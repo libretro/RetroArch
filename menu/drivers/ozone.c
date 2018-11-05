@@ -72,6 +72,7 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_BUTTON_A = 0,
    OZONE_THEME_TEXTURE_BUTTON_B,
    OZONE_THEME_TEXTURE_SWITCH,
+   OZONE_THEME_TEXTURE_CHECK,
 
    OZONE_THEME_TEXTURE_LAST
 };
@@ -79,7 +80,8 @@ enum OZONE_THEME_TEXTURES {
 static char* OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
-   "switch"
+   "switch",
+   "check"
 };
 
 enum OZONE_TAB_TEXTURES {
@@ -533,6 +535,7 @@ typedef struct ozone_handle
       float selection[16];
       float entries_border[16];
       float entries_icon[16];
+      float entries_checkmark[16];
    } theme_dynamic;
 
    bool need_compute;
@@ -1353,6 +1356,7 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    memcpy(ozone->theme_dynamic.selection, ozone->theme->selection, sizeof(ozone->theme_dynamic.selection));
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
+   memcpy(ozone->theme_dynamic.entries_checkmark, ozone_pure_white, sizeof(ozone->theme_dynamic.entries_checkmark));
 
    last_color_theme = color_theme;
 }
@@ -2058,14 +2062,10 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    {
       /* Entry */
       menu_entry_t entry;
-      char entry_value[255];
       ozone_node_t *node     = NULL;
-
-      entry_value[0] = '\0';
       
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
 
       /* Cache node */
       node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, i);
@@ -2359,18 +2359,32 @@ static void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_
    menu_display_scissor_end(video_info);
 }
 
-static void ozone_draw_entry_value(ozone_handle_t *ozone, video_frame_info_t *video_info, char *value, unsigned x, unsigned y, uint32_t alpha_uint32)
+static void ozone_draw_entry_value(ozone_handle_t *ozone, 
+      video_frame_info_t *video_info,
+      char *value,
+      unsigned x, unsigned y,
+      uint32_t alpha_uint32,
+      bool checked)
 {
    enum msg_file_type hash_type;
    bool switch_is_on = true;
    bool do_draw_text = false;
 
-   if (string_is_empty(value))
+   if (!checked && string_is_empty(value))
       return;
 
    hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
 
-   /* set switch_is_on */
+   /* check icon */
+   if (checked)
+   {
+      menu_display_blend_begin(video_info);
+      ozone_draw_icon(video_info, 35, 35, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 25, y - 25, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
+      menu_display_blend_end(video_info);
+      return;
+   }
+
+   /* text value */
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
@@ -2482,6 +2496,7 @@ static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_
          goto text_iterate;
 
       ozone_color_alpha(ozone->theme_dynamic.entries_border, alpha);
+      ozone_color_alpha(ozone->theme_dynamic.entries_checkmark, alpha);
 
       /* Borders */
       menu_display_draw_quad(video_info, x_offset + 456-3, y - 3 + scroll_y, entry_width + 10 - 3 -1, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
@@ -2537,9 +2552,7 @@ text_iterate:
       ozone_draw_icon(video_info, 46, 46, ozone->icons_textures[icon], x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
       menu_display_blend_end(video_info);
 
-
       entry_rich_label = menu_entry_get_rich_label(&entry);
-
 
       ticker.idx = ozone->frame_count / 20;
       ticker.s = rich_label;
@@ -2562,7 +2575,7 @@ text_iterate:
       ticker.len = (entry_width - 60 - ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
-      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32);
+      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, entry.checked);
       
       free(entry_rich_label);
 

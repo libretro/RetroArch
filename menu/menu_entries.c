@@ -487,6 +487,15 @@ error:
    return false;
 }
 
+void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
+      bool checked)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, entry_idx);
+
+   if (cbs)
+      cbs->checked = checked;
+}
+
 void menu_entries_append(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
