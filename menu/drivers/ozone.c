@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
  *  Copyright (C) 2016-2017 - Brad Parker
- *  Copyright (C) 2018      - Alfredo Monclús
+ *  Copyright (C) 2018      - Alfredo MonclÃºs
  *  Copyright (C) 2018      - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -21,21 +21,21 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <streams/file_stream.h>
+#include <features/features_cpu.h>
 
 #include "menu_generic.h"
+
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 
 #include "../../configuration.h"
-
 #include "../../cheevos/badges.h"
 #include "../../content.h"
-
 #include "../../core_info.h"
 #include "../../core.h"
-
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../tasks/tasks_internal.h"
 
 /* TODO Handle translation for hardcoded strings (footer...) */
 
@@ -50,6 +50,8 @@
 #define ANIMATION_CURSOR_DURATION 8
 
 #define ENTRIES_START_Y 127
+
+#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 static float ozone_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
@@ -2170,6 +2172,8 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    char title[255];
    menu_animation_ctx_ticker_t ticker;
+   settings_t *settings     = config_get_ptr();
+   unsigned timedate_offset = 0;
 
    /* Separator */
    menu_display_draw_quad(video_info, 30, 87, video_info->width - 60, 1, video_info->width, video_info->height, ozone->theme->header_footer_separator);
@@ -2190,6 +2194,41 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_RETROARCH], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
    menu_display_blend_end(video_info);
 
+   /* Battery */
+   if (video_info->battery_level_enable)
+   {
+      char msg[12];
+      static retro_time_t last_time  = 0;
+      bool charging                  = false;
+      retro_time_t current_time      = cpu_features_get_time_usec();
+      int percent                    = 0;
+      enum frontend_powerstate state = get_last_powerstate(&percent);
+
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         charging = true;
+
+      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
+      {
+         last_time = current_time;
+         task_push_get_powerstate();
+      }
+
+      *msg = '\0';
+
+      if (percent > 0)
+      {
+         timedate_offset = 95;
+
+         snprintf(msg, sizeof(msg), "%d%%", percent);
+
+         ozone_draw_text(video_info, ozone, msg, video_info->width - 85, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+
+         menu_display_blend_begin(video_info);
+         ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[charging ? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL], video_info->width - 60 - 56, 30 - 28, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+         menu_display_blend_end(video_info);
+      }
+   }
+
    /* Timedate */
    if (video_info->timedate_enable)
    {
@@ -2199,12 +2238,16 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       timedate[0] = '\0';
 
       datetime.s = timedate;
-      datetime.time_mode = 4;
+      datetime.time_mode = settings->uints.menu_timedate_style;
       datetime.len = sizeof(timedate);
 
       menu_display_timedate(&datetime);
 
-      ozone_draw_text(video_info, ozone, timedate, video_info->width - 60, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+      ozone_draw_text(video_info, ozone, timedate, video_info->width - 87 - timedate_offset, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+
+      menu_display_blend_begin(video_info);
+      ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK], video_info->width - 60 - 56 - timedate_offset, 30 - 28, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+      menu_display_blend_end(video_info);
    }
 }
 
