@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
  *  Copyright (C) 2016-2017 - Brad Parker
- *  Copyright (C) 2018      - Alfredo Monclús
+ *  Copyright (C) 2018      - Alfredo MonclÃºs
  *  Copyright (C) 2018      - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -21,21 +21,21 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <streams/file_stream.h>
+#include <features/features_cpu.h>
 
 #include "menu_generic.h"
+
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 
 #include "../../configuration.h"
-
 #include "../../cheevos/badges.h"
 #include "../../content.h"
-
 #include "../../core_info.h"
 #include "../../core.h"
-
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../tasks/tasks_internal.h"
 
 /* TODO Handle translation for hardcoded strings (footer...) */
 
@@ -50,6 +50,8 @@
 #define ANIMATION_CURSOR_DURATION 8
 
 #define ENTRIES_START_Y 127
+
+#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 static float ozone_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
@@ -527,6 +529,7 @@ typedef struct ozone_handle
 
    unsigned title_font_glyph_width;
    unsigned entry_font_glyph_width;
+   unsigned sublabel_font_glyph_width;
 
    ozone_theme_t *theme;
 
@@ -555,6 +558,7 @@ typedef struct ozone_node
 {
    unsigned height;
    unsigned position_y;
+   bool wrap;
 } ozone_node_t;
 
 static const char *ozone_entries_icon_texture_path(ozone_handle_t *ozone, unsigned id)
@@ -1564,6 +1568,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       ozone->title_font_glyph_width = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
       ozone->entry_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_label, "a", 1, 1);
+      ozone->sublabel_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_sublabel, "a", 1, 1);
       
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -2042,10 +2047,21 @@ static void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozo
    }
 }
 
+static unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 static void ozone_compute_entries_position(ozone_handle_t *ozone)
 {
-   unsigned video_info_height;
    /* Compute entries height and adjust scrolling if needed */
+   unsigned video_info_height;
+   unsigned video_info_width;
    size_t i, entries_end;
    file_list_t *selection_buf = NULL;
 
@@ -2054,7 +2070,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    entries_end   = menu_entries_get_size();
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   video_driver_get_size(NULL, &video_info_height);
+   video_driver_get_size(&video_info_width, &video_info_height);
 
    ozone->entries_height = 0;
 
@@ -2074,6 +2090,25 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
          continue;
 
       node->height = (entry.sublabel ? 100 : 60-8);
+      node->wrap   = false;
+
+      if (entry.sublabel)
+      {
+         char *sublabel_str = menu_entry_get_sublabel(&entry);
+
+         word_wrap(sublabel_str, sublabel_str, (video_info_width - 548) / ozone->sublabel_font_glyph_width, false);
+
+         unsigned lines = ozone_count_lines(sublabel_str);
+
+         if (lines > 1)
+         {
+            node->height += lines * 15;
+            node->wrap = true;
+         }
+
+         free(sublabel_str);
+      }
+
       node->position_y = ozone->entries_height;
 
       ozone->entries_height += node->height;
@@ -2170,6 +2205,8 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    char title[255];
    menu_animation_ctx_ticker_t ticker;
+   settings_t *settings     = config_get_ptr();
+   unsigned timedate_offset = 0;
 
    /* Separator */
    menu_display_draw_quad(video_info, 30, 87, video_info->width - 60, 1, video_info->width, video_info->height, ozone->theme->header_footer_separator);
@@ -2190,6 +2227,41 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_RETROARCH], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
    menu_display_blend_end(video_info);
 
+   /* Battery */
+   if (video_info->battery_level_enable)
+   {
+      char msg[12];
+      static retro_time_t last_time  = 0;
+      bool charging                  = false;
+      retro_time_t current_time      = cpu_features_get_time_usec();
+      int percent                    = 0;
+      enum frontend_powerstate state = get_last_powerstate(&percent);
+
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         charging = true;
+
+      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
+      {
+         last_time = current_time;
+         task_push_get_powerstate();
+      }
+
+      *msg = '\0';
+
+      if (percent > 0)
+      {
+         timedate_offset = 95;
+
+         snprintf(msg, sizeof(msg), "%d%%", percent);
+
+         ozone_draw_text(video_info, ozone, msg, video_info->width - 85, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+
+         menu_display_blend_begin(video_info);
+         ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[charging ? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL], video_info->width - 60 - 56, 30 - 28, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+         menu_display_blend_end(video_info);
+      }
+   }
+
    /* Timedate */
    if (video_info->timedate_enable)
    {
@@ -2199,12 +2271,16 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       timedate[0] = '\0';
 
       datetime.s = timedate;
-      datetime.time_mode = 4;
+      datetime.time_mode = settings->uints.menu_timedate_style;
       datetime.len = sizeof(timedate);
 
       menu_display_timedate(&datetime);
 
-      ozone_draw_text(video_info, ozone, timedate, video_info->width - 60, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+      ozone_draw_text(video_info, ozone, timedate, video_info->width - 87 - timedate_offset, 30 + FONT_SIZE_TIME, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba);
+
+      menu_display_blend_begin(video_info);
+      ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK], video_info->width - 60 - 56 - timedate_offset, 30 - 28, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+      menu_display_blend_end(video_info);
    }
 }
 
@@ -2523,6 +2599,7 @@ text_iterate:
       char entry_value[255];
       char rich_label[255];
       char entry_value_ticker[255];
+      char *sublabel_str;
       ozone_node_t *node     = NULL;
       char *entry_rich_label = NULL;
       bool entry_selected    = false;
@@ -2563,8 +2640,14 @@ text_iterate:
       menu_animation_ticker(&ticker);
 
       /* Text */
+
+      sublabel_str = menu_entry_get_sublabel(&entry);
+
+      if (node->wrap)
+         word_wrap(sublabel_str, sublabel_str, (video_info->width - 548) / ozone->sublabel_font_glyph_width, false);
+
       ozone_draw_text(video_info, ozone, rich_label, x_offset + 521, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, (ozone->theme->text_rgba & 0xFFFFFF00) | alpha_uint32);
-      ozone_draw_text(video_info, ozone, entry.sublabel, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, (ozone->theme->text_sublabel_rgba & 0xFFFFFF00) | alpha_uint32);
+      ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, (ozone->theme->text_sublabel_rgba & 0xFFFFFF00) | alpha_uint32);
 
       /* Value */
 
@@ -2578,6 +2661,7 @@ text_iterate:
       ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, entry.checked);
       
       free(entry_rich_label);
+      free(sublabel_str);
 
 icons_iterate:
       y += node->height;
