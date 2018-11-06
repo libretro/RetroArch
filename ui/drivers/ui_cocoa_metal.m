@@ -38,12 +38,9 @@
 #include "../../tasks/tasks_internal.h"
 #include ".././verbosity.h"
 
-#ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
-#endif
 
-#if !((defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__))))
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
@@ -61,23 +58,16 @@
 {}
 
 @end
-#endif
 
 id<ApplePlatform> apple_platform;
 
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-@interface RetroArch_OSX : NSObject <ApplePlatform>
-#else
 @interface RetroArch_OSX : NSObject <ApplePlatform, NSApplicationDelegate>
-#endif
 {
    NSWindow* _window;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    WindowListener *_listener;
-#endif
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -88,42 +78,10 @@ static void app_terminate(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
 }
-#ifdef HAVE_METAL
 @interface RAWindow : NSWindow
 @end
 
 @implementation RAWindow
-#else
-@interface RApplication : NSApplication
-@end
-
-@implementation RApplication
-#endif
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
-#define NSEventTypeKeyDown             NSKeyDown
-#define NSEventTypeKeyUp               NSKeyUp
-#define NSEventTypeFlagsChanged        NSFlagsChanged
-#define NSEventTypeMouseMoved          NSMouseMoved
-#define NSEventTypeLeftMouseDragged    NSLeftMouseDragged
-#define NSEventTypeRightMouseDragged   NSRightMouseDragged
-#define NSEventTypeOtherMouseDragged   NSOtherMouseDragged
-#define NSEventTypeLeftMouseDown       NSLeftMouseDown
-#define NSEventTypeRightMouseDown      NSRightMouseDown
-#define NSEventTypeOtherMouseDown      NSOtherMouseDown
-#define NSEventTypeLeftMouseUp         NSLeftMouseUp
-#define NSEventTypeRightMouseUp        NSRightMouseUp
-#define NSEventTypeOtherMouseUp        NSOtherMouseUp
-#define NSEventTypeScrollWheel         NSScrollWheel
-
-// modifier flags
-#define NSEventModifierFlagCapsLock    NSAlphaShiftKeyMask
-#define NSEventModifierFlagShift       NSShiftKeyMask
-#define NSEventModifierFlagControl     NSControlKeyMask
-#define NSEventModifierFlagOption      NSAlternateKeyMask
-#define NSEventModifierFlagCommand     NSCommandKeyMask
-#define NSEventModifierFlagNumericPad  NSNumericPadKeyMask
-#endif
 
 - (void)sendEvent:(NSEvent *)event {
    [super sendEvent:event];
@@ -246,39 +204,19 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 
-#if !__has_feature(objc_arc)
-- (void)dealloc
-{
-   [_window release];
-   [super dealloc];
-}
-#endif
-
-#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
    apple_platform   = self;
 
-   SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
-   SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-
-   if ([self.window respondsToSelector:selector])
-   {
-       if ([self.window respondsToSelector:fsselector])
-          [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
-   }
+   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
    
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    _listener = [WindowListener new];
-#endif
    
    [self.window setAcceptsMouseMovedEvents: YES];
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
-#endif
    
    [[self.window contentView] setAutoresizesSubviews:YES];
 
@@ -324,14 +262,12 @@ static char** waiting_argv;
    switch (vt) {
       case APPLE_VIEW_TYPE_VULKAN:
       case APPLE_VIEW_TYPE_METAL:
-#if defined(HAVE_METAL) || defined(HAVE_VULKAN)
       {
          MetalView *v = [MetalView new];
          v.paused = YES;
          v.enableSetNeedsDisplay = NO;
          _renderView = v;
       }
-#endif
       break;
       
       case APPLE_VIEW_TYPE_OPENGL:
@@ -349,9 +285,7 @@ static char** waiting_argv;
    [_renderView setFrame: [[self.window contentView] bounds]];
    
    self.window.contentView = _renderView;
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-   [self.window.contentView setNextResponder:_listener];
-#endif
+   self.window.contentView.nextResponder = _listener;
 }
 
 - (apple_view_type_t)viewType {
@@ -367,8 +301,7 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-#ifdef HAVE_METAL
-   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+   BOOL isFullScreen = (self.window.styleMask & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
    if (mode.fullscreen && !isFullScreen)
    {
       [self.window toggleFullScreen:self];
@@ -386,7 +319,6 @@ static char** waiting_argv;
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
-#endif
 }
 
 - (void)setCursorVisible:(bool)v {
@@ -398,7 +330,6 @@ static char** waiting_argv;
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
    if (disable && _sleepActivity == nil)
    {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
@@ -409,10 +340,6 @@ static char** waiting_argv;
       _sleepActivity = nil;
    }
    return YES;
-#else
-   return NO;
-#endif
-
 }
 
 

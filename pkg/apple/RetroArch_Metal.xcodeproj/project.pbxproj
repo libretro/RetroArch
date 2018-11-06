@@ -513,6 +513,8 @@
 		05D7753120A55D2700646447 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
 		05D7753320A5678300646447 /* griffin_cpp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		05D7753420A5678400646447 /* griffin_glslang.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
+		05EFAFC22191D64200D27059 /* stripes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stripes.c; sourceTree = "<group>"; };
+		05EFAFC32191D64200D27059 /* ozone.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone.c; sourceTree = "<group>"; };
 		05F2872F20F2BEEA00632D47 /* task_autodetect.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_autodetect.c; sourceTree = "<group>"; };
 		05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_find_content.c; sourceTree = "<group>"; };
 		05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_nat_traversal.c; sourceTree = "<group>"; };
@@ -804,7 +806,9 @@
 				05A8C53320DB72F000FF7857 /* menu_generic.h */,
 				05A8C53D20DB72F000FF7857 /* nuklear.c */,
 				05A8C53E20DB72F000FF7857 /* null.c */,
+				05EFAFC32191D64200D27059 /* ozone.c */,
 				05A8C53C20DB72F000FF7857 /* rgui.c */,
+				05EFAFC22191D64200D27059 /* stripes.c */,
 				05A8C53220DB72F000FF7857 /* xmb.c */,
 				05A8C53B20DB72F000FF7857 /* xui.cpp */,
 				05A8C53F20DB72F000FF7857 /* zarch.c */,

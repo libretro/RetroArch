@@ -3152,6 +3152,9 @@ static void ozone_toggle(void *userdata, bool menu_on)
 {
    bool tmp              = false;
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+   if (!ozone)
+      return;
+   
    if (!menu_on)
    {
       menu_display_ctx_clearcolor_t clearcolor;
