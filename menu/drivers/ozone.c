@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2017 - Brad Parker
- *  Copyright (C) 2018      - Alfredo MonclÃºs
+ *  Copyright (C) 2018      - Alfredo Monclús
  *  Copyright (C) 2018      - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -2379,7 +2379,7 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    if (checked)
    {
       menu_display_blend_begin(video_info);
-      ozone_draw_icon(video_info, 35, 35, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 25, y - 25, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
+      ozone_draw_icon(video_info, 30, 30, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20, y - 22, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
       menu_display_blend_end(video_info);
       return;
    }

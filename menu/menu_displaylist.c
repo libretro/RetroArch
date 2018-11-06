@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
- *  Copyright (C) 2015-2017 - AndrÃ©s SuÃ¡rez
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -8125,11 +8125,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -8150,11 +8151,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
@@ -8190,11 +8192,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -8214,11 +8217,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
@@ -8255,11 +8259,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -8280,11 +8285,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
@@ -8434,11 +8440,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -8459,11 +8466,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
@@ -8499,11 +8507,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -8523,11 +8532,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
@@ -8564,11 +8574,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -8589,11 +8600,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
 
-                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 if (!checked_found && val == orig_value)
                                  {
-                                    checked = i;
+                                    checked       = count;
                                     checked_found = true;
                                  }
+                                 count++;
                               }
                            }
 
