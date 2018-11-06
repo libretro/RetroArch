@@ -529,6 +529,7 @@ typedef struct ozone_handle
 
    unsigned title_font_glyph_width;
    unsigned entry_font_glyph_width;
+   unsigned sublabel_font_glyph_width;
 
    ozone_theme_t *theme;
 
@@ -557,6 +558,7 @@ typedef struct ozone_node
 {
    unsigned height;
    unsigned position_y;
+   bool wrap;
 } ozone_node_t;
 
 static const char *ozone_entries_icon_texture_path(ozone_handle_t *ozone, unsigned id)
@@ -1566,6 +1568,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       ozone->title_font_glyph_width = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
       ozone->entry_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_label, "a", 1, 1);
+      ozone->sublabel_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_sublabel, "a", 1, 1);
       
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -2044,10 +2047,21 @@ static void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozo
    }
 }
 
+static unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 static void ozone_compute_entries_position(ozone_handle_t *ozone)
 {
-   unsigned video_info_height;
    /* Compute entries height and adjust scrolling if needed */
+   unsigned video_info_height;
+   unsigned video_info_width;
    size_t i, entries_end;
    file_list_t *selection_buf = NULL;
 
@@ -2056,7 +2070,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    entries_end   = menu_entries_get_size();
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   video_driver_get_size(NULL, &video_info_height);
+   video_driver_get_size(&video_info_width, &video_info_height);
 
    ozone->entries_height = 0;
 
@@ -2076,6 +2090,25 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
          continue;
 
       node->height = (entry.sublabel ? 100 : 60-8);
+      node->wrap   = false;
+
+      if (entry.sublabel)
+      {
+         char *sublabel_str = menu_entry_get_sublabel(&entry);
+
+         word_wrap(sublabel_str, sublabel_str, (video_info_width - 548) / ozone->sublabel_font_glyph_width, false);
+
+         unsigned lines = ozone_count_lines(sublabel_str);
+
+         if (lines > 1)
+         {
+            node->height += lines * 15;
+            node->wrap = true;
+         }
+
+         free(sublabel_str);
+      }
+
       node->position_y = ozone->entries_height;
 
       ozone->entries_height += node->height;
@@ -2566,6 +2599,7 @@ text_iterate:
       char entry_value[255];
       char rich_label[255];
       char entry_value_ticker[255];
+      char *sublabel_str;
       ozone_node_t *node     = NULL;
       char *entry_rich_label = NULL;
       bool entry_selected    = false;
@@ -2606,8 +2640,14 @@ text_iterate:
       menu_animation_ticker(&ticker);
 
       /* Text */
+
+      sublabel_str = menu_entry_get_sublabel(&entry);
+
+      if (node->wrap)
+         word_wrap(sublabel_str, sublabel_str, (video_info->width - 548) / ozone->sublabel_font_glyph_width, false);
+
       ozone_draw_text(video_info, ozone, rich_label, x_offset + 521, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, (ozone->theme->text_rgba & 0xFFFFFF00) | alpha_uint32);
-      ozone_draw_text(video_info, ozone, entry.sublabel, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, (ozone->theme->text_sublabel_rgba & 0xFFFFFF00) | alpha_uint32);
+      ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, (ozone->theme->text_sublabel_rgba & 0xFFFFFF00) | alpha_uint32);
 
       /* Value */
 
@@ -2621,6 +2661,7 @@ text_iterate:
       ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, entry.checked);
       
       free(entry_rich_label);
+      free(sublabel_str);
 
 icons_iterate:
       y += node->height;
