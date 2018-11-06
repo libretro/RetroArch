@@ -1554,6 +1554,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
    {
       /* Fonts init */
       unsigned i;
+      unsigned size;
       char font_path[PATH_MAX_LENGTH];
 
       fill_pathname_join(font_path, ozone->assets_path, "Inter-UI-Regular.ttf", sizeof(font_path));
@@ -1566,9 +1567,21 @@ static void ozone_context_reset(void *data, bool is_threaded)
       fill_pathname_join(font_path, ozone->assets_path, "Inter-UI-Bold.ttf", sizeof(font_path));
       ozone->fonts.title = menu_display_font_file(font_path, FONT_SIZE_TITLE, is_threaded);
 
-      ozone->title_font_glyph_width = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
-      ozone->entry_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_label, "a", 1, 1);
-      ozone->sublabel_font_glyph_width = font_driver_get_message_width(ozone->fonts.entries_sublabel, "a", 1, 1);
+      /* Naive font size */
+      ozone->title_font_glyph_width = FONT_SIZE_TITLE * 3/4;
+      ozone->entry_font_glyph_width = FONT_SIZE_ENTRIES_LABEL * 3/4;
+      ozone->sublabel_font_glyph_width = FONT_SIZE_ENTRIES_SUBLABEL * 3/4;
+
+      /* More realistic font size */
+      size = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
+      if (size)
+         ozone->title_font_glyph_width = size;
+      size = font_driver_get_message_width(ozone->fonts.entries_label, "a", 1, 1);
+      if (size)
+         ozone->entry_font_glyph_width = size;
+      size = font_driver_get_message_width(ozone->fonts.entries_sublabel, "a", 1, 1);
+      if (size)
+         ozone->sublabel_font_glyph_width = size;
       
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
