@@ -549,6 +549,9 @@ typedef struct ozone_handle
    float scroll_old;
 
    bool want_horizontal_animation;
+
+   bool draw_icons;
+   bool draw_icons_old;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -957,164 +960,151 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return OZONE_ENTRIES_ICONS_TEXTURE_MUSIC;
 
-      default:
-      /* Menu icons are here waiting for theme support*/
-      {
-            settings_t *settings = config_get_ptr();
-            if (settings->uints.menu_xmb_theme != XMB_ICON_THEME_FLATUI &&
-                settings->uints.menu_xmb_theme != XMB_ICON_THEME_PIXEL )
-            {
-               switch (enum_idx)
-               {
-                  /* Menu icons */
-                  case MENU_ENUM_LABEL_CONTENT_SETTINGS:
-                  case MENU_ENUM_LABEL_UPDATE_ASSETS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU;
-                  case MENU_ENUM_LABEL_START_CORE:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
-                  case MENU_ENUM_LABEL_CORE_LIST:
-                  case MENU_ENUM_LABEL_CORE_SETTINGS:
-                  case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_CORE;
-                  case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-                  case MENU_ENUM_LABEL_SCAN_FILE:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_FILE;
-                  case MENU_ENUM_LABEL_ONLINE_UPDATER:
-                  case MENU_ENUM_LABEL_UPDATER_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_UPDATER;
-                  case MENU_ENUM_LABEL_UPDATE_LAKKA:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU;
-                  case MENU_ENUM_LABEL_UPDATE_CHEATS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS;
-                  case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_IMAGE;
-                  case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
-                  case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY;
-                  case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
-                  case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
-                  case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
-                  case MENU_ENUM_LABEL_INFORMATION:
-                  case MENU_ENUM_LABEL_INFORMATION_LIST:
-                  case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-                  case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_INFO;
-                  case MENU_ENUM_LABEL_UPDATE_DATABASES:
-                  case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RDB;
-                  case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_CURSOR;
-                  case MENU_ENUM_LABEL_HELP_LIST:
-                  case MENU_ENUM_LABEL_HELP_CONTROLS:
-                  case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-                  case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-                  case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-                  case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-                  case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_HELP;
-                  case MENU_ENUM_LABEL_QUIT_RETROARCH:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_EXIT;
-                  /* Settings icons*/
-                  case MENU_ENUM_LABEL_DRIVER_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS;
-                  case MENU_ENUM_LABEL_VIDEO_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_VIDEO;
-                  case MENU_ENUM_LABEL_AUDIO_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_AUDIO;
-                  case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_MIXER;
-                  case MENU_ENUM_LABEL_INPUT_SETTINGS:
-                  case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-                  case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
-                  case MENU_ENUM_LABEL_LATENCY_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_LATENCY;
-                  case MENU_ENUM_LABEL_SAVING_SETTINGS:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
-                  case MENU_ENUM_LABEL_LOGGING_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_LOG;
-                  case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP;
-                  case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
-                  case MENU_ENUM_LABEL_RECORDING_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RECORD;
-                  case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_STREAM;
-                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
-                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
-                  case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_OSD;
-                  case MENU_ENUM_LABEL_SHOW_WIMP:
-                  case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_UI;
+      /* Menu icons */
+      case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+      case MENU_ENUM_LABEL_UPDATE_ASSETS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU;
+      case MENU_ENUM_LABEL_START_CORE:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
+      case MENU_ENUM_LABEL_CORE_LIST:
+      case MENU_ENUM_LABEL_CORE_SETTINGS:
+      case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
+            return OZONE_ENTRIES_ICONS_TEXTURE_CORE;
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+      case MENU_ENUM_LABEL_SCAN_FILE:
+            return OZONE_ENTRIES_ICONS_TEXTURE_FILE;
+      case MENU_ENUM_LABEL_ONLINE_UPDATER:
+      case MENU_ENUM_LABEL_UPDATER_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_UPDATER;
+      case MENU_ENUM_LABEL_UPDATE_LAKKA:
+            return OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU;
+      case MENU_ENUM_LABEL_UPDATE_CHEATS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS;
+      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+            return OZONE_ENTRIES_ICONS_TEXTURE_IMAGE;
+      case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
+      case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY;
+      case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+      case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+      case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
+      case MENU_ENUM_LABEL_INFORMATION:
+      case MENU_ENUM_LABEL_INFORMATION_LIST:
+      case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+      case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
+            return OZONE_ENTRIES_ICONS_TEXTURE_INFO;
+      case MENU_ENUM_LABEL_UPDATE_DATABASES:
+      case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RDB;
+      case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
+            return OZONE_ENTRIES_ICONS_TEXTURE_CURSOR;
+      case MENU_ENUM_LABEL_HELP_LIST:
+      case MENU_ENUM_LABEL_HELP_CONTROLS:
+      case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
+      case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
+      case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
+      case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+      case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+            return OZONE_ENTRIES_ICONS_TEXTURE_HELP;
+      case MENU_ENUM_LABEL_QUIT_RETROARCH:
+            return OZONE_ENTRIES_ICONS_TEXTURE_EXIT;
+      /* Settings icons*/
+      case MENU_ENUM_LABEL_DRIVER_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS;
+      case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_VIDEO;
+      case MENU_ENUM_LABEL_AUDIO_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_AUDIO;
+      case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_MIXER;
+      case MENU_ENUM_LABEL_INPUT_SETTINGS:
+      case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
+      case MENU_ENUM_LABEL_LATENCY_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_LATENCY;
+      case MENU_ENUM_LABEL_SAVING_SETTINGS:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+            return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
+      case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_LOG;
+      case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP;
+      case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
+      case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RECORD;
+      case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+            return OZONE_ENTRIES_ICONS_TEXTURE_STREAM;
+      case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
+      case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
+            return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+      case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_OSD;
+      case MENU_ENUM_LABEL_SHOW_WIMP:
+      case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_UI;
 #ifdef HAVE_LAKKA_SWITCH
-                  case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
-                  case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+      case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+      case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
-                  case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_POWER;
-                  case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS;
-                  case MENU_ENUM_LABEL_NETWORK_INFORMATION:
-                  case MENU_ENUM_LABEL_NETWORK_SETTINGS:
-                  case MENU_ENUM_LABEL_WIFI_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_NETWORK;
-                  case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST;
-                  case MENU_ENUM_LABEL_USER_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_USER;
-                  case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
-                  case MENU_ENUM_LABEL_SCAN_DIRECTORY:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_FOLDER;
-                  case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY;
+      case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_POWER;
+      case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS;
+      case MENU_ENUM_LABEL_NETWORK_INFORMATION:
+      case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_WIFI_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_NETWORK;
+      case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST;
+      case MENU_ENUM_LABEL_USER_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_USER;
+      case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+      case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+            return OZONE_ENTRIES_ICONS_TEXTURE_FOLDER;
+      case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY;
 
-                  case MENU_ENUM_LABEL_REWIND_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_REWIND;
-                  case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE;
-                  case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS;
+      case MENU_ENUM_LABEL_REWIND_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_REWIND;
+      case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE;
+      case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS;
 #ifdef HAVE_NETWORKING
-                  case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
-                  case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
-                  case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_ROOM;
-                  case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+            return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+            return OZONE_ENTRIES_ICONS_TEXTURE_ROOM;
+      case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
 #endif
-                  case MENU_ENUM_LABEL_REBOOT:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
-                  case MENU_ENUM_LABEL_SHUTDOWN:
-                     return OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN;
-                  default:
-                     break;
-                  }
-            }
+      case MENU_ENUM_LABEL_REBOOT:
+            return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+      case MENU_ENUM_LABEL_SHUTDOWN:
+            return OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN;
+      default:
             break;
-      }
    }
 
    switch(type)
@@ -1387,10 +1377,12 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata = ozone;
+
    ozone->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+
    ozone->want_horizontal_animation = false;
-   ozone->draw_sidebar = true;
-   ozone->sidebar_offset = 0;
+   ozone->draw_sidebar              = true;
+   ozone->sidebar_offset            = 0;
 
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
@@ -2075,6 +2067,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    /* Compute entries height and adjust scrolling if needed */
    unsigned video_info_height;
    unsigned video_info_width;
+   unsigned icon;
    size_t i, entries_end;
    file_list_t *selection_buf = NULL;
 
@@ -2086,6 +2079,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    video_driver_get_size(&video_info_width, &video_info_height);
 
    ozone->entries_height = 0;
+   ozone->draw_icons     = false;
 
    for (i = 0; i < entries_end; i++)
    {
@@ -2104,6 +2098,11 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
 
       node->height = (entry.sublabel ? 100 : 60-8);
       node->wrap   = false;
+
+      icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, false);
+
+      if (icon != OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING)
+         ozone->draw_icons = true;
 
       if (entry.sublabel)
       {
@@ -2523,7 +2522,8 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
 
 static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    unsigned selection, unsigned selection_old,
-   file_list_t *selection_buf, float alpha, float scroll_y)
+   file_list_t *selection_buf, float alpha, float scroll_y,
+   bool draw_icons)
 {
    bool old_list;
    uint32_t alpha_uint32;
@@ -2616,6 +2616,7 @@ text_iterate:
       ozone_node_t *node     = NULL;
       char *entry_rich_label = NULL;
       bool entry_selected    = false;
+      int text_offset   = -40;
 
       entry_value[0]         = '\0';
       entry_selected         = selection == i;
@@ -2634,13 +2635,18 @@ text_iterate:
          goto icons_iterate;
 
       /* Icon */
-      icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, entry_selected);
+      if (draw_icons)
+      {
+         icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, entry_selected);
 
-      ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
+         ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
 
-      menu_display_blend_begin(video_info);
-      ozone_draw_icon(video_info, 46, 46, ozone->icons_textures[icon], x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
-      menu_display_blend_end(video_info);
+         menu_display_blend_begin(video_info);
+         ozone_draw_icon(video_info, 46, 46, ozone->icons_textures[icon], x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         menu_display_blend_end(video_info);
+
+         text_offset = 0;
+      }
 
       entry_rich_label = menu_entry_get_rich_label(&entry);
 
@@ -2653,13 +2659,12 @@ text_iterate:
       menu_animation_ticker(&ticker);
 
       /* Text */
-
       sublabel_str = menu_entry_get_sublabel(&entry);
 
       if (node->wrap)
          word_wrap(sublabel_str, sublabel_str, (video_info->width - 548) / ozone->sublabel_font_glyph_width, false);
 
-      ozone_draw_text(video_info, ozone, rich_label, x_offset + 521, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, (ozone->theme->text_rgba & 0xFFFFFF00) | alpha_uint32);
+      ozone_draw_text(video_info, ozone, rich_label, text_offset + x_offset + 521, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, (ozone->theme->text_rgba & 0xFFFFFF00) | alpha_uint32);
       ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, (ozone->theme->text_sublabel_rgba & 0xFFFFFF00) | alpha_uint32);
 
       /* Value */
@@ -2814,11 +2819,27 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    menu_display_scissor_begin(video_info, ozone->sidebar_offset + 408, 87, video_info->width - 408 + (-ozone->sidebar_offset), video_info->height - 87 - 78);
 
    /* Current list */
-   ozone_draw_entries(ozone, video_info, ozone->selection, ozone->selection_old, menu_entries_get_selection_buf_ptr(0), ozone->animations.list_alpha, ozone->animations.scroll_y);
+   ozone_draw_entries(ozone,
+      video_info,
+      ozone->selection,
+      ozone->selection_old,
+      menu_entries_get_selection_buf_ptr(0),
+      ozone->animations.list_alpha,
+      ozone->animations.scroll_y,
+      ozone->draw_icons
+   );
    
    /* Old list */
    if (ozone->draw_old_list)
-      ozone_draw_entries(ozone, video_info, ozone->selection_old_list, ozone->selection_old_list, ozone->selection_buf_old, ozone->animations.list_alpha, ozone->scroll_old);
+      ozone_draw_entries(ozone,
+         video_info,
+         ozone->selection_old_list,
+         ozone->selection_old_list,
+         ozone->selection_buf_old,
+         ozone->animations.list_alpha,
+         ozone->scroll_old,
+         ozone->draw_icons_old
+      );
 
    menu_display_scissor_end(video_info);
 
@@ -3343,6 +3364,7 @@ static void ozone_list_cache(void *data,
    ozone->need_compute        = true;
    ozone->selection_old_list  = ozone->selection;
    ozone->scroll_old          = ozone->animations.scroll_y;
+   ozone->draw_icons_old      = ozone->draw_icons;
 
    /* Deep copy visible elements */
    video_driver_get_size(NULL, &video_info_height);
