@@ -2914,7 +2914,14 @@ static int xmb_draw_item(
 
       menu_display_rotate_z(&rotate_draw, video_info);
 
-      xmb_draw_icon(video_info,
+
+   if (
+        (entry->checked) ||
+        !((entry_type >= MENU_SETTING_DROPDOWN_ITEM) &&
+        (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
+      )
+      {
+         xmb_draw_icon(video_info,
             xmb->icon_size,
             &mymat_tmp,
             texture,
@@ -2927,6 +2934,7 @@ static int xmb_draw_item(
             scale_factor,
             &color[0],
             xmb->shadow_offset);
+      }
    }
 
    menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
