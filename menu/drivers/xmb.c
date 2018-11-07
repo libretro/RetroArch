@@ -200,6 +200,7 @@ enum
    XMB_TEXTURE_INPUT_RB,
    XMB_TEXTURE_INPUT_LT,
    XMB_TEXTURE_INPUT_RT,
+   XMB_TEXTURE_CHECKMARK,
    XMB_TEXTURE_LAST
 };
 
@@ -2251,7 +2252,7 @@ static void xmb_populate_entries(void *data,
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
-      enum msg_hash_enums enum_idx, unsigned type, bool active)
+      enum msg_hash_enums enum_idx, unsigned type, bool active, bool checked)
 {
    switch (enum_idx)
    {
@@ -2651,6 +2652,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if ( type == (input_id + 23))
             return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
       }
+   if (checked)
+      return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
+
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
@@ -2895,7 +2899,7 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       menu_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry->enum_idx, entry_type, (i == current));
+            entry->enum_idx, entry_type, (i == current), entry->checked);
       float x                  = icon_x;
       float y                  = icon_y;
       float rotation           = 0;
@@ -4849,6 +4853,9 @@ static const char *xmb_texture_path(unsigned id)
          break;
       case XMB_TEXTURE_INPUT_START:
          icon_name = "input_START.png";
+         break;
+      case XMB_TEXTURE_CHECKMARK:
+         icon_name = "menu_check.png";
          break;
    }
 
