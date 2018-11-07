@@ -2522,6 +2522,12 @@ static enum runloop_state runloop_check_state(
    bool menu_is_alive               = menu_driver_is_alive();
 #endif
 
+#ifdef HAVE_LIBNX
+   // Should be called once per frame
+   if(!appletMainLoop())
+      return RUNLOOP_STATE_QUIT;
+#endif
+
    BIT256_CLEAR_ALL_PTR(&current_input);
 
 #ifdef HAVE_MENU

@@ -957,12 +957,6 @@ static bool gl_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
-#ifdef HAVE_LIBNX
-   // Should be called once per frame
-   if(!appletMainLoop())
-    return false;
-#endif
-
    gl_context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
