@@ -549,9 +549,6 @@ typedef struct ozone_handle
    float scroll_old;
 
    bool want_horizontal_animation;
-
-   bool draw_icons;
-   bool draw_icons_old;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -2067,7 +2064,6 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    /* Compute entries height and adjust scrolling if needed */
    unsigned video_info_height;
    unsigned video_info_width;
-   unsigned icon;
    size_t i, entries_end;
    file_list_t *selection_buf = NULL;
 
@@ -2079,7 +2075,6 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    video_driver_get_size(&video_info_width, &video_info_height);
 
    ozone->entries_height = 0;
-   ozone->draw_icons     = false;
 
    for (i = 0; i < entries_end; i++)
    {
@@ -2098,11 +2093,6 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
 
       node->height = (entry.sublabel ? 100 : 60-8);
       node->wrap   = false;
-
-      icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, false);
-
-      if (icon != OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING)
-         ozone->draw_icons = true;
 
       if (entry.sublabel)
       {
@@ -2522,8 +2512,7 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
 
 static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    unsigned selection, unsigned selection_old,
-   file_list_t *selection_buf, float alpha, float scroll_y,
-   bool draw_icons)
+   file_list_t *selection_buf, float alpha, float scroll_y)
 {
    bool old_list;
    uint32_t alpha_uint32;
@@ -2635,10 +2624,9 @@ text_iterate:
          goto icons_iterate;
 
       /* Icon */
-      if (draw_icons)
+      icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, entry_selected);
+      if (icon != OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING)
       {
-         icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, entry_selected);
-
          ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
 
          menu_display_blend_begin(video_info);
@@ -2825,8 +2813,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       ozone->selection_old,
       menu_entries_get_selection_buf_ptr(0),
       ozone->animations.list_alpha,
-      ozone->animations.scroll_y,
-      ozone->draw_icons
+      ozone->animations.scroll_y
    );
    
    /* Old list */
@@ -2837,8 +2824,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->selection_old_list,
          ozone->selection_buf_old,
          ozone->animations.list_alpha,
-         ozone->scroll_old,
-         ozone->draw_icons_old
+         ozone->scroll_old
       );
 
    menu_display_scissor_end(video_info);
@@ -3364,7 +3350,6 @@ static void ozone_list_cache(void *data,
    ozone->need_compute        = true;
    ozone->selection_old_list  = ozone->selection;
    ozone->scroll_old          = ozone->animations.scroll_y;
-   ozone->draw_icons_old      = ozone->draw_icons;
 
    /* Deep copy visible elements */
    video_driver_get_size(NULL, &video_info_height);
