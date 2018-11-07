@@ -1182,9 +1182,7 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
          return OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY;
 #endif
       case MENU_SETTING_ACTION:
-         if (ozone->depth == 3)
-            return OZONE_ENTRIES_ICONS_TEXTURE_SETTING;
-         return OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING;
+         return OZONE_ENTRIES_ICONS_TEXTURE_SETTING;
    }
 
 #ifdef HAVE_CHEEVOS
