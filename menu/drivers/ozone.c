@@ -3170,20 +3170,13 @@ static void ozone_toggle(void *userdata, bool menu_on)
 {
    bool tmp              = false;
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+
+   /* Restore content black background */
+   if (!menu_on)
+      menu_display_restore_clear_color();
+
    if (!ozone)
       return;
-   
-   if (!menu_on)
-   {
-      menu_display_ctx_clearcolor_t clearcolor;
-   
-      clearcolor.r = 0.0f;
-      clearcolor.g = 0.0f;
-      clearcolor.b = 0.0f;
-      clearcolor.a = 1.0f;
-
-      menu_display_clear_color(&clearcolor, NULL);
-   }
 
    tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 
