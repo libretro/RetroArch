@@ -423,6 +423,8 @@ typedef struct vk
    struct
    {
       uint64_t dirty;
+      VkRect2D scissor;
+      bool use_scissor;
       VkPipeline pipeline;
       VkImageView view;
       VkSampler sampler;
