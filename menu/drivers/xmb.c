@@ -848,7 +848,7 @@ static void xmb_messagebox(void *data, const char *message)
 
 static void xmb_render_messagebox_internal(
       video_frame_info_t *video_info,
-      xmb_handle_t *xmb, const char *message, float* coord_white)
+      xmb_handle_t *xmb, const char *message)
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
@@ -901,7 +901,7 @@ static void xmb_render_messagebox_internal(
          longest_width + xmb->margins_dialog * 2,
          line_height * list->size + xmb->margins_dialog * 2,
          width, height,
-         &coord_white[0],
+         NULL,
          xmb->margins_slice, 1.0,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
@@ -4046,7 +4046,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       xmb_draw_dark_layer(xmb, video_info, width, height);
       xmb_render_messagebox_internal(
-            video_info, xmb, msg, &coord_white[0]);
+            video_info, xmb, msg);
    }
 
    /* Cursor image */

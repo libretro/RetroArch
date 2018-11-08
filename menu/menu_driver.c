@@ -993,7 +993,7 @@ void menu_display_draw_texture_slice(
    draw.matrix_data         = &mymat;
    draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id         = 0;
-   coords.color             = (const float*)colors;
+   coords.color             = (const float*)(color == NULL ? colors : color);
 
    menu_display_rotate_z(&rotate_draw, video_info);
 
