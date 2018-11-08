@@ -778,7 +778,7 @@ static int stripes_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsi
 
 static void stripes_render_messagebox_internal(
       video_frame_info_t *video_info,
-      stripes_handle_t *stripes, const char *message, float* stripes_coord_white)
+      stripes_handle_t *stripes, const char *message)
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
@@ -831,7 +831,7 @@ static void stripes_render_messagebox_internal(
          longest_width + stripes->margins_dialog * 2,
          line_height * list->size + stripes->margins_dialog * 2,
          width, height,
-         &stripes_coord_white[0],
+         NULL,
          stripes->margins_slice, 1.0,
          stripes->textures.list[STRIPES_TEXTURE_DIALOG_SLICE]);
 
@@ -3012,7 +3012,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    {
       stripes_draw_dark_layer(stripes, video_info, width, height);
       stripes_render_messagebox_internal(
-            video_info, stripes, msg, &stripes_coord_white[0]);
+            video_info, stripes, msg);
    }
 
    /* Cursor image */

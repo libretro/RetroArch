@@ -27,6 +27,10 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
+#include "../menu_input.h"
+
+#include "../widgets/menu_input_dialog.h"
+#include "../widgets/menu_osk.h"
 
 #include "../../configuration.h"
 #include "../../cheevos/badges.h"
@@ -36,8 +40,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
-
-/* TODO Handle translation for hardcoded strings (footer...) */
 
 #define FONT_SIZE_FOOTER 18
 #define FONT_SIZE_TITLE 36
@@ -58,6 +60,13 @@ static float ozone_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
+};
+
+static float ozone_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
 };
 
 enum OZONE_TEXTURE {
@@ -388,6 +397,7 @@ typedef struct ozone_theme
    float entries_border[16];
    float entries_icon[16];
    float text_selected[16];
+   float message_background[16];
 
    /* RGBA colors for text */
    uint32_t text_rgba;
@@ -414,6 +424,7 @@ ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00),
    COLOR_HEX_TO_FLOAT(0x333333, 1.00),
    COLOR_HEX_TO_FLOAT(0x374CFF, 1.00),
+   COLOR_HEX_TO_FLOAT(0xF0F0F0, 1.00),
 
    0x333333FF,
    0x374CFFFF,
@@ -438,6 +449,7 @@ ozone_theme_t ozone_theme_dark = {
    COLOR_HEX_TO_FLOAT(0x51514F, 1.00),
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
    COLOR_HEX_TO_FLOAT(0x00D9AE, 1.00),
+   COLOR_HEX_TO_FLOAT(0x464646, 1.00),
 
    0xFFFFFFFF,
    0x00FFC5FF,
@@ -549,6 +561,8 @@ typedef struct ozone_handle
    float scroll_old;
 
    bool want_horizontal_animation;
+
+   char *pending_message;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -1378,6 +1392,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->want_horizontal_animation = false;
    ozone->draw_sidebar              = true;
    ozone->sidebar_offset            = 0;
+   ozone->pending_message           = NULL;
 
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
@@ -1530,6 +1545,9 @@ static void ozone_free(void *data)
          ozone_free_list_nodes(ozone->selection_buf_old, false);
          file_list_free(ozone->selection_buf_old);
       }
+
+      if (!string_is_empty(ozone->pending_message))
+         free(ozone->pending_message);
    }
 }
 
@@ -1544,14 +1562,14 @@ static void ozone_context_reset(void *data, bool is_threaded)
       unsigned size;
       char font_path[PATH_MAX_LENGTH];
 
-      fill_pathname_join(font_path, ozone->assets_path, "Inter-UI-Regular.ttf", sizeof(font_path));
+      fill_pathname_join(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
       ozone->fonts.footer = menu_display_font_file(font_path, FONT_SIZE_FOOTER, is_threaded);
       ozone->fonts.entries_label = menu_display_font_file(font_path, FONT_SIZE_ENTRIES_LABEL, is_threaded);
       ozone->fonts.entries_sublabel = menu_display_font_file(font_path, FONT_SIZE_ENTRIES_SUBLABEL, is_threaded);
       ozone->fonts.time = menu_display_font_file(font_path, FONT_SIZE_TIME, is_threaded);
       ozone->fonts.sidebar = menu_display_font_file(font_path, FONT_SIZE_SIDEBAR, is_threaded);
 
-      fill_pathname_join(font_path, ozone->assets_path, "Inter-UI-Bold.ttf", sizeof(font_path));
+      fill_pathname_join(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
       ozone->fonts.title = menu_display_font_file(font_path, FONT_SIZE_TITLE, is_threaded);
 
       /* Naive font size */
@@ -2743,12 +2761,107 @@ static unsigned ozone_get_system_theme()
    return 0;
 }
 
+static void ozone_draw_backdrop(video_frame_info_t *video_info)
+{
+   menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
+}
+
+static void ozone_draw_messagebox(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      const char *message)
+{
+   unsigned i, y_position;
+   int x, y, longest = 0, longest_width = 0;
+   float line_height        = 0;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
+   struct string_list *list = !string_is_empty(message)
+      ? string_split(message, "\n") : NULL;
+
+   if (!list || !ozone || !ozone->fonts.footer)
+   {
+      if (list)
+         string_list_free(list);
+      return;
+   }
+
+   if (list->elems == 0)
+      goto end;
+
+   line_height      = 25;
+
+   y_position       = height / 2;
+   if (menu_input_dialog_get_display_kb())
+      y_position    = height / 4;
+
+   x                = width  / 2;
+   y                = y_position - (list->size-1) * line_height / 2;
+
+   /* find the longest line width */
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg  = list->elems[i].data;
+      int len          = (int)utf8len(msg);
+
+      if (len > longest)
+      {
+         longest       = len;
+         longest_width = font_driver_get_message_width(
+               ozone->fonts.footer, msg, (unsigned)strlen(msg), 1);
+      }
+   }
+
+   menu_display_blend_begin(video_info);
+
+   menu_display_draw_texture_slice(
+      video_info,
+      x - longest_width/2 - 48,
+      y + 16 - 48,
+      256, 256,
+      longest_width + 48 * 2,
+      line_height * list->size + 48 * 2,
+      width, height,
+      ozone->theme->message_background,
+      16, 1.0,
+      ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]
+   );
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+
+      if (msg)
+         ozone_draw_text(video_info, ozone,
+            msg,
+            x - longest_width/2.0,
+            y + (i+0.75) * line_height,
+            TEXT_ALIGN_LEFT,
+            width, height,
+            ozone->fonts.footer,
+            ozone->theme->text_rgba
+         );
+   }
+
+   if (menu_input_dialog_get_display_kb())
+      menu_display_draw_keyboard(
+            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_KEY_HOVER],
+            ozone->fonts.footer,
+            video_info,
+            menu_event_get_osk_grid(),
+            menu_event_get_osk_ptr());
+
+end:
+   string_list_free(list);
+}
+
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
    menu_display_ctx_clearcolor_t clearcolor;
    ozone_handle_t* ozone = (ozone_handle_t*) data;
    settings_t  *settings = config_get_ptr();
    unsigned color_theme  = video_info->ozone_color_theme;
+   bool draw_message_box = false;
+   char msg[2014];
 
    if (!ozone)
       return;
@@ -2838,6 +2951,31 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_bind_block(ozone->fonts.entries_label, NULL);
 
    menu_display_unset_viewport(video_info->width, video_info->height);
+
+   /* Message box & OSK */
+   if (!string_is_empty(ozone->pending_message))
+   {
+      strlcpy(msg, ozone->pending_message,
+            sizeof(msg));
+      free(ozone->pending_message);
+      ozone->pending_message  = NULL;
+      draw_message_box = true;
+   }
+
+   if (menu_input_dialog_get_display_kb())
+   {
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
+
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
+      draw_message_box = true;
+   }
+
+   if (draw_message_box)
+   {
+      ozone_draw_backdrop(video_info);
+      ozone_draw_messagebox(ozone, video_info, msg);
+   }
 }
 
 static void ozone_set_header(ozone_handle_t *ozone)
@@ -3399,9 +3537,19 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
    return 0;
 }
 
+static void ozone_messagebox(void *data, const char *message)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*) data;
+
+   if (!ozone || string_is_empty(message))
+      return;
+
+   ozone->pending_message = strdup(message);
+}
+
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
-   NULL,                         /* render_messagebox */
+   ozone_messagebox,
    ozone_menu_iterate,
    ozone_render,
    ozone_frame,
