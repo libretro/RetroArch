@@ -4,7 +4,7 @@ LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
 
 ifeq ($(HAVE_STACK_USAGE), 1)
-CFLAGS += -fstack-usage
+   CFLAGS += -fstack-usage
 endif
 
 ifeq ($(HAVE_GL_CONTEXT),)
@@ -28,16 +28,16 @@ ifeq ($(HAVE_LIBRETRODB),)
 endif
 
 ifeq ($(HAVE_VIDEO_PROCESSOR), 1)
-	DEFINES += -DHAVE_VIDEO_PROCESSOR
+   DEFINES += -DHAVE_VIDEO_PROCESSOR
 endif
 
 ifeq ($(HAVE_MENU), 1)
-	DEFINES += -DHAVE_MENU
-	HAVE_MENU_COMMON = 1
+   DEFINES += -DHAVE_MENU
+   HAVE_MENU_COMMON = 1
 endif
 
 ifeq ($(HAVE_SOCKET_LEGACY), 1)
-	DEFINES += -DHAVE_SOCKET_LEGACY
+   DEFINES += -DHAVE_SOCKET_LEGACY
 endif
 
 ifeq ($(HAVE_HID), 1)
@@ -49,7 +49,7 @@ ifeq ($(HAVE_LIBRETRODB), 1)
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-	DEFINES += -DHAVE_VITA2D
+   DEFINES += -DHAVE_VITA2D
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -108,7 +108,7 @@ endif
 
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC += -I/usr/local/include
-	HAVE_UNIX = 1
+   HAVE_UNIX = 1
 endif
 
 ifneq ($(findstring Darwin,$(OS)),)
@@ -134,11 +134,11 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_UNIX), 1)
-	OBJ += frontend/drivers/platform_unix.o
+   OBJ += frontend/drivers/platform_unix.o
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
-	OBJ += frontend/drivers/platform_ctr.o
+   OBJ += frontend/drivers/platform_ctr.o
 endif
 
 # Git
@@ -272,13 +272,13 @@ OBJ += frontend/frontend.o \
        midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)
-DEFINES += -DHAVE_RUNAHEAD
-OBJ += runahead/copy_load_info.o \
-       runahead/dirty_input.o \
-       runahead/mem_util.o \
-       runahead/mylist.o \
-       runahead/run_ahead.o \
-       runahead/secondary_core.o
+   DEFINES += -DHAVE_RUNAHEAD
+   OBJ += runahead/copy_load_info.o \
+          runahead/dirty_input.o \
+          runahead/mem_util.o \
+          runahead/mylist.o \
+          runahead/run_ahead.o \
+          runahead/secondary_core.o
 endif
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
@@ -287,27 +287,26 @@ ifeq ($(HAVE_CC_RESAMPLER), 1)
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
-DEFINES += -DHAVE_LANGEXTRA
-DEFINES += -finput-charset=UTF-8
+   DEFINES += -DHAVE_LANGEXTRA
+   DEFINES += -finput-charset=UTF-8
 
-OBJ += intl/msg_hash_de.o \
-       intl/msg_hash_eo.o \
-       intl/msg_hash_es.o \
-       intl/msg_hash_fr.o \
-       intl/msg_hash_it.o \
-       intl/msg_hash_ja.o \
-       intl/msg_hash_ko.o \
-       intl/msg_hash_nl.o \
-       intl/msg_hash_pl.o \
-       intl/msg_hash_pt_br.o \
-       intl/msg_hash_pt_pt.o \
-       intl/msg_hash_ru.o \
-       intl/msg_hash_vn.o \
-       intl/msg_hash_chs.o \
-       intl/msg_hash_cht.o \
-       intl/msg_hash_ar.o \
-       intl/msg_hash_el.o						 
-
+   OBJ += intl/msg_hash_de.o \
+          intl/msg_hash_eo.o \
+          intl/msg_hash_es.o \
+          intl/msg_hash_fr.o \
+          intl/msg_hash_it.o \
+          intl/msg_hash_ja.o \
+          intl/msg_hash_ko.o \
+          intl/msg_hash_nl.o \
+          intl/msg_hash_pl.o \
+          intl/msg_hash_pt_br.o \
+          intl/msg_hash_pt_pt.o \
+          intl/msg_hash_ru.o \
+          intl/msg_hash_vn.o \
+          intl/msg_hash_chs.o \
+          intl/msg_hash_cht.o \
+          intl/msg_hash_ar.o \
+          intl/msg_hash_el.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -500,11 +499,11 @@ ifeq ($(HAVE_PYTHON), 1)
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
-OBJ += frontend/drivers/platform_emscripten.o \
-       input/drivers/rwebinput_input.o \
-       input/drivers_joypad/rwebpad_joypad.o \
-       audio/drivers/rwebaudio.o \
-       camera/drivers/rwebcam.o
+   OBJ += frontend/drivers/platform_emscripten.o \
+          input/drivers/rwebinput_input.o \
+          input/drivers_joypad/rwebpad_joypad.o \
+          audio/drivers/rwebaudio.o \
+          camera/drivers/rwebcam.o
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
@@ -512,7 +511,7 @@ ifeq ($(HAVE_LAKKA), 1)
 endif
 
 # Audio
-#
+
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
@@ -1754,7 +1753,6 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o
-
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
