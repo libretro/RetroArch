@@ -43,11 +43,11 @@ typedef struct ps2_video
 
 // PRIVATE METHODS
 static GSGLOBAL *init_GSGlobal(void) {
-	GSGLOBAL *gsGlobal = gsKit_init_global()
+	GSGLOBAL *gsGlobal = gsKit_init_global();
 
-      gsGlobal->PSM = GS_PSM_CT24;
+      gsGlobal->PSM = GS_PSM_CT16;
 	gsGlobal->PSMZ = GS_PSMZ_16S;
-	gsGlobal->DoubleBuffering = GS_SETTING_ON;
+	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
 	gsGlobal->ZBuffering = GS_SETTING_OFF;
       gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
@@ -65,10 +65,18 @@ static GSGLOBAL *init_GSGlobal(void) {
       return gsGlobal;
 }
 
+static GSTEXTURE * prepare_new_texture(void) {
+      GSTEXTURE *texture = malloc(sizeof *texture);
+      texture->Width = 0;
+      texture->Height = 0;
+      texture->Mem = NULL;
+      return texture;
+}
+
 static void init_ps2_video(ps2_video_t *ps2) {
    ps2->gsGlobal = init_GSGlobal();
-   ps2->menuTexture = malloc(sizeof *ps2->menuTexture);
-   ps2->coreTexture = malloc(sizeof *ps2->coreTexture);
+   ps2->menuTexture = prepare_new_texture();
+   ps2->coreTexture = prepare_new_texture();
 }
 
 static void deinitTexture(GSTEXTURE *texture) {
@@ -107,11 +115,11 @@ static void transfer_texture(GSTEXTURE *texture, const void *frame,
       texture->Width != width || 
       texture->Height != height ||
       texture->PSM != PSM ) {
-      deinitTexture(texture);
       texture->Width = width;
       texture->Height = height;
       texture->PSM = PSM;
       texture->Filter = filter;
+      free(texture->Mem);
       texture->Mem = memalign(128, size);
 }
 
@@ -226,7 +234,6 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    if (frame_count%120==0) {
       printf("ps2_gfx_frame %i\n", frame_count);
    }
-
    gsKit_vram_clear(ps2->gsGlobal);
 
    if (frame) {
@@ -236,7 +243,8 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect);
    }
 
-   if (ps2->menuVisible) {
+   bool texture_empty = !ps2->menuTexture->Width || !ps2->menuTexture->Height;
+   if (ps2->menuVisible && !texture_empty) {
       vram_alloc(ps2->gsGlobal, ps2->menuTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
       prim_texture(ps2->gsGlobal, ps2->menuTexture, 2, ps2->fullscreen);
