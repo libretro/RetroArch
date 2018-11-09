@@ -922,7 +922,8 @@ static void xmb_render_messagebox_internal(
             xmb->font,
             video_info,
             menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr());
+            menu_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    string_list_free(list);

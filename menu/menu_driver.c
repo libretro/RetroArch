@@ -1503,7 +1503,8 @@ void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
       video_frame_info_t *video_info,
-      char *grid[], unsigned id)
+      char *grid[], unsigned id,
+      unsigned text_color)
 {
    unsigned i;
    int ptr_width, ptr_height;
@@ -1537,7 +1538,8 @@ void menu_display_draw_keyboard(
 
    for (i = 0; i < 44; i++)
    {
-      int line_y = (i / 11) * height / 10.0;
+      int line_y     = (i / 11) * height / 10.0;
+      unsigned color = 0xffffffff;
 
       if (i == id)
       {
@@ -1553,13 +1555,15 @@ void menu_display_draw_keyboard(
                hover_texture);
 
          menu_display_blend_end(video_info);
+
+         color = text_color;
       }
 
       menu_display_draw_text(font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11)
             * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + font->size / 3,
-            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            width, height, color, TEXT_ALIGN_CENTER, 1.0f,
             false, 0);
    }
 }

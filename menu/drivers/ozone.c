@@ -85,6 +85,8 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_SWITCH,
    OZONE_THEME_TEXTURE_CHECK,
 
+   OZONE_THEME_TEXTURE_CURSOR,
+
    OZONE_THEME_TEXTURE_LAST
 };
 
@@ -92,7 +94,8 @@ static char* OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
    "switch",
-   "check"
+   "check",
+   "cursor"
 };
 
 enum OZONE_TAB_TEXTURES {
@@ -552,6 +555,7 @@ typedef struct ozone_handle
       float entries_border[16];
       float entries_icon[16];
       float entries_checkmark[16];
+      float cursor_color[16];
    } theme_dynamic;
 
    bool need_compute;
@@ -564,6 +568,7 @@ typedef struct ozone_handle
    bool want_horizontal_animation;
 
    char *pending_message;
+   bool has_assets;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -1395,6 +1400,7 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
    memcpy(ozone->theme_dynamic.entries_checkmark, ozone_pure_white, sizeof(ozone->theme_dynamic.entries_checkmark));
+   memcpy(ozone->theme_dynamic.cursor_color, ozone_pure_white, sizeof(ozone->theme_dynamic.cursor_color));
 
    last_color_theme = color_theme;
 }
@@ -1622,6 +1628,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       size = font_driver_get_message_width(ozone->fonts.entries_sublabel, "a", 1, 1);
       if (size)
          ozone->sublabel_font_glyph_width = size;
+
+      ozone->has_assets = filestream_exists(ozone->png_path);
       
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -2401,9 +2409,36 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    menu_display_blend_end(video_info);
 }
 
-/* TODO Reduce sidebar width ? */
+/* TODO Fluid sidebar width ? */
 
-static void ozone_draw_cursor(ozone_handle_t *ozone, video_frame_info_t *video_info, int x_offset, unsigned entry_width, size_t y, float alpha)
+static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      int x_offset,
+      unsigned entry_width,
+      size_t y, float alpha)
+{
+   ozone_color_alpha(ozone->theme_dynamic.cursor_color, alpha);
+   menu_display_blend_begin(video_info);
+   menu_display_draw_texture_slice(
+      video_info,
+      x_offset - 14,
+      y + 8,
+      80, 80,
+      entry_width + 3 + 28 - 4,
+      72,
+      video_info->width, video_info->height,
+      ozone->theme_dynamic.cursor_color,
+      20, 1.0,
+      ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR]
+   );
+   menu_display_blend_end(video_info);
+}
+
+static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      int x_offset,
+      unsigned entry_width,
+      size_t y, float alpha)
 {
    ozone_color_alpha(ozone->theme_dynamic.selection_border, alpha);
    ozone_color_alpha(ozone->theme_dynamic.selection, alpha);
@@ -2416,6 +2451,18 @@ static void ozone_draw_cursor(ozone_handle_t *ozone, video_frame_info_t *video_i
    menu_display_draw_quad(video_info, x_offset -3, y + 70 - 10 - 10 - 3, entry_width + 6, 3, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
    menu_display_draw_quad(video_info, x_offset -3, y, 3, 70 - 10 - 3 - 6 - 4, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
    menu_display_draw_quad(video_info, x_offset + entry_width, y, 3, 70 - 10 - 3 - 6 - 4, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
+}
+
+static void ozone_draw_cursor(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      int x_offset,
+      unsigned entry_width,
+      size_t y, float alpha)
+{
+   if (ozone->has_assets)
+      ozone_draw_cursor_slice(ozone, video_info, x_offset, entry_width, y, alpha);
+   else
+      ozone_draw_cursor_fallback(ozone, video_info, x_offset, entry_width, y, alpha);
 }
 
 static void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
@@ -2455,7 +2502,7 @@ static void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_
    if (ozone->cursor_in_sidebar)
       ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + 41, 408-81, selection_y-8, ozone->animations.cursor_alpha);
 
-   if (ozone->cursor_in_sidebar_old && ozone->categories_selection_ptr != ozone->categories_active_idx_old)
+   if (ozone->cursor_in_sidebar_old)
       ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + 41, 408-81, selection_old_y-8, 1-ozone->animations.cursor_alpha);
 
    /* Icons */
@@ -2639,7 +2686,7 @@ text_iterate:
    if (!ozone->cursor_in_sidebar)
       ozone_draw_cursor(ozone, video_info, x_offset + 456, entry_width, selection_y + scroll_y, ozone->animations.cursor_alpha * alpha);
 
-   if (!ozone->cursor_in_sidebar_old && ozone->selection != ozone->selection_old)
+   if (!ozone->cursor_in_sidebar_old)
       ozone_draw_cursor(ozone, video_info, x_offset + 456, entry_width, old_selection_y + scroll_y, 1-ozone->animations.cursor_alpha * alpha);
 
    /* Icons + text */
@@ -2848,18 +2895,19 @@ static void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    menu_display_blend_begin(video_info);
 
-   menu_display_draw_texture_slice(
-      video_info,
-      x - longest_width/2 - 48,
-      y + 16 - 48,
-      256, 256,
-      longest_width + 48 * 2,
-      line_height * list->size + 48 * 2,
-      width, height,
-      ozone->theme->message_background,
-      16, 1.0,
-      ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]
-   );
+   if (ozone->has_assets) /* avoid drawing a black box if there's no assets */
+      menu_display_draw_texture_slice(
+         video_info,
+         x - longest_width/2 - 48,
+         y + 16 - 48,
+         256, 256,
+         longest_width + 48 * 2,
+         line_height * list->size + 48 * 2,
+         width, height,
+         ozone->theme->message_background,
+         16, 1.0,
+         ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]
+      );
 
    for (i = 0; i < list->size; i++)
    {
@@ -2879,11 +2927,12 @@ static void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    if (menu_input_dialog_get_display_kb())
       menu_display_draw_keyboard(
-            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_KEY_HOVER],
+            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR],
             ozone->fonts.footer,
             video_info,
             menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr());
+            menu_event_get_osk_ptr(),
+            ozone->theme->text_rgba);
 
 end:
    string_list_free(list);
