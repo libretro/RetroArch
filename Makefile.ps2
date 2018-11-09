@@ -39,7 +39,6 @@ RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -
 LIBDIR =
 LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 #LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
-LIBS = -Xlinker --start-group 
 LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
 LIBS += -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit -lpad -lsdl
 
@@ -103,8 +102,4 @@ $(EE_IRX_OBJ):
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref 
 include $(PS2SDK)/samples/Makefile.eeglobal
-
-#EE_CFLAGS += -O2
-
-EE_LIBS += -Xlinker --end-group
    
