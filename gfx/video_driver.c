@@ -295,6 +295,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef PSP
    &video_psp1,
 #endif
+#ifdef PS2
+   &video_ps2,
+#endif
 #ifdef _3DS
    &video_ctr,
 #endif

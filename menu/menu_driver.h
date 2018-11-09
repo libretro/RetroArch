@@ -738,7 +738,8 @@ void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
       video_frame_info_t *video_info,
-      char *grid[], unsigned id);
+      char *grid[], unsigned id,
+      unsigned text_color);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
@@ -819,7 +820,7 @@ font_data_t *menu_display_font(
 
 font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
 
-void menu_display_reset_textures_list(
+bool menu_display_reset_textures_list(
       const char *texture_path,
       const char *iconpath,
       uintptr_t *item,

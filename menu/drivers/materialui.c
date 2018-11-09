@@ -568,7 +568,8 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
             mui->font,
             video_info,
-            menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+            menu_event_get_osk_grid(), menu_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    if (list)

@@ -852,6 +852,10 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
+#elif defined(PS2)
+   int tickUS = cpu_ticks()/295.0;
+   now.tv_sec = tickUS/1000000;
+   now.tv_nsec = tickUS * 1000;
 #elif defined(__mips__) || defined(VITA) || defined(_3DS)
    struct timeval tm;
 

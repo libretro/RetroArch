@@ -86,6 +86,9 @@ static const input_driver_t *input_drivers[] = {
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
    &input_psp,
 #endif
+#if defined(PS2)
+   &input_ps2,
+#endif
 #if defined(_3DS)
    &input_ctr,
 #endif
@@ -160,6 +163,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #endif
 #if defined(PSP) || defined(VITA)
    &psp_joypad,
+#endif
+#if defined(PS2)
+   &ps2_joypad,
 #endif
 #ifdef _3DS
    &ctr_joypad,

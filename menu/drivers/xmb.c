@@ -922,7 +922,8 @@ static void xmb_render_messagebox_internal(
             xmb->font,
             video_info,
             menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr());
+            menu_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    string_list_free(list);
@@ -2429,6 +2430,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
                   case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
                   case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
+                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
+                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
+                  case MENU_ENUM_LABEL_CORE_DELETE:
                      return xmb->textures.list[XMB_TEXTURE_CLOSE];
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_OSD];

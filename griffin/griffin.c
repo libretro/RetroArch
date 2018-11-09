@@ -438,6 +438,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(PS2)
+#include "../gfx/drivers/ps2_gfx.c"
 #elif defined(HAVE_VITA2D)
 #include "../deps/libvita2d/source/vita2d.c"
 #include "../deps/libvita2d/source/vita2d_texture.c"
@@ -567,6 +569,9 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
+#elif defined(PS2)
+#include "../input/drivers/ps2_input.c"
+#include "../input/drivers_joypad/ps2_joypad.c"
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
@@ -764,6 +769,8 @@ AUDIO
 #include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP) || defined(VITA)
 #include "../audio/drivers/psp_audio.c"
+#elif defined(PS2)
+// #include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
@@ -959,6 +966,8 @@ FRONTEND
 #include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(PS2)
+#include "../frontend/drivers/platform_ps2.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(SWITCH) && defined(HAVE_LIBNX)
