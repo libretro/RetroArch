@@ -50,6 +50,7 @@
 
 #define ANIMATION_PUSH_ENTRY_DURATION 10
 #define ANIMATION_CURSOR_DURATION 8
+#define ANIMATION_CURSOR_PULSE 30
 
 #define ENTRIES_START_Y 127
 
@@ -71,12 +72,14 @@ static float ozone_backdrop[16] = {
 
 enum OZONE_TEXTURE {
    OZONE_TEXTURE_RETROARCH = 0,
+   OZONE_TEXTURE_CURSOR_BORDER,
 
    OZONE_TEXTURE_LAST
 };
 
 static char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
-   "retroarch"
+   "retroarch",
+   "cursor_border"
 };
 
 enum OZONE_THEME_TEXTURES {
@@ -85,17 +88,19 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_SWITCH,
    OZONE_THEME_TEXTURE_CHECK,
 
-   OZONE_THEME_TEXTURE_CURSOR,
+   OZONE_THEME_TEXTURE_CURSOR_NO_BORDER,
+   OZONE_THEME_TEXTURE_CURSOR_STATIC,
 
    OZONE_THEME_TEXTURE_LAST
 };
 
-static char* OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
+static char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
    "switch",
    "check",
-   "cursor"
+   "cursor_noborder",
+   "cursor_static"
 };
 
 enum OZONE_TAB_TEXTURES {
@@ -385,6 +390,12 @@ static float ozone_sidebar_gradient_bottom_dark[16] = {
       0.2, 0.2, 0.2, 1.00,
 };
 
+static float ozone_border_0_light[16] = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
+static float ozone_border_1_light[16] = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
+
+static float ozone_border_0_dark[16] = COLOR_HEX_TO_FLOAT(0x198AC6, 1.00);
+static float ozone_border_1_dark[16] = COLOR_HEX_TO_FLOAT(0x89F1F2, 1.00);
+
 typedef struct ozone_theme
 {
    /* Background color */
@@ -413,6 +424,12 @@ typedef struct ozone_theme
    float *sidebar_top_gradient;
    float *sidebar_bottom_gradient;
 
+   /* 
+      Fancy cursor colors
+   */
+   float *cursor_border_0;
+   float *cursor_border_1;
+
    menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
 
    const char *name;
@@ -437,6 +454,9 @@ ozone_theme_t ozone_theme_light = {
    ozone_sidebar_background_light,
    ozone_sidebar_gradient_top_light,
    ozone_sidebar_gradient_bottom_light,
+
+   ozone_border_0_light,
+   ozone_border_1_light,
 
    {0},
 
@@ -463,6 +483,9 @@ ozone_theme_t ozone_theme_dark = {
    ozone_sidebar_gradient_top_dark,
    ozone_sidebar_gradient_bottom_dark,
 
+   ozone_border_0_dark,
+   ozone_border_1_dark,
+
    {0},
 
    "dark"
@@ -476,7 +499,7 @@ ozone_theme_t *ozone_themes[] = {
 static unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 static unsigned last_color_theme                   = 0;
 static bool last_use_preferred_system_color_theme  = false;
-static ozone_theme_t *ozone_default_theme          = &ozone_theme_light;
+static ozone_theme_t *ozone_default_theme          = &ozone_theme_light; /* also used as a tag for cursor animation */
 
 typedef struct ozone_handle
 {
@@ -555,7 +578,10 @@ typedef struct ozone_handle
       float entries_border[16];
       float entries_icon[16];
       float entries_checkmark[16];
-      float cursor_color[16];
+      float cursor_alpha[16];
+
+      unsigned cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
+      float cursor_border[16];
    } theme_dynamic;
 
    bool need_compute;
@@ -1379,6 +1405,70 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
    return result;
 }
 
+static void ozone_cursor_animation_cb(void *userdata);
+
+static void ozone_animate_cursor(ozone_handle_t *ozone, float *dst, float *target)
+{
+   menu_animation_ctx_entry_t entry;
+   int i;
+
+   entry.easing_enum = EASING_OUT_QUAD;
+   entry.tag = (uintptr_t) &ozone_default_theme;
+   entry.duration = ANIMATION_CURSOR_PULSE;
+   entry.userdata = ozone;
+
+   for (i = 0; i < 16; i++)
+   {
+      if (i == 3 || i == 7 || i == 11 || i == 15)
+         continue;
+
+      if (i == 14)
+         entry.cb = ozone_cursor_animation_cb;
+      else
+         entry.cb = NULL;
+
+      entry.subject        = &dst[i];
+      entry.target_value   = target[i];
+
+      menu_animation_push(&entry);
+   }
+}
+
+static void ozone_cursor_animation_cb(void *userdata)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+
+   float *target = NULL;
+
+   switch (ozone->theme_dynamic.cursor_state)
+   {
+      case 0:
+         target = ozone->theme->cursor_border_1;
+         break;
+      case 1:
+         target = ozone->theme->cursor_border_0;
+         break;
+   }
+
+   ozone->theme_dynamic.cursor_state = (ozone->theme_dynamic.cursor_state + 1) % 2;
+
+   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, target);
+}
+
+static void ozone_restart_cursor_animation(ozone_handle_t *ozone)
+{
+   menu_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+
+   if (!ozone->has_all_assets)
+      return;
+
+   ozone->theme_dynamic.cursor_state = 1;
+   memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
+   menu_animation_kill_by_tag(&tag);
+
+   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
+}
+
 static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
    ozone_theme_t *theme = ozone_default_theme;
@@ -1403,7 +1493,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
    memcpy(ozone->theme_dynamic.entries_checkmark, ozone_pure_white, sizeof(ozone->theme_dynamic.entries_checkmark));
-   memcpy(ozone->theme_dynamic.cursor_color, ozone_pure_white, sizeof(ozone->theme_dynamic.cursor_color));
+   memcpy(ozone->theme_dynamic.cursor_alpha, ozone_pure_white, sizeof(ozone->theme_dynamic.cursor_alpha));
+
+   ozone_restart_cursor_animation(ozone);
 
    last_color_theme = color_theme;
 }
@@ -1695,6 +1787,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* TODO Localize */
       if (!ozone->has_all_assets)
          runloop_msg_queue_push("Some assets are missing - please update them", 1, 256, false);
+
+      ozone_restart_cursor_animation(ozone);
    }
 }
 
@@ -1742,6 +1836,9 @@ static void ozone_context_destroy(void *data)
    ozone->fonts.entries_label = NULL;
    ozone->fonts.entries_sublabel = NULL;
    ozone->fonts.sidebar = NULL;
+
+   menu_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+   menu_animation_kill_by_tag(&tag);
 }
 
 static void *ozone_list_get_entry(void *data,
@@ -2441,8 +2538,12 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       unsigned entry_width,
       size_t y, float alpha)
 {
-   ozone_color_alpha(ozone->theme_dynamic.cursor_color, alpha);
+   ozone_color_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
+   ozone_color_alpha(ozone->theme_dynamic.cursor_border, alpha);
+
    menu_display_blend_begin(video_info);
+
+   /* Cursor without border */
    menu_display_draw_texture_slice(
       video_info,
       x_offset - 14,
@@ -2451,10 +2552,25 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       entry_width + 3 + 28 - 4,
       72,
       video_info->width, video_info->height,
-      ozone->theme_dynamic.cursor_color,
+      ozone->theme_dynamic.cursor_alpha,
       20, 1.0,
-      ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR]
+      ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER]
    );
+
+   /* Tainted border */
+   menu_display_draw_texture_slice(
+      video_info,
+      x_offset - 14,
+      y + 8,
+      80, 80,
+      entry_width + 3 + 28 - 4,
+      72,
+      video_info->width, video_info->height,
+      ozone->theme_dynamic.cursor_border,
+      20, 1.0,
+      ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]
+   );
+
    menu_display_blend_end(video_info);
 }
 
@@ -2706,12 +2822,13 @@ text_iterate:
       y += node->height;
    }
 
-   /* Cursor(s) layer */
+   /* Cursor(s) layer - current */
    if (!ozone->cursor_in_sidebar)
       ozone_draw_cursor(ozone, video_info, x_offset + 456, entry_width, selection_y + scroll_y, ozone->animations.cursor_alpha * alpha);
 
+   /* Old*/
    if (!ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, x_offset + 456, entry_width, old_selection_y + scroll_y, 1-ozone->animations.cursor_alpha * alpha);
+      ozone_draw_cursor(ozone, video_info, x_offset + 456, entry_width, old_selection_y + scroll_y, (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
    y = ENTRIES_START_Y;
@@ -2951,7 +3068,7 @@ static void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    if (menu_input_dialog_get_display_kb())
       menu_display_draw_keyboard(
-            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR],
+            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
             ozone->fonts.footer,
             video_info,
             menu_event_get_osk_grid(),
