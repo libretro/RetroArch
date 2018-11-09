@@ -568,7 +568,7 @@ typedef struct ozone_handle
    bool want_horizontal_animation;
 
    char *pending_message;
-   bool has_assets;
+   bool has_all_assets;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -1347,11 +1347,12 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
    }
 }
 
-static void ozone_reset_theme_textures(ozone_handle_t *ozone)
+static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
    int i;
    int j;
    char theme_path[255];
+   bool result = true;
 
    for (j = 0; j < ozone_themes_count; j++)
    {
@@ -1370,10 +1371,12 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
          strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, ".png", sizeof(filename));
 
-         menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+         if (!menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+            result = false;
       }
    }
 
+   return result;
 }
 
 static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
@@ -1598,6 +1601,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
    if (ozone)
    {
+      ozone->has_all_assets = true;
+
       /* Fonts init */
       unsigned i;
       unsigned size;
@@ -1612,6 +1617,18 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       fill_pathname_join(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
       ozone->fonts.title = menu_display_font_file(font_path, FONT_SIZE_TITLE, is_threaded);
+
+      if (
+         !ozone->fonts.footer           ||
+         !ozone->fonts.entries_label    ||
+         !ozone->fonts.entries_sublabel ||
+         !ozone->fonts.time             ||
+         !ozone->fonts.sidebar          ||
+         !ozone->fonts.title
+      )
+      {
+         ozone->has_all_assets = false;
+      }
 
       /* Naive font size */
       ozone->title_font_glyph_width = FONT_SIZE_TITLE * 3/4;
@@ -1629,8 +1646,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       if (size)
          ozone->sublabel_font_glyph_width = size;
 
-      ozone->has_assets = filestream_exists(ozone->png_path);
-      
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
@@ -1638,7 +1653,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, ".png", sizeof(filename));
 
-         menu_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+         if (!menu_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+            ozone->has_all_assets = false;
       }
 
       /* Sidebar textures */
@@ -1648,15 +1664,18 @@ static void ozone_context_reset(void *data, bool is_threaded)
          strlcpy(filename, OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, ".png", sizeof(filename));
 
-         menu_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+         if (!menu_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+            ozone->has_all_assets = false;
       }
 
       /* Theme textures */
-      ozone_reset_theme_textures(ozone);
+      if (!ozone_reset_theme_textures(ozone))
+         ozone->has_all_assets = false;
 
       /* Icons textures init */
       for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
-         menu_display_reset_textures_list(ozone_entries_icon_texture_path(ozone, i), ozone->icons_path, &ozone->icons_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+         if (!menu_display_reset_textures_list(ozone_entries_icon_texture_path(ozone, i), ozone->icons_path, &ozone->icons_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+            ozone->has_all_assets = false;
 
       menu_display_allocate_white_texture();
 
@@ -1671,6 +1690,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->animations.cursor_alpha = 1.0f;
       ozone->animations.scroll_y = 0.0f;
       ozone->animations.list_alpha = 1.0f;
+
+      /* Missing assets message */
+      /* TODO Localize */
+      if (!ozone->has_all_assets)
+         runloop_msg_queue_push("Some assets are missing - please update them", 1, 256, false);
    }
 }
 
@@ -2459,7 +2483,7 @@ static void ozone_draw_cursor(ozone_handle_t *ozone,
       unsigned entry_width,
       size_t y, float alpha)
 {
-   if (ozone->has_assets)
+   if (ozone->has_all_assets)
       ozone_draw_cursor_slice(ozone, video_info, x_offset, entry_width, y, alpha);
    else
       ozone_draw_cursor_fallback(ozone, video_info, x_offset, entry_width, y, alpha);
@@ -2895,7 +2919,7 @@ static void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    menu_display_blend_begin(video_info);
 
-   if (ozone->has_assets) /* avoid drawing a black box if there's no assets */
+   if (ozone->has_all_assets) /* avoid drawing a black box if there's no assets */
       menu_display_draw_texture_slice(
          video_info,
          x - longest_width/2 - 48,

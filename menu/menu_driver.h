@@ -820,7 +820,7 @@ font_data_t *menu_display_font(
 
 font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
 
-void menu_display_reset_textures_list(
+bool menu_display_reset_textures_list(
       const char *texture_path,
       const char *iconpath,
       uintptr_t *item,

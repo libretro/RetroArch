@@ -1604,7 +1604,7 @@ void menu_display_draw_text(
    video_driver_set_osd_msg(text, &params, (void*)font);
 }
 
-void menu_display_reset_textures_list(
+bool menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type)
 {
@@ -1620,14 +1620,16 @@ void menu_display_reset_textures_list(
       fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
 
    if (string_is_empty(texpath) || !filestream_exists(texpath))
-      return;
+      return false;
 
    if (!image_texture_load(&ti, texpath))
-      return;
+      return false;
 
    video_driver_texture_load(&ti,
          filter_type, item);
    image_texture_free(&ti);
+
+   return true;
 }
 
 bool menu_driver_is_binding_state(void)
