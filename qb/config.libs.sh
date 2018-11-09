@@ -315,6 +315,13 @@ fi
 check_pkgconf FLAC flac
 check_val '' FLAC '-lFLAC'
 
+if [ "$HAVE_LUA" = 'no' ]; then
+   HAVE_BUILTINLUA=no
+fi
+
+check_pkgconf LUA lua
+check_val '' LUA '-llua'
+
 check_pkgconf LIBUSB libusb-1.0 1.0.13
 check_val '' LIBUSB -lusb-1.0 libusb-1.0
 

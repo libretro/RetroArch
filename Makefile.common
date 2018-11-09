@@ -1632,7 +1632,8 @@ ifeq ($(HAVE_NETWORKING), 1)
              cheevos/var.o \
              cheevos/cond.o
 
-      ifeq ($(HAVE_LUA), 1)
+      ifeq ($(HAVE_BUILTINLUA), 1)
+         HAVE_LUA = 1
          DEFINES += -DHAVE_LUA \
                     -DLUA_32BITS \
                     -Ideps/lua/src
@@ -1669,6 +1670,9 @@ ifeq ($(HAVE_NETWORKING), 1)
                 deps/lua/src/lutf8lib.o \
                 deps/lua/src/loadlib.o \
                 deps/lua/src/linit.o
+      else ifeq ($(HAVE_LUA), 1)
+         DEFINES += -DHAVE_LUA
+         LIBS    += $(LUA_LIBS)
       else
          DEFINES += -DRC_DISABLE_LUA
       endif
