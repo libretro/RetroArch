@@ -66,10 +66,7 @@ static GSGLOBAL *init_GSGlobal(void) {
 }
 
 static GSTEXTURE * prepare_new_texture(void) {
-      GSTEXTURE *texture = malloc(sizeof *texture);
-      texture->Width = 0;
-      texture->Height = 0;
-      texture->Mem = NULL;
+      GSTEXTURE *texture = calloc(1, sizeof(*texture));
       return texture;
 }
 
