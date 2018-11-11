@@ -346,8 +346,6 @@ static unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
    HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
 }
 
-#define OZONE_COLOR_BACKGROUND(hex) hex, HEX_R(hex), HEX_G(hex), HEX_B(hex)
-
 static float ozone_sidebar_background_light[16] = {
       0.94, 0.94, 0.94, 1.00,
       0.94, 0.94, 0.94, 1.00,
@@ -399,10 +397,7 @@ static float ozone_border_1_dark[16] = COLOR_HEX_TO_FLOAT(0x89F1F2, 1.00);
 typedef struct ozone_theme
 {
    /* Background color */
-   uint32_t background_rgb;
-   float background_r;
-   float background_g;
-   float background_b;
+   float background[16];
 
    /* Float colors for quads and icons */
    float header_footer_separator[16];
@@ -436,7 +431,7 @@ typedef struct ozone_theme
 } ozone_theme_t;
 
 ozone_theme_t ozone_theme_light = {
-   OZONE_COLOR_BACKGROUND(0xEBEBEB),
+   COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
 
    COLOR_HEX_TO_FLOAT(0x2B2B2B, 1.00),
    COLOR_HEX_TO_FLOAT(0x333333, 1.00),
@@ -464,7 +459,7 @@ ozone_theme_t ozone_theme_light = {
 };
 
 ozone_theme_t ozone_theme_dark = {
-   OZONE_COLOR_BACKGROUND(0x2D2D2D),
+   COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00),
 
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
@@ -3081,7 +3076,6 @@ end:
 
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
-   menu_display_ctx_clearcolor_t clearcolor;
    ozone_handle_t* ozone = (ozone_handle_t*) data;
    settings_t  *settings = config_get_ptr();
    unsigned color_theme  = video_info->ozone_color_theme;
@@ -3125,12 +3119,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
    /* Background */
-   clearcolor.r = ozone->theme->background_r;
-   clearcolor.g = ozone->theme->background_g;
-   clearcolor.b = ozone->theme->background_b;
-   clearcolor.a = 1.0f;
-
-   menu_display_clear_color(&clearcolor, video_info);
+   menu_display_draw_quad(video_info, 
+      0, 0, video_info->width, video_info->height, 
+      video_info->width, video_info->height, 
+      ozone->theme->background
+   );
 
    /* Header, footer */
    ozone_draw_header(ozone, video_info);
@@ -3533,10 +3526,6 @@ static void ozone_toggle(void *userdata, bool menu_on)
 {
    bool tmp              = false;
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-
-   /* Restore content black background */
-   if (!menu_on)
-      menu_display_restore_clear_color();
 
    if (!ozone)
       return;

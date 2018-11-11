@@ -3770,28 +3770,28 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Użyj motywu kolorystycznego systemu operacyjnego (jeśli jest dostępny) - zastępuje ustawienia kompozycji.")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
+      "Najniższa")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
+      "Niższa")
 MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
+      "Normalna")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
+      "Wyższa")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+      "Najwyższa")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "No music available."
+    "Brak muzyki."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "No videos available."
+    "Brak filmów."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "No images available."
+    "Brak zdjęć."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "No favorites available."
+    "Brak ulubionych."
     )

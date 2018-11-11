@@ -1180,9 +1180,14 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
+   if (!joypad_driver)
+      return;
+
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       bool bit_pressed = false;
+      int16_t val;
+      val = input_joypad_analog(joypad_driver, joypad_info, port, RETRO_DEVICE_INDEX_ANALOG_BUTTON, i, libretro_input_binds[port]);
 
       if (input_driver_input_state(joypad_info, libretro_input_binds,
                port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
@@ -1190,10 +1195,9 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
 
       if (bit_pressed)
          BIT256_SET_PTR(p_new_state, i);
+      if (bit_pressed && val)
+         p_new_state->analog_buttons[i] = val;
    }
-
-   if (!joypad_driver)
-      return;
 
    for (i = 0; i < 2; i++)
    {
