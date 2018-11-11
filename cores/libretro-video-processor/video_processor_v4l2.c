@@ -291,7 +291,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    struct retro_audio_callback audio_cb;
    audio_cb.callback = audio_callback;
    audio_cb.set_state = audio_set_state;
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &audio_cb);
 #endif
 
    // Enumerate all real devices
