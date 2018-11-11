@@ -27,7 +27,7 @@
 #define LIBRARY_NAME		"V4L2"
 #define LIBRARY_VERSION		"0.0.2"
 #define VIDEO_BUFFERS_MAX   2
-#define AUDIO_SAMPLE_RATE	44100
+#define AUDIO_SAMPLE_RATE	48000
 #define AUDIO_BUFSIZE		64
 #define ENVVAR_BUFLEN		1024
 
@@ -131,7 +131,6 @@ static void audio_callback(void)
 {
    int16_t audio_data[128];
 
-   return;
    if (audio_handle)
    {
       const int frames = snd_pcm_readi(audio_handle,
