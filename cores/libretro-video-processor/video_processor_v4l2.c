@@ -287,13 +287,6 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    // Allows retroarch to seed the previous values
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 
-#ifdef HAVE_ALSA
-   struct retro_audio_callback audio_cb;
-   audio_cb.callback = audio_callback;
-   audio_cb.set_state = audio_set_state;
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &audio_cb);
-#endif
-
    // Enumerate all real devices
    enumerate_video_devices(video_devices, sizeof(video_devices));
    enumerate_audio_devices(audio_devices, sizeof(audio_devices));
@@ -1044,6 +1037,15 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       return false;
    }
 
+#ifdef HAVE_ALSA
+   if (audio_handle != NULL) {
+       struct retro_audio_callback audio_cb;
+       audio_cb.callback = audio_callback;
+       audio_cb.set_state = audio_set_state;
+       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &audio_cb);
+   }
+#endif
+
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
    if (videodev.value == NULL) {
        close_devices();
@@ -1294,6 +1296,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 {
    struct v4l2_requestbuffers reqbufs;
+
+#ifdef HAVE_ALSA
+   if (audio_handle != NULL) {
+       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
+   }
+#endif
 
    if ((strcmp(video_device, "dummy") != 0) && (video_device_fd != -1))
    {
