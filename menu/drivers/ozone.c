@@ -862,6 +862,7 @@ switch (id)
          break;
       case OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN:
          icon_name = "menu_shutdown.png";
+         break;
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U:
          icon_name = "input_DPAD-U.png";
          break;
@@ -1162,6 +1163,7 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+      case MENU_ENUM_LABEL_RESTART_RETROARCH:
             return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
       case MENU_ENUM_LABEL_SHUTDOWN:
             return OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN;
@@ -1275,15 +1277,29 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
 #endif
 
    if (
-         (type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
+         (type >= MENU_SETTINGS_INPUT_BEGIN) &&
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
          unsigned input_id;
-         input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         while (type > (input_id + 23))
+         if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
-            input_id = (input_id + 24) ;
+            input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 2)
+               return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
+            if ( type == input_id + 4)
+               return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+            if ( type == input_id + 5)
+               return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
+            input_id = input_id + 7;
+         }
+         else
+         {
+            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+            while (type > (input_id + 23))
+            {
+               input_id = (input_id + 24) ;
+            }
          }
          if ( type == input_id )
             return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D;

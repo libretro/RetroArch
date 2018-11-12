@@ -2080,6 +2080,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
       menu_displaylist_info_t *info,
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry,
+      unsigned entry_type,
       rarch_setting_t *setting
       )
 {
@@ -2231,8 +2232,16 @@ static int menu_displaylist_parse_settings_internal(void *data,
          goto loop;
 #endif
 
+      if (
+            (entry_type >= MENU_SETTINGS_INPUT_BEGIN) &&
+            (entry_type < MENU_SETTINGS_INPUT_END)
+         )
+          entry_type = MENU_SETTINGS_INPUT_BEGIN + count;
+      if (entry_type == 0)
+          entry_type = menu_setting_set_flags(setting);
+
       menu_entries_append(info->list, short_description,
-            name, menu_setting_set_flags(setting), 0, 0);
+            name, entry_type, 0, 0);
       count++;
 
 loop:
@@ -2481,7 +2490,7 @@ loop:
    return 0;
 }
 
-#define menu_displaylist_parse_settings(data, info, info_label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal(data, info, parse_type, add_empty_entry, menu_setting_find(info_label))
+#define menu_displaylist_parse_settings(data, info, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(data, info, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
 
 #define menu_displaylist_parse_settings_enum(data, info, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(data, info, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
 
@@ -3310,9 +3319,9 @@ static int menu_displaylist_parse_options_remappings(
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
 
       menu_displaylist_parse_settings(menu, info,
-            key_type, PARSE_ONLY_UINT, true);
+            key_type, PARSE_ONLY_UINT, true, 0);
       menu_displaylist_parse_settings(menu, info,
-            key_analog, PARSE_ONLY_UINT, true);
+            key_analog, PARSE_ONLY_UINT, true, 0);
    }
 
    menu_entries_append_enum(info->list,
@@ -6855,7 +6864,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                      msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
 
                menu_displaylist_parse_settings(menu, info,
-                     key_split_joycon, PARSE_ONLY_UINT, true);
+                     key_split_joycon, PARSE_ONLY_UINT, true, 0);
             }
          }
 #endif
@@ -7643,7 +7652,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             strlcpy(lbl, temp_val, sizeof(lbl));
             ret = menu_displaylist_parse_settings(menu, info,
-                  lbl, PARSE_NONE, true);
+                  lbl, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
             info->need_refresh = true;
             info->need_push    = true;
          }
