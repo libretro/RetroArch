@@ -836,6 +836,7 @@ switch (id)
          break;
       case OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN:
          icon_name = "menu_shutdown.png";
+         break;
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U:
          icon_name = "input_DPAD-U.png";
          break;
@@ -1136,6 +1137,7 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+      case MENU_ENUM_LABEL_RESTART_RETROARCH:
             return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
       case MENU_ENUM_LABEL_SHUTDOWN:
             return OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN;

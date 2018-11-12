@@ -2407,7 +2407,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
                   case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
                   case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
                      return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
                   case MENU_ENUM_LABEL_LATENCY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_LATENCY];
@@ -2483,6 +2482,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_REBOOT:
                   case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
                   case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+                  case MENU_ENUM_LABEL_RESTART_RETROARCH:
                      return xmb->textures.list[XMB_TEXTURE_RELOAD];
                   case MENU_ENUM_LABEL_SHUTDOWN:
                      return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
@@ -4855,6 +4855,7 @@ static const char *xmb_texture_path(unsigned id)
          break;
       case XMB_TEXTURE_SHUTDOWN:
          icon_name = "menu_shutdown.png";
+         break;
       case XMB_TEXTURE_INPUT_DPAD_U:
          icon_name = "input_DPAD-U.png";
          break;
