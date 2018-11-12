@@ -2635,10 +2635,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             if ( type == input_id + 5)
                return xmb->textures.list[XMB_TEXTURE_SAVING];
             input_id = input_id + 7;
-            while (type > (input_id + 35))
-            {
-               input_id = (input_id + 36) ;
-            }
          }
          else
          {

@@ -1266,10 +1266,6 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
             if ( type == input_id + 5)
                return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
             input_id = input_id + 7;
-            while (type > (input_id + 35))
-            {
-               input_id = (input_id + 36) ;
-            }
          }
          else
          {
