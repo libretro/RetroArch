@@ -287,7 +287,7 @@ else ifeq ($(LIBRETRO), pokemini)
 	APP_AUTHOR           = justburn
 	APP_PRODUCT_CODE     = RARCH-POKEMINI
 	APP_UNIQUE_ID        = 0xBAC20
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/pokemini.png
+	APP_BANNER           = pkg/ctr/assets/pokemini_banner.png
 
 endif
