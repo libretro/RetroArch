@@ -2,7 +2,7 @@ BUILD_PRX          = 0
 DEBUG              = 1
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
-HAVE_FILE_LOGGER   = 0
+HAVE_FILE_LOGGER   = 1
 HAVE_THREADS       = 0
 BIG_STACK          = 0
 WHOLE_ARCHIVE_LINK = 0
@@ -34,13 +34,13 @@ CFLAGS = $(OPTIMIZE_LV)  -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
-RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
+RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_IMAGEVIEWER -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
 LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 #LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
 LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit -lpad -lsdl
+LIBS += -lgskit -lpad -lsdl -lm -lz -lfileXio -laudsrv -lpatches -lpoweroff
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
@@ -102,4 +102,11 @@ $(EE_IRX_OBJ):
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref 
 include $(PS2SDK)/samples/Makefile.eeglobal
+
+   
+# $(EE_BIN): $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o
+# 	$(EE_CXX) $(EE_NO_CRT) -T$(PS2SDK)/ee/startup/linkfile $(EE_CXXFLAGS) \
+# 		-o $(EE_BIN) $(PS2SDK)/ee/startup/crt0.o $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(EE_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ) $(EE_LDFLAGS) $(EE_LIBS)
+
+
    

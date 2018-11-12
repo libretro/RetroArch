@@ -439,3 +439,8 @@ int link(const char *oldpath, const char *newpath)
 {
 	return fileXioSymlink(oldpath, newpath);
 }
+
+int unlink(const char *path)
+{
+	return fileXioRemove(path);
+}
