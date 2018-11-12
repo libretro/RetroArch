@@ -2483,6 +2483,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_REBOOT:
                   case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
                   case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+                  case MENU_ENUM_LABEL_RESTART_RETROARCH:
                      return xmb->textures.list[XMB_TEXTURE_RELOAD];
                   case MENU_ENUM_LABEL_SHUTDOWN:
                      return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
@@ -2620,15 +2621,29 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
 
    if (
-         (type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
+         (type >= MENU_SETTINGS_INPUT_BEGIN) &&
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
          unsigned input_id;
-         input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         while (type > (input_id + 23))
+         if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
-            input_id = (input_id + 24) ;
+            input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 2)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+            if ( type == input_id + 4)
+               return xmb->textures.list[XMB_TEXTURE_RELOAD];
+            if ( type == input_id + 5)
+               return xmb->textures.list[XMB_TEXTURE_SAVING];
+            input_id = input_id + 7;
+         }
+         else
+         {
+            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+            while (type > (input_id + 23))
+            {
+               input_id = (input_id + 24) ;
+            }
          }
          if ( type == input_id )
             return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
@@ -4837,6 +4852,7 @@ static const char *xmb_texture_path(unsigned id)
          break;
       case XMB_TEXTURE_SHUTDOWN:
          icon_name = "menu_shutdown.png";
+         break;
       case XMB_TEXTURE_INPUT_DPAD_U:
          icon_name = "input_DPAD-U.png";
          break;
