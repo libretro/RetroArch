@@ -1249,15 +1249,33 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
 #endif
 
    if (
-         (type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
+         (type >= MENU_SETTINGS_INPUT_BEGIN) &&
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
          unsigned input_id;
-         input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         while (type > (input_id + 23))
+         if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
-            input_id = (input_id + 24) ;
+            input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 2)
+               return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
+            if ( type == input_id + 4)
+               return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+            if ( type == input_id + 5)
+               return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
+            input_id = input_id + 7;
+            while (type > (input_id + 35))
+            {
+               input_id = (input_id + 36) ;
+            }
+         }
+         else
+         {
+            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+            while (type > (input_id + 23))
+            {
+               input_id = (input_id + 24) ;
+            }
          }
          if ( type == input_id )
             return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D;

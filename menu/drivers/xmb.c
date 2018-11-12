@@ -2407,6 +2407,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
                   case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
                   case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+                  case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
                      return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
                   case MENU_ENUM_LABEL_LATENCY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_LATENCY];
@@ -2619,15 +2620,33 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
 
    if (
-         (type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
+         (type >= MENU_SETTINGS_INPUT_BEGIN) &&
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
          unsigned input_id;
-         input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         while (type > (input_id + 23))
+         if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
-            input_id = (input_id + 24) ;
+            input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 2)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+            if ( type == input_id + 4)
+               return xmb->textures.list[XMB_TEXTURE_RELOAD];
+            if ( type == input_id + 5)
+               return xmb->textures.list[XMB_TEXTURE_SAVING];
+            input_id = input_id + 7;
+            while (type > (input_id + 35))
+            {
+               input_id = (input_id + 36) ;
+            }
+         }
+         else
+         {
+            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+            while (type > (input_id + 23))
+            {
+               input_id = (input_id + 24) ;
+            }
          }
          if ( type == input_id )
             return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
