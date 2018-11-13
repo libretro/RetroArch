@@ -4,12 +4,49 @@
    "version": "2.0.0",
    "tasks": [
       {
-         "taskName": "msys2-mingw64 build",
+         "label": "linux clean build",
+         "type": "shell",
+         "group": "build",
+         "command": "make clean && ./configure && make -j12"
+      },
+      {
+         "label": "linux clean",
+         "type": "shell",
+         "group": "build",
+         "command": "make clean"
+      },
+      {
+         "label": "linux build with debug symbols",
+         "type": "shell",
+         "group": "build",
+         "command": "DEBUG=1 make -j12"
+      },
+      {
+         "label": "linux build",
+         "type": "shell",
+         "group": "build",
+         "command": "make -j12"
+      },
+      {
+         "label": "linux build and run",
+         "type": "shell",
+         "group": "build",
+         "command": "make -j12 && ./retroarch -v"
+      },
+      {
+         "label": "linux build and run with debug symbols",
+         "type": "shell",
+         "group": "build",
+         "command": "DEBUG=1 make -j12 && ./retroarch -v"
+      },
+      {
+         "label": "msys2-mingw64 build",
          "type": "shell",
 
          "group": {
             "kind": "build",
-            "isDefault": true },
+            "isDefault": true 
+         },
 
          "command": "./configure; make -j2",
          "options": {
@@ -20,9 +57,9 @@
                ]
             }
          }
-      }
+      },
       {
-         "taskName": "msys2-mingw64 build with debug symbols",
+         "label": "msys2-mingw64 build with debug symbols",
          "type": "shell",
 
          "group": "build",
@@ -36,9 +73,9 @@
                ]
             }
          }
-      }
+      },
       {
-         "taskName": "msys2-mingw64 rebuild",
+         "label": "msys2-mingw64 rebuild",
          "type": "shell",
 
          "group": "build",
@@ -52,9 +89,9 @@
                ]
             }
          }
-      }
+      },
       {
-         "taskName": "msys2-mingw64 clean",
+         "label": "msys2-mingw64 clean",
          "type": "shell",
 
          "group": "build",
@@ -68,9 +105,9 @@
                ]
             }
          }
-      }
+      },
       {
-         "taskName": "msys2-mingw64 run",
+         "label": "msys2-mingw64 run",
          "type": "shell",
 
          "group": {
