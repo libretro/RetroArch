@@ -2700,9 +2700,12 @@ static void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_
    /* Background */
    sidebar_height = video_info->height - 87 - 55 - 78;
 
-   menu_display_draw_quad(video_info, ozone->sidebar_offset, 88, 408, 55/2, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
-   menu_display_draw_quad(video_info, ozone->sidebar_offset, 88 + 55/2, 408, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
-   menu_display_draw_quad(video_info, ozone->sidebar_offset, 55*2 + sidebar_height, 408, 55/2 + 1, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
+   if (!video_info->libretro_running)
+   {
+      menu_display_draw_quad(video_info, ozone->sidebar_offset, 88, 408, 55/2, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
+      menu_display_draw_quad(video_info, ozone->sidebar_offset, 88 + 55/2, 408, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
+      menu_display_draw_quad(video_info, ozone->sidebar_offset, 55*2 + sidebar_height, 408, 55/2 + 1, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
+   }
 
    /* Tabs */
    /* TODO Scroll */
@@ -3079,7 +3082,7 @@ static unsigned ozone_get_system_theme()
 
 static void ozone_draw_backdrop(video_frame_info_t *video_info)
 {
-   /* TODO Replace this backdrop by a blur shader on the whole screen */
+   /* TODO Replace this backdrop by a blur shader on the whole screen if available */
    menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
 }
 
@@ -3297,6 +3300,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.entries_label.carr.coords.vertices = 0;
    ozone->raster_blocks.entries_sublabel.carr.coords.vertices = 0;
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
+
+   /* TODO Replace this by blur backdrop if available */
+   ozone_color_alpha(ozone->theme->background, video_info->libretro_running ? 0.75f : 1.0f);
 
    /* Background */
    menu_display_draw_quad(video_info, 
