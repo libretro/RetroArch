@@ -57,7 +57,7 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
-float osk_dark[16];
+extern float osk_dark[16];
 
 enum menu_image_type
 {
