@@ -5415,7 +5415,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    xmb_toggle_horizontal_list(xmb);
 }
 
-static int deferred_push_content_actions(menu_displaylist_info_t *info)
+static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)
 {
    if (!menu_displaylist_ctl(
             DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
@@ -5432,7 +5432,7 @@ static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs)
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_CONTENT_ACTIONS:
-            cbs->action_deferred_push = deferred_push_content_actions;
+            cbs->action_deferred_push = xmb_deferred_push_content_actions;
             break;
          default:
             return -1;

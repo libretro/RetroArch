@@ -3767,6 +3767,42 @@ static void ozone_messagebox(void *data, const char *message)
    ozone->pending_message = strdup(message);
 }
 
+static int ozone_deferred_push_content_actions(menu_displaylist_info_t *info)
+{
+   if (!menu_displaylist_ctl(
+            DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
+      return -1;
+   menu_displaylist_process(info);
+   menu_displaylist_info_free(info);
+   return 0;
+}
+
+static int ozone_list_bind_init_compare_label(menu_file_list_cbs_t *cbs)
+{
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+   {
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_CONTENT_ACTIONS:
+            cbs->action_deferred_push = ozone_deferred_push_content_actions;
+            break;
+         default:
+            return -1;
+      }
+   }
+
+   return 0;
+}
+
+static int ozone_list_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (ozone_list_bind_init_compare_label(cbs) == 0)
+      return 0;
+
+   return -1;
+}
+
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
@@ -3797,7 +3833,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_list_get_size,
    ozone_list_get_entry,
    NULL,                         /* list_set_selection */
-   NULL,                         /* bind_init */
+   ozone_list_bind_init,         /* bind_init */
    NULL,                         /* load_image */
    "ozone",
    ozone_environ_cb,
