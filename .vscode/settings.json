@@ -27,7 +27,8 @@
       "menu_driver.h": "c",
       "file_path.h": "c",
       "unordered_map": "c",
-      "unordered_set": "c"
+      "unordered_set": "c",
+      "sstream": "cpp"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
