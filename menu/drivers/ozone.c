@@ -2953,7 +2953,7 @@ border_iterate:
       {
          unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label, rich_label, (unsigned)strlen(rich_label), 1);
          x_offset = (video_info_width - 408 - 162)/2 - text_width/2;
-         y = video_info_height/2 - 23;
+         y = video_info_height/2 - 60;
       }
 
       sublabel_str = menu_entry_get_sublabel(&entry);
