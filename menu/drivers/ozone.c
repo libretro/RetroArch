@@ -3387,6 +3387,38 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    menu_animation_push(&entry);
 }
 
+static void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
+{
+   struct menu_animation_ctx_entry entry;
+
+   menu_animation_ctx_tag tag = (uintptr_t)ozone;
+
+   if (ozone->categories_selection_ptr != new_selection)
+   {
+      ozone->categories_active_idx_old = ozone->categories_selection_ptr;
+      ozone->categories_selection_ptr = new_selection;
+
+      ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
+
+      menu_animation_kill_by_tag(&tag);
+   }
+
+   /* Cursor animation */
+   ozone->animations.cursor_alpha = 0.0f;
+
+   entry.cb = NULL;
+   entry.duration = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum = EASING_OUT_QUAD;
+   entry.subject = &ozone->animations.cursor_alpha;
+   entry.tag = tag;
+   entry.target_value = 1.0f;
+   entry.userdata = NULL;
+
+   menu_animation_push(&entry);
+
+   ozone_change_tab(ozone, ozone_system_tabs_idx[new_selection], ozone_system_tabs_type[new_selection]);
+}
+
 static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
 {
    int new_selection;
@@ -3417,30 +3449,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          if (new_selection >= OZONE_SYSTEM_TAB_LAST) /* TODO Check against actual tabs count and not just system tabs */
             new_selection = 0;
 
-         if (ozone->categories_selection_ptr != new_selection)
-         {
-            ozone->categories_active_idx_old = ozone->categories_selection_ptr;
-            ozone->categories_selection_ptr = new_selection;
-
-            ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
-
-            menu_animation_kill_by_tag(&tag);
-         }
-
-         /* Cursor animation */
-         ozone->animations.cursor_alpha = 0.0f;
-
-         entry.cb = NULL;
-         entry.duration = ANIMATION_CURSOR_DURATION;
-         entry.easing_enum = EASING_OUT_QUAD;
-         entry.subject = &ozone->animations.cursor_alpha;
-         entry.tag = tag;
-         entry.target_value = 1.0f;
-         entry.userdata = NULL;
-
-         menu_animation_push(&entry);
-
-         ozone_change_tab(ozone, ozone_system_tabs_idx[new_selection], ozone_system_tabs_type[new_selection]);
+         ozone_sidebar_goto(ozone, new_selection);
 
          new_action = MENU_ACTION_NOOP;
          break;
@@ -3455,30 +3464,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          if (new_selection < 0)
             new_selection = OZONE_SYSTEM_TAB_LAST-1; /* TODO Set this to actual tabs count and not just system tabs */
 
-         if (ozone->categories_selection_ptr != new_selection)
-         {
-            ozone->categories_active_idx_old = ozone->categories_selection_ptr;
-            ozone->categories_selection_ptr = new_selection;
-
-            ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
-
-            menu_animation_kill_by_tag(&tag);
-         }
-
-         /* Cursor animation */
-         ozone->animations.cursor_alpha = 0.0f;
-
-         entry.cb = NULL;
-         entry.duration = ANIMATION_CURSOR_DURATION;
-         entry.easing_enum = EASING_OUT_QUAD;
-         entry.subject = &ozone->animations.cursor_alpha;
-         entry.tag = tag;
-         entry.target_value = 1.0f;
-         entry.userdata = NULL;
-
-         menu_animation_push(&entry);
-
-         ozone_change_tab(ozone, ozone_system_tabs_idx[new_selection], ozone_system_tabs_type[new_selection]);
+         ozone_sidebar_goto(ozone, new_selection);
 
          new_action = MENU_ACTION_NOOP;
          break;
@@ -3519,6 +3505,10 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
       case MENU_ACTION_CANCEL:
          if (ozone->cursor_in_sidebar)
          {
+            /* Go back to main menu tab */
+            if (ozone->categories_selection_ptr != 0)
+               ozone_sidebar_goto(ozone, 0);
+
             new_action = MENU_ACTION_NOOP;
             break;
          }
