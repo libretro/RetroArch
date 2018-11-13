@@ -2750,19 +2750,16 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
       char *value,
       unsigned x, unsigned y,
       uint32_t alpha_uint32,
-      bool checked)
+      menu_entry_t *entry)
 {
-   enum msg_file_type hash_type;
    bool switch_is_on = true;
    bool do_draw_text = false;
 
-   if (!checked && string_is_empty(value))
+   if (!entry->checked && string_is_empty(value))
       return;
 
-   hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
-
    /* check icon */
-   if (checked)
+   if (entry->checked)
    {
       menu_display_blend_begin(video_info);
       ozone_draw_icon(video_info, 30, 30, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20, y - 22, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
@@ -2785,25 +2782,31 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    }
    else
    {
-      switch (hash_type)
+      if (!string_is_empty(entry->value))
       {
-         case FILE_TYPE_IN_CARCHIVE:
-         case FILE_TYPE_COMPRESSED:
-         case FILE_TYPE_MORE:
-         case FILE_TYPE_CORE:
-         case FILE_TYPE_DIRECT_LOAD:
-         case FILE_TYPE_RDB:
-         case FILE_TYPE_CURSOR:
-         case FILE_TYPE_PLAIN:
-         case FILE_TYPE_DIRECTORY:
-         case FILE_TYPE_MUSIC:
-         case FILE_TYPE_IMAGE:
-         case FILE_TYPE_MOVIE:
+         if (
+               string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(PRESET)")  ||
+               string_is_equal(entry->value, "(SHADER)")  ||
+               string_is_equal(entry->value, "(COMP)")  ||
+               string_is_equal(entry->value, "(CORE)")  ||
+               string_is_equal(entry->value, "(MOVIE)") ||
+               string_is_equal(entry->value, "(MUSIC)") ||
+               string_is_equal(entry->value, "(DIR)")   ||
+               string_is_equal(entry->value, "(RDB)")   ||
+               string_is_equal(entry->value, "(CURSOR)")||
+               string_is_equal(entry->value, "(CFILE)") ||
+               string_is_equal(entry->value, "(FILE)")  ||
+               string_is_equal(entry->value, "(IMAGE)")
+            )
+         {
             return;
-         default:
+         }
+         else
             do_draw_text = true;
-            break;
       }
+      else
+         do_draw_text = true;
    }
 
    if (do_draw_text)
@@ -2983,7 +2986,7 @@ border_iterate:
       ticker.len = (entry_width - 60 - ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
-      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, entry.checked);
+      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, &entry);
       
       free(entry_rich_label);
       free(sublabel_str);
