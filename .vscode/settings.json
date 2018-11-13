@@ -7,6 +7,7 @@
    "terminal.integrated.cursorBlinking": true,
 
    "editor.tabSize": 3,
+   "editor.detectIndentation": false,
    "editor.renderWhitespace": "all",
    "editor.insertSpaces": true,
    "files.associations": {
