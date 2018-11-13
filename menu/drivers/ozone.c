@@ -590,6 +590,9 @@ typedef struct ozone_handle
 
    char *pending_message;
    bool has_all_assets;
+
+   bool is_playlist;
+   bool is_playlist_old;
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -1540,6 +1543,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->draw_sidebar              = true;
    ozone->sidebar_offset            = 0;
    ozone->pending_message           = NULL;
+   ozone->is_playlist               = false;
+   ozone->categories_selection_ptr  = 0;
 
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
@@ -2250,6 +2255,37 @@ static unsigned ozone_count_lines(const char *str)
    return lines;
 }
 
+static bool ozone_is_playlist(ozone_handle_t *ozone)
+{
+   bool is_playlist;
+
+   switch (ozone->categories_selection_ptr)
+   {
+      case OZONE_SYSTEM_TAB_MAIN:
+      case OZONE_SYSTEM_TAB_SETTINGS:
+      case OZONE_SYSTEM_TAB_ADD:
+         is_playlist = false;
+         break;
+      case OZONE_SYSTEM_TAB_HISTORY:
+      case OZONE_SYSTEM_TAB_FAVORITES:
+      case OZONE_SYSTEM_TAB_MUSIC:
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+      case OZONE_SYSTEM_TAB_VIDEO:
+#endif
+#ifdef HAVE_IMAGEVIEWER
+      case OZONE_SYSTEM_TAB_IMAGES:
+#endif
+#ifdef HAVE_NETWORKING
+      case OZONE_SYSTEM_TAB_NETPLAY:
+#endif
+      default:
+         is_playlist = true;
+         break;
+   }
+
+   return is_playlist && ozone->depth == 1;
+}
+
 static void ozone_compute_entries_position(ozone_handle_t *ozone)
 {
    /* Compute entries height and adjust scrolling if needed */
@@ -2761,7 +2797,8 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
 
 static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    unsigned selection, unsigned selection_old,
-   file_list_t *selection_buf, float alpha, float scroll_y)
+   file_list_t *selection_buf, float alpha, float scroll_y,
+   bool is_playlist)
 {
    bool old_list;
    uint32_t alpha_uint32;
@@ -3158,7 +3195,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       ozone->selection_old,
       menu_entries_get_selection_buf_ptr(0),
       ozone->animations.list_alpha,
-      ozone->animations.scroll_y
+      ozone->animations.scroll_y,
+      ozone->is_playlist
    );
    
    /* Old list */
@@ -3169,7 +3207,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->selection_old_list,
          ozone->selection_buf_old,
          ozone->animations.list_alpha,
-         ozone->scroll_old
+         ozone->scroll_old,
+         ozone->is_playlist_old
       );
 
    menu_display_scissor_end(video_info);
@@ -3303,8 +3342,9 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
 
    int new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
-   ozone->fade_direction = new_depth <= ozone->depth;
-   ozone->depth = new_depth;
+   ozone->fade_direction   = new_depth <= ozone->depth;
+   ozone->depth            = new_depth;
+   ozone->is_playlist      = ozone_is_playlist(ozone);
 
    if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
    {
@@ -3699,6 +3739,7 @@ static void ozone_list_cache(void *data,
    ozone->need_compute        = true;
    ozone->selection_old_list  = ozone->selection;
    ozone->scroll_old          = ozone->animations.scroll_y;
+   ozone->is_playlist_old     = ozone->is_playlist;
 
    /* Deep copy visible elements */
    video_driver_get_size(NULL, &video_info_height);
