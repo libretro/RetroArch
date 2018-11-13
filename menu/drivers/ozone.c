@@ -54,7 +54,8 @@
 
 #define ENTRIES_START_Y 127
 
-#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
+#define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
+#define INTERVAL_OSK_CURSOR (0.5f * 1000000)
 
 static float ozone_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
@@ -68,6 +69,13 @@ static float ozone_backdrop[16] = {
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
+};
+
+static float ozone_osk_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
 };
 
 enum OZONE_TEXTURE {
@@ -595,6 +603,8 @@ typedef struct ozone_handle
    bool is_playlist_old;
 
    bool empty_playlist;
+
+   bool osk_cursor; /* true = display it, false = don't */
 } ozone_handle_t;
 
 /* If you change this struct, also
@@ -2484,7 +2494,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       if (state == FRONTEND_POWERSTATE_CHARGING)
          charging = true;
 
-      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
+      if (current_time - last_time >= INTERVAL_BATTERY_LEVEL_CHECK)
       {
          last_time = current_time;
          task_push_get_powerstate();
@@ -3069,7 +3079,99 @@ static unsigned ozone_get_system_theme()
 
 static void ozone_draw_backdrop(video_frame_info_t *video_info)
 {
+   /* TODO Replace this backdrop by a blur shader on the whole screen */
    menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
+}
+
+static void ozone_draw_osk(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      const char *label, const char *str)
+{
+   int i;
+   const char *text;
+   char message[2048];
+   unsigned text_color;
+   struct string_list *list;
+
+   unsigned margin         = 75;
+   unsigned padding        = 10;
+   unsigned bottom_end     = video_info->height/2;
+   unsigned y_offset       = 0;
+   bool draw_placeholder   = string_is_empty(str);
+
+   retro_time_t current_time      = cpu_features_get_time_usec();
+   static retro_time_t last_time  = 0;
+
+   if (current_time - last_time >= INTERVAL_OSK_CURSOR)
+   {
+      ozone->osk_cursor = !ozone->osk_cursor;
+      last_time = current_time;
+   }
+
+   /* Border */
+   /* Top */
+   menu_display_draw_quad(video_info, margin, margin, video_info->width - margin*2, 1, video_info->width, video_info->height, ozone->theme->entries_border);
+
+   /* Bottom */
+   menu_display_draw_quad(video_info, margin, bottom_end - margin, video_info->width - margin*2, 1, video_info->width, video_info->height, ozone->theme->entries_border);
+
+   /* Left */
+   menu_display_draw_quad(video_info, margin, margin, 1, bottom_end - margin*2, video_info->width, video_info->height, ozone->theme->entries_border);
+
+   /* Right */
+   menu_display_draw_quad(video_info, video_info->width - margin, margin, 1, bottom_end - margin*2, video_info->width, video_info->height, ozone->theme->entries_border);
+
+   /* Backdrop */
+   /* TODO Remove the backdrop if blur shader is available */
+   menu_display_draw_quad(video_info, margin + 1, margin + 1, video_info->width - margin*2 - 2, bottom_end - margin*2 - 2, video_info->width, video_info->height, ozone_osk_backdrop);
+
+   /* Placeholder & text*/
+   if (!draw_placeholder)
+   {
+      text        = str;
+      text_color  = 0xffffffff;
+   }
+   else
+   {
+      text        = label;
+      text_color  = ozone_theme_light.text_sublabel_rgba;
+   }
+
+   word_wrap(message, text, (video_info->width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true);
+
+   list = string_split(message, "\n");
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+
+      ozone_draw_text(video_info, ozone, msg, margin + padding * 2, margin + padding + FONT_SIZE_ENTRIES_LABEL + y_offset, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, text_color);
+
+      /* Cursor */
+      if (i == list->size - 1)
+      {
+         if (ozone->osk_cursor)
+         {
+            unsigned cursor_x = draw_placeholder ? 0 : font_driver_get_message_width(ozone->fonts.entries_label, msg, (unsigned)strlen(msg), 1);
+            menu_display_draw_quad(video_info, margin + padding*2 + cursor_x, margin + padding + y_offset + 3, 1, 25, video_info->width, video_info->height, ozone_pure_white);
+         }
+      }
+      else
+      {
+         y_offset += 25;
+      }
+   }
+
+   /* Keyboard */
+   menu_display_draw_keyboard(
+            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
+            ozone->fonts.entries_label,
+            video_info,
+            menu_event_get_osk_grid(),
+            menu_event_get_osk_ptr(),
+            ozone->theme->text_rgba);
+
+   string_list_free(list);
 }
 
 static void ozone_draw_messagebox(ozone_handle_t *ozone,
@@ -3149,15 +3251,6 @@ static void ozone_draw_messagebox(ozone_handle_t *ozone,
          );
    }
 
-   if (menu_input_dialog_get_display_kb())
-      menu_display_draw_keyboard(
-            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
-            ozone->fonts.footer,
-            video_info,
-            menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr(),
-            ozone->theme->text_rgba);
-
 end:
    string_list_free(list);
 }
@@ -3167,7 +3260,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_handle_t* ozone = (ozone_handle_t*) data;
    settings_t  *settings = config_get_ptr();
    unsigned color_theme  = video_info->ozone_color_theme;
-   bool draw_message_box = false;
    char msg[2014];
 
    if (!ozone)
@@ -3258,32 +3350,34 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_bind_block(ozone->fonts.time, NULL);
    font_driver_bind_block(ozone->fonts.entries_label, NULL);
 
-   menu_display_unset_viewport(video_info->width, video_info->height);
+   /* Message box & OSK - second layer of text */
+   ozone->raster_blocks.footer.carr.coords.vertices = 0;
+   ozone->raster_blocks.entries_label.carr.coords.vertices = 0;
 
-   /* Message box & OSK */
    if (!string_is_empty(ozone->pending_message))
    {
       strlcpy(msg, ozone->pending_message,
             sizeof(msg));
       free(ozone->pending_message);
       ozone->pending_message  = NULL;
-      draw_message_box = true;
+
+      ozone_draw_backdrop(video_info);
+      ozone_draw_messagebox(ozone, video_info, msg);
    }
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
+      const char *str   = menu_input_dialog_get_buffer();
 
-      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      draw_message_box = true;
-   }
-
-   if (draw_message_box)
-   {
       ozone_draw_backdrop(video_info);
-      ozone_draw_messagebox(ozone, video_info, msg);
+      ozone_draw_osk(ozone, video_info, label, str);
    }
+
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer, video_info);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
+
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void ozone_set_header(ozone_handle_t *ozone)

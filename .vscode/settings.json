@@ -28,7 +28,12 @@
       "file_path.h": "c",
       "unordered_map": "c",
       "unordered_set": "c",
-      "sstream": "cpp"
+      "sstream": "cpp",
+      "hash_map": "c",
+      "hash_set": "c",
+      "initializer_list": "c",
+      "string_view": "c",
+      "utility": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

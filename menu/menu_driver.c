@@ -76,6 +76,13 @@ typedef struct menu_ctx_load_image
    enum menu_image_type type;
 } menu_ctx_load_image_t;
 
+float osk_dark[16] =  {
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+};
+
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_OZONE)
@@ -1510,12 +1517,6 @@ void menu_display_draw_keyboard(
    int ptr_width, ptr_height;
    unsigned width    = video_info->width;
    unsigned height   = video_info->height;
-   float dark[16]    =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-   };
 
    float white[16]=  {
       1.00, 1.00, 1.00, 1.00,
@@ -1528,7 +1529,7 @@ void menu_display_draw_keyboard(
          video_info,
          0, height/2.0, width, height/2.0,
          width, height,
-         &dark[0]);
+         &osk_dark[0]);
 
    ptr_width  = width  / 11;
    ptr_height = height / 10;
