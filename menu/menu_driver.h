@@ -813,7 +813,8 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale_factor, bool shadows_enable, float shadow_offset);
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 

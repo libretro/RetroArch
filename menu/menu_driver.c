@@ -1167,18 +1167,18 @@ void menu_display_draw_texture_slice(
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
    vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1] - vert_scaled_mid_height;
+   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_scaled_mid_height;
+   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
 
    tex_coord[0] = T_BL[0] + tex_woff;
    tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
    tex_coord[2] = T_BR[0] + tex_mid_width;
    tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
    tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1] + tex_mid_height;
+   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
    tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_mid_height;
+   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
    menu_display_draw(&draw, video_info);
 
@@ -1565,7 +1565,7 @@ void menu_display_draw_keyboard(
             * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + font->size / 3,
             width, height, color, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
+            false, 0, false);
    }
 }
 
@@ -1575,13 +1575,15 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale, bool shadows_enable, float shadow_offset)
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
 {
    struct font_params params;
 
    /* Don't draw outside of the screen */
-   if (     (x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64)
+   if (     ((x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64))
+         && !draw_outside
       )
       return;
 
