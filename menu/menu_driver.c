@@ -1565,7 +1565,7 @@ void menu_display_draw_keyboard(
             * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + font->size / 3,
             width, height, color, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
+            false, 0, false);
    }
 }
 
@@ -1575,13 +1575,15 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale, bool shadows_enable, float shadow_offset)
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
 {
    struct font_params params;
 
    /* Don't draw outside of the screen */
-   if (     (x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64)
+   if (     ((x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64))
+         && !draw_outside
       )
       return;
 
