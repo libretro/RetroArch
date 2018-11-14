@@ -1517,6 +1517,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
+#ifdef _3DS
+   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
+#endif
+
    *size = count;
 
    return tmp;

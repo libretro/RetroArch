@@ -3099,6 +3099,10 @@ MSG_HASH(
     "Desativar Composição da Área de Trabalho"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "Tela Inferior 3DS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Driver de Vídeo"
     )

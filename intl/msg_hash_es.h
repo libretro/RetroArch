@@ -3029,6 +3029,10 @@ MSG_HASH(
     "Desactivar composición de escritorio"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "Pantalla inferior 3DS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Controlador de video"
     )

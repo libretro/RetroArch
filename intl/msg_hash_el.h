@@ -3067,6 +3067,10 @@ MSG_HASH(
     "Disable Desktop Composition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "Κάτω οθόνη 3DS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Οδηγός Βίντεο"
     )
