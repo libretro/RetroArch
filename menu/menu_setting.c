@@ -4081,7 +4081,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
