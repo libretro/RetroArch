@@ -213,6 +213,24 @@ static enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_ADD_TAB
 };
 
+static unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
+   OZONE_TAB_TEXTURE_MAIN_MENU,
+   OZONE_TAB_TEXTURE_SETTINGS,
+   OZONE_TAB_TEXTURE_HISTORY,
+   OZONE_TAB_TEXTURE_FAVORITES,
+   OZONE_TAB_TEXTURE_MUSIC,
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   OZONE_TAB_TEXTURE_VIDEO,
+#endif
+#ifdef HAVE_IMAGEVIEWER
+   OZONE_TAB_TEXTURE_IMAGE,
+#endif
+#ifdef HAVE_NETWORKING
+   OZONE_TAB_TEXTURE_NETWORK,
+#endif
+   OZONE_TAB_TEXTURE_SCAN_CONTENT
+};
+
 enum
 {
    OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU = 0,
@@ -323,24 +341,6 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT,
    OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK,
    OZONE_ENTRIES_ICONS_TEXTURE_LAST
-};
-
-static unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
-   OZONE_TAB_TEXTURE_MAIN_MENU,
-   OZONE_TAB_TEXTURE_SETTINGS,
-   OZONE_TAB_TEXTURE_HISTORY,
-   OZONE_TAB_TEXTURE_FAVORITES,
-   OZONE_TAB_TEXTURE_MUSIC,
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   OZONE_TAB_TEXTURE_VIDEO,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-   OZONE_TAB_TEXTURE_IMAGE,
-#endif
-#ifdef HAVE_NETWORKING
-   OZONE_TAB_TEXTURE_NETWORK,
-#endif
-   OZONE_TAB_TEXTURE_SCAN_CONTENT
 };
 
 #define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
@@ -2748,17 +2748,17 @@ static void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_
    menu_display_blend_begin(video_info);
    /* TODO Cache all the tabs data */
 
-   for (i = 0; i < OZONE_SYSTEM_TAB_LAST; i++)
+   for (i = 0; i < ozone->system_tab_end; i++)
    {
       enum msg_hash_enums value_idx;
       const char *title = NULL;
       bool     selected = (ozone->categories_selection_ptr == i);
-      unsigned     icon = ozone_system_tabs_icons[i];
+      unsigned     icon = ozone_system_tabs_icons[ozone->tabs[i]];
 
       /* Icon */
       ozone_draw_icon(video_info, 40, 40, ozone->tab_textures[icon], ozone->sidebar_offset + 41 + 10, y - 5, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
-      value_idx = ozone_system_tabs_value[i];
+      value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
 
       /* Text */
@@ -3667,7 +3667,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 
    menu_animation_push(&entry);
 
-   ozone_change_tab(ozone, ozone_system_tabs_idx[new_selection], ozone_system_tabs_type[new_selection]);
+   ozone_change_tab(ozone, ozone_system_tabs_idx[ozone->tabs[new_selection]], ozone_system_tabs_type[ozone->tabs[new_selection]]);
 }
 
 static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
@@ -3699,7 +3699,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
 
          new_selection = (ozone->categories_selection_ptr + 1);
 
-         if (new_selection >= OZONE_SYSTEM_TAB_LAST) /* TODO Check against actual tabs count and not just system tabs */
+         if (new_selection >= ozone->system_tab_end)
             new_selection = 0;
 
          ozone_sidebar_goto(ozone, new_selection);
@@ -3715,7 +3715,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_selection = ozone->categories_selection_ptr - 1;
          
          if (new_selection < 0)
-            new_selection = OZONE_SYSTEM_TAB_LAST-1; /* TODO Set this to actual tabs count and not just system tabs */
+            new_selection = ozone->system_tab_end-1;
 
          ozone_sidebar_goto(ozone, new_selection);
 
