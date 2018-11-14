@@ -6099,6 +6099,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
                PARSE_ONLY_BOOL, false);
 #endif
+#ifdef _3DS
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
+               PARSE_ONLY_BOOL, false);
+#endif
          info->need_refresh = true;
          info->need_push    = true;
          break;

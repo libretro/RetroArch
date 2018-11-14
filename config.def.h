@@ -478,6 +478,11 @@ static const float crt_refresh_rate = 60/1.001;
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
 
+#ifdef _3DS
+/* Enable bottom LCD screen */
+static const bool video_3ds_lcd_bottom = true;
+#endif
+
 /* AUDIO */
 
 /* Will enable audio or not. */
