@@ -164,6 +164,7 @@ static void handle_discord_join_request(const DiscordUser* request)
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
    static char filename[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
 
    RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
       request->username,
@@ -174,9 +175,10 @@ static void handle_discord_join_request(const DiscordUser* request)
    discord_download_avatar(request->userId, request->avatar);
 
 #ifdef HAVE_MENU
-      char buf[PATH_MAX_LENGTH];
       menu_input_ctx_line_t line;
+      /* To-Do: needs in-game widgets
       rarch_menu_running();
+      */
 
       memset(&line, 0, sizeof(line));
       snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
