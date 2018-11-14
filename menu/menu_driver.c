@@ -1167,18 +1167,18 @@ void menu_display_draw_texture_slice(
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
    vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1] - vert_scaled_mid_height;
+   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_scaled_mid_height;
+   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
 
    tex_coord[0] = T_BL[0] + tex_woff;
    tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
    tex_coord[2] = T_BR[0] + tex_mid_width;
    tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
    tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1] + tex_mid_height;
+   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
    tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_mid_height;
+   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
    menu_display_draw(&draw, video_info);
 
