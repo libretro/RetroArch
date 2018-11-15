@@ -393,19 +393,36 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
       /* Deal with analog triggers that report -32767 to 32767 */
-      #if HAVE_SDL2
-        if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "rightx") == 0) ||
-        (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "righttrigger") == 0)) &&
-        (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
-        {
-          val = (val + 0x7fff) / 2;
-        }
+      #ifdef __linux
+        #if HAVE_SDL2
+          if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "rightx") == 0) ||
+          (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "righttrigger") == 0)) &&
+          (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #else
+          if (((AXIS_NEG_GET(joyaxis) == 2) || (AXIS_NEG_GET(joyaxis) == 5)) &&
+          (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #endif
       #else
-        if (((AXIS_NEG_GET(joyaxis) == 2) || (AXIS_NEG_GET(joyaxis) == 5)) &&
-        (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
-        {
-          val = (val + 0x7fff) / 2;
-        }
+        #if HAVE_SDL2
+          if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "lefttrigger") == 0) ||
+          (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "righttrigger") == 0)) &&
+          (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #else
+          if (((AXIS_NEG_GET(joyaxis) == 4) || (AXIS_NEG_GET(joyaxis) == 5)) &&
+          (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #endif
       #endif
       /* END Deal with analog triggers that report -32767 to 32767 */
       
@@ -418,19 +435,36 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    {
       val = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
       /* Deal with analog triggers that report -32767 to 32767 */
-      #if HAVE_SDL2
-        if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "rightx") == 0) ||
-        (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "righttrigger") == 0)) &&
-        (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
-        {
-          val = (val + 0x7fff) / 2;
-        }
-      #else
-        if (((AXIS_POS_GET(joyaxis) == 2) || (AXIS_POS_GET(joyaxis) == 5)) &&
+      #ifdef __linux
+        #if HAVE_SDL2
+          if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "rightx") == 0) ||
+          (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "righttrigger") == 0)) &&
           (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
-        {
-          val = (val + 0x7fff) / 2;
-        }
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #else
+          if (((AXIS_POS_GET(joyaxis) == 2) || (AXIS_POS_GET(joyaxis) == 5)) &&
+            (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #endif
+      #else
+        #if HAVE_SDL2
+          if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "lefttrigger") == 0) ||
+          (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "righttrigger") == 0)) &&
+          (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #else
+          if (((AXIS_POS_GET(joyaxis) == 4) || (AXIS_POS_GET(joyaxis) == 5)) &&
+            (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+          {
+            val = (val + 0x7fff) / 2;
+          }
+        #endif
       #endif
       /* END Deal with analog triggers that report -32767 to 32767 */
       
