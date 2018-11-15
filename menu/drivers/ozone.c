@@ -1618,20 +1618,24 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             malloc(PATH_MAX_LENGTH * sizeof(char));
          char *content_texturepath = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
+         char *icons_path          = (char*)
+            malloc(PATH_MAX_LENGTH * sizeof(char));
+
+         strlcpy(icons_path, ozone->icons_path, PATH_MAX_LENGTH * sizeof(char));
 
          sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
 
          fill_pathname_base_noext(sysname, path,
                PATH_MAX_LENGTH * sizeof(char));
 
-         fill_pathname_join_concat(texturepath, ozone->icons_path, sysname,
+         fill_pathname_join_concat(texturepath, icons_path, sysname,
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!filestream_exists(texturepath))
-               fill_pathname_join_concat(texturepath, ozone->icons_path, "default",
+               fill_pathname_join_concat(texturepath, icons_path, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
 
@@ -1655,7 +1659,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          fill_pathname_join_delim(sysname, sysname,
                file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, ozone->icons_path, PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, icons_path, PATH_MAX_LENGTH * sizeof(char));
 
          strlcat(content_texturepath, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
@@ -1663,8 +1667,9 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* If the content icon doesn't exist return default-content */
          if (!filestream_exists(content_texturepath))
          {
-            strlcat(ozone->icons_path, "default", PATH_MAX_LENGTH * sizeof(char));
-            fill_pathname_join_delim(content_texturepath, ozone->icons_path,
+            strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
+            strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));
+            fill_pathname_join_delim(content_texturepath, icons_path,
                   file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                   PATH_MAX_LENGTH * sizeof(char));
          }
@@ -1718,6 +1723,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          free(sysname);
          free(texturepath);
          free(content_texturepath);
+         free(icons_path);
       }
    }
 }
@@ -3324,7 +3330,7 @@ border_iterate:
          /* Console specific icons */
          if (entry.type == FILE_TYPE_RPL_ENTRY && ozone->horizontal_list && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
-            ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end);
+            ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
             if (!sidebar_node || !sidebar_node->content_icon)
                texture = ozone->icons_textures[icon];
