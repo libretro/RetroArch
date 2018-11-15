@@ -1692,14 +1692,26 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Format : "Vendor - Console"
             Remove everything before the hyphen
             and the subsequent space */
-         char *chr = title_noext;
+         char *chr         = title_noext;
+         bool hyphen_found = false;
 
-         while (*chr != '-' && *chr != '\0')
+         while (true)
          {
+            if (*chr == '-')
+            {
+               hyphen_found = true;
+               break;
+            }
+            else if (*chr == '\0')
+               break;
+
             chr++;
          }
 
-         chr += 2;
+         if (hyphen_found)
+            chr += 2;
+         else
+            chr = title_noext;
 
          node->console_name = strdup(chr);
 
