@@ -675,9 +675,9 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       #HAVE_STRIPES = 1
    #endif
 
-   #ifeq ($(HAVE_OZONE),)
-      #HAVE_OZONE = 1
-   #endif
+   ifeq ($(HAVE_OZONE),)
+      HAVE_OZONE = 1
+   endif
 else
    HAVE_ZARCH       ?= 0
    HAVE_MATERIALUI  ?= 0
