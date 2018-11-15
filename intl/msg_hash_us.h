@@ -261,7 +261,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-    "Configurations"
+    "Configuration File"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -6052,11 +6052,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-    "Show Configurations"
+    "Show Configuration File"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-    "Show/hide the 'Configurations' option."
+    "Show/hide the 'Configuration File' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
