@@ -57,6 +57,8 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
+extern float osk_dark[16];
+
 enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
@@ -811,7 +813,8 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale_factor, bool shadows_enable, float shadow_offset);
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 

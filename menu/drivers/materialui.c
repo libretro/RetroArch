@@ -559,7 +559,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
                mui->font, msg,
                x - longest_width/2.0,
                y + i * line_height + mui->font->size / 3,
-               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    }
 
@@ -864,7 +864,7 @@ static void materialui_render_label_value(
                mui->margin + icon_margin,
                y + (scale_factor / 4) + mui->font->size,
                width, height, sublabel_color, TEXT_ALIGN_LEFT,
-               1.0f, false, 0);
+               1.0f, false, 0, false);
       }
       free(sublabel_str);
    }
@@ -872,13 +872,13 @@ static void materialui_render_label_value(
    menu_display_draw_text(mui->font, label_str,
          mui->margin + icon_margin,
          y + (scale_factor / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
             y + (scale_factor / 5),
-            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
+            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
       materialui_draw_icon(video_info,
@@ -1562,7 +1562,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       menu_display_draw_text(mui->font, title_buf,
             title_margin,
             header_height / 2 + mui->font->size / 3,
-            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    materialui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
 

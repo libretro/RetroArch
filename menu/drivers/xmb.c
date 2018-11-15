@@ -833,7 +833,7 @@ static void xmb_draw_text(
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
          video_info->xmb_shadows_enable,
-         xmb->shadow_offset);
+         xmb->shadow_offset, false);
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -913,7 +913,7 @@ static void xmb_render_messagebox_internal(
          menu_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
-               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -5415,7 +5415,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    xmb_toggle_horizontal_list(xmb);
 }
 
-static int deferred_push_content_actions(menu_displaylist_info_t *info)
+static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)
 {
    if (!menu_displaylist_ctl(
             DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
@@ -5432,7 +5432,7 @@ static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs)
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_CONTENT_ACTIONS:
-            cbs->action_deferred_push = deferred_push_content_actions;
+            cbs->action_deferred_push = xmb_deferred_push_content_actions;
             break;
          default:
             return -1;

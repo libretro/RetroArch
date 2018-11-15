@@ -668,7 +668,7 @@ static void stripes_draw_text(
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
          video_info->xmb_shadows_enable,
-         stripes->shadow_offset);
+         stripes->shadow_offset, false);
 }
 
 static void stripes_messagebox(void *data, const char *message)
@@ -742,7 +742,7 @@ static void stripes_render_keyboard(
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + stripes->font->size / 3,
             width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
+            false, 0, false);
    }
 }
 
@@ -843,7 +843,7 @@ static void stripes_render_messagebox_internal(
          menu_display_draw_text(stripes->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
-               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())

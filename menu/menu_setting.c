@@ -4081,7 +4081,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -8683,6 +8682,24 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
+
+#ifdef _3DS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_3ds_lcd_bottom,
+               MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
+               MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+               video_3ds_lcd_bottom,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
 #endif
 
 #ifdef HAVE_NETWORKING
