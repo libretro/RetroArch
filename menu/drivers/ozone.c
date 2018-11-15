@@ -1667,6 +1667,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* If the content icon doesn't exist return default-content */
          if (!filestream_exists(content_texturepath))
          {
+            strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
             strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, icons_path,
                   file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
