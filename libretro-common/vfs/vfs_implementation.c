@@ -47,6 +47,9 @@
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
 #  endif
+#  if defined(PS2)
+#    include <fileXio_rpc.h>
+#  endif
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  if !defined(VITA)
@@ -125,6 +128,8 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
       return _fseeki64(stream->fp, offset, whence);
 #elif defined(__CELLOS_LV2__) || defined(_MSC_VER) && _MSC_VER <= 1310
       return fseek(stream->fp, (long)offset, whence);
+#elif defined(PS2)
+      return fioLseek(fileno(stream->fp), (off_t)offset, whence);
 #else
       return fseeko(stream->fp, (off_t)offset, whence);
 #endif
@@ -231,7 +236,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
          mode_str = "wb";
 
          flags    = O_WRONLY | O_CREAT | O_TRUNC;
-#ifndef _WIN32
+#if defined(PS2)
+         flags   |= FIO_S_IRUSR | FIO_S_IWUSR;
+#elif !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
@@ -242,7 +249,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
          mode_str = "w+b";
 
          flags    = O_RDWR | O_CREAT | O_TRUNC;
-#ifndef _WIN32
+#if defined(PS2)
+         flags   |= FIO_S_IRUSR | FIO_S_IWUSR;
+#elif !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
@@ -254,7 +263,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
          mode_str = "r+b";
 
          flags    = O_RDWR;
-#ifndef _WIN32
+#if defined(PS2)
+         flags   |= FIO_S_IRUSR | FIO_S_IWUSR;
+#elif !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
@@ -391,7 +402,7 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 #ifdef _WIN32
    if(_chsize(_fileno(stream->fp), length) != 0)
       return -1;
-#elif !defined(VITA) && !defined(PSP) && (!defined(SWITCH) || defined(HAVE_LIBNX))
+#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && (!defined(SWITCH) || defined(HAVE_LIBNX))
    if(ftruncate(fileno(stream->fp), length) != 0)
       return -1;
 #endif

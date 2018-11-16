@@ -120,6 +120,7 @@ extern frontend_ctx_driver_t frontend_ctx_qnx;
 extern frontend_ctx_driver_t frontend_ctx_darwin;
 extern frontend_ctx_driver_t frontend_ctx_unix;
 extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_ps2;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_switch;
 extern frontend_ctx_driver_t frontend_ctx_win32;

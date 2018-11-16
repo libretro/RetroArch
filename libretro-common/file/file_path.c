@@ -79,6 +79,11 @@
 #include <pspkernel.h>
 #endif
 
+#if defined(PS2)
+#include <fileXio_rpc.h>
+#include <fileXio.h>
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include <cell/cell_fs.h>
 #endif
@@ -122,7 +127,19 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
       return false;
    }
    free(tmp);
+#elif defined(PS2)
+   iox_stat_t buf;
+   char *tmp  = strdup(path);
+   size_t len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1]='\0';
 
+   if (fileXioGetStat(tmp, &buf) < 0)
+   {
+      free(tmp);
+      return false;
+   }
+   free(tmp);
 #elif defined(__CELLOS_LV2__)
     CellFsStat buf;
     if (cellFsStat(path, &buf) < 0)
@@ -167,13 +184,18 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #endif
 
    if (size)
+#if defined(PS2)
+      *size = (int32_t)buf.size;
+#else
       *size = (int32_t)buf.st_size;
-
+#endif
    switch (mode)
    {
       case IS_DIRECTORY:
 #if defined(VITA) || defined(PSP)
          return FIO_S_ISDIR(buf.st_mode);
+#elif defined(PS2)
+         return FIO_S_ISDIR(buf.mode);
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
@@ -182,7 +204,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
          return S_ISDIR(buf.st_mode);
 #endif
       case IS_CHARACTER_SPECIAL:
-#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__) || defined(_WIN32)
+#if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
          return false;
 #else
          return S_ISCHR(buf.st_mode);
@@ -230,7 +252,7 @@ static bool path_mkdir_error(int ret)
 {
 #if defined(VITA)
    return (ret == SCE_ERROR_ERRNO_EEXIST);
-#elif defined(PSP) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
+#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
    return (ret == -1);
 #else
    return (ret < 0 && errno == EEXIST);
@@ -299,6 +321,8 @@ bool path_mkdir(const char *dir)
       int ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
       int ret = sceIoMkdir(dir, 0777);
+#elif defined(PS2)
+      int ret =fileXioMkdir(dir, 0777);
 #elif defined(__QNX__)
       int ret = mkdir(dir, 0777);
 #else

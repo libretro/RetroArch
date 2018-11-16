@@ -3067,6 +3067,10 @@ MSG_HASH(
     "Disable Desktop Composition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "Κάτω οθόνη 3DS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Οδηγός Βίντεο"
     )
@@ -7700,3 +7704,29 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use preferred system color theme")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use your operating system's color theme (if any) - overrides theme settings.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Lowest")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lower")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Higher")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "No music available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "No videos available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "No images available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "No favorites available."
+    )

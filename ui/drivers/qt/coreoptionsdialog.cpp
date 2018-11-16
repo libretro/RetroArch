@@ -222,10 +222,11 @@ void CoreOptionsDialog::buildLayout()
 
          if (settings->bools.game_specific_options)
          {
-            rarch_system_info_t *system = runloop_get_system_info();
             QString contentLabel;
             QString label;
+            rarch_system_info_t *system = runloop_get_system_info();
 
+            /* TODO/FIXME - why have this check here? system is not used */
             if (system)
                contentLabel = QFileInfo(path_get(RARCH_PATH_BASENAME)).completeBaseName();
 

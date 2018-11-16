@@ -500,20 +500,20 @@ bool netplay_handshake_info(netplay_t *netplay,
       struct netplay_connection *connection)
 {
    struct info_buf_s info_buf;
-   uint32_t      content_crc      = 0;
-   rarch_system_info_t *core_info = runloop_get_system_info();
+   uint32_t      content_crc        = 0;
+   struct retro_system_info *system = runloop_get_libretro_system_info();
 
    memset(&info_buf, 0, sizeof(info_buf));
    info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
    info_buf.cmd[1] = htonl(sizeof(info_buf) - 2*sizeof(uint32_t));
 
    /* Get our core info */
-   if (core_info)
+   if (system)
    {
       strlcpy(info_buf.core_name,
-            core_info->info.library_name, sizeof(info_buf.core_name));
+            system->library_name, sizeof(info_buf.core_name));
       strlcpy(info_buf.core_version,
-            core_info->info.library_version, sizeof(info_buf.core_version));
+            system->library_version, sizeof(info_buf.core_version));
    }
    else
    {
@@ -836,9 +836,9 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    struct info_buf_s info_buf;
    uint32_t cmd_size;
    ssize_t recvd;
-   uint32_t content_crc           = 0;
-   const char *dmsg               = NULL;
-   rarch_system_info_t *core_info = runloop_get_system_info();
+   uint32_t content_crc             = 0;
+   const char *dmsg                 = NULL;
+   struct retro_system_info *system = runloop_get_libretro_system_info();
 
    RECV(&info_buf, sizeof(info_buf.cmd)) {}
 
@@ -876,11 +876,10 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    /* Check the core info */
-
-   if (core_info)
+   if (system)
    {
       if (strncmp(info_buf.core_name,
-               core_info->info.library_name, sizeof(info_buf.core_name)))
+               system->library_name, sizeof(info_buf.core_name)))
       {
          /* Wrong core! */
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
@@ -890,7 +889,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
          return false;
       }
       if (strncmp(info_buf.core_version,
-             core_info->info.library_version, sizeof(info_buf.core_version)))
+             system->library_version, sizeof(info_buf.core_version)))
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("%s\n", dmsg);

@@ -22,7 +22,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
@@ -37,7 +37,7 @@
 #include <retro_assert.h>
 #include <compat/apple_compat.h>
 
-#import "../../ui/drivers/cocoa/cocoa_common.h"
+#import "../../ui/drivers/cocoa/cocoa_common_metal.h"
 #include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -107,8 +107,8 @@ static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 static bool g_use_hw_ctx = false;
 
-#if defined(HAVE_COCOA)
-#include "../../ui/drivers/ui_cocoa.h"
+#if defined(HAVE_COCOA_METAL)
+#include "../../ui/drivers/ui_cocoa_metal.h"
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -203,7 +203,7 @@ float get_backing_scale_factor(void)
       return backing_scale_def;
    
    backing_scale_def = 1.0f;
-#ifdef HAVE_COCOA
+#ifdef HAVE_COCOA_METAL
    screen = (BRIDGE RAScreen*)get_chosen_screen();
    
    if (screen)
@@ -228,7 +228,7 @@ void cocoagl_gfx_ctx_update(void)
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
 #if MAC_OS_X_VERSION_10_7
          CGLUpdateContext(g_hw_ctx.CGLContextObj);
          CGLUpdateContext(g_context.CGLContextObj);
@@ -256,7 +256,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
       case GFX_CTX_OPENGL_ES_API:
          [GLContextClass clearCurrentContext];
          
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
          [g_context clearDrawable];
          RELEASE(g_context);
          RELEASE(g_format);
@@ -302,7 +302,7 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
          // setViewType is not (yet?) defined for iOS
          // [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
          break;
-#elif defined(HAVE_COCOA)
+#elif defined(HAVE_COCOA_METAL)
       case GFX_CTX_OPENGL_API:
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
          break;
@@ -341,7 +341,7 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
          break;
-#elif defined(HAVE_COCOA)
+#elif defined(HAVE_COCOA_METAL)
       case GFX_CTX_OPENGL_API:
          break;
 #ifdef HAVE_VULKAN
@@ -376,7 +376,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int interval)
          //   Just skip presents so fast forward still works.
          g_is_syncing         = interval ? true : false;
          g_fast_forward_skips = interval ? 0 : 3;
-#elif defined(HAVE_COCOA)
+#elif defined(HAVE_COCOA_METAL)
          GLint value          = interval ? 1 : 0;
          [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #endif
@@ -405,7 +405,7 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
    (void)data;
    
-#ifdef HAVE_COCOA
+#ifdef HAVE_COCOA_METAL
    if (state)
       [NSCursor unhide];
    else
@@ -421,7 +421,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx->width = width;
    cocoa_ctx->height = height;
    
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    //CocoaView *g_view = (BRIDGE CocoaView *)nsview_get_ptr();
    NSView *g_view = apple_platform.renderView;
 #endif
@@ -431,7 +431,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       {
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
          if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
             [g_view setWantsBestResolutionOpenGLSurface:YES];
          
@@ -507,7 +507,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          break;
    }
    
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    static bool has_went_fullscreen = false;
    /* TODO: Screen mode support. */
    
@@ -563,7 +563,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    CGRect size;
    GLsizei backingPixelWidth, backingPixelHeight;
    NSView *g_view                  = apple_platform.renderView;
@@ -584,7 +584,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    *height                         = CGRectGetHeight(size) * screenscale;
 }
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    ui_window_cocoa_t view;
@@ -611,7 +611,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
                                         float *value)
 {
    RAScreen *screen              = (BRIDGE RAScreen*)get_chosen_screen();
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    NSDictionary *description     = [screen deviceDescription];
    NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
    CGSize  display_physical_size = CGDisplayScreenSize(
@@ -719,7 +719,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
          if (!(--g_fast_forward_skips < 0))
             return;
          
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
          [g_context flushBuffer];
          [g_hw_ctx flushBuffer];
 #elif defined(HAVE_COCOATOUCH)
@@ -892,7 +892,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    .set_video_mode       = cocoagl_gfx_ctx_set_video_mode,
    .get_video_size       = cocoagl_gfx_ctx_get_video_size,
    .get_metrics          = cocoagl_gfx_ctx_get_metrics,
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    .update_window_title  = cocoagl_gfx_ctx_update_title,
 #endif
    .check_window         = cocoagl_gfx_ctx_check_window,

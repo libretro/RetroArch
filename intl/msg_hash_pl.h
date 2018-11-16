@@ -1741,6 +1741,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Przytnij Overscan (Przeładuj)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Wyłącz kompozycję pulpitu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+      "Dolny ekran 3DS")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Sterownik wideo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -3755,17 +3757,43 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
       "Kolor menu")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "podstawowy odcień bieli"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "podstawowy odcień czerni"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "Wybierz inny motyw koloru."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
+      "Użyj preferowanego motywu kolorystycznego systemu")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
+      "Użyj motywu kolorystycznego systemu operacyjnego (jeśli jest dostępny) - zastępuje ustawienia kompozycji.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Najniższa")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Niższa")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normalna")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Wyższa")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Najwyższa")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "Brak muzyki."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "Brak filmów."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "Brak zdjęć."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "Brak ulubionych."
+    )

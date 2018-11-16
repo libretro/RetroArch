@@ -979,10 +979,18 @@ static void vulkan_check_dynamic_state(
    {
       VkRect2D sci;
 
-      sci.offset.x      = vk->vp.x;
-      sci.offset.y      = vk->vp.y;
-      sci.extent.width  = vk->vp.width;
-      sci.extent.height = vk->vp.height;
+      if (vk->tracker.use_scissor)
+      {
+         sci = vk->tracker.scissor;
+      }
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor (vk->cmd, 0, 1, &sci);

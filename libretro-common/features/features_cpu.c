@@ -65,6 +65,12 @@
 #include <psp2/rtc.h>
 #endif
 
+#if defined(PS2)
+#include <kernel.h>
+#include <timer.h>
+#include <SDL/SDL.h>
+#endif
+
 #if defined(__PSL1GHT__)
 #include <sys/time.h>
 #elif defined(__CELLOS_LV2__)
@@ -184,6 +190,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    sceRtcGetCurrentTick((uint64_t*)&time_ticks);
 #elif defined(VITA)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
+#elif defined(PS2)
+   time_ticks = SDL_GetTicks()*294912; // 294,912MHZ / 1000 msecs
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
@@ -232,6 +240,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
+#elif defined(PS2)
+      return SDL_GetTicks()*1000;
 #elif defined(__mips__) || defined(DJGPP)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -479,7 +489,7 @@ unsigned cpu_features_get_core_amount(void)
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;
-#elif defined(PSP)
+#elif defined(PSP) || defined(PS2)
    return 1;
 #elif defined(VITA)
    return 4;
@@ -787,7 +797,7 @@ uint64_t cpu_features_get(void)
    cpu |= RETRO_SIMD_VMX;
 #elif defined(XBOX360)
    cpu |= RETRO_SIMD_VMX128;
-#elif defined(PSP)
+#elif defined(PSP) || defined(PS2)
    cpu |= RETRO_SIMD_VFPU;
 #elif defined(GEKKO)
    cpu |= RETRO_SIMD_PS;

@@ -852,25 +852,25 @@ void netplay_get_architecture(char *frontend_architecture, size_t size)
 static void netplay_announce(void)
 {
    char buf [2048];
-   char url [2048]               = "http://lobby.libretro.com/add/";
-   char *username                = NULL;
-   char *corename                = NULL;
-   char *gamename                = NULL;
-   char *coreversion             = NULL;
-   char *frontend_ident          = NULL;
-   settings_t *settings          = config_get_ptr();
-   rarch_system_info_t *system   = runloop_get_system_info();
-   uint32_t content_crc          = content_get_crc();
    char frontend_architecture[PATH_MAX_LENGTH];
+   char url [2048]                  = "http://lobby.libretro.com/add/";
+   char *username                   = NULL;
+   char *corename                   = NULL;
+   char *gamename                   = NULL;
+   char *coreversion                = NULL;
+   char *frontend_ident             = NULL;
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   uint32_t content_crc             = content_get_crc();
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
    net_http_urlencode(&username, settings->paths.username);
-   net_http_urlencode(&corename, system->info.library_name);
+   net_http_urlencode(&corename, system->library_name);
    net_http_urlencode(&gamename,
       !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
       path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
-   net_http_urlencode(&coreversion, system->info.library_version);
+   net_http_urlencode(&coreversion, system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
    buf[0] = '\0';

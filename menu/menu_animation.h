@@ -118,6 +118,19 @@ typedef struct menu_animation_ctx_ticker
    const char *str;
 } menu_animation_ctx_ticker_t;
 
+typedef float menu_timer_t;
+
+typedef struct menu_timer_ctx_entry
+{
+   float duration;
+   tween_cb cb;
+   void *userdata;
+} menu_timer_ctx_entry_t;
+
+void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
+
+void menu_timer_kill(menu_timer_t *timer);
+
 bool menu_animation_update(float delta_time);
 
 bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);

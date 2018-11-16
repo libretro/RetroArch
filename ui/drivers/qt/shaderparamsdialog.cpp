@@ -724,14 +724,11 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0] = tmp[0] = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
    {
@@ -757,17 +754,15 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
             fill_pathname_join(file, directory, core_name, sizeof(file));
          break;
       case SHADER_PRESET_SAVE_GAME:
-      {
-         const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-         fill_pathname_join(file, directory, game_name, sizeof(file));
-         break;
-      }
+         {
+            const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+            fill_pathname_join(file, directory, game_name, sizeof(file));
+            break;
+         }
       case SHADER_PRESET_SAVE_PARENT:
-      {
          fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
          fill_pathname_join(file, directory, tmp, sizeof(file));
          break;
-      }
       case SHADER_PRESET_SAVE_NORMAL:
       default:
          if (!string_is_empty(path))
@@ -821,13 +816,13 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
 void ShaderParamsDialog::onShaderRemovePassClicked()
 {
 #ifdef HAVE_MENU
-   QAction *action = qobject_cast<QAction*>(sender());
-   QVariant passVariant;
-   struct video_shader *menu_shader = NULL;
-   struct video_shader *video_shader = NULL;
-   int pass = 0;
    int i;
-   bool ok = false;
+   QVariant passVariant;
+   QAction                   *action = qobject_cast<QAction*>(sender());
+   struct video_shader *menu_shader  = NULL;
+   struct video_shader *video_shader = NULL;
+   int pass                          = 0;
+   bool ok                           = false;
 
    getShaders(&menu_shader, &video_shader);
 

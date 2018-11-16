@@ -55,6 +55,7 @@ enum menu_displaylist_ctl_state
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_DROPDOWN_LIST,
+   DISPLAYLIST_DROPDOWN_LIST_SPECIAL,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
    DISPLAYLIST_HELP_SCREEN_LIST,
@@ -205,6 +206,8 @@ typedef struct menu_displaylist_info
    bool download_core;
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
+
+   unsigned count;
 
    char *path;
    char *path_b;
