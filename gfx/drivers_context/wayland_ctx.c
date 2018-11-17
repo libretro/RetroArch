@@ -1312,10 +1312,15 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
-   wl->xdg_surface = xdg_surface_get_toplevel(wl->shell, wl->surface);
-
+   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->shell, wl->surface);
    xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
-   xdg_surface_set_user_data(wl->xdg_surface);
+
+   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
+   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
+
+   xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
+   xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
+
 
    switch (wl_api)
    {
