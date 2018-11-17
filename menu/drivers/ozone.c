@@ -2122,10 +2122,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->animations.list_alpha     = 1.0f;
 
       /* Missing assets message */
-      /* TODO Localize */
       if (!ozone->has_all_assets)
-         runloop_msg_queue_push("Some assets are missing - please update them", 1, 256, false);
-
+      {
+         RARCH_WARN("[OZONE] Assets missing\n");
+         runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
+      }
       ozone_restart_cursor_animation(ozone);
    }
 }

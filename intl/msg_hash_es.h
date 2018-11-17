@@ -1,3 +1,29 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "GPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Acelera el procesador de video"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Brillo de pantalla"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Ajusta el brillo de la pantalla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "CPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Acelera el procesador"
+    )
+#endif
 MSG_HASH(
     MSG_COMPILER,
     "Compilador"
@@ -8,7 +34,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NATIVE,
-    "Native")
+    "Nativo")
 MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Dispositivo desconectado del puerto"
@@ -1490,6 +1516,10 @@ MSG_HASH(
     "Árabe"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+    "Griego"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
     "Analógico izquierdo"
     )
@@ -2879,6 +2909,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Mostrar fecha y hora"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    "Estilo de fecha y hora"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+    "Cambia la forma en que se muestra la fecha y hora"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
@@ -4931,6 +4969,19 @@ MSG_HASH(
     "Auto-aplicar los trucos después que el juego cargue"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "La cantidad de veces que el truco será aplicado.\n"
+    "Usar junto a las otras dos optionces de iteración para afectar regiones grandes de memoria"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Después de cada 'Número de iteraciones' la dirección de memoria será incrementada este número multiplicado por 'Tamaño de búsqueda de memoria'"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Después de cada 'Número de iteraciones' el Valor será incrementado esta cantidad"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
     "Rebobinar un determinado número de frames a la vez, para aumentar la velocidad del rebobinado"
     )
@@ -6378,7 +6429,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
-    "<Por defeco>"
+    "<Por defecto>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
@@ -6836,6 +6887,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
     "Duración (ms) de la vibración secundaria"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+    "Número de iteraciones"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Incrementar Valor cada iteración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Incrementar Dirección cada iteración"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
@@ -7607,15 +7670,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
+    "Joy-Con separados"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-    "Reset To Defaults"
+    "Restablecer configuraciones"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-    "Reset the current configuration to default values."
+    "Cambia la configuración acutal a los valores por defecto"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
@@ -7627,43 +7690,61 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "Blanco Básico"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "Negro Básico"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "Seleccione un color diferente"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
-MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Usar los colores del sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Preferir los colores del sistema operativo si están disponibles"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWEST,
+    "Muy Baja"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWER,
+    "Baja"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHER,
+    "Alta"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHEST,
+    "Ultra"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "No music available."
+    "No hay música disponibles"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "No videos available."
+    "No hay videos disponibles"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "No images available."
+    "No hay imágenes disponibles"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "No favorites available."
+    "No hay favoritos disponibles"
+    )
+MSG_HASH(
+    MSG_MISSING_ASSETS,
+    "ADVERTENCIA: Faltan recursos, use el Actualizador si está disponible"
     )

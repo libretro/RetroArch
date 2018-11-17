@@ -2910,45 +2910,45 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Show date / time"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-       "Style of date / time"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+     "Style of date / time"
     )
-    MSG_HASH(
-       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
-       "Changes the style current date and/or time is shown inside the menu."
+MSG_HASH(
+     MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+     "Changes the style current date and/or time is shown inside the menu."
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
-       "YYYY-MM-DD HH:MM:SS"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+     "YYYY-MM-DD HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
-       "YYYY-MM-DD HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+     "YYYY-MM-DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
-       "MM-DD-YYYY HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+     "MM-DD-YYYY HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
-       "HH:MM:SS"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+     "HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
-       "HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+     "HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
-       "DD/MM HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+     "DD/MM HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
-       "MM/DD HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+     "MM/DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
-       "HH:MM:SS (AM/PM)"
+ MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+     "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
@@ -4995,19 +4995,20 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
     "Apply cheat immediately after toggling."
-)
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
     "Auto-apply cheats when game loads."
-)
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-    "The number of times the cheat will be applied.  Use with the other two Iteration options to affect large areas of memory."
+    "The number of times the cheat will be applied.\n"
+    "Use with the other two Iteration options to affect large areas of memory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
     "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
-)
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
     "After each 'Number of Iterations' the Value will be increased by this amount."
@@ -6922,15 +6923,15 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
     "Number of Iterations"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
     "Value Increase Each Iteration"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
     "Address Increase Each Iteration"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
     "Add New Cheat After This One"
@@ -7731,20 +7732,34 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
     "Select a different color theme."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
-MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Use preferred system color theme"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Use your operating system's color theme (if any) - overrides theme settings."
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWEST,
+    "Lowest"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWER,
+    "Lower"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHER,
+    "Higher"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHEST,
+    "Highest"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
     "No music available."
@@ -7760,4 +7775,8 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
     "No favorites available."
+    )
+MSG_HASH(
+    MSG_MISSING_ASSETS,
+    "Warning: Missing assets, use the Online Updater if available"
     )
