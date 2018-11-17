@@ -860,11 +860,7 @@ endif
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o \
-<<<<<<< HEAD
-		  gfx/common/wayland/xdg-shell.o 
-=======
 		  gfx/common/wayland/xdg-shell.o
->>>>>>> 877221c662f20c7ede1ca347736d9b0d79b9fd70
  ifeq ($(HAVE_EGL), 1)
    LIBS += $(EGL_LIBS)
  endif
