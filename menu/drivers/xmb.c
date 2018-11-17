@@ -4936,13 +4936,12 @@ static void xmb_context_reset_textures(
       xmb_handle_t *xmb, const char *iconpath)
 {
    unsigned i;
-   bool missing_assets = false;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
       if (xmb_texture_path(i) == NULL)
       {
-         missing_assets = true;
          /* If the icon doesn't exist at least try to return the subsetting icon*/
          if (!(i == XMB_TEXTURE_DIALOG_SLICE || i == XMB_TEXTURE_KEY_HOVER || i == XMB_TEXTURE_KEY_HOVER))
             menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
@@ -4950,6 +4949,12 @@ static void xmb_context_reset_textures(
       }
       menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
    }
+
+   /* Warn only if critical assets are missing, some themes are incomplete */
+   if (
+         ((xmb_texture_path(XMB_TEXTURE_SUBSETTING) == NULL)) && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
+      )
+         runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
 
    menu_display_allocate_white_texture();
 
@@ -4994,9 +4999,6 @@ static void xmb_context_reset_textures(
    xmb->netplay_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->netplay_tab_node.zoom   = xmb->categories_active_zoom;
 #endif
-
-   if (missing_assets)
-      runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
 
 }
 

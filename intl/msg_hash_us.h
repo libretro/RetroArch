@@ -7778,5 +7778,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_MISSING_ASSETS,
-    "Warning: Some assets are missing, use the Online Updater if available"
+    "Warning: Missing assets, use the Online Updater if available"
     )
