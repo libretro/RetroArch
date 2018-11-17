@@ -486,9 +486,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
       "<Niets>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-      "Directory niet gevonden.")
+      "Map niet gevonden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-      "Directory")
+      "Map")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
       "Disk Cycle Tray Status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -708,7 +708,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "Keyboard Gamepad Mapping Type")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-      "Maximaal Aantal Gebruikers")
+      "Maximum Aantal Gebruikers")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Menu Schakelaar Gamepad Combo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
@@ -754,15 +754,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Reset game")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-      "Rewind")
+      "Terugspoelen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Save state")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-      "Take screenshot")
+      "Schermafdruk maken")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-      "Next shader")
+      "Volgende shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-      "Previous shader")
+      "Vorige shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
       "Slow motion")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -778,7 +778,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
       "Verberg Overlay In Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-      "Poll Type Behavior")
+      "Poll Type Gedrag")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
       "Vroeg")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
@@ -848,7 +848,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
       "Arabic")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-      "Linkse Analoog Stick")
+      "Linkse Analoge Stick")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
       "Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
@@ -940,9 +940,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
       "Connect to Netplay host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Begin hosting")
+      "Begin met hosten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-      "Eindig netplay host")
+      "Stop met hosten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Server Adres")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -994,7 +994,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "Geen prestatie tellers.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-      "No playlists.")
+      "Geen afspeellijsten.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
       "Geen afspeellijst items beschikbaar.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -1058,9 +1058,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PRESENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
       "Privacy")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-      "Sluit RetroArch")
+      "RetroArch Afsluiten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-      "Analog supported")
+      "Analoge besturing ondersteund")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
       "BBFC Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
@@ -1177,7 +1177,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
       "Start Scherm Weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-      "Rechtse Analog Stick")
+      "Rechtse Analoge Stick")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
     "Toevoegen aan Favorieten"
@@ -1502,6 +1502,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Overscan Afsnijden (Herladen Vereist)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Desktop Compositie Deactiveren")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+      "3DS onderste scherm")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Video Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1611,11 +1613,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
       "Menu Alpha Factor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-      "Menu Font Red Color")
+      "Menu Font Rode Kleur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-      "Menu Font Green Color")
+      "Menu Font Groene Kleur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-      "Menu Font Blue Color")
+      "Menu Font Blauwe Kleur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
       "Menu Font")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -1821,13 +1823,13 @@ MSG_HASH(MSG_COMPILED_AGAINST_API,
 MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
       "Config directory not set. Cannot save new config.")
 MSG_HASH(MSG_CONNECTED_TO,
-      "Connected to")
+      "Verbonden met")
 MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
       "Content CRC32s differ. Cannot use different games.")
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
       "Content loading skipped. Implementation will load it on its own.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-      "Core does not support save states.")
+      "Core heeft geen save state ondersteuning.")
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Core options file created successfully.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -1859,7 +1861,7 @@ MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
       "Disconnect device from a valid port.")
 MSG_HASH(MSG_DISK_CLOSED,
-      "Closed")
+      "Gesloten")
 MSG_HASH(MSG_DISK_EJECTED,
       "Ejected")
 MSG_HASH(MSG_DOWNLOADING,
@@ -1867,15 +1869,15 @@ MSG_HASH(MSG_DOWNLOADING,
 MSG_HASH(MSG_DOWNLOAD_FAILED,
       "Download mislukt")
 MSG_HASH(MSG_ERROR,
-      "Error")
+      "Fout")
 MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
       "Libretro core heeft inhoud nodig, maar dat werd niet gegeven.")
 MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
       "Libretro core heeft speciaal inhoud nodig, maar dat werd niet gegeven.")
 MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
-      "Error parsing arguments.")
+      "Fout opgetreden tijdens het verwerken van de argumenten.")
 MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-      "Error saving core options file.")
+      "Fout opgetreden tijdens het opslaan van core opties bestand.")
 MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
       "Fout is opgetreden tijdens het opslaan van remap bestand.")
 MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
@@ -1887,7 +1889,7 @@ MSG_HASH(MSG_EXTRACTING,
 MSG_HASH(MSG_EXTRACTING_FILE,
       "Uitpakken van bestand")
 MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
-      "Fout is opgetrijdens tijdens het opslaan van configuratie naar ")
+      "Fout is opgetreden tijdens het opslaan van configuratie naar ")
 MSG_HASH(MSG_FAILED_TO,
       "Failed to")
 MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -1973,7 +1975,7 @@ MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
       "Found last state slot")
 MSG_HASH(MSG_FOUND_SHADER,
-      "Found shader")
+      "Shader gevonden")
 MSG_HASH(MSG_FRAMES,
       "Frames")
 MSG_HASH(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
@@ -2085,7 +2087,7 @@ MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
       "Reverting savestate directory to")
 MSG_HASH(MSG_REWINDING,
-      "Rewinding.")
+      "Terugspoelen.")
 MSG_HASH(MSG_REWIND_INIT,
       "Initializing rewind buffer with size")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
@@ -2093,7 +2095,7 @@ MSG_HASH(MSG_REWIND_INIT_FAILED,
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
       "Implementation uses threaded audio. Cannot use rewind.")
 MSG_HASH(MSG_REWIND_REACHED_END,
-      "Reached end of rewind buffer.")
+      "Einde bereikt van terugspoel buffer.")
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Saved new config to")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
@@ -2123,7 +2125,7 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
 MSG_HASH(MSG_SLOW_MOTION,
       "Slow motion.")
 MSG_HASH(MSG_FAST_FORWARD,
-      "Snel vooruit.")
+      "Vooruitspoelen.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Slow motion rewind.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
@@ -2350,7 +2352,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
       "Sneeuwvlok")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-      "Refresh Room List")
+      "Room Lijst Vernieuwen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
       "Nickname: %s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
@@ -2368,7 +2370,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
       "Input the password of your Retro Achievements account.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-      "Input your user name here. This will be used for netplay sessions, among other things.")
+      "Voer hier je gebruikersnaam in. Dit zal o.a. gebruikt worden voor netplay sessies.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -2378,7 +2380,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Show network interface(s) and associated IP addresses.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-      "Show information specific to the device.")
+      "Laat apparaat-specifieke informatie zien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "Sluit het programma af.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -2399,7 +2401,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Hide the overlay while inside the menu, and show it again when exiting the menu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "Scanned content will appear here."
+      "Gescande inhoud zal hier getoond worden."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -2559,19 +2561,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-      "Opacity of all UI elements of the overlay."
+      "Doorzichtigheid van alle UI elementen van de overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-      "Scale of all UI elements of the overlay."
+      "Schalering van alle UI elements van de overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-      "Enable the overlay."
+      "Activeer de overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-      "Select an overlay from the file browser."
+      "Selecteer een overlay d.m.v. bestands beheerder."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -2900,7 +2902,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
       "Cheat changes will take effect immediately.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-      "Load a cheat file."
+      "Laad een cheat bestand."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
@@ -2944,7 +2946,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-      "Audio Mixer Volume Level (dB)"
+      "Audio Mixer Volume Niveau (dB)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -2965,13 +2967,13 @@ MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
       "Verwijder core")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
-      "Remove this core from disk.")
+      "Verwijder deze core permanent.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
       "Rename the title of the entry.")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "Rename")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-      "Framebuffer Opacity")
+      "Framebuffer Doorzichtigheid")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
       "Modify the opacity of the framebuffer.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
@@ -2991,7 +2993,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
       "Videos which have been previously played will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Menu Icons")
+      "Menu Iconen")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -3105,7 +3107,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
       "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
-      "Enter Password")
+      "Voer Wachtwoord In")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Wachtwoord correct.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
@@ -3154,7 +3156,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
       "Enable or disable menu sound.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-      "Mixer Settings")
+      "Mixer Instellingen")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
       "View and/or modify audio mixer settings.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -3180,13 +3182,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
       "Play")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-      "Play (Looped)")
+      "Afspelen (Loop)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Play (Sequential)")
+      "Afspelen (Sequentieel)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
       "Stop")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-      "Remove")
+      "Verwijderen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
       "Volume")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
@@ -3198,11 +3200,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
       "In-Game")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-      "In-Game (Paused)")
+      "In-Game (Gepauzeerd)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
-      "Playing")
+      "Afspelen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-      "Paused")
+      "Gepauzeerd")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
       "Discord Inschakelen"
@@ -3212,7 +3214,7 @@ MSG_HASH(
       "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-      "Power Management")
+      "Energiebeheer")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
       "Change power management settings.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -3339,11 +3341,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
       "Menu Kleur Thema")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "Wit"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "Zwart"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -3353,3 +3355,29 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use preferred system color theme")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use your operating system's color theme (if any) - overrides theme settings.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Laagst")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lager")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normaal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Hoger")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Hoogst")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "Geen muziek beschikbaar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "Geen videos beschikbaar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "Geen afbeeldingen beschikbaar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "Geen favorieten beschikbaar."
+    )

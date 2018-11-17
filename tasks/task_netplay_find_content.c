@@ -56,8 +56,6 @@ static void netplay_crc_scan_callback(void *task_data,
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};
-   rarch_system_info_t *info        = runloop_get_system_info();
-   struct retro_system_info *system = &info->info;
 
    if (!state)
       return;
@@ -69,6 +67,8 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
        && !state->contentless && !state->current)
    {
+      struct retro_system_info *system = runloop_get_libretro_system_info();
+
       RARCH_LOG("[lobby] loading core %s with content file %s\n",
          state->core_path, state->content_path);
 
@@ -89,13 +89,14 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && state->contentless)
    {
-      content_ctx_info_t content_info = {0};
+      content_ctx_info_t content_info  = {0};
+      struct retro_system_info *system = runloop_get_libretro_system_info();
 
       RARCH_LOG("[lobby] loading contentless core %s\n", state->core_path);
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
-      if (!string_is_equal(info->info.library_name, state->core_name))
+      if (!string_is_equal(system->library_name, state->core_name))
          task_push_load_new_core(state->core_path, NULL,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
 

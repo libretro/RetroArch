@@ -1637,6 +1637,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Crop Overscan (Ricarica)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Disattiva composizione del Desktop")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+      "3DS Bottom Screen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Driver Video")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -3552,17 +3554,43 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
       "Colore del tema di Menu ")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "Bianco Basic "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "Nero Basic"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "Seleziona un tema con colorazione diversa."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
+      "Usa la colorazione preferita di sistema")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
+      "Utilizza la colorazione dei temi del sistema operativo (se presente) - impostazioni del tema di override.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Molto Basso")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Basso")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normale")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Alto")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Molto Alto")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "Nessuna musica disponibile"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "Nessun video disponibile."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "Nessuna immagine disponibile."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "Nessun preferito disponibile."
+    )

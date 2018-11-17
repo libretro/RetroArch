@@ -54,7 +54,6 @@
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
-#include "core.h"
 #include "driver.h"
 #include "performance_counters.h"
 #include "gfx/video_driver.h"
@@ -62,13 +61,11 @@
 #include "midi/midi_driver.h"
 
 #include "cores/internal_cores.h"
-#include "frontend/frontend_driver.h"
 #include "content.h"
 #include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "configuration.h"
-#include "msg_hash.h"
 #include "verbosity.h"
 #include "tasks/tasks_internal.h"
 
@@ -318,6 +315,10 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 }
 #endif
 
+static char current_library_name[1024];
+static char current_library_version[1024];
+static char current_valid_extensions[1024];
+
 /**
  * libretro_get_system_info:
  * @path                         : Path to libretro library.
@@ -374,13 +375,23 @@ bool libretro_get_system_info(const char *path,
 
    memcpy(info, &dummy_info, sizeof(*info));
 
-   if (!string_is_empty(dummy_info.library_name))
-      info->library_name    = strdup(dummy_info.library_name);
-   if (!string_is_empty(dummy_info.library_version))
-      info->library_version    = strdup(dummy_info.library_version);
+   current_library_name[0] = '\0';
+   current_library_version[0] = '\0';
+   current_valid_extensions[0] = '\0';
 
+   if (!string_is_empty(dummy_info.library_name))
+      strlcpy(current_library_name, 
+            dummy_info.library_name, sizeof(current_library_name));
+   if (!string_is_empty(dummy_info.library_version))
+      strlcpy(current_library_version, 
+            dummy_info.library_version, sizeof(current_library_version));
    if (dummy_info.valid_extensions)
-      info->valid_extensions = strdup(dummy_info.valid_extensions);
+      strlcpy(current_valid_extensions, 
+            dummy_info.valid_extensions, sizeof(current_valid_extensions));
+
+   info->library_name     = current_library_name;
+   info->library_version  = current_library_version;
+   info->valid_extensions = current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
@@ -709,10 +720,6 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
  **/
 bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
-   /* Guarantee that we can do "dirty" casting.
-    * Every OS that this program supports should pass this. */
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
    if (!load_symbols(type, current_core))
       return false;
 
@@ -1381,8 +1388,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* Old ABI. Don't copy garbage. */
          if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL)
+         {
             memcpy(hwr,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
+            memset(hwr + offsetof(struct retro_hw_render_callback, stencil),
+                  0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
+            
+         }
          else
             memcpy(hwr, cb, sizeof(*cb));
          break;
@@ -1581,9 +1593,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             struct retro_subsystem_info *info_ptr = NULL;
             free(system->subsystem.data);
             system->subsystem.data = NULL;
+            system->subsystem.size = 0;
 
             info_ptr = (struct retro_subsystem_info*)
-               calloc(i, sizeof(*info_ptr));
+               malloc(i * sizeof(*info_ptr));
 
             if (!info_ptr)
                return false;
@@ -1619,6 +1632,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             free(system->ports.data);
             system->ports.data = NULL;
+            system->ports.size = 0;
 
             info_ptr = (struct retro_controller_info*)calloc(i, sizeof(*info_ptr));
             if (!info_ptr)
@@ -1643,6 +1657,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
+            system->mmaps.descriptors     = 0;
             system->mmaps.num_descriptors = 0;
             descriptors = (rarch_memory_descriptor_t*)
                calloc(mmaps->num_descriptors,

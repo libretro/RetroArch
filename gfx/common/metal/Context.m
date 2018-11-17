@@ -565,6 +565,17 @@
    [self.rce setViewport:vp];
 }
 
+- (void)resetScissorRect
+{
+   MTLScissorRect sr = {
+      .x       = 0,
+      .y       = 0,
+      .width   = _viewport.full_width,
+      .height  = _viewport.full_height,
+   };
+   [self.rce setScissorRect:sr];
+}
+
 - (void)drawQuadX:(float)x y:(float)y w:(float)w h:(float)h
                 r:(float)r g:(float)g b:(float)b a:(float)a
 {

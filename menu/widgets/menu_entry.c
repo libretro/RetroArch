@@ -325,6 +325,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
       entry->enum_idx               = cbs->enum_idx;
+      entry->checked                = cbs->checked;
 
       menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 

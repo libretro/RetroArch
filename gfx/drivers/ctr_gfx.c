@@ -47,6 +47,12 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
+/* An annoyance...
+ * Have to keep track of bottom screen enable state
+ * externally, otherwise cannot detect current state
+ * when reinitialising... */
+static bool ctr_bottom_screen_enabled = true;
+
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
 {
    float slider_val             = *(float*)0x1FF81080;
@@ -263,7 +269,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
       {
          u32 *cmdbuf = getThreadCommandBuffer();
-         cmdbuf[0] = ((hook == APTHOOK_ONSUSPEND) || ctr->lcd_buttom_on)? 0x00110040: 0x00120040;
+         cmdbuf[0] = ((hook == APTHOOK_ONSUSPEND) || ctr_bottom_screen_enabled)? 0x00110040: 0x00120040;
          cmdbuf[1] = 2;
          svcSendSyncRequest(lcd_handle);
          svcCloseHandle(lcd_handle);
@@ -283,11 +289,38 @@ static bool ctr_tasks_finder(retro_task_t *task,void *userdata)
 task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
+static void ctr_set_bottom_screen_enable(void* data, bool enabled)
+{
+   Handle lcd_handle;
+   u8 not_2DS;
+   extern PrintConsole* currentConsole;
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+    if (!ctr)
+      return;
+
+   gfxBottomFramebuffers[0] = enabled ? (u8*)currentConsole->frameBuffer:
+                                        (u8*)ctr->empty_framebuffer;
+
+   CFGU_GetModelNintendo2DS(&not_2DS);
+   if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+   {
+      u32 *cmdbuf = getThreadCommandBuffer();
+      cmdbuf[0] = enabled? 0x00110040:  0x00120040;
+      cmdbuf[1] = 2;
+      svcSendSyncRequest(lcd_handle);
+      svcCloseHandle(lcd_handle);
+   }
+
+   ctr_bottom_screen_enabled = enabled;
+}
+
 static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
    float refresh_rate;
    void* ctrinput   = NULL;
+   settings_t *settings = config_get_ptr();
    ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -415,7 +448,6 @@ static void* ctr_init(const video_info_t* video,
 
    if (input && input_data)
    {
-      settings_t *settings = config_get_ptr();
       ctrinput             = input_ctr.init(settings->arrays.input_joypad_driver);
       *input               = ctrinput ? &input_ctr : NULL;
       *input_data          = ctrinput;
@@ -425,7 +457,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->should_resize = true;
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
-   ctr->lcd_buttom_on = true;
+   ctr->lcd_buttom_on = true; /* Unused */
    ctr->current_buffer_top = 0;
 
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
@@ -443,6 +475,11 @@ static void* ctr_init(const video_info_t* video,
    ctr->msg_rendering_enabled = false;
    ctr->menu_texture_frame_enable = false;
    ctr->menu_texture_enable = false;
+
+   /* Set bottom screen enable state, if required */
+   if (settings->bools.video_3ds_lcd_bottom != ctr_bottom_screen_enabled) {
+      ctr_set_bottom_screen_enable(ctr, settings->bools.video_3ds_lcd_bottom);
+   }
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0, (ThreadFunc)ctr_vsync_hook, ctr, false);
 
@@ -494,24 +531,7 @@ static bool ctr_frame(void* data, const void* frame,
    hidTouchRead(&state_tmp_touch);
    if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))
    {
-      Handle lcd_handle;
-      u8 not_2DS;
-      extern PrintConsole* currentConsole;
-
-      gfxBottomFramebuffers[0] = ctr->lcd_buttom_on ? (u8*)ctr->empty_framebuffer:
-                                                      (u8*)currentConsole->frameBuffer;
-
-      CFGU_GetModelNintendo2DS(&not_2DS);
-      if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
-      {
-         u32 *cmdbuf = getThreadCommandBuffer();
-         cmdbuf[0] = ctr->lcd_buttom_on? 0x00120040:  0x00110040;
-         cmdbuf[1] = 2;
-         svcSendSyncRequest(lcd_handle);
-         svcCloseHandle(lcd_handle);
-      }
-
-      ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
+      ctr_set_bottom_screen_enable(ctr, !ctr_bottom_screen_enabled);
    }
 
 

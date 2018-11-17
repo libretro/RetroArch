@@ -148,6 +148,7 @@ enum video_driver_enum
    VIDEO_XENON360,
    VIDEO_PSP1,
    VIDEO_VITA2D,
+   VIDEO_PS2,
    VIDEO_CTR,
    VIDEO_SWITCH,
    VIDEO_D3D8,
@@ -191,6 +192,7 @@ enum audio_driver_enum
    AUDIO_WIIU,
    AUDIO_RWEBAUDIO,
    AUDIO_PSP,
+   AUDIO_PS2,
    AUDIO_CTR,
    AUDIO_SWITCH,
    AUDIO_NULL
@@ -214,6 +216,7 @@ enum input_driver_enum
    INPUT_DINPUT,
    INPUT_PS3,
    INPUT_PSP,
+   INPUT_PS2,
    INPUT_CTR,
    INPUT_SWITCH,
    INPUT_XENON360,
@@ -237,6 +240,7 @@ enum joypad_driver_enum
    JOYPAD_WIIU,
    JOYPAD_XDK,
    JOYPAD_PSP,
+   JOYPAD_PS2,
    JOYPAD_CTR,
    JOYPAD_SWITCH,
    JOYPAD_DINPUT,
@@ -325,6 +329,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 #elif defined(PSP)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
+#elif defined(PS2)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PS2;
 #elif defined(_3DS)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 #elif defined(SWITCH)
@@ -355,6 +361,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 #elif defined(PSP) || defined(VITA)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
+#elif defined(PS2)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
 #elif defined(_3DS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(SWITCH)
@@ -435,6 +443,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
+#elif defined(PS2)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
 #elif defined(_3DS)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(SWITCH)
@@ -451,7 +461,7 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_WAYLAND)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
@@ -477,6 +487,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PSP) || defined(VITA)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
+#elif defined(PS2)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 #elif defined(_3DS)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)
@@ -511,7 +523,7 @@ static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
-#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
+#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
@@ -525,7 +537,7 @@ static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
-#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
+#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
@@ -535,8 +547,8 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
-/* #elif defined(HAVE_OZONE) && defined(HAVE_LIBNX)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE; */
+#elif defined(HAVE_OZONE) && defined(HAVE_LIBNX)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 #elif defined(HAVE_RGUI)
@@ -663,6 +675,8 @@ const char *config_get_default_audio(void)
 #else
          return "psp";
 #endif
+      case AUDIO_PS2:
+         return "ps2";
       case AUDIO_CTR:
          return "csnd";
       case AUDIO_SWITCH:
@@ -758,6 +772,8 @@ const char *config_get_default_video(void)
          return "d3d12";
       case VIDEO_PSP1:
          return "psp1";
+      case VIDEO_PS2:
+         return "ps2";
       case VIDEO_VITA2D:
          return "vita2d";
       case VIDEO_CTR:
@@ -818,6 +834,8 @@ const char *config_get_default_input(void)
 #else
          return "psp";
 #endif
+      case INPUT_PS2:
+         return "ps2";
       case INPUT_CTR:
          return "ctr";
       case INPUT_SWITCH:
@@ -888,6 +906,8 @@ const char *config_get_default_joypad(void)
 #else
          return "psp";
 #endif
+      case JOYPAD_PS2:
+         return "ps2";
       case JOYPAD_CTR:
          return "ctr";
       case JOYPAD_SWITCH:
@@ -1496,6 +1516,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, window_decorations, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
+
+#ifdef _3DS
+   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
+#endif
 
    *size = count;
 

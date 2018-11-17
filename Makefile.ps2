@@ -1,0 +1,105 @@
+BUILD_PRX          = 0
+DEBUG              = 1
+HAVE_KERNEL_PRX    = 0
+HAVE_LOGGER        = 0
+HAVE_FILE_LOGGER   = 0
+HAVE_THREADS       = 0
+BIG_STACK          = 0
+WHOLE_ARCHIVE_LINK = 0
+PS2_IP = 192.168.1.150
+
+#Configuration for IRX
+EE_BIN2O = bin2o
+IRX_DIR = $(PS2SDK)/iop/irx
+
+TARGET = retroarchps2.elf
+
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_LV	:= -O0 -g
+	RARCH_DEFINES += -DDEBUG
+else
+   OPTIMIZE_LV	:= -O2
+endif
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
+INCDIR = -I$(PS2SDK)/ports/include -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/iop/include -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include
+INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
+INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
+GPVAL = -G0
+CFLAGS = $(OPTIMIZE_LV)  -ffast-math -fsingle-precision-constant
+ASFLAGS = $(CFLAGS)
+
+RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
+RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
+
+LIBDIR =
+LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
+#LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
+LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
+LIBS += -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit -lpad -lsdl
+
+#IRX modules
+# IRX modules - modules have to be in IRX_DIR
+IRX = iomanX.irx fileXio.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
+IRX_OBJ = $(IRX:.irx=.o)
+EE_OBJS += $(IRX_OBJ)
+
+ifeq ($(HAVE_THREADS), 1)
+RARCH_DEFINES += -DHAVE_THREADS
+endif
+
+ifeq ($(HAVE_FILE_LOGGER), 1)
+CFLAGS += -DHAVE_FILE_LOGGER
+endif
+
+ifeq ($(HAVE_KERNEL_PRX), 1)
+CFLAGS += -DHAVE_KERNEL_PRX
+endif
+
+ifeq ($(BIG_STACK), 1)
+CFLAGS += -DBIG_STACK
+endif
+
+CFLAGS += $(RARCH_DEFINES)
+
+# Missing objecst on the PS2SDK
+EE_OBJS += ps2/compat_ctype.o
+
+#EE_OBJS = griffin/griffin.o bootstrap/ps2/kernel_functions.o
+EE_OBJS += griffin/griffin.o
+
+EE_CFLAGS = $(CFLAGS)
+EE_LDFLAGS = $(LDFLAGS)
+EE_LIBS = $(LIBS)
+EE_ASFLAGS = $(ASFLAGS)
+EE_INCS = $(INCDIR)
+EE_IRX_OBJ = $(IRX_OBJ) 
+EE_BIN = $(TARGET)
+EE_GPVAL = $(GPVAL)
+
+all: $(EE_IRX_OBJ) $(EE_BIN)
+
+clean:
+	rm -f $(EE_BIN) $(EE_OBJS)
+
+prepare:
+	ps2client -h $(PS2_IP) reset
+	ps2client -h $(PS2_IP) netdump
+
+run:
+	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
+
+debug: clean prepare all run
+
+#Specific file name and output per IRX Module
+$(EE_IRX_OBJ):
+	$(EE_BIN2O) $(EE_GPVAL) $(IRX_DIR)/$(@:.o=.irx) $@ $(@:.o=_irx)
+
+#Include preferences
+include $(PS2SDK)/samples/Makefile.pref 
+include $(PS2SDK)/samples/Makefile.eeglobal
+   

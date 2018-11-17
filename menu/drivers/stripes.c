@@ -668,7 +668,7 @@ static void stripes_draw_text(
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
          video_info->xmb_shadows_enable,
-         stripes->shadow_offset);
+         stripes->shadow_offset, false);
 }
 
 static void stripes_messagebox(void *data, const char *message)
@@ -742,7 +742,7 @@ static void stripes_render_keyboard(
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + stripes->font->size / 3,
             width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
+            false, 0, false);
    }
 }
 
@@ -778,7 +778,7 @@ static int stripes_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsi
 
 static void stripes_render_messagebox_internal(
       video_frame_info_t *video_info,
-      stripes_handle_t *stripes, const char *message, float* stripes_coord_white)
+      stripes_handle_t *stripes, const char *message)
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
@@ -831,7 +831,7 @@ static void stripes_render_messagebox_internal(
          longest_width + stripes->margins_dialog * 2,
          line_height * list->size + stripes->margins_dialog * 2,
          width, height,
-         &stripes_coord_white[0],
+         NULL,
          stripes->margins_slice, 1.0,
          stripes->textures.list[STRIPES_TEXTURE_DIALOG_SLICE]);
 
@@ -843,7 +843,7 @@ static void stripes_render_messagebox_internal(
          menu_display_draw_text(stripes->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
-               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -3012,7 +3012,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    {
       stripes_draw_dark_layer(stripes, video_info, width, height);
       stripes_render_messagebox_internal(
-            video_info, stripes, msg, &stripes_coord_white[0]);
+            video_info, stripes, msg);
    }
 
    /* Cursor image */

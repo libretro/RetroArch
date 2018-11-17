@@ -349,8 +349,6 @@ static int general_push(menu_displaylist_info_t *info,
    char                      *newstring2 = NULL;
    core_info_list_t           *list      = NULL;
    menu_handle_t                  *menu  = NULL;
-   rarch_system_info_t           *system = runloop_get_system_info();
-   struct retro_system_info *system_menu = &system->info;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -406,32 +404,35 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
-
-         if (system_menu && system_menu->valid_extensions)
          {
-            if (*system_menu->valid_extensions)
-               strlcpy(newstring2, system_menu->valid_extensions,
+            struct retro_system_info *system      = runloop_get_libretro_system_info();
+            if (system && system->valid_extensions)
+            {
+               if (*system->valid_extensions)
+                  strlcpy(newstring2, system->valid_extensions,
+                        PATH_MAX_LENGTH * sizeof(char));
+            }
+            else
+            {
+               strlcpy(newstring2, system->valid_extensions,
                      PATH_MAX_LENGTH * sizeof(char));
-         }
-         else
-         {
-            strlcpy(newstring2, system->valid_extensions,
-                  PATH_MAX_LENGTH * sizeof(char));
+            }
          }
          break;
       case PUSH_DEFAULT:
          {
-            bool new_exts_allocated = false;
-            char *new_exts          = NULL;
+            bool new_exts_allocated               = false;
+            char *new_exts                        = NULL;
+            struct retro_system_info *system      = runloop_get_libretro_system_info();
 
             if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
             {
             }
-            else if (system_menu && system_menu->valid_extensions)
+            else if (system && system->valid_extensions)
             {
-               if (*system_menu->valid_extensions)
+               if (*system->valid_extensions)
                {
-                  new_exts           = strdup(system_menu->valid_extensions);
+                  new_exts           = strdup(system->valid_extensions);
                   new_exts_allocated = true;
                }
             }
@@ -478,16 +479,17 @@ static int general_push(menu_displaylist_info_t *info,
             size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
             char *newstring                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             struct string_list *str_list2    = string_list_new();
+            struct retro_system_info *system = runloop_get_libretro_system_info();
 
             newstring[0]                     = '\0';
             attr.i                           = 0;
 
-            if (system_menu && system_menu->valid_extensions)
+            if (system && system->valid_extensions)
             {
-               if (!string_is_empty(system_menu->valid_extensions))
+               if (!string_is_empty(system->valid_extensions))
                {
                   unsigned x;
-                  struct string_list *str_list    = string_split(system_menu->valid_extensions, "|");
+                  struct string_list *str_list    = string_split(system->valid_extensions, "|");
 
                   for (x = 0; x < str_list->size; x++)
                   {
@@ -610,6 +612,7 @@ generic_deferred_push_clear_general(deferred_music_history_list, PUSH_DEFAULT, D
 generic_deferred_push_clear_general(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
 generic_deferred_push_clear_general(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -623,6 +626,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_special);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST)))
