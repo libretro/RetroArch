@@ -42,10 +42,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#ifdef HAVE_DBUS
-#include "../common/dbus_common.h"
-#endif
-
 #include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -799,11 +795,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->width      = 0;
    wl->height     = 0;
-
-#ifdef HAVE_DBUS
-   dbus_screensaver_uninhibit();
-   dbus_close_connection();
-#endif
 }
 
 void flush_wayland_fd(void *data)
@@ -1138,10 +1129,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    flush_wayland_fd(&wl->input);
 
-#ifdef HAVE_DBUS
-   dbus_ensure_connection();
-#endif
-
    return wl;
 
 error:
@@ -1404,18 +1391,6 @@ static bool gfx_ctx_wl_has_focus(void *data)
    return wl->input.keyboard_focus;
 }
 
-static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-#ifdef HAVE_DBUS
-   return dbus_suspend_screensaver(enable);
-#endif
-
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
 {
    return wl_api;
@@ -1609,7 +1584,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    gfx_ctx_wl_check_window,
    gfx_ctx_wl_has_focus,
-   gfx_ctx_wl_suppress_screensaver,
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
    gfx_ctx_wl_get_proc_address,
