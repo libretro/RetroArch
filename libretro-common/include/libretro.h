@@ -140,7 +140,8 @@ extern "C" {
 /* The ANALOG device is an extension to JOYPAD (RetroPad).
  * Similar to DualShock2 it adds two analog sticks and all buttons can
  * be analog. This is treated as a separate device type as it returns
- * axis values in the full analog range of [-0x7fff, 0x7fff].
+ * axis values in the full analog range of [-0x7fff, 0x7fff],
+ * although some devices may return -0x8000.
  * Positive X axis is right. Positive Y axis is down.
  * Buttons are returned in the range [0, 0x7fff].
  * Only use ANALOG type when polling for analog values.
