@@ -68,14 +68,15 @@ typedef struct gfx_ctx_wayland_data
    egl_ctx_data_t egl;
    struct wl_egl_window *win;
 #endif
-   bool resize;
    bool fullscreen;
    bool maximized;
+   bool resize;
    unsigned width;
    unsigned height;
    unsigned physical_width;
    unsigned physical_height;
    int refresh_rate;
+   int touch_entries;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -342,7 +343,42 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
-// Check for resize
+static int check_for_resize(void *data, wl_fixed_t x_w, wl_fixed_t y_w,
+      enum xdg_toplevel_resize_edge *edge)
+{
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	
+	if (wl->touch_entries || wl->fullscreen || wl->maximized)
+		return 0;
+	
+	const int edge_pixels = 64;
+	int pos[2] = { wl_fixed_to_double(x_w), wl_fixed_to_double(y_w) };
+	int left_edge = pos[0] < edge_pixels;
+	int top_edge = pos[1] < edge_pixels;
+	int right_edge = pos[0] > edge_pixels;
+	int bottom_edge = pos[1] > edge_pixels;
+	
+	if (left_edge) {
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
+		if (top_edge)
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT;
+	} else if (right_edge) {
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+		if (top_edge)
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT;
+		else if (bottom_edge)
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT;
+	} else if (top_edge) {
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+	} else if (bottom_edge) {
+		*edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
+	} else {
+		*edge = 0;
+		return 0;
+	}
+	
+	return 1;
+}
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -902,18 +938,18 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-//static void gfx_ctx_wl_update_title(void *data, void *data2)
-//{
-//   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-//   char title[128];
+static void gfx_ctx_wl_update_title(void *data, void *data2)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   char title[128];
 
-//   title[0] = '\0';
+   title[0] = '\0';
 
-//   video_driver_get_window_title(title, sizeof(title));
+   video_driver_get_window_title(title, sizeof(title));
 
-//   if (wl && title[0])
-//      xdg_surface_set_title(wl->xdg_surface, title);
-//}
+   if (wl && title[0])
+      xdg_toplevel_set_title (wl->xdg_toplevel, title);
+}
 
 
 static bool gfx_ctx_wl_get_metrics(void *data,
@@ -1582,7 +1618,9 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL, /* get_video_output_next */
    gfx_ctx_wl_get_metrics,
    NULL,
+   gfx_ctx_wl_update_title,
    gfx_ctx_wl_check_window,
+   gfx_ctx_wl_set_resize,
    gfx_ctx_wl_has_focus,
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
