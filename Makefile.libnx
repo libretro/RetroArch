@@ -222,7 +222,8 @@ ifneq ($(ROMFS),)
 	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
-DEPENDS	:=	$(OFILES:.o=.d)
+DEPENDS_TMP  := $(OFILES:.o=.d)
+DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 
 .PHONY: clean all
 
@@ -244,7 +245,7 @@ endif
 $(OUTPUT).elf	:	$(OBJ)
 
 clean:
-	rm -f $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
