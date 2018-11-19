@@ -973,67 +973,67 @@ switch (id)
       return  icon_name;
 }
 
-static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
+static menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active)
 {
    switch (enum_idx)
    {
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE];
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
-         return OZONE_ENTRIES_ICONS_TEXTURE_UNDO;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS];
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS];
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_SAVE_STATE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_UNDO;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SCREENSHOT;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SCREENSHOT];
       case MENU_ENUM_LABEL_DELETE_ENTRY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_RESTART_CONTENT:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RENAME_ENTRY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RENAME;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RENAME];
       case MENU_ENUM_LABEL_RESUME_CONTENT:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RESUME;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_FAVORITES:
       case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return OZONE_ENTRIES_ICONS_TEXTURE_FOLDER;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RDB;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
 
 
       /* Menu collection submenus*/
       case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ZIP;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
-         return OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE];
       case MENU_ENUM_LABEL_GOTO_IMAGES:
-         return OZONE_ENTRIES_ICONS_TEXTURE_IMAGE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_GOTO_VIDEO:
-         return OZONE_ENTRIES_ICONS_TEXTURE_MOVIE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
       case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return OZONE_ENTRIES_ICONS_TEXTURE_MUSIC;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
 
       /* Menu icons */
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
@@ -1041,48 +1041,48 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
-            return OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU];
       case MENU_ENUM_LABEL_START_CORE:
       case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
       case MENU_ENUM_LABEL_CORE_LIST:
       case MENU_ENUM_LABEL_CORE_SETTINGS:
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
-            return OZONE_ENTRIES_ICONS_TEXTURE_CORE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SCAN_FILE:
-            return OZONE_ENTRIES_ICONS_TEXTURE_FILE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case MENU_ENUM_LABEL_ONLINE_UPDATER:
       case MENU_ENUM_LABEL_UPDATER_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_UPDATER;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UPDATER];
       case MENU_ENUM_LABEL_UPDATE_LAKKA:
-            return OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-            return OZONE_ENTRIES_ICONS_TEXTURE_IMAGE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY];
       case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
       case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
       case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
       case MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_INFORMATION:
       case MENU_ENUM_LABEL_INFORMATION_LIST:
       case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
       case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-            return OZONE_ENTRIES_ICONS_TEXTURE_INFO;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INFO];
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
       case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RDB;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
       case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-            return OZONE_ENTRIES_ICONS_TEXTURE_CURSOR;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       case MENU_ENUM_LABEL_HELP_LIST:
       case MENU_ENUM_LABEL_HELP_CONTROLS:
       case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
@@ -1090,18 +1090,18 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
       case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
       case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-            return OZONE_ENTRIES_ICONS_TEXTURE_HELP;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
-            return OZONE_ENTRIES_ICONS_TEXTURE_EXIT;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_EXIT];
       /* Settings icons*/
       case MENU_ENUM_LABEL_DRIVER_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS];
       case MENU_ENUM_LABEL_VIDEO_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_VIDEO;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_VIDEO];
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_AUDIO;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_AUDIO];
       case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_MIXER;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MIXER];
       case MENU_ENUM_LABEL_INPUT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
@@ -1120,25 +1120,25 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_LATENCY;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
       case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
       case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
       case MENU_ENUM_LABEL_LOGGING_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_LOG;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOG];
       case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP];
       case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RECORD;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RECORD];
       case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
-            return OZONE_ENTRIES_ICONS_TEXTURE_STREAM;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_STREAM];
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
       case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
@@ -1146,60 +1146,60 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_CORE_DELETE:
-            return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_OSD;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OSD];
       case MENU_ENUM_LABEL_SHOW_WIMP:
       case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_UI;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UI];
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
       case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
       case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_POWER;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POWER];
       case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_NETWORK;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NETWORK];
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST];
       case MENU_ENUM_LABEL_USER_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_USER;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_USER];
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
-            return OZONE_ENTRIES_ICONS_TEXTURE_FOLDER;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY];
 
       case MENU_ENUM_LABEL_REWIND_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_REWIND;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_REWIND];
       case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
       case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
-            return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
-            return OZONE_ENTRIES_ICONS_TEXTURE_ROOM;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ROOM];
       case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
 #endif
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
       case MENU_ENUM_LABEL_RESTART_RETROARCH:
-            return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_SHUTDOWN:
-            return OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN];
       case MENU_ENUM_LABEL_CONFIGURATIONS:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
       case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
@@ -1208,10 +1208,10 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
-         return OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK];
       default:
             break;
    }
@@ -1219,80 +1219,80 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
    switch(type)
    {
       case FILE_TYPE_DIRECTORY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_FOLDER;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case FILE_TYPE_PLAIN:
       case FILE_TYPE_IN_CARCHIVE:
       case FILE_TYPE_RPL_ENTRY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_FILE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_SHADER:
       case FILE_TYPE_SHADER_PRESET:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case FILE_TYPE_CARCHIVE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ZIP;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
       case FILE_TYPE_MUSIC:
-         return OZONE_ENTRIES_ICONS_TEXTURE_MUSIC;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
       case FILE_TYPE_IMAGE:
       case FILE_TYPE_IMAGEVIEWER:
-         return OZONE_ENTRIES_ICONS_TEXTURE_IMAGE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
       case FILE_TYPE_MOVIE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_MOVIE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
       case FILE_TYPE_CORE:
       case FILE_TYPE_DIRECT_LOAD:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CORE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case FILE_TYPE_RDB:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RDB;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
       case FILE_TYPE_CURSOR:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CURSOR;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       case FILE_TYPE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RUN;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
       case MENU_SETTING_ACTION_CLOSE:
       case MENU_SETTING_ACTION_DELETE_ENTRY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CLOSE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
       case MENU_SETTING_ACTION_LOADSTATE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case FILE_TYPE_RDB_ENTRY:
       case MENU_SETTING_ACTION_CORE_INFORMATION:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS];
       case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS];
       case MENU_SETTING_ACTION_CORE_SHADER_OPTIONS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case MENU_SETTING_ACTION_SCREENSHOT:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SCREENSHOT;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SCREENSHOT];
       case MENU_SETTING_ACTION_RESET:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
-         return OZONE_ENTRIES_ICONS_TEXTURE_RESUME;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
 
       case MENU_SETTING_GROUP:
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_SET_SWITCH_BRIGHTNESS:
 #endif
-         return OZONE_ENTRIES_ICONS_TEXTURE_SETTING;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
-         return OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_WIFI:
-         return OZONE_ENTRIES_ICONS_TEXTURE_WIFI;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
       case MENU_ROOM:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ROOM;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ROOM];
       case MENU_ROOM_LAN:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ROOM_LAN;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ROOM_LAN];
       case MENU_ROOM_RELAY:
-         return OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY];
 #endif
       case MENU_SETTING_ACTION:
-         return OZONE_ENTRIES_ICONS_TEXTURE_SETTING;
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
    }
 
 #ifdef HAVE_CHEEVOS
@@ -1305,7 +1305,7 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
       if (get_badge_texture(new_id) != 0)
          return get_badge_texture(new_id);
       /* Should be replaced with placeholder badge icon. */
-      return OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS;
+      return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
    }
 #endif
 
@@ -1319,11 +1319,11 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
             if ( type == input_id + 2)
-               return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS;
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
             if ( type == input_id + 4)
-               return OZONE_ENTRIES_ICONS_TEXTURE_RELOAD;
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
             if ( type == input_id + 5)
-               return OZONE_ENTRIES_ICONS_TEXTURE_SAVING;
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
             input_id = input_id + 7;
          }
          else
@@ -1335,55 +1335,55 @@ static unsigned ozone_entries_icon_get_id(ozone_handle_t *ozone,
             }
          }
          if ( type == input_id )
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D];
          if ( type == (input_id + 1))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L];
          if ( type == (input_id + 2))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT];
          if ( type == (input_id + 3))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START];
          if ( type == (input_id + 4))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U];
          if ( type == (input_id + 5))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_D;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_D];
          if ( type == (input_id + 6))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_L;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_L];
          if ( type == (input_id + 7))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R];
          if ( type == (input_id + 8))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R];
          if ( type == (input_id + 9))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U];
          if ( type == (input_id + 10))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LB;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LB];
          if ( type == (input_id + 11))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RB;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RB];
          if ( type == (input_id + 12))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LT;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LT];
          if ( type == (input_id + 13))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT];
          if ( type == (input_id + 14))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P];
          if ( type == (input_id + 15))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P];
          if ( type == (input_id + 16))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R];
          if ( type == (input_id + 17))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L];
          if ( type == (input_id + 18))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D];
          if ( type == (input_id + 19))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U];
          if ( type == (input_id + 20))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R];
          if ( type == (input_id + 21))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L];
          if ( type == (input_id + 22))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D];
          if ( type == (input_id + 23))
-            return OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U;
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U];
       }
-   return OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING;
+   return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING];
 }
 
 static void ozone_draw_text(
@@ -2617,8 +2617,8 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
          OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
       if (ozone->is_playlist && entries_end == 1)
       {
-         unsigned icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, false);
-         ozone->empty_playlist = icon == OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
+         menu_texture_item tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
+         ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
       {
@@ -3271,7 +3271,7 @@ border_iterate:
 
    for (i = 0; i < entries_end; i++)
    {
-      unsigned icon;
+      menu_texture_item tex;
       menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
       char entry_value[255];
@@ -3282,6 +3282,7 @@ border_iterate:
       char *entry_rich_label  = NULL;
       bool entry_selected     = false;
       int text_offset         = -40;
+      float *icon_color       = NULL;
 
       entry_value[0]         = '\0';
       entry_selected         = selection == i;
@@ -3323,10 +3324,10 @@ border_iterate:
          word_wrap(sublabel_str, sublabel_str, (video_info->width - 548) / ozone->sublabel_font_glyph_width, false);
 
       /* Icon */
-      icon = ozone_entries_icon_get_id(ozone, entry.enum_idx, entry.type, entry_selected);
-      if (icon != OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING)
+      tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, entry_selected);
+      if (tex != ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING])
       {
-         uintptr_t texture = ozone->icons_textures[icon];
+         uintptr_t texture = tex;
 
          /* Console specific icons */
          if (entry.type == FILE_TYPE_RPL_ENTRY && ozone->horizontal_list && ozone->categories_selection_ptr > ozone->system_tab_end)
@@ -3334,15 +3335,23 @@ border_iterate:
             ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
             if (!sidebar_node || !sidebar_node->content_icon)
-               texture = ozone->icons_textures[icon];
+               texture = tex;
             else
                texture = sidebar_node->content_icon;
          }
 
-         ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
+         /* Cheevos badges should not be recolored */
+         if (!(
+            (entry.type >= MENU_SETTINGS_CHEEVOS_START) &&
+            (entry.type < MENU_SETTINGS_NETPLAY_ROOMS_START)
+         ))
+         {
+            icon_color = ozone->theme_dynamic.entries_icon;
+            ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
+         }
 
          menu_display_blend_begin(video_info);
-         ozone_draw_icon(video_info, 46, 46, texture, x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, 46, 46, texture, x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, icon_color);
          menu_display_blend_end(video_info);
 
          text_offset = 0;
