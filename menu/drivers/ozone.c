@@ -1876,7 +1876,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
    if (settings->bools.menu_content_show_history)
       ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
-#ifdef HAVE_IMAGEVIEWERe
+#ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_content_show_images)
       ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_IMAGES;
 #endif
