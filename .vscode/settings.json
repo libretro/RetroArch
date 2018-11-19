@@ -33,7 +33,14 @@
       "hash_set": "c",
       "initializer_list": "c",
       "string_view": "c",
-      "utility": "c"
+      "utility": "c",
+      "menu_input.h": "c",
+      "tasks_internal.h": "c",
+      "ozone.h": "c",
+      "ozone_theme.h": "c",
+      "ozone_texture.h": "c",
+      "string_list.h": "c",
+      "core_info.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
