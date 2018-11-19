@@ -405,10 +405,25 @@ static float ozone_border_1_light[16] = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
 static float ozone_border_0_dark[16] = COLOR_HEX_TO_FLOAT(0x198AC6, 1.00);
 static float ozone_border_1_dark[16] = COLOR_HEX_TO_FLOAT(0x89F1F2, 1.00);
 
+static float ozone_background_libretro_running_light[16] = {
+   0.690, 0.690, 0.690, 0.75,
+   0.690, 0.690, 0.690, 0.75,
+   0.922, 0.922, 0.922, 1.0,
+   0.922, 0.922, 0.922, 1.0
+};
+
+static float ozone_background_libretro_running_dark[16] = {
+   0.176, 0.176, 0.176, 0.75,
+   0.176, 0.176, 0.176, 0.75,
+   0.178, 0.178, 0.178, 1.0,
+   0.178, 0.178, 0.178, 1.0,
+};
+
 typedef struct ozone_theme
 {
    /* Background color */
    float background[16];
+   float *background_libretro_running;
 
    /* Float colors for quads and icons */
    float header_footer_separator[16];
@@ -443,6 +458,7 @@ typedef struct ozone_theme
 
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
+   ozone_background_libretro_running_light,
 
    COLOR_HEX_TO_FLOAT(0x2B2B2B, 1.00),
    COLOR_HEX_TO_FLOAT(0x333333, 1.00),
@@ -471,6 +487,7 @@ ozone_theme_t ozone_theme_light = {
 
 ozone_theme_t ozone_theme_dark = {
    COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00),
+   ozone_background_libretro_running_dark,
 
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
@@ -3702,14 +3719,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.entries_sublabel.carr.coords.vertices = 0;
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
-   /* TODO Replace this by blur backdrop if available */
-   ozone_color_alpha(ozone->theme->background, video_info->libretro_running ? 0.75f : 1.0f);
-
    /* Background */
    menu_display_draw_quad(video_info, 
       0, 0, video_info->width, video_info->height, 
       video_info->width, video_info->height, 
-      ozone->theme->background
+      !video_info->libretro_running ? ozone->theme->background : ozone->theme->background_libretro_running
    );
 
    /* Header, footer */
