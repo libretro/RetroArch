@@ -3444,8 +3444,6 @@ static unsigned ozone_get_system_theme()
 static void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 {
    /* TODO Replace this backdrop by a blur shader on the whole screen if available */
-   if (alpha == -1)
-      alpha = 0.75f;
    ozone_color_alpha(ozone_backdrop, alpha);
    menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
 }
@@ -3641,11 +3639,26 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    settings_t  *settings                  = config_get_ptr();
    unsigned color_theme                   = video_info->ozone_color_theme;
    menu_animation_ctx_tag messagebox_tag  = (uintptr_t)ozone->pending_message;
+   bool draw_osk                          = menu_input_dialog_get_display_kb();
+   static bool draw_osk_old               = false;
 
    menu_animation_ctx_entry_t entry;
 
    if (!ozone)
       return;
+
+   /* OSK Fade detection */
+   if (draw_osk != draw_osk_old)
+   {
+      draw_osk_old = draw_osk;
+      if (!draw_osk)
+      {
+         ozone->should_draw_messagebox       = false;
+         ozone->messagebox_state             = false;
+         ozone->messagebox_state_old         = false;
+         ozone->animations.messagebox_alpha  = 0.0f;
+      }
+   }
 
    /* Change theme on the fly */
    if (color_theme != last_color_theme || last_use_preferred_system_color_theme != settings->bools.menu_use_preferred_system_color_theme)
@@ -3739,7 +3752,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.footer.carr.coords.vertices = 0;
    ozone->raster_blocks.entries_label.carr.coords.vertices = 0;
 
-   if (ozone->should_draw_messagebox || menu_input_dialog_get_display_kb())
+   if (ozone->should_draw_messagebox || draw_osk)
    {
       /* Fade in animation */
       if (ozone->messagebox_state_old != ozone->messagebox_state && ozone->messagebox_state)
@@ -3781,7 +3794,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       ozone_draw_backdrop(video_info, fmin(ozone->animations.messagebox_alpha, 0.75f));
 
-      if (menu_input_dialog_get_display_kb())
+      if (draw_osk)
       {
          const char *label = menu_input_dialog_get_label_buffer();
          const char *str   = menu_input_dialog_get_buffer();
