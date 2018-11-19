@@ -128,7 +128,8 @@ extern "C" {
 
 /* LIGHTGUN device is similar to Guncon-2 for PlayStation 2.
  * It reports X/Y coordinates in screen space (similar to the pointer)
- * in the range [-0x8000, 0x7fff] in both axes, with zero being center.
+ * in the range [-0x8000, 0x7fff] in both axes, with zero being center and
+ * -0x8000 being out of bounds.
  * As well as reporting on/off screen state. It features a trigger,
  * start/select buttons, auxiliary action buttons and a
  * directional pad. A forced off-screen shot can be requested for
@@ -139,7 +140,8 @@ extern "C" {
 /* The ANALOG device is an extension to JOYPAD (RetroPad).
  * Similar to DualShock2 it adds two analog sticks and all buttons can
  * be analog. This is treated as a separate device type as it returns
- * axis values in the full analog range of [-0x8000, 0x7fff].
+ * axis values in the full analog range of [-0x7fff, 0x7fff],
+ * although some devices may return -0x8000.
  * Positive X axis is right. Positive Y axis is down.
  * Buttons are returned in the range [0, 0x7fff].
  * Only use ANALOG type when polling for analog values.
