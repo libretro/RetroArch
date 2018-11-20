@@ -1275,7 +1275,7 @@ MENU
 #include "../menu/drivers/xmb.c"
 #endif
 #ifdef HAVE_OZONE
-#include "../menu/drivers/ozone.c"
+#include "../menu/drivers/ozone/ozone.c"
 #endif
 
 #ifdef HAVE_STRIPES
