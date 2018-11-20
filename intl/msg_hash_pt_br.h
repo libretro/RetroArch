@@ -261,7 +261,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-    "Configurações"
+    "Arquivo de Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -2910,45 +2910,45 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Exibir data e hora"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
        "Estilo da data / hora"
     )
-    MSG_HASH(
-       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
-       "Altera o estilo da data atual ou como a hora é mostrada dentro do menu."
+MSG_HASH(
+     MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+     "Altera o estilo da data atual ou como a hora é mostrada dentro do menu."
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
-       "YYYY-MM-DD HH:MM:SS"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+     "YYYY-MM-DD HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
-       "YYYY-MM-DD HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+     "YYYY-MM-DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
-       "MM-DD-YYYY HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+     "MM-DD-YYYY HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
-       "HH:MM:SS"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+     "HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
-       "HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+     "HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
-       "DD/MM HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+     "DD/MM HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
-       "MM/DD HH:MM"
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+     "MM/DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
-       "HH:MM:SS (AM/PM)"
+ MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+     "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
@@ -5002,7 +5002,8 @@ MSG_HASH(
 )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-    "O número de vezes que a trapaça será aplicada. Use com as outras duas opções de iteração para afetar grandes áreas da memória."
+    "O número de vezes que a trapaça será aplicada.\n"
+    "Use com as outras duas opções de iteração para afetar grandes áreas da memória."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -6052,11 +6053,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-    "Exibir Configurações"
+    "Exibir Arquivo de Configuração"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-    "Exibir/ocultar a opção 'Configurações'."
+    "Exibir/ocultar a opção 'Arquivo de Configuração'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -7721,43 +7722,61 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "Branco Básico"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "Preto Básico"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "Selecione um tema de cor diferente"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
-MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
-MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
-MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Use a cor preferida do tema do sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Usar a cor do tema do seu sistema operacional (se houver) - substitui as configurações do tema."
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWEST,
+    "Muito baixa"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWER,
+    "Baixa"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHER,
+    "Alta"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHEST,
+    "Muito alta"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "No music available."
+    "Nenhuma música disponível."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "No videos available."
+    "Nenhum vídeo disponível."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "No images available."
+    "Nenhuma imagem disponível."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "No favorites available."
+    "Não há favoritos disponíveis."
+    )
+MSG_HASH(
+    MSG_MISSING_ASSETS,
+    "Aviso: Recursos ausentes, use o Atualizador Online se disponível"
     )
