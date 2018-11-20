@@ -7722,61 +7722,43 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Branco Básico"
+    "Basic White"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Preto Básico"
+    "Basic Black"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Selecione um tema de cor diferente"
+    "Select a different color theme."
     )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-    "Use a cor preferida do tema do sistema"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-    "Usar a cor do tema do seu sistema operacional (se houver) - substitui as configurações do tema."
-    )
-MSG_HASH(
-    MSG_RESAMPLER_QUALITY_LOWEST,
-    "Muito baixa"
-    )
-MSG_HASH(
-    MSG_RESAMPLER_QUALITY_LOWER,
-    "Baixa"
-    )
-MSG_HASH(
-    MSG_RESAMPLER_QUALITY_NORMAL,
-    "Normal"
-    )
-MSG_HASH(
-    MSG_RESAMPLER_QUALITY_HIGHER,
-    "Alta"
-    )
-MSG_HASH(
-    MSG_RESAMPLER_QUALITY_HIGHEST,
-    "Muito alta"
-    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use preferred system color theme")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use your operating system's color theme (if any) - overrides theme settings.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Lowest")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lower")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Higher")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Highest")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "Nenhuma música disponível."
+    "No music available."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "Nenhum vídeo disponível."
+    "No videos available."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "Nenhuma imagem disponível."
+    "No images available."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "Não há favoritos disponíveis."
-    )
-MSG_HASH(
-    MSG_MISSING_ASSETS,
-    "Aviso: Recursos ausentes, use o Atualizador Online se disponível"
+    "No favorites available."
     )
