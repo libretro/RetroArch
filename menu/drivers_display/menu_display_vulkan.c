@@ -352,25 +352,20 @@ static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
    VkRect2D sci;
    vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
 
-   sci.offset.x      = x;
-   sci.offset.y      = video_info->height - y - height;
-   sci.extent.width  = width;
-   sci.extent.height = height;
-
-   vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+   vk->tracker.use_scissor = true;
+   vk->tracker.scissor.offset.x = x;
+   vk->tracker.scissor.offset.y = y;
+   vk->tracker.scissor.extent.width = width;
+   vk->tracker.scissor.extent.height = height;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
    VkRect2D sci;
    vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
-
-   sci.offset.x      = 0;
-   sci.offset.y      = 0;
-   sci.extent.width  = video_info->width;
-   sci.extent.height = video_info->height;
-
-   vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+   vk->tracker.use_scissor = false;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

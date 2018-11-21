@@ -57,6 +57,8 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
+extern float osk_dark[16];
+
 enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
@@ -146,6 +148,11 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_INT_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM,
+   MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL,
    MENU_SETTING_NO_ITEM,
    MENU_SETTING_DRIVER,
    MENU_SETTING_ACTION,
@@ -221,6 +228,8 @@ enum menu_settings_type
    MENU_SETTINGS_PERF_COUNTERS_END = MENU_SETTINGS_PERF_COUNTERS_BEGIN + (MAX_COUNTERS - 1),
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
+   MENU_SETTINGS_INPUT_BEGIN,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
@@ -733,7 +742,8 @@ void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
       video_frame_info_t *video_info,
-      char *grid[], unsigned id);
+      char *grid[], unsigned id,
+      unsigned text_color);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
@@ -803,7 +813,8 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale_factor, bool shadows_enable, float shadow_offset);
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 
@@ -812,7 +823,9 @@ font_data_t *menu_display_font(
       float font_size,
       bool video_is_threaded);
 
-void menu_display_reset_textures_list(
+font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
+
+bool menu_display_reset_textures_list(
       const char *texture_path,
       const char *iconpath,
       uintptr_t *item,
@@ -825,6 +838,8 @@ int menu_display_osk_ptr_at_pos(void *data, int x, int y,
 bool menu_display_driver_exists(const char *s);
 
 void menu_driver_destroy(void);
+
+void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
 extern uintptr_t menu_display_white_texture;
 
@@ -846,6 +861,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
+extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;

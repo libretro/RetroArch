@@ -36,6 +36,7 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_MENU = 1
 HAVE_RUNAHEAD = 1
 HAVE_NETWORKING = 1
+HAVE_NETPLAYDISCOVERY = 1
 HAVE_STB_FONT = 1
 HAVE_CHEEVOS = 1
 
@@ -55,9 +56,8 @@ ifeq ($(HAVE_OPENGL), 1)
   HAVE_RGUI = 1
   HAVE_MATERIALUI = 1
 
-  HAVE_ZARCH = 0
   HAVE_XMB = 1
-  HAVE_STRIPES = 0
+  HAVE_OZONE = 1
 
   HAVE_OVERLAY = 1
 else
@@ -66,11 +66,12 @@ else
   HAVE_ZARCH = 0
   HAVE_MATERIALUI = 0
   HAVE_XMB = 0
+  HAVE_OZONE = 0
   HAVE_STRIPES = 0
 endif
 
 include Makefile.common
-BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+BLACKLIST :=
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
@@ -221,7 +222,8 @@ ifneq ($(ROMFS),)
 	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
-DEPENDS	:=	$(OFILES:.o=.d)
+DEPENDS_TMP  := $(OFILES:.o=.d)
+DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 
 .PHONY: clean all
 
@@ -243,7 +245,7 @@ endif
 $(OUTPUT).elf	:	$(OBJ)
 
 clean:
-	rm -f $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

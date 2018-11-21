@@ -55,6 +55,15 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
       return false;
    }
 
+   /* Remove Windows \r chars if we encounter them.
+    * filestream_read_file() allocates one extra for 0 terminator. */
+   auto itr = remove_if(buf, buf + len + 1, [](char c) {
+      return c == '\r';
+   });
+
+   if (itr < buf + len)
+      *itr = '\0';
+
    /* Cannot use string_split since it removes blank lines (strtok). */
    ptr = buf;
 

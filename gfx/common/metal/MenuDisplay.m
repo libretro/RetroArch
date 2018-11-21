@@ -14,8 +14,10 @@
 {
    Context *_context;
    MTLClearColor _clearColor;
-   bool _clearNextRender;
+   MTLScissorRect _scissorRect;
+   BOOL _useScissorRect;
    Uniforms _uniforms;
+   bool _clearNextRender;
 }
 
 - (instancetype)initWithContext:(Context *)context
@@ -25,6 +27,7 @@
       _context = context;
       _clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
+      _useScissorRect = NO;
    }
    return self;
 }
@@ -72,6 +75,19 @@
 {
    return _clearColor;
 }
+
+- (void)setScissorRect:(MTLScissorRect)rect
+{
+   _scissorRect = rect;
+   _useScissorRect = YES;
+}
+
+- (void)clearScissorRect
+{
+   _useScissorRect = NO;
+   [_context resetScissorRect];
+}
+
 
 - (MTLPrimitiveType)_toPrimitiveType:(enum menu_display_prim_type)prim
 {
@@ -180,6 +196,10 @@
       .zfar    = 1,
    };
    [rce setViewport:vp];
+   
+   if (_useScissorRect) {
+      [rce setScissorRect:_scissorRect];
+   }
    
    switch (draw->pipeline.id)
    {

@@ -148,6 +148,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    {
       case ACTION_OK_DL_DROPDOWN_BOX_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -310,6 +312,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -477,12 +488,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_STREAM_CONFIGFILE:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.path_stream_config;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            global_t  *global  = global_get_ptr();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = global->record.config_dir;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
          filebrowser_clear_type();
@@ -1302,20 +1315,22 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_STREAM_CONFIGFILE:
          {
-            settings_t *settings            = config_get_ptr();
+            settings_t *settings = config_get_ptr();
             flush_char       = msg_hash_to_str(flush_id);
-            strlcpy(settings->paths.path_stream_config, action_path,
-                  sizeof(settings->paths.path_stream_config));
+
+            if (settings)
+               strlcpy(settings->paths.path_stream_config, action_path,
+                     sizeof(settings->paths.path_stream_config));
          }
          break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
-            global_t *global = global_get_ptr();
+            settings_t *settings = config_get_ptr();
             flush_char       = msg_hash_to_str(flush_id);
 
-            if (global)
-               strlcpy(global->record.config, action_path,
-                     sizeof(global->record.config));
+            if (settings)
+               strlcpy(settings->paths.path_record_config, action_path,
+                     sizeof(settings->paths.path_record_config));
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
@@ -2207,14 +2222,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0] = tmp[0] = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
    {
@@ -2292,14 +2304,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0]          = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
       fill_pathname_join(
@@ -4262,6 +4271,89 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_core_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      return -1;
+
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, path,
+         setting->size);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_int_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_float_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   float val                    = (float)atof(path);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.fraction = (float)val;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned value;
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   value = (unsigned)(idx + setting->offset_by);
+
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+
+   *setting->value.target.unsigned_integer = value;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_setting_core_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4321,13 +4413,25 @@ static int action_ok_push_dropdown_setting_float_item(const char *path,
 static int action_ok_push_dropdown_setting_uint_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   unsigned value;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
 
    if (!setting)
       return -1;
 
-   *setting->value.target.unsigned_integer = (unsigned)(idx + setting->offset_by);
+   value = (unsigned)(idx + setting->offset_by);
+
+#if 0
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+#endif
+
+   *setting->value.target.unsigned_integer = value;
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -5288,6 +5392,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_RECORD_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_record_configfile);
             break;
+         case MENU_LABEL_STREAM_CONFIG:
+            BIND_ACTION_OK(cbs, action_ok_stream_configfile);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
@@ -5429,6 +5536,21 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);
             break;
          case MENU_SETTING_DROPDOWN_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);

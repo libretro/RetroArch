@@ -56,6 +56,7 @@ typedef struct menu_entry
    char *sublabel;
    char *rich_label;
    char *value;
+   bool checked;
 } menu_entry_t;
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);

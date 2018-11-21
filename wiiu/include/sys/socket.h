@@ -28,6 +28,7 @@ extern "C" {
 /* return codes */
 #define SO_SUCCESS      0
 #define SO_EWOULDBLOCK  6
+#define SO_EINVAL      11
 
 #define EWOULDBLOCK SO_EWOULDBLOCK
 #define EAGAIN SO_EWOULDBLOCK
@@ -42,11 +43,10 @@ struct sockaddr
    char        sa_data[];
 };
 
-struct sockaddr_storage
-{
-   sa_family_t ss_family;
-   char        __ss_padding[26];
-};
+/* Wii U only supports IPv4 so we make sockaddr_storage
+   be sockaddr_in for compatibility.
+ */
+#define sockaddr_storage sockaddr_in
 
 struct linger
 {

@@ -247,7 +247,7 @@ menu_display_ctx_driver_t menu_display_ctx_vita2d = {
    menu_display_vita2d_get_default_tex_coords,
    menu_display_vita2d_font_init_first,
    MENU_VIDEO_DRIVER_VITA2D,
-   "menu_display_vita2d",
+   "vita2d",
    true,
    NULL,
    NULL

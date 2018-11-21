@@ -30,6 +30,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gdi_common.h"
@@ -82,6 +83,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    unsigned full_x, full_y;
    gfx_ctx_input_t inp;
    gfx_ctx_mode_t mode;
+   void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -106,10 +108,14 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    ctx_driver = video_context_driver_init_first(gdi,
          settings->arrays.video_context_driver,
-         GFX_CTX_GDI_API, 1, 0, false);
+         GFX_CTX_GDI_API, 1, 0, false, &ctx_data);
    if (!ctx_driver)
       goto error;
 
+   if (ctx_data)
+      gdi->ctx_data = ctx_data;
+
+   gdi->ctx_driver = ctx_driver;
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);
@@ -193,8 +199,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    HWND hwnd                 = win32_get_window();
    BITMAPINFO *info;
 
-   /* FIXME */
+   /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable = false;
+   video_info->menu_shader_pipeline = 0;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -355,23 +362,21 @@ static void gdi_gfx_set_nonblock_state(void *data, bool toggle)
 
 static bool gdi_gfx_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
+   gdi_t *gdi           = (gdi_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
+   gdi->ctx_driver->check_window(gdi->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
-   if (video_context_driver_check_window(&size_data))
-      ret = !quit;
+   ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
@@ -401,7 +406,7 @@ static bool gdi_gfx_has_windowed(void *data)
 static void gdi_gfx_free(void *data)
 {
    gdi_t *gdi = (gdi_t*)data;
-   HWND hwnd = win32_get_window();
+   HWND hwnd  = win32_get_window();
 
    if (gdi_menu_frame)
    {

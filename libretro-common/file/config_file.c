@@ -406,6 +406,7 @@ static config_file_t *config_file_new_internal(
    conf->path                     = NULL;
    conf->entries                  = NULL;
    conf->tail                     = NULL;
+   conf->last                     = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false ;
@@ -558,6 +559,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->path                     = NULL;
    conf->entries                  = NULL;
    conf->tail                     = NULL;
+   conf->last                     = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false ;
@@ -842,7 +844,7 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
-   struct config_entry_list *last  = conf->entries;
+   struct config_entry_list *last  = (conf->guaranteed_no_duplicates && conf->last) ? conf->last : conf->entries;
    struct config_entry_list *entry = conf->guaranteed_no_duplicates?NULL:config_get_entry(conf, key, &last);
 
    if (entry && !entry->readonly)
@@ -868,6 +870,9 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       last->next    = entry;
    else
       conf->entries = entry;
+
+   conf->last = entry ;
+
 }
 
 void config_unset(config_file_t *conf, const char *key)

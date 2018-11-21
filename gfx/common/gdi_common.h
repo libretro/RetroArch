@@ -34,6 +34,8 @@ typedef struct gdi
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 } gdi_t;
 
 typedef struct gdi_texture

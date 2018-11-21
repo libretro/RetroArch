@@ -87,8 +87,8 @@ static void *gcm_ctx_alloc( void )
 
 static void gcm_ctx_free( void *ctx )
 {
-    mbedtls_gcm_free( ctx );
-    mbedtls_free( ctx );
+    mbedtls_gcm_free((mbedtls_gcm_context*)ctx);
+    mbedtls_free(ctx);
 }
 #endif /* MBEDTLS_GCM_C */
 
@@ -106,7 +106,7 @@ static void *ccm_ctx_alloc( void )
 
 static void ccm_ctx_free( void *ctx )
 {
-    mbedtls_ccm_free( ctx );
+    mbedtls_ccm_free((mbedtls_ccm_context*)ctx);
     mbedtls_free( ctx );
 }
 #endif /* MBEDTLS_CCM_C */
@@ -162,7 +162,7 @@ static int aes_setkey_enc_wrap( void *ctx, const unsigned char *key,
 
 static void * aes_ctx_alloc( void )
 {
-    mbedtls_aes_context *aes = mbedtls_calloc( 1, sizeof( mbedtls_aes_context ) );
+    mbedtls_aes_context *aes = (mbedtls_aes_context*)mbedtls_calloc( 1, sizeof( mbedtls_aes_context ) );
 
     if( aes == NULL )
         return( NULL );
@@ -518,8 +518,8 @@ static int camellia_setkey_enc_wrap( void *ctx, const unsigned char *key,
 
 static void * camellia_ctx_alloc( void )
 {
-    mbedtls_camellia_context *ctx;
-    ctx = mbedtls_calloc( 1, sizeof( mbedtls_camellia_context ) );
+    mbedtls_camellia_context *ctx = (mbedtls_camellia_context*)
+       mbedtls_calloc( 1, sizeof( mbedtls_camellia_context ) );
 
     if( ctx == NULL )
         return( NULL );
@@ -906,7 +906,8 @@ static int des3_set3key_enc_wrap( void *ctx, const unsigned char *key,
 
 static void * des_ctx_alloc( void )
 {
-    mbedtls_des_context *des = mbedtls_calloc( 1, sizeof( mbedtls_des_context ) );
+    mbedtls_des_context *des = (mbedtls_des_context*)
+       mbedtls_calloc( 1, sizeof( mbedtls_des_context ) );
 
     if( des == NULL )
         return( NULL );
@@ -924,8 +925,7 @@ static void des_ctx_free( void *ctx )
 
 static void * des3_ctx_alloc( void )
 {
-    mbedtls_des3_context *des3;
-    des3 = mbedtls_calloc( 1, sizeof( mbedtls_des3_context ) );
+    mbedtls_des3_context *des3 = (mbedtls_des3_context*)mbedtls_calloc( 1, sizeof( mbedtls_des3_context ) );
 
     if( des3 == NULL )
         return( NULL );
@@ -1123,8 +1123,7 @@ static int blowfish_setkey_wrap( void *ctx, const unsigned char *key,
 
 static void * blowfish_ctx_alloc( void )
 {
-    mbedtls_blowfish_context *ctx;
-    ctx = mbedtls_calloc( 1, sizeof( mbedtls_blowfish_context ) );
+    mbedtls_blowfish_context *ctx = (mbedtls_blowfish_context*)mbedtls_calloc( 1, sizeof( mbedtls_blowfish_context ) );
 
     if( ctx == NULL )
         return( NULL );
@@ -1233,8 +1232,7 @@ static int arc4_setkey_wrap( void *ctx, const unsigned char *key,
 
 static void * arc4_ctx_alloc( void )
 {
-    mbedtls_arc4_context *ctx;
-    ctx = mbedtls_calloc( 1, sizeof( mbedtls_arc4_context ) );
+    mbedtls_arc4_context *ctx = (mbedtls_arc4_context*)mbedtls_calloc( 1, sizeof( mbedtls_arc4_context ) );
 
     if( ctx == NULL )
         return( NULL );

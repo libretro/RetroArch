@@ -49,10 +49,13 @@
 #elif defined(VITA)
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
-#include <psp2/io/stat.h>
+#  include <psp2/io/stat.h>
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
+#  endif
+#  if defined(PS2)
+#    include <fileXio_rpc.h>
 #  endif
 #  include <sys/types.h>
 #  include <sys/stat.h>
@@ -64,7 +67,7 @@
 #include <cell/cell_fs.h>
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP) || defined(PS2)
 #include <unistd.h> /* stat() is defined here */
 #endif
 
@@ -88,6 +91,9 @@ struct RDIR
 #elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;
+#elif defined(PS2)
+   int directory;
+   iox_dirent_t entry;
 #elif defined(__CELLOS_LV2__)
    CellFsErrno error;
    int directory;
@@ -146,6 +152,8 @@ struct RDIR *retro_opendir(const char *name)
 
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
+#elif defined(PS2)
+   rdir->directory = fileXioDopen(name);
 #elif defined(_3DS)
    rdir->directory = !string_is_empty(name) ? opendir(name) : NULL;
    rdir->entry     = NULL;
@@ -167,7 +175,7 @@ bool retro_dirent_error(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    return (rdir->directory == INVALID_HANDLE_VALUE);
-#elif defined(VITA) || defined(PSP)
+#elif defined(VITA) || defined(PSP) || defined(PS2)
    return (rdir->directory < 0);
 #elif defined(__CELLOS_LV2__)
    return (rdir->error != CELL_FS_SUCCEEDED);
@@ -190,6 +198,11 @@ int retro_readdir(struct RDIR *rdir)
    return (rdir->directory != INVALID_HANDLE_VALUE);
 #elif defined(VITA) || defined(PSP)
    return (sceIoDread(rdir->directory, &rdir->entry) > 0);
+#elif defined(PS2)
+   iox_dirent_t record;
+   int ret = fileXioDread(rdir->directory, &record);
+   rdir->entry = record;
+   return ( ret > 0);
 #elif defined(__CELLOS_LV2__)
    uint64_t nread;
    rdir->error = cellFsReaddir(rdir->directory, &rdir->entry, &nread);
@@ -220,6 +233,8 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
    return (char*)rdir->entry.cFileName;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
+#elif defined(PS2)
+   return rdir->entry.name;
 #else
 
    return rdir->entry->d_name;
@@ -249,6 +264,9 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #elif defined(VITA)
    return SCE_S_ISDIR(entry->d_stat.st_mode);
 #endif
+#elif defined(PS2)
+   const iox_dirent_t *entry = (const iox_dirent_t*)&rdir->entry;
+   return FIO_S_ISDIR(entry->stat.mode);
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
@@ -289,6 +307,8 @@ void retro_closedir(struct RDIR *rdir)
       FindClose(rdir->directory);
 #elif defined(VITA) || defined(PSP)
    sceIoDclose(rdir->directory);
+#elif defined(PS2)
+   fileXioDclose(rdir->directory);
 #elif defined(__CELLOS_LV2__)
    rdir->error = cellFsClosedir(rdir->directory);
 #else

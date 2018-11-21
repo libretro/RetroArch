@@ -332,6 +332,8 @@ typedef struct vk
 
    vulkan_context_t *context;
    video_info_t video;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 
    VkFormat tex_fmt;
    math_matrix_4x4 mvp, mvp_no_rot;
@@ -421,6 +423,8 @@ typedef struct vk
    struct
    {
       uint64_t dirty;
+      VkRect2D scissor;
+      bool use_scissor;
       VkPipeline pipeline;
       VkImageView view;
       VkSampler sampler;
@@ -499,6 +503,7 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
          return 4;
 
       case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+      case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
       case VK_FORMAT_R5G6B5_UNORM_PACK16:
          return 2;
 

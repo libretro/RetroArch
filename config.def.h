@@ -188,7 +188,7 @@ static const bool video_threaded = false;
 #endif
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP)
+#if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
@@ -265,6 +265,12 @@ static const float default_input_overlay_opacity = 0.7f;
 #include "menu/menu_driver.h"
 
 static bool default_block_config_read    = true;
+
+#ifdef HAVE_LIBNX
+static bool menu_use_preferred_system_color_theme = true;
+#else
+static bool menu_use_preferred_system_color_theme = false;
+#endif
 
 static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
@@ -471,6 +477,11 @@ static const float crt_refresh_rate = 60/1.001;
  * honored, but ignored.
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
+
+#ifdef _3DS
+/* Enable bottom LCD screen */
+static const bool video_3ds_lcd_bottom = true;
+#endif
 
 /* AUDIO */
 
@@ -725,7 +736,7 @@ static const bool desktop_menu_enable = true;
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
-#elif defined(PSP) || defined(_3DS) || defined(VITA)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
 #else
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
@@ -810,5 +821,7 @@ static char buildbot_server_url[] = "";
 #endif
 
 static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
+
+static char default_discord_app_id[] = "475456035851599874";
 
 #endif

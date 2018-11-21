@@ -1278,6 +1278,7 @@ static bool event_init_content(void)
 {
    bool contentless = false;
    bool is_inited   = false;
+   settings_t *settings            = config_get_ptr();
 
    content_get_status(&contentless, &is_inited);
 
@@ -1304,7 +1305,18 @@ static bool event_init_content(void)
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
+/*
+   Since the operations are asynchronouse we can't guarantee users will not use auto_load_state to cheat on
+   achievements so we forbid auto_load_state from happening if cheevos_enable and cheevos_hardcode_mode_enable
+   are true
+*/
+#ifdef HAVE_CHEEVOS
+   if (!settings->bools.cheevos_enable || !settings->bools.cheevos_hardcore_mode_enable)
+      command_event_load_auto_state();
+#else
    command_event_load_auto_state();
+#endif
+
    command_event(CMD_EVENT_BSV_MOVIE_INIT, NULL);
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
@@ -2433,17 +2445,12 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
-         global_t *global               = global_get_ptr();
-         rarch_system_info_t *sys_info  = runloop_get_system_info();
-         const char *core_name          = NULL;
-         const char *core_path          = NULL;
-         const char *label              = NULL;
-
-         if (sys_info)
-         {
-            core_name = sys_info->info.library_name;
-            core_path = path_get(RARCH_PATH_CORE);
-         }
+         /* TODO/FIXME - does path_get(RARCH_PATH_CORE) depend on the system info struct? Investigate */
+         global_t *global                 = global_get_ptr();
+         struct retro_system_info *system = runloop_get_libretro_system_info();
+         const char *label                = NULL;
+         const char *core_path            = system ? path_get(RARCH_PATH_CORE) : NULL;
+         const char *core_name            = system ? system->library_name : NULL;
 
          if (!string_is_empty(global->name.label))
             label = global->name.label;

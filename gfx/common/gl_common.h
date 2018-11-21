@@ -19,6 +19,7 @@
 
 #include <boolean.h>
 #include <string.h>
+#include <libretro.h>
 #include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
@@ -316,6 +317,8 @@ struct gl
 
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 };
 
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
@@ -384,6 +387,23 @@ static INLINE GLenum gl_min_filter_to_mag(GLenum type)
    }
 
    return type;
+}
+
+static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
+{
+   gfx_ctx_flags_t flags;
+   if (ctx_type != RETRO_HW_CONTEXT_OPENGL_CORE)
+      return false;
+
+   /**
+    * Ensure that the rest of the frontend knows we have a core context
+    */
+   flags.flags = 0;
+   BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+   video_context_driver_set_flags(&flags);
+
+   return true;
 }
 
 RETRO_END_DECLS

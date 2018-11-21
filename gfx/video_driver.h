@@ -404,6 +404,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool shared_context;
    bool black_frame_insertion;
@@ -444,6 +445,7 @@ typedef struct video_frame_info
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
    unsigned materialui_color_theme;
+   unsigned ozone_color_theme;
    unsigned custom_vp_width;
    unsigned custom_vp_height;
    unsigned custom_vp_full_width;
@@ -493,13 +495,13 @@ typedef struct video_frame_info
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
-   void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
    bool (*cb_set_mvp)(void *data, void *shader_data,
          const void *mat_data);
 
    void *context_data;
    void *shader_data;
    void *userdata;
+   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);
@@ -1126,8 +1128,6 @@ void video_driver_set_threaded(bool val);
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused);
 
-void video_driver_set_resize(unsigned width, unsigned height);
-
 /**
  * video_context_driver_init_first:
  * @data                    : Input data.
@@ -1142,10 +1142,10 @@ void video_driver_set_resize(unsigned width, unsigned height);
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-const gfx_ctx_driver_t *video_context_driver_init_first(void *data, const char *ident,
-      enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
-
-bool video_context_driver_check_window(gfx_ctx_size_t *size_data);
+const gfx_ctx_driver_t *video_context_driver_init_first(
+      void *data, const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor,
+      bool hw_render_ctx, void **ctx_data);
 
 bool video_context_driver_find_prev_driver(void);
 
@@ -1182,8 +1182,6 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate);
-
-bool video_context_driver_get_context_data(void *data);
 
 bool video_context_driver_show_mouse(bool *bool_data);
 
@@ -1253,6 +1251,7 @@ extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
+extern video_driver_t video_ps2;
 extern video_driver_t video_ctr;
 extern video_driver_t video_switch;
 extern video_driver_t video_d3d8;

@@ -6,7 +6,28 @@
 #
 # If you would like a logfile, pipe this script's output to tee.
 
-script_dir=$(dirname $(readlink -f $0))
+NETCAT=
+
+find_netcat()
+{
+  NETCAT=$(which netcat 2>/dev/null |grep '/')
+  if [ -z "$NETCAT" ]; then
+    NETCAT=$(which nc 2>/dev/null |grep '/')
+    if [ -z "$NETCAT" ]; then
+      echo "Failed to find either 'netcat' or 'nc'. Please install it."
+      exit 1
+    fi
+  fi
+}
+
+do_readlink()
+{
+  local exe=$1
+  echo "$(cd $(dirname $exe) && pwd)"
+}
+
+find_netcat
+script_dir=$(do_readlink $0)
 
 IP=$(which ip 2>/dev/null | grep '^/')
 IFCONFIG=$(which ifconfig 2>/dev/null | grep '^/')
@@ -54,8 +75,8 @@ echo "Listening for UDP packets on broadcast IP: $broadcast"
 while [ $exit_listen_loop -eq 0 ]; do
   echo ========= `date` =========
   if [ -z "$TS" ]; then
-    netcat -kluw 0 $broadcast $PC_DEVELOPMENT_TCP_PORT
+    $NETCAT -kluw 0 $broadcast $PC_DEVELOPMENT_TCP_PORT
   else
-    netcat -kluw 0 $broadcast $PC_DEVELOPMENT_TCP_PORT |ts '[%Y-%m-%d %H:%M:%.S]'
+    $NETCAT -kluw 0 $broadcast $PC_DEVELOPMENT_TCP_PORT |ts '[%Y-%m-%d %H:%M:%.S]'
   fi
 done

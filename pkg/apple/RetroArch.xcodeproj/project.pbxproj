@@ -385,7 +385,7 @@
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_CG",
@@ -419,7 +419,7 @@
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_CG",
@@ -455,7 +455,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -485,7 +485,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -510,7 +510,7 @@
 					"-DHAVE_LROUND",
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
-                                        "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -547,6 +547,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
@@ -574,7 +575,7 @@
 					"-DHAVE_LROUND",
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
-                                        "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -611,6 +612,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",

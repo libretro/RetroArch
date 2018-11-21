@@ -396,7 +396,9 @@ bool core_unload(void)
 {
    video_driver_set_cached_frame_ptr(NULL);
 
-   current_core.retro_deinit();
+   if (current_core.inited)
+      current_core.retro_deinit();
+
    return true;
 }
 
@@ -407,9 +409,11 @@ bool core_unload_game(void)
 
    video_driver_set_cached_frame_ptr(NULL);
 
-   current_core.retro_unload_game();
-
-   current_core.game_loaded = false;
+   if (current_core.game_loaded)
+   {
+      current_core.retro_unload_game();
+      current_core.game_loaded = false;
+   }
 
    audio_driver_stop();
 

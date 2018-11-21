@@ -16,8 +16,10 @@
 #include <file/file_path.h>
 
 #include "discord.h"
+#include "discord_register.h"
 
 #include "../retroarch.h"
+#include "../configuration.h"
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
@@ -35,7 +37,6 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-static const char* APPLICATION_ID = "475456035851599874";
 static int FrustrationLevel       = 0;
 
 static int64_t start_time         = 0;
@@ -211,6 +212,7 @@ void discord_update(enum discord_presence presence)
 
 void discord_init(void)
 {
+   settings_t *settings = config_get_ptr();
    DiscordEventHandlers handlers;
 
    RARCH_LOG("[Discord] initializing ..\n");
@@ -224,7 +226,11 @@ void discord_init(void)
    handlers.spectateGame = handle_discord_spectate;
    handlers.joinRequest  = handle_discord_join_request;
 
-   Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
+   /* To-Do: Add the arguments RetroArch was started with to the register URI*/
+   const char command[256] = "retroarch";
+
+   Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
+   Discord_Register(settings->arrays.discord_app_id, NULL);
 
    discord_ready         = true;
 }

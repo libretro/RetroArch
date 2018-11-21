@@ -438,6 +438,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(PS2)
+#include "../gfx/drivers/ps2_gfx.c"
 #elif defined(HAVE_VITA2D)
 #include "../deps/libvita2d/source/vita2d.c"
 #include "../deps/libvita2d/source/vita2d_texture.c"
@@ -567,7 +569,10 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#elif defined(PS2)
+#include "../input/drivers/ps2_input.c"
+#include "../input/drivers_joypad/ps2_joypad.c"
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
@@ -764,6 +769,8 @@ AUDIO
 #include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP) || defined(VITA)
 #include "../audio/drivers/psp_audio.c"
+#elif defined(PS2)
+// #include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
@@ -860,6 +867,7 @@ FILTERS
 #include "../gfx/video_filters/blargg_ntsc_snes.c"
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
+#include "../gfx/video_filters/normal2x.c"
 
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
@@ -958,6 +966,8 @@ FRONTEND
 #include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(PS2)
+#include "../frontend/drivers/platform_ps2.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(SWITCH) && defined(HAVE_LIBNX)
@@ -1035,6 +1045,7 @@ RETROARCH
 #include "../intl/msg_hash_chs.c"
 #include "../intl/msg_hash_cht.c"
 #include "../intl/msg_hash_ar.c"
+#include "../intl/msg_hash_el.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1262,6 +1273,14 @@ MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__) || defined(HAVE_METAL)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
+#endif
+#ifdef HAVE_OZONE
+#include "../menu/drivers/ozone/ozone.c"
+#include "../menu/drivers/ozone/ozone_display.c"
+#include "../menu/drivers/ozone/ozone_entries.c"
+#include "../menu/drivers/ozone/ozone_sidebar.c"
+#include "../menu/drivers/ozone/ozone_texture.c"
+#include "../menu/drivers/ozone/ozone_theme.c"
 #endif
 
 #ifdef HAVE_STRIPES

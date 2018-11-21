@@ -118,10 +118,14 @@ static const GLfloat white_color[] = {
 
 static bool gl_shared_context_use = false;
 
-void context_bind_hw_render(bool enable)
+#define gl_context_bind_hw_render(gl, enable) \
+   if (gl_shared_context_use) \
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
+
+void context_bind_hw_render(void *data, bool enable)
 {
-   if (gl_shared_context_use)
-      video_context_driver_bind_hw_render(&enable);
+   gl_t *gl = (gl_t*)data;
+   gl_context_bind_hw_render(gl, enable);
 }
 
 
@@ -210,8 +214,9 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -580,19 +585,17 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
    unsigned i, width, height;
-   video_shader_ctx_info_t shader_info;
    video_frame_info_t video_info;
 
    video_driver_build_info(&video_info);
    video_driver_get_size(&width, &height);
 
-   shader_info.data       = gl;
-   shader_info.set_active = true;
-
    for (i = 0; i < 2; i++)
    {
-      shader_info.idx        = i;
-      video_shader_driver_use(&shader_info);
+      if (video_info.shader_driver && video_info.shader_driver->use)
+         video_info.shader_driver->use(gl,
+               video_info.shader_data, i, true);
+
       gl_set_viewport(gl, &video_info,
             width, height, false, true);
    }
@@ -678,7 +681,7 @@ static void gl_set_texture_frame(void *data,
    if (!gl)
       return;
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    menu_filter = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
@@ -695,7 +698,7 @@ static void gl_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
 }
 
 static void gl_set_texture_enable(void *data, bool state, bool full_screen)
@@ -777,8 +780,9 @@ static void gl_render_osd_background(
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    video_driver_set_coords(&coords_data);
 
@@ -877,8 +881,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices    = 4;
 
@@ -953,17 +958,19 @@ static bool gl_frame(void *data, const void *frame,
       return false;
 
 #ifdef HAVE_LIBNX
-   /* Should be called once per frame */
+   // Should be called once per frame
    if(!appletMainLoop())
     return false;
 #endif
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
       gl->renderchain_driver->bind_vao(gl, gl->renderchain_data);
 
-   video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1164,7 +1171,9 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      video_info->cb_shader_use(gl, video_info->shader_data, 0, true);
+      if (video_info->shader_driver && video_info->shader_driver->use)
+         video_info->shader_driver->use(gl,
+               video_info->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
       if (gl->renderchain_driver->disable_client_arrays)
@@ -1226,7 +1235,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->renderchain_driver->unbind_vao(gl,
             gl->renderchain_data);
 
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
 
    return true;
 }
@@ -1266,7 +1275,7 @@ static void gl_free(void *data)
    if (!gl)
       return;
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    if (gl->have_sync)
    {
@@ -1332,13 +1341,13 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    if (!state)
       interval = settings->uints.video_swap_interval;
 
    video_context_driver_swap_interval(&interval);
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
 }
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
@@ -1501,48 +1510,48 @@ static bool gl_init_pbo_readback(gl_t *gl)
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
    enum gfx_ctx_api api;
+   const gfx_ctx_driver_t *gfx_ctx      = NULL;
+   void                      *ctx_data  = NULL;
    const char                 *api_name = NULL;
    settings_t                 *settings = config_get_ptr();
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
-   enum retro_hw_context_type ctx_type  = hwr->context_type;
-   bool hw_context_in_use               = ctx_type != RETRO_HW_CONTEXT_NONE;
 
 #ifdef HAVE_OPENGLES
    api                                  = GFX_CTX_OPENGL_ES_API;
    api_name                             = "OpenGL ES 2.0";
 
-   switch (ctx_type)
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
-      case RETRO_HW_CONTEXT_OPENGLES3:
-         major                             = 3;
-         minor                             = 0;
-         api_name                          = "OpenGL ES 3.0";
-         break;
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         api_name                          = "OpenGL ES 3.1+";
-         break;
-      case RETRO_HW_CONTEXT_NONE:
-      default:
-         break;
+      major                             = 3;
+      minor                             = 0;
+      api_name                          = "OpenGL ES 3.0";
    }
+   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
+      api_name                          = "OpenGL ES 3.1+";
 #else
-   api                                     = GFX_CTX_OPENGL_API;
-   api_name                                = "OpenGL";
+   api                                  = GFX_CTX_OPENGL_API;
+   api_name                             = "OpenGL";
 #endif
 
    (void)api_name;
 
    gl_shared_context_use = settings->bools.video_shared_context
-      && hw_context_in_use;
+      && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (libretro_get_shared_context() && hw_context_in_use)
+   if (     (libretro_get_shared_context())
+         && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl_shared_context_use = true;
 
-   return video_context_driver_init_first(gl,
+   gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
-         api, major, minor, gl_shared_context_use);
+         api, major, minor, gl_shared_context_use, &ctx_data);
+
+   if (ctx_data)
+      gl->ctx_data = ctx_data;
+
+   return gfx_ctx;
 }
 
 #ifdef GL_DEBUG
@@ -1733,6 +1742,7 @@ static void *gl_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
+   gl->ctx_driver                       = ctx_driver;
    gl->video_info                       = *video;
 
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
@@ -1789,18 +1799,10 @@ static void *gl_init(const video_info_t *video,
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
-      gfx_ctx_flags_t flags;
-
       gl_query_core_context_set(true);
       gl->core_context_in_use = true;
 
-      /**
-       * Ensure that the rest of the frontend knows we have a core context
-       */
-      flags.flags = 0;
-      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-      video_context_driver_set_flags(&flags);
+      gl_set_core_context(hwr->context_type);
 
       RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
       if (!gl_check_capability(GL_CAPS_VAO))
@@ -1877,9 +1879,9 @@ static void *gl_init(const video_info_t *video,
        * create textures. */
       gl->textures = 1;
 #ifdef GL_DEBUG
-      context_bind_hw_render(true);
+      gl_context_bind_hw_render(gl, true);
       gl_begin_debug(gl);
-      context_bind_hw_render(false);
+      gl_context_bind_hw_render(gl, false);
 #endif
    }
 
@@ -2015,7 +2017,7 @@ static void *gl_init(const video_info_t *video,
       goto error;
    }
 
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
    return gl;
 
 error:
@@ -2026,31 +2028,26 @@ error:
 
 static bool gl_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    gl_t         *gl     = (gl_t*)data;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
+   gl->ctx_driver->check_window(gl->ctx_data,
+         &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
-   if (video_context_driver_check_window(&size_data))
-   {
-      if (quit)
-         gl->quitting = true;
-      else if (resize)
-         gl->should_resize = true;
+   if (quit)
+      gl->quitting = true;
+   else if (resize)
+      gl->should_resize = true;
 
-      ret = !gl->quitting;
-   }
+   ret = !gl->quitting;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
@@ -2077,7 +2074,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    wrap_info.idx                     = 0;
    wrap_info.type                    = RARCH_WRAP_BORDER;
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    shader_filter.index               = 1;
    shader_filter.smooth              = &smooth;
@@ -2114,7 +2111,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
 }
 
 static bool gl_set_shader(void *data,
@@ -2129,7 +2126,7 @@ static bool gl_set_shader(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -2212,13 +2209,13 @@ static bool gl_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
 #endif
 
    return true;
 
 error:
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
    return false;
 }
 
@@ -2316,7 +2313,7 @@ static bool gl_overlay_load(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
+   gl_context_bind_hw_render(gl, false);
 
    gl_free_overlay(gl);
    gl->overlay_tex = (GLuint*)
@@ -2324,7 +2321,7 @@ static bool gl_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      context_bind_hw_render(true);
+      gl_context_bind_hw_render(gl, true);
       return false;
    }
 
@@ -2362,7 +2359,7 @@ static bool gl_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   context_bind_hw_render(true);
+   gl_context_bind_hw_render(gl, true);
    return true;
 }
 

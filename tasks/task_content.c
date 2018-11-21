@@ -386,9 +386,10 @@ static bool load_content_from_compressed_archive(
 {
    union string_list_elem_attr attributes;
    int64_t new_path_len              = 0;
-   size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
-   char *new_basedir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *new_path                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t new_basedir_size           = PATH_MAX_LENGTH * sizeof(char);
+   size_t new_path_size              = PATH_MAX_LENGTH * sizeof(char);
+   char *new_basedir                 = (char*)malloc(new_basedir_size);
+   char *new_path                    = (char*)malloc(new_path_size);
    bool ret                          = false;
 
    new_path[0]                       = '\0';
@@ -399,8 +400,7 @@ static bool load_content_from_compressed_archive(
          " Now extracting to temporary directory.\n");
 
    if (!string_is_empty(content_ctx->directory_cache))
-      strlcpy(new_basedir, content_ctx->directory_cache,
-            path_size);
+      strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
 
    if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
    {
@@ -408,24 +408,24 @@ static bool load_content_from_compressed_archive(
             "cache directory was not set or found. "
             "Setting cache directory to directory "
             "derived by basename...\n");
-      fill_pathname_basedir(new_basedir, path,
-            path_size);
+      fill_pathname_basedir(new_basedir, path, new_basedir_size);
    }
 
    new_path[0]    = '\0';
    new_basedir[0] = '\0';
 
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), path_size);
+         path_basename(path), new_path_size);
 
    ret = file_archive_compressed_read(path,
          NULL, new_path, &new_path_len);
 
    if (!ret || new_path_len < 0)
    {
-      char *str = (char*)malloc(1024 * sizeof(char));
+      size_t path_size = 1024 * sizeof(char);
+      char *str        = (char*)malloc(path_size);
       snprintf(str,
-            1024 * sizeof(char),
+            path_size,
             "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
@@ -452,12 +452,14 @@ error:
    return false;
 }
 
+/* Try to extract all content we're going to load if appropriate. */
+
 static bool content_file_init_extract(
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
-      union string_list_elem_attr *attr,
-      char **error_string
+      char **error_string,
+      union string_list_elem_attr *attr
       )
 {
    unsigned i;
@@ -478,32 +480,34 @@ static bool content_file_init_extract(
          continue;
 
       {
-         char *temp_content    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         const char *valid_ext = special ?
+         size_t temp_content_size = PATH_MAX_LENGTH * sizeof(char);
+         size_t new_path_size     = PATH_MAX_LENGTH * sizeof(char);
+         char *temp_content       = (char*)malloc(temp_content_size);
+         const char *valid_ext    = special ?
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
 
-         new_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         new_path        = (char*)malloc(new_path_size);
 
          temp_content[0] = new_path[0] = '\0';
 
          if (!string_is_empty(path))
-            strlcpy(temp_content, path,
-                  PATH_MAX_LENGTH * sizeof(char));
+            strlcpy(temp_content, path, temp_content_size);
 
          if (!valid_ext || !file_archive_extract_file(
                   temp_content,
-                  PATH_MAX_LENGTH * sizeof(char),
+                  temp_content_size,
                   valid_ext,
                   !string_is_empty(content_ctx->directory_cache) ?
                   content_ctx->directory_cache : NULL,
                   new_path,
-                  PATH_MAX_LENGTH * sizeof(char)
+                  new_path_size
                   ))
          {
-            char *str = (char*)malloc(1024 * sizeof(char));
+            size_t path_size = 1024 * sizeof(char);
+            char *str        = (char*)malloc(path_size);
 
-            snprintf(str, 1024 * sizeof(char),
+            snprintf(str, path_size,
                   "%s: %s.\n",
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
@@ -554,7 +558,7 @@ static bool content_file_load(
    unsigned i;
    retro_ctx_load_content_info_t load_info;
    size_t msg_size = 1024 * sizeof(char);
-   char *msg       = (char*)malloc(1024 * sizeof(char));
+   char *msg       = (char*)malloc(msg_size);
 
    msg[0]          = '\0';
 
@@ -603,9 +607,6 @@ static bool content_file_load(
       }
       else
       {
-         RARCH_LOG("%s\n",
-               msg_hash_to_str(
-                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
 
 #ifdef HAVE_COMPRESSION
          if (     !content_ctx->block_extract
@@ -618,6 +619,10 @@ static bool content_file_load(
                   error_string))
             goto error;
 #endif
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+         content_rom_crc = file_crc32(0, path);
+         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+
       }
    }
 
@@ -657,15 +662,16 @@ error:
 
 static const struct
 retro_subsystem_info *content_file_init_subsystem(
-      content_information_ctx_t *content_ctx,
+      const struct retro_subsystem_info *subsystem_data,
+      size_t subsystem_size,
       char **error_string,
       bool *ret)
 {
    size_t path_size                           = 1024 * sizeof(char);
-   char *msg                                  = (char*)malloc(1024 * sizeof(char));
+   char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            content_ctx->subsystem.data, content_ctx->subsystem.size,
+            subsystem_data, subsystem_size,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    msg[0] = '\0';
@@ -721,16 +727,16 @@ error:
    return NULL;
 }
 
-static bool content_file_init_set_attribs(
+static void content_file_init_set_attribs(
       struct string_list *content,
       const struct retro_subsystem_info *special,
       content_information_ctx_t *content_ctx,
-      char **error_string)
+      char **error_string,
+      union string_list_elem_attr *attr)
 {
-   union string_list_elem_attr attr;
    struct string_list *subsystem    = path_get_subsystem_list();
 
-   attr.i                           = 0;
+   attr->i                          = 0;
 
    if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
    {
@@ -738,11 +744,11 @@ static bool content_file_init_set_attribs(
 
       for (i = 0; i < subsystem->size; i++)
       {
-         attr.i            = special->roms[i].block_extract;
-         attr.i           |= special->roms[i].need_fullpath << 1;
-         attr.i           |= special->roms[i].required      << 2;
+         attr->i            = special->roms[i].block_extract;
+         attr->i           |= special->roms[i].need_fullpath << 1;
+         attr->i           |= special->roms[i].required      << 2;
 
-         string_list_append(content, subsystem->elems[i].data, attr);
+         string_list_append(content, subsystem->elems[i].data, *attr);
       }
    }
    else
@@ -752,26 +758,20 @@ static bool content_file_init_set_attribs(
 
       content_get_status(&contentless, &is_inited);
 
-      attr.i               = content_ctx->block_extract;
-      attr.i              |= content_ctx->need_fullpath << 1;
-      attr.i              |= (!contentless)  << 2;
+      attr->i               = content_ctx->block_extract;
+      attr->i              |= content_ctx->need_fullpath << 1;
+      attr->i              |= (!contentless)  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
             && contentless
             && content_ctx->set_supports_no_game_enable)
-         string_list_append(content, "", attr);
+         string_list_append(content, "", *attr);
       else
       {
          if (!path_is_empty(RARCH_PATH_CONTENT))
-            string_list_append(content, path_get(RARCH_PATH_CONTENT), attr);
+            string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
       }
    }
-
-#ifdef HAVE_COMPRESSION
-   /* Try to extract all content we're going to load if appropriate. */
-   content_file_init_extract(content, content_ctx, special, &attr, error_string);
-#endif
-   return true;
 }
 
 /**
@@ -787,16 +787,23 @@ static bool content_file_init(
       struct string_list *content,
       char **error_string)
 {
+   union string_list_elem_attr attr;
    struct retro_game_info               *info = NULL;
    bool ret                                   =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? true : false;
    const struct retro_subsystem_info *special =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
-      ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
-   if (  !ret ||
-         !content_file_init_set_attribs(content, special, content_ctx, error_string))
+      ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
+            content_ctx->subsystem.size, error_string, &ret);
+
+   if (!ret)
       return false;
+
+   content_file_init_set_attribs(content, special, content_ctx, error_string, &attr);
+#ifdef HAVE_COMPRESSION
+   content_file_init_extract(content, content_ctx, special, error_string, &attr);
+#endif
 
    if (content->size > 0)
       info                   = (struct retro_game_info*)
@@ -816,7 +823,7 @@ static bool content_file_init(
 
       free(info);
    }
-   else if (special == NULL)
+   else if (!special)
    {
       *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
       ret = false;
@@ -880,34 +887,29 @@ static bool task_load_content(content_ctx_info_t *content_info,
    bool is_inited   = false;
 
    if (!content_load(content_info))
-   {
       return false;
-   }
-
-
 
    content_get_status(&contentless, &is_inited);
 
    /* Push entry to top of history playlist */
    if (is_inited || contentless)
    {
-      char *tmp                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      rarch_system_info_t *sys_info  = runloop_get_system_info();
+      size_t tmp_size                = PATH_MAX_LENGTH * sizeof(char);
+      char *tmp                      = (char*)malloc(tmp_size);
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = sys_info ? &sys_info->info : NULL;
+      struct retro_system_info *info = runloop_get_libretro_system_info();
 
       tmp[0] = '\0';
 
       if (!string_is_empty(path_content))
-         strlcpy(tmp, path_content, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(tmp, path_content, tmp_size);
 
       if (!launched_from_menu)
       {
          /* Path can be relative here.
           * Ensure we're pushing absolute path. */
          if (!string_is_empty(tmp))
-            path_resolve_realpath(tmp,
-                  PATH_MAX_LENGTH * sizeof(char));
+            path_resolve_realpath(tmp, tmp_size);
       }
 
 #ifdef HAVE_MENU
@@ -1019,7 +1021,7 @@ static bool firmware_update_status(
    bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *s                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *s                    = (char*)malloc(s_size);
 
    core_info_get_current_core(&core_info);
 
@@ -1524,6 +1526,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    if (sys_info)
    {
+      struct retro_system_info *system        = runloop_get_libretro_system_info();
+
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
@@ -1531,11 +1535,11 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
          content_ctx.directory_system         = strdup(settings->paths.directory_system);
       if (!string_is_empty(settings->paths.directory_cache))
          content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
-      if (!string_is_empty(sys_info->info.valid_extensions))
-         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
+      if (!string_is_empty(system->valid_extensions))
+         content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = sys_info->info.block_extract;
-      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+      content_ctx.block_extract               = system->block_extract;
+      content_ctx.need_fullpath               = system->need_fullpath;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;
@@ -1650,7 +1654,7 @@ bool task_push_start_builtin_core(
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    retroarch_set_current_core_type(type, true);
-
+      printf("Step 1\n");
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
@@ -1797,10 +1801,10 @@ void content_set_subsystem(unsigned idx)
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   pending_subsystem_roms[pending_subsystem_rom_id] = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t pending_size                              = PATH_MAX_LENGTH * sizeof(char);
+   pending_subsystem_roms[pending_subsystem_rom_id] = (char*)malloc(pending_size);
 
-   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path,
-      PATH_MAX_LENGTH * sizeof(char));
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, pending_size);
    RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id,
       pending_subsystem_roms[pending_subsystem_rom_id]);
@@ -1916,6 +1920,8 @@ bool content_init(void)
 
    if (sys_info)
    {
+      struct retro_system_info *system        = runloop_get_libretro_system_info();
+
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
@@ -1923,11 +1929,11 @@ bool content_init(void)
          content_ctx.directory_system         = strdup(settings->paths.directory_system);
       if (!string_is_empty(settings->paths.directory_cache))
          content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
-      if (!string_is_empty(sys_info->info.valid_extensions))
-         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
+      if (!string_is_empty(system->valid_extensions))
+         content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = sys_info->info.block_extract;
-      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+      content_ctx.block_extract               = system->block_extract;
+      content_ctx.need_fullpath               = system->need_fullpath;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;

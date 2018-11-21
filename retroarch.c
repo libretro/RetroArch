@@ -1204,8 +1204,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   config_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   core_path                              = (char*)malloc(str_size);
+   config_directory                       = (char*)malloc(str_size);
    config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
@@ -1479,8 +1479,8 @@ void rarch_menu_running_finished(void)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char *game_path       = (char*)malloc(8192 * sizeof(char));
    size_t game_path_size = 8192 * sizeof(char);
+   char *game_path       = (char*)malloc(game_path_size);
 
    game_path[0] ='\0';
 
@@ -1697,15 +1697,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
-
-#if 0
-         if (!string_is_empty(runloop_system.info.library_name))
-            free((void*)runloop_system.info.library_name);
-         if (!string_is_empty(runloop_system.info.library_version))
-            free((void*)runloop_system.info.library_version);
-         if (!string_is_empty(runloop_system.info.valid_extensions))
-            free((void*)runloop_system.info.valid_extensions);
-#endif
 
          runloop_system.info.library_name          = NULL;
          runloop_system.info.library_version       = NULL;
@@ -2060,8 +2051,7 @@ char* retroarch_get_shader_preset(void)
       return runtime_shader_preset;
    else if (!string_is_empty(settings->paths.path_shader))
       return settings->paths.path_shader;
-   else
-      return NULL;
+   return NULL;
 }
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
@@ -3593,4 +3583,10 @@ int runloop_iterate(unsigned *sleep_ms)
 rarch_system_info_t *runloop_get_system_info(void)
 {
    return &runloop_system;
+}
+
+struct retro_system_info *runloop_get_libretro_system_info(void)
+{
+   struct retro_system_info *system = &runloop_system.info;
+   return system;
 }

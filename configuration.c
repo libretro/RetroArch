@@ -148,6 +148,7 @@ enum video_driver_enum
    VIDEO_XENON360,
    VIDEO_PSP1,
    VIDEO_VITA2D,
+   VIDEO_PS2,
    VIDEO_CTR,
    VIDEO_SWITCH,
    VIDEO_D3D8,
@@ -191,6 +192,7 @@ enum audio_driver_enum
    AUDIO_WIIU,
    AUDIO_RWEBAUDIO,
    AUDIO_PSP,
+   AUDIO_PS2,
    AUDIO_CTR,
    AUDIO_SWITCH,
    AUDIO_NULL
@@ -214,6 +216,7 @@ enum input_driver_enum
    INPUT_DINPUT,
    INPUT_PS3,
    INPUT_PSP,
+   INPUT_PS2,
    INPUT_CTR,
    INPUT_SWITCH,
    INPUT_XENON360,
@@ -237,6 +240,7 @@ enum joypad_driver_enum
    JOYPAD_WIIU,
    JOYPAD_XDK,
    JOYPAD_PSP,
+   JOYPAD_PS2,
    JOYPAD_CTR,
    JOYPAD_SWITCH,
    JOYPAD_DINPUT,
@@ -288,6 +292,7 @@ enum menu_driver_enum
    MENU_XMB,
    MENU_STRIPES,
    MENU_NUKLEAR,
+   MENU_OZONE,
    MENU_NULL
 };
 
@@ -324,6 +329,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 #elif defined(PSP)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
+#elif defined(PS2)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PS2;
 #elif defined(_3DS)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 #elif defined(SWITCH)
@@ -354,6 +361,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 #elif defined(PSP) || defined(VITA)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
+#elif defined(PS2)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
 #elif defined(_3DS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(SWITCH)
@@ -434,6 +443,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
+#elif defined(PS2)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
 #elif defined(_3DS)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(SWITCH)
@@ -450,7 +461,7 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_WAYLAND)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
@@ -476,6 +487,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PSP) || defined(VITA)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
+#elif defined(PS2)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 #elif defined(_3DS)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)
@@ -510,7 +523,7 @@ static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
-#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
+#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
@@ -524,7 +537,7 @@ static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
-#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
+#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
@@ -534,6 +547,8 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
+#elif defined(HAVE_OZONE) && defined(HAVE_LIBNX)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 #elif defined(HAVE_RGUI)
@@ -660,6 +675,8 @@ const char *config_get_default_audio(void)
 #else
          return "psp";
 #endif
+      case AUDIO_PS2:
+         return "ps2";
       case AUDIO_CTR:
          return "csnd";
       case AUDIO_SWITCH:
@@ -755,6 +772,8 @@ const char *config_get_default_video(void)
          return "d3d12";
       case VIDEO_PSP1:
          return "psp1";
+      case VIDEO_PS2:
+         return "ps2";
       case VIDEO_VITA2D:
          return "vita2d";
       case VIDEO_CTR:
@@ -815,6 +834,8 @@ const char *config_get_default_input(void)
 #else
          return "psp";
 #endif
+      case INPUT_PS2:
+         return "ps2";
       case INPUT_CTR:
          return "ctr";
       case INPUT_SWITCH:
@@ -885,6 +906,8 @@ const char *config_get_default_joypad(void)
 #else
          return "psp";
 #endif
+      case JOYPAD_PS2:
+         return "ps2";
       case JOYPAD_CTR:
          return "ctr";
       case JOYPAD_SWITCH:
@@ -1028,6 +1051,8 @@ const char *config_get_default_menu(void)
          return "rgui";
       case MENU_XUI:
          return "xui";
+      case MENU_OZONE:
+         return "ozone";
       case MENU_MATERIALUI:
          return "glui";
       case MENU_XMB:
@@ -1111,7 +1136,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
    SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
-   SETTING_ARRAY("twitch_stream_key",        settings->arrays.twitch_stream_key, true, NULL, true);
+   SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, default_discord_app_id, true);
    *size = count;
 
    return tmp;
@@ -1382,6 +1407,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_content_dir_overrides",  &settings->bools.quick_menu_show_save_content_dir_overrides, true, quick_menu_show_save_content_dir_overrides, false);
    SETTING_BOOL("quick_menu_show_information",   &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, kiosk_mode_enable, false);
+   SETTING_BOOL("menu_use_preferred_system_color_theme",         &settings->bools.menu_use_preferred_system_color_theme, true, menu_use_preferred_system_color_theme, false);
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
@@ -1491,6 +1517,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
+#ifdef _3DS
+   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
+#endif
+
    *size = count;
 
    return tmp;
@@ -1575,6 +1605,16 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_timedate_style", &settings->uints.menu_timedate_style, true, menu_timedate_style, false);
+#ifdef HAVE_LIBNX
+   SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
+   SETTING_UINT("split_joycon_p2", &settings->uints.input_split_joycon[1], true, 0, false);
+   SETTING_UINT("split_joycon_p3", &settings->uints.input_split_joycon[2], true, 0, false);
+   SETTING_UINT("split_joycon_p4", &settings->uints.input_split_joycon[3], true, 0, false);
+   SETTING_UINT("split_joycon_p5", &settings->uints.input_split_joycon[4], true, 0, false);
+   SETTING_UINT("split_joycon_p6", &settings->uints.input_split_joycon[5], true, 0, false);
+   SETTING_UINT("split_joycon_p7", &settings->uints.input_split_joycon[6], true, 0, false);
+   SETTING_UINT("split_joycon_p8", &settings->uints.input_split_joycon[7], true, 0, false);
+#endif
 #ifdef HAVE_XMB
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
@@ -1588,6 +1628,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
+#ifdef HAVE_OZONE
+   SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 0, false);
+#endif
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
@@ -1803,6 +1846,9 @@ void config_set_defaults(void)
 #ifdef HAVE_XMB
    *settings->paths.path_menu_xmb_font            = '\0';
 #endif
+
+   strlcpy(settings->arrays.discord_app_id,
+      default_discord_app_id,  sizeof(settings->arrays.discord_app_id));
 
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu.materialui.menu_color_theme_enable)
@@ -2349,7 +2395,8 @@ static bool check_menu_driver_compatibility(void)
    char *menu_driver    = settings->arrays.menu_driver;
 
    if (string_is_equal  (menu_driver, "rgui") ||
-         string_is_equal(menu_driver, "null"))
+         string_is_equal(menu_driver, "null") ||
+         string_is_equal(video_driver, "null"))
       return true;
 
    /* TODO/FIXME - maintenance hazard */
@@ -2357,11 +2404,13 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "d3d10")  ||
          string_is_equal(video_driver, "d3d11")  ||
          string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "gdi")    ||
          string_is_equal(video_driver, "gl")     ||
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
          string_is_equal(video_driver, "metal")  ||
-         string_is_equal(video_driver, "vita"))
+         string_is_equal(video_driver, "ctr")    ||
+         string_is_equal(video_driver, "vita2d"))
       return true;   
 
    return false;

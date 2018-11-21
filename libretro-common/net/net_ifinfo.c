@@ -38,7 +38,9 @@
 #ifdef WANT_IFADDRS
 #include <compat/ifaddrs.h>
 #else
+#ifndef HAVE_LIBNX
 #include <ifaddrs.h>
+#endif
 #endif
 #endif
 
@@ -71,10 +73,77 @@ void net_ifinfo_free(net_ifinfo_t *list)
    free(list->entries);
 }
 
+#ifdef HAVE_LIBNX
+static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
+{
+   unsigned char bytes[4];
+   bytes[0] = ip & 0xFF;
+   bytes[1] = (ip >> 8) & 0xFF;
+   bytes[2] = (ip >> 16) & 0xFF;
+   bytes[3] = (ip >> 24) & 0xFF;
+
+   if (inverted)
+      snprintf(dst, size, "%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3]);
+   else
+      snprintf(dst, size, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
+}
+#endif
+
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
    unsigned k              = 0;
-#if defined(_WIN32) && !defined(_XBOX)
+#ifdef HAVE_LIBNX
+   uint32_t id;
+   Result rc;
+
+   char hostname[128];
+   struct net_ifinfo_entry *ptr = NULL;
+
+   memset(list, 0, sizeof(net_ifinfo_t));
+
+   /* loopback */
+   convert_ip(hostname, sizeof(hostname), INADDR_LOOPBACK, false);
+
+   ptr = (struct net_ifinfo_entry*)
+         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+
+   if (!ptr)
+      goto error;
+
+   list->entries          = ptr;
+
+   list->entries[k].name  = strdup("lo");
+   list->entries[k].host  = strdup(hostname);
+   list->size             = k + 1;
+
+   k++;
+
+   /*
+      actual interface
+      can be wlan or eth (with a wiiu adapter)
+      so we just use "switch" as a name 
+   */
+   rc = nifmGetCurrentIpAddress(&id);
+
+   if (!R_SUCCEEDED(rc)) /* not connected to any network */
+      return true;
+
+   convert_ip(hostname, sizeof(hostname), id, true);
+
+   ptr = (struct net_ifinfo_entry*)
+         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+
+   if (!ptr)
+      goto error;
+
+   list->entries          = ptr;
+
+   list->entries[k].name  = strdup("switch");
+   list->entries[k].host  = strdup(hostname);
+   list->size             = k + 1;
+
+   return true;
+#elif defined(_WIN32) && !defined(_XBOX)
    PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
    PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
 #ifdef _WIN32_WINNT_WINXP
@@ -173,7 +242,7 @@ error:
 #ifdef _WIN32
    if (adapter_addresses)
       free(adapter_addresses);
-#else
+#elif !defined(HAVE_LIBNX)
    freeifaddrs(ifaddr);
 #endif
    net_ifinfo_free(list);

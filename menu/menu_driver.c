@@ -76,8 +76,18 @@ typedef struct menu_ctx_load_image
    enum menu_image_type type;
 } menu_ctx_load_image_t;
 
+float osk_dark[16] =  {
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+   0.00, 0.00, 0.00, 0.85,
+};
+
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
 #endif
@@ -445,7 +455,6 @@ font_data_t *menu_display_font(
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
-   font_data_t *font_data = NULL;
 
    if (!menu_disp)
       return NULL;
@@ -454,6 +463,15 @@ font_data_t *menu_display_font(
 
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
+
+   return menu_display_font_file(fontpath, font_size, is_threaded);
+}
+
+font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+{
+   font_data_t *font_data = NULL;
+   if (!menu_disp)
+      return NULL;
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
@@ -982,7 +1000,7 @@ void menu_display_draw_texture_slice(
    draw.matrix_data         = &mymat;
    draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id         = 0;
-   coords.color             = (const float*)colors;
+   coords.color             = (const float*)(color == NULL ? colors : color);
 
    menu_display_rotate_z(&rotate_draw, video_info);
 
@@ -1149,18 +1167,18 @@ void menu_display_draw_texture_slice(
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
    vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1] - vert_scaled_mid_height;
+   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_scaled_mid_height;
+   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
 
    tex_coord[0] = T_BL[0] + tex_woff;
    tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
    tex_coord[2] = T_BR[0] + tex_mid_width;
    tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
    tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1] + tex_mid_height;
+   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
    tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_mid_height;
+   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
    menu_display_draw(&draw, video_info);
 
@@ -1492,18 +1510,13 @@ void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
       video_frame_info_t *video_info,
-      char *grid[], unsigned id)
+      char *grid[], unsigned id,
+      unsigned text_color)
 {
    unsigned i;
    int ptr_width, ptr_height;
    unsigned width    = video_info->width;
    unsigned height   = video_info->height;
-   float dark[16]    =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-   };
 
    float white[16]=  {
       1.00, 1.00, 1.00, 1.00,
@@ -1516,7 +1529,7 @@ void menu_display_draw_keyboard(
          video_info,
          0, height/2.0, width, height/2.0,
          width, height,
-         &dark[0]);
+         &osk_dark[0]);
 
    ptr_width  = width  / 11;
    ptr_height = height / 10;
@@ -1526,7 +1539,8 @@ void menu_display_draw_keyboard(
 
    for (i = 0; i < 44; i++)
    {
-      int line_y = (i / 11) * height / 10.0;
+      int line_y     = (i / 11) * height / 10.0;
+      unsigned color = 0xffffffff;
 
       if (i == id)
       {
@@ -1542,14 +1556,16 @@ void menu_display_draw_keyboard(
                hover_texture);
 
          menu_display_blend_end(video_info);
+
+         color = text_color;
       }
 
       menu_display_draw_text(font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11)
             * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + font->size / 3,
-            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
+            width, height, color, TEXT_ALIGN_CENTER, 1.0f,
+            false, 0, false);
    }
 }
 
@@ -1559,13 +1575,15 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale, bool shadows_enable, float shadow_offset)
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
 {
    struct font_params params;
 
    /* Don't draw outside of the screen */
-   if (     (x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64)
+   if (     ((x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64))
+         && !draw_outside
       )
       return;
 
@@ -1589,7 +1607,7 @@ void menu_display_draw_text(
    video_driver_set_osd_msg(text, &params, (void*)font);
 }
 
-void menu_display_reset_textures_list(
+bool menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type)
 {
@@ -1605,14 +1623,16 @@ void menu_display_reset_textures_list(
       fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
 
    if (string_is_empty(texpath) || !filestream_exists(texpath))
-      return;
+      return false;
 
    if (!image_texture_load(&ti, texpath))
-      return;
+      return false;
 
    video_driver_texture_load(&ti,
          filter_type, item);
    image_texture_free(&ti);
+
+   return true;
 }
 
 bool menu_driver_is_binding_state(void)
@@ -2625,4 +2645,12 @@ size_t menu_navigation_get_selection(void)
 void menu_navigation_set_selection(size_t val)
 {
    menu_driver_selection_ptr = val;
+}
+
+void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
+{
+   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
+   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
+   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
+   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }

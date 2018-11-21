@@ -62,9 +62,18 @@ static uint32_t *splashData = NULL;
 
 static bool psmInitialized = false;
 
+static AppletHookCookie applet_hook_cookie;
+
 #ifdef NXLINK
 extern bool nxlink_connected;
 #endif
+
+static void on_applet_hook(AppletHookType hook, void* param) {
+   if(hook == AppletHookType_OnExitRequest) {
+      RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
+      retroarch_main_quit();
+   }
+}
 
 #endif /* HAVE_LIBNX */
 
@@ -191,6 +200,7 @@ static void frontend_switch_deinit(void *data)
    (void)data;
 
 #ifdef HAVE_LIBNX
+   nifmExit();
 #if defined(SWITCH) && defined(NXLINK)
    socketExit();
 #endif
@@ -208,6 +218,7 @@ static void frontend_switch_deinit(void *data)
 #ifndef HAVE_OPENGL
    gfxExit();
 #endif
+   appletUnlockExit();
 #endif
 }
 
@@ -607,6 +618,9 @@ static void frontend_switch_init(void *data)
    (void)data;
 
 #ifdef HAVE_LIBNX
+   nifmInitialize();
+   appletLockExit();
+   appletHook(&applet_hook_cookie, on_applet_hook, NULL);
 #ifndef HAVE_OPENGL
    /* Init Resolution before initDefault */
    gfxInitResolution(1280, 720);
@@ -616,6 +630,9 @@ static void frontend_switch_init(void *data)
 
    gfxConfigureTransform(0);
 #endif /* HAVE_OPENGL */
+
+   appletInitializeGamePlayRecording();
+
 #ifdef NXLINK
    socketInitializeDefault();
    nxlink_connected = nxlinkStdio() != -1;

@@ -1,13 +1,21 @@
 # 1.7.6 (future)
+- CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
 - MIDI: Add a Linux ALSA driver for MIDI.
+- LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Simplified Chinese translation.
 - LOCALIZATION: Update Japanese translation.
+- MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
+- MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
+- VULKAN: Fix RGUI crashing at startup.
+- VULKAN: Fix secondary screens in overlays not working.
+- WINDOWS/WSA: Network Information info is blank until first network operation.
+- WIIU: Initial netplay peer-to-peer support. Network information working.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
