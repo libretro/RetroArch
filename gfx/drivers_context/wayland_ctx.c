@@ -42,6 +42,10 @@
 #include "../common/gl_common.h"
 #endif
 
+#ifdef HAVE_DBUS
+#include "../common/dbus_common.h"
+#endif
+
 #include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -49,6 +53,7 @@
 
 // Generated from xdg-shell.xml
 #include "../common/wayland/xdg-shell.h"
+
 
 typedef struct touch_pos
 {
@@ -76,7 +81,6 @@ typedef struct gfx_ctx_wayland_data
    unsigned physical_width;
    unsigned physical_height;
    int refresh_rate;
-   int touch_entries;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -244,7 +248,7 @@ static const struct wl_keyboard_listener keyboard_listener = {
    keyboard_handle_repeat_info
 };
 
-static int gfx_ctx_wl_show_mouse(void *data, bool state);
+static void gfx_ctx_wl_show_mouse(void *data, bool state);
 
 static void pointer_handle_enter(void *data,
       struct wl_pointer *pointer,
@@ -305,6 +309,8 @@ static void pointer_handle_button(void *data,
       {
          wl->input.mouse.left = true;
 
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->xdg_toplevel)
+            xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
       }
       else if (button == BTN_RIGHT)
          wl->input.mouse.right = true;
@@ -342,43 +348,6 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_button,
    pointer_handle_axis,
 };
-
-static int check_for_resize(void *data, wl_fixed_t x_w, wl_fixed_t y_w,
-      enum xdg_toplevel_resize_edge *edge)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	
-	if (wl->touch_entries || wl->fullscreen || wl->maximized)
-		return 0;
-	
-	const int edge_pixels = 64;
-	int pos[2] = { wl_fixed_to_double(x_w), wl_fixed_to_double(y_w) };
-	int left_edge = pos[0] < edge_pixels;
-	int top_edge = pos[1] < edge_pixels;
-	int right_edge = pos[0] > edge_pixels;
-	int bottom_edge = pos[1] > edge_pixels;
-	
-	if (left_edge) {
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
-		if (top_edge)
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT;
-	} else if (right_edge) {
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
-		if (top_edge)
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT;
-		else if (bottom_edge)
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT;
-	} else if (top_edge) {
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP;
-	} else if (bottom_edge) {
-		*edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
-	} else {
-		*edge = 0;
-		return 0;
-	}
-	
-	return 1;
-}
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -625,11 +594,38 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
     }
 }
 
-//TODO: Setup resize here
-
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
 };
+
+//static void shell_surface_handle_configure(void *data,
+      //struct xdg_surface *xdg_surface,
+      //uint32_t edges, int32_t width, int32_t height)
+//{
+   //gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   //(void)xdg_surface;
+   //(void)edges;
+
+   //wl->width  = wl->buffer_scale * width;
+   //wl->height = wl->buffer_scale * height;
+
+   //RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
+         //wl->width, wl->height);
+//}
+
+//static void shell_surface_handle_popup_done(void *data,
+      //struct wl_shell_surface *shell_surface)
+//{
+   //(void)data;
+   //(void)shell_surface;
+//}
+
+//static const struct wl_shell_surface_listener shell_surface_listener = {
+   //shell_surface_handle_ping,
+   //shell_surface_handle_configure,
+   //shell_surface_handle_popup_done,
+//};
 
 static void display_handle_geometry(void *data,
       struct wl_output *output,
@@ -718,6 +714,7 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    {
       output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
+      wl_output_add_listener(output, &output_listener, wl);
       wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, "xdg_wm_base"))
@@ -831,6 +828,11 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->width      = 0;
    wl->height     = 0;
+
+#ifdef HAVE_DBUS
+   dbus_screensaver_uninhibit();
+   dbus_close_connection();
+#endif
 }
 
 void flush_wayland_fd(void *data)
@@ -1110,7 +1112,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    if (!wl->shell)
    {
-      RARCH_ERR("[Wayland]: Compositor doesn't support xdg-shell interface.\n");
+      RARCH_ERR("[Wayland]: Failed to create shell.\n");
       goto error;
    }
 
@@ -1164,6 +1166,10 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    }
 
    flush_wayland_fd(&wl->input);
+
+#ifdef HAVE_DBUS
+   dbus_ensure_connection();
+#endif
 
    return wl;
 
@@ -1341,9 +1347,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
    xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
 
-   xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
    xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
-
+   xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
 
    switch (wl_api)
    {
@@ -1367,6 +1372,12 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
+
+   //if (fullscreen)
+      //wl_shell_surface_set_fullscreen(wl->shell_surf,
+            //WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
+
+   //flush_wayland_fd(&wl->input);
 
    switch (wl_api)
    {
@@ -1425,6 +1436,24 @@ static bool gfx_ctx_wl_has_focus(void *data)
    (void)data;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    return wl->input.keyboard_focus;
+}
+
+static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+#ifdef HAVE_DBUS
+   return dbus_suspend_screensaver(enable);
+#endif
+
+   return true;
+}
+
+static bool gfx_ctx_wl_has_windowed(void *data)
+{
+   (void)data;
+   return true;
 }
 
 static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
@@ -1578,11 +1607,11 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
       wl->core_hw_context_enable = true;
 }
 
-static int gfx_ctx_wl_show_mouse(void *data, bool state)
+static void gfx_ctx_wl_show_mouse(void *data, bool state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (!wl->wl_pointer)
-      return 1;
+      return;
 
    if (state)
    {
@@ -1612,6 +1641,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_bind_api,
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
+   gfx_ctx_wl_get_video_size,
    gfx_ctx_wl_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
@@ -1622,6 +1652,8 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_check_window,
    gfx_ctx_wl_set_resize,
    gfx_ctx_wl_has_focus,
+   gfx_ctx_wl_suppress_screensaver,
+   gfx_ctx_wl_has_windowed,
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
    gfx_ctx_wl_get_proc_address,
