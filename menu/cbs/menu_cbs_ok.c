@@ -1082,7 +1082,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 }
 
 #ifdef HAVE_LIBRETRODB
-void handle_dbscan_finished(void *task_data, void *user_data, const char *err);
+void handle_dbscan_finished(retro_task_t *task, void *task_data, void *user_data, const char *err);
 #endif
 
 static void content_add_to_playlist(const char *path)
@@ -1411,7 +1411,7 @@ static int generic_action_ok(const char *path,
             if(!file_copy(action_path, destination_path, message, sizeof(message)))
             {
                runloop_msg_queue_push(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true);
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_LOG("[sideload] %s: %s\n", msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), message);
                RARCH_LOG(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR));
@@ -1419,7 +1419,7 @@ static int generic_action_ok(const char *path,
             else
             {
                runloop_msg_queue_push(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS), 1, 100, true);
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_LOG("[sideload] %s\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS));
             }
          }
@@ -1788,7 +1788,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    {
       runloop_msg_queue_push(
             "File could not be loaded from playlist.\n",
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       if (playlist_initialized)
          playlist_free(tmp_playlist);
       return menu_cbs_exit();
@@ -1863,7 +1864,8 @@ static int action_ok_playlist_entry(const char *path,
    {
       runloop_msg_queue_push(
             "File could not be loaded from playlist.\n",
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return menu_cbs_exit();
    }
 
@@ -1938,7 +1940,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
    if (!menu_content_playlist_load(playlist, selection_ptr))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
    }
 
@@ -2240,13 +2242,15 @@ static void menu_input_st_string_cb_disable_kiosk_mode(void *userdata,
 
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -2267,13 +2271,15 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -2303,11 +2309,13 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       if(ret)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       else
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    menu_input_dialog_end();
@@ -2435,11 +2443,13 @@ static int generic_action_ok_shader_preset_save(const char *path,
    if(menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -2525,12 +2535,14 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
    {
@@ -2559,12 +2571,14 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE),
-               1, 100, true);
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return 0;
 }
@@ -2700,7 +2714,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    snprintf(command, sizeof(command), "Current Clock set to %i", profile_clock);
 #endif
 
-   runloop_msg_queue_push(command, 1, 90, true);
+   runloop_msg_queue_push(command, 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 	return menu_cbs_exit();
 }
@@ -2721,7 +2735,7 @@ static int action_ok_set_switch_gpu_profile(const char *path,
 
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 
-   runloop_msg_queue_push(command, 1, 90, true);
+   runloop_msg_queue_push(command, 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 	return menu_cbs_exit();
 }
@@ -2739,7 +2753,7 @@ static int action_ok_set_switch_backlight(const char *path,
 
    snprintf(command, sizeof(command), "Brightness set to %d%%", brightness);
 
-   runloop_msg_queue_push(command, 1, 90, true);
+   runloop_msg_queue_push(command, 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -2919,7 +2933,7 @@ static int action_ok_cheat_add_top(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -2940,7 +2954,7 @@ static int action_ok_cheat_add_bottom(const char *path,
          msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -2952,7 +2966,7 @@ static int action_ok_cheat_delete_all(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_INSTRUCTIONS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 240, true);
+   runloop_msg_queue_push(msg, 1, 240, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return 0 ;
 }
 
@@ -2984,7 +2998,7 @@ static int action_ok_cheat_add_new_after(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -3020,7 +3034,7 @@ static int action_ok_cheat_add_new_before(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -3057,7 +3071,7 @@ static int action_ok_cheat_copy_before(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -3094,7 +3108,7 @@ static int action_ok_cheat_copy_after(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0 ;
 }
@@ -3133,7 +3147,7 @@ static int action_ok_cheat_delete(const char *path,
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    new_selection_ptr = menu_navigation_get_selection();
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
@@ -3245,7 +3259,7 @@ static int action_ok_undo_save_state(const char *path,
 #ifdef HAVE_NETWORKING
 
 #ifdef HAVE_ZLIB
-static void cb_decompressed(void *task_data, void *user_data, const char *err)
+static void cb_decompressed(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
@@ -3378,7 +3392,7 @@ default_action_ok_list(action_ok_core_updater_list, MENU_ENUM_LABEL_CB_CORE_UPDA
 default_action_ok_list(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
 default_action_ok_list(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
-static void cb_generic_dir_download(void *task_data,
+static void cb_generic_dir_download(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
    file_transfer_t     *transf      = (file_transfer_t*)user_data;
@@ -3392,7 +3406,7 @@ static void cb_generic_dir_download(void *task_data,
 }
 
 /* expects http_transfer_t*, file_transfer_t* */
-void cb_generic_download(void *task_data,
+void cb_generic_download(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
@@ -3527,10 +3541,14 @@ void cb_generic_download(void *task_data,
 
    if (path_is_compressed_file(output_path))
    {
+      void *frontend_userdata = task->frontend_userdata;
+      task->frontend_userdata = NULL;
+
       if (!task_push_decompress(output_path, dir_path,
                NULL, NULL, NULL,
                cb_decompressed, (void*)(uintptr_t)
-               msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
+               msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
+               frontend_userdata))
       {
         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
         goto finish;
@@ -3709,7 +3727,8 @@ static int action_ok_option_create(const char *path,
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
 
@@ -3726,7 +3745,8 @@ static int action_ok_option_create(const char *path,
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
-            1, 100, true);
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       path_set(RARCH_PATH_CORE_OPTIONS, game_path);
    }
    config_file_free(conf);
@@ -4258,7 +4278,7 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 #define INET6_ADDRSTRLEN 46
 #endif
 
-static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
+static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    char *new_data                = NULL;
    const char *path              = NULL;
@@ -4385,7 +4405,7 @@ finish:
 
 }
 
-static void netplay_lan_scan_callback(void *task_data,
+static void netplay_lan_scan_callback(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
    struct netplay_host_list *netplay_hosts = NULL;
@@ -4876,7 +4896,7 @@ static int action_ok_video_resolution(const char *path,
          snprintf(msg, sizeof(msg),
                "Applying: %dx%d\n START to reset",
                width, height);
-      runloop_msg_queue_push(msg, 1, 100, true);
+      runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #else
    generic_action_ok_displaylist_push(
@@ -4908,7 +4928,8 @@ static int action_ok_netplay_enable_host(const char *path,
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true);
+            1, 480, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
 
@@ -4938,7 +4959,8 @@ static void action_ok_netplay_enable_client_hostname_cb(
                (void*)tmp_hostname);
          runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true);
+            1, 480, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {

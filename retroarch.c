@@ -60,7 +60,11 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_animation.h"
 #include "menu/menu_input.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "menu/widgets/menu_widgets.h"
+#endif
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_dialog.h"
 #endif
@@ -1907,7 +1911,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool threaded_enable = false;
 #endif
             task_queue_deinit();
-            task_queue_init(threaded_enable, runloop_msg_queue_push);
+            task_queue_init(threaded_enable, runloop_task_msg_queue_push);
          }
          break;
       case RARCH_CTL_SET_CORE_SHUTDOWN:
@@ -2429,11 +2433,29 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-void runloop_msg_queue_push(const char *msg,
+void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
 {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (!video_driver_has_widgets() || !menu_widgets_task_msg_queue_push(task))
+#endif
+      runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{
    runloop_ctx_msg_info_t msg_info;
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   /* People have 60FPS in mind when they use runloop_msg_queue_push */
+   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg, duration / 60 * 1000, title, icon, category))
+     return;
+#endif
 
 #ifdef HAVE_THREADS
    runloop_msg_queue_lock();
@@ -2450,7 +2472,8 @@ void runloop_msg_queue_push(const char *msg,
    if (runloop_msg_queue)
    {
       msg_queue_push(runloop_msg_queue, msg_info.msg,
-            msg_info.prio, msg_info.duration);
+            msg_info.prio, msg_info.duration,
+            title, icon, category);
 
       ui_companion_driver_msg_queue_push(msg_info.msg,
             msg_info.prio, msg_info.duration, msg_info.flush);
@@ -2808,7 +2831,13 @@ static enum runloop_state runloop_check_state(
       }
    }
 
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU)
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_iterate();
+#endif
+
+   menu_animation_update();
+
    if (menu_is_alive)
    {
       enum menu_action action;
@@ -3223,8 +3252,17 @@ static enum runloop_state runloop_check_state(
 
       /* Display the fast forward state to the user, if needed. */
       if (runloop_fastmotion)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
+      {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets() || !menu_widgets_set_fast_forward(true))
+#endif
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      else
+         menu_widgets_set_fast_forward(false);
+#endif
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
@@ -3266,7 +3304,7 @@ static enum runloop_state runloop_check_state(
                msg_hash_to_str(MSG_STATE_SLOT),
                settings->ints.state_slot);
 
-         runloop_msg_queue_push(msg, 2, 180, true);
+         runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          RARCH_LOG("%s\n", msg);
       }
@@ -3301,7 +3339,7 @@ static enum runloop_state runloop_check_state(
    if (cheevos_hardcore_active && cheevos_state_loaded_flag)
    {
       cheevos_hardcore_paused = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    if (!cheevos_hardcore_active)
@@ -3309,12 +3347,23 @@ static enum runloop_state runloop_check_state(
    {
       char s[128];
       unsigned t = 0;
+      bool rewinding = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
       s[0] = '\0';
 
-      if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-               settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
-         runloop_msg_queue_push(s, 0, t, true);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!video_driver_has_widgets())
+#endif
+         if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+                  settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
+            runloop_msg_queue_push(s, 0, t, true, NULL, 
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_set_rewind(rewinding);
+#endif
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -3352,13 +3401,22 @@ static enum runloop_state runloop_check_state(
                video_driver_cached_frame();
          }
 
-         if (state_manager_frame_is_reversed())
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false);
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets())
+         {
+#endif
+            if (state_manager_frame_is_reversed())
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL, 
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false, 
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       }
+#endif
 
       old_slowmotion_button_state                  = new_slowmotion_button_state;
       old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;

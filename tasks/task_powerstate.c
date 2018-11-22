@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include "../../frontend/frontend_driver.h"
 #include "tasks_internal.h"
+#include <queues/task_queue.h>
 
 static int              power_percent = 0;
 static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
@@ -38,7 +39,7 @@ enum frontend_powerstate get_last_powerstate(int *percent)
    return state;
 }
 
-static void task_powerstate_cb(void *task_data,
+static void task_powerstate_cb(retro_task_t* task, void *task_data,
                                void *user_data, const char *error)
 {
    powerstate_t *powerstate = (powerstate_t*)task_data;
@@ -66,7 +67,7 @@ static void task_powerstate_handler(retro_task_t *task)
 
 void task_push_get_powerstate(void)
 {
-   retro_task_t *task  = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task  = task_init();
    powerstate_t *state = NULL;
 
    if (!task)

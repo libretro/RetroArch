@@ -274,7 +274,7 @@ static int action_start_video_resolution(unsigned type, const char *label)
       video_driver_set_video_mode(width, height, true);
 
       strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
-      runloop_msg_queue_push(msg, 1, 100, true);
+      runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return 0;

@@ -84,12 +84,6 @@ enum menu_animation_easing_type
    EASING_LAST
 };
 
-typedef struct menu_animation_ctx_delta
-{
-   float current;
-   float ideal;
-} menu_animation_ctx_delta_t;
-
 typedef uintptr_t menu_animation_ctx_tag;
 
 typedef struct menu_animation_ctx_subject
@@ -141,9 +135,7 @@ void menu_animation_init(void);
 
 void menu_animation_free(void);
 
-bool menu_animation_update(float delta_time);
-
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
+bool menu_animation_update();
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 
@@ -162,6 +154,8 @@ void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *ent
 float menu_animation_get_delta_time(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
+
+float menu_animation_get_ticker_time();
 
 RETRO_END_DECLS
 

@@ -91,6 +91,12 @@ bool file_list_prepend(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx);
 
+bool file_list_insert(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx,
+      size_t idx);
+
 void file_list_pop(file_list_t *list, size_t *directory_ptr);
 
 void file_list_clear(file_list_t *list);

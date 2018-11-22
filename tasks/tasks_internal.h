@@ -84,7 +84,8 @@ bool task_push_decompress(
       const char *subdir,
       const char *valid_ext,
       retro_task_callback_t cb,
-      void *user_data);
+      void *user_data,
+      void *frontend_userdata);
 
 void task_file_load_handler(retro_task_t *task);
 

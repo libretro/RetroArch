@@ -271,7 +271,8 @@ bool task_push_decompress(
       const char *subdir,
       const char *valid_ext,
       retro_task_callback_t cb,
-      void *user_data)
+      void *user_data,
+      void *frontend_userdata)
 {
    char tmp[PATH_MAX_LENGTH];
    const char *ext            = NULL;
@@ -334,10 +335,12 @@ bool task_push_decompress(
    s->archive.type   = ARCHIVE_TRANSFER_INIT;
    s->userdata = (struct archive_extract_userdata*)calloc(1, sizeof(*s->userdata));
 
-   t              = (retro_task_t*)calloc(1, sizeof(*t));
+   t              = task_init();
 
    if (!t)
       goto error;
+
+   t->frontend_userdata = frontend_userdata;
 
    t->state       = s;
    t->handler     = task_decompress_handler;

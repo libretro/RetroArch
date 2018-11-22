@@ -35,7 +35,7 @@ struct nat_traversal_state_data
    uint16_t port;
 };
 
-static void netplay_nat_traversal_callback(void *task_data,
+static void netplay_nat_traversal_callback(retro_task_t *task, void *task_data,
                                void *user_data, const char *error)
 {
    struct nat_traversal_state_data *ntsd =
@@ -65,7 +65,7 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 {
 #ifdef HAVE_NETWORKING
    struct nat_traversal_state_data *ntsd;
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task = task_init();
 
    if (!task)
       return false;

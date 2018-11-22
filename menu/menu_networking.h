@@ -22,6 +22,7 @@
 
 #include <retro_common_api.h>
 #include <retro_environment.h>
+#include <queues/task_queue.h>
 
 #include <lists/file_list.h>
 
@@ -33,10 +34,10 @@ void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended);
 
-void cb_net_generic_subdir(void *task_data, void *user_data,
+void cb_net_generic_subdir(retro_task_t *task, void *task_data, void *user_data,
       const char *err);
 
-void cb_net_generic(void *task_data, void *user_data, const char *err);
+void cb_net_generic(retro_task_t *task, void *task_data, void *user_data, const char *err);
 
 RETRO_END_DECLS
 

@@ -265,7 +265,7 @@ static void* task_push_http_transfer_generic(
    /* Concurrent download of the same file is not allowed */
    if (task_queue_find(&find_data))
    {
-      RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
+      RARCH_LOG("[http] '%s' is already being downloaded.\n", url);
       return NULL;
    }
 
@@ -286,7 +286,7 @@ static void* task_push_http_transfer_generic(
    strlcpy(http->connection.url, url, sizeof(http->connection.url));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
-   t                       = (retro_task_t*)calloc(1, sizeof(*t));
+   t                       = task_init();
 
    if (!t)
       goto error;

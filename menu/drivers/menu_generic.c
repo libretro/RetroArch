@@ -29,6 +29,8 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 
+#include "../../tasks/task_content.h"
+
 static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
@@ -75,6 +77,16 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
 
    if (!menu)
       return 0;
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (task_load_content_is_pending())
+   {
+      if (task_load_content_should_resume())
+         action = MENU_ACTION_OK;
+      else
+         return 0;
+   }
+#endif
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 

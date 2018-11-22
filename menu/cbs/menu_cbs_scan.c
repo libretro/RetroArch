@@ -37,7 +37,7 @@
 #endif
 
 #ifdef HAVE_LIBRETRODB
-void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
+void handle_dbscan_finished(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
