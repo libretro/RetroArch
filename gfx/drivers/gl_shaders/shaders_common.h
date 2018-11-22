@@ -23,11 +23,11 @@
                   "#else\n" \
                   "  precision mediump float;\n" \
                   "#endif\n" #src
+#define GLSL_300(src)   "#version 300 es\n"   #src
 #else
 #define CG(src)   "" #src
 #define GLSL(src) "" #src
-#define GLSL_300(src)   "#version 300 es\n"   #src
-#define GLSL_330(src)   "#version 330 core\n"   #src
+#define GLSL_330(src)   "#version 330\n"   #src
 #endif
 
 #endif
