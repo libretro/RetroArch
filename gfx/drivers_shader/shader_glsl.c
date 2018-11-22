@@ -344,7 +344,6 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       }
 #endif
       snprintf(version, sizeof(version), "#version %u%s\n", version_no, version_extra);
-      RARCH_LOG("[GLSL]: Using GLSL version %u%s.\n", version_no, version_extra);
    }
    else if (glsl_core)
    {
@@ -368,9 +367,14 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       }
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
-      RARCH_LOG("[GLSL]: Using GLSL version %u.\n", version_no);
+   }
+   else
+   {
+      /* Don't leave version empty, prevent the compiler warning */
+      snprintf(version, sizeof(version), "#version 110\n");
    }
 
+   RARCH_LOG("[GLSL]: Using GLSL %s", version);
    source[0] = version;
    source[1] = define;
    source[2] = glsl->alias_define;
