@@ -571,11 +571,7 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
-    wl->width  = wl->buffer_scale * width;
-    wl->height = wl->buffer_scale * height;
-    
-    RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
-    wl->width, wl->height);
+    // TODO: implement resizing
     
     wl->configured = false;
 }
@@ -1338,7 +1334,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          break;
    }
 
-   //TODO: fullscreen;
+   if (fullscreen)
+		xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 
    flush_wayland_fd(&wl->input);
 
