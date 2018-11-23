@@ -1,6 +1,4 @@
-#ifndef _SHADERS_COMMON
-#define _SHADERS_COMMON
-
+#undef FRAGMENT
+#undef VERTEX
+#define VERTEX
 #include "../glsl_common.h"
-
-#endif
