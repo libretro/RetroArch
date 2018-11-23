@@ -27,6 +27,7 @@
 #else
 #define CG(src)   "" #src
 #define GLSL(src) "" #src
+#define GLSL_300(src) "#version 300 es\n"
 #define GLSL_330(src)   "#version 330\n"   #src
 #endif
 

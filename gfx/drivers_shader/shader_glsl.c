@@ -371,7 +371,11 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    else
    {
       /* Don't leave version empty, prevent the compiler warning */
+#ifdef HAVE_OPENGLES
+      snprintf(version, sizeof(version), "#version 100\n");
+#else
       snprintf(version, sizeof(version), "#version 110\n");
+#endif
    }
 
    RARCH_LOG("[GLSL]: Using GLSL %s", version);
