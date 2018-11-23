@@ -278,8 +278,7 @@ static void handshake_password(void *ignore, const char *line)
    struct netplay_connection *connection = &netplay->connections[0];
 
    snprintf(password, sizeof(password), "%08X", connection->salt);
-   if (line)
-      strlcpy(password + 8, line, sizeof(password)-8);
+   strlcpy(password + 8, line, sizeof(password)-8);
 
    password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));
