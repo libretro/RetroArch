@@ -569,7 +569,15 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
                                    int width, int height, struct wl_array *states)
 {
-    // TODO
+    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+    
+    wl->width  = wl->buffer_scale * width;
+    wl->height = wl->buffer_scale * height;
+    
+    RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
+    wl->width, wl->height);
+    
+    wl->configured = false;
 }
 
 
