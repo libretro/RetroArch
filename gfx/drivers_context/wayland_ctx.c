@@ -76,6 +76,7 @@ typedef struct gfx_ctx_wayland_data
    bool fullscreen;
    bool maximized;
    bool resize;
+   bool configured;
    unsigned width;
    unsigned height;
    unsigned physical_width;
@@ -557,7 +558,7 @@ static const struct xdg_wm_base_listener xdg_shell_listener = {
 
 static void handle_surface_config(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
-{
+{	
     xdg_surface_ack_configure(surface, serial);
 }
 
@@ -568,64 +569,13 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
                                    int width, int height, struct wl_array *states)
 {
-    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-    int prev_fs_state = wl->fullscreen;
-    wl->maximized = false;
-    wl->fullscreen = false;
-    enum xdg_toplevel_state *state;
-    wl_array_for_each(state, states) {
-        switch (*state) {
-        case XDG_TOPLEVEL_STATE_FULLSCREEN:
-            wl->fullscreen = true;
-            break;
-        case XDG_TOPLEVEL_STATE_RESIZING:
-            wl->resize = true;
-            break;
-        case XDG_TOPLEVEL_STATE_ACTIVATED:
-            break;
-        case XDG_TOPLEVEL_STATE_TILED_TOP:
-        case XDG_TOPLEVEL_STATE_TILED_LEFT:
-        case XDG_TOPLEVEL_STATE_TILED_RIGHT:
-        case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
-        case XDG_TOPLEVEL_STATE_MAXIMIZED:
-            wl->maximized = true;
-            break;
-        }
-    }
+    // TODO
 }
+
 
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
 };
-
-//static void shell_surface_handle_configure(void *data,
-      //struct xdg_surface *xdg_surface,
-      //uint32_t edges, int32_t width, int32_t height)
-//{
-   //gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   //(void)xdg_surface;
-   //(void)edges;
-
-   //wl->width  = wl->buffer_scale * width;
-   //wl->height = wl->buffer_scale * height;
-
-   //RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
-         //wl->width, wl->height);
-//}
-
-//static void shell_surface_handle_popup_done(void *data,
-      //struct wl_shell_surface *shell_surface)
-//{
-   //(void)data;
-   //(void)shell_surface;
-//}
-
-//static const struct wl_shell_surface_listener shell_surface_listener = {
-   //shell_surface_handle_ping,
-   //shell_surface_handle_configure,
-   //shell_surface_handle_popup_done,
-//};
 
 static void display_handle_geometry(void *data,
       struct wl_output *output,
@@ -1341,6 +1291,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
+   
    wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->shell, wl->surface);
    xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
 
@@ -1349,6 +1300,12 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
    xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
+   
+   wl_surface_commit(wl->surface);
+   wl->configured = true;
+   
+   while (wl->configured)
+      wl_display_dispatch(wl->input.dpy);
 
    switch (wl_api)
    {
@@ -1373,11 +1330,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          break;
    }
 
-   //if (fullscreen)
-      //wl_shell_surface_set_fullscreen(wl->shell_surf,
-            //WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
+   //TODO: fullscreen;
 
-   //flush_wayland_fd(&wl->input);
+   flush_wayland_fd(&wl->input);
 
    switch (wl_api)
    {
