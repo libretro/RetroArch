@@ -39,8 +39,8 @@
 #endif
 
 #ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow.cg.h"
+#include "../drivers/gl_shaders/cg/pipeline_xmb_ribbon_simple.cg.h"
+#include "../drivers/gl_shaders/cg/pipeline_snow.cg.h"
 #endif
 
 #include "../include/Cg/cg.h"
@@ -132,7 +132,7 @@ struct uniform_cg
    }
 
 
-#include "../drivers/gl_shaders/opaque.cg.h"
+#include "../drivers/gl_shaders/cg/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
       void *data,

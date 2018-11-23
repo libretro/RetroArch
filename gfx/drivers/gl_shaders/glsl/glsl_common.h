@@ -14,11 +14,9 @@
    "#endif\n" 
 
 #if defined(HAVE_OPENGLES)
-#define CG(src)       "" #src
 #define GLSL(src)     GLSL_DERIV_PREAMBLE() GLSL_PREAMBLE() #src
 #define GLSL_330(src) "#version 330 es\n" GLSL_PREAMBLE() #src
 #else
-#define CG(src)         "" #src
 #define GLSL(src)       "" GLSL_PREAMBLE() #src
 #define GLSL_300(src)   "#version 300 es\n" GLSL_PREAMBLE() #src
 #define GLSL_330(src)   "#version 330 core\n" GLSL_PREAMBLE() #src
