@@ -35,7 +35,7 @@
 
 #define NETPLAY_NICK_LEN      32
 #define NETPLAY_PASS_LEN      128
-#define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
+#define NETPLAY_PASS_HASH_LEN 65 /* length of a SHA-256 hash + NULL terminator*/
 
 #define MAX_SERVER_STALL_TIME_USEC  (5*1000*1000)
 #define MAX_CLIENT_STALL_TIME_USEC  (10*1000*1000)
