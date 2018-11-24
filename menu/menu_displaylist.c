@@ -8340,6 +8340,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                         val_d,
                         MENU_ENUM_LABEL_NO_ITEMS,
                         MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, list[i].idx, 0);
+
+                  if (list[i].current)
+                     menu_entries_set_checked(info->list, i, true);
                }
 
                free(list);

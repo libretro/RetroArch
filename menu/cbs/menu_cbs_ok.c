@@ -4494,7 +4494,9 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
 
       /* TODO/FIXME - menu drivers like XMB don't rescale
        * automatically */
+      return menu_cbs_exit();
    }
+
    return 0;
 }
 
