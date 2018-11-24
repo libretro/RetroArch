@@ -1,8 +1,5 @@
-#undef GLSL_DERIV_PREAMBLE
-#undef GLSL_PREAMBLE
-#undef GLSL
-#undef GLSL_300
-#undef GLSL_330
+#ifndef _SHADERS_COMMON
+#define _SHADERS_COMMON
 
 #define GLSL_DERIV_PREAMBLE() "#extension GL_OES_standard_derivatives : enable\n"
 #define GLSL_PREAMBLE() \
@@ -23,4 +20,6 @@
 #define GLSL(src)       "" GLSL_PREAMBLE() #src
 #define GLSL_300(src)   "#version 300 es\n" GLSL_PREAMBLE() #src
 #define GLSL_330(src)   "#version 330 core\n" GLSL_PREAMBLE() #src
+#endif
+
 #endif
