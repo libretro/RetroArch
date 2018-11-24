@@ -213,7 +213,7 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
 
-   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
+   win32_get_video_output(&curDevmode, -1, sizeof(curDevmode));
 
    if (win32_orig_width == 0)
       win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
@@ -238,7 +238,7 @@ static bool win32_display_server_set_resolution(void *data,
       LONG res;
       DEVMODE devmode;
 
-      if (!EnumDisplaySettings(NULL, iModeNum, &devmode))
+      if (!win32_get_video_output(&devmode, iModeNum, sizeof(devmode)))
          break;
 
       if (devmode.dmPelsWidth != width)

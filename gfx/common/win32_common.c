@@ -1353,15 +1353,13 @@ void win32_get_video_output_prev(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   memset(&dm, 0, sizeof(dm));
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width  = dm.dmPelsWidth;
+      curr_height = dm.dmPelsHeight;
+   }
 
-   dm.dmSize            = sizeof(dm);
-
-   win32_get_video_output_size(&curr_width, &curr_height);
-
-   for (i = 0;
-         EnumDisplaySettings(NULL, i, &dm) != 0;
-         i++)
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
@@ -1458,14 +1456,13 @@ void win32_get_video_output_next(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   memset(&dm, 0, sizeof(dm));
-   dm.dmSize = sizeof(dm);
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width  = dm.dmPelsWidth;
+      curr_height = dm.dmPelsHeight;
+   }
 
-   win32_get_video_output_size(&curr_width, &curr_height);
-
-   for (i = 0;
-         EnumDisplaySettings(NULL, i, &dm) != 0;
-         i++)
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
       if (found)
       {
@@ -1480,13 +1477,23 @@ void win32_get_video_output_next(
    }
 }
 
+bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
+{
+   memset(dm, 0, len);
+   dm->dmSize  = len;
+
+   if (EnumDisplaySettings(NULL,
+            (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm) == 0)
+      return false;
+
+   return true;
+}
+
 void win32_get_video_output_size(unsigned *width, unsigned *height)
 {
    DEVMODE dm;
-   memset(&dm, 0, sizeof(dm));
-   dm.dmSize  = sizeof(dm);
 
-   if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
    {
       *width  = dm.dmPelsWidth;
       *height = dm.dmPelsHeight;
