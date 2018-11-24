@@ -204,13 +204,9 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center)
 {
-   LONG res;
    DEVMODE curDevmode;
-   DEVMODE devmode;
-
    int iModeNum;
    int freq               = int_hz;
-   DWORD flags            = 0;
    int depth              = 0;
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
@@ -239,6 +235,9 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (iModeNum = 0;; iModeNum++)
    {
+      LONG res;
+      DEVMODE devmode;
+
       if (!EnumDisplaySettings(NULL, iModeNum, &devmode))
          break;
 
@@ -262,15 +261,15 @@ static bool win32_display_server_set_resolution(void *data,
       switch (res)
       {
       case DISP_CHANGE_SUCCESSFUL:
-         res = win32_change_display_settings(NULL, &devmode, flags);
+         res = win32_change_display_settings(NULL, &devmode, 0);
          switch (res)
          {
-         case DISP_CHANGE_SUCCESSFUL:
-            return true;
-         case DISP_CHANGE_NOTUPDATED:
-            return true;
-         default:
-            break;
+            case DISP_CHANGE_SUCCESSFUL:
+               return true;
+            case DISP_CHANGE_NOTUPDATED:
+               return true;
+            default:
+               break;
          }
          break;
       case DISP_CHANGE_RESTART:
