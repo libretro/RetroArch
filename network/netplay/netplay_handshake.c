@@ -274,16 +274,17 @@ static void handshake_password(void *ignore, const char *line)
 {
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
+   char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
    netplay_t *netplay = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
    snprintf(password, sizeof(password), "%08X", connection->salt);
-   if (line)
-      strlcpy(password + 8, line, sizeof(password)-8);
+   strlcpy(password + 8, line, sizeof(password)-8);
 
    password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));
-   sha256_hash(password_buf.password, (uint8_t *) password, strlen(password));
+   sha256_hash(hash, (uint8_t *) password, strlen(password));
+   memcpy(password_buf.password, hash, NETPLAY_PASS_HASH_LEN);
 
    /* We have no way to handle an error here, so we'll let the next function error out */
    if (netplay_send(&connection->send_packet_buffer, connection->fd, &password_buf, sizeof(password_buf)))
@@ -751,8 +752,9 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
 bool netplay_handshake_pre_password(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   struct password_buf_s password_buf, corr_password_buf;
+   struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
+   char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
    ssize_t recvd;
    char msg[512];
    bool correct         = false;
@@ -788,11 +790,9 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
       strlcpy(password + 8,
             settings->paths.netplay_password, sizeof(password)-8);
 
-      sha256_hash(corr_password_buf.password,
-            (uint8_t *) password, strlen(password));
+      sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password,
-               corr_password_buf.password, sizeof(password_buf.password)))
+      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
       {
          correct = true;
          connection->can_play = true;
@@ -803,11 +803,9 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
       strlcpy(password + 8,
             settings->paths.netplay_spectate_password, sizeof(password)-8);
 
-      sha256_hash(corr_password_buf.password,
-            (uint8_t *) password, strlen(password));
+      sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password,
-               corr_password_buf.password, sizeof(password_buf.password)))
+      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
          correct = true;
    }
 
