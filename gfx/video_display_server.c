@@ -90,11 +90,11 @@ bool video_display_server_set_window_decorations(bool on)
 }
 
 
-bool video_display_server_switch_resolution(unsigned width, unsigned height,
+bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center)
 {
-   if (current_display_server && current_display_server->switch_resolution)
-      return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz, center);
+   if (current_display_server && current_display_server->set_resolution)
+      return current_display_server->set_resolution(current_display_server_data, width, height, int_hz, hz, center);
    return false;
 }
 

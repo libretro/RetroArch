@@ -107,7 +107,7 @@ static void win32_display_server_destroy(void *data)
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
    if (win32_orig_width > 0 && win32_orig_height > 0)
-      video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
+      video_display_server_set_resolution(win32_orig_width, win32_orig_height,
             win32_orig_refresh, (float)win32_orig_refresh, crt_center );
 
 #ifdef HAS_TASKBAR_EXT
