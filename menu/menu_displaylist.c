@@ -8333,7 +8333,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                for (i = 0; i < size; i++)
                {
                   char val_d[256], str[256];
-                  snprintf(str, sizeof(str), "%dx%d (%dHz)", list[i].width, list[i].height, list[i].refreshrate);
+                  snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
                   snprintf(val_d, sizeof(val_d), "%d", i);
                   menu_entries_append_enum(info->list,
                         str,

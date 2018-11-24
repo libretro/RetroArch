@@ -60,6 +60,7 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../gfx/video_display_server.h"
 
 #include <net/net_http.h>
 
@@ -4463,12 +4464,37 @@ static int action_ok_push_dropdown_item(const char *path,
 static int action_ok_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   RARCH_LOG("dropdown: \n");
-   RARCH_LOG("path: %s \n", path);
-   RARCH_LOG("label: %s \n", label);
-   RARCH_LOG("type: %d \n", type);
-   RARCH_LOG("idx: %d \n", idx);
-   RARCH_LOG("entry_idx: %d \n", entry_idx);
+   char str[100];
+   char *pch            = NULL;
+   unsigned width       = 0;
+   unsigned height      = 0;
+   unsigned refreshrate = 0;
+
+   snprintf(str, sizeof(str), "%s", path);
+
+   pch = strtok(str, "x");
+   if (pch)
+      width = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, " ");
+   if (pch)
+      height = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, "(");
+   if (pch)
+      refreshrate = strtoul(pch, NULL, 0);
+
+   if (video_display_server_set_resolution(width, height,
+         refreshrate, (float)refreshrate, 0))
+   {
+      settings_t *settings = config_get_ptr();
+
+      video_monitor_set_refresh_rate((float)refreshrate);
+
+      settings->uints.video_fullscreen_x = width;
+      settings->uints.video_fullscreen_y = height;
+
+      /* TODO/FIXME - menu drivers like XMB don't rescale
+       * automatically */
+   }
    return 0;
 }
 
