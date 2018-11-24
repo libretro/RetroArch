@@ -306,9 +306,10 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
    x11_display_server_set_window_opacity,
-   NULL,
+   NULL, /* set_window_progress */
    x11_display_server_set_window_decorations,
    x11_display_server_set_resolution,
+   NULL, /* get_resolution_list */
    x11_display_server_get_output_options,
    "x11"
 };
