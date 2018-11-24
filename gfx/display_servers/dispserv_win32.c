@@ -282,7 +282,8 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
-unsigned win32_display_server_get_resolution_list(struct video_display_config **conf)
+unsigned win32_display_server_get_resolution_list(void *data,
+      struct video_display_config **conf)
 {
    unsigned i;
    unsigned len = 0;

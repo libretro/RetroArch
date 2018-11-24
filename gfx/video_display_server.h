@@ -42,7 +42,8 @@ typedef struct video_display_server
    bool (*set_window_decorations)(void *data, bool on);
    bool (*switch_resolution)(void *data, unsigned width,
          unsigned height, int int_hz, float hz, int center);
-   unsigned (*get_resolution_list)(struct video_display_config **conf);
+   unsigned (*get_resolution_list)(void *data,
+         struct video_display_config **conf);
    const char *(*get_output_options)(void *data);
    const char *ident;
 } video_display_server_t;
@@ -60,6 +61,9 @@ bool video_display_server_set_window_decorations(bool on);
 bool video_display_server_switch_resolution(
       unsigned width, unsigned height,
       int int_hz, float hz, int center);
+
+unsigned video_display_server_get_resolution_list(
+      struct video_display_config **list);
 
 const char *video_display_server_get_output_options(void);
 
