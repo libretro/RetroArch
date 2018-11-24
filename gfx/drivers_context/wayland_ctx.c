@@ -350,6 +350,8 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
+// TODO: implement check for resize
+
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
       uint32_t serial,
@@ -548,10 +550,11 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
 
 
 /* Shell surface callbacks. */
-static void xdg_shell_ping (void *data, struct xdg_wm_base *shell, uint32_t serial)
+static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
     xdg_wm_base_pong(shell, serial);
 }
+
 static const struct xdg_wm_base_listener xdg_shell_listener = {
     xdg_shell_ping,
 };
@@ -575,6 +578,8 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
     
     wl->configured = false;
 }
+
+// TODO: implement xdg_toplevel close
 
 
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
@@ -1305,11 +1310,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
    xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
    
+   // Waiting for xdg_toplevel to be configured before starting to draw
    wl_surface_commit(wl->surface);
    wl->configured = true;
    
    while (wl->configured)
       wl_display_dispatch(wl->input.dpy);
+   
+   // Waiting for the "initial" set of globals to appear   
+   wl_display_roundtrip(wl->input.dpy);
+   xdg_wm_base_add_listener(wl->shell, &xdg_shell_listener, NULL);
 
    switch (wl_api)
    {
