@@ -45,6 +45,9 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
+      case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
+      case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+      case MENU_ENUM_LABEL_DISK_INDEX:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS];
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
@@ -266,6 +269,11 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK];
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD];
       default:
             break;
    }
@@ -300,7 +308,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case FILE_TYPE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_CLOSE:
       case MENU_SETTING_ACTION_DELETE_ENTRY:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
@@ -326,13 +334,13 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_SETTING_ACTION_RESET:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
-
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PAUSE];
       case MENU_SETTING_GROUP:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_SET_SWITCH_BRIGHTNESS:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS];
 #endif
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_WIFI:
@@ -760,6 +768,15 @@ switch (id)
          break;
       case OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK:
          icon_name = "menu_check.png";
+         break;
+      case OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD:
+         icon_name = "menu_add.png";
+         break;
+      case OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS:
+         icon_name = "menu_brightnes.png";
+         break;
+      case OZONE_ENTRIES_ICONS_TEXTURE_PAUSE:
+         icon_name = "menu_pause.png";
          break;
    }
 
