@@ -51,7 +51,7 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 
-// Generated from xdg-shell.xml
+/* Generated from xdg-shell.xml */
 #include "../common/wayland/xdg-shell.h"
 
 
@@ -350,7 +350,7 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
-// TODO: implement check for resize
+/* TODO: implement check for resize */
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -574,14 +574,12 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
-    // TODO: implement resizing
+    /* TODO: implement resizing */
     
     wl->configured = false;
 }
 
-// TODO: implement xdg_toplevel close
-
-
+/* TODO: implement xdg_toplevel close */
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
 };
@@ -1310,14 +1308,14 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
    xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
    
-   // Waiting for xdg_toplevel to be configured before starting to draw
+   /* Waiting for xdg_toplevel to be configured before starting to draw */
    wl_surface_commit(wl->surface);
    wl->configured = true;
    
    while (wl->configured)
       wl_display_dispatch(wl->input.dpy);
    
-   // Waiting for the "initial" set of globals to appear   
+   /* Waiting for the "initial" set of globals to appear    */
    wl_display_roundtrip(wl->input.dpy);
    xdg_wm_base_add_listener(wl->shell, &xdg_shell_listener, NULL);
 
