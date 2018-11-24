@@ -863,13 +863,15 @@ ifeq ($(TARGET), retroarch_switch)
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
-   OBJ += gfx/drivers_context/wayland_ctx.o \
-          input/drivers/wayland_input.o
-   ifeq ($(HAVE_EGL), 1)
-      LIBS += $(EGL_LIBS)
-   endif
-   DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
-   LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+ OBJ += gfx/drivers_context/wayland_ctx.o \
+		  input/drivers/wayland_input.o \
+		  gfx/common/wayland/xdg-shell.o
+ ifeq ($(HAVE_EGL), 1)
+   LIBS += $(EGL_LIBS)
+ endif
+ DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
+ LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+
 endif
 
 #Input

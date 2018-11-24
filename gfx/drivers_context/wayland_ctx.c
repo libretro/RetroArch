@@ -51,6 +51,9 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 
+// Generated from xdg-shell.xml
+#include "../common/wayland/xdg-shell.h"
+
 
 typedef struct touch_pos
 {
@@ -70,7 +73,10 @@ typedef struct gfx_ctx_wayland_data
    egl_ctx_data_t egl;
    struct wl_egl_window *win;
 #endif
+   bool fullscreen;
+   bool maximized;
    bool resize;
+   bool configured;
    unsigned width;
    unsigned height;
    unsigned physical_width;
@@ -79,8 +85,9 @@ typedef struct gfx_ctx_wayland_data
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
-   struct wl_shell_surface *shell_surf;
-   struct wl_shell *shell;
+   struct xdg_surface *xdg_surface;
+   struct xdg_wm_base *shell;
+   struct xdg_toplevel *xdg_toplevel;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct wl_touch *wl_touch;
@@ -303,9 +310,8 @@ static void pointer_handle_button(void *data,
       {
          wl->input.mouse.left = true;
 
-         /* This behavior matches mpv, seems like a decent way to support window moving for now. */
-         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->shell_surf)
-            wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->xdg_toplevel)
+            xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
       }
       else if (button == BTN_RIGHT)
          wl->input.mouse.right = true;
@@ -343,6 +349,8 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_button,
    pointer_handle_axis,
 };
+
+// TODO: implement check for resize
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -542,41 +550,40 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
 
 
 /* Shell surface callbacks. */
-static void shell_surface_handle_ping(void *data,
-      struct wl_shell_surface *shell_surface,
-      uint32_t serial)
+static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
-   (void)data;
-   wl_shell_surface_pong(shell_surface, serial);
+    xdg_wm_base_pong(shell, serial);
 }
 
-static void shell_surface_handle_configure(void *data,
-      struct wl_shell_surface *shell_surface,
-      uint32_t edges, int32_t width, int32_t height)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+static const struct xdg_wm_base_listener xdg_shell_listener = {
+    xdg_shell_ping,
+};
 
-   (void)shell_surface;
-   (void)edges;
-
-   wl->width  = wl->buffer_scale * width;
-   wl->height = wl->buffer_scale * height;
-
-   RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
-         wl->width, wl->height);
+static void handle_surface_config(void *data, struct xdg_surface *surface,
+                                  uint32_t serial)
+{	
+    xdg_surface_ack_configure(surface, serial);
 }
 
-static void shell_surface_handle_popup_done(void *data,
-      struct wl_shell_surface *shell_surface)
+static const struct xdg_surface_listener xdg_surface_listener = {
+    handle_surface_config,
+};
+
+static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
+                                   int width, int height, struct wl_array *states)
 {
-   (void)data;
-   (void)shell_surface;
+    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+    
+    // TODO: implement resizing
+    
+    wl->configured = false;
 }
 
-static const struct wl_shell_surface_listener shell_surface_listener = {
-   shell_surface_handle_ping,
-   shell_surface_handle_configure,
-   shell_surface_handle_popup_done,
+// TODO: implement xdg_toplevel close
+
+
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
+    handle_toplevel_config,
 };
 
 static void display_handle_geometry(void *data,
@@ -669,9 +676,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       wl_output_add_listener(output, &output_listener, wl);
       wl_display_roundtrip(wl->input.dpy);
    }
-   else if (string_is_equal(interface, "wl_shell"))
-      wl->shell = (struct wl_shell*)
-         wl_registry_bind(reg, id, &wl_shell_interface, 1);
+   else if (string_is_equal(interface, "xdg_wm_base"))
+      wl->shell = (struct xdg_wm_base*)
+         wl_registry_bind(reg, id, &xdg_wm_base_interface, 1);
    else if (string_is_equal(interface, "wl_shm"))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
@@ -752,13 +759,13 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->shell)
-      wl_shell_destroy(wl->shell);
+      xdg_wm_base_destroy(wl->shell);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
       wl_registry_destroy(wl->registry);
-   if (wl->shell_surf)
-      wl_shell_surface_destroy(wl->shell_surf);
+   if (wl->xdg_surface)
+      xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
@@ -775,7 +782,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->compositor = NULL;
    wl->registry   = NULL;
    wl->input.dpy        = NULL;
-   wl->shell_surf = NULL;
+   wl->xdg_surface = NULL;
    wl->surface    = NULL;
 
    wl->width      = 0;
@@ -902,7 +909,7 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
    video_driver_get_window_title(title, sizeof(title));
 
    if (wl && title[0])
-      wl_shell_surface_set_title(wl->shell_surf, title);
+      xdg_toplevel_set_title (wl->xdg_toplevel, title);
 }
 
 
@@ -1293,12 +1300,26 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
-   wl->shell_surf = wl_shell_get_shell_surface(wl->shell, wl->surface);
+   
+   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->shell, wl->surface);
+   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
 
-   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, wl);
-   wl_shell_surface_set_toplevel(wl->shell_surf);
-   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
-   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
+   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
+   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
+
+   xdg_toplevel_set_app_id (wl->xdg_toplevel, "RetroArch");
+   xdg_toplevel_set_title (wl->xdg_toplevel, "RetroArch");
+   
+   // Waiting for xdg_toplevel to be configured before starting to draw
+   wl_surface_commit(wl->surface);
+   wl->configured = true;
+   
+   while (wl->configured)
+      wl_display_dispatch(wl->input.dpy);
+   
+   // Waiting for the "initial" set of globals to appear   
+   wl_display_roundtrip(wl->input.dpy);
+   xdg_wm_base_add_listener(wl->shell, &xdg_shell_listener, NULL);
 
    switch (wl_api)
    {
@@ -1324,8 +1345,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    }
 
    if (fullscreen)
-      wl_shell_surface_set_fullscreen(wl->shell_surf,
-            WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
+		xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 
    flush_wayland_fd(&wl->input);
 
