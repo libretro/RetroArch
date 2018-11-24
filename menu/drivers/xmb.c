@@ -201,6 +201,9 @@ enum
    XMB_TEXTURE_INPUT_LT,
    XMB_TEXTURE_INPUT_RT,
    XMB_TEXTURE_CHECKMARK,
+   XMB_TEXTURE_MENU_ADD,
+   XMB_TEXTURE_BRIGHTNESS,
+   XMB_TEXTURE_PAUSE,
    XMB_TEXTURE_LAST
 };
 
@@ -2270,6 +2273,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
+      case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
+      case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+      case MENU_ENUM_LABEL_DISK_INDEX:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
@@ -2499,6 +2505,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
                   case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
                      return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
+                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
+                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
+                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+                     return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
                   default:
                      break;
                   }
@@ -2559,7 +2570,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
-         return xmb->textures.list[XMB_TEXTURE_RUN];
+         return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_CLOSE:
       case MENU_SETTING_ACTION_DELETE_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
@@ -2585,12 +2596,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_SETTING_ACTION_RESET:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
-         return xmb->textures.list[XMB_TEXTURE_RESUME];
-
-      case MENU_SETTING_GROUP:
+         return xmb->textures.list[XMB_TEXTURE_PAUSE];
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_SET_SWITCH_BRIGHTNESS:
+         return xmb->textures.list[XMB_TEXTURE_BRIGHTNESS];
 #endif
+      case MENU_SETTING_GROUP:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
@@ -4912,6 +4923,15 @@ static const char *xmb_texture_path(unsigned id)
          break;
       case XMB_TEXTURE_CHECKMARK:
          icon_name = "menu_check.png";
+         break;
+      case XMB_TEXTURE_MENU_ADD:
+         icon_name = "menu_add.png";
+         break;
+      case XMB_TEXTURE_BRIGHTNESS:
+         icon_name = "menu_brightness.png";
+         break;
+      case XMB_TEXTURE_PAUSE:
+         icon_name = "menu_pause.png";
          break;
    }
 
