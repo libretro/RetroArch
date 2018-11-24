@@ -282,38 +282,43 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
-unsigned win32_display_server_get_resolution_list(void *data,
-      struct video_display_config **conf)
+void *win32_display_server_get_resolution_list(void *data,
+      unsigned *len)
 {
-   unsigned i;
-   unsigned len = 0;
+   unsigned i, count = 0;
+   struct video_display_config *conf = NULL;
 
    for (i = 0;; i++)
    {
-      void *optr = NULL;
       DEVMODE dm;
 
       if (!win32_get_video_output(&dm, i, sizeof(dm)))
-         continue;
+         break;
 
-      len++;
-      
-      if (*conf)
-         optr = realloc(*conf, len);
-      else
-         optr = malloc(len);
-
-      if (optr)
-         *conf = optr;
-
-      conf[i]->width       = dm.dmPelsWidth; 
-      conf[i]->height      = dm.dmPelsHeight; 
-      conf[i]->bpp         = dm.dmBitsPerPel; 
-      conf[i]->refreshrate = dm.dmDisplayFrequency;
-      conf[i]->idx         = i;
+      count++;
    }
 
-   return len;
+   *len = count;
+   conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config));
+
+   if (!conf)
+      return NULL;
+
+   for (i = 0;; i++)
+   {
+      DEVMODE dm;
+
+      if (!win32_get_video_output(&dm, i, sizeof(dm)))
+         break;
+
+      conf[i].width       = dm.dmPelsWidth; 
+      conf[i].height      = dm.dmPelsHeight; 
+      conf[i].bpp         = dm.dmBitsPerPel; 
+      conf[i].refreshrate = dm.dmDisplayFrequency;
+      conf[i].idx         = i;
+   }
+
+   return conf;
 }
 
 const video_display_server_t dispserv_win32 = {

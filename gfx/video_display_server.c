@@ -98,11 +98,11 @@ bool video_display_server_switch_resolution(unsigned width, unsigned height,
    return false;
 }
 
-unsigned video_display_server_get_resolution_list(struct video_display_config **list)
+void *video_display_server_get_resolution_list(unsigned *size)
 {
    if (current_display_server && current_display_server->get_resolution_list)
-      return current_display_server->get_resolution_list(current_display_server_data, list);
-   return 0;
+      return current_display_server->get_resolution_list(current_display_server_data, size);
+   return NULL;
 }
 
 const char *video_display_server_get_output_options(void)

@@ -5381,6 +5381,14 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                  MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
             CONFIG_UINT(
                   list, list_info,
                   &custom_vp->width,

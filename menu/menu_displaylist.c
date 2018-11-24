@@ -8322,56 +8322,201 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             info->need_push          = true;
          }
          break;
-      case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
+      case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            unsigned i, size                  = 0;
+            struct video_display_config *list = video_display_server_get_resolution_list(&size);
 
-            if (strstr(info->path, "core_option_"))
+            if (list)
             {
-               struct string_list *tmp_str_list = string_split(info->path, "_");
-
-               if (tmp_str_list && tmp_str_list->size > 0)
+               for (i = 0; i < size; i++)
                {
-                  core_option_manager_t *coreopts = NULL;
+                  char val_d[256], str[256];
+                  snprintf(str, sizeof(str), "%dx%d (%dHz)", list[i].width, list[i].height, list[i].refreshrate);
+                  snprintf(val_d, sizeof(val_d), "%d", i);
+                  menu_entries_append_enum(info->list,
+                        str,
+                        val_d,
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, list[i].idx, 0);
+               }
 
-                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+               free(list);
+            }
+            else
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
 
-                  if (coreopts)
+         }
+         info->need_refresh       = true;
+         info->need_push          = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (strstr(info->path, "core_option_"))
+         {
+            struct string_list *tmp_str_list = string_split(info->path, "_");
+
+            if (tmp_str_list && tmp_str_list->size > 0)
+            {
+               core_option_manager_t *coreopts = NULL;
+
+               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+               if (coreopts)
+               {
+                  unsigned size                   = (unsigned)tmp_str_list->size;
+                  unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                  struct core_option *option      = NULL;
+                  bool checked_found              = false;
+                  unsigned checked                = 0;
+                  const char *val                 = core_option_manager_get_val(coreopts, i-1);
+
+                  i--;
+
+                  option                          = (struct core_option*)&coreopts->opts[i];
+
+                  if (option)
                   {
-                     unsigned size                   = (unsigned)tmp_str_list->size;
-                     unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
-                     struct core_option *option      = NULL;
-                     bool checked_found              = false;
-                     unsigned checked                = 0;
-                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
-
-                     i--;
-
-                     option                          = (struct core_option*)&coreopts->opts[i];
-
-                     if (option)
+                     unsigned k;
+                     for (k = 0; k < option->vals->size; k++)
                      {
-                        unsigned k;
-                        for (k = 0; k < option->vals->size; k++)
-                        {
-                           const char *str = option->vals->elems[k].data;
+                        const char *str = option->vals->elems[k].data;
 
-                           if (!string_is_empty(str))
+                        if (!string_is_empty(str))
+                        {
+                           char val_d[256];
+                           snprintf(val_d, sizeof(val_d), "%d", i);
+                           menu_entries_append_enum(info->list,
+                                 str,
+                                 val_d,
+                                 MENU_ENUM_LABEL_NO_ITEMS,
+                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+
+                           if (!checked_found && string_is_equal(str, val))
+                           {
+                              checked = k;
+                              checked_found = true;
+                           }
+
+                           count++;
+                        }
+                     }
+
+                     if (checked_found)
+                        menu_entries_set_checked(info->list, checked, true);
+                  }
+               }
+            }
+
+         }
+         else
+         {
+            enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+            rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+            if (setting)
+            {
+               switch (setting->type)
+               {
+                  case ST_STRING_OPTIONS:
+                     {
+                        struct string_list *tmp_str_list = string_split(setting->values, "|");
+
+                        if (tmp_str_list && tmp_str_list->size > 0)
+                        {
+                           unsigned i;
+                           unsigned size        = (unsigned)tmp_str_list->size;
+                           bool checked_found   = false;
+                           unsigned checked     = 0;
+
+                           for (i = 0; i < size; i++)
                            {
                               char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", i);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               menu_entries_append_enum(info->list,
-                                    str,
+                                    tmp_str_list->elems[i].data,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
 
-                              if (!checked_found && string_is_equal(str, val))
+                              if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
                               {
-                                 checked = k;
+                                 checked = i;
                                  checked_found = true;
                               }
+                           }
 
+                           if (checked_found)
+                              menu_entries_set_checked(info->list, checked, true);
+                        }
+                     }
+                     break;
+                  case ST_INT:
+                     {
+                        float i;
+                        int32_t orig_value     = *setting->value.target.integer;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
+
+                        if (setting->get_string_representation)
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
+                              count++;
+                           }
+
+                           *setting->value.target.integer = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
                               count++;
                            }
                         }
@@ -8379,263 +8524,149 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                         if (checked_found)
                            menu_entries_set_checked(info->list, checked, true);
                      }
-                  }
-               }
+                     break;
+                  case ST_FLOAT:
+                     {
+                        float i;
+                        float orig_value       = *setting->value.target.fraction;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
 
-            }
-            else
-            {
-               enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
-               rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-               if (setting)
-               {
-                  switch (setting->type)
-                  {
-                     case ST_STRING_OPTIONS:
+                        if (setting->get_string_representation)
                         {
-                           struct string_list *tmp_str_list = string_split(setting->values, "|");
-
-                           if (tmp_str_list && tmp_str_list->size > 0)
+                           for (i = min; i <= max; i += step)
                            {
-                              unsigned i;
-                              unsigned size        = (unsigned)tmp_str_list->size;
-                              bool checked_found   = false;
-                              unsigned checked     = 0;
+                              char val_s[256], val_d[256];
 
-                              for (i = 0; i < size; i++)
+                              *setting->value.target.fraction = i;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, 0, 0);
+
+                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
-                                 char val_d[256];
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       tmp_str_list->elems[i].data,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
-
-                                 if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
-                                 {
-                                    checked = i;
-                                    checked_found = true;
-                                 }
+                                 checked       = count;
+                                 checked_found = true;
                               }
+                              count++;
+                           }
 
-                              if (checked_found)
-                                 menu_entries_set_checked(info->list, checked, true);
+                           *setting->value.target.fraction = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+
+                              snprintf(val_s, sizeof(val_s), "%.2f", i);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, 0, 0);
+
+                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
+                              count++;
                            }
                         }
-                        break;
-                     case ST_INT:
+
+                        if (checked_found)
+                           menu_entries_set_checked(info->list, checked, true);
+                     }
+                     break;
+                  case ST_UINT:
+                     {
+                        float i;
+                        unsigned orig_value    = *setting->value.target.unsigned_integer;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
+
+                        if (setting->get_string_representation)
                         {
-                           float i;
-                           int32_t orig_value     = *setting->value.target.integer;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
-
-                           if (setting->get_string_representation)
+                           for (i = min; i <= max; i += step)
                            {
-                              for (i = min; i <= max; i += step)
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.unsigned_integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
                               {
-                                 char val_s[256], val_d[256];
-                                 int val = (int)i;
-
-                                 *setting->value.target.integer = val;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
+                                 checked       = count;
+                                 checked_found = true;
                               }
-
-                              *setting->value.target.integer = orig_value;
-                           }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-                                 int val = (int)i;
-
-                                 snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
+                              count++;
                            }
 
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
+                           *setting->value.target.unsigned_integer = orig_value;
                         }
-                        break;
-                     case ST_FLOAT:
+                        else
                         {
-                           float i;
-                           float orig_value       = *setting->value.target.fraction;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
-
-                           if (setting->get_string_representation)
+                           for (i = min; i <= max; i += step)
                            {
-                              for (i = min; i <= max; i += step)
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
                               {
-                                 char val_s[256], val_d[256];
-
-                                 *setting->value.target.fraction = i;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
-
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
+                                 checked       = count;
+                                 checked_found = true;
                               }
-
-                              *setting->value.target.fraction = orig_value;
+                              count++;
                            }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-
-                                 snprintf(val_s, sizeof(val_s), "%.2f", i);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
-
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-                           }
-
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
                         }
-                        break;
-                     case ST_UINT:
-                        {
-                           float i;
-                           unsigned orig_value    = *setting->value.target.unsigned_integer;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
 
-                           if (setting->get_string_representation)
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[256], val_d[256];
-                                 int val = (int)i;
-
-                                 *setting->value.target.unsigned_integer = val;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-
-                              *setting->value.target.unsigned_integer = orig_value;
-                           }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-                                 int val = (int)i;
-
-                                 snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-                           }
-
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
-                        }
-                        break;
-                     default:
-                        break;
-                  }
+                        if (checked_found)
+                           menu_entries_set_checked(info->list, checked, true);
+                     }
+                     break;
+                  default:
+                     break;
                }
             }
-
-            info->need_refresh       = true;
-            info->need_push          = true;
          }
+
+         info->need_refresh       = true;
+         info->need_push          = true;
          break;
       case DISPLAYLIST_NONE:
          break;
