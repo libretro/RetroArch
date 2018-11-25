@@ -2111,7 +2111,6 @@ static void xmb_context_reset_horizontal_list(
       }
    }
 
-   xmb_toggle_horizontal_list(xmb);
 }
 
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
@@ -2133,6 +2132,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
       xmb_init_horizontal_list(xmb);
 
    xmb_context_reset_horizontal_list(xmb);
+   xmb_toggle_horizontal_list(xmb);
 }
 
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
@@ -3671,33 +3671,8 @@ static const char *xmb_texture_path(unsigned id)
 
 }
 
-
-static void xmb_context_reset_textures(
-      xmb_handle_t *xmb, const char *iconpath)
+static void xmb_context_reset_textures_nodes(xmb_handle_t *xmb)
 {
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   for (i = 0; i < XMB_TEXTURE_LAST; i++)
-   {
-      if (xmb_texture_path(i) == NULL)
-      {
-         /* If the icon doesn't exist at least try to return the subsetting icon*/
-         if (!(i == XMB_TEXTURE_DIALOG_SLICE || i == XMB_TEXTURE_KEY_HOVER || i == XMB_TEXTURE_KEY_HOVER))
-            menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
-         continue;
-      }
-      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
-   }
-
-   /* Warn only if critical assets are missing, some themes are incomplete */
-   if (
-         ((xmb_texture_path(XMB_TEXTURE_SUBSETTING) == NULL)) && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
-      )
-         runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
-
-   menu_display_allocate_white_texture();
-
    xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
    xmb->main_menu_node.alpha    = xmb->categories_active_alpha;
    xmb->main_menu_node.zoom     = xmb->categories_active_zoom;
@@ -3739,6 +3714,34 @@ static void xmb_context_reset_textures(
    xmb->netplay_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->netplay_tab_node.zoom   = xmb->categories_active_zoom;
 #endif
+}
+
+static void xmb_context_reset_textures(
+      xmb_handle_t *xmb, const char *iconpath)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   for (i = 0; i < XMB_TEXTURE_LAST; i++)
+   {
+      if (xmb_texture_path(i) == NULL)
+      {
+         /* If the icon doesn't exist at least try to return the subsetting icon*/
+         if (!(i == XMB_TEXTURE_DIALOG_SLICE || i == XMB_TEXTURE_KEY_HOVER || i == XMB_TEXTURE_KEY_HOVER))
+            menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+         continue;
+      }
+      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   }
+
+   /* Warn only if critical assets are missing, some themes are incomplete */
+   if (
+         ((xmb_texture_path(XMB_TEXTURE_SUBSETTING) == NULL)) && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
+      )
+         runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
+
+   menu_display_allocate_white_texture();
+
 
 }
 
@@ -3770,8 +3773,30 @@ static void xmb_context_reset_background(const char *iconpath)
 static void xmb_context_reset(void *data, bool is_threaded)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+   char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   char bg_file_path[PATH_MAX_LENGTH] = {0};
+   iconpath[0]       = '\0';
+   fill_pathname_application_special(iconpath,
+         PATH_MAX_LENGTH * sizeof(char),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+   fill_pathname_application_special(bg_file_path,
+         sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+   if (!string_is_empty(bg_file_path))
+   {
+      if (!string_is_empty(xmb->bg_file_path))
+         free(xmb->bg_file_path);
+      xmb->bg_file_path = strdup(bg_file_path);
+   }
+
+   xmb_context_reset_textures(xmb, iconpath);
+   xmb_context_reset_background(iconpath);
+   xmb_context_reset_horizontal_list(xmb);
 
    xmb->previous_scale_factor = 0.0;
+
+   free(iconpath);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
@@ -4030,24 +4055,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (scale_factor != xmb->previous_scale_factor)
    {
-      char bg_file_path[PATH_MAX_LENGTH] = {0};
-      char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      iconpath[0]       = '\0';
-
-      fill_pathname_application_special(bg_file_path,
-            sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
-
-      if (!string_is_empty(bg_file_path))
-      {
-         if (!string_is_empty(xmb->bg_file_path))
-            free(xmb->bg_file_path);
-         xmb->bg_file_path = strdup(bg_file_path);
-      }
-
-      fill_pathname_application_special(iconpath,
-            PATH_MAX_LENGTH * sizeof(char),
-            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-
       menu_display_font_free(xmb->font);
       menu_display_font_free(xmb->font2);
       xmb_layout(xmb);
@@ -4057,9 +4064,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
             xmb->font2_size,
             video_driver_is_threaded());
-      xmb_context_reset_textures(xmb, iconpath);
-      xmb_context_reset_background(iconpath);
-      xmb_context_reset_horizontal_list(xmb);
+      xmb_context_reset_textures_nodes(xmb);
+      xmb_toggle_horizontal_list(xmb);
 
       if (!string_is_equal(xmb_thumbnails_ident('R'),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
@@ -4074,8 +4080,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb_update_thumbnail_image(xmb);
       }
       xmb_update_savestate_thumbnail_image(xmb);
-
-      free(iconpath);
    }
 
    xmb->frame_count++;
