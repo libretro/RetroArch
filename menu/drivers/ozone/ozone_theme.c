@@ -118,10 +118,10 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    last_color_theme = color_theme;
 }
 
-unsigned ozone_get_system_theme()
+unsigned ozone_get_system_theme(void)
 {
-   unsigned ret = 0;
 #ifdef HAVE_LIBNX
+   unsigned ret = 0;
    if (R_SUCCEEDED(setsysInitialize())) 
    {
       ColorSetId theme;
