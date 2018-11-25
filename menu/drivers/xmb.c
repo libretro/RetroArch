@@ -4055,15 +4055,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (scale_factor != xmb->previous_scale_factor)
    {
+      bool video_is_threaded = video_driver_is_threaded();
       menu_display_font_free(xmb->font);
       menu_display_font_free(xmb->font2);
       xmb_layout(xmb);
-      xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+      xmb->font = menu_display_font(
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
             xmb->font_size,
-            video_driver_is_threaded());
-      xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+            video_is_threaded);
+      xmb->font2 = menu_display_font(
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
             xmb->font2_size,
-            video_driver_is_threaded());
+            video_is_threaded);
       xmb_context_reset_textures_nodes(xmb);
       xmb_toggle_horizontal_list(xmb);
 
