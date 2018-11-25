@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-AndrÈ Santoni
- *  Copyright (C) 2015-2017 - AndrÈs Su·rez
+ *  Copyright (C) 2014-2017 - Jean-Andr√© Santoni
+ *  Copyright (C) 2015-2017 - Andr√©s Su√°rez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -6547,9 +6547,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-               PARSE_ACTION, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PAL60_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6570,6 +6567,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+               PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
                PARSE_ONLY_UINT, false);
@@ -6610,12 +6610,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_VIDEO_SCALE,
                PARSE_ONLY_FLOAT, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6624,6 +6618,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                PARSE_ONLY_BOOL, false);

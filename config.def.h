@@ -117,8 +117,8 @@ static const unsigned monitor_index = 0;
 /* Window */
 /* Window size. A value of 0 uses window scale
  * multiplied by the core framebuffer size. */
-static const unsigned window_x = 0;
-static const unsigned window_y = 0;
+static const unsigned window_width = 1280;
+static const unsigned window_height = 720;
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */

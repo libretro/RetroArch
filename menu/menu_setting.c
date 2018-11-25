@@ -5457,10 +5457,10 @@ static bool setting_append_list(
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                CONFIG_UINT(
                      list, list_info,
-                     &settings->uints.video_window_x,
+                     &settings->uints.window_position_width,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-                     0,
+                     window_width,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -5471,10 +5471,10 @@ static bool setting_append_list(
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                CONFIG_UINT(
                      list, list_info,
-                     &settings->uints.video_window_y,
+                     &settings->uints.window_position_height,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-                     0,
+                     window_height,
                      &group_info,
                      &subgroup_info,
                      parent_group,
