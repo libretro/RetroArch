@@ -373,7 +373,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    gfx_ctx_ident_t ident_info;
 #endif
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[8192];
    char feat_str[255];
 #ifdef ANDROID
    bool perms                            = false;
@@ -432,7 +432,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[255];
+      char cpu_str[8192];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
@@ -1445,7 +1445,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    for (i = 0; i < pass_count; i++)
    {
       char buf_tmp[64];
-      char buf[64];
+      char buf[128];
 
       buf[0] = buf_tmp[0] = '\0';
 
@@ -3381,8 +3381,8 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
          {
-            char desc_label[64];
-            char descriptor[255];
+            char desc_label[400];
+            char descriptor[300];
             const struct retro_keybind *auto_bind = NULL;
             const struct retro_keybind *keybind   = NULL;
 
@@ -6546,6 +6546,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+	 if (true)
+#else
+	 if (!string_is_equal(video_display_server_get_ident(), "null"))
+#endif
+	 {
+		 menu_displaylist_parse_settings_enum(menu, info,
+				 MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+				 PARSE_ACTION, false);
+	 }
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PAL60_ENABLE,
                PARSE_ONLY_BOOL, false);
