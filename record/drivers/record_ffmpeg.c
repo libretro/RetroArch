@@ -97,6 +97,14 @@ extern "C" {
 #define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
 #endif
 
+#ifndef PIX_FMT_RGB24
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
+#ifndef PIX_FMT_RGB8
+#define PIX_FMT_RGB8 AV_PIX_FMT_RGB8
+#endif
+
 #ifndef PIX_FMT_RGB565
 #define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
 #endif
@@ -556,7 +564,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
-         params->threads              = 1;
+         params->threads              = 2;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 75;
@@ -572,7 +580,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
-         params->threads              = 1;
+         params->threads              = 2;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 75;
@@ -588,7 +596,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
-         params->threads              = 1;
+         params->threads              = 2;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 100;
@@ -603,10 +611,10 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
-         params->threads              = 1;
+         params->threads              = 2;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
-         params->audio_global_quality = 100;
+         params->audio_global_quality = 80;
          params->out_pix_fmt          = PIX_FMT_BGR24;
 
          strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
@@ -615,10 +623,51 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->video_opts, "preset", "medium", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
          av_dict_set(&params->video_opts, "crf", "0", 0);
-         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "80", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
+         params->threads              = 2;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 50;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "deadline", "realtime", 0);
+         av_dict_set(&params->video_opts, "crf", "14", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
+         params->threads              = 2;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "deadline", "realtime", 0);
+         av_dict_set(&params->video_opts, "crf", "4", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_GIF:
+         params->threads              = 2;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = false;
+         params->audio_global_quality = 0;
+         params->out_pix_fmt          = PIX_FMT_RGB8;
+
+         strlcpy(params->vcodec, "gif", sizeof(params->vcodec));
+         strlcpy(params->acodec, "", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "framerate", "50", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
-         params->threads              = 1;
+         params->threads              = 2;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 50;
@@ -644,6 +693,24 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
       else
          params->scale_factor = 1;
       strlcpy(params->format, "matroska", sizeof(params->format));
+   }
+   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "webm", sizeof(params->format));
+   }
+   else if (preset <= RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "gif", sizeof(params->format));
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
    {
