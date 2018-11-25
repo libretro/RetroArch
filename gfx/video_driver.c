@@ -985,16 +985,25 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      if (settings->bools.video_force_aspect)
+      /* To-Do: remove when the new window resizing core is hooked */
+      if (settings->uints.window_position_width || settings->uints.window_position_height)
       {
-         /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width =
-            roundf(geom->base_height * video_driver_get_aspect_ratio());
-         width  = roundf(base_width * settings->floats.video_scale);
+         width  = settings->uints.window_position_width;
+         height = settings->uints.window_position_height;
       }
       else
-         width  = roundf(geom->base_width   * settings->floats.video_scale);
-      height = roundf(geom->base_height * settings->floats.video_scale);
+      {
+         if (settings->bools.video_force_aspect)
+         {
+            /* Do rounding here to simplify integer scale correctness. */
+            unsigned base_width =
+               roundf(geom->base_height * video_driver_get_aspect_ratio());
+            width  = roundf(base_width * settings->floats.video_scale);
+         }
+         else
+            width  = roundf(geom->base_width   * settings->floats.video_scale);
+         height = roundf(geom->base_height * settings->floats.video_scale);
+}
    }
 
    if (width && height)
