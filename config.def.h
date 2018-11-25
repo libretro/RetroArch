@@ -125,6 +125,10 @@ static const unsigned window_height = 720;
 static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
 
+/* Number of threads to use for video recording */
+
+static const unsigned video_record_threads = 2;
+
 /* Amount of transparency to use for the main window.
  * 1 is the most transparent while 100 is opaque.
  */

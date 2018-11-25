@@ -7317,6 +7317,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+               PARSE_ONLY_UINT, true) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STREAMING_TITLE,
                PARSE_ONLY_STRING, false) == 0)
             count++;

@@ -1676,6 +1676,8 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, window_width, false);
    SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, window_height, false);
 
+   SETTING_UINT("video_record_threads",            &settings->uints.video_record_threads,    true, video_record_threads, false);
+
    *size = count;
 
    return tmp;
