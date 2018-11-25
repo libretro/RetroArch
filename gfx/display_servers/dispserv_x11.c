@@ -29,7 +29,7 @@ static char old_mode[250]       = {0};
 static char new_mode[250]       = {0};
 static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
-static char output[250]         = {0};
+static char output[500]         = {0};
 static bool crt_en              = false;
 
 typedef struct
@@ -277,7 +277,7 @@ static bool x11_display_server_set_resolution(void *data,
    return true;
 }
 
-const char *x11_display_server_get_output_options(void)
+const char *x11_display_server_get_output_options(void *data)
 {
    /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
    return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
