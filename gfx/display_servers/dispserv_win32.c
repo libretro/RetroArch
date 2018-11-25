@@ -107,7 +107,7 @@ static void win32_display_server_destroy(void *data)
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
    if (win32_orig_width > 0 && win32_orig_height > 0)
-      video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
+      video_display_server_set_resolution(win32_orig_width, win32_orig_height,
             win32_orig_refresh, (float)win32_orig_refresh, crt_center );
 
 #ifdef HAS_TASKBAR_EXT
@@ -204,20 +204,16 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center)
 {
-   LONG res;
    DEVMODE curDevmode;
-   DEVMODE devmode;
-
    int iModeNum;
    int freq               = int_hz;
-   DWORD flags            = 0;
    int depth              = 0;
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
    if (!serv)
       return false;
 
-   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
+   win32_get_video_output(&curDevmode, -1, sizeof(curDevmode));
 
    if (win32_orig_width == 0)
       win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
@@ -239,7 +235,10 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (iModeNum = 0;; iModeNum++)
    {
-      if (!EnumDisplaySettings(NULL, iModeNum, &devmode))
+      LONG res;
+      DEVMODE devmode;
+
+      if (!win32_get_video_output(&devmode, iModeNum, sizeof(devmode)))
          break;
 
       if (devmode.dmPelsWidth != width)
@@ -262,15 +261,15 @@ static bool win32_display_server_set_resolution(void *data,
       switch (res)
       {
       case DISP_CHANGE_SUCCESSFUL:
-         res = win32_change_display_settings(NULL, &devmode, flags);
+         res = win32_change_display_settings(NULL, &devmode, 0);
          switch (res)
          {
-         case DISP_CHANGE_SUCCESSFUL:
-            return true;
-         case DISP_CHANGE_NOTUPDATED:
-            return true;
-         default:
-            break;
+            case DISP_CHANGE_SUCCESSFUL:
+               return true;
+            case DISP_CHANGE_NOTUPDATED:
+               return true;
+            default:
+               break;
          }
          break;
       case DISP_CHANGE_RESTART:
@@ -283,6 +282,62 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
+void *win32_display_server_get_resolution_list(void *data,
+      unsigned *len)
+{
+   DEVMODE dm;
+   unsigned i, count                 = 0;
+   unsigned curr_width               = 0;
+   unsigned curr_height              = 0;
+   unsigned curr_bpp                 = 0;
+   unsigned curr_refreshrate         = 0;
+   struct video_display_config *conf = NULL;
+
+   for (i = 0;; i++)
+   {
+      if (!win32_get_video_output(&dm, i, sizeof(dm)))
+         break;
+
+      count++;
+   }
+
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width       = dm.dmPelsWidth;
+      curr_height      = dm.dmPelsHeight;
+      curr_bpp         = dm.dmBitsPerPel;
+      curr_refreshrate = dm.dmDisplayFrequency;
+   }
+
+   *len = count;
+   conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config));
+
+   if (!conf)
+      return NULL;
+
+   for (i = 0;; i++)
+   {
+      if (!win32_get_video_output(&dm, i, sizeof(dm)))
+         break;
+
+      conf[i].width       = dm.dmPelsWidth; 
+      conf[i].height      = dm.dmPelsHeight; 
+      conf[i].bpp         = dm.dmBitsPerPel; 
+      conf[i].refreshrate = dm.dmDisplayFrequency;
+      conf[i].idx         = i;
+      conf[i].current     = false;
+
+      if (     (conf[i].width       == curr_width)
+            && (conf[i].height      == curr_height)
+            && (conf[i].refreshrate == curr_refreshrate)
+            && (conf[i].bpp         == curr_bpp)
+         )
+         conf[i].current  = true;
+   }
+
+   return conf;
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -290,6 +345,7 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_set_window_progress,
    win32_display_server_set_window_decorations,
    win32_display_server_set_resolution,
+   win32_display_server_get_resolution_list,
    NULL, /* get_output_options */
    "win32"
 };

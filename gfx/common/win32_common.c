@@ -200,6 +200,8 @@ static bool g_win32_quit            = false;
 
 static int g_win32_pos_x            = CW_USEDEFAULT;
 static int g_win32_pos_y            = CW_USEDEFAULT;
+static unsigned g_win32_pos_width   = 0;
+static unsigned g_win32_pos_height  = 0;
 
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
@@ -617,6 +619,48 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 }
 #endif
 
+static void win32_set_position_from_config(void)
+{
+   settings_t *settings  = config_get_ptr();
+   if (!settings->bools.video_window_save_positions)
+      return;
+
+   g_win32_pos_x     = settings->uints.window_position_x;
+   g_win32_pos_y     = settings->uints.window_position_y;
+   g_win32_pos_width = settings->uints.window_position_width;
+   g_win32_pos_height= settings->uints.window_position_height;
+}
+
+static void win32_save_position(void)
+{
+   RECT rect;
+   WINDOWPLACEMENT placement;
+   settings_t *settings     = config_get_ptr();
+   memset(&placement, 0, sizeof(placement));
+   placement.length = sizeof(placement);
+
+   GetWindowPlacement(main_window.hwnd, &placement);
+
+   g_win32_pos_x = placement.rcNormalPosition.left;
+   g_win32_pos_y = placement.rcNormalPosition.top;
+
+   if (GetWindowRect(main_window.hwnd, &rect))
+   {
+      g_win32_pos_width  = rect.right  - rect.left;
+      g_win32_pos_height = rect.bottom - rect.top;
+   }
+   if (settings && settings->bools.video_window_save_positions)
+   {
+      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen())
+      {
+         settings->uints.window_position_x      = g_win32_pos_x;
+         settings->uints.window_position_y      = g_win32_pos_y;
+         settings->uints.window_position_width  = g_win32_pos_width;
+         settings->uints.window_position_height = g_win32_pos_height;
+      }
+   }
+}
+
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -634,6 +678,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                *quit = true;
                break;
          }
+         win32_save_position();
          break;
       case WM_DROPFILES:
          {
@@ -649,21 +694,16 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          *quit = true;
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
+      case WM_MOVE:
+         win32_save_position();
+         break;
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         {
-            WINDOWPLACEMENT placement;
-            memset(&placement, 0, sizeof(placement));
-            placement.length = sizeof(placement);
+         win32_save_position();
 
-            GetWindowPlacement(main_window.hwnd, &placement);
-
-            g_win32_pos_x = placement.rcNormalPosition.left;
-            g_win32_pos_y = placement.rcNormalPosition.top;
-            g_win32_quit  = true;
-            *quit         = true;
-         }
+         g_win32_quit  = true;
+         *quit         = true;
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -678,6 +718,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                g_win32_resized       = true;
             }
          }
+         win32_save_position();
          *quit = true;
          break;
      case WM_COMMAND:
@@ -719,6 +760,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
@@ -779,6 +821,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit,
@@ -878,6 +921,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
@@ -918,12 +962,23 @@ bool win32_window_create(void *data, unsigned style,
 #endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
+   unsigned user_width   = width;
+   unsigned user_height  = height;
+   win32_set_position_from_config();
+
+   if (settings->bools.video_window_save_positions
+         && !fullscreen)
+   {
+      user_width = g_win32_pos_width;
+      user_height= g_win32_pos_height;
+   }
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
-         width, height,
+         user_width,
+         user_height,
          NULL, NULL, NULL, data);
    if (!main_window.hwnd)
       return false;
@@ -1139,9 +1194,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #if !defined(_XBOX)
+   bool position_set_from_config = false;
+   settings_t *settings          = config_get_ptr();
    if (fullscreen)
    {
-      settings_t *settings = config_get_ptr();
       /* Windows only reports the refresh rates for modelines as
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to half
@@ -1176,8 +1232,23 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       AdjustWindowRect(rect, *style, FALSE);
 
-      g_win32_resize_width  = *width   = rect->right  - rect->left;
-      g_win32_resize_height = *height  = rect->bottom - rect->top;
+      if (settings->bools.video_window_save_positions)
+      {
+         win32_set_position_from_config();
+         if (g_win32_pos_width != 0 && g_win32_pos_height != 0)
+            position_set_from_config = true;
+      }
+
+      if (position_set_from_config)
+      {
+         g_win32_resize_width  = *width   = g_win32_pos_width;
+         g_win32_resize_height = *height  = g_win32_pos_height;
+      }
+      else
+      {
+         g_win32_resize_width  = *width   = rect->right  - rect->left;
+         g_win32_resize_height = *height  = rect->bottom - rect->top;
+      }
    }
 #endif
 }
@@ -1255,6 +1326,7 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style,
             &mon_rect, width, height, fullscreen))
       return false;
+
 
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);
@@ -1353,15 +1425,13 @@ void win32_get_video_output_prev(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   memset(&dm, 0, sizeof(dm));
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width  = dm.dmPelsWidth;
+      curr_height = dm.dmPelsHeight;
+   }
 
-   dm.dmSize            = sizeof(dm);
-
-   win32_get_video_output_size(&curr_width, &curr_height);
-
-   for (i = 0;
-         EnumDisplaySettings(NULL, i, &dm) != 0;
-         i++)
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
@@ -1458,14 +1528,13 @@ void win32_get_video_output_next(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   memset(&dm, 0, sizeof(dm));
-   dm.dmSize = sizeof(dm);
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width  = dm.dmPelsWidth;
+      curr_height = dm.dmPelsHeight;
+   }
 
-   win32_get_video_output_size(&curr_width, &curr_height);
-
-   for (i = 0;
-         EnumDisplaySettings(NULL, i, &dm) != 0;
-         i++)
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
       if (found)
       {
@@ -1480,13 +1549,23 @@ void win32_get_video_output_next(
    }
 }
 
+bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
+{
+   memset(dm, 0, len);
+   dm->dmSize  = len;
+
+   if (EnumDisplaySettings(NULL,
+            (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm) == 0)
+      return false;
+
+   return true;
+}
+
 void win32_get_video_output_size(unsigned *width, unsigned *height)
 {
    DEVMODE dm;
-   memset(&dm, 0, sizeof(dm));
-   dm.dmSize  = sizeof(dm);
 
-   if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
    {
       *width  = dm.dmPelsWidth;
       *height = dm.dmPelsHeight;

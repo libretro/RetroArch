@@ -60,6 +60,7 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../gfx/video_display_server.h"
 
 #include <net/net_http.h>
 
@@ -150,6 +151,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -321,6 +324,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -4449,6 +4461,45 @@ static int action_ok_push_dropdown_item(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char str[100];
+   char *pch            = NULL;
+   unsigned width       = 0;
+   unsigned height      = 0;
+   unsigned refreshrate = 0;
+
+   snprintf(str, sizeof(str), "%s", path);
+
+   pch = strtok(str, "x");
+   if (pch)
+      width = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, " ");
+   if (pch)
+      height = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, "(");
+   if (pch)
+      refreshrate = strtoul(pch, NULL, 0);
+
+   if (video_display_server_set_resolution(width, height,
+         refreshrate, (float)refreshrate, 0))
+   {
+      settings_t *settings = config_get_ptr();
+
+      video_monitor_set_refresh_rate((float)refreshrate);
+
+      settings->uints.video_fullscreen_x = width;
+      settings->uints.video_fullscreen_y = height;
+
+      /* TODO/FIXME - menu drivers like XMB don't rescale
+       * automatically */
+      return menu_cbs_exit();
+   }
+
+   return 0;
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4587,6 +4638,7 @@ default_action_ok_help(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -4610,6 +4662,12 @@ static int action_ok_video_resolution(const char *path,
                width, height);
       runloop_msg_queue_push(msg, 1, 100, true);
    }
+#else
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
+#endif
 
    return 0;
 }
@@ -5554,6 +5612,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);

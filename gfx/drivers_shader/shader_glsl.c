@@ -480,11 +480,11 @@ error:
    return false;
 }
 
-static void gl_glsl_strip_parameter_pragmas(char *source)
+static void gl_glsl_strip_parameter_pragmas(char *source, const char *str)
 {
    /* #pragma parameter lines tend to have " characters in them,
     * which is not legal GLSL. */
-   char *s = strstr(source, "#pragma parameter");
+   char *s = strstr(source, str);
 
    while (s)
    {
@@ -492,7 +492,7 @@ static void gl_glsl_strip_parameter_pragmas(char *source)
        * so we can just replace the entire line with spaces. */
       while (*s != '\0' && *s != '\n')
          *s++ = ' ';
-      s = strstr(s, "#pragma parameter");
+      s = strstr(s, str);
    }
 }
 
@@ -506,7 +506,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
    if (nitems <= 0 || len <= 0)
       return false;
 
-   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex);
+   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex, "#pragma parameter");
    pass->source.string.fragment = strdup(pass->source.string.vertex);
    return pass->source.string.fragment && pass->source.string.vertex;
 }

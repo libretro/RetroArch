@@ -38,7 +38,7 @@ matrix:
             - clang-3.8
       env: COMPILER_NAME=clang-3.8 CXX=clang++-3.8 CC=clang-3.8
     - os: osx
-      osx_image: xcode7.3
+      osx_image: xcode8
       script:
           - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx

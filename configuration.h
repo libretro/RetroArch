@@ -293,6 +293,7 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+      bool video_window_save_positions;
 
       bool sustained_performance_mode;
    } bools;
@@ -372,8 +373,6 @@ typedef struct settings
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
-      unsigned video_window_x;
-      unsigned video_window_y;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
@@ -439,6 +438,11 @@ typedef struct settings
 
       unsigned midi_volume;
       unsigned streaming_mode;
+
+      unsigned window_position_x;
+      unsigned window_position_y;
+      unsigned window_position_width;
+      unsigned window_position_height;
    } uints;
 
    struct

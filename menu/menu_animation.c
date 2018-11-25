@@ -714,13 +714,12 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
 void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry)
 {
+   menu_animation_ctx_entry_t entry;
    menu_animation_ctx_tag tag = (uintptr_t) timer;
 
    menu_timer_kill(timer);
 
    *timer = 0.0f;
-
-   menu_animation_ctx_entry_t entry;
 
    entry.easing_enum    = EASING_LINEAR;
    entry.tag            = tag;

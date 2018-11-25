@@ -985,24 +985,16 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      if (settings->uints.video_window_x || settings->uints.video_window_y)
+      if (settings->bools.video_force_aspect)
       {
-         width  = settings->uints.video_window_x;
-         height = settings->uints.video_window_y;
+         /* Do rounding here to simplify integer scale correctness. */
+         unsigned base_width =
+            roundf(geom->base_height * video_driver_get_aspect_ratio());
+         width  = roundf(base_width * settings->floats.video_scale);
       }
       else
-      {
-         if (settings->bools.video_force_aspect)
-         {
-            /* Do rounding here to simplify integer scale correctness. */
-            unsigned base_width =
-               roundf(geom->base_height * video_driver_get_aspect_ratio());
-            width  = roundf(base_width * settings->floats.video_scale);
-         }
-         else
-            width  = roundf(geom->base_width   * settings->floats.video_scale);
-         height = roundf(geom->base_height * settings->floats.video_scale);
-      }
+         width  = roundf(geom->base_width   * settings->floats.video_scale);
+      height = roundf(geom->base_height * settings->floats.video_scale);
    }
 
    if (width && height)
@@ -1491,15 +1483,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   CONFIG_ACTION(
-         list, list_info,
-         MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-         MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-         group_info,
-         subgroup_info,
-         parent_group);
-#endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          list, list_info,

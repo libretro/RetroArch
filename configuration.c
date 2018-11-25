@@ -1514,6 +1514,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, window_decorations, false);
+   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, false, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
@@ -1589,8 +1590,6 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_monitor_index",          &settings->uints.video_monitor_index, true, monitor_index, false);
    SETTING_UINT("video_fullscreen_x",           &settings->uints.video_fullscreen_x,  true, fullscreen_x, false);
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
-   SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
-   SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
@@ -1672,6 +1671,10 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",            &settings->uints.video_record_scale_factor,    true, 1, false);
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
+   SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
+   SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
+   SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, window_width, false);
+   SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, window_height, false);
 
    *size = count;
 

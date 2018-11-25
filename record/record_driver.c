@@ -539,7 +539,7 @@ void recording_driver_update_streaming_url(void)
          else
          {
             /* To-Do: Show input box for twitch_stream_key*/
-            RARCH_LOG("[recording] twitch streaming key empty");
+            RARCH_LOG("[recording] twitch streaming key empty\n");
          }
          break;
       }
@@ -553,7 +553,7 @@ void recording_driver_update_streaming_url(void)
          else
          {
             /* To-Do: Show input box for youtube_stream_key*/
-            RARCH_LOG("[recording] youtube streaming key empty");
+            RARCH_LOG("[recording] youtube streaming key empty\n");
          }
          break;
       }
