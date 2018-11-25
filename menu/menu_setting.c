@@ -5467,8 +5467,8 @@ static bool setting_append_list(
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.window_position_width,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+                     MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
                      window_width,
                      &group_info,
                      &subgroup_info,
@@ -6803,6 +6803,22 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_record_threads,
+               MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+               MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+               video_record_threads,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 1, 8, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_DIR(
                list, list_info,
