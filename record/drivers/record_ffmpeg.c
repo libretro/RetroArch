@@ -564,7 +564,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 75;
@@ -580,7 +580,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 75;
@@ -596,7 +596,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 100;
@@ -611,7 +611,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 80;
@@ -626,7 +626,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "80", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 50;
@@ -640,7 +640,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 75;
@@ -654,7 +654,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_GIF:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = false;
          params->audio_global_quality = 0;
@@ -667,7 +667,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
-         params->threads              = 2;
+         params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 50;

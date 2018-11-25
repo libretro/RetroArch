@@ -443,6 +443,8 @@ typedef struct settings
       unsigned window_position_y;
       unsigned window_position_width;
       unsigned window_position_height;
+
+      unsigned video_record_threads;
    } uints;
 
    struct
