@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
  *  Copyright (C) 2016-2017 - Brad Parker
- *  Copyright (C) 2018 - Alfredo Monclús
+ *  Copyright (C) 2018 - Alfredo MonclÃºs
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -3103,6 +3103,9 @@ static void xmb_draw_items(
    menu_display_blend_end(video_info);
 }
 
+static void xmb_context_reset_internal(xmb_handle_t *xmb,
+      bool is_threaded, bool reinit_textures);
+
 static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
@@ -3113,8 +3116,24 @@ static void xmb_render(void *data, bool is_idle)
    bool mouse_enable        = settings->bools.menu_mouse_enable;
    bool pointer_enable      = settings->bools.menu_pointer_enable;
 
-   if (!xmb)
+   unsigned width, height;
+   float scale_factor;
+
+    if (!xmb)
       return;
+
+   video_driver_get_size(&width, &height);
+
+   scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+
+   if (scale_factor != xmb->previous_scale_factor && !xmb->context_just_reset)
+      xmb_context_reset_internal(xmb, video_driver_is_threaded(),
+            false);
+
+   if (xmb->context_just_reset)
+      xmb->context_just_reset = false;
+
+   xmb->previous_scale_factor = scale_factor;
 
    delta.current = menu_animation_get_delta_time();
 
@@ -3320,9 +3339,6 @@ static void xmb_draw_dark_layer(
    menu_display_blend_end(video_info);
 }
 
-static void xmb_context_reset_internal(xmb_handle_t *xmb,
-      bool is_threaded, bool reinit_textures);
-
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
@@ -3351,15 +3367,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
-
-   if (scale_factor != xmb->previous_scale_factor && !xmb->context_just_reset)
-      xmb_context_reset_internal(xmb, video_driver_is_threaded(),
-            false);
-
-   if (xmb->context_just_reset)
-      xmb->context_just_reset = false;
-
-   xmb->previous_scale_factor = scale_factor;
 
    xmb->frame_count++;
 
