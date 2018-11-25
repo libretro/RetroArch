@@ -20,7 +20,7 @@
 #include "video_driver.h"
 #include "../verbosity.h"
 
-static const video_display_server_t *current_display_server = NULL;
+static const video_display_server_t *current_display_server = &dispserv_null;
 static void                    *current_display_server_data = NULL;
 
 const char *video_display_server_get_ident(void)
