@@ -651,10 +651,13 @@ static void win32_save_position(void)
    }
    if (settings && settings->bools.video_window_save_positions)
    {
-      settings->uints.window_position_x     = g_win32_pos_x;
-      settings->uints.window_position_y     = g_win32_pos_y;
-      settings->uints.window_position_width = g_win32_pos_width;
-      settings->uints.window_position_height= g_win32_pos_height;
+      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen())
+      {
+         settings->uints.window_position_x      = g_win32_pos_x;
+         settings->uints.window_position_y      = g_win32_pos_y;
+         settings->uints.window_position_width  = g_win32_pos_width;
+         settings->uints.window_position_height = g_win32_pos_height;
+      }
    }
 }
 
@@ -1323,6 +1326,7 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style,
             &mon_rect, width, height, fullscreen))
       return false;
+
 
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);
