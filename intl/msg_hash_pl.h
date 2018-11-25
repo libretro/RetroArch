@@ -3798,4 +3798,4 @@ MSG_HASH(
     "Brak ulubionych."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Remember Window Positions")
+      "Remember Window Position and Size")
