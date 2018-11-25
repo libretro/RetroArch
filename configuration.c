@@ -1675,6 +1675,8 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
    SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
+   SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, 0, false);
+   SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, 0, false);
 
    *size = count;
 

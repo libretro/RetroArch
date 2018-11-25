@@ -200,6 +200,8 @@ static bool g_win32_quit            = false;
 
 static int g_win32_pos_x            = CW_USEDEFAULT;
 static int g_win32_pos_y            = CW_USEDEFAULT;
+static unsigned g_win32_pos_width   = 0;
+static unsigned g_win32_pos_height  = 0;
 
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
@@ -617,8 +619,21 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 }
 #endif
 
+static void win32_set_position_from_config(void)
+{
+   settings_t *settings  = config_get_ptr();
+   if (!settings->bools.video_window_save_positions)
+      return;
+
+   g_win32_pos_x     = settings->uints.window_position_x;
+   g_win32_pos_y     = settings->uints.window_position_y;
+   g_win32_pos_width = settings->uints.window_position_width;
+   g_win32_pos_height= settings->uints.window_position_height;
+}
+
 static void win32_save_position(void)
 {
+   RECT rect;
    WINDOWPLACEMENT placement;
    settings_t *settings     = config_get_ptr();
    memset(&placement, 0, sizeof(placement));
@@ -628,10 +643,18 @@ static void win32_save_position(void)
 
    g_win32_pos_x = placement.rcNormalPosition.left;
    g_win32_pos_y = placement.rcNormalPosition.top;
+
+   if (GetWindowRect(main_window.hwnd, &rect))
+   {
+      g_win32_pos_width  = rect.right  - rect.left;
+      g_win32_pos_height = rect.bottom - rect.top;
+   }
    if (settings && settings->bools.video_window_save_positions)
    {
-      settings->uints.window_position_x = g_win32_pos_x;
-      settings->uints.window_position_y = g_win32_pos_y;
+      settings->uints.window_position_x     = g_win32_pos_x;
+      settings->uints.window_position_y     = g_win32_pos_y;
+      settings->uints.window_position_width = g_win32_pos_width;
+      settings->uints.window_position_height= g_win32_pos_height;
    }
 }
 
@@ -652,6 +675,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                *quit = true;
                break;
          }
+         win32_save_position();
          break;
       case WM_DROPFILES:
          {
@@ -935,17 +959,16 @@ bool win32_window_create(void *data, unsigned style,
 #endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
-   if (settings->bools.video_window_save_positions)
-   {
-      g_win32_pos_x = settings->uints.window_position_x;
-      g_win32_pos_y = settings->uints.window_position_y;
-   }
+   win32_set_position_from_config();
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
-         width, height,
+         (settings->bools.video_window_save_positions) ? g_win32_pos_width : 
+         width,
+         (settings->bools.video_window_save_positions) ? g_win32_pos_height :
+         height,
          NULL, NULL, NULL, data);
    if (!main_window.hwnd)
       return false;
@@ -1161,9 +1184,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #if !defined(_XBOX)
+   bool position_set_from_config = false;
+   settings_t *settings          = config_get_ptr();
    if (fullscreen)
    {
-      settings_t *settings = config_get_ptr();
       /* Windows only reports the refresh rates for modelines as
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to half
@@ -1198,8 +1222,23 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       AdjustWindowRect(rect, *style, FALSE);
 
-      g_win32_resize_width  = *width   = rect->right  - rect->left;
-      g_win32_resize_height = *height  = rect->bottom - rect->top;
+      if (settings->bools.video_window_save_positions)
+      {
+         win32_set_position_from_config();
+         if (g_win32_pos_width != 0 && g_win32_pos_height != 0)
+            position_set_from_config = true;
+      }
+
+      if (position_set_from_config)
+      {
+         g_win32_resize_width  = *width   = g_win32_pos_width;
+         g_win32_resize_height = *height  = g_win32_pos_height;
+      }
+      else
+      {
+         g_win32_resize_width  = *width   = rect->right  - rect->left;
+         g_win32_resize_height = *height  = rect->bottom - rect->top;
+      }
    }
 #endif
 }
