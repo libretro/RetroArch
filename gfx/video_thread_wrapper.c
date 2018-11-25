@@ -48,9 +48,6 @@ enum thread_cmd
 
    CMD_POKE_SET_VIDEO_MODE,
    CMD_POKE_SET_FILTERING,
-   CMD_POKE_GET_VIDEO_OUTPUT_SIZE,
-   CMD_POKE_GET_VIDEO_OUTPUT_PREV,
-   CMD_POKE_GET_VIDEO_OUTPUT_NEXT,
 
    CMD_POKE_SET_FBO_STATE,
    CMD_POKE_GET_FBO_STATE,
@@ -496,26 +493,6 @@ static bool video_thread_handle_packet(
             thr->poke->set_filtering(thr->driver_data,
                   pkt.data.filtering.index,
                   pkt.data.filtering.smooth);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_SIZE:
-         if (thr->poke && thr->poke->get_video_output_size)
-            thr->poke->get_video_output_size(thr->driver_data,
-                  &pkt.data.output.width,
-                  &pkt.data.output.height);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_PREV:
-         if (thr->poke && thr->poke->get_video_output_prev)
-            thr->poke->get_video_output_prev(thr->driver_data);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_NEXT:
-         if (thr->poke && thr->poke->get_video_output_next)
-            thr->poke->get_video_output_next(thr->driver_data);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1107,37 +1084,36 @@ static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_SIZE };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
-
-   *width  = pkt.data.output.width;
-   *height = pkt.data.output.height;
+   if (thr->poke && thr->poke->get_video_output_size)
+      thr->poke->get_video_output_size(thr->driver_data,
+            width,
+            height);
 }
 
 static void thread_get_video_output_prev(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_PREV };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   if (thr->poke && thr->poke->get_video_output_prev)
+      thr->poke->get_video_output_prev(thr->driver_data);
 }
 
 static void thread_get_video_output_next(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_NEXT };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   if (thr->poke && thr->poke->get_video_output_next)
+      thr->poke->get_video_output_next(thr->driver_data);
 }
 
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
