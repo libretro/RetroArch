@@ -293,6 +293,7 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+      bool video_window_save_positions;
 
       bool sustained_performance_mode;
    } bools;
@@ -439,6 +440,9 @@ typedef struct settings
 
       unsigned midi_volume;
       unsigned streaming_mode;
+
+      unsigned window_position_x;
+      unsigned window_position_y;
    } uints;
 
    struct

@@ -5518,6 +5518,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.video_window_save_positions,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.video_scale_integer,
                   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,

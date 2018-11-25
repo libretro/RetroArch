@@ -7780,3 +7780,5 @@ MSG_HASH(
     MSG_MISSING_ASSETS,
     "Aviso: Recursos ausentes, use o Atualizador Online se disponível"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Save Window Positions")

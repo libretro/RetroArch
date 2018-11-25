@@ -617,6 +617,24 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 }
 #endif
 
+static void win32_save_position(void)
+{
+   WINDOWPLACEMENT placement;
+   settings_t *settings     = config_get_ptr();
+   memset(&placement, 0, sizeof(placement));
+   placement.length = sizeof(placement);
+
+   GetWindowPlacement(main_window.hwnd, &placement);
+
+   g_win32_pos_x = placement.rcNormalPosition.left;
+   g_win32_pos_y = placement.rcNormalPosition.top;
+   if (settings && settings->bools.video_window_save_positions)
+   {
+      settings->uints.window_position_x = g_win32_pos_x;
+      settings->uints.window_position_y = g_win32_pos_y;
+   }
+}
+
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -649,21 +667,16 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          *quit = true;
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
+      case WM_MOVE:
+         win32_save_position();
+         break;
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         {
-            WINDOWPLACEMENT placement;
-            memset(&placement, 0, sizeof(placement));
-            placement.length = sizeof(placement);
+         win32_save_position();
 
-            GetWindowPlacement(main_window.hwnd, &placement);
-
-            g_win32_pos_x = placement.rcNormalPosition.left;
-            g_win32_pos_y = placement.rcNormalPosition.top;
-            g_win32_quit  = true;
-            *quit         = true;
-         }
+         g_win32_quit  = true;
+         *quit         = true;
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -678,6 +691,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                g_win32_resized       = true;
             }
          }
+         win32_save_position();
          *quit = true;
          break;
      case WM_COMMAND:
@@ -719,6 +733,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
@@ -779,6 +794,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit,
@@ -878,6 +894,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+      case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
@@ -918,6 +935,11 @@ bool win32_window_create(void *data, unsigned style,
 #endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
+   if (settings->bools.video_window_save_positions)
+   {
+      g_win32_pos_x = settings->uints.window_position_x;
+      g_win32_pos_y = settings->uints.window_position_y;
+   }
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
          style,

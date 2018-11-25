@@ -6622,6 +6622,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,

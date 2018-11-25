@@ -7748,3 +7748,5 @@ MSG_HASH(
     MSG_MISSING_ASSETS,
     "ADVERTENCIA: Faltan recursos, use el Actualizador si está disponible"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Save Window Positions")

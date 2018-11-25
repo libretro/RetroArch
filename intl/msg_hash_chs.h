@@ -4749,3 +4749,5 @@ MSG_HASH(
     MSG_MISSING_ASSETS,
     "Warning: Missing assets, use the Online Updater if available"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Save Window Positions")
