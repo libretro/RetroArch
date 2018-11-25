@@ -959,16 +959,23 @@ bool win32_window_create(void *data, unsigned style,
 #endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
+   unsigned user_width   = width;
+   unsigned user_height  = height;
    win32_set_position_from_config();
+
+   if (settings->bools.video_window_save_positions
+         && !fullscreen)
+   {
+      user_width = g_win32_pos_width;
+      user_height= g_win32_pos_height;
+   }
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
-         (settings->bools.video_window_save_positions) ? g_win32_pos_width : 
-         width,
-         (settings->bools.video_window_save_positions) ? g_win32_pos_height :
-         height,
+         user_width,
+         user_height,
          NULL, NULL, NULL, data);
    if (!main_window.hwnd)
       return false;
