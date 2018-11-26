@@ -134,7 +134,8 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 {
    XEvent xev               = {0};
 
-   XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy, "_NET_MOVERESIZE_WINDOW", False);
+   XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy,
+		   "_NET_MOVERESIZE_WINDOW", False);
 
    xev.xclient.type         = ClientMessage;
    xev.xclient.send_event   = True;
@@ -170,12 +171,12 @@ static void x11_set_window_pid(Display *dpy, Window win)
         XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid, 1);
 
     errno = 0;
-    if((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
+    if ((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
         return;
-    if((hostname = (char*)malloc(scret + 1)) == NULL)
+    if ((hostname = (char*)malloc(scret + 1)) == NULL)
         return;
 
-    if(gethostname(hostname, scret + 1) == -1)
+    if (gethostname(hostname, scret + 1) == -1)
         RARCH_WARN("Failed to get hostname.\n");
     else
     {
