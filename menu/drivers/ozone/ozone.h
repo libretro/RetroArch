@@ -42,7 +42,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
 #define INTERVAL_OSK_CURSOR (0.5f * 1000000)
 
-typedef struct ozone_handle
+struct ozone_handle
 {
    uint64_t frame_count;
 
@@ -152,7 +152,7 @@ typedef struct ozone_handle
    unsigned old_list_offset_y;
 
    file_list_t *horizontal_list; /* console tabs */
-} ozone_handle_t;
+};
 
 /* If you change this struct, also
    change ozone_alloc_node and

@@ -3207,6 +3207,10 @@ MSG_HASH(
     "Windowed Scale"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+    "Recording Threads"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
     "Integer Scale"
     )

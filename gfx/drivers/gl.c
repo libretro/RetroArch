@@ -2509,7 +2509,7 @@ static void video_texture_load_gl(
 }
 
 #ifdef HAVE_THREADS
-static int video_texture_load_wrap_gl_mipmap(void *data)
+static int64_t video_texture_load_wrap_gl_mipmap(void *data)
 {
    uintptr_t id = 0;
 
@@ -2517,10 +2517,10 @@ static int video_texture_load_wrap_gl_mipmap(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return (int)id;
+   return (int64_t)(uintptr_t)id;
 }
 
-static int video_texture_load_wrap_gl(void *data)
+static int64_t video_texture_load_wrap_gl(void *data)
 {
    uintptr_t id = 0;
 
@@ -2528,7 +2528,7 @@ static int video_texture_load_wrap_gl(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_LINEAR, &id);
-   return (int)id;
+   return (int64_t)(uintptr_t)id;
 }
 #endif
 

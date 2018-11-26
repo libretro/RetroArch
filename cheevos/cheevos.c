@@ -1666,7 +1666,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
             if (settings && settings->bools.cheevos_auto_screenshot)
             {
-               char shotname[256];
+               char shotname[4200];
 
                snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
                   settings->paths.directory_screenshot,

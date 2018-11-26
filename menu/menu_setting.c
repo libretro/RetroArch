@@ -336,16 +336,16 @@ static void setting_get_string_representation_video_stream_quality(
    /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
-      case 5:
+      case 8:
          strlcpy(s, "Custom", len);
          break;
-      case 6:
+      case 9:
          strlcpy(s, "Low", len);
          break;
-      case 7:
+      case 10:
          strlcpy(s, "Medium", len);
          break;
-      case 8:
+      case 11:
          strlcpy(s, "High", len);
          break;
    }
@@ -374,6 +374,15 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
          break;
       case 4:
          strlcpy(s, "Lossless", len);
+         break;
+      case 5:
+         strlcpy(s, "WebM Fast", len);
+         break;
+      case 6:
+         strlcpy(s, "WebM High Quality", len);
+         break;
+      case 7:
+         strlcpy(s, "GIF", len);
          break;
    }
 }
@@ -6689,7 +6698,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_record_quality;
-            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_GIF, 1, true, true);
 
             CONFIG_PATH(
                list, list_info,
@@ -6750,7 +6759,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
-            CONFIG_UINT(
+           CONFIG_UINT(
                list, list_info,
                &settings->uints.video_stream_quality,
                MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
@@ -6764,7 +6773,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_stream_quality;
-               (*list)[list_info->index - 1].offset_by = 5;
             menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
 
             CONFIG_PATH(
@@ -6794,6 +6802,22 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_record_threads,
+               MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+               MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+               video_record_threads,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 1, 8, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_DIR(
                list, list_info,

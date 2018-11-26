@@ -14,6 +14,7 @@
 - SWITCH: Proper button labels.
 - VULKAN: Fix RGUI crashing at startup.
 - VULKAN: Fix secondary screens in overlays not working.
+- WAYLAND: Implement idle-inhibit support (needed for screensaver suspend).
 - WINDOWS/WSA: Network Information info is blank until first network operation.
 - WIIU: Initial netplay peer-to-peer support. Network information working.
 

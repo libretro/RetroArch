@@ -1990,7 +1990,7 @@ void netplay_handle_slaves(netplay_t *netplay)
 void netplay_announce_nat_traversal(netplay_t *netplay)
 {
 #ifndef HAVE_SOCKET_LEGACY
-   char msg[512], host[PATH_MAX_LENGTH], port[6];
+   char msg[4200], host[PATH_MAX_LENGTH], port[6];
 
    if (netplay->nat_traversal_state.have_inet4)
    {
