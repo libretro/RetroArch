@@ -27,7 +27,7 @@
 
 RETRO_BEGIN_DECLS
 
-typedef int (*custom_command_method_t)(void*);
+typedef int64_t (*custom_command_method_t)(void*);
 
 typedef bool (*custom_font_command_method_t)(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
