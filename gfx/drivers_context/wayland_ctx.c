@@ -42,14 +42,13 @@
 #include "../common/gl_common.h"
 #endif
 
-#ifdef HAVE_DBUS
-#include "../common/dbus_common.h"
-#endif
-
 #include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
+
+/* Generated from idle-inhibit-unstable-v1.xml */
+#include "../common/wayland/idle-inhibit-unstable-v1.h"
 
 /* Generated from xdg-shell.xml */
 #include "../common/wayland/xdg-shell.h"
@@ -93,6 +92,8 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
+   struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    int swap_interval;
    bool core_hw_context_enable;
 
@@ -684,6 +685,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 2);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
    }
+   else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
+      wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
+                                  reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
 }
 
 static void registry_handle_global_remove(void *data,
@@ -766,6 +770,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
+   if (wl->idle_inhibit_manager)
+      zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
+   if (wl->idle_inhibitor)
+      zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
 
    if (wl->input.dpy)
    {
@@ -786,10 +794,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->width      = 0;
    wl->height     = 0;
 
-#ifdef HAVE_DBUS
-   dbus_screensaver_uninhibit();
-   dbus_close_connection();
-#endif
 }
 
 void flush_wayland_fd(void *data)
@@ -1072,6 +1076,11 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       RARCH_ERR("[Wayland]: Failed to create shell.\n");
       goto error;
    }
+   
+   if (!wl->idle_inhibit_manager)
+   {
+	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
+   }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
@@ -1123,10 +1132,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    }
 
    flush_wayland_fd(&wl->input);
-
-#ifdef HAVE_DBUS
-   dbus_ensure_connection();
-#endif
 
    return wl;
 
@@ -1406,16 +1411,25 @@ static bool gfx_ctx_wl_has_focus(void *data)
    return wl->input.keyboard_focus;
 }
 
-static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
+static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
-   (void)data;
-   (void)enable;
-
-#ifdef HAVE_DBUS
-   return dbus_suspend_screensaver(enable);
-#endif
-
-   return true;
+	(void)data;
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	
+    if (!wl->idle_inhibit_manager)
+        return false;
+    if (state == (!!wl->idle_inhibitor))
+        return true;
+    if (state) {
+        RARCH_LOG("[Wayland]: Enabling idle inhibitor\n");
+        struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
+        wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
+    } else {
+        RARCH_LOG("[Wayland]: Disabling the idle inhibitor\n");
+        zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
+        wl->idle_inhibitor = NULL;
+    }
+    return true;
 }
 
 static bool gfx_ctx_wl_has_windowed(void *data)

@@ -865,7 +865,8 @@ endif
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o \
-		  gfx/common/wayland/xdg-shell.o
+		  gfx/common/wayland/xdg-shell.o \
+		  gfx/common/wayland/idle-inhibit-unstable-v1.o
  ifeq ($(HAVE_EGL), 1)
    LIBS += $(EGL_LIBS)
  endif
