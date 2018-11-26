@@ -812,7 +812,6 @@ static void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozo
    else
    {
       ozone->selection_old = ozone->selection;
-      ozone->animations.cursor_alpha = 1.0f;
       ozone->animations.scroll_y = new_scroll;
    }
 }
