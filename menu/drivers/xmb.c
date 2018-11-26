@@ -233,7 +233,6 @@ typedef struct xmb_handle
 {
    bool mouse_show;
    bool use_ps3_layout;
-   bool context_just_reset;
 
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
@@ -3126,12 +3125,9 @@ static void xmb_render(void *data, bool is_idle)
 
    scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
 
-   if (scale_factor != xmb->previous_scale_factor && !xmb->context_just_reset)
+   if (scale_factor != xmb->previous_scale_factor)
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
             false);
-
-   if (xmb->context_just_reset)
-      xmb->context_just_reset = false;
 
    xmb->previous_scale_factor = scale_factor;
 
@@ -5139,7 +5135,6 @@ static void xmb_context_reset(void *data, bool is_threaded)
    if (xmb)
    {
       xmb_context_reset_internal(xmb, is_threaded, true);
-      xmb->context_just_reset = true;
    }
 }
 
