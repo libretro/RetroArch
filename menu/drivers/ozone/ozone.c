@@ -774,9 +774,8 @@ static void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozo
    bottom_boundary                      = video_info_height - 87 - 78;
    entries_middle                       = video_info_height/2;
 
-   if (current_selection_middle_onscreen != entries_middle)
-      new_scroll = ozone->animations.scroll_y - (current_selection_middle_onscreen - entries_middle);
-   
+   new_scroll = ozone->animations.scroll_y - (current_selection_middle_onscreen - entries_middle);
+
    if (new_scroll + ozone->entries_height < bottom_boundary)
       new_scroll = -(78 + ozone->entries_height - bottom_boundary);
 
