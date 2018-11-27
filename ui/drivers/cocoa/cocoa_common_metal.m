@@ -172,10 +172,23 @@ void *glkitview_init(void);
 }
 
 #elif defined(HAVE_COCOATOUCH)
+- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
+{
+    return UIRectEdgeBottom;
+}
+
+-(BOOL)prefersHomeIndicatorAutoHidden
+{
+    return NO;
+}
+
 - (void)viewDidAppear:(BOOL)animated
 {
    /* Pause Menus. */
    [self showPauseIndicator];
+   if (@available(iOS 11.0, *)) {
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+   }
 }
 
 - (void)showPauseIndicator

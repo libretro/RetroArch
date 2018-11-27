@@ -153,12 +153,53 @@ void *glkitview_init(void);
 }
 
 #elif defined(HAVE_COCOATOUCH)
+- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
+{
+    return UIRectEdgeBottom;
+}
+
+-(BOOL)prefersHomeIndicatorAutoHidden
+{
+    return NO;
+}
+
 - (void)viewDidAppear:(BOOL)animated
 {
    /* Pause Menus. */
    [self showPauseIndicator];
+   if (@available(iOS 11.0, *)) {
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+   }
 }
 
+-(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+    if (@available(iOS 11, *)) {
+        [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+            [self adjustViewFrameForSafeArea];
+        } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        }];
+    }
+}
+
+-(void)adjustViewFrameForSafeArea {
+    // This is for adjusting the view frame to account for the notch in iPhone X phones
+    if (@available(iOS 11, *)) {
+        RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
+        CGRect screenSize = [screen bounds];
+        UIEdgeInsets inset = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
+        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+        CGRect newFrame = screenSize;
+        if ( orientation == UIInterfaceOrientationPortrait ) {
+            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y + inset.top, screenSize.size.width, screenSize.size.height - inset.top);
+        } else if ( orientation == UIInterfaceOrientationLandscapeLeft ) {
+            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y, screenSize.size.width - inset.right, screenSize.size.height);
+        } else if ( orientation == UIInterfaceOrientationLandscapeRight ) {
+            newFrame = CGRectMake(screenSize.origin.x + inset.left, screenSize.origin.y, screenSize.size.width - inset.left, screenSize.size.height);
+        }
+        self.view.frame = newFrame;
+    }
+}
 - (void)showPauseIndicator
 {
    g_pause_indicator_view.alpha = 1.0f;
@@ -191,6 +232,7 @@ void *glkitview_init(void);
    
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
+   [self adjustViewFrameForSafeArea];
 }
 
 #define ALMOST_INVISIBLE (.021f)
