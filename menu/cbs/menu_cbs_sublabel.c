@@ -40,6 +40,7 @@
 
 #include "../../retroarch.h"
 #include "../../content.h"
+#include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
 
@@ -514,14 +515,14 @@ static int action_bind_sublabel_subsystem_add(
       char *s, size_t len)
 {
    rarch_system_info_t *system                  = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = (system && system->subsystem.data) ?
-	   system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
+   const struct retro_subsystem_info *subsystem = (system && subsystem_size > 0) ?
+	   subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
 
-   if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+   if (subsystem_size > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
       snprintf(s, len, " Current Content: %s",
-	  content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
-	  ? subsystem->roms[content_get_subsystem_rom_id()].desc
-	  : subsystem->roms[0].desc);
+         content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
+         ? subsystem->roms[content_get_subsystem_rom_id()].desc
+         : subsystem->roms[0].desc);
 
    return 0;
 }
@@ -540,8 +541,8 @@ static int action_bind_sublabel_remap_kbd_sublabel(
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
          (input_config_get_device_name(user_idx) ?
-          input_config_get_device_name(user_idx) : 
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+            input_config_get_device_name(user_idx) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 

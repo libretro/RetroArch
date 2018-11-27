@@ -55,6 +55,7 @@
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../verbosity.h"
+#include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../playlist.h"
 #include "../../retroarch.h"
@@ -5622,16 +5623,15 @@ static int xmb_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-               const struct retro_subsystem_info* subsystem = NULL;
+
 
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
-
-               subsystem           = system->subsystem.data;
-
-               if (subsystem)
+               if (subsystem_size > 0)
                {
-                  for (i = 0; i < (unsigned)system->subsystem.size; i++, subsystem++)
+                  const struct retro_subsystem_info* subsystem = NULL;
+                  subsystem           = subsystem_data;
+                  for (i = 0; i < subsystem_size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
                      if (content_get_subsystem() == i)

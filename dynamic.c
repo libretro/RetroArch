@@ -176,12 +176,80 @@ void libretro_free_system_info(struct retro_system_info *info)
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
+   rarch_system_info_t *system  = runloop_get_system_info();
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          *load_no_content_hook = *(const bool*)data;
          break;
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
+      {
+         unsigned i, j;
+         const struct retro_subsystem_info *info =
+            (const struct retro_subsystem_info*)data;
+         subsystem_size = 0;
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
+         for (i = 0; info[i].ident; i++)
+         {
+            RARCH_LOG("Subsystem ID: %d\n", i);
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  Content:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ?
+                     "required" : "optional");
+            }
+         }
+
+         RARCH_LOG("Subsystems: %d\n", i);
+         unsigned size = i;
+
+         if (system)
+         {
+            for (i = 0; i < size; i++)
+            {
+               subsystem_data[i].desc = strdup(info[i].desc);
+               subsystem_data[i].ident = strdup(info[i].ident);
+               subsystem_data[i].id = info[i].id;
+               subsystem_data[i].num_roms = info[i].num_roms;
+
+               for (j = 0; j < subsystem_data[i].num_roms; j++)
+               {
+                  subsystem_data_roms[i][j].desc = strdup(info[i].roms[j].desc);
+                  subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
+                  subsystem_data_roms[i][j].required = info[i].roms[j].required;
+                  subsystem_data_roms[i][j].block_extract = info[i].roms[j].block_extract;
+                  subsystem_data_roms[i][j].need_fullpath = info[i].roms[j].need_fullpath;
+               }
+               subsystem_data[i].roms = subsystem_data_roms[i];
+            }
+
+            for (i = 0; i < size; i++)
+            {
+#if 1
+               RARCH_LOG("Subsystem ID: %d\n", i);
+               RARCH_LOG("Special game type: %s\n", subsystem_data[i].desc);
+               RARCH_LOG("  Ident: %s\n", subsystem_data[i].ident);
+               RARCH_LOG("  ID: %u\n", subsystem_data[i].id);
+               RARCH_LOG("  Content:\n");
+#endif
+               for (j = 0; j < subsystem_data[i].num_roms; j++)
+               {
+                  RARCH_LOG("    %s (%s)\n",
+                        subsystem_data[i].roms[j].desc, subsystem_data[i].roms[j].required ?
+                        "required" : "optional");
+               }
+            }
+            RARCH_LOG("Subsystems: %d\n", subsystem_size);
+            subsystem_size = size;
+            RARCH_LOG("Subsystems: %d\n", subsystem_size);
+         }
+         break;
+      }
       default:
          return false;
    }
@@ -396,7 +464,6 @@ bool libretro_get_system_info(const char *path,
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
 #endif
-
    return true;
 }
 

@@ -1899,6 +1899,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
       {
+         subsystem_size = 0;
+         content_clear_subsystem();
          bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
          (void)success;
 
@@ -2019,8 +2021,10 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 
             if (is_inited)
+            {
                if (!task_push_start_dummy_core(&content_info))
                   return false;
+            }
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
@@ -2037,6 +2041,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
 #endif
+            if (is_inited)
+            {
+               subsystem_size = 0;
+               content_clear_subsystem();
+            }
          }
          break;
       case CMD_EVENT_QUIT:
