@@ -986,7 +986,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    else
    {
       /* To-Do: remove when the new window resizing core is hooked */
-      if (settings->uints.window_position_width || settings->uints.window_position_height)
+      if (settings->bools.video_window_save_positions &&
+         (settings->uints.window_position_width || settings->uints.window_position_height))
       {
          width  = settings->uints.window_position_width;
          height = settings->uints.window_position_height;
