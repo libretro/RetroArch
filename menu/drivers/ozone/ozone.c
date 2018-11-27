@@ -587,12 +587,9 @@ static int ozone_list_push(void *data, void *userdata,
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
 
-               subsystem           = system->subsystem.data;
-
                if (subsystem_size > 0)
                {
-                  const struct retro_subsystem_info* subsystem = NULL;
-                  subsystem           = subsystem_data;
+                  const struct retro_subsystem_info* subsystem = system->subsystem.data;
                   for (i = 0; i < subsystem_size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
