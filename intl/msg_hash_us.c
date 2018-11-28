@@ -567,6 +567,11 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Enables displaying the current frames \n"
                              "per second.");
             break;
+        case MENU_ENUM_LABEL_MEMORY_SHOW:
+            snprintf(s, len,
+                     "Includes displaying the current memory \n"
+                             "usage/total with FPS/Frames.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
             snprintf(s, len,
                      "Show and/or hide onscreen messages.");

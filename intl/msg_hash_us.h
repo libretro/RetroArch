@@ -844,6 +844,10 @@ MSG_HASH(
     "Display Framerate"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Include Memory Details"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
     "Limit Maximum Run Speed"
     )
@@ -3633,6 +3637,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
     "Displays the current frame count onscreen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+    "Includes the current memory usage/total onscreen with FPS/Frames."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
