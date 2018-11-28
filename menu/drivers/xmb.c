@@ -4620,9 +4620,9 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
 
 static const char *xmb_texture_path(unsigned id)
 {
-   char *iconpath = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *icon_name = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *icon_fullpath = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *iconpath      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *icon_name     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *icon_fullpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    iconpath[0] = icon_name[0] = icon_fullpath[0] = '\0';
 
@@ -4963,11 +4963,12 @@ static const char *xmb_texture_path(unsigned id)
    if (!filestream_exists(icon_fullpath))
    {
       RARCH_WARN("[XMB] Asset missing: %s\n", icon_fullpath);
+      free(icon_fullpath);
       return NULL;
    }
-   else
-      return  icon_name;
 
+   free(icon_fullpath);
+   return  icon_name;
 }
 
 static void xmb_context_reset_textures(
