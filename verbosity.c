@@ -126,9 +126,12 @@ void retro_main_log_file_init(const char *path)
 void retro_main_log_file_deinit(void)
 {
    if (log_file_fp && log_file_fp != stderr)
+   {
       fclose(log_file_fp);
-   if (log_file_buf) free(log_file_buf);
-   log_file_fp = NULL;
+      log_file_fp = NULL;
+   }
+   if (log_file_buf)
+      free(log_file_buf);
    log_file_buf = NULL;
 }
 
