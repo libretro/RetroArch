@@ -3631,6 +3631,10 @@ MSG_HASH(
     "Displays the current framerate per second onscreen."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+    "Displays the current frame count onscreen."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
     "Configure hotkey settings."
     )
@@ -6265,7 +6269,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-    "Show frame count on FPS display"
+    "Display Frame Count"
     )
 MSG_HASH(
     MSG_CONFIG_OVERRIDE_LOADED,
