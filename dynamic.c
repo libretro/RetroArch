@@ -207,6 +207,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          }
 
          RARCH_LOG("Subsystems: %d\n", i);
+	 size = i;
 
          if (system)
          {
