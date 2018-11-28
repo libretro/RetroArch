@@ -549,7 +549,7 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-/* Show frame count on FPS display */
+/* Enables displaying the current frame count. */
 static const bool framecount_show = true;
 
 /* Enables use of rewind. This will incur some memory footprint
