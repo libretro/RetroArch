@@ -2464,7 +2464,7 @@ void video_driver_frame(const void *data, unsigned width,
                      (uint64_t)video_driver_frame_count);
             }
             snprintf(video_driver_window_title, sizeof(video_driver_window_title),
-               "%s%s%s", title, video_info.fps_text,
+               "%s%s%s%s", title, video_info.fps_text,
                video_info.fps_show ? video_info.fps_text : "",
                video_info.framecount_show ? frames_text : "");
          }
