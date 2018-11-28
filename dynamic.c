@@ -185,6 +185,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
          unsigned i, j;
+         unsigned size = i;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          subsystem_size = 0;
@@ -206,7 +207,6 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          }
 
          RARCH_LOG("Subsystems: %d\n", i);
-         unsigned size = i;
 
          if (system)
          {
