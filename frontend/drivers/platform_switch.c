@@ -55,6 +55,8 @@ static const char *elf_path_cst = "/switch/retroarch_switch.nro";
 
 static uint64_t frontend_switch_get_mem_used(void);
 
+bool platform_switch_has_focus = true;
+
 #ifdef HAVE_LIBNX
 
 /* Splash */
@@ -69,9 +71,17 @@ extern bool nxlink_connected;
 #endif
 
 static void on_applet_hook(AppletHookType hook, void* param) {
+   /* Exit request */
    if(hook == AppletHookType_OnExitRequest) {
       RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
       retroarch_main_quit();
+   }
+   /* Focus state*/
+   else if (hook == AppletHookType_OnFocusState) {
+      AppletFocusState focus_state = appletGetFocusState();
+      RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
+
+      platform_switch_has_focus = focus_state == AppletFocusState_Focused;
    }
 }
 
@@ -621,6 +631,8 @@ static void frontend_switch_init(void *data)
    nifmInitialize();
    appletLockExit();
    appletHook(&applet_hook_cookie, on_applet_hook, NULL);
+
+   appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
 #ifndef HAVE_OPENGL
    /* Init Resolution before initDefault */
    gfxInitResolution(1280, 720);
