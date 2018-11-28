@@ -580,9 +580,15 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
     wl->configured = false;
 }
 
-/* TODO: implement xdg_toplevel close */
+static void handle_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
+{
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	BIT_SET(wl->input.key_state, KEY_ESC);
+}
+
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
+    handle_toplevel_close,
 };
 
 static void display_handle_geometry(void *data,
