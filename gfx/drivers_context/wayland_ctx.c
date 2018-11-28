@@ -576,6 +576,10 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
     /* TODO: implement resizing */
+    (void)toplevel;
+    
+    wl->width = wl->buffer_scale * width;
+    wl->height = wl->buffer_scale * height;
     
     wl->configured = false;
 }
