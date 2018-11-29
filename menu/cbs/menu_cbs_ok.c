@@ -2524,25 +2524,34 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#ifdef HAVE_LAKKA_SWITCH
 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
-
    char command[PATH_MAX_LENGTH] = {0};
 
+#ifdef HAVE_LAKKA_SWITCH
    snprintf(command, sizeof(command), "cpu-profile set %s", profile_name);
 
    system(command);
-        
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-        
+#else
+   config_get_ptr()->uints.libnx_overclock = entry_idx;
+
+   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
+   pcvSetClockRate(PcvModule_Cpu, (u32)profile_clock);
+   snprintf(command, sizeof(command), "Current Clock set to %i", profile_clock);
+#endif
+
    runloop_msg_queue_push(command, 1, 90, true);
 
 	return menu_cbs_exit();
 }
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
 
 static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5187,6 +5196,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -5640,6 +5651,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SET_SWITCH_BRIGHTNESS:
             BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
             break;
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;

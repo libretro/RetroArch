@@ -2450,7 +2450,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_UI];
 #ifdef HAVE_LAKKA_SWITCH
                   case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
                   case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+                     return xmb->textures.list[XMB_TEXTURE_POWER];
 #endif
                   case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_POWER];
@@ -5714,10 +5717,12 @@ static int xmb_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_CPU_PROFILE;
             menu_displaylist_setting(&entry);
+#endif
 
+#ifdef HAVE_LAKKA_SWITCH
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_GPU_PROFILE;
             menu_displaylist_setting(&entry);
 

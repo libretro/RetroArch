@@ -3750,8 +3750,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
-#if defined(HAVE_LAKKA)
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
         CONFIG_ACTION(
               list, list_info,
               MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
@@ -3759,7 +3758,10 @@ static bool setting_append_list(
               &group_info,
               &subgroup_info,
               parent_group);
+#endif
 
+#if defined(HAVE_LAKKA)
+#ifdef HAVE_LAKKA_SWITCH
         CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,

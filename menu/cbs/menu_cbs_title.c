@@ -210,9 +210,12 @@ default_title_copy_macro(action_get_title_cheevos_list,           MENU_ENUM_LABE
 default_title_copy_macro(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 default_title_copy_macro(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+default_title_macro(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
+#endif
+
 #ifdef HAVE_LAKKA_SWITCH
 default_title_macro(action_get_title_switch_gpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE)
-default_title_macro(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
 default_title_macro(action_get_title_switch_backlight_control,    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
@@ -879,12 +882,14 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
             break;
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
+            break;
+#endif
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_gpu_profile);
-            break;
-         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
             break;
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);
@@ -1176,12 +1181,14 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LIBRETRO_INFO_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
             break;
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
+            break;
+#endif
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_gpu_profile);
-            break;
-         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
             break;
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);

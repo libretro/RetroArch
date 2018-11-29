@@ -1679,6 +1679,10 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 
    SETTING_UINT("video_record_threads",            &settings->uints.video_record_threads,    true, video_record_threads, false);
 
+#ifdef HAVE_LIBNX
+   SETTING_UINT("libnx_overclock",  &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
+#endif
+
    *size = count;
 
    return tmp;
@@ -3131,6 +3135,12 @@ static bool config_load_file(const char *path, bool set_defaults,
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility())
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+#endif
+
+#ifdef HAVE_LIBNX
+   // Apply initial clocks
+   extern void libnx_apply_overclock();
+   libnx_apply_overclock();
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
