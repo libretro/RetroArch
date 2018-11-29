@@ -5630,8 +5630,7 @@ static int xmb_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
                if (subsystem_size > 0)
                {
-                  const struct retro_subsystem_info* subsystem = NULL;
-                  subsystem           = subsystem_data;
+                  const struct retro_subsystem_info* subsystem = subsystem_data;
                   for (i = 0; i < subsystem_size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
