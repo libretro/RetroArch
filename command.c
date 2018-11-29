@@ -220,6 +220,7 @@ static const struct cmd_map map[] = {
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
+   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -2185,6 +2186,12 @@ TODO: Add a setting for these tweaks */
 
             runloop_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
+         }
+         break;
+      case CMD_EVENT_FPS_TOGGLE:
+         {
+            settings_t *settings           = config_get_ptr();
+            settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          }
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
