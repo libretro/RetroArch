@@ -1252,6 +1252,10 @@ MSG_HASH(
     "Frameadvance"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "FPS toggle"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
     "Fullscreen toggle"
     )
