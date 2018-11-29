@@ -446,6 +446,8 @@ typedef struct settings
       unsigned window_position_height;
 
       unsigned video_record_threads;
+
+      unsigned libnx_overclock;
    } uints;
 
    struct

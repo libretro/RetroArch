@@ -15,6 +15,8 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
     "Ajusta el brillo de la pantalla"
     )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"

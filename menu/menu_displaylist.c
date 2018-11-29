@@ -51,6 +51,11 @@
 #include "../../lakka.h"
 #endif
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#include "../../switch_performance_profiles.h"
+#endif
+
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../frontend/drivers/platform_unix.h"
 #endif
@@ -4265,7 +4270,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
    switch (type)
    {
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
          unsigned i;
@@ -4274,17 +4279,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
          
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      
+#ifdef HAVE_LAKKA_SWITCH
          profile = popen("cpu-profile get", "r");          
          fgets(current_profile, PATH_MAX_LENGTH, profile);  
          pclose(profile);
+   
          
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
-         snprintf(text, sizeof(text),
-               "Current profile : %s", current_profile);
-         
+         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+#else
+         u32 currentClock = 0;
+         pcvGetClockRate(PcvModule_Cpu, &currentClock);
+         snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
+#endif
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4313,6 +4323,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       
          break;
       }
+#if defined(HAVE_LAKKA_SWITCH)
       case DISPLAYLIST_SWITCH_GPU_PROFILE:
       {
          unsigned i;
@@ -4330,7 +4341,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
-         
+
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4383,7 +4394,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          break;
       }
-#endif
+#endif // HAVE_LAKKA_SWITCH
+#endif // HAVE_LAKKA_SWITCH || HAVE_LIBNX
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
