@@ -310,6 +310,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       case FILE_TYPE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_CLOSE:
@@ -451,351 +452,230 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
    return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING];
 }
 
-const char *ozone_entries_icon_texture_path(ozone_handle_t *ozone, unsigned id)
+const char *ozone_entries_icon_texture_path(unsigned id)
 {
-   char icon_fullpath[255];
-   char *icon_name         = NULL;
-
 switch (id)
    {
       case OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU:
 #if defined(HAVE_LAKKA)
-         icon_name = "lakka.png";
-         break;
+         return "lakka.png";
 #else
-         icon_name = "retroarch.png";
-         break;
+         return "retroarch.png";
 #endif
       case OZONE_ENTRIES_ICONS_TEXTURE_SETTINGS:
-         icon_name = "settings.png";
-         break;
+         return "settings.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_HISTORY:
-         icon_name = "history.png";
-         break;
+         return "history.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES:
-         icon_name = "favorites.png";
-         break;
+         return "favorites.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE:
-         icon_name = "add-favorite.png";
-         break;
+         return "add-favorite.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MUSICS:
-         icon_name = "musics.png";
-         break;
+         return "musics.png";
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case OZONE_ENTRIES_ICONS_TEXTURE_MOVIES:
-         icon_name = "movies.png";
-         break;
+         return "movies.png";
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case OZONE_ENTRIES_ICONS_TEXTURE_IMAGES:
-         icon_name = "images.png";
-         break;
+         return "images.png";
 #endif
       case OZONE_ENTRIES_ICONS_TEXTURE_SETTING:
-         icon_name = "setting.png";
-         break;
+         return "setting.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING:
-         icon_name = "subsetting.png";
-         break;
+         return "subsetting.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ARROW:
-         icon_name = "arrow.png";
-         break;
+         return "arrow.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RUN:
-         icon_name = "run.png";
-         break;
+         return "run.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CLOSE:
-         icon_name = "close.png";
-         break;
+         return "close.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RESUME:
-         icon_name = "resume.png";
-         break;
+         return "resume.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CLOCK:
-         icon_name = "clock.png";
-         break;
+         return "clock.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL:
-         icon_name = "battery-full.png";
-         break;
+         return "battery-full.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING:
-         icon_name = "battery-charging.png";
-         break;
+         return "battery-charging.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_POINTER:
-         icon_name = "pointer.png";
-         break;
+         return "pointer.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE:
-         icon_name = "savestate.png";
-         break;
+         return "savestate.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE:
-         icon_name = "loadstate.png";
-         break;
+         return "loadstate.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_UNDO:
-         icon_name = "undo.png";
-         break;
+         return "undo.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO:
-         icon_name = "core-infos.png";
-         break;
+         return "core-infos.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_WIFI:
-         icon_name = "wifi.png";
-         break;
+         return "wifi.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS:
-         icon_name = "core-options.png";
-         break;
+         return "core-options.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS:
-         icon_name = "core-input-remapping-options.png";
-         break;
+         return "core-input-remapping-options.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS:
-         icon_name = "core-cheat-options.png";
-         break;
+         return "core-cheat-options.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS:
-         icon_name = "core-disk-options.png";
-         break;
+         return "core-disk-options.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS:
-         icon_name = "core-shader-options.png";
-         break;
+         return "core-shader-options.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST:
-         icon_name = "achievement-list.png";
-         break;
+         return "achievement-list.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SCREENSHOT:
-         icon_name = "screenshot.png";
-         break;
+         return "screenshot.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RELOAD:
-         icon_name = "reload.png";
-         break;
+         return "reload.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RENAME:
-         icon_name = "rename.png";
-         break;
+         return "rename.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FILE:
-         icon_name = "file.png";
-         break;
+         return "file.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FOLDER:
-         icon_name = "folder.png";
-         break;
+         return "folder.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ZIP:
-         icon_name = "zip.png";
-         break;
+         return "zip.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MUSIC:
-         icon_name = "music.png";
-         break;
+         return "music.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE:
-         icon_name = "favorites-content.png";
-         break;
+         return "favorites-content.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_IMAGE:
-         icon_name = "image.png";
-         break;
+         return "image.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MOVIE:
-         icon_name = "movie.png";
-         break;
+         return "movie.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE:
-         icon_name = "core.png";
-         break;
+         return "core.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RDB:
-         icon_name = "database.png";
-         break;
+         return "database.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CURSOR:
-         icon_name = "cursor.png";
-         break;
+         return "cursor.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SWITCH_ON:
-         icon_name = "on.png";
-         break;
+         return "on.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SWITCH_OFF:
-         icon_name = "off.png";
-         break;
+         return "off.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ADD:
-         icon_name = "add.png";
-         break;
+         return "add.png";
 #ifdef HAVE_NETWORKING
       case OZONE_ENTRIES_ICONS_TEXTURE_NETPLAY:
-         icon_name = "netplay.png";
-         break;
+         return "netplay.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ROOM:
-         icon_name = "menu_room.png";
-         break;
+         return "menu_room.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ROOM_LAN:
-         icon_name = "menu_room_lan.png";
-         break;
+         return "menu_room_lan.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY:
-         icon_name = "menu_room_relay.png";
-         break;
+         return "menu_room_relay.png";
 #endif
       case OZONE_ENTRIES_ICONS_TEXTURE_KEY:
-         icon_name = "key.png";
-         break;
+         return "key.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_KEY_HOVER:
-         icon_name = "key-hover.png";
-         break;
+         return "key-hover.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE:
-         icon_name = "dialog-slice.png";
-         break;
+         return "dialog-slice.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS:
-         icon_name = "menu_achievements.png";
-         break;
+         return "menu_achievements.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_AUDIO:
-         icon_name = "menu_audio.png";
-         break;
+         return "menu_audio.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS:
-         icon_name = "menu_drivers.png";
-         break;
+         return "menu_drivers.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_EXIT:
-         icon_name = "menu_exit.png";
-         break;
+         return "menu_exit.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP:
-         icon_name = "menu_frameskip.png";
-         break;
+         return "menu_frameskip.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_HELP:
-         icon_name = "menu_help.png";
-         break;
+         return "menu_help.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INFO:
-         icon_name = "menu_info.png";
-         break;
+         return "menu_info.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS:
-         icon_name = "Libretro - Pad.png";
-         break;
+         return "Libretro - Pad.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_LATENCY:
-         icon_name = "menu_latency.png";
-         break;
+         return "menu_latency.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_NETWORK:
-         icon_name = "menu_network.png";
-         break;
+         return "menu_network.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_POWER:
-         icon_name = "menu_power.png";
-         break;
+         return "menu_power.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_RECORD:
-         icon_name = "menu_record.png";
-         break;
+         return "menu_record.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SAVING:
-         icon_name = "menu_saving.png";
-         break;
+         return "menu_saving.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_UPDATER:
-         icon_name = "menu_updater.png";
-         break;
+         return "menu_updater.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_VIDEO:
-         icon_name = "menu_video.png";
-         break;
+         return "menu_video.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MIXER:
-         icon_name = "menu_mixer.png";
-         break;
+         return "menu_mixer.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_LOG:
-         icon_name = "menu_log.png";
-         break;
+         return "menu_log.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_OSD:
-         icon_name = "menu_osd.png";
-         break;
+         return "menu_osd.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_UI:
-         icon_name = "menu_ui.png";
-         break;
+         return "menu_ui.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_USER:
-         icon_name = "menu_user.png";
-         break;
+         return "menu_user.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY:
-         icon_name = "menu_privacy.png";
-         break;
+         return "menu_privacy.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST:
-         icon_name = "menu_playlist.png";
-         break;
+         return "menu_playlist.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU:
-         icon_name = "menu_quickmenu.png";
-         break;
+         return "menu_quickmenu.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_REWIND:
-         icon_name = "menu_rewind.png";
-         break;
+         return "menu_rewind.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY:
-         icon_name = "menu_overlay.png";
-         break;
+         return "menu_overlay.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE:
-         icon_name = "menu_override.png";
-         break;
+         return "menu_override.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS:
-         icon_name = "menu_notifications.png";
-         break;
+         return "menu_notifications.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_STREAM:
-         icon_name = "menu_stream.png";
-         break;
+         return "menu_stream.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN:
-         icon_name = "menu_shutdown.png";
-         break;
+         return "menu_shutdown.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U:
-         icon_name = "input_DPAD-U.png";
-         break;
+         return "input_DPAD-U.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_D:
-         icon_name = "input_DPAD-D.png";
-         break;
+         return "input_DPAD-D.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_L:
-         icon_name = "input_DPAD-L.png";
-         break;
+         return "input_DPAD-L.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R:
-         icon_name = "input_DPAD-R.png";
-         break;
+         return "input_DPAD-R.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U:
-         icon_name = "input_STCK-U.png";
-         break;
+         return "input_STCK-U.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D:
-         icon_name = "input_STCK-D.png";
-         break;
+         return "input_STCK-D.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L:
-         icon_name = "input_STCK-L.png";
-         break;
+         return "input_STCK-L.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R:
-         icon_name = "input_STCK-R.png";
-         break;
+         return "input_STCK-R.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P:
-         icon_name = "input_STCK-P.png";
-         break;
+         return "input_STCK-P.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U:
-         icon_name = "input_BTN-U.png";
-         break;
+         return "input_BTN-U.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D:
-         icon_name = "input_BTN-D.png";
-         break;
+         return "input_BTN-D.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L:
-         icon_name = "input_BTN-L.png";
-         break;
+         return "input_BTN-L.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R:
-         icon_name = "input_BTN-R.png";
-         break;
+         return "input_BTN-R.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LB:
-         icon_name = "input_LB.png";
-         break;
+         return "input_LB.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RB:
-         icon_name = "input_RB.png";
-         break;
+         return "input_RB.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LT:
-         icon_name = "input_LT.png";
-         break;
+         return "input_LT.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT:
-         icon_name = "input_RT.png";
-         break;
+         return "input_RT.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT:
-         icon_name = "input_SELECT.png";
-         break;
+         return "input_SELECT.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START:
-         icon_name = "input_START.png";
-         break;
+         return "input_START.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK:
-         icon_name = "menu_check.png";
-         break;
+         return "menu_check.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD:
-         icon_name = "menu_add.png";
-         break;
+         return "menu_add.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS:
-         icon_name = "menu_brightnes.png";
-         break;
+         return "menu_brightness.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_PAUSE:
-         icon_name = "menu_pause.png";
-         break;
+         return "menu_pause.png";
    }
-
-   fill_pathname_join(
-      icon_fullpath,
-      ozone->icons_path,
-      icon_name,
-      sizeof(icon_fullpath)
-   );
-
-   if (!filestream_exists(icon_fullpath))
-   {
-      return "subsetting.png";
-   }
-   else
-      return  icon_name;
+   return NULL;
 }
 
 void ozone_unload_theme_textures(ozone_handle_t *ozone)
