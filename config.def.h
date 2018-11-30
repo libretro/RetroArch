@@ -550,7 +550,7 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 static const bool fps_show = false;
 
 /* Enables displaying the current frame count. */
-static const bool framecount_show = true;
+static const bool framecount_show = false;
 
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 static const bool memory_show = false;
