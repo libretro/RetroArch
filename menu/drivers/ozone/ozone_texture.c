@@ -212,7 +212,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POWER];
 #endif
@@ -277,6 +277,10 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
       case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD];
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_TOGGLE];
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG];
       default:
             break;
    }
@@ -674,6 +678,10 @@ switch (id)
          return "menu_brightness.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_PAUSE:
          return "menu_pause.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_TOGGLE:
+         return "menu_apply_toggle.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG:
+         return "menu_apply_cog.png";
    }
    return NULL;
 }

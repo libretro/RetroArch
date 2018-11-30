@@ -207,6 +207,8 @@ enum
    XMB_TEXTURE_PAUSE,
    XMB_TEXTURE_DEFAULT,
    XMB_TEXTURE_DEFAULT_CONTENT,
+   XMB_TEXTURE_MENU_APPLY_TOGGLE,
+   XMB_TEXTURE_MENU_APPLY_COG,
    XMB_TEXTURE_LAST
 };
 
@@ -2454,7 +2456,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #ifdef HAVE_LAKKA_SWITCH
                   case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
                   case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
                      return xmb->textures.list[XMB_TEXTURE_POWER];
 #endif
@@ -2518,6 +2520,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
                   case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
                      return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
+                  case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+                     return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_TOGGLE];
+                  case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+                     return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
                   default:
                      break;
                   }
@@ -4854,6 +4860,10 @@ static const char *xmb_texture_path(unsigned id)
          return "default.png";
       case XMB_TEXTURE_DEFAULT_CONTENT:
          return "default-content.png";
+      case XMB_TEXTURE_MENU_APPLY_TOGGLE:
+         return "menu_apply_toggle.png";
+      case XMB_TEXTURE_MENU_APPLY_COG:
+         return "menu_apply_cog.png";
    }
    return NULL;
 }
