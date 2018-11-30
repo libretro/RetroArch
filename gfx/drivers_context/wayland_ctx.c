@@ -76,6 +76,9 @@ typedef struct gfx_ctx_wayland_data
    bool maximized;
    bool resize;
    bool configured;
+   bool activated;
+   int prev_width;
+   int prev_height;
    unsigned width;
    unsigned height;
    unsigned physical_width;
@@ -571,17 +574,55 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 };
 
 static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
-                                   int width, int height, struct wl_array *states)
+                                   int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
-    /* TODO: implement resizing */
-    (void)toplevel;
-    
-    wl->width = wl->buffer_scale * width;
-    wl->height = wl->buffer_scale * height;
-    
-    wl->configured = false;
+    printf("Configure event got, width: %d, height: %d\n", width, height);
+    wl->fullscreen = false;
+    wl->maximized = false;
+    enum xdg_toplevel_state *state;
+    wl_array_for_each(state, states) {
+		switch (*state) {
+			case XDG_TOPLEVEL_STATE_FULLSCREEN:
+			printf("Surface state: XDG_SURFACE_STATE_FULLSCREEN\n");
+			    wl->fullscreen = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_MAXIMIZED:
+			printf("Surface state: XDG_SURFACE_STATE_MAXIMIZED\n");
+			    wl->maximized = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_RESIZING:
+			printf("Surface state: XDG_SURFACE_STATE_RESIZING\n");
+			    wl->resize = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_ACTIVATED:
+			printf("Surface state: XDG_SURFACE_STATE_ACTIVATED\n");
+			    wl->activated = true;
+                            break;
+			case XDG_TOPLEVEL_STATE_TILED_TOP:
+			printf("Surface state: XDG_SURFACE_STATE_TILED_TOP\n");
+			case XDG_TOPLEVEL_STATE_TILED_LEFT:
+			printf("Surface state: XDG_SURFACE_STATE_TILED_LEFT\n");
+			case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+			printf("Surface state: XDG_SURFACE_STATE_TILED_RIGHT\n");
+			case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
+			printf("Surface state: XDG_SURFACE_STATE_TILED_BOTTOM\n");
+                        break;
+			}
+	}
+	if (width > 0 && height >0) {
+				wl->prev_width = width;
+				wl->prev_height = height;
+				wl->width = width;
+				wl->height = height;
+			}
+			else {
+				wl->width = wl->prev_width;
+				wl->height = wl->prev_height;
+			}
+				
+	wl->configured = false;
 }
 
 static void handle_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
@@ -1423,9 +1464,9 @@ static bool gfx_ctx_wl_has_focus(void *data)
 
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
-	(void)data;
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	
+        (void)data;
+        gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
     if (!wl->idle_inhibit_manager)
         return false;
     if (state == (!!wl->idle_inhibitor))
