@@ -55,6 +55,7 @@ typedef NS_ENUM(NSUInteger, RTextureFilter)
 };
 
 extern matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom);
+extern matrix_float4x4 matrix_rotate_z(float rot);
 extern matrix_float4x4 make_matrix_float4x4(const float *v);
 
 #endif /* RendererCommon_h */

@@ -76,6 +76,7 @@ typedef struct
 /*! @brief end commits the command buffer */
 - (void)end;
 
+- (void)setRotation:(unsigned)rotation;
 - (bool)readBackBuffer:(uint8_t *)buffer;
 
 @end

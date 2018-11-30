@@ -96,6 +96,8 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;
+- (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate;
+- (void)setRotation:(unsigned)rotation;
 
 @end
 
