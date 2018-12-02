@@ -585,33 +585,25 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
     wl_array_for_each(state, states) {
 		switch (*state) {
 			case XDG_TOPLEVEL_STATE_FULLSCREEN:
-			printf("Surface state: XDG_SURFACE_STATE_FULLSCREEN\n");
 			    wl->fullscreen = true;
 			    break;
 			case XDG_TOPLEVEL_STATE_MAXIMIZED:
-			printf("Surface state: XDG_SURFACE_STATE_MAXIMIZED\n");
 			    wl->maximized = true;
 			    break;
 			case XDG_TOPLEVEL_STATE_RESIZING:
-			printf("Surface state: XDG_SURFACE_STATE_RESIZING\n");
 			    wl->resize = true;
 			    break;
 			case XDG_TOPLEVEL_STATE_ACTIVATED:
-			printf("Surface state: XDG_SURFACE_STATE_ACTIVATED\n");
 			    wl->activated = true;
                             break;
 			case XDG_TOPLEVEL_STATE_TILED_TOP:
-			printf("Surface state: XDG_SURFACE_STATE_TILED_TOP\n");
 			case XDG_TOPLEVEL_STATE_TILED_LEFT:
-			printf("Surface state: XDG_SURFACE_STATE_TILED_LEFT\n");
 			case XDG_TOPLEVEL_STATE_TILED_RIGHT:
-			printf("Surface state: XDG_SURFACE_STATE_TILED_RIGHT\n");
 			case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
-			printf("Surface state: XDG_SURFACE_STATE_TILED_BOTTOM\n");
-                        break;
+         break;
 			}
 	}
-	if (width > 0 && height >0) {
+	if (width > 0 && height > 0) {
 				wl->prev_width = width;
 				wl->prev_height = height;
 				wl->width = width;
