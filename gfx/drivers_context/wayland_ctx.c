@@ -578,7 +578,6 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
-    printf("Configure event got, width: %d, height: %d\n", width, height);
     wl->fullscreen = false;
     wl->maximized = false;
     enum xdg_toplevel_state *state;
@@ -1456,8 +1455,9 @@ static bool gfx_ctx_wl_has_focus(void *data)
 
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
-        (void)data;
-        gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	(void)data;
+	
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
     if (!wl->idle_inhibit_manager)
         return false;
