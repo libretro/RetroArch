@@ -536,7 +536,13 @@ static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
+/* Flush to file every 10 seconds on modern platforms by default */
+static const unsigned autosave_interval = 10;
+#else
+/* Default to disabled on I/O-constrained platforms */
 static const unsigned autosave_interval = 0;
+#endif
 
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;
