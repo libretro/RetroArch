@@ -608,10 +608,6 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 				wl->width = width;
 				wl->height = height;
 			}
-			else {
-				wl->width = wl->prev_width;
-				wl->height = wl->prev_height;
-			}
 				
 	wl->configured = false;
 }
