@@ -603,11 +603,11 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 			}
 	}
 	if (width > 0 && height > 0) {
-				wl->prev_width = width;
-				wl->prev_height = height;
-				wl->width = width;
-				wl->height = height;
-			}
+		wl->prev_width = width;
+		wl->prev_height = height;
+		wl->width = width;
+		wl->height = height;
+	}
 				
 	wl->configured = false;
 }
