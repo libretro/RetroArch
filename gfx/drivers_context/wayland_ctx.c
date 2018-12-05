@@ -612,11 +612,11 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 			}
 	}
 	if (width > 0 && height > 0) {
-				wl->prev_width = width;
-				wl->prev_height = height;
-				wl->width = width;
-				wl->height = height;
-			}
+		wl->prev_width = width;
+		wl->prev_height = height;
+		wl->width = width;
+		wl->height = height;
+	}
 				
 	wl->configured = false;
 }
@@ -676,11 +676,11 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 			}
 	}
 	if (width > 0 && height > 0) {
-				wl->prev_width = width;
-				wl->prev_height = height;
-				wl->width = width;
-				wl->height = height;
-			}
+		wl->prev_width = width;
+		wl->prev_height = height;
+		wl->width = width;
+		wl->height = height;
+	}
 				
 	wl->configured = false;
 }
@@ -1500,15 +1500,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "RetroArch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-	   
-	   /* Waiting for xdg_toplevel to be configured before starting to draw */
+
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
 	   
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
-       /* Waiting for the "initial" set of globals to appear    */
        wl_display_roundtrip(wl->input.dpy);
        xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
    } else if (wl->zxdg_shell) {
@@ -1520,20 +1518,17 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "RetroArch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-	   
-	   /* Waiting for xdg_toplevel to be configured before starting to draw */
+
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
 	   
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
-       /* Waiting for the "initial" set of globals to appear    */
        wl_display_roundtrip(wl->input.dpy);
        zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
    } else if (wl->shell) {
 	   wl->shell_surf = wl_shell_get_shell_surface(wl->shell, wl->surface);
-	   
 	   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, wl);
 	   wl_shell_surface_set_toplevel(wl->shell_surf);
 	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
