@@ -163,3 +163,9 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+
+# Wayland
+gfx/common/wayland/idle-inhibit-unstable-v1.c
+gfx/common/wayland/idle-inhibit-unstable-v1.h
+gfx/common/wayland/xdg-shell.c
+gfx/common/wayland/xdg-shell.h

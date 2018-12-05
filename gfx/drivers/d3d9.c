@@ -1990,14 +1990,14 @@ static void d3d9_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
-static int64_t d3d9_video_texture_load_wrap_d3d(void *data)
+static int d3d9_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
    struct d3d9_texture_info *info = (struct d3d9_texture_info*)data;
    if (!info)
       return 0;
    d3d9_video_texture_load_d3d(info, &id);
-   return (int64_t)(uintptr_t)id;
+   return id;
 }
 
 static uintptr_t d3d9_load_texture(void *video_data, void *data,

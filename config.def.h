@@ -240,7 +240,7 @@ static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
 /* 1:1 PAR */
 static const bool aspect_ratio_auto = false;
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360) || defined(ANDROID_AARCH64)
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
@@ -549,8 +549,11 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-/* Show frame count on FPS display */
-static const bool framecount_show = true;
+/* Enables displaying the current frame count. */
+static const bool framecount_show = false;
+
+/* Includes displaying the current memory usage/total with FPS/Frames. */
+static const bool memory_show = false;
 
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
@@ -581,7 +584,13 @@ static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
+/* Flush to file every 10 seconds on modern platforms by default */
+static const unsigned autosave_interval = 10;
+#else
+/* Default to disabled on I/O-constrained platforms */
 static const unsigned autosave_interval = 0;
+#endif
 
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;

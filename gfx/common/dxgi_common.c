@@ -305,8 +305,9 @@ void dxgi_copy(
 void dxgi_update_title(video_frame_info_t* video_info)
 {
    const ui_window_t* window = ui_companion_driver_get_window_ptr();
+   const settings_t *settings = config_get_ptr();
 
-   if (video_info->fps_show)
+   if (settings->bools.video_memory_show)
    {
       MEMORYSTATUS stat;
       char         mem[128];
@@ -315,7 +316,7 @@ void dxgi_update_title(video_frame_info_t* video_info)
 
       GlobalMemoryStatus(&stat);
       snprintf(
-            mem, sizeof(mem), "|| MEM: %.2f/%.2fMB", stat.dwAvailPhys / (1024.0f * 1024.0f),
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", stat.dwAvailPhys / (1024.0f * 1024.0f),
             stat.dwTotalPhys / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }

@@ -1782,11 +1782,11 @@ void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
    const struct retro_subsystem_info *subsystem = system ?
-	   system->subsystem.data + idx : NULL;
+	   subsystem_data + idx : NULL;
 
    pending_subsystem_id                         = idx;
 
-   if (subsystem)
+   if (subsystem_size > 0)
    {
       strlcpy(pending_subsystem_ident,
          subsystem->ident, sizeof(pending_subsystem_ident));

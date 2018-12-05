@@ -482,9 +482,10 @@ else
 fi
 
 if [ "$HAVE_X11" = 'no' ]; then
-   HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
+	HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no; HAVE_XRANDR=no
 fi
 
+check_lib '' XRANDR -lXrandr
 check_pkgconf XINERAMA xinerama
 check_val '' XINERAMA -lXinerama
 

@@ -957,12 +957,6 @@ static bool gl_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
-#ifdef HAVE_LIBNX
-   // Should be called once per frame
-   if(!appletMainLoop())
-    return false;
-#endif
-
    gl_context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
@@ -2509,7 +2503,7 @@ static void video_texture_load_gl(
 }
 
 #ifdef HAVE_THREADS
-static int64_t video_texture_load_wrap_gl_mipmap(void *data)
+static int video_texture_load_wrap_gl_mipmap(void *data)
 {
    uintptr_t id = 0;
 
@@ -2517,10 +2511,10 @@ static int64_t video_texture_load_wrap_gl_mipmap(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return (int64_t)(uintptr_t)id;
+   return (int)id;
 }
 
-static int64_t video_texture_load_wrap_gl(void *data)
+static int video_texture_load_wrap_gl(void *data)
 {
    uintptr_t id = 0;
 
@@ -2528,7 +2522,7 @@ static int64_t video_texture_load_wrap_gl(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_LINEAR, &id);
-   return (int64_t)(uintptr_t)id;
+   return (int)id;
 }
 #endif
 

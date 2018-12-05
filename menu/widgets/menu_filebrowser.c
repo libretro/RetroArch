@@ -39,6 +39,7 @@
 #include "../../core.h"
 #include "../../content.h"
 #include "../../verbosity.h"
+#include "../../dynamic.h"
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
@@ -83,10 +84,9 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
          str_list = file_archive_get_file_list(path, info->exts);
       else
       {
-         rarch_system_info_t         *system          = runloop_get_system_info();
-         const struct retro_subsystem_info *subsystem = system->subsystem.data + content_get_subsystem();
+         const struct retro_subsystem_info *subsystem = &subsystem_data[content_get_subsystem()];
 
-         if (subsystem)
+         if (subsystem_size > 0)
             str_list  = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
       }
    }
@@ -94,11 +94,9 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    {
       if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t         *system          = runloop_get_system_info();
-         const struct retro_subsystem_info *subsystem = 
-            system->subsystem.data + content_get_subsystem();
+         const struct retro_subsystem_info *subsystem = &subsystem_data[content_get_subsystem()];
 
-         if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+         if (subsystem_size > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
             str_list = dir_list_new(path,
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, settings->bools.show_hidden_files, true, false);

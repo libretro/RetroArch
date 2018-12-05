@@ -40,6 +40,7 @@
 
 #include "../../retroarch.h"
 #include "../../content.h"
+#include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
 
@@ -123,6 +124,8 @@ default_sublabel_macro(action_bind_sublabel_user_language,                 MENU_
 default_sublabel_macro(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES )
 default_sublabel_macro(action_bind_sublabel_online_updater,                MENU_ENUM_SUBLABEL_ONLINE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_fps_show,                      MENU_ENUM_SUBLABEL_FPS_SHOW)
+default_sublabel_macro(action_bind_sublabel_framecount_show,               MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW)
+default_sublabel_macro(action_bind_sublabel_memory_show,                   MENU_ENUM_SUBLABEL_MEMORY_SHOW)
 default_sublabel_macro(action_bind_sublabel_statistics_show,               MENU_ENUM_SUBLABEL_STATISTICS_SHOW)
 default_sublabel_macro(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
 default_sublabel_macro(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
@@ -482,9 +485,12 @@ default_sublabel_macro(action_bind_sublabel_show_wimp,                          
 #endif
 default_sublabel_macro(action_bind_sublabel_discord_allow,                         MENU_ENUM_SUBLABEL_DISCORD_ALLOW)
 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+default_sublabel_macro(action_bind_sublabel_switch_cpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE)
+#endif
+
 #ifdef HAVE_LAKKA_SWITCH
 default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE)
-default_sublabel_macro(action_bind_sublabel_switch_cpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE)
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
@@ -514,14 +520,14 @@ static int action_bind_sublabel_subsystem_add(
       char *s, size_t len)
 {
    rarch_system_info_t *system                  = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = (system && system->subsystem.data) ?
-	   system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
+   const struct retro_subsystem_info *subsystem = (system && subsystem_size > 0) ?
+	   subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
 
-   if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+   if (subsystem_size > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
       snprintf(s, len, " Current Content: %s",
-	  content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
-	  ? subsystem->roms[content_get_subsystem_rom_id()].desc
-	  : subsystem->roms[0].desc);
+         content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
+         ? subsystem->roms[content_get_subsystem_rom_id()].desc
+         : subsystem->roms[0].desc);
 
    return 0;
 }
@@ -540,8 +546,8 @@ static int action_bind_sublabel_remap_kbd_sublabel(
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
          (input_config_get_device_name(user_idx) ?
-          input_config_get_device_name(user_idx) : 
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+            input_config_get_device_name(user_idx) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -1872,6 +1878,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_FPS_SHOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fps_show);
             break;
+         case MENU_ENUM_LABEL_FRAMECOUNT_SHOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_framecount_show);
+            break;
+         case MENU_ENUM_LABEL_MEMORY_SHOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_memory_show);
+            break;
          case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_views_settings_list);
             break;
@@ -2027,10 +2039,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;
 #endif
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_cpu_profile);
             break;
+#endif
+#ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_gpu_profile);
             break;

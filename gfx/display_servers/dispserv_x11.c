@@ -14,8 +14,17 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <compat/strl.h>
+
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "../../config.h"
+
+#ifdef HAVE_XRANDR
+#include <X11/extensions/Xrandr.h>
+#endif
 
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
@@ -284,8 +293,37 @@ static bool x11_display_server_set_resolution(void *data,
 
 const char *x11_display_server_get_output_options(void *data)
 {
+#ifdef HAVE_XRANDR
+   Display *dpy;
+   XRRScreenResources *res;
+   XRROutputInfo *info;
+   Window root;
+   int i;
+   static char s[PATH_MAX_LENGTH];
+
+   if (!(dpy = XOpenDisplay(0)))
+      return NULL;
+
+   root = RootWindow(dpy, DefaultScreen(dpy));
+
+   if (!(res = XRRGetScreenResources(dpy, root)))
+      return NULL;
+
+   for (i = 0; i < res->noutput; i++)
+   {
+      if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
+         return NULL;
+
+      strlcat(s, info->name, sizeof(s));
+      if ((i+1) < res->noutput)
+         strlcat(s, "|", sizeof(s));
+   }
+
+   return s;
+#else
    /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
    return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
+#endif
 }
 
 const video_display_server_t dispserv_x11 = {

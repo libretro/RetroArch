@@ -15,6 +15,8 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
     "调整 Switch 的屏幕亮度"
     )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU 超频"

@@ -3750,8 +3750,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
-#if defined(HAVE_LAKKA)
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
         CONFIG_ACTION(
               list, list_info,
               MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
@@ -3759,7 +3758,10 @@ static bool setting_append_list(
               &group_info,
               &subgroup_info,
               parent_group);
+#endif
 
+#if defined(HAVE_LAKKA)
+#ifdef HAVE_LAKKA_SWITCH
         CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
@@ -5104,6 +5106,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.video_memory_show,
+                  MENU_ENUM_LABEL_MEMORY_SHOW,
+                  MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+                  memory_show,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.video_statistics_show,
                   MENU_ENUM_LABEL_STATISTICS_SHOW,
                   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -5390,13 +5407,20 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-                  MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+            if (true)
+#else
+            if (!string_is_equal(video_display_server_get_ident(), "null"))
+#endif
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                     MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+            }
 
             CONFIG_UINT(
                   list, list_info,

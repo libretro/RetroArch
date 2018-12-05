@@ -51,6 +51,11 @@
 #include "../../lakka.h"
 #endif
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#include "../../switch_performance_profiles.h"
+#endif
+
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../frontend/drivers/platform_unix.h"
 #endif
@@ -2584,25 +2589,6 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
 
-#if 0
-      const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
-
-      if (subsystem)
-      {
-         unsigned p;
-
-         for (p = 0; p < system->subsystem.size; p++, subsystem++)
-         {
-            char s[PATH_MAX_LENGTH];
-            snprintf(s, sizeof(s), "%s (%s)", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), subsystem->desc);
-            menu_entries_append_enum(info->list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL),
-                  MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
-                  MENU_SETTING_ACTION, 0, 0);
-         }
-      }
-#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
             msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
@@ -2633,7 +2619,7 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !cheevos_hardcore_active
+         && !cheevos_hardcore_active
 #endif
          )
       {
@@ -4284,7 +4270,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
    switch (type)
    {
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
          unsigned i;
@@ -4293,17 +4279,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
          
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      
+#ifdef HAVE_LAKKA_SWITCH
          profile = popen("cpu-profile get", "r");          
          fgets(current_profile, PATH_MAX_LENGTH, profile);  
          pclose(profile);
+   
          
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
-         snprintf(text, sizeof(text),
-               "Current profile : %s", current_profile);
-         
+         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+#else
+         u32 currentClock = 0;
+         pcvGetClockRate(PcvModule_Cpu, &currentClock);
+         snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
+#endif
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4332,6 +4323,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       
          break;
       }
+#if defined(HAVE_LAKKA_SWITCH)
       case DISPLAYLIST_SWITCH_GPU_PROFILE:
       {
          unsigned i;
@@ -4349,7 +4341,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
-         
+
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4402,7 +4394,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          break;
       }
-#endif
+#endif // HAVE_LAKKA_SWITCH
+#endif // HAVE_LAKKA_SWITCH || HAVE_LIBNX
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
@@ -5620,10 +5613,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_FPS_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STATISTICS_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+               MENU_ENUM_LABEL_MEMORY_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FONT_PATH,

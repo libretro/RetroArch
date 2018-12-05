@@ -59,6 +59,7 @@ HAVE_OPENDINGUX_FBDEV=no   # Opendingux fbdev context support
 HAVE_OPENGLES=no           # Use GLESv2 instead of desktop GL
 HAVE_OPENGLES3=no          # OpenGLES3 support
 HAVE_X11=auto              # everything X11.
+HAVE_XRANDR=auto           # Xrandr support.
 HAVE_OMAP=no               # OMAP video support
 HAVE_XINERAMA=auto         # Xinerama support.
 HAVE_KMS=auto              # KMS context support

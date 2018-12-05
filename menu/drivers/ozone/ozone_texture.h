@@ -196,10 +196,12 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD,
    OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS,
    OZONE_ENTRIES_ICONS_TEXTURE_PAUSE,
+   OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_TOGGLE,
+   OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG,
    OZONE_ENTRIES_ICONS_TEXTURE_LAST
 };
 
-const char *ozone_entries_icon_texture_path(ozone_handle_t *ozone, unsigned id);
+const char *ozone_entries_icon_texture_path(unsigned id);
 
 menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active);
