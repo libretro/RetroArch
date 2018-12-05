@@ -76,6 +76,9 @@ typedef struct gfx_ctx_wayland_data
    bool maximized;
    bool resize;
    bool configured;
+   bool activated;
+   int prev_width;
+   int prev_height;
    unsigned width;
    unsigned height;
    unsigned physical_width;
@@ -571,18 +574,53 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 };
 
 static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
-                                   int width, int height, struct wl_array *states)
+                                   int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
     
-    /* TODO: implement resizing */
-    
-    wl->configured = false;
+    wl->fullscreen = false;
+    wl->maximized = false;
+    enum xdg_toplevel_state *state;
+    wl_array_for_each(state, states) {
+		switch (*state) {
+			case XDG_TOPLEVEL_STATE_FULLSCREEN:
+			    wl->fullscreen = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_MAXIMIZED:
+			    wl->maximized = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_RESIZING:
+			    wl->resize = true;
+			    break;
+			case XDG_TOPLEVEL_STATE_ACTIVATED:
+			    wl->activated = true;
+                            break;
+			case XDG_TOPLEVEL_STATE_TILED_TOP:
+			case XDG_TOPLEVEL_STATE_TILED_LEFT:
+			case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+			case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
+         break;
+			}
+	}
+	if (width > 0 && height > 0) {
+		wl->prev_width = width;
+		wl->prev_height = height;
+		wl->width = width;
+		wl->height = height;
+	}
+				
+	wl->configured = false;
 }
 
-/* TODO: implement xdg_toplevel close */
+static void handle_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
+{
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	BIT_SET(wl->input.key_state, KEY_ESC);
+}
+
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
+    handle_toplevel_close,
 };
 
 static void display_handle_geometry(void *data,
@@ -1414,8 +1452,9 @@ static bool gfx_ctx_wl_has_focus(void *data)
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
 	(void)data;
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 	
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
     if (!wl->idle_inhibit_manager)
         return false;
     if (state == (!!wl->idle_inhibitor))
