@@ -457,7 +457,7 @@ check_pkgconf X11 x11
 check_pkgconf XCB xcb
 check_pkgconf WAYLAND wayland-egl 1.14
 check_pkgconf WAYLAND_CURSOR wayland-cursor 1.14
-check_pkgconf WAYLAND_PROTOS wayland-protocols 1.13
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext

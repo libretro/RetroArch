@@ -56,6 +56,9 @@
 /* Generated from xdg-shell.xml */
 #include "../common/wayland/xdg-shell.h"
 
+/* Generated from xdg-decoration-unstable-v1.h */
+#include "../common/wayland/xdg-decoration-unstable-v1.h"
+
 
 typedef struct touch_pos
 {
@@ -103,6 +106,8 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct zxdg_decoration_manager_v1 *deco_manager;
+   struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    int swap_interval;
@@ -842,6 +847,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
                                   reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
+   else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
+      wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
+                                  reg, id, &zxdg_decoration_manager_v1_interface, 1);
 }
 
 static void registry_handle_global_remove(void *data,
@@ -938,6 +946,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_shell_surface_destroy(wl->shell_surf);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
+   if (wl->deco)
+      zxdg_toplevel_decoration_v1_destroy(wl->deco);
+   if (wl->deco_manager)
+      zxdg_decoration_manager_v1_destroy(wl->deco_manager);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
 
