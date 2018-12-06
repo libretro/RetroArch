@@ -1742,6 +1742,9 @@ static bool vulkan_frame(void *data, const void *frame,
          input.view         = vk->hw.image->image_view;
          input.layout       = vk->hw.image->image_layout;
 
+         /* The format can change on a whim. */
+         input.format       = vk->hw.image->create_info.format;
+
          if (frame)
          {
             input.width     = frame_width;
@@ -1769,6 +1772,7 @@ static bool vulkan_frame(void *data, const void *frame,
          input.layout = tex->layout;
          input.width  = tex->width;
          input.height = tex->height;
+         input.format = VK_FORMAT_UNDEFINED; /* It's already configured. */
       }
 
       vulkan_filter_chain_set_input_texture((vulkan_filter_chain_t*)vk->filter_chain, &input);

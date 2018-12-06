@@ -53,6 +53,7 @@ struct vulkan_filter_chain_texture
    VkImageLayout layout;
    unsigned width;
    unsigned height;
+   VkFormat format;
 };
 
 enum vulkan_filter_chain_scale
