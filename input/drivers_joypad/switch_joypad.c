@@ -170,6 +170,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
             }
          }
          lastMode = 1;
