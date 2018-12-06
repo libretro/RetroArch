@@ -588,6 +588,10 @@ static int ozone_list_push(void *data, void *userdata,
                {
                   entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
                   menu_displaylist_setting(&entry);
+
+                  entry.enum_idx   = MENU_ENUM_LABEL_SIDELOAD_CORE_LIST;
+                  menu_displaylist_setting(&entry);
+
                }
             }
 

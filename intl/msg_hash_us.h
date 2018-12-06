@@ -674,6 +674,10 @@ MSG_HASH(
     "Load Core"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Sideload Core"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
     "Options"
     )
