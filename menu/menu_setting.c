@@ -3567,13 +3567,16 @@ static bool setting_append_list(
             }
          }
 
-               CONFIG_ACTION(
-                     list, list_info,
-                     MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
-                     MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group);
+#ifdef HAVE_DYNAMIC
+         if (settings->bools.menu_show_advanced_settings)
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -3582,6 +3585,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
 
          if (settings->bools.history_list_enable)
          {
