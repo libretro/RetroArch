@@ -894,6 +894,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_FILE_BROWSER_SHADER,
    MENU_ENUM_LABEL_FILE_BROWSER_REMAP,
    MENU_ENUM_LABEL_FILE_BROWSER_CORE,
+   MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE,
    MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY,
    MENU_ENUM_LABEL_FILE_BROWSER_CHEAT,
    MENU_ENUM_LABEL_FILE_BROWSER_FONT,
@@ -1570,6 +1571,7 @@ enum msg_hash_enums
    MENU_LABEL(SUBSYSTEM_ADD),
    MENU_LABEL(SUBSYSTEM_LOAD),
    MENU_LABEL(CORE_LIST),
+   MENU_LABEL(SIDELOAD_CORE_LIST),
    MENU_LABEL(MANAGEMENT),
    MENU_LABEL(ONLINE),
    MENU_LABEL(ONLINE_UPDATER),
@@ -2358,6 +2360,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
+#define MENU_LABEL_SIDELOAD_CORE_LIST                                          0x88ef1cf2U
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
