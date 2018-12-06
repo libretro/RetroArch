@@ -622,18 +622,22 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 static void win32_set_position_from_config(void)
 {
    settings_t *settings  = config_get_ptr();
+   int border_thickness = GetSystemMetrics(SM_CXSIZEFRAME);
+   int title_bar_height = GetSystemMetrics(SM_CYCAPTION);
    if (!settings->bools.video_window_save_positions)
       return;
 
    g_win32_pos_x     = settings->uints.window_position_x;
    g_win32_pos_y     = settings->uints.window_position_y;
-   g_win32_pos_width = settings->uints.window_position_width;
-   g_win32_pos_height= settings->uints.window_position_height;
+   g_win32_pos_width = settings->uints.window_position_width + border_thickness * 2;
+   g_win32_pos_height= settings->uints.window_position_height + border_thickness * 2 + title_bar_height;
 }
 
 static void win32_save_position(void)
 {
    RECT rect;
+   int border_thickness = GetSystemMetrics(SM_CXSIZEFRAME);
+   int title_bar_height = GetSystemMetrics(SM_CYCAPTION);
    WINDOWPLACEMENT placement;
    settings_t *settings     = config_get_ptr();
    memset(&placement, 0, sizeof(placement));
@@ -655,8 +659,8 @@ static void win32_save_position(void)
       {
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
-         settings->uints.window_position_width  = g_win32_pos_width;
-         settings->uints.window_position_height = g_win32_pos_height;
+         settings->uints.window_position_width  = g_win32_pos_width - border_thickness * 2;
+         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height;
       }
    }
 }
