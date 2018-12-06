@@ -186,6 +186,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeDual(i);
                hidSetNpadJoyAssignmentModeDual(i + 1);
+               hidMergeSingleJoyAsDualJoy(i, i + 1);
             }
          }
          lastMode = 0;
