@@ -329,8 +329,47 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-   if (!eglChooseConfig(egl->dpy, attrib_ptr, &egl->config, 1, n) || *n != 1)
+   EGLint count = 0;
+   EGLint matched = 0;
+   EGLConfig *configs;
+   int config_index = -1;
+
+   if (!eglGetConfigs(egl->dpy, NULL, 0, &count) || count < 1)
+   {
+      RARCH_ERR("[EGL]: No cofigs to choose from.\n");
       return false;
+   }
+
+   configs = malloc(count * sizeof *configs);
+   if (!configs) return false;
+
+   if (!eglChooseConfig(egl->dpy, attrib_ptr, configs, count, &matched) || !matched)
+   {
+      RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
+      return false;
+   }
+
+   int i;
+   EGLint id;
+
+   for (i = 0; i < count; ++i)
+   {
+      if (!eglGetConfigAttrib(egl->dpy, configs[i], EGL_NATIVE_VISUAL_ID, &id))
+         continue;
+
+      if (id == GBM_FORMAT_XRGB8888) break;
+   }
+
+   if (id != GBM_FORMAT_XRGB8888)
+   {
+      RARCH_ERR("[EGL]: No EGL configs with format XRGB8888\n");
+      return false;
+   }
+
+   config_index = i;
+   if (config_index != -1) egl->config = configs[config_index];
+
+   free(configs);
 
    egl->major = g_egl_major;
    egl->minor = g_egl_minor;
