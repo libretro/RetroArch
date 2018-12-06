@@ -315,7 +315,12 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr)
 {
-   EGLDisplay dpy = get_egl_display(platform, display_data);
+   EGLConfig *configs = NULL;
+   EGLint count       = 0;
+   EGLint matched     = 0;
+   int config_index   = -1;
+   EGLDisplay dpy     = get_egl_display(platform, display_data);
+
    if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
@@ -329,11 +334,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-   EGLint count = 0;
-   EGLint matched = 0;
-   EGLConfig *configs;
-   int config_index = -1;
-
    if (!eglGetConfigs(egl->dpy, NULL, 0, &count) || count < 1)
    {
       RARCH_ERR("[EGL]: No cofigs to choose from.\n");
@@ -343,7 +343,8 @@ bool egl_init_context(egl_ctx_data_t *egl,
    configs = malloc(count * sizeof *configs);
    if (!configs) return false;
 
-   if (!eglChooseConfig(egl->dpy, attrib_ptr, configs, count, &matched) || !matched)
+   if (!eglChooseConfig(egl->dpy, attrib_ptr,
+            configs, count, &matched) || !matched)
    {
       RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
       return false;
@@ -354,10 +355,12 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    for (i = 0; i < count; ++i)
    {
-      if (!eglGetConfigAttrib(egl->dpy, configs[i], EGL_NATIVE_VISUAL_ID, &id))
+      if (!eglGetConfigAttrib(egl->dpy,
+               configs[i], EGL_NATIVE_VISUAL_ID, &id))
          continue;
 
-      if (id == GBM_FORMAT_XRGB8888) break;
+      if (id == GBM_FORMAT_XRGB8888)
+         break;
    }
 
    if (id != GBM_FORMAT_XRGB8888)
@@ -367,7 +370,8 @@ bool egl_init_context(egl_ctx_data_t *egl,
    }
 
    config_index = i;
-   if (config_index != -1) egl->config = configs[config_index];
+   if (config_index != -1)
+      egl->config = configs[config_index];
 
    free(configs);
 
