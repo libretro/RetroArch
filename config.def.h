@@ -244,6 +244,11 @@ static const bool aspect_ratio_auto = false;
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#elif defined(_3DS)
+/* Previously defaulted to ASPECT_RATIO_4_3.
+ * Non-4:3 content looks dreadful when stretched
+ * to 4:3 on the 3DS screen... */
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
