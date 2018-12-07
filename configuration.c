@@ -543,6 +543,9 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
 
+#if defined(_3DS) && defined(HAVE_RGUI)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
+#else
 #if defined(HAVE_XUI)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
@@ -556,7 +559,7 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
-
+#endif
 
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
@@ -678,7 +681,7 @@ const char *config_get_default_audio(void)
       case AUDIO_PS2:
          return "ps2";
       case AUDIO_CTR:
-         return "csnd";
+         return "dsp";
       case AUDIO_SWITCH:
          return "switch";
       case AUDIO_RWEBAUDIO:
