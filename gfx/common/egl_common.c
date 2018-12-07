@@ -315,6 +315,8 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr)
 {
+   int i;
+   EGLint id;
    EGLConfig *configs = NULL;
    EGLint count       = 0;
    EGLint matched     = 0;
@@ -350,24 +352,25 @@ bool egl_init_context(egl_ctx_data_t *egl,
       return false;
    }
 
-   int i;
-   EGLint id;
-
    for (i = 0; i < count; ++i)
    {
       if (!eglGetConfigAttrib(egl->dpy,
                configs[i], EGL_NATIVE_VISUAL_ID, &id))
          continue;
 
+#ifdef HAVE_GBM
       if (id == GBM_FORMAT_XRGB8888)
          break;
+#endif
    }
 
+#ifdef HAVE_GBM
    if (id != GBM_FORMAT_XRGB8888)
    {
       RARCH_ERR("[EGL]: No EGL configs with format XRGB8888\n");
       return false;
    }
+#endif
 
    config_index = i;
    if (config_index != -1)
