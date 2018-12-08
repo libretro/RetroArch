@@ -15,6 +15,8 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
     "Increase or decrease the Switch screen brightness"
     )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"
@@ -844,6 +846,10 @@ MSG_HASH(
     "Display Framerate"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Include Memory Details"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
     "Limit Maximum Run Speed"
     )
@@ -1246,6 +1252,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
     "Frameadvance"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "FPS toggle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -3629,6 +3639,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FPS_SHOW,
     "Displays the current framerate per second onscreen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+    "Displays the current frame count onscreen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+    "Includes the current memory usage/total onscreen with FPS/Frames."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
@@ -6265,7 +6283,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-    "Show frame count on FPS display"
+    "Display Frame Count"
     )
 MSG_HASH(
     MSG_CONFIG_OVERRIDE_LOADED,
@@ -7789,4 +7807,4 @@ MSG_HASH(
     "Warning: Missing assets, use the Online Updater if available"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Remember Window Positions")
+      "Remember Window Position and Size")

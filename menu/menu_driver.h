@@ -245,6 +245,8 @@ enum menu_settings_type
 #ifdef HAVE_LAKKA_SWITCH
    MENU_SET_SWITCH_GPU_PROFILE,
    MENU_SET_SWITCH_BRIGHTNESS,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 

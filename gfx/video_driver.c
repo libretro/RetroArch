@@ -2449,10 +2449,13 @@ void video_driver_frame(const void *data, unsigned width,
          char frames_text[64];
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
 
-         if (video_info.fps_show)
+         if (video_info.fps_show || video_info.framecount_show)
          {
-            snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                  "||  FPS: %6.1f ", last_fps);
+            if (video_info.fps_show)
+            {
+               snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+                     " ||  FPS: %6.1f ", last_fps);
+            }
             if (video_info.framecount_show)
             {
                snprintf(frames_text,
@@ -2461,7 +2464,8 @@ void video_driver_frame(const void *data, unsigned width,
                      (uint64_t)video_driver_frame_count);
             }
             snprintf(video_driver_window_title, sizeof(video_driver_window_title),
-               "%s%s%s", title, video_info.fps_text,
+               "%s%s%s", title,
+               video_info.fps_show ? video_info.fps_text : "",
                video_info.framecount_show ? frames_text : "");
          }
          else
@@ -2491,6 +2495,28 @@ void video_driver_frame(const void *data, unsigned width,
                   "FPS: %6.1f",
                   last_fps);
       }
+
+      if (video_info.fps_show && video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f || %s: %" PRIu64,
+               last_fps,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "%s: %" PRIu64,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.fps_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f",
+               last_fps);
    }
    else
    {
@@ -2620,7 +2646,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_frame_count++;
 
    /* Display the FPS, with a higher priority. */
-   if (video_info.fps_show)
+   if (video_info.fps_show || video_info.framecount_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 
    /* trigger set resolution*/

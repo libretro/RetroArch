@@ -42,7 +42,7 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(ANDROID)
 #define VULKAN_EMULATE_MAILBOX
 #endif
 

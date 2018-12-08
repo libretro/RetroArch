@@ -210,9 +210,10 @@ class Framebuffer
       Framebuffer(Framebuffer&&) = delete;
       void operator=(Framebuffer&&) = delete;
 
-      void set_size(DeferredDisposer &disposer, const Size2D &size);
+      void set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
 
       const Size2D &get_size() const { return size; }
+      VkFormat get_format() const { return format; }
       VkImage get_image() const { return image; }
       VkImageView get_view() const { return view; }
       VkFramebuffer get_framebuffer() const { return framebuffer; }
@@ -1009,9 +1010,10 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
    swap(back, tmp);
 
    if (input_texture.width != tmp->get_size().width ||
-         input_texture.height != tmp->get_size().height)
+         input_texture.height != tmp->get_size().height ||
+         (input_texture.format != VK_FORMAT_UNDEFINED && input_texture.format != tmp->get_format()))
    {
-      tmp->set_size(disposer, { input_texture.width, input_texture.height });
+      tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
    }
 
    tmp->copy(cmd, input_texture.image, src_layout);
@@ -2422,12 +2424,14 @@ void Framebuffer::init_framebuffer()
    vkCreateFramebuffer(device, &info, nullptr, &framebuffer);
 }
 
-void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
+void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
 {
    this->size = size;
+   if (format != VK_FORMAT_UNDEFINED)
+	  this->format = format;
 
-   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %u x %u.\n",
-         size.width, size.height);
+   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %u x %u (format: %u).\n",
+         size.width, size.height, (unsigned)this->format);
 
    {
       // The current framebuffers, etc, might still be in use

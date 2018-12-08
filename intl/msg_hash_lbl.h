@@ -3,6 +3,8 @@ MSG_HASH(MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
       "switch_gpu_profile")
 MSG_HASH(MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
       "switch_backlight_control")
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 MSG_HASH(MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
       "switch_cpu_profile")
 #endif
@@ -1551,6 +1553,8 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,
       "video_msg_color_blue")
 MSG_HASH(MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
       "framecount_show")
+MSG_HASH(MENU_ENUM_LABEL_MEMORY_SHOW,
+      "memory_show")
 MSG_HASH(MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "automatically_add_content_to_playlist")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
