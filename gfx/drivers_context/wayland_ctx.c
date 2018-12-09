@@ -56,6 +56,9 @@
 /* Generated from xdg-shell.xml */
 #include "../common/wayland/xdg-shell.h"
 
+/* Generated from xdg-decoration-unstable-v1.h */
+#include "../common/wayland/xdg-decoration-unstable-v1.h"
+
 
 typedef struct touch_pos
 {
@@ -103,6 +106,8 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct zxdg_decoration_manager_v1 *deco_manager;
+   struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    int swap_interval;
@@ -842,6 +847,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
                                   reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
+   else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
+      wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
+                                  reg, id, &zxdg_decoration_manager_v1_interface, 1);
 }
 
 static void registry_handle_global_remove(void *data,
@@ -938,6 +946,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_shell_surface_destroy(wl->shell_surf);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
+   if (wl->deco)
+      zxdg_toplevel_decoration_v1_destroy(wl->deco);
+   if (wl->deco_manager)
+      zxdg_decoration_manager_v1_destroy(wl->deco_manager);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
 
@@ -1082,10 +1094,18 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
    video_driver_get_window_title(title, sizeof(title));
 
    if (wl && title[0]) {
-	   if (wl->xdg_toplevel)
-	     xdg_toplevel_set_title(wl->xdg_toplevel, title);
-	   else if (wl->zxdg_toplevel)
-	     zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+	   if (wl->xdg_toplevel) {
+		   if (wl->deco) {
+			   zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+		   }
+		   xdg_toplevel_set_title(wl->xdg_toplevel, title);
+	   }
+	   else if (wl->zxdg_toplevel) {
+		   if (wl->deco) {
+			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+		  } 
+		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+	  }
 	   else if (wl->shell_surf)
 		 wl_shell_surface_set_title(wl->shell_surf, title);
 	}
@@ -1267,6 +1287,11 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    if (!wl->idle_inhibit_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
+   }
+   
+   if (!wl->deco_manager)
+   {
+	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
    }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
@@ -1500,7 +1525,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "RetroArch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-
+	   
+	   if (wl->deco_manager) {
+		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+		   wl->deco_manager, wl->xdg_toplevel);
+	   }
+	   
+	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
 	   
@@ -1518,7 +1549,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "RetroArch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-
+	   
+	   if (wl->deco_manager) {
+		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+		   wl->deco_manager, wl->xdg_toplevel);
+	   }
+	   
+	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
 	   
