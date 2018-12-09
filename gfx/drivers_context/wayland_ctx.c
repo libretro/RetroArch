@@ -59,6 +59,9 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
+/* Generated from server-decoration.xml */
+#include "../common/wayland/server-decorations.h"
+
 
 typedef struct touch_pos
 {
@@ -106,6 +109,8 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct org_kde_kwin_server_decoration *server_deco;
+   struct org_kde_kwin_server_decoration_manager *server_deco_manager;
    struct zxdg_decoration_manager_v1 *deco_manager;
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
@@ -850,6 +855,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
                                   reg, id, &zxdg_decoration_manager_v1_interface, 1);
+   else if (string_is_equal(interface, "org_kde_kwin_server_decoration_manager"))
+      wl->server_deco_manager = (struct org_kde_kwin_server_decoration_manager*)wl_registry_bind(
+                                  reg, id, &org_kde_kwin_server_decoration_interface, 1);
 }
 
 static void registry_handle_global_remove(void *data,
@@ -950,6 +958,8 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       zxdg_toplevel_decoration_v1_destroy(wl->deco);
    if (wl->deco_manager)
       zxdg_decoration_manager_v1_destroy(wl->deco_manager);
+   if (wl->server_deco)
+      org_kde_kwin_server_decoration_destroy(wl->server_deco);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
 
@@ -1097,13 +1107,17 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 	   if (wl->xdg_toplevel) {
 		   if (wl->deco) {
 			   zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+		   } else if (wl->server_deco) {
+			   org_kde_kwin_server_decoration_request_mode(wl->server_deco, ORG_KDE_KWIN_SERVER_DECORATION_MODE_SERVER);
 		   }
 		   xdg_toplevel_set_title(wl->xdg_toplevel, title);
 	   }
 	   else if (wl->zxdg_toplevel) {
 		   if (wl->deco) {
 			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		  } 
+		  } else if (wl->server_deco) {
+			  org_kde_kwin_server_decoration_request_mode(wl->server_deco, ORG_KDE_KWIN_SERVER_DECORATION_MODE_SERVER);
+		  }
 		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
 	  }
 	   else if (wl->shell_surf)
@@ -1292,6 +1306,11 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    if (!wl->deco_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
+   }
+   
+   if (!wl->server_deco_manager)
+   {
+	   RARCH_WARN("[Wayland]: Compositor doesn't support org_kde_kwin_server_decoration_manager protocol!\n");
    }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
@@ -1529,6 +1548,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
+	   } else if (wl->server_deco_manager) {
+		   wl->server_deco = org_kde_kwin_server_decoration_manager_create(wl->server_deco_manager, wl->surface);
 	   }
 	   
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
@@ -1554,6 +1575,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
+	   } else if (wl->server_deco_manager) {
+		   wl->server_deco = org_kde_kwin_server_decoration_manager_create(wl->server_deco_manager, wl->surface);
 	   }
 	   
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */

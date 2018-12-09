@@ -868,7 +868,8 @@ ifeq ($(HAVE_WAYLAND), 1)
 		  gfx/common/wayland/xdg-shell.o \
 		  gfx/common/wayland/xdg-shell-unstable-v6.o \
 		  gfx/common/wayland/idle-inhibit-unstable-v1.o \
-		  gfx/common/wayland/xdg-decoration-unstable-v1.o
+		  gfx/common/wayland/xdg-decoration-unstable-v1.o \
+		  gfx/common/wayland/server-decorations.o
  ifeq ($(HAVE_EGL), 1)
    LIBS += $(EGL_LIBS)
  endif
