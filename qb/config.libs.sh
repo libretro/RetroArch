@@ -455,8 +455,8 @@ check_pkgconf V4L2 libv4l2
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
-check_pkgconf WAYLAND wayland-egl 1.14
-check_pkgconf WAYLAND_CURSOR wayland-cursor 1.14
+check_pkgconf WAYLAND wayland-egl 1.15
+check_pkgconf WAYLAND_CURSOR wayland-cursor 1.15
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1
@@ -474,7 +474,7 @@ check_val '' XEXT -lXext
 check_val '' XF86VM -lXxf86vm
 
 if [ "$HAVE_WAYLAND_PROTOS" = yes ] && [ "$HAVE_WAYLAND" = yes ]; then
-    check_pkgconf WAYLAND_SCANNER wayland-scanner 1.13
+    check_pkgconf WAYLAND_SCANNER wayland-scanner 1.15
     ./gfx/common/wayland/generate_wayland_protos.sh
 else
     die : 'Notice: wayland-egl or wayland-protocols not present. Skiping Wayland code paths.'
