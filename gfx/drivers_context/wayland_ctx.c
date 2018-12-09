@@ -1094,10 +1094,18 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
    video_driver_get_window_title(title, sizeof(title));
 
    if (wl && title[0]) {
-	   if (wl->xdg_toplevel)
-	     xdg_toplevel_set_title(wl->xdg_toplevel, title);
-	   else if (wl->zxdg_toplevel)
-	     zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+	   if (wl->xdg_toplevel) {
+		   if (wl->deco) {
+			   zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+		   }
+		   xdg_toplevel_set_title(wl->xdg_toplevel, title);
+	   }
+	   else if (wl->zxdg_toplevel) {
+		   if (wl->deco) {
+			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+		  } 
+		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+	  }
 	   else if (wl->shell_surf)
 		 wl_shell_surface_set_title(wl->shell_surf, title);
 	}
@@ -1279,6 +1287,11 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    if (!wl->idle_inhibit_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
+   }
+   
+   if (!wl->deco_manager)
+   {
+	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
    }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
@@ -1513,6 +1526,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "RetroArch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
 	   
+	   if (wl->deco_manager) {
+		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+		   wl->deco_manager, wl->xdg_toplevel);
+	   }
+	   
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
@@ -1532,6 +1550,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "RetroArch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
+	   
+	   if (wl->deco_manager) {
+		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+		   wl->deco_manager, wl->xdg_toplevel);
+	   }
 	   
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
