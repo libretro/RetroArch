@@ -131,6 +131,10 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
+void menu_animation_init(void);
+
+void menu_animation_free(void);
+
 bool menu_animation_update(float delta_time);
 
 bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
