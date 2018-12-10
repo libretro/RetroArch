@@ -1515,6 +1515,8 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "quick_menu_show_undo_save_load_state")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "quick_menu_show_add_to_favorites")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "quick_menu_show_reset_core_association")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
       "quick_menu_show_options")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
