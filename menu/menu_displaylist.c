@@ -3458,16 +3458,19 @@ static int menu_displaylist_parse_playlists(
    if (!horizontal)
    {
 #ifdef HAVE_LIBRETRODB
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-            MENU_ENUM_LABEL_SCAN_DIRECTORY,
-            MENU_SETTING_ACTION, 0, 0);
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-            MENU_ENUM_LABEL_SCAN_FILE,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.menu_content_show_add)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_DIRECTORY,
+               MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+               MENU_ENUM_LABEL_SCAN_FILE,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
      if (settings->bools.menu_content_show_favorites)
       menu_entries_append_enum(info->list,
