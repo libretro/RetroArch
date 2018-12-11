@@ -1781,12 +1781,18 @@ int content_get_subsystem()
 void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = system ?
-	   subsystem_data + idx : NULL;
+   const struct retro_subsystem_info *subsystem;
 
-   pending_subsystem_id                         = idx;
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data + idx;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data + idx;
 
-   if (subsystem_current_count > 0)
+   pending_subsystem_id = idx;
+
+   if (subsystem && subsystem_current_count > 0)
    {
       strlcpy(pending_subsystem_ident,
          subsystem->ident, sizeof(pending_subsystem_ident));
