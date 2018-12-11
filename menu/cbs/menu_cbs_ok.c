@@ -521,24 +521,36 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
-         filebrowser_clear_type();
-         if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
-            content_clear_subsystem();
-         content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
-         filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+               content_clear_subsystem();
+            content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
+            filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
          {
