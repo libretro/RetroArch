@@ -663,7 +663,7 @@ error:
 static const struct
 retro_subsystem_info *content_file_init_subsystem(
       const struct retro_subsystem_info *subsystem_data,
-      size_t subsystem_size,
+      size_t subsystem_current_count,
       char **error_string,
       bool *ret)
 {
@@ -671,7 +671,7 @@ retro_subsystem_info *content_file_init_subsystem(
    char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, subsystem_size,
+            subsystem_data, subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    msg[0] = '\0';
@@ -1786,7 +1786,7 @@ void content_set_subsystem(unsigned idx)
 
    pending_subsystem_id                         = idx;
 
-   if (subsystem_size > 0)
+   if (subsystem_current_count > 0)
    {
       strlcpy(pending_subsystem_ident,
          subsystem->ident, sizeof(pending_subsystem_ident));
