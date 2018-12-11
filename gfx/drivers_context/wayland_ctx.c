@@ -1305,7 +1305,8 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
          if (!egl_init_context(&wl->egl,
                   EGL_PLATFORM_WAYLAND_KHR,
                   (EGLNativeDisplayType)wl->input.dpy,
-                  &major, &minor, &n, attrib_ptr))
+                  &major, &minor, &n, attrib_ptr,
+                  egl_default_accept_config_cb))
          {
             egl_report_error();
             goto error;

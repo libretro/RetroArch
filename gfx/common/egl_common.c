@@ -309,14 +309,31 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
    return eglGetDisplay((EGLNativeDisplayType) native);
 }
 
+bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
+{
+   /* Makes sure we have 8 bit color. */
+   EGLint r, g, b;
+   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+      return false;
+
+   if (r != 8 || g != 8 || b != 8)
+      return false;
+
+   return true;
+}
+
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
       void *display_data,
       EGLint *major, EGLint *minor,
-     EGLint *n, const EGLint *attrib_ptr)
+      EGLint *n, const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb)
 {
-   int i;
-   EGLint id;
+   EGLint i;
    EGLConfig *configs = NULL;
    EGLint count       = 0;
    EGLint matched     = 0;
@@ -336,14 +353,13 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-#ifdef HAVE_GBM
    if (!eglGetConfigs(egl->dpy, NULL, 0, &count) || count < 1)
    {
       RARCH_ERR("[EGL]: No configs to choose from.\n");
       return false;
    }
 
-   configs = malloc(count * sizeof *configs);
+   configs = malloc(count * sizeof(*configs));
    if (!configs)
       return false;
 
@@ -354,31 +370,22 @@ bool egl_init_context(egl_ctx_data_t *egl,
       return false;
    }
 
-   for (i = 0; i < count; ++i)
+   for (i = 0; i < count; i++)
    {
-      if (!eglGetConfigAttrib(egl->dpy,
-               configs[i], EGL_NATIVE_VISUAL_ID, &id))
-         continue;
-
-      if (id == GBM_FORMAT_XRGB8888)
+      if (!cb || cb(display_data, egl->dpy, configs[i]))
+      {
+         egl->config = configs[i];
          break;
+      }
    }
-
-   if (id != GBM_FORMAT_XRGB8888)
-   {
-      RARCH_ERR("[EGL]: No EGL configs with format XRGB8888\n");
-      return false;
-   }
-
-   config_index = i;
-   if (config_index != -1)
-      egl->config = configs[config_index];
 
    free(configs);
-#else
-   if (!eglChooseConfig(egl->dpy, attrib_ptr, &egl->config, 1, n) || *n != 1)
+
+   if (i == count)
+   {
+      RARCH_ERR("[EGL]: No EGL config found which satifies requirements.\n");
       return false;
-#endif
+   }
 
    egl->major = g_egl_major;
    egl->minor = g_egl_minor;

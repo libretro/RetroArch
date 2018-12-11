@@ -88,7 +88,7 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-                          &major, &minor, &n, attribs))
+                          &major, &minor, &n, attribs, NULL))
     {
         egl_report_error();
         goto error;

@@ -210,7 +210,7 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&vc->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-            &major, &minor, &n, attribute_list))
+            &major, &minor, &n, attribute_list, NULL))
    {
       egl_report_error();
       goto error;
