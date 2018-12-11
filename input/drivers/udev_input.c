@@ -523,7 +523,7 @@ static bool udev_input_add_device(udev_input_t *udev,
       device->mouse.y_max = absinfo.maximum;
    }
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
-   else if (type == UDEV_INPUT_MOUSE && ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+   else if (type == UDEV_INPUT_MOUSE && ioctl(fd, EVIOCGABS(ABS_X), &absinfo) > 0)
    {
       if (absinfo.minimum >= absinfo.maximum)
          goto error;
