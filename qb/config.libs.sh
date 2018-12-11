@@ -418,6 +418,9 @@ if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
    die : 'Notice: Threads are not available, FFmpeg will also be disabled.'
 fi
 
+check_header DRMINGW exchndl.h
+check_lib '' DRMINGW -lexchndl
+
 if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_pkgconf AVCODEC libavcodec 54
    check_pkgconf AVFORMAT libavformat 54

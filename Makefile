@@ -82,6 +82,11 @@ else
    OPTIMIZE_FLAG = -O3 -ffast-math
 endif
 
+ifeq ($(HAVE_DRMINGW), 1)
+   CFLAGS   += -DHAVE_DRMINGW
+   LDFLAGS += $(DRMINGW_LIBS)
+endif
+
 ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -mwindows
 endif
