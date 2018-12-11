@@ -78,6 +78,10 @@ endif
 ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0 -g
    DEFINES += -DDEBUG -D_DEBUG
+   ifeq ($(HAVE_DRMINGW), 1)
+      CFLAGS   += -DHAVE_DRMINGW
+      LDFLAGS += $(DRMINGW_LIBS)
+   endif
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
 endif

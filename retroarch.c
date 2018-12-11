@@ -23,6 +23,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#if defined(DEBUG) && defined(HAVE_DRMINGW)
+#include "exchndl.h"
+#endif
 #endif
 
 #include <stdlib.h>
@@ -1253,7 +1256,7 @@ static void retroarch_validate_cpu_features(void)
 
 static void retroarch_main_init_media(void)
 {
-   settings_t *settings     = config_get_ptr();
+   settings_t *settings = config_get_ptr();
    const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
    bool builtin_imageviewer = false;
    bool builtin_mediaplayer = false;
@@ -1313,6 +1316,10 @@ bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
    global_t  *global = global_get_ptr();
+
+#if defined(DEBUG) && defined(HAVE_DRMINGW)
+   ExcHndlInit();
+#endif
 
    retroarch_init_state();
 
