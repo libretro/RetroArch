@@ -521,14 +521,23 @@ static int action_bind_sublabel_subsystem_add(
       char *s, size_t len)
 {
    rarch_system_info_t *system                  = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = (system && subsystem_size > 0) ?
-	   subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
+   const struct retro_subsystem_info *subsystem;
 
-   if (subsystem_size > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
-      snprintf(s, len, " Current Content: %s",
-         content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
-         ? subsystem->roms[content_get_subsystem_rom_id()].desc
-         : subsystem->roms[0].desc);
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+
+   if (subsystem && subsystem_current_count > 0)
+   {
+      if (content_get_subsystem_rom_id() < subsystem->num_roms)
+         snprintf(s, len, " Current Content: %s",
+            content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
+            ? subsystem->roms[content_get_subsystem_rom_id()].desc
+            : subsystem->roms[0].desc);
+   }
 
    return 0;
 }

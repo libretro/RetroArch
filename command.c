@@ -1901,7 +1901,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE:
       {
 	 bool success   = false;
-         subsystem_size = 0;
+         subsystem_current_count = 0;
          content_clear_subsystem();
          success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
          (void)success;
@@ -2045,7 +2045,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             if (is_inited)
             {
-               subsystem_size = 0;
+               subsystem_current_count = 0;
                content_clear_subsystem();
             }
          }
