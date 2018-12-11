@@ -146,9 +146,14 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
  **/
 void uninit_libretro_sym(struct retro_core_t *core);
 
-struct retro_subsystem_info subsystem_data[20];
-struct retro_subsystem_rom_info subsystem_data_roms[10][10];
-unsigned subsystem_size;
+/* Arbitrary twenty subsystems limite */
+#define SUBSYSTEM_MAX_SUBSYSTEMS 20
+/* Arbitrary 10 roms for each subsystem limit */
+#define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
+
+struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+unsigned subsystem_current_count;
 
 RETRO_END_DECLS
 
