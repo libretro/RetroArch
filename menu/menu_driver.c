@@ -2654,3 +2654,57 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
    rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
    rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }
+
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
+{
+   int i = 0;
+   if (subsystem && subsystem_current_count > 0)
+   {
+      for (i = 0; i < subsystem_current_count; i++, subsystem++)
+      {
+         char s[PATH_MAX_LENGTH];
+         if (content_get_subsystem() == i)
+         {
+            if (content_get_subsystem_rom_id() < subsystem->num_roms)
+            {
+               snprintf(s, sizeof(s),
+                  "Load %s %s",
+                  subsystem->desc,
+                  i == content_get_subsystem()
+                  ? "\u2605" : " ");
+               menu_entries_append_enum(info->list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                  MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                  MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+            }
+            else
+            {
+               snprintf(s, sizeof(s),
+                  "Start %s %s",
+                  subsystem->desc,
+                  i == content_get_subsystem()
+                  ? "\u2605" : " ");
+               menu_entries_append_enum(info->list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
+                  MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
+                  MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
+            }
+         }
+         else
+         {
+            snprintf(s, sizeof(s),
+               "Load %s %s",
+               subsystem->desc,
+               i == content_get_subsystem()
+               ? "\u2605" : " ");
+            menu_entries_append_enum(info->list,
+               s,
+               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+               MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+               MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+         }
+      }
+   }
+}

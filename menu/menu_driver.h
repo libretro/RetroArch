@@ -844,6 +844,8 @@ void menu_driver_destroy(void);
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
