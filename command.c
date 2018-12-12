@@ -2745,8 +2745,11 @@ TODO: Add a setting for these tweaks */
             settings_t *settings      = config_get_ptr();
             bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
+
             if (!video_driver_has_windowed())
                return false;
+
+            retroarch_set_switching_display_mode();
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2763,6 +2766,8 @@ TODO: Add a setting for these tweaks */
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
+
+            retroarch_unset_switching_display_mode();
          }
          break;
       case CMD_EVENT_COMMAND_DEINIT:

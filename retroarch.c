@@ -210,6 +210,7 @@ static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
 static bool rarch_block_config_read                             = false;
 static bool rarch_force_fullscreen                              = false;
+static bool rarch_is_switching_display_mode                     = false;
 static bool has_set_verbosity                                   = false;
 static bool has_set_libretro                                    = false;
 static bool has_set_libretro_directory                          = false;
@@ -2023,6 +2024,21 @@ bool retroarch_is_forced_fullscreen(void)
 void retroarch_unset_forced_fullscreen(void)
 {
    rarch_force_fullscreen = false;
+}
+
+bool retroarch_is_switching_display_mode(void)
+{
+   return rarch_is_switching_display_mode;
+}
+
+void retroarch_set_switching_display_mode(void)
+{
+   rarch_is_switching_display_mode = true;
+}
+
+void retroarch_unset_switching_display_mode(void)
+{
+   rarch_is_switching_display_mode = false;
 }
 
 /* set a runtime shader preset without overwriting the settings value */

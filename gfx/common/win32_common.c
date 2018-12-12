@@ -657,7 +657,7 @@ static void win32_save_position(void)
    }
    if (settings && settings->bools.video_window_save_positions)
    {
-      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen())
+      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen() && !retroarch_is_switching_display_mode())
       {
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
@@ -684,7 +684,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                *quit = true;
                break;
          }
-         win32_save_position();
          break;
       case WM_DROPFILES:
          {
@@ -724,10 +723,9 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                g_win32_resized       = true;
             }
          }
-         win32_save_position();
          *quit = true;
          break;
-     case WM_COMMAND:
+      case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
             if (settings && settings->bools.ui_menubar_enable)
@@ -970,7 +968,6 @@ bool win32_window_create(void *data, unsigned style,
 #ifndef _XBOX
    unsigned user_width   = width;
    unsigned user_height  = height;
-   win32_set_position_from_config();
 
    if (settings->bools.video_window_save_positions
          && !fullscreen)

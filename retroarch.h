@@ -330,6 +330,12 @@ void retroarch_unset_shader_preset(void);
 
 char* retroarch_get_shader_preset(void);
 
+bool retroarch_is_switching_display_mode(void);
+
+void retroarch_set_switching_display_mode(void);
+
+void retroarch_unset_switching_display_mode(void);
+
 /**
  * retroarch_fail:
  * @error_code  : Error code.
