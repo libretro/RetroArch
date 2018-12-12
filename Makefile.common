@@ -342,7 +342,7 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/ui_qt_browser_window.o \
           ui/drivers/qt/ui_qt_load_core_window.o \
           ui/drivers/qt/ui_qt_msg_window.o \
-          ui/drivers/qt/flowlayout.o \
+          ui/drivers/qt/gridview.o \
           ui/drivers/qt/shaderparamsdialog.o \
           ui/drivers/qt/coreoptionsdialog.o \
           ui/drivers/qt/filedropwidget.o \
@@ -357,7 +357,7 @@ ifeq ($(HAVE_QT), 1)
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
-                  ui/drivers/qt/flowlayout.h \
+                  ui/drivers/qt/gridview.h \
                   ui/drivers/qt/shaderparamsdialog.h \
                   ui/drivers/qt/coreoptionsdialog.h \
                   ui/drivers/qt/filedropwidget.h \

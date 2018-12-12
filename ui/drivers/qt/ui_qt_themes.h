@@ -313,7 +313,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       padding-left:5px;
       padding-right:5px;
    }
-   QTableWidget {
+   QTableView {
       background-color:rgb(25,25,25);
       alternate-background-color:rgb(40,40,40);
    }
@@ -422,14 +422,14 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QSizeGrip {
       background-color:solid;
    }
-   ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
+   GridView::item {
       background-color:rgb(40,40,40);
    }
-   ThumbnailWidget#thumbnailWidgetSelected {
-      background-color:rgb(40,40,40);
+   GridView::item:selected {
       border:3px solid %1;
    }
-   QWidget#gridLayoutWidget {
+   GridView {
       background-color:rgb(25,25,25);
+      selection-color: white;
    }
 )");
