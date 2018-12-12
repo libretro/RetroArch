@@ -523,21 +523,38 @@ static bool udev_input_add_device(udev_input_t *udev,
       device->mouse.y_max = absinfo.maximum;
    }
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
-   else if (type == UDEV_INPUT_MOUSE && ioctl(fd, EVIOCGABS(ABS_X), &absinfo) > 0)
+   else if (type == UDEV_INPUT_MOUSE)
    {
-      if (absinfo.minimum >= absinfo.maximum)
-         goto error;
+      if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+      {      
+	
+        if (absinfo.minimum >= absinfo.maximum )
+      	{
+          device->mouse.x_min = 0;
+          device->mouse.x_max = 0;
+        }
+	else
+	{
+	  device->mouse.x_min = absinfo.minimum;
+	  device->mouse.x_min = absinfo.maximum; 
+        }         
+      }
 
-      device->mouse.x_min = absinfo.minimum;
-      device->mouse.x_max = absinfo.maximum;
-
-      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0 ||
-          absinfo.minimum >= absinfo.maximum)
-         goto error;
-
-      device->mouse.y_min = absinfo.minimum;
-      device->mouse.y_max = absinfo.maximum;
-   }
+    if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) >= 0)
+      {      
+	
+        if (absinfo.minimum >= absinfo.maximum )
+      	{
+          device->mouse.y_min = 0;
+          device->mouse.y_max = 0;
+        }
+	else
+	{
+	  device->mouse.y_min = absinfo.minimum;
+	  device->mouse.y_min = absinfo.maximum; 
+        }         
+      }
+  }
 
    tmp = ( udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
