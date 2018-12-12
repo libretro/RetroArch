@@ -342,6 +342,7 @@ typedef struct vk
    struct video_viewport vp;
    struct vk_per_frame *chain;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   struct vk_texture default_texture;
 
    /* Currently active command buffer. */
    VkCommandBuffer cmd;
