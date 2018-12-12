@@ -85,6 +85,8 @@ enum event_command
    CMD_EVENT_AUDIO_START,
    /* Mutes audio. */
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
+   /* Toggles FPS counter. */
+   CMD_EVENT_FPS_TOGGLE,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Deinitializes overlay. */

@@ -37,6 +37,7 @@ typedef struct mitm_server {
 static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
+   { "montreal", "Montreal, Canada" },
 };
 
 enum rarch_netplay_ctl_state

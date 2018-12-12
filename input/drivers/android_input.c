@@ -1057,8 +1057,17 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if((strstr(device_model, "R800") || strstr(device_model, "Xperia Play")) && 
+   else if(
             (
+               strstr(device_model, "R800x") ||
+               strstr(device_model, "R800at") ||
+               strstr(device_model, "R800i") ||
+               strstr(device_model, "R800a") ||
+               strstr(device_model, "R800") ||
+               strstr(device_model, "Xperia Play") ||
+               strstr(device_model, "Play") ||
+               strstr(device_model, "SO-01D")
+            ) && (
                strstr(device_name, "keypad-game-zeus") ||
                strstr(device_name, "keypad-zeus") ||
                strstr(device_name, "Android Gamepad")

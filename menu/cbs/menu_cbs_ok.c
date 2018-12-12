@@ -60,6 +60,7 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../gfx/video_display_server.h"
 
 #include <net/net_http.h>
 
@@ -150,6 +151,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -321,6 +324,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -509,24 +521,36 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
-         filebrowser_clear_type();
-         if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
-            content_clear_subsystem();
-         content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
-         filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+               content_clear_subsystem();
+            content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
+            filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
          {
@@ -2512,25 +2536,34 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#ifdef HAVE_LAKKA_SWITCH
 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
-
    char command[PATH_MAX_LENGTH] = {0};
 
+#ifdef HAVE_LAKKA_SWITCH
    snprintf(command, sizeof(command), "cpu-profile set %s", profile_name);
 
    system(command);
-        
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-        
+#else
+   config_get_ptr()->uints.libnx_overclock = entry_idx;
+
+   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
+   pcvSetClockRate(PcvModule_Cpu, (u32)profile_clock);
+   snprintf(command, sizeof(command), "Current Clock set to %i", profile_clock);
+#endif
+
    runloop_msg_queue_push(command, 1, 90, true);
 
 	return menu_cbs_exit();
 }
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
 
 static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4449,6 +4482,45 @@ static int action_ok_push_dropdown_item(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char str[100];
+   char *pch            = NULL;
+   unsigned width       = 0;
+   unsigned height      = 0;
+   unsigned refreshrate = 0;
+
+   snprintf(str, sizeof(str), "%s", path);
+
+   pch = strtok(str, "x");
+   if (pch)
+      width = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, " ");
+   if (pch)
+      height = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, "(");
+   if (pch)
+      refreshrate = strtoul(pch, NULL, 0);
+
+   if (video_display_server_set_resolution(width, height,
+         refreshrate, (float)refreshrate, 0))
+   {
+      settings_t *settings = config_get_ptr();
+
+      video_monitor_set_refresh_rate((float)refreshrate);
+
+      settings->uints.video_fullscreen_x = width;
+      settings->uints.video_fullscreen_y = height;
+
+      /* TODO/FIXME - menu drivers like XMB don't rescale
+       * automatically */
+      return menu_cbs_exit();
+   }
+
+   return 0;
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4587,6 +4659,7 @@ default_action_ok_help(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -4610,6 +4683,12 @@ static int action_ok_video_resolution(const char *path,
                width, height);
       runloop_msg_queue_push(msg, 1, 100, true);
    }
+#else
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
+#endif
 
    return 0;
 }
@@ -5129,6 +5208,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -5555,6 +5636,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
+            break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
@@ -5579,6 +5663,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SET_SWITCH_BRIGHTNESS:
             BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
             break;
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;

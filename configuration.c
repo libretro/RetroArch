@@ -543,6 +543,9 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
 
+#if defined(_3DS) && defined(HAVE_RGUI)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
+#else
 #if defined(HAVE_XUI)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
@@ -556,7 +559,7 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
-
+#endif
 
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
@@ -678,7 +681,7 @@ const char *config_get_default_audio(void)
       case AUDIO_PS2:
          return "ps2";
       case AUDIO_CTR:
-         return "csnd";
+         return "dsp";
       case AUDIO_SWITCH:
          return "switch";
       case AUDIO_RWEBAUDIO:
@@ -1317,7 +1320,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->bools.multimedia_builtin_imageviewer_enable, true, true, false);
    SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, false, false);
    SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, false, false);
-   SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, true, false);
+   SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, false, false);
+   SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, false, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, rewind_enable, false);
@@ -1398,6 +1402,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_load_state",      &settings->bools.quick_menu_show_save_load_state, true, quick_menu_show_save_load_state, false);
    SETTING_BOOL("quick_menu_show_undo_save_load_state", &settings->bools.quick_menu_show_undo_save_load_state, true, quick_menu_show_undo_save_load_state, false);
    SETTING_BOOL("quick_menu_show_add_to_favorites",     &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
+   SETTING_BOOL("quick_menu_show_reset_core_association", &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
    SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
    SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
    SETTING_BOOL("quick_menu_show_cheats",        &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
@@ -1514,6 +1519,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, window_decorations, false);
+   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, false, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
@@ -1589,8 +1595,6 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_monitor_index",          &settings->uints.video_monitor_index, true, monitor_index, false);
    SETTING_UINT("video_fullscreen_x",           &settings->uints.video_fullscreen_x,  true, fullscreen_x, false);
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
-   SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
-   SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
@@ -1672,6 +1676,16 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",            &settings->uints.video_record_scale_factor,    true, 1, false);
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
+   SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
+   SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
+   SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, window_width, false);
+   SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, window_height, false);
+
+   SETTING_UINT("video_record_threads",            &settings->uints.video_record_threads,    true, video_record_threads, false);
+
+#ifdef HAVE_LIBNX
+   SETTING_UINT("libnx_overclock",  &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
+#endif
 
    *size = count;
 
@@ -3125,6 +3139,12 @@ static bool config_load_file(const char *path, bool set_defaults,
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility())
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+#endif
+
+#ifdef HAVE_LIBNX
+   // Apply initial clocks
+   extern void libnx_apply_overclock();
+   libnx_apply_overclock();
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);

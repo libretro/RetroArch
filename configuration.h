@@ -103,6 +103,7 @@ typedef struct settings
       bool video_fps_show;
       bool video_statistics_show;
       bool video_framecount_show;
+      bool video_memory_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
 
@@ -183,6 +184,7 @@ typedef struct settings
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
@@ -293,6 +295,7 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+      bool video_window_save_positions;
 
       bool sustained_performance_mode;
    } bools;
@@ -372,8 +375,6 @@ typedef struct settings
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
-      unsigned video_window_x;
-      unsigned video_window_y;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
@@ -439,6 +440,15 @@ typedef struct settings
 
       unsigned midi_volume;
       unsigned streaming_mode;
+
+      unsigned window_position_x;
+      unsigned window_position_y;
+      unsigned window_position_width;
+      unsigned window_position_height;
+
+      unsigned video_record_threads;
+
+      unsigned libnx_overclock;
    } uints;
 
    struct

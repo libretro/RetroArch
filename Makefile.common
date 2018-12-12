@@ -863,13 +863,18 @@ ifeq ($(TARGET), retroarch_switch)
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
-   OBJ += gfx/drivers_context/wayland_ctx.o \
-          input/drivers/wayland_input.o
-   ifeq ($(HAVE_EGL), 1)
-      LIBS += $(EGL_LIBS)
-   endif
-   DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
-   LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+ OBJ += gfx/drivers_context/wayland_ctx.o \
+		  input/drivers/wayland_input.o \
+		  gfx/common/wayland/xdg-shell.o \
+		  gfx/common/wayland/xdg-shell-unstable-v6.o \
+		  gfx/common/wayland/idle-inhibit-unstable-v1.o \
+		  gfx/common/wayland/xdg-decoration-unstable-v1.o
+ ifeq ($(HAVE_EGL), 1)
+   LIBS += $(EGL_LIBS)
+ endif
+ DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
+ LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+
 endif
 
 #Input
@@ -900,7 +905,7 @@ ifeq ($(HAVE_X11), 1)
           gfx/common/xinerama_common.o \
           gfx/display_servers/dispserv_x11.o
 
-   LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
+   LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS) $(XRANDR_LIBS)
    DEFINES += -DHAVE_X11 $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS    += -lX11-xcb

@@ -985,10 +985,12 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      if (settings->uints.video_window_x || settings->uints.video_window_y)
+      /* To-Do: remove when the new window resizing core is hooked */
+      if (settings->bools.video_window_save_positions &&
+         (settings->uints.window_position_width || settings->uints.window_position_height))
       {
-         width  = settings->uints.video_window_x;
-         height = settings->uints.video_window_y;
+         width  = settings->uints.window_position_width;
+         height = settings->uints.window_position_height;
       }
       else
       {
@@ -1002,7 +1004,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          else
             width  = roundf(geom->base_width   * settings->floats.video_scale);
          height = roundf(geom->base_height * settings->floats.video_scale);
-      }
+}
    }
 
    if (width && height)
@@ -1491,15 +1493,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   CONFIG_ACTION(
-         list, list_info,
-         MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-         MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-         group_info,
-         subgroup_info,
-         parent_group);
-#endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          list, list_info,
@@ -2456,10 +2449,13 @@ void video_driver_frame(const void *data, unsigned width,
          char frames_text[64];
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
 
-         if (video_info.fps_show)
+         if (video_info.fps_show || video_info.framecount_show)
          {
-            snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                  "||  FPS: %6.1f ", last_fps);
+            if (video_info.fps_show)
+            {
+               snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+                     " ||  FPS: %6.1f ", last_fps);
+            }
             if (video_info.framecount_show)
             {
                snprintf(frames_text,
@@ -2468,7 +2464,8 @@ void video_driver_frame(const void *data, unsigned width,
                      (uint64_t)video_driver_frame_count);
             }
             snprintf(video_driver_window_title, sizeof(video_driver_window_title),
-               "%s%s%s", title, video_info.fps_text,
+               "%s%s%s", title,
+               video_info.fps_show ? video_info.fps_text : "",
                video_info.framecount_show ? frames_text : "");
          }
          else
@@ -2498,6 +2495,28 @@ void video_driver_frame(const void *data, unsigned width,
                   "FPS: %6.1f",
                   last_fps);
       }
+
+      if (video_info.fps_show && video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f || %s: %" PRIu64,
+               last_fps,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "%s: %" PRIu64,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.fps_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f",
+               last_fps);
    }
    else
    {
@@ -2627,7 +2646,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_frame_count++;
 
    /* Display the FPS, with a higher priority. */
-   if (video_info.fps_show)
+   if (video_info.fps_show || video_info.framecount_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 
    /* trigger set resolution*/

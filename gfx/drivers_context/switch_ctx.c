@@ -27,6 +27,8 @@
 static enum gfx_ctx_api ctx_nx_api = GFX_CTX_OPENGL_API;
 switch_ctx_data_t *nx_ctx_ptr = NULL;
 
+extern bool platform_switch_has_focus;
+
 void switch_ctx_destroy(void *data)
 {
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
@@ -86,7 +88,7 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-                          &major, &minor, &n, attribs))
+                          &major, &minor, &n, attribs, NULL))
     {
         egl_report_error();
         goto error;
@@ -190,7 +192,7 @@ static bool switch_ctx_bind_api(void *data,
 static bool switch_ctx_has_focus(void *data)
 {
     (void)data;
-    return true;
+    return platform_switch_has_focus;
 }
 
 static bool switch_ctx_suppress_screensaver(void *data, bool enable)

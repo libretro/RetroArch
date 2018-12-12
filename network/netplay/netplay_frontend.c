@@ -851,7 +851,7 @@ void netplay_get_architecture(char *frontend_architecture, size_t size)
 
 static void netplay_announce(void)
 {
-   char buf [2048];
+   char buf [4600];
    char frontend_architecture[PATH_MAX_LENGTH];
    char url [2048]                  = "http://lobby.libretro.com/add/";
    char *username                   = NULL;

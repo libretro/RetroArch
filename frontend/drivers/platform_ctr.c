@@ -240,13 +240,15 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
       }
       else
       {
-         RARCH_LOG("\n");
-         RARCH_LOG("\n");
-         RARCH_LOG("Warning:\n");
-         RARCH_LOG("First core launch may take 20 seconds!\n");
-         RARCH_LOG("Do not force quit before then or your memory card may be corrupted!\n");
-         RARCH_LOG("\n");
-         RARCH_LOG("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("Warning:\n");
+         RARCH_WARN("First core launch may take 20\n");
+         RARCH_WARN("seconds! Do not force quit\n");
+         RARCH_WARN("before then or your memory\n");
+         RARCH_WARN("card may be corrupted!\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
          exec_cia(path, arg_data);
       }
 
@@ -355,6 +357,17 @@ static void ctr_check_dspfirm(void)
             free(code_buffer);
          }
          fclose(code_fp);
+      }
+      else
+      {
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("Warning:\n");
+         RARCH_WARN("3DS DSP dump is missing.\n");
+         RARCH_WARN("A working DSP dump is required\n");
+         RARCH_WARN("for correct operation.\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
       }
    }
 }

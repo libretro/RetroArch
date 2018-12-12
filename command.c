@@ -220,6 +220,7 @@ static const struct cmd_map map[] = {
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
+   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -1899,7 +1900,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
       {
-         bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+	 bool success   = false;
+         subsystem_current_count = 0;
+         content_clear_subsystem();
+         success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
          (void)success;
 
 #ifndef HAVE_DYNAMIC
@@ -2019,8 +2023,10 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 
             if (is_inited)
+            {
                if (!task_push_start_dummy_core(&content_info))
                   return false;
+            }
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
@@ -2037,6 +2043,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
 #endif
+            if (is_inited)
+            {
+               subsystem_current_count = 0;
+               content_clear_subsystem();
+            }
          }
          break;
       case CMD_EVENT_QUIT:
@@ -2175,6 +2186,12 @@ TODO: Add a setting for these tweaks */
 
             runloop_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
+         }
+         break;
+      case CMD_EVENT_FPS_TOGGLE:
+         {
+            settings_t *settings           = config_get_ptr();
+            settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          }
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
@@ -2728,8 +2745,11 @@ TODO: Add a setting for these tweaks */
             settings_t *settings      = config_get_ptr();
             bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
+
             if (!video_driver_has_windowed())
                return false;
+
+            retroarch_set_switching_display_mode();
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2746,6 +2766,8 @@ TODO: Add a setting for these tweaks */
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
+
+            retroarch_unset_switching_display_mode();
          }
          break;
       case CMD_EVENT_COMMAND_DEINIT:

@@ -134,7 +134,7 @@ static void *gfx_ctx_qnx_init(video_frame_info_t *video_info, void *video_driver
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&qnx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
-            &n, attribs))
+            &n, attribs, NULL))
    {
       egl_report_error();
       goto error;

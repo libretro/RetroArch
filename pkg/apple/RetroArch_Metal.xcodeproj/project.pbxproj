@@ -88,6 +88,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		05132C6621A74D7A00379846 /* ozone_texture.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone_texture.c; sourceTree = "<group>"; };
+		05132C6721A74D7B00379846 /* ozone_theme.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone_theme.h; sourceTree = "<group>"; };
+		05132C6821A74D7B00379846 /* ozone.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone.h; sourceTree = "<group>"; };
+		05132C6921A74D7B00379846 /* ozone_entries.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone_entries.c; sourceTree = "<group>"; };
+		05132C6A21A74D7B00379846 /* ozone.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone.c; sourceTree = "<group>"; };
+		05132C6B21A74D7B00379846 /* ozone_theme.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone_theme.c; sourceTree = "<group>"; };
+		05132C6C21A74D7B00379846 /* ozone_sidebar.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone_sidebar.c; sourceTree = "<group>"; };
+		05132C6D21A74D7B00379846 /* ozone_sidebar.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone_sidebar.h; sourceTree = "<group>"; };
+		05132C6E21A74D7B00379846 /* ozone_display.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone_display.c; sourceTree = "<group>"; };
+		05132C6F21A74D7B00379846 /* ozone_texture.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone_texture.h; sourceTree = "<group>"; };
+		05132C7021A74D7B00379846 /* ozone_display.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone_display.h; sourceTree = "<group>"; };
 		05269A6120ABF20500C29F1E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnailpackdownload.cpp; sourceTree = "<group>"; };
 		05366513213F8BE5007E7EA0 /* ui_qt_application.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_application.cpp; sourceTree = "<group>"; };
@@ -514,7 +525,6 @@
 		05D7753320A5678300646447 /* griffin_cpp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		05D7753420A5678400646447 /* griffin_glslang.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
 		05EFAFC22191D64200D27059 /* stripes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stripes.c; sourceTree = "<group>"; };
-		05EFAFC32191D64200D27059 /* ozone.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ozone.c; sourceTree = "<group>"; };
 		05F2872F20F2BEEA00632D47 /* task_autodetect.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_autodetect.c; sourceTree = "<group>"; };
 		05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_find_content.c; sourceTree = "<group>"; };
 		05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_nat_traversal.c; sourceTree = "<group>"; };
@@ -610,6 +620,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		05132C6521A74D5100379846 /* ozone */ = {
+			isa = PBXGroup;
+			children = (
+				05132C6E21A74D7B00379846 /* ozone_display.c */,
+				05132C7021A74D7B00379846 /* ozone_display.h */,
+				05132C6921A74D7B00379846 /* ozone_entries.c */,
+				05132C6C21A74D7B00379846 /* ozone_sidebar.c */,
+				05132C6D21A74D7B00379846 /* ozone_sidebar.h */,
+				05132C6621A74D7A00379846 /* ozone_texture.c */,
+				05132C6F21A74D7B00379846 /* ozone_texture.h */,
+				05132C6B21A74D7B00379846 /* ozone_theme.c */,
+				05132C6721A74D7B00379846 /* ozone_theme.h */,
+				05132C6A21A74D7B00379846 /* ozone.c */,
+				05132C6821A74D7B00379846 /* ozone.h */,
+			);
+			path = ozone;
+			sourceTree = "<group>";
+		};
 		05366511213F8BE5007E7EA0 /* qt */ = {
 			isa = PBXGroup;
 			children = (
@@ -801,12 +829,12 @@
 			isa = PBXGroup;
 			children = (
 				05A8C53520DB72F000FF7857 /* nuklear */,
+				05132C6521A74D5100379846 /* ozone */,
 				05A8C54020DB72F000FF7857 /* materialui.c */,
 				05A8C53420DB72F000FF7857 /* menu_generic.c */,
 				05A8C53320DB72F000FF7857 /* menu_generic.h */,
 				05A8C53D20DB72F000FF7857 /* nuklear.c */,
 				05A8C53E20DB72F000FF7857 /* null.c */,
-				05EFAFC32191D64200D27059 /* ozone.c */,
 				05A8C53C20DB72F000FF7857 /* rgui.c */,
 				05EFAFC22191D64200D27059 /* stripes.c */,
 				05A8C53220DB72F000FF7857 /* xmb.c */,

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-AndrÈ Santoni
- *  Copyright (C) 2015-2017 - AndrÈs Su·rez
+ *  Copyright (C) 2014-2017 - Jean-Andr√© Santoni
+ *  Copyright (C) 2015-2017 - Andr√©s Su√°rez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -49,6 +49,11 @@
 
 #ifdef HAVE_LAKKA_SWITCH
 #include "../../lakka.h"
+#endif
+
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#include "../../switch_performance_profiles.h"
 #endif
 
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
@@ -373,7 +378,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    gfx_ctx_ident_t ident_info;
 #endif
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[8192];
    char feat_str[255];
 #ifdef ANDROID
    bool perms                            = false;
@@ -432,7 +437,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[255];
+      char cpu_str[8192];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
@@ -1445,7 +1450,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    for (i = 0; i < pass_count; i++)
    {
       char buf_tmp[64];
-      char buf[64];
+      char buf[128];
 
       buf[0] = buf_tmp[0] = '\0';
 
@@ -2584,25 +2589,6 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
 
-#if 0
-      const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
-
-      if (subsystem)
-      {
-         unsigned p;
-
-         for (p = 0; p < system->subsystem.size; p++, subsystem++)
-         {
-            char s[PATH_MAX_LENGTH];
-            snprintf(s, sizeof(s), "%s (%s)", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), subsystem->desc);
-            menu_entries_append_enum(info->list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL),
-                  MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
-                  MENU_SETTING_ACTION, 0, 0);
-         }
-      }
-#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
             msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
@@ -2633,7 +2619,7 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !cheevos_hardcore_active
+         && !cheevos_hardcore_active
 #endif
          )
       {
@@ -2901,7 +2887,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_add_to_favorites)
+      if (settings->bools.quick_menu_show_reset_core_association)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION),
@@ -3381,8 +3367,8 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
          {
-            char desc_label[64];
-            char descriptor[255];
+            char desc_label[400];
+            char descriptor[300];
             const struct retro_keybind *auto_bind = NULL;
             const struct retro_keybind *keybind   = NULL;
 
@@ -3472,16 +3458,19 @@ static int menu_displaylist_parse_playlists(
    if (!horizontal)
    {
 #ifdef HAVE_LIBRETRODB
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-            MENU_ENUM_LABEL_SCAN_DIRECTORY,
-            MENU_SETTING_ACTION, 0, 0);
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-            MENU_ENUM_LABEL_SCAN_FILE,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.menu_content_show_add)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_DIRECTORY,
+               MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+               MENU_ENUM_LABEL_SCAN_FILE,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
      if (settings->bools.menu_content_show_favorites)
       menu_entries_append_enum(info->list,
@@ -4284,7 +4273,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
    switch (type)
    {
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
          unsigned i;
@@ -4293,17 +4282,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
          
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      
+#ifdef HAVE_LAKKA_SWITCH
          profile = popen("cpu-profile get", "r");          
          fgets(current_profile, PATH_MAX_LENGTH, profile);  
          pclose(profile);
+   
          
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
-         snprintf(text, sizeof(text),
-               "Current profile : %s", current_profile);
-         
+         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+#else
+         u32 currentClock = 0;
+         pcvGetClockRate(PcvModule_Cpu, &currentClock);
+         snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
+#endif
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4332,6 +4326,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       
          break;
       }
+#if defined(HAVE_LAKKA_SWITCH)
       case DISPLAYLIST_SWITCH_GPU_PROFILE:
       {
          unsigned i;
@@ -4349,7 +4344,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
-         
+
          menu_entries_append_enum(info->list,
             text,
             "",
@@ -4402,7 +4397,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          break;
       }
-#endif
+#endif // HAVE_LAKKA_SWITCH
+#endif // HAVE_LAKKA_SWITCH || HAVE_LIBNX
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
@@ -5620,10 +5616,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_FPS_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STATISTICS_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+               MENU_ENUM_LABEL_MEMORY_SHOW,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FONT_PATH,
@@ -5836,6 +5835,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
                PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6546,9 +6549,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-               PARSE_ACTION, false);
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+	 if (true)
+#else
+	 if (!string_is_equal(video_display_server_get_ident(), "null"))
+#endif
+	 {
+		 menu_displaylist_parse_settings_enum(menu, info,
+				 MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+				 PARSE_ACTION, false);
+	 }
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PAL60_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -6570,6 +6580,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+               PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
                PARSE_ONLY_UINT, false);
@@ -6610,17 +6623,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_VIDEO_SCALE,
                PARSE_ONLY_FLOAT, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                PARSE_ONLY_BOOL, false);
@@ -7302,6 +7318,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STREAMING_MODE,
                PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+               PARSE_ONLY_UINT, true) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STREAMING_TITLE,
@@ -8322,56 +8342,204 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             info->need_push          = true;
          }
          break;
-      case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
+      case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            unsigned i, size                  = 0;
+            struct video_display_config *list = video_display_server_get_resolution_list(&size);
 
-            if (strstr(info->path, "core_option_"))
+            if (list)
             {
-               struct string_list *tmp_str_list = string_split(info->path, "_");
-
-               if (tmp_str_list && tmp_str_list->size > 0)
+               for (i = 0; i < size; i++)
                {
-                  core_option_manager_t *coreopts = NULL;
+                  char val_d[256], str[256];
+                  snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
+                  snprintf(val_d, sizeof(val_d), "%d", i);
+                  menu_entries_append_enum(info->list,
+                        str,
+                        val_d,
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, list[i].idx, 0);
 
-                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+                  if (list[i].current)
+                     menu_entries_set_checked(info->list, i, true);
+               }
 
-                  if (coreopts)
+               free(list);
+            }
+            else
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
+         }
+         info->need_refresh       = true;
+         info->need_push          = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (strstr(info->path, "core_option_"))
+         {
+            struct string_list *tmp_str_list = string_split(info->path, "_");
+
+            if (tmp_str_list && tmp_str_list->size > 0)
+            {
+               core_option_manager_t *coreopts = NULL;
+
+               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+               if (coreopts)
+               {
+                  unsigned size                   = (unsigned)tmp_str_list->size;
+                  unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                  struct core_option *option      = NULL;
+                  bool checked_found              = false;
+                  unsigned checked                = 0;
+                  const char *val                 = core_option_manager_get_val(coreopts, i-1);
+
+                  i--;
+
+                  option                          = (struct core_option*)&coreopts->opts[i];
+
+                  if (option)
                   {
-                     unsigned size                   = (unsigned)tmp_str_list->size;
-                     unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
-                     struct core_option *option      = NULL;
-                     bool checked_found              = false;
-                     unsigned checked                = 0;
-                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
-
-                     i--;
-
-                     option                          = (struct core_option*)&coreopts->opts[i];
-
-                     if (option)
+                     unsigned k;
+                     for (k = 0; k < option->vals->size; k++)
                      {
-                        unsigned k;
-                        for (k = 0; k < option->vals->size; k++)
-                        {
-                           const char *str = option->vals->elems[k].data;
+                        const char *str = option->vals->elems[k].data;
 
-                           if (!string_is_empty(str))
+                        if (!string_is_empty(str))
+                        {
+                           char val_d[256];
+                           snprintf(val_d, sizeof(val_d), "%d", i);
+                           menu_entries_append_enum(info->list,
+                                 str,
+                                 val_d,
+                                 MENU_ENUM_LABEL_NO_ITEMS,
+                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+
+                           if (!checked_found && string_is_equal(str, val))
+                           {
+                              checked = k;
+                              checked_found = true;
+                           }
+
+                           count++;
+                        }
+                     }
+
+                     if (checked_found)
+                        menu_entries_set_checked(info->list, checked, true);
+                  }
+               }
+            }
+
+         }
+         else
+         {
+            enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+            rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+            if (setting)
+            {
+               switch (setting->type)
+               {
+                  case ST_STRING_OPTIONS:
+                     {
+                        struct string_list *tmp_str_list = string_split(setting->values, "|");
+
+                        if (tmp_str_list && tmp_str_list->size > 0)
+                        {
+                           unsigned i;
+                           unsigned size        = (unsigned)tmp_str_list->size;
+                           bool checked_found   = false;
+                           unsigned checked     = 0;
+
+                           for (i = 0; i < size; i++)
                            {
                               char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", i);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               menu_entries_append_enum(info->list,
-                                    str,
+                                    tmp_str_list->elems[i].data,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
 
-                              if (!checked_found && string_is_equal(str, val))
+                              if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
                               {
-                                 checked = k;
+                                 checked = i;
                                  checked_found = true;
                               }
+                           }
 
+                           if (checked_found)
+                              menu_entries_set_checked(info->list, checked, true);
+                        }
+                     }
+                     break;
+                  case ST_INT:
+                     {
+                        float i;
+                        int32_t orig_value     = *setting->value.target.integer;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
+
+                        if (setting->get_string_representation)
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
+                              count++;
+                           }
+
+                           *setting->value.target.integer = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
                               count++;
                            }
                         }
@@ -8379,263 +8547,149 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                         if (checked_found)
                            menu_entries_set_checked(info->list, checked, true);
                      }
-                  }
-               }
+                     break;
+                  case ST_FLOAT:
+                     {
+                        float i;
+                        float orig_value       = *setting->value.target.fraction;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
 
-            }
-            else
-            {
-               enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
-               rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-               if (setting)
-               {
-                  switch (setting->type)
-                  {
-                     case ST_STRING_OPTIONS:
+                        if (setting->get_string_representation)
                         {
-                           struct string_list *tmp_str_list = string_split(setting->values, "|");
-
-                           if (tmp_str_list && tmp_str_list->size > 0)
+                           for (i = min; i <= max; i += step)
                            {
-                              unsigned i;
-                              unsigned size        = (unsigned)tmp_str_list->size;
-                              bool checked_found   = false;
-                              unsigned checked     = 0;
+                              char val_s[256], val_d[256];
 
-                              for (i = 0; i < size; i++)
+                              *setting->value.target.fraction = i;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, 0, 0);
+
+                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
-                                 char val_d[256];
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       tmp_str_list->elems[i].data,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
-
-                                 if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
-                                 {
-                                    checked = i;
-                                    checked_found = true;
-                                 }
+                                 checked       = count;
+                                 checked_found = true;
                               }
+                              count++;
+                           }
 
-                              if (checked_found)
-                                 menu_entries_set_checked(info->list, checked, true);
+                           *setting->value.target.fraction = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+
+                              snprintf(val_s, sizeof(val_s), "%.2f", i);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, 0, 0);
+
+                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                              {
+                                 checked       = count;
+                                 checked_found = true;
+                              }
+                              count++;
                            }
                         }
-                        break;
-                     case ST_INT:
+
+                        if (checked_found)
+                           menu_entries_set_checked(info->list, checked, true);
+                     }
+                     break;
+                  case ST_UINT:
+                     {
+                        float i;
+                        unsigned orig_value    = *setting->value.target.unsigned_integer;
+                        unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
+                        float step             = setting->step;
+                        double min             = setting->enforce_minrange ? setting->min : 0.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        bool checked_found     = false;
+                        unsigned checked       = 0;
+
+                        if (setting->get_string_representation)
                         {
-                           float i;
-                           int32_t orig_value     = *setting->value.target.integer;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
-
-                           if (setting->get_string_representation)
+                           for (i = min; i <= max; i += step)
                            {
-                              for (i = min; i <= max; i += step)
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.unsigned_integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
                               {
-                                 char val_s[256], val_d[256];
-                                 int val = (int)i;
-
-                                 *setting->value.target.integer = val;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
+                                 checked       = count;
+                                 checked_found = true;
                               }
-
-                              *setting->value.target.integer = orig_value;
-                           }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-                                 int val = (int)i;
-
-                                 snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
+                              count++;
                            }
 
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
+                           *setting->value.target.unsigned_integer = orig_value;
                         }
-                        break;
-                     case ST_FLOAT:
+                        else
                         {
-                           float i;
-                           float orig_value       = *setting->value.target.fraction;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
-
-                           if (setting->get_string_representation)
+                           for (i = min; i <= max; i += step)
                            {
-                              for (i = min; i <= max; i += step)
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+
+                              if (!checked_found && val == orig_value)
                               {
-                                 char val_s[256], val_d[256];
-
-                                 *setting->value.target.fraction = i;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
-
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
+                                 checked       = count;
+                                 checked_found = true;
                               }
-
-                              *setting->value.target.fraction = orig_value;
+                              count++;
                            }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-
-                                 snprintf(val_s, sizeof(val_s), "%.2f", i);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
-
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-                           }
-
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
                         }
-                        break;
-                     case ST_UINT:
-                        {
-                           float i;
-                           unsigned orig_value    = *setting->value.target.unsigned_integer;
-                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
-                           float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
-                           bool checked_found     = false;
-                           unsigned checked       = 0;
 
-                           if (setting->get_string_representation)
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[256], val_d[256];
-                                 int val = (int)i;
-
-                                 *setting->value.target.unsigned_integer = val;
-
-                                 setting->get_string_representation(setting,
-                                       val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-
-                              *setting->value.target.unsigned_integer = orig_value;
-                           }
-                           else
-                           {
-                              for (i = min; i <= max; i += step)
-                              {
-                                 char val_s[16], val_d[16];
-                                 int val = (int)i;
-
-                                 snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
-
-                                 if (!checked_found && val == orig_value)
-                                 {
-                                    checked       = count;
-                                    checked_found = true;
-                                 }
-                                 count++;
-                              }
-                           }
-
-                           if (checked_found)
-                              menu_entries_set_checked(info->list, checked, true);
-                        }
-                        break;
-                     default:
-                        break;
-                  }
+                        if (checked_found)
+                           menu_entries_set_checked(info->list, checked, true);
+                     }
+                     break;
+                  default:
+                     break;
                }
             }
-
-            info->need_refresh       = true;
-            info->need_push          = true;
          }
+
+         info->need_refresh       = true;
+         info->need_push          = true;
          break;
       case DISPLAYLIST_NONE:
          break;

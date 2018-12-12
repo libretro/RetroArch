@@ -210,6 +210,7 @@ static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
 static bool rarch_block_config_read                             = false;
 static bool rarch_force_fullscreen                              = false;
+static bool rarch_is_switching_display_mode                     = false;
 static bool has_set_verbosity                                   = false;
 static bool has_set_libretro                                    = false;
 static bool has_set_libretro_directory                          = false;
@@ -2025,6 +2026,21 @@ void retroarch_unset_forced_fullscreen(void)
    rarch_force_fullscreen = false;
 }
 
+bool retroarch_is_switching_display_mode(void)
+{
+   return rarch_is_switching_display_mode;
+}
+
+void retroarch_set_switching_display_mode(void)
+{
+   rarch_is_switching_display_mode = true;
+}
+
+void retroarch_unset_switching_display_mode(void)
+{
+   rarch_is_switching_display_mode = false;
+}
+
 /* set a runtime shader preset without overwriting the settings value */
 void retroarch_set_shader_preset(const char* preset)
 {
@@ -2522,6 +2538,12 @@ static enum runloop_state runloop_check_state(
    bool menu_is_alive               = menu_driver_is_alive();
 #endif
 
+#ifdef HAVE_LIBNX
+   // Should be called once per frame
+   if(!appletMainLoop())
+      return RUNLOOP_STATE_QUIT;
+#endif
+
    BIT256_CLEAR_ALL_PTR(&current_input);
 
 #ifdef HAVE_MENU
@@ -2920,6 +2942,18 @@ static enum runloop_state runloop_check_state(
             input_keyboard_ctl(
                   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
       }
+
+      old_pressed             = pressed;
+   }
+
+   /* Check FPS toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_FPS_TOGGLE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_FPS_TOGGLE, NULL);
 
       old_pressed             = pressed;
    }

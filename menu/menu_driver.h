@@ -143,6 +143,7 @@ enum menu_settings_type
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
+   MENU_SETTING_DROPDOWN_ITEM_RESOLUTION,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -244,6 +245,8 @@ enum menu_settings_type
 #ifdef HAVE_LAKKA_SWITCH
    MENU_SET_SWITCH_GPU_PROFILE,
    MENU_SET_SWITCH_BRIGHTNESS,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
@@ -840,6 +843,8 @@ bool menu_display_driver_exists(const char *s);
 void menu_driver_destroy(void);
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
+
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
 
 extern uintptr_t menu_display_white_texture;
 

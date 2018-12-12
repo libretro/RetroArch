@@ -176,12 +176,89 @@ void libretro_free_system_info(struct retro_system_info *info)
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
+   rarch_system_info_t *system  = runloop_get_system_info();
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          *load_no_content_hook = *(const bool*)data;
          break;
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
+      {
+         unsigned i, j;
+         unsigned size = i;
+         const struct retro_subsystem_info *info =
+            (const struct retro_subsystem_info*)data;
+         subsystem_current_count = 0;
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
+         for (i = 0; info[i].ident; i++)
+         {
+            RARCH_LOG("Subsystem ID: %d\n", i);
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  Content:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ?
+                     "required" : "optional");
+            }
+         }
+
+         RARCH_LOG("Subsystems: %d\n", i);
+         size = i;
+
+         if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
+            RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+
+         if (system)
+         {
+            for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
+            {
+               subsystem_data[i].desc = strdup(info[i].desc);
+               subsystem_data[i].ident = strdup(info[i].ident);
+               subsystem_data[i].id = info[i].id;
+               subsystem_data[i].num_roms = info[i].num_roms;
+
+               if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
+                  RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
+
+               for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
+               {
+                  subsystem_data_roms[i][j].desc = strdup(info[i].roms[j].desc);
+                  subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
+                  subsystem_data_roms[i][j].required = info[i].roms[j].required;
+                  subsystem_data_roms[i][j].block_extract = info[i].roms[j].block_extract;
+                  subsystem_data_roms[i][j].need_fullpath = info[i].roms[j].need_fullpath;
+               }
+               subsystem_data[i].roms = subsystem_data_roms[i];
+            }
+
+
+            subsystem_current_count = size <= SUBSYSTEM_MAX_SUBSYSTEMS ? size : SUBSYSTEM_MAX_SUBSYSTEMS;
+#if 0
+            RARCH_LOG("Subsystems: %d\n", subsystem_current_count);
+
+            for (i = 0; i < subsystem_current_count; i++)
+            {
+               RARCH_LOG("Subsystem ID: %d\n", i);
+               RARCH_LOG("Special game type: %s\n", subsystem_data[i].desc);
+               RARCH_LOG("  Ident: %s\n", subsystem_data[i].ident);
+               RARCH_LOG("  ID: %u\n", subsystem_data[i].id);
+               RARCH_LOG("  Content:\n");
+
+               for (j = 0; j < subsystem_data[i].num_roms; j++)
+               {
+                  RARCH_LOG("    %s (%s)\n",
+                        subsystem_data[i].roms[j].desc, subsystem_data[i].roms[j].required ?
+                        "required" : "optional");
+               }
+            }
+#endif
+         }
+         break;
+      }
       default:
          return false;
    }
@@ -396,7 +473,6 @@ bool libretro_get_system_info(const char *path,
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
 #endif
-
    return true;
 }
 
@@ -1393,7 +1469,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                   cb, offsetof(struct retro_hw_render_callback, stencil));
             memset(hwr + offsetof(struct retro_hw_render_callback, stencil),
                   0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
-            
          }
          else
             memcpy(hwr, cb, sizeof(*cb));

@@ -244,7 +244,7 @@ border_iterate:
 
       sublabel_str = menu_entry_get_sublabel(&entry);
 
-      if (node->wrap)
+      if (node->wrap && sublabel_str)
          word_wrap(sublabel_str, sublabel_str, (video_info->width - 548) / ozone->sublabel_font_glyph_width, false);
 
       /* Icon */
@@ -271,19 +271,28 @@ border_iterate:
          ))
          {
             icon_color = ozone->theme_dynamic.entries_icon;
-            ozone_color_alpha(ozone->theme_dynamic.entries_icon, alpha);
          }
+         else
+         {
+            icon_color = ozone_pure_white;
+         }
+
+         ozone_color_alpha(icon_color, alpha);
 
          menu_display_blend_begin(video_info);
          ozone_draw_icon(video_info, 46, 46, texture, x_offset + 451+5+10, y + scroll_y, video_info->width, video_info->height, 0, 1, icon_color);
          menu_display_blend_end(video_info);
+
+         if (icon_color == ozone_pure_white)
+            ozone_color_alpha(icon_color, 1.0f);
 
          text_offset = 0;
       }
 
       /* Draw text */
       ozone_draw_text(video_info, ozone, rich_label, text_offset + x_offset + 521, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
-      ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
+      if (sublabel_str)
+         ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
       ticker.idx = ozone->frame_count / 20;
@@ -296,7 +305,9 @@ border_iterate:
       ozone_draw_entry_value(ozone, video_info, entry_value_ticker, x_offset + 426 + entry_width, y + FONT_SIZE_ENTRIES_LABEL + 8 - 1 + scroll_y,alpha_uint32, &entry);
       
       free(entry_rich_label);
-      free(sublabel_str);
+
+      if (sublabel_str)
+         free(sublabel_str);
 
 icons_iterate:
       y += node->height;

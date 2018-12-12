@@ -663,7 +663,7 @@ error:
 static const struct
 retro_subsystem_info *content_file_init_subsystem(
       const struct retro_subsystem_info *subsystem_data,
-      size_t subsystem_size,
+      size_t subsystem_current_count,
       char **error_string,
       bool *ret)
 {
@@ -671,7 +671,7 @@ retro_subsystem_info *content_file_init_subsystem(
    char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, subsystem_size,
+            subsystem_data, subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    msg[0] = '\0';
@@ -1781,12 +1781,18 @@ int content_get_subsystem()
 void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = system ?
-	   system->subsystem.data + idx : NULL;
+   const struct retro_subsystem_info *subsystem;
 
-   pending_subsystem_id                         = idx;
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data + idx;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data + idx;
 
-   if (subsystem)
+   pending_subsystem_id = idx;
+
+   if (subsystem && subsystem_current_count > 0)
    {
       strlcpy(pending_subsystem_ident,
          subsystem->ident, sizeof(pending_subsystem_ident));

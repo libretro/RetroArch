@@ -117,13 +117,17 @@ static const unsigned monitor_index = 0;
 /* Window */
 /* Window size. A value of 0 uses window scale
  * multiplied by the core framebuffer size. */
-static const unsigned window_x = 0;
-static const unsigned window_y = 0;
+static const unsigned window_width = 1280;
+static const unsigned window_height = 720;
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
 static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
+
+/* Number of threads to use for video recording */
+
+static const unsigned video_record_threads = 2;
 
 /* Amount of transparency to use for the main window.
  * 1 is the most transparent while 100 is opaque.
@@ -236,9 +240,14 @@ static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
 /* 1:1 PAR */
 static const bool aspect_ratio_auto = false;
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360) || defined(ANDROID_AARCH64)
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#elif defined(_3DS)
+/* Previously defaulted to ASPECT_RATIO_4_3.
+ * Non-4:3 content looks dreadful when stretched
+ * to 4:3 on the 3DS screen... */
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
@@ -276,6 +285,7 @@ static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;
 static bool quick_menu_show_add_to_favorites            = true;
+static bool quick_menu_show_reset_core_association      = true;
 static bool quick_menu_show_options                     = true;
 static bool quick_menu_show_controls                    = true;
 static bool quick_menu_show_cheats                      = true;
@@ -545,8 +555,11 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-/* Show frame count on FPS display */
-static const bool framecount_show = true;
+/* Enables displaying the current frame count. */
+static const bool framecount_show = false;
+
+/* Includes displaying the current memory usage/total with FPS/Frames. */
+static const bool memory_show = false;
 
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
@@ -577,7 +590,13 @@ static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
+/* Flush to file every 10 seconds on modern platforms by default */
+static const unsigned autosave_interval = 10;
+#else
+/* Default to disabled on I/O-constrained platforms */
 static const unsigned autosave_interval = 0;
+#endif
 
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;
