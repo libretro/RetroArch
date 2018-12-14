@@ -1402,6 +1402,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_load_state",      &settings->bools.quick_menu_show_save_load_state, true, quick_menu_show_save_load_state, false);
    SETTING_BOOL("quick_menu_show_undo_save_load_state", &settings->bools.quick_menu_show_undo_save_load_state, true, quick_menu_show_undo_save_load_state, false);
    SETTING_BOOL("quick_menu_show_add_to_favorites",     &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
+   SETTING_BOOL("quick_menu_show_start_recording",      &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
+   SETTING_BOOL("quick_menu_show_start_streaming",      &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
    SETTING_BOOL("quick_menu_show_reset_core_association", &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
    SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
    SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
