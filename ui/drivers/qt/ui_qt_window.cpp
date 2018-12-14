@@ -416,6 +416,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_tableView->setAlternatingRowColors(true);
    m_tableView->setModel(m_proxyModel);
+   m_tableView->setSortingEnabled(true);
+   m_tableView->verticalHeader()->setVisible(false);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(this));
    m_gridView->setModel(m_proxyModel);
