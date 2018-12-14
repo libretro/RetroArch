@@ -253,6 +253,7 @@ void GridView::resizeEvent(QResizeEvent*)
 
 void GridView::reset()
 {
+   m_visibleIndexes.clear();
    QAbstractItemView::reset();
    refresh();
 }
