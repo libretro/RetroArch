@@ -394,10 +394,9 @@ ifeq ($(HAVE_LIBRETRODB), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-   HAVE_GTKPLUS = 0
-
-   ifeq ($(HAVE_SSL), 1)
-      ifeq ($(HAVE_NETWORKING), 1)
+   ifeq ($(HAVE_NETWORKING), 1)
+      ifeq ($(HAVE_BUILTINMBEDTLS), 1)
+         HAVE_SSL = 1
          DEFINES += -DHAVE_SSL
 
          ifeq ($(DEBUG), 1)
@@ -482,6 +481,9 @@ ifneq ($(C89_BUILD), 1)
                     deps/mbedtls/ssl_tls.o
 
          OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
+      else ifeq ($(HAVE_SSL), 1)
+         DEFINES += -DHAVE_SSL
+         LIBS += $(MBEDTLS_LIBS) $(MBEDX509_LIBS) $(MBEDCRYPTO_LIBS)
       endif
    endif
 endif
