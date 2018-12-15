@@ -4397,8 +4397,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          break;
       }
-#endif // HAVE_LAKKA_SWITCH
-#endif // HAVE_LAKKA_SWITCH || HAVE_LIBNX
+#endif /* HAVE_LAKKA_SWITCH */
+#endif /* HAVE_LAKKA_SWITCH || HAVE_LIBNX */
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
