@@ -435,7 +435,10 @@ void driver_uninit(int flags)
 
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
+   {
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+      menu_driver_free();
+   }
 #endif
 
    if ((flags & DRIVER_LOCATION_MASK) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
