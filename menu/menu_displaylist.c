@@ -2672,15 +2672,21 @@ static int menu_displaylist_parse_load_content_settings(
       {
          if (!recording_is_enabled())
          {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
-                  msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
-                  MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
+            if (settings->bools.quick_menu_show_start_recording)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
+                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
+                     MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
+            }
 
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
-                  msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
-                  MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0);
+            if (settings->bools.quick_menu_show_start_streaming)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
+                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
+                     MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0);
+            }
          }
          else
          {
@@ -5835,6 +5841,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
                PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_settings_enum(menu, info,
