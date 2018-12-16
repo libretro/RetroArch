@@ -103,6 +103,9 @@ unsigned content_get_subsystem_rom_id(void);
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void);
 
+/* Get the path to the last selected subsystem rom */
+char* content_get_subsystem_rom(unsigned index);
+
 RETRO_END_DECLS
 
 #endif
