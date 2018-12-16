@@ -1838,6 +1838,11 @@ uint32_t content_get_crc(void)
    return content_rom_crc;
 }
 
+char* content_get_subsystem_rom(unsigned index)
+{
+   return pending_subsystem_roms[index];
+}
+
 bool content_is_inited(void)
 {
    return _content_is_inited;

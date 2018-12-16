@@ -538,7 +538,10 @@ int generic_action_ok_displaylist_push(const char *path,
          {
             char game_dir[PATH_MAX_LENGTH];
             filebrowser_clear_type();
-            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            if (content_get_subsystem_rom_id() > 0)
+               strlcpy(game_dir, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(game_dir));
+            else
+               strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
             path_basedir(game_dir);
 
             if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
