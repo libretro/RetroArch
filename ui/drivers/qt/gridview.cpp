@@ -13,21 +13,19 @@ ThumbnailDelegate::ThumbnailDelegate(QObject* parent) :
 
 void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
 {
-   painter->save();
-
    QStyleOptionViewItem opt = option;
-   initStyleOption(&opt, index);
-
    const QWidget *widget = opt.widget;
-
    QStyle *style = widget->style();
-
    int margin = 11;
    int textMargin = 4;
-   QRect rect = opt.rect;
    int textHeight = painter->fontMetrics().height() + margin + margin;
+   QRect rect = opt.rect;
    QRect adjusted = rect.adjusted(margin, margin, -margin, -textHeight + textMargin);
    QPixmap pixmap = index.data(PlaylistModel::THUMBNAIL).value<QPixmap>();
+
+   painter->save();
+
+   initStyleOption(&opt, index);
 
    // draw the background
    style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, widget);
@@ -43,6 +41,8 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    if (!opt.text.isEmpty())
    {
       QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
+      QRect textRect = QRect(rect.x() + margin, rect.y() + adjusted.height() - textMargin + margin, rect.width() - 2 * margin, textHeight);
+      QString elidedText = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
          cg = QPalette::Inactive;
@@ -51,9 +51,6 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
          painter->setPen(opt.palette.color(cg, QPalette::HighlightedText));
       else
          painter->setPen(opt.palette.color(cg, QPalette::Text));
-
-      QRect textRect = QRect(rect.x() + margin, rect.y() + adjusted.height() - textMargin + margin, rect.width() - 2 * margin, textHeight);
-      QString elidedText = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       painter->setFont(opt.font);
       painter->drawText(textRect, Qt::AlignCenter, elidedText);
@@ -174,8 +171,9 @@ QRect GridView::visualRect(const QModelIndex &index) const
 
 QRectF GridView::viewportRectForRow(int row) const
 {
+   QRectF rect;
    calculateRectsIfNecessary();
-   QRectF rect = m_rectForRow.value(row).toRect();
+   rect = m_rectForRow.value(row).toRect();
    if (!rect.isValid())
       return rect;
    return QRectF(rect.x() - horizontalScrollBar()->value(), rect.y() - verticalScrollBar()->value(), rect.width(), rect.height());
@@ -200,15 +198,19 @@ void GridView::scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint)
 QModelIndex GridView::indexAt(const QPoint &point_) const
 {
    QPoint point(point_);
+   QHash<int, QRectF>::const_iterator i;
    point.rx() += horizontalScrollBar()->value();
    point.ry() += verticalScrollBar()->value();
+
    calculateRectsIfNecessary();
-   QHashIterator<int, QRectF> i(m_rectForRow);
-   while (i.hasNext())
+
+   i = m_rectForRow.constBegin();
+
+   while (i != m_rectForRow.constEnd())
    {
-      i.next();
       if (i.value().contains(point))
          return model()->index(i.key(), 0, rootIndex());
+      i++;
    }
    return QModelIndex();
 }
@@ -302,23 +304,28 @@ QVector<QModelIndex> GridView::visibleIndexes() const {
 
 void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::SelectionFlag> flags)
 {
-   QRect rectangle = rect.translated(horizontalScrollBar()->value(), verticalScrollBar()->value()).normalized();
-   calculateRectsIfNecessary();
-   QHashIterator<int, QRectF> i(m_rectForRow);
+   QRect rectangle;
+   QHash<int, QRectF>::const_iterator i;
    int firstRow = model()->rowCount();
    int lastRow = -1;
-   while (i.hasNext())
+
+   calculateRectsIfNecessary();
+
+   rectangle = rect.translated(horizontalScrollBar()->value(), verticalScrollBar()->value()).normalized();
+
+   i = m_rectForRow.constBegin();
+   while (i != m_rectForRow.constEnd())
    {
-      i.next();
       if (i.value().intersects(rectangle))
       {
          firstRow = firstRow < i.key() ? firstRow : i.key();
          lastRow = lastRow > i.key() ? lastRow : i.key();
       }
+      i++;
    }
    if (firstRow != model()->rowCount() && lastRow != -1)
    {
-      QItemSelection selection( model()->index(firstRow, 0, rootIndex()), model()->index(lastRow, 0, rootIndex()));
+      QItemSelection selection(model()->index(firstRow, 0, rootIndex()), model()->index(lastRow, 0, rootIndex()));
       selectionModel()->select(selection, flags);
    }
    else
@@ -332,7 +339,9 @@ void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::Selec
 QRegion GridView::visualRegionForSelection(const QItemSelection &selection) const
 {
    QRegion region;
-   foreach(const QItemSelectionRange &range, selection)
+   QItemSelectionRange range;
+
+   foreach(range, selection)
    {
       for (int row = range.top(); row <= range.bottom(); ++row)
       {
@@ -343,6 +352,7 @@ QRegion GridView::visualRegionForSelection(const QItemSelection &selection) cons
          }
       }
    }
+
    return region;
 }
 
@@ -358,12 +368,12 @@ void GridView::paintEvent(QPaintEvent*)
    {
       QModelIndex index = model()->index(row, 0, rootIndex());
       QRectF rect = viewportRectForRow(row);
+      QStyleOptionViewItem option = viewOptions();
 
       if (!rect.isValid() || rect.bottom() < 0 || rect.y() > viewport()->height())
          continue;
 
       m_visibleIndexes.append(index);
-      QStyleOptionViewItem option = viewOptions();
       option.rect = rect.toRect();
 
       if (selectionModel()->isSelected(index))

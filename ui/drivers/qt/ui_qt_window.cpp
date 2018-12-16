@@ -2127,13 +2127,15 @@ void MainWindow::onSearchEnterPressed()
 
 void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
+   QHash<QString, QString> hash;
+
    if (!roles.contains(Qt::EditRole))
       return;
 
    if (topLeft != bottomRight)
       return;
 
-   QHash<QString, QString> hash = topLeft.data(PlaylistModel::HASH).value<QHash<QString, QString>>();
+   hash = topLeft.data(PlaylistModel::HASH).value<QHash<QString, QString>>();
 
    updateCurrentPlaylistEntry(hash);
 
@@ -2617,6 +2619,7 @@ void MainWindow::initContentTableWidget()
    QListWidgetItem *item = m_listWidget->currentItem();
    QStringList horizontal_header_labels;
    QString path;
+   QModelIndex index;
    int i = 0;
 
    if (!item)
@@ -2632,7 +2635,6 @@ void MainWindow::initContentTableWidget()
    }
 
    m_currentGridWidget = NULL;
-
 
    m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -2660,15 +2662,14 @@ void MainWindow::initContentTableWidget()
    else
       m_playlistModel->addPlaylistItems(QStringList() << path);
 
-      //TODO delete?
-   //m_tableView->setSortingEnabled(true);
-
    if (item != m_historyPlaylistsItem)
       m_tableView->sortByColumn(0, Qt::AscendingOrder);
+   else
+      m_proxyModel->sort(-1);
 
    m_tableView->resizeColumnsToContents();
 
-   QModelIndex index = m_proxyModel->index(0, 0);
+   index = m_proxyModel->index(0, 0);
    m_gridView->scrollToTop();
    m_gridView->setCurrentIndex(index);
    m_tableView->setCurrentIndex(index);
