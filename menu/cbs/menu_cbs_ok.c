@@ -88,6 +88,7 @@ enum
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
    ACTION_OK_SIDELOAD_CORE,
+   ACTION_OK_BACKUP_CORE,
    ACTION_OK_LOAD_WALLPAPER,
    ACTION_OK_SET_PATH,
    ACTION_OK_SET_PATH_AUDIO_FILTER,
@@ -593,6 +594,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = settings->paths.directory_core_assets;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE;
+         break;
+      case ACTION_OK_DL_BACKUP_CORE_LIST:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_libretro;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_BACKUP_CORE;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          info.type          = type;
@@ -1283,9 +1292,9 @@ static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
          break;
       }
    }
-   return ret;
    fclose(src);
    fclose(dst);
+   return ret;
 }
 
 static int generic_action_ok(const char *path,
@@ -1365,7 +1374,21 @@ static int generic_action_ok(const char *path,
             if(!file_copy(action_path, destination_path, message, sizeof(message)))
                RARCH_LOG(message);
             else
-               RARCH_LOG("Core sideloaded correctly\n");
+               RARCH_LOG("Core restored correctly\n");
+         }
+         break;
+      case ACTION_OK_BACKUP_CORE:
+         {
+            settings_t            *settings = config_get_ptr();
+            char destination_path[PATH_MAX_LENGTH];
+            char message[PATH_MAX_LENGTH];
+
+            fill_pathname_join(destination_path, settings->paths.directory_core_assets, path_basename(action_path), sizeof(destination_path));
+            /* TO-DO: Localization */
+            if(!file_copy(action_path, destination_path, message, sizeof(message)))
+               RARCH_LOG(message);
+            else
+               RARCH_LOG("Core backed-up correctly\n");
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
@@ -1539,6 +1562,7 @@ default_action_ok_set(action_ok_set_path_overlay,     ACTION_OK_SET_PATH_OVERLAY
 default_action_ok_set(action_ok_set_path,             ACTION_OK_SET_PATH,              MSG_UNKNOWN)
 default_action_ok_set(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
 default_action_ok_set(action_ok_sideload_core,            ACTION_OK_SIDELOAD_CORE,             MSG_UNKNOWN)
+default_action_ok_set(action_ok_backup_core,            ACTION_OK_BACKUP_CORE,             MSG_UNKNOWN)
 default_action_ok_set(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE,      MSG_UNKNOWN)
 default_action_ok_set(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
 default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
@@ -3902,6 +3926,7 @@ default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_sideload_core_list, ACTION_OK_DL_SIDELOAD_CORE_LIST)
+default_action_ok_func(action_ok_backup_core_list, ACTION_OK_DL_BACKUP_CORE_LIST)
 default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
 default_action_ok_func(action_ok_cheat_file_append, ACTION_OK_DL_CHEAT_FILE_APPEND)
 default_action_ok_func(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
@@ -5063,6 +5088,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_BACKUP_CORE:
+            BIND_ACTION_OK(cbs, action_ok_backup_core);
+            break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
@@ -5374,6 +5402,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_sideload_core_list);
+            break;
+         case MENU_ENUM_LABEL_BACKUP_CORE_LIST:
+            BIND_ACTION_OK(cbs, action_ok_backup_core_list);
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
@@ -5853,6 +5884,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                   case MENU_LABEL_SIDELOAD_CORE_LIST:
                      BIND_ACTION_OK(cbs, action_ok_sideload_core);
+                     break;
+                  case MENU_LABEL_BACKUP_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_backup_core);
                      break;
                }
             }

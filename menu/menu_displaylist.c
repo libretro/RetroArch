@@ -3703,15 +3703,16 @@ static unsigned menu_displaylist_parse_cores(
          file_type = FILE_TYPE_DIRECTORY;
          enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
       }
-      else if(string_is_equal(info->path, settings->paths.directory_core_assets))
-      {
-         file_type = FILE_TYPE_CORE;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
-      }
       else
       {
+         if(string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
+         else if(string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_BACKUP_CORE_LIST)))
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_BACKUP_CORE;
+         else
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
          file_type = FILE_TYPE_CORE;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
+
       }
 
       items_found++;
@@ -7410,6 +7411,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             if (settings->bools.menu_show_load_core)
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, PARSE_ACTION, false);
+            if (settings->bools.menu_show_load_core)
+                  menu_displaylist_parse_settings_enum(menu, info,
+                        MENU_ENUM_LABEL_BACKUP_CORE_LIST, PARSE_ACTION, false);
             }
 
             if (settings->bools.menu_show_load_content)
@@ -7657,6 +7661,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
+      case DISPLAYLIST_FILE_BROWSER_SELECT_BACKUP_CORE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
       case DISPLAYLIST_GENERIC:
          {

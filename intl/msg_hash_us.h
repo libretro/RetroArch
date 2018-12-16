@@ -675,7 +675,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-    "Sideload Core"
+    "Restore Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BACKUP_CORE_LIST,
+    "Backup Core"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -4896,7 +4900,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-    "Sideload a core from the downloads directory."
+    "Restore a core from the downloads directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BACKUP_CORE_LIST,
+    "Backup a core to the downloads directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
