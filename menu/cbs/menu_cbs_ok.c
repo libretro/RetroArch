@@ -1240,6 +1240,54 @@ static int generic_action_ok_command(enum event_command cmd)
    return 0;
 }
 
+/* TO-DO: Localization */
+static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
+{
+
+   FILE *src, *dst;
+   char buffer[100];
+   int numr, numw;
+   bool ret = true;
+
+   src = fopen(src_path, "rb");
+
+   if (!src)
+   {
+      strlcpy(msg, "Unable to open source file\n", size);
+      ret = false;
+   }
+
+   dst = fopen(dst_path, "wb");
+   if (!dst)
+   {
+      strlcpy(msg, "Unable to open destination file\n", size);
+      ret = false;
+   }
+
+   while (!feof(src))
+   {
+      memset(buffer, 0, sizeof(buffer));
+      numr = fread(buffer, 1, 100, src);
+      if (ferror(dst) != 0)
+      {
+         strlcpy(msg, "Error reading file\n", size);
+         ret = false;
+         break;
+      }
+
+      numw = fwrite(buffer, sizeof(char), numr, dst);
+      if (numw != numr)
+      {
+         strlcpy(msg, "Error writing to file\n", size);
+         ret = false;
+         break;
+      }
+   }
+   return ret;
+   fclose(src);
+   fclose(dst);
+}
+
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
@@ -1310,39 +1358,14 @@ static int generic_action_ok(const char *path,
          {
             settings_t            *settings = config_get_ptr();
             char destination_path[PATH_MAX_LENGTH];
-            FILE *src, *dst;
-            char buffer[100];
-            int numr, numw;
+            char message[PATH_MAX_LENGTH];
 
             fill_pathname_join(destination_path, settings->paths.directory_libretro, path_basename(action_path), sizeof(destination_path));
-            src = fopen(action_path, "rb");
-
-            if (!src)
-               RARCH_LOG("Unable to open source file\n");
-
-            dst = fopen(destination_path, "wb");
-            if (!dst)
-               RARCH_LOG("Unable to open destination file\n");
-
-            while (!feof(src))
-            {
-               memset(buffer, 0, sizeof(buffer));
-               numr = fread(buffer, 1, 100, src);
-               if (ferror(dst) != 0)
-               {
-                     RARCH_LOG("File read error\n");
-                     break;
-               }
-
-               numw = fwrite(buffer, sizeof(char), numr, dst);
-               if (numw != numr)
-               {
-                     RARCH_LOG("File write error\n");
-                     break;
-               }
-            }
-            fclose(src);
-            fclose(dst);
+            /* TO-DO: Localization */
+            if(!file_copy(action_path, destination_path, message, sizeof(message)))
+               RARCH_LOG(message);
+            else
+               RARCH_LOG("Core sideloaded correctly\n");
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
