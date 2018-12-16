@@ -295,16 +295,16 @@ static void ozone_free(void *data)
 
 static void ozone_context_reset(void *data, bool is_threaded)
 {
+   /* Fonts init */
+   unsigned i;
+   unsigned size;
+   char font_path[PATH_MAX_LENGTH];
+
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
    if (ozone)
    {
       ozone->has_all_assets = true;
-
-      /* Fonts init */
-      unsigned i;
-      unsigned size;
-      char font_path[PATH_MAX_LENGTH];
 
       fill_pathname_join(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
       ozone->fonts.footer = menu_display_font_file(font_path, FONT_SIZE_FOOTER, is_threaded);
@@ -423,6 +423,7 @@ static void ozone_context_destroy(void *data)
 {
    unsigned i;
    ozone_handle_t *ozone = (ozone_handle_t*) data;
+   menu_animation_ctx_tag tag;
 
    if (!ozone)
       return;
@@ -458,7 +459,7 @@ static void ozone_context_destroy(void *data)
    ozone->fonts.entries_sublabel = NULL;
    ozone->fonts.sidebar = NULL;
 
-   menu_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+   tag = (uintptr_t) &ozone_default_theme;
    menu_animation_kill_by_tag(&tag);
 
    /* Horizontal list */
@@ -798,6 +799,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
    /* Compute entries height and adjust scrolling if needed */
    unsigned video_info_height;
    unsigned video_info_width;
+   unsigned lines;
    size_t i, entries_end;
    file_list_t *selection_buf = NULL;
 
@@ -847,7 +849,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
 
          word_wrap(sublabel_str, sublabel_str, (video_info_width - 548) / ozone->sublabel_font_glyph_width, false);
 
-         unsigned lines = ozone_count_lines(sublabel_str);
+         lines = ozone_count_lines(sublabel_str);
 
          if (lines > 1)
          {
@@ -1358,6 +1360,8 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
 {
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
+   int new_depth;
+
    if (!ozone)
       return;
 
@@ -1374,7 +1378,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
 
    ozone->need_compute = true;
 
-   int new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
+   new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
    ozone->fade_direction   = new_depth <= ozone->depth;
    ozone->depth            = new_depth;

@@ -288,7 +288,7 @@
 #define __STB_INCLUDE_STB_TRUETYPE_H__
 
 #ifdef STBTT_STATIC
-#define STBTT_DEF static
+#define STBTT_DEF STATIC
 #else
 #define STBTT_DEF extern
 #endif
