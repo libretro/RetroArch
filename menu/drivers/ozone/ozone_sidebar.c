@@ -295,11 +295,20 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 {
    unsigned video_info_height;
 
-   video_driver_get_size(NULL, &video_info_height);
-
    struct menu_animation_ctx_entry entry;
 
-   menu_animation_ctx_tag tag = (uintptr_t)ozone;
+   menu_animation_ctx_tag tag;
+
+   float new_scroll;
+   float selected_position_y;
+   float current_selection_middle_onscreen;
+   float bottom_boundary;
+   float entries_middle;
+   float entries_height;
+
+   video_driver_get_size(NULL, &video_info_height);
+
+   tag = (uintptr_t)ozone;
 
    if (ozone->categories_selection_ptr != new_selection)
    {
@@ -325,12 +334,12 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    menu_animation_push(&entry);
 
    /* Scroll animation */
-   float new_scroll                             = 0;
-   float selected_position_y                    = ozone_get_selected_sidebar_y_position(ozone);
-   float current_selection_middle_onscreen      = ENTRIES_START_Y - 10 + ozone->animations.scroll_y_sidebar + selected_position_y + 65 / 2;
-   float bottom_boundary                        = video_info_height - 87 - 78;
-   float entries_middle                         = video_info_height/2;
-   float entries_height                         = ozone_get_sidebar_height(ozone);
+   new_scroll                             = 0;
+   selected_position_y                    = ozone_get_selected_sidebar_y_position(ozone);
+   current_selection_middle_onscreen      = ENTRIES_START_Y - 10 + ozone->animations.scroll_y_sidebar + selected_position_y + 65 / 2;
+   bottom_boundary                        = video_info_height - 87 - 78;
+   entries_middle                         = video_info_height/2;
+   entries_height                         = ozone_get_sidebar_height(ozone);
 
    if (current_selection_middle_onscreen != entries_middle)
       new_scroll = ozone->animations.scroll_y_sidebar - (current_selection_middle_onscreen - entries_middle);
@@ -456,6 +465,8 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    unsigned i;
    const char *title;
    char title_noext[255];
+   char *chr;
+   bool hyphen_found;
 
    size_t list_size  = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
@@ -567,8 +578,8 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Format : "Vendor - Console"
             Remove everything before the hyphen
             and the subsequent space */
-         char *chr         = title_noext;
-         bool hyphen_found = false;
+         chr          = title_noext;
+         hyphen_found = false;
 
          while (true)
          {
