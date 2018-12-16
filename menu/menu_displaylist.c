@@ -3703,15 +3703,13 @@ static unsigned menu_displaylist_parse_cores(
          file_type = FILE_TYPE_DIRECTORY;
          enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
       }
-      else if(string_is_equal(info->path, settings->paths.directory_core_assets))
-      {
-         file_type = FILE_TYPE_CORE;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
-      }
       else
       {
          file_type = FILE_TYPE_CORE;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
+         if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
+         else
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
       }
 
       items_found++;

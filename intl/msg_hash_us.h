@@ -675,7 +675,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-    "Sideload Core"
+    "Install or Restore a Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+    "Core installation failed"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+    "Core installation succesful"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -4893,6 +4901,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_LIST,
     "Select which core to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Install or restore a core from the downloads directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
