@@ -196,12 +196,7 @@
  * but wants "__inline__" or something instead, #define DG_DYNARR_INLINE accordingly.
  */
 #ifndef DG_DYNARR_INLINE
-	/* for pre-C99 compilers you might have to use something compiler-specific (or maybe only "static") */
-	#ifdef _MSC_VER
-		#define DG_DYNARR_INLINE static __inline
-	#else
-		#define DG_DYNARR_INLINE static inline
-	#endif
+	#define DG_DYNARR_INLINE static INLINE
 #endif
 
 /* ############### Short da_* aliases for the long names ############### */
@@ -220,8 +215,7 @@
 #define da_init(a) \
 	dg_dynarr_init(a)
 
-/*
- * This allows you to provide an external buffer that'll be used as long as it's big enough
+/* This allows you to provide an external buffer that'll be used as long as it's big enough
  * once you add more elements than buf can hold, fresh memory will be allocated on the heap
  * Use like:
  * DA_TYPEDEF(double, MyDoubleArrType);

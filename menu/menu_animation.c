@@ -46,7 +46,7 @@ struct tween
    void        *userdata;
 };
 
-DA_TYPEDEF(struct tween, tween_array_t);
+DA_TYPEDEF(struct tween, tween_array_t)
 
 struct menu_animation
 {
