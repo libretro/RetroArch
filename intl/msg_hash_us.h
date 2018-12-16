@@ -4895,6 +4895,10 @@ MSG_HASH(
     "Select which core to use."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Sideload a core from the downloads directory."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
     "Select which content to start."
     )
