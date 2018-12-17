@@ -1244,7 +1244,7 @@ static int generic_action_ok_command(enum event_command cmd)
 }
 
 /* TO-DO: Localization for errors */
-static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
+static bool file_copy(const char *src_path, const char *dst_path, char *msg, size_t size)
 {
    RFILE *src, *dst;
    int numr, numw;
