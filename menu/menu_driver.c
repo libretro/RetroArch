@@ -392,7 +392,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
          strftime(datetime->s, datetime->len,
-            "%r", localtime(&time_));
+            "%I : %M : %S %p", localtime(&time_));
 #else
          {
             char *local;
