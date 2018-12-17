@@ -1106,12 +1106,12 @@ StaticTexture::StaticTexture(string id,
       bool linear,
       bool mipmap,
       vulkan_filter_chain_address address)
-   : id(move(id)),
-     device(device),
+   : device(device),
      image(image),
      view(view),
      memory(memory),
-     buffer(move(buffer))
+     buffer(move(buffer)),
+     id(move(id))
 {
    texture.filter = linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
    texture.mip_filter =
@@ -2104,8 +2104,8 @@ Framebuffer::Framebuffer(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       const Size2D &max_size, VkFormat format,
       unsigned max_levels) :
-   device(device),
    memory_properties(mem_props),
+   device(device),
    size(max_size),
    format(format),
    max_levels(max(max_levels, 1u))
