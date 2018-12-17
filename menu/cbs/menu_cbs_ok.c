@@ -1246,13 +1246,13 @@ static int generic_action_ok_command(enum event_command cmd)
 /* TO-DO: Localization for errors */
 static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
 {
-
-   FILE *src, *dst;
-   char buffer[100];
+   RFILE *src, *dst;
    int numr, numw;
    bool ret = true;
 
-   src = fopen(src_path, "rb");
+   src = filestream_open(src_path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!src)
    {
@@ -1260,25 +1260,30 @@ static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
       ret = false;
    }
 
-   dst = fopen(dst_path, "wb");
+   dst = filestream_open(dst_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
    if (!dst)
    {
       strlcpy(msg, "unable to open destination file", size);
       ret = false;
    }
 
-   while (!feof(src))
+   while (!filestream_eof(src))
    {
-      memset(buffer, 0, sizeof(buffer));
-      numr = fread(buffer, 1, 100, src);
-      if (ferror(dst) != 0)
+      char buffer[100] = {0};
+      numr = filestream_read(src, buffer, sizeof(buffer));
+
+      if (filestream_error(dst) != 0)
       {
          strlcpy(msg, "error reading file\n", size);
          ret = false;
          break;
       }
 
-      numw = fwrite(buffer, sizeof(char), numr, dst);
+      numw = filestream_write(dst, buffer, numr);
+
       if (numw != numr)
       {
          strlcpy(msg, "error writing to file\n", size);
@@ -1286,8 +1291,10 @@ static bool file_copy(char* src_path, char* dst_path, char* msg, size_t size)
          break;
       }
    }
-   fclose(src);
-   fclose(dst);
+
+   filestream_close(src);
+   filestream_close(dst);
+
    return ret;
 }
 
