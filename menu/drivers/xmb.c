@@ -2347,6 +2347,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
                      return xmb->textures.list[XMB_TEXTURE_RUN];
                   case MENU_ENUM_LABEL_CORE_LIST:
+                  case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
                   case MENU_ENUM_LABEL_CORE_SETTINGS:
                   case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
                   case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
@@ -5540,6 +5541,11 @@ static int xmb_list_push(void *data, void *userdata,
                {
                   entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
                   menu_displaylist_setting(&entry);
+                  if (settings->bools.menu_show_advanced_settings)
+                  {
+                     entry.enum_idx   = MENU_ENUM_LABEL_SIDELOAD_CORE_LIST;
+                     menu_displaylist_setting(&entry);
+                  }
                }
             }
 
