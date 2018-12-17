@@ -184,7 +184,8 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i, j;
+         unsigned i = 0;
+         unsigned j = 0;
          unsigned size = i;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
