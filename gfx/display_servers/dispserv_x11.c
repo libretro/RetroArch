@@ -218,14 +218,14 @@ static bool x11_display_server_set_resolution(void *data,
    /* create interlaced newmode from modline variables */
    if (height < 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
