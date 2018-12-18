@@ -667,7 +667,7 @@ static void rgui_render(void *data, bool is_idle)
       entry_title_buf_utf8len = utf8len(entry_title_buf);
       entry_title_buf_len     = strlen(entry_title_buf);
 
-      snprintf(message, sizeof(message), "%c %-*.*s %-*s",
+      snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
             entry_selected ? '>' : ' ',
             (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
             (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
