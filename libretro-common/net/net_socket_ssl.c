@@ -163,7 +163,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *
       return -1;
    }
 
-   if (isagain((int)ret))
+   if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
       return 0;
 
    *error = true;
