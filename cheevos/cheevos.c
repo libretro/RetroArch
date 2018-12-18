@@ -2615,7 +2615,7 @@ static int cheevos_iterate(coro_t *coro)
       {SNES_MD5,    "SNES (8Mb padding)",                snes_exts},
       {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
       {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
-      {NES_MD5,     "NES (discards VROM)",               NULL},
+      {NES_MD5,     "NES (discards header)",             NULL},
       {GENERIC_MD5, "Generic (plain content)",           NULL},
       {FILENAME_MD5, "Generic (filename)",               NULL}
    };
@@ -2987,12 +2987,8 @@ found:
          *************************************************************************/
    CORO_SUB(NES_MD5)
 
-      /* Note about the references to the FCEU emulator below. There is no
-         * core-specific code in this function, it's rather Retro Achievements
-         * specific code that must be followed to the letter so we compute
-         * the correct ROM hash. Retro Achievements does indeed use some
-         * FCEU related method to compute the hash, since its NES emulator
-         * is based on it. */
+      /* Checks for the existence of a headered NES file.
+         Unheadered files fall back to GENERIC_MD5. */
 
       if (coro->len < sizeof(coro->header))
       {
@@ -3012,36 +3008,12 @@ found:
          CORO_RET();
       }
 
-      {
-         size_t romsize = 256;
-         /* from FCEU core - compute size using the cart mapper */
-         int mapper     = (coro->header.rom_type >> 4) | (coro->header.rom_type2 & 0xF0);
-
-         if (coro->header.rom_size)
-            romsize     = next_pow2(coro->header.rom_size);
-
-         /* for games not to the power of 2, so we just read enough
-            * PRG rom from it, but we have to keep ROM_size to the power of 2
-            * since PRGCartMapping wants ROM_size to be to the power of 2
-            * so instead if not to power of 2, we just use head.ROM_size when
-            * we use FCEU_read. */
-         coro->round       = mapper != 53 && mapper != 198 && mapper != 228;
-         coro->bytes       = coro->round ? romsize : coro->header.rom_size;
-      }
-
       /* from FCEU core - check if Trainer included in ROM data */
       MD5_Init(&coro->md5);
       coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
             ? sizeof(coro->header) : 0);
-      coro->count  = 0x4000 * coro->bytes;
+      coro->count  = coro->len - coro->offset;
       CORO_GOSUB(EVAL_MD5);
-
-      if (coro->count < 0x4000 * coro->bytes)
-      {
-         coro->offset      = 0xff;
-         coro->count       = 0x4000 * coro->bytes - coro->count;
-         CORO_GOSUB(FILL_MD5);
-      }
 
       MD5_Final(coro->hash, &coro->md5);
       CORO_GOTO(GET_GAMEID);
