@@ -71,4 +71,4 @@ private:
    mutable bool m_hashIsDirty;
 };
 
-#endif // GRIDVIEW_H
+#endif

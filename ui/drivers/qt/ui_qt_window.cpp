@@ -247,7 +247,6 @@ MainWindow::MainWindow(QWidget *parent) :
    QMainWindow(parent)
    ,m_loadCoreWindow(new LoadCoreWindow(this))
    ,m_timer(new QTimer(this))
-   ,m_thumbnailTimer(new QTimer(this))
    ,m_currentCore()
    ,m_currentCoreVersion()
    ,m_statusLabel(new QLabel(this))
@@ -322,6 +321,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_failedThumbnails(0)
    ,m_playlistThumbnailDownloadWasCanceled(false)
    ,m_pendingDirScrollPath()
+   ,m_thumbnailTimer(new QTimer(this))
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -337,8 +337,6 @@ MainWindow::MainWindow(QWidget *parent) :
    QHBoxLayout *gridProgressLayout = new QHBoxLayout();
    QLabel *gridProgressLabel = NULL;
    QHBoxLayout *gridFooterLayout = NULL;
-
-   //QApplication::setStyle(QStyleFactory::create("windowsvista"));
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
@@ -1512,11 +1510,6 @@ QModelIndex MainWindow::getCurrentContentIndex()
 QHash<QString, QString> MainWindow::getCurrentContentHash()
 {
    return getCurrentContentIndex().data(PlaylistModel::HASH).value<QHash<QString, QString> >();
-}
-
-void MainWindow::onContentItemDoubleClicked(QTableWidgetItem*)
-{
-   onRunClicked();
 }
 
 void MainWindow::onContentItemDoubleClicked(const QModelIndex &index)

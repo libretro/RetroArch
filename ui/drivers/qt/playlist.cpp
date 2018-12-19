@@ -1177,7 +1177,6 @@ void MainWindow::reloadPlaylists()
 QString MainWindow::getCurrentPlaylistPath()
 {
    QListWidgetItem *playlistItem = m_listWidget->currentItem();
-   QHash<QString, QString> contentHash;
    QString playlistPath;
 
    if (!playlistItem)

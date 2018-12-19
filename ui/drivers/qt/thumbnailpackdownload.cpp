@@ -191,7 +191,6 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    reply->disconnect();
    reply->close();
-   //reply->deleteLater();
 }
 
 void MainWindow::onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)

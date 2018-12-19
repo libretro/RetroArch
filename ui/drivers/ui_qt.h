@@ -422,7 +422,6 @@ private slots:
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void onContentItemDoubleClicked(const QModelIndex &index);
-   void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();

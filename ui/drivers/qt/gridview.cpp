@@ -27,17 +27,17 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
 
    initStyleOption(&opt, index);
 
-   // draw the background
+   /* draw the background */
    style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, widget);
 
-   // draw the image
+   /* draw the image */
    if (!pixmap.isNull())
    {
       QPixmap pixmapScaled = pixmap.scaled(adjusted.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
       style->drawItemPixmap(painter, adjusted, Qt::AlignHCenter | Qt::AlignBottom, pixmapScaled);
    }
 
-   // draw the text
+   /* draw the text */
    if (!opt.text.isEmpty())
    {
       QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
@@ -195,6 +195,7 @@ void GridView::scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint)
    viewport()->update();
 }
 
+/* TODO: Make this more efficient by changing m_rectForRow for another data structure. Look at how Qt's own views do it. */
 QModelIndex GridView::indexAt(const QPoint &point_) const
 {
    QPoint point(point_);
@@ -298,6 +299,7 @@ void GridView::scrollContentsBy(int dx, int dy)
    emit(visibleItemsChangedMaybe());
 }
 
+/* TODO: Maybe add a way to get the previous/next visible indexes. */
 QVector<QModelIndex> GridView::visibleIndexes() const {
    return m_visibleIndexes;
 }
@@ -340,12 +342,16 @@ QRegion GridView::visualRegionForSelection(const QItemSelection &selection) cons
 {
    QRegion region;
    QItemSelectionRange range;
+   int i = 0;
 
-   foreach(range, selection)
+   for (i; i < selection.size(); i++)
    {
-      for (int row = range.top(); row <= range.bottom(); ++row)
+      range = selection.at(i);
+      int row = range.top();
+      for (row; row <= range.bottom(); ++row)
       {
-         for (int column = range.left(); column < range.right(); ++column)
+         int column = range.left();
+         for (column; column < range.right(); ++column)
          {
             QModelIndex index = model()->index(row, column, rootIndex());
             region += visualRect(index);
