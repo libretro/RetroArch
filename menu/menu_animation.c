@@ -44,6 +44,7 @@ struct tween
    easing_cb   easing;
    tween_cb    cb;
    void        *userdata;
+   bool        deleted;
 };
 
 DA_TYPEDEF(struct tween, tween_array_t)
@@ -52,6 +53,7 @@ struct menu_animation
 {
    tween_array_t list;
    tween_array_t pending;
+   bool pending_deletes;
    bool in_update;
 };
 
@@ -341,6 +343,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    t.cb                 = entry->cb;
    t.userdata           = entry->userdata;
    t.easing             = NULL;
+   t.deleted            = false;
 
    switch (entry->easing_enum)
    {
@@ -471,7 +474,8 @@ bool menu_animation_update(float delta_time)
 {
    unsigned i;
    
-   anim.in_update = true;
+   anim.in_update       = true;
+   anim.pending_deletes = false;
 
    for(i = 0; i < da_count(anim.list); i++)
    {
@@ -494,6 +498,20 @@ bool menu_animation_update(float delta_time)
          da_delete(anim.list, i);
          i--;
       }
+   }
+   
+   if (anim.pending_deletes)
+   {
+      for(i = 0; i < da_count(anim.list); i++)
+      {
+         struct tween *tween = da_getptr(anim.list, i);
+         if (tween->deleted)
+         {
+            da_delete(anim.list, i);
+            i--;
+         }
+      }
+      anim.pending_deletes = false;
    }
    
    if (da_count(anim.pending) > 0)
@@ -594,9 +612,17 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
       struct tween *t = da_getptr(anim.list, i);
       if (t->tag != *tag)
          continue;
-      
-      da_delete(anim.list, i);
-      --i;
+   
+      if (anim.in_update)
+      {
+         t->deleted = true;
+         anim.pending_deletes = true;
+      }
+      else
+      {
+         da_delete(anim.list, i);
+         --i;
+      }
    }
 
    return true;
@@ -615,9 +641,17 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
       {
          if (t->subject != sub[j])
             continue;
-
-         da_delete(anim.list, i);
-         --i;
+         
+         if (anim.in_update)
+         {
+            t->deleted = true;
+            anim.pending_deletes = true;
+         }
+         else
+         {
+            da_delete(anim.list, i);
+            --i;
+         }
 
          killed++;
          break;
