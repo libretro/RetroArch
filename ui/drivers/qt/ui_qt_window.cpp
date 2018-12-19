@@ -655,7 +655,8 @@ void MainWindow::updateVisibleItems() {
    if (m_viewType == VIEW_TYPE_ICONS)
    {
       QVector<QModelIndex> indexes = m_gridView->visibleIndexes();
-      for (int i = 0; i < indexes.size(); i++)
+      int i;
+      for (i = 0; i < indexes.size(); i++)
       {
          m_playlistModel->loadThumbnail(m_proxyModel->mapToSource(indexes.at(i)));
       }

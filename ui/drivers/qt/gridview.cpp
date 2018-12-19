@@ -342,17 +342,16 @@ QRegion GridView::visualRegionForSelection(const QItemSelection &selection) cons
 {
    QRegion region;
    QItemSelectionRange range;
-   int i = 0;
+   int i;
 
-   for (i; i < selection.size(); i++)
+   for (i = 0; i < selection.size(); i++)
    {
-      int row;
       range = selection.at(i);
-      row = range.top();
-      for (row; row <= range.bottom(); ++row)
+      int row;
+      for (row = range.top(); row <= range.bottom(); row++)
       {
-         int column = range.left();
-         for (column; column < range.right(); ++column)
+         int column;
+         for (column = range.left(); column < range.right(); column++)
          {
             QModelIndex index = model()->index(row, column, rootIndex());
             region += visualRect(index);
