@@ -4,7 +4,7 @@ LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
 
 ifeq ($(HAVE_STACK_USAGE), 1)
-   CFLAGS += -fstack-usage
+   DEF_FLAGS += -fstack-usage
 endif
 
 ifeq ($(HAVE_GL_CONTEXT),)
@@ -65,13 +65,11 @@ ifeq ($(HAVE_PRESERVE_DYLIB),1)
 endif
 
 ifeq ($(GL_DEBUG), 1)
-   CFLAGS += -DGL_DEBUG
-   CXXFLAGS += -DGL_DEBUG
+   DEF_FLAGS += -DGL_DEBUG
 endif
 
 ifeq ($(VULKAN_DEBUG), 1)
-   CFLAGS += -DVULKAN_DEBUG
-   CXXFLAGS += -DVULKAN_DEBUG
+   DEF_FLAGS += -DVULKAN_DEBUG
 endif
 
 ifeq ($(HAVE_HARD_FLOAT), 1)
@@ -83,23 +81,23 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-   CFLAGS += -DHAVE_FILE_LOGGER
+   DEF_FLAGS += -DHAVE_FILE_LOGGER
 endif
 
 ifeq ($(HAVE_SHADERPIPELINE), 1)
-   CFLAGS += -DHAVE_SHADERPIPELINE
+   DEF_FLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
+DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
 #
 ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
-   CFLAGS += -DHAVE_NETPLAYDISCOVERY
+   DEF_FLAGS += -DHAVE_NETPLAYDISCOVERY
 endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
-	CFLAGS += -DHAVE_LOGGER
+	DEF_FLAGS += -DHAVE_LOGGER
 	DEFINES += -DHAVE_LOGGER
 	OBJ += network/net_logger.o
 endif
@@ -151,7 +149,7 @@ endif
 
 # General object files
 DEFINES += -DHAVE_DR_MP3
-CFLAGS  += -DHAVE_DR_MP3
+DEF_FLAGS += -DHAVE_DR_MP3
 
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
@@ -839,7 +837,7 @@ ifeq ($(HAVE_VITA2D), 1)
    OBJ += gfx/drivers/vita2d_gfx.o \
           gfx/drivers_font/vita2d_font.o
 
-   CFLAGS += -I$(DEPS_DIR)/libvita2d/include
+   DEF_FLAGS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -940,7 +938,7 @@ endif
 
 ifeq ($(HAVE_DBUS), 1)
    LIBS += $(DBUS_LIBS)
-   CFLAGS += $(DBUS_CFLAGS)
+   DEF_FLAGS += $(DBUS_CFLAGS)
    OBJ += gfx/common/dbus_common.o
 endif
 
@@ -1035,7 +1033,7 @@ endif
 
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
-   CFLAGS += -I/usr/include/sixel
+   DEF_FLAGS += -I/usr/include/sixel
    OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
           gfx/drivers_context/sixel_ctx.o
    LIBS += -lsixel
@@ -1047,7 +1045,7 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   CFLAGS += -I/usr/include/libdrm
+   DEF_FLAGS += -I/usr/include/libdrm
    LIBS += -ldrm
 endif
 
@@ -1330,7 +1328,7 @@ ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o \
           gfx/common/dxgi_common.o
-   CFLAGS += -Wno-unknown-pragmas
+   DEF_FLAGS += -Wno-unknown-pragmas
 endif
 
 ifeq ($(HAVE_D3D8), 1)
@@ -1446,7 +1444,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
-   CFLAGS  += -I$(DEPS_DIR)/7zip
+   DEF_FLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
@@ -1475,8 +1473,8 @@ endif
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
    DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
-   CFLAGS  += -DHAVE_DR_FLAC
-   CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
+   DEF_FLAGS += -DHAVE_DR_FLAC
+   DEF_FLAGS += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
@@ -1534,7 +1532,7 @@ ifeq ($(HAVE_ZLIB), 1)
 endif
 
 ifeq ($(HAVE_CHD), 1)
-   CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+   DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
@@ -1826,7 +1824,7 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -I$(DEPS_DIR)/libiosuhax
-   CFLAGS  += -I$(DEPS_DIR)/libiosuhax
+   DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
@@ -1834,7 +1832,7 @@ endif
 
 ifeq ($(WANT_LIBFAT), 1)
    DEFINES += -I$(DEPS_DIR)/libfat/include
-   CFLAGS  += -I$(DEPS_DIR)/libfat/include
+   DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \
           $(DEPS_DIR)/libfat/disc.o \
@@ -1868,7 +1866,7 @@ endif
 # Help at https://modmyclassic.com/comp
 
 ifeq ($(HAVE_CLASSIC), 1)
-  CFLAGS += -DHAVE_CLASSIC
+  DEF_FLAGS += -DHAVE_CLASSIC
 endif
 
 ifeq ($(HAVE_C_A7A7), 1)
@@ -1880,12 +1878,11 @@ ifeq ($(HAVE_C_A7A7), 1)
                 -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
                 -fmerge-all-constants -fno-math-errno \
                 -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-   CFLAGS += $(C_A7A7_OPT)
-   CXXFLAGS += $(C_A7A7_OPT)
+   DEF_FLAGS += $(C_A7A7_OPT)
    ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-      CFLAGS += -march=armv7-a
+      DEF_FLAGS += -march=armv7-a
    else
-      CFLAGS += -march=armv7ve
+      DEF_FLAGS += -march=armv7ve
       # If gcc is 5.0 or later
       ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
          LDFLAGS += -static-libgcc -static-libstdc++
@@ -1894,6 +1891,6 @@ ifeq ($(HAVE_C_A7A7), 1)
 endif
 
 ifeq ($(HAVE_HAKCHI), 1)
-   CFLAGS += -DHAVE_HAKCHI
+   DEF_FLAGS += -DHAVE_HAKCHI
 endif
 ##################################
