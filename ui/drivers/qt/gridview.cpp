@@ -346,8 +346,9 @@ QRegion GridView::visualRegionForSelection(const QItemSelection &selection) cons
 
    for (i; i < selection.size(); i++)
    {
+      int row;
       range = selection.at(i);
-      int row = range.top();
+      row = range.top();
       for (row; row <= range.bottom(); ++row)
       {
          int column = range.left();
