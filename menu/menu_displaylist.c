@@ -3394,6 +3394,15 @@ static int menu_displaylist_parse_options_remappings(
                strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
+            /* Add user index when display driver == rgui,
+             * but only if there is more than one user */
+            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            {
+               snprintf(desc_label, sizeof(desc_label),
+                        "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+               strlcpy(descriptor, desc_label, sizeof(descriptor));
+            }
+
             menu_entries_append_enum(info->list, descriptor, "",
                   MSG_UNKNOWN,
                   MENU_SETTINGS_INPUT_DESC_BEGIN +
@@ -3404,6 +3413,7 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
          {
+            char desc_label[255];
             char descriptor[255];
             const struct retro_keybind *auto_bind = NULL;
             const struct retro_keybind *keybind   = NULL;
@@ -3421,6 +3431,15 @@ static int menu_displaylist_parse_options_remappings(
                   &input_config_binds[p][retro_id];
 
                strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+            }
+
+            /* Add user index when display driver == rgui,
+             * but only if there is more than one user */
+            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            {
+               snprintf(desc_label, sizeof(desc_label),
+                        "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+               strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
             menu_entries_append_enum(info->list, descriptor, "",
