@@ -406,6 +406,10 @@ typedef struct settings
       unsigned menu_entry_normal_color;
       unsigned menu_entry_hover_color;
       unsigned menu_title_color;
+      unsigned menu_bg_dark_color;
+      unsigned menu_bg_light_color;
+      unsigned menu_border_dark_color;
+      unsigned menu_border_light_color;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;

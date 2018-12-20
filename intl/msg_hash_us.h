@@ -2977,6 +2977,22 @@ MSG_HASH(
     "Menu title color"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
+    "Menu background dark color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
+    "Menu background light color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
+    "Menu border dark color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
+    "Menu border light color"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "True"
     )

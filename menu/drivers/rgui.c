@@ -69,18 +69,50 @@ typedef struct
 
 static uint16_t *rgui_framebuf_data      = NULL;
 
-#if defined(GEKKO)|| defined(PSP)
-#define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
-#define NORMAL_COLOR(settings)   0x7FFF
-#define TITLE_COLOR(settings)    HOVER_COLOR(settings)
+/* Note: if we knew what colour format each of these
+ * special cases required, we could do away with all
+ * this nonsense and handle it inside a single colour
+ * conversion function...
+ * In the meantime, we'll use the existing obfuscated
+ * values for all the non-standard platforms, and leave
+ * it messy... */
+#if defined(GEKKO) || defined(PSP)
+
+/* Is this supposed to be 4444 ABGR?
+ * Have no idea what's going on here, so have to use
+ * fixed colour values... */
+#define HOVER_COLOR(settings)        ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
+#define NORMAL_COLOR(settings)       0x7FFF
+#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
+#define BG_DARK_COLOR(settings)      ((6 << 12) | (1 << 8) | (1 << 4) | (1 << 0))
+#define BG_LIGHT_COLOR(settings)     ((6 << 12) | (2 << 8) | (2 << 4) | (2 << 0))
+#define BORDER_DARK_COLOR(settings)  ((6 << 12) | (1 << 8) | (1 << 5) | (1 << 0))
+#define BORDER_LIGHT_COLOR(settings) ((6 << 12) | (2 << 8) | (2 << 5) | (2 << 0))
+
 #elif defined(PS2)
-#define HOVER_COLOR(settings)    0x03E0
-#define NORMAL_COLOR(settings)   0x7FFF
-#define TITLE_COLOR(settings)    HOVER_COLOR(settings)
-#else
+
+/* Have no idea what's going on here, so have to use
+ * fixed colour values... */
+#define HOVER_COLOR(settings)        0x03E0
+#define NORMAL_COLOR(settings)       0x7FFF
+#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
+#define BG_DARK_COLOR(settings)      ((0 << 15) | (1 << 12) | (1 << 7) | (1 << 2))
+#define BG_LIGHT_COLOR(settings)     ((0 << 15) | (2 << 12) | (2 << 7) | (2 << 2))
+#define BORDER_DARK_COLOR(settings)  ((0 << 15) | (1 << 12) | (1 << 8) | (1 << 2))
+#define BORDER_LIGHT_COLOR(settings) ((0 << 15) | (2 << 12) | (2 << 8) | (2 << 2))
+
+#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
+
 #define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
 #define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
 #define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_title_color))
+/* Is this supposed to be RGB565?
+ * Have no idea what's going on here, so have to use
+ * fixed colour values... */
+#define BG_DARK_COLOR(settings)      ((((31 * (54)) / 255) << 11) | (((63 * (54)) / 255) << 5) | ((31 * (54)) / 255))
+#define BG_LIGHT_COLOR(settings)     BG_DARK_COLOR(settings)
+#define BORDER_DARK_COLOR(settings)  ((((31 * (54)) / 255) << 11) | (((63 * (109)) / 255) << 5) | ((31 * (54)) / 255))
+#define BORDER_LIGHT_COLOR(settings) BORDER_DARK_COLOR(settings)
 
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
@@ -90,41 +122,41 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
    unsigned b = ((col & 0xff)      ) >> 4;
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
-#endif
 
-
-static uint16_t rgui_gray_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shft        = (rgui->bg_thickness ? 1 : 0);
-   unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
-#if defined(GEKKO) || defined(PSP)
-      return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
-#elif defined(PS2)
-      return (0 << 15) | (col << 12) | (col << 7) | (col << 2);
-#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
-   return (((31 * (54)) / 255) << 11) |
-           (((63 * (54)) / 255) << 5) |
-           ((31 * (54)) / 255);
 #else
-   return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
-#endif
+
+/* This is the only sane case... */
+#define HOVER_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
+#define NORMAL_COLOR(settings)       (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
+#define TITLE_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_title_color))
+#define BG_DARK_COLOR(settings)      (argb32_to_rgba4444(settings->uints.menu_bg_dark_color))
+#define BG_LIGHT_COLOR(settings)     (argb32_to_rgba4444(settings->uints.menu_bg_light_color))
+#define BORDER_DARK_COLOR(settings)  (argb32_to_rgba4444(settings->uints.menu_border_dark_color))
+#define BORDER_LIGHT_COLOR(settings) (argb32_to_rgba4444(settings->uints.menu_border_light_color))
+
+static uint16_t argb32_to_rgba4444(uint32_t col)
+{
+   unsigned a = ((col >> 24) & 0xff) >> 4;
+   unsigned r = ((col >> 16) & 0xff) >> 4;
+   unsigned g = ((col >> 8)  & 0xff) >> 4;
+   unsigned b = ((col & 0xff)      ) >> 4;
+   return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
-static uint16_t rgui_green_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shft        = (rgui->border_thickness ? 1 : 0);
-   unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
-#if defined(GEKKO) || defined(PSP)
-   return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
-#elif defined(PS2)
-   return (0 << 15) | (col << 12) | (col << 8) | (col << 2);
-#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
-    return (((31 * (54)) / 255) << 11) |
-           (((63 * (109)) / 255) << 5) |
-           ((31 * (54)) / 255);
-#else
-   return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
 #endif
+
+static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
+{
+   unsigned shift  = (rgui->bg_thickness ? 1 : 0);
+   unsigned select = ((x >> shift) + (y >> shift)) & 1;
+   return (select == 0) ? dark_color : light_color;
+}
+
+static uint16_t rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
+{
+   unsigned shift  = (rgui->border_thickness ? 1 : 0);
+   unsigned select = ((x >> shift) + (y >> shift)) & 1;
+   return (select == 0) ? dark_color : light_color;
 }
 
 static void rgui_fill_rect(
@@ -133,13 +165,14 @@ static void rgui_fill_rect(
       size_t pitch,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y))
+      uint16_t dark_color, uint16_t light_color,
+      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color))
 {
    unsigned i, j;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         data[j * (pitch >> 1) + i] = col(rgui, i, j);
+         data[j * (pitch >> 1) + i] = col(rgui, i, j, dark_color, light_color);
 }
 
 static void rgui_color_rect(
@@ -267,7 +300,8 @@ static void rgui_render_background(rgui_t *rgui)
    unsigned fb_width, fb_height;
    uint16_t             *src  = NULL;
    uint16_t             *dst  = NULL;
-
+   uint16_t dark_color, light_color;
+   
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
@@ -288,12 +322,18 @@ static void rgui_render_background(rgui_t *rgui)
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_green_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_green_filler);
+         dark_color = BORDER_DARK_COLOR(settings);
+         light_color = BORDER_LIGHT_COLOR(settings);
+         
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5,
+                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5,
+                        dark_color, light_color, rgui_border_filler);
 
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_green_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10,
+                        dark_color, light_color, rgui_border_filler);
          rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
-               rgui_green_filler);
+                        dark_color, light_color, rgui_border_filler);
       }
    }
 }
@@ -314,7 +354,8 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 {
    int x, y;
-   uint16_t color;
+   uint16_t normal_color;
+   uint16_t dark_color, light_color;
    size_t i, fb_pitch;
    unsigned fb_width, fb_height;
    unsigned width, glyphs_width, height;
@@ -364,27 +405,30 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
    if (rgui_framebuf_data)
    {
-      rgui_fill_rect(rgui, rgui_framebuf_data,
-            fb_pitch, x + 5, y + 5, width - 10,
-            height - 10, rgui_gray_filler);
+      dark_color = BG_DARK_COLOR(settings);
+      light_color = BG_LIGHT_COLOR(settings);
+      
+      rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + 5, width - 10, height - 10,
+                     dark_color, light_color, rgui_bg_filler);
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
-         rgui_fill_rect(rgui, rgui_framebuf_data,
-               fb_pitch, x, y, width - 5, 5, rgui_green_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data,
-               fb_pitch, x + width - 5, y, 5,
-               height - 5, rgui_green_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data,
-               fb_pitch, x + 5, y + height - 5,
-               width - 5, 5, rgui_green_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data,
-               fb_pitch, x, y + 5, 5,
-               height - 5, rgui_green_filler);
+         
+         dark_color = BORDER_DARK_COLOR(settings);
+         light_color = BORDER_LIGHT_COLOR(settings);
+         
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y, width - 5, 5,
+                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + width - 5, y, 5, height - 5,
+                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + height - 5, width - 5, 5,
+                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y + 5, 5, height - 5,
+                        dark_color, light_color, rgui_border_filler);
       }
    }
 
-   color = NORMAL_COLOR(settings);
+   normal_color = NORMAL_COLOR(settings);
 
    for (i = 0; i < list->size; i++)
    {
@@ -393,7 +437,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       if (rgui_framebuf_data)
-         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
+         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, normal_color);
    }
 
 end:
@@ -438,6 +482,7 @@ static void rgui_render(void *data, bool is_idle)
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
    uint16_t hover_color, normal_color;
+   uint16_t dark_color, light_color;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
@@ -472,8 +517,13 @@ static void rgui_render(void *data, bool is_idle)
    if (rgui->bg_modified || rgui->last_width != fb_width || rgui->last_height != fb_height)
    {
       if (rgui_framebuf_data)
-         rgui_fill_rect(rgui, rgui_framebuf_data,
-               fb_pitch, 0, fb_height, fb_width, 4, rgui_gray_filler);
+      {
+         dark_color = BG_DARK_COLOR(settings);
+         light_color = BG_LIGHT_COLOR(settings);
+         
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 0, fb_height, fb_width, 4,
+                        dark_color, light_color, rgui_bg_filler);
+      }
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
