@@ -1819,6 +1819,9 @@ static void setting_get_string_representation_toggle_gamepad_combo(
       case INPUT_TOGGLE_L_R:
          strlcpy(s, "L + R", len);
          break;
+      case INPUT_TOGGLE_HOLD_START:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
+         break;
    }
 }
 

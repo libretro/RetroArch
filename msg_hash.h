@@ -2186,6 +2186,8 @@ enum msg_hash_enums
    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
 #endif
 
+   MENU_ENUM_LABEL_VALUE_HOLD_START,
+
    MSG_LAST
 };
 
