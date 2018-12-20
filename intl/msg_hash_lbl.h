@@ -1125,6 +1125,14 @@ MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_STYLE,
    "menu_timedate_style")
 MSG_HASH(MENU_ENUM_LABEL_TITLE_COLOR,
       "menu_title_color")
+MSG_HASH(MENU_ENUM_LABEL_BG_DARK_COLOR,
+      "menu_bg_dark_color")
+MSG_HASH(MENU_ENUM_LABEL_BG_LIGHT_COLOR,
+      "menu_bg_light_color")
+MSG_HASH(MENU_ENUM_LABEL_BORDER_DARK_COLOR,
+      "menu_border_dark_color")
+MSG_HASH(MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
+      "menu_border_light_color")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
       "ui_companion_enable")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,

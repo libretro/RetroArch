@@ -5968,6 +5968,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   PARSE_ONLY_HEX, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_BG_DARK_COLOR,
+                  PARSE_ONLY_HEX, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
+                  PARSE_ONLY_HEX, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
+                  PARSE_ONLY_HEX, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
+                  PARSE_ONLY_HEX, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;

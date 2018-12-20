@@ -1914,6 +1914,10 @@ void config_set_defaults(void)
    settings->uints.menu_entry_normal_color     = menu_entry_normal_color;
    settings->uints.menu_entry_hover_color      = menu_entry_hover_color;
    settings->uints.menu_title_color            = menu_title_color;
+   settings->uints.menu_bg_dark_color          = menu_bg_dark_color;
+   settings->uints.menu_bg_light_color         = menu_bg_light_color;
+   settings->uints.menu_border_dark_color      = menu_border_dark_color;
+   settings->uints.menu_border_light_color     = menu_border_light_color;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -2831,6 +2835,14 @@ static bool config_load_file(const char *path, bool set_defaults,
          &settings->uints.menu_entry_hover_color);
    config_get_hex_base(conf, "menu_title_color",
          &settings->uints.menu_title_color);
+   config_get_hex_base(conf, "menu_bg_dark_color",
+         &settings->uints.menu_bg_dark_color);
+   config_get_hex_base(conf, "menu_bg_light_color",
+         &settings->uints.menu_bg_light_color);
+   config_get_hex_base(conf, "menu_border_dark_color",
+         &settings->uints.menu_border_dark_color);
+   config_get_hex_base(conf, "menu_border_light_color",
+         &settings->uints.menu_border_light_color);
 #endif
 
    /* Float settings */
@@ -4335,6 +4347,14 @@ bool config_save_file(const char *path)
          settings->uints.menu_entry_hover_color);
    config_set_hex(conf, "menu_title_color",
          settings->uints.menu_title_color);
+   config_set_hex(conf, "menu_bg_dark_color",
+         settings->uints.menu_bg_dark_color);
+   config_set_hex(conf, "menu_bg_light_color",
+         settings->uints.menu_bg_light_color);
+   config_set_hex(conf, "menu_border_dark_color",
+         settings->uints.menu_border_dark_color);
+   config_set_hex(conf, "menu_border_light_color",
+         settings->uints.menu_border_light_color);
 #endif
 
 

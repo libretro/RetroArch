@@ -7689,6 +7689,62 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_bg_dark_color,
+                  MENU_ENUM_LABEL_BG_DARK_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
+                  menu_bg_dark_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_bg_light_color,
+                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
+                  menu_bg_light_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_border_dark_color,
+                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
+                  menu_border_dark_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_border_light_color,
+                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
+                  menu_border_light_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
