@@ -6842,7 +6842,6 @@ static bool setting_append_list(
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-
             CONFIG_UINT(
                list, list_info,
                &settings->uints.video_record_threads,
@@ -6862,9 +6861,9 @@ static bool setting_append_list(
                list, list_info,
                global->record.output_dir,
                sizeof(global->record.output_dir),
-               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
                &group_info,
                &subgroup_info,
