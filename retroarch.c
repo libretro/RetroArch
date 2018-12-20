@@ -2510,9 +2510,6 @@ static bool input_driver_toggle_button_combo(
          break;
       case INPUT_TOGGLE_HOLD_START:
       {
-         uint64_t frame_count = 0;
-         bool is_alive = false;
-         bool is_focused = false;
          static rarch_timer_t timer = {0};
 
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
@@ -2521,8 +2518,6 @@ static bool input_driver_toggle_button_combo(
             rarch_timer_end(&timer);
             return false;
          }
-
-         video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
          if (!rarch_timer_is_running(&timer))
          {
