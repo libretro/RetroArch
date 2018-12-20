@@ -3438,7 +3438,7 @@ static int menu_displaylist_parse_options_remappings(
             if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
             {
                snprintf(desc_label, sizeof(desc_label),
-                        "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+                        "%.5s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
                strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
