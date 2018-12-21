@@ -6864,7 +6864,7 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
