@@ -527,6 +527,10 @@ ifeq ($(HAVE_LIBNX), 1)
    OBJ += gfx/drivers_font/switch_font.o
 endif
 
+ifeq ($(HAVE_AUDIOIO), 1)
+   OBJ += audio/drivers/audioio.o
+endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/drivers/oss.o
 else ifeq ($(HAVE_OSS_BSD), 1)

@@ -316,6 +316,7 @@ const char *audio_driver_mixer_get_stream_name(unsigned i);
 bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
 extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
 extern audio_driver_t audio_alsathread;
