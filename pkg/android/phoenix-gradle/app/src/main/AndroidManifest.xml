@@ -1,6 +1,7 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.retroarch.aarch64"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.retroarch"
     android:versionCode="74"
     android:versionName="1.7.5"
     android:installLocation="internalOnly">
@@ -8,9 +9,6 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
-    <uses-sdk
-        android:minSdkVersion="9"
-        android:targetSdkVersion="26" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
@@ -18,10 +16,11 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="RetroArch (AArch64)"
+        android:label="@string/app_name"
         android:hasCode="true"
         android:isGame="true"
-        android:banner="@drawable/banner">
+        android:banner="@drawable/banner"
+        tools:ignore="GoogleAppIndexingWarning">
         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
