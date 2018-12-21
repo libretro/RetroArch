@@ -3413,8 +3413,8 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
          {
-            char desc_label[255];
-            char descriptor[255];
+            char desc_label[400];
+            char descriptor[300];
             const struct retro_keybind *auto_bind = NULL;
             const struct retro_keybind *keybind   = NULL;
 
@@ -3438,7 +3438,7 @@ static int menu_displaylist_parse_options_remappings(
             if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
             {
                snprintf(desc_label, sizeof(desc_label),
-                        "%.5s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+                        "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
                strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
