@@ -236,9 +236,7 @@ check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
 check_lib '' SIXEL -lsixel
 
-if [ "$HAVE_AUDIOIO" != 'no' ]; then
-   check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
-fi
+check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
 
 if [ "$HAVE_OSS" != 'no' ]; then
    check_header OSS sys/soundcard.h
