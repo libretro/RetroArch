@@ -81,6 +81,7 @@ HAVE_ZLIB=auto             # zlib support (ZIP extract, PNG decoding/encoding)
 HAVE_ALSA=auto             # ALSA support
 C89_ALSA=no
 HAVE_TINYALSA=auto         # TinyALSA support
+HAVE_AUDIOIO=auto          # AudioIO support
 HAVE_OSS=auto              # OSS support
 HAVE_RSOUND=auto           # RSound support
 HAVE_ROAR=auto             # RoarAudio support
