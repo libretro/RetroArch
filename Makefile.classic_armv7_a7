@@ -11,10 +11,13 @@
 # patchelf
 # bc
 
+include version.all
+
 # Classic Readme Variables ############
-CLASSIC_MODS_VER := Official_Retroarch_v1_7_5c_COptimised
-CLASSIC_MODS_NAME := RetroArch v1.7.5c (Official Classic Optimised)
-CLASSIC_VERSION := 1.7.5c \(Classic+\)
+CLASSIC_ALT_VER := $(shell echo $(RARCH_VERSION) | tr . _)
+CLASSIC_MODS_VER := Official_Retroarch_v$(CLASSIC_ALT_VER)c_COptimised
+CLASSIC_MODS_NAME := RetroArch v$(RARCH_VERSION)c \(Official Classic Optimised\)
+CLASSIC_VERSION := $(RARCH_VERSION)c \(Classic+\)
 MOD_CREATOR := Libretro + ModMyClassic
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
