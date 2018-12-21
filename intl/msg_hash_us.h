@@ -795,7 +795,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-    "Download Core..."
+    "Download a Core"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -4917,6 +4917,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_LIST,
     "Select which core to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Install a core from the online updater."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
