@@ -141,10 +141,10 @@ check_macro() #$1 = HAVE_$1  $2 = macro name  $3 = header name [included only if
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	if [ $3 ]; then
-		ECHOBUF="Checking presence of predefined macro $2"
+		ECHOBUF="Checking presence of predefined macro $2 in $3"
 		header_include=$(printf '#include <%s>' "$3")
 	else
-		ECHOBUF="Checking presence of predefined macro $2 in $3"
+		ECHOBUF="Checking presence of predefined macro $2"
 		header_include=""
 	fi
 	cat << EOF > "$TEMP_C"
