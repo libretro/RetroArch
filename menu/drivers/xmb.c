@@ -370,7 +370,6 @@ static float item_color[] = {
    1, 1, 1, 1
 };
 
-
 float gradient_dark_purple[16] = {
    20/255.0,  13/255.0,  20/255.0, 1.0,
    20/255.0,  13/255.0,  20/255.0, 1.0,
@@ -2023,7 +2022,6 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
@@ -2192,7 +2190,6 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
 
-
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon_size * -(xmb->depth*2-2);
    entry.subject      = &xmb->x;
@@ -2313,7 +2310,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
          return xmb->textures.list[XMB_TEXTURE_RDB];
-
 
       /* Menu collection submenus*/
       case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
@@ -2965,7 +2961,6 @@ static int xmb_draw_item(
             TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
-
    menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
    if (
@@ -2994,7 +2989,6 @@ static int xmb_draw_item(
       rotate_draw.scale_enable = true;
 
       menu_display_rotate_z(&rotate_draw, video_info);
-
 
       xmb_draw_icon(video_info,
          xmb->icon_size,
@@ -3795,13 +3789,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (video_info->timedate_enable && !xmb->assets_missing)
+   if (video_info->timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
       char timedate[255];
       int x_pos = 0;
 
-      if (coord_white[3] != 0)
+      if (coord_white[3] != 0 && !xmb->assets_missing)
       {
          int x_pos = 0;
 
@@ -4161,7 +4155,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    new_font_size                 = 32.0  * scale_factor;
    xmb->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
-
 
    xmb->thumbnail_width          = 1024.0 * scale_factor;
    xmb->left_thumbnail_width     = 1024.0 * scale_factor;
@@ -4876,6 +4869,8 @@ static void xmb_context_reset_textures(
    settings_t *settings = config_get_ptr();
    xmb->assets_missing = false;
 
+   menu_display_allocate_white_texture();
+
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
       if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR))
@@ -4909,8 +4904,6 @@ static void xmb_context_reset_textures(
          }
       }
    }
-
-   menu_display_allocate_white_texture();
 
    xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
    xmb->main_menu_node.alpha    = xmb->categories_active_alpha;
@@ -4957,7 +4950,7 @@ static void xmb_context_reset_textures(
 return;
 
 error:
-   xmb->assets_missing = true ;
+   xmb->assets_missing = true;
    RARCH_WARN("[XMB] Critical asset missing, no icons will be drawn\n");
    return;
 }
@@ -5347,7 +5340,6 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    }
 }
 
-
 static void xmb_context_destroy(void *data)
 {
    unsigned i;
@@ -5546,7 +5538,6 @@ static int xmb_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-
 
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
