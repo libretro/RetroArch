@@ -322,6 +322,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistThumbnailDownloadWasCanceled(false)
    ,m_pendingDirScrollPath()
    ,m_thumbnailTimer(new QTimer(this))
+   ,m_gridItem(this)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -417,7 +418,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_tableView->setSortingEnabled(true);
    m_tableView->verticalHeader()->setVisible(false);
 
-   m_gridView->setItemDelegate(new ThumbnailDelegate(this));
+   m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
 
    m_logWidget->setObjectName("logWidget");
@@ -566,6 +567,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_thumbnailTimer, SIGNAL(timeout()), this, SLOT(updateVisibleItems()));
    connect(this, SIGNAL(updateThumbnails()), this, SLOT(updateVisibleItems()));
 
+   /* TODO: Handle scroll and resize differently. */
    connect(m_gridView, SIGNAL(visibleItemsChangedMaybe()), this, SLOT(startTimer()));
 
    connect(m_gridView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
@@ -1134,6 +1136,8 @@ void MainWindow::setTheme(Theme theme)
 {
    m_currentTheme = theme;
 
+   setDefaultCustomProperties();
+
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
@@ -1157,6 +1161,14 @@ void MainWindow::setTheme(Theme theme)
       default:
          break;
    }
+}
+
+void MainWindow::setDefaultCustomProperties()
+{
+   m_gridView->setLayout(QString(DEFAULT_GRID_LAYOUT));
+   m_gridView->setSpacing(DEFAULT_GRID_SPACING);
+   m_gridItem.setThumbnailVerticalAlign(QString(DEFAULT_GRID_ITEM_THUMBNAIL_ALIGNMENT));
+   m_gridItem.setPadding(DEFAULT_GRID_ITEM_MARGIN);
 }
 
 void MainWindow::changeThumbnailType(ThumbnailType type)

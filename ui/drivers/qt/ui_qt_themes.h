@@ -431,5 +431,9 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    GridView {
       background-color:rgb(25,25,25);
       selection-color: white;
+      qproperty-layout: "fixed";
+   }
+   GridItem {
+      qproperty-thumbnailvalign: "center";
    }
 )");

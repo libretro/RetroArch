@@ -4,18 +4,31 @@
 #include <QAbstractItemView>
 #include <QStyledItemDelegate>
 
+#define DEFAULT_GRID_ITEM_MARGIN 11
+#define DEFAULT_GRID_ITEM_THUMBNAIL_ALIGNMENT "bottom"
+#define DEFAULT_GRID_SPACING 7
+#define DEFAULT_GRID_LAYOUT "centered"
+
+class GridItem;
+
 class ThumbnailDelegate : public QStyledItemDelegate
 {
    Q_OBJECT
 
 public:
-   ThumbnailDelegate(QObject* parent = 0);
+   ThumbnailDelegate(const GridItem &gridItem, QObject* parent = 0);
    void paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const;
+
+private:
+   const GridItem &m_style;
 };
 
 class GridView : public QAbstractItemView
 {
    Q_OBJECT
+
+   Q_PROPERTY(QString layout READ getLayout WRITE setLayout DESIGNABLE true SCRIPTABLE true)
+   Q_PROPERTY(int spacing READ getSpacing WRITE setSpacing DESIGNABLE true SCRIPTABLE true)
 
 public:
    enum ViewMode
@@ -35,6 +48,10 @@ public:
    void scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint);
    void setGridSize(const int newSize);
    void setviewMode(ViewMode mode);
+   QString getLayout() const;
+   void setLayout(QString layout);
+   int getSpacing() const;
+   void setSpacing(const int spacing);
 
 signals:
    void visibleItemsChangedMaybe() const;
@@ -63,7 +80,7 @@ private:
    void refresh();
 
    int m_size = 255;
-   int m_spacing = 7;
+   int m_spacing = DEFAULT_GRID_SPACING;
    QVector<QModelIndex> m_visibleIndexes;
    ViewMode m_viewMode = Centered;
    mutable int m_idealHeight;

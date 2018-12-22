@@ -271,6 +271,26 @@ public slots:
    void appendMessage(const QString& text);
 };
 
+/* Used to store styling since delegates don't inherit QWidget. */
+class GridItem : public QWidget
+{
+   Q_OBJECT
+
+   Q_PROPERTY(QString thumbnailvalign READ getThumbnailVerticalAlign WRITE setThumbnailVerticalAlign)
+   Q_PROPERTY(int padding READ getPadding WRITE setPadding)
+
+public:
+   GridItem(QWidget* parent);
+
+   Qt::AlignmentFlag thumbnailVerticalAlignmentFlag;
+   int padding;
+
+   int getPadding() const;
+   void setPadding(const int value);
+   QString getThumbnailVerticalAlign() const;
+   void setThumbnailVerticalAlign(const QString valign);
+};
+
 class MainWindow : public QMainWindow
 {
    Q_OBJECT
@@ -347,6 +367,7 @@ public:
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
    QString getScrubbedString(QString str);
+   void setDefaultCustomProperties();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -574,6 +595,7 @@ private:
    QString m_pendingDirScrollPath;
 
    QTimer *m_thumbnailTimer;
+   GridItem m_gridItem;
 
 protected:
    void closeEvent(QCloseEvent *event);

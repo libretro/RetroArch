@@ -6,21 +6,20 @@
 
 /* http://www.informit.com/articles/article.aspx?p=1613548 */
 
-ThumbnailDelegate::ThumbnailDelegate(QObject* parent) :
-   QStyledItemDelegate(parent)
+ThumbnailDelegate::ThumbnailDelegate(const GridItem &gridItem, QObject* parent) :
+   QStyledItemDelegate(parent), m_style(gridItem)
 {
 }
-
 void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
 {
    QStyleOptionViewItem opt = option;
    const QWidget *widget = opt.widget;
    QStyle *style = widget->style();
-   int margin = 11;
-   int textMargin = 4;
-   int textHeight = painter->fontMetrics().height() + margin + margin;
+   int padding = m_style.padding;
+   int textTopMargin = 4; /* Qt seemingly reports -4 the actual line height. */
+   int textHeight = painter->fontMetrics().height() + padding + padding;
    QRect rect = opt.rect;
-   QRect adjusted = rect.adjusted(margin, margin, -margin, -textHeight + textMargin);
+   QRect adjusted = rect.adjusted(padding, padding, -padding, -textHeight + textTopMargin);
    QPixmap pixmap = index.data(PlaylistModel::THUMBNAIL).value<QPixmap>();
 
    painter->save();
@@ -34,14 +33,14 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    if (!pixmap.isNull())
    {
       QPixmap pixmapScaled = pixmap.scaled(adjusted.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-      style->drawItemPixmap(painter, adjusted, Qt::AlignHCenter | Qt::AlignBottom, pixmapScaled);
+      style->drawItemPixmap(painter, adjusted, Qt::AlignHCenter | m_style.thumbnailVerticalAlignmentFlag, pixmapScaled);
    }
 
    /* draw the text */
    if (!opt.text.isEmpty())
    {
       QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-      QRect textRect = QRect(rect.x() + margin, rect.y() + adjusted.height() - textMargin + margin, rect.width() - 2 * margin, textHeight);
+      QRect textRect = QRect(rect.x() + padding, rect.y() + adjusted.height() - textTopMargin + padding, rect.width() - 2 * padding, textHeight);
       QString elidedText = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
@@ -95,68 +94,67 @@ void GridView::calculateRectsIfNecessary() const
 
    const int maxWidth = viewport()->width();
 
-   switch (m_viewMode) {
-   case Anchored:
+   switch (m_viewMode)
    {
-      int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
-      if (columns > 0)
+      case Anchored:
       {
-         const int actualSpacing = (maxWidth - m_spacing - m_size - (columns - 1) * m_size) / columns;
+         int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
+         if (columns > 0)
+         {
+            const int actualSpacing = (maxWidth - m_spacing - m_size - (columns - 1) * m_size) / columns;
+            for (row = 0; row < model()->rowCount(); ++row)
+            {
+               nextX = x + m_size + actualSpacing;
+               if (nextX > maxWidth)
+               {
+                  x = m_spacing;
+                  y += m_size + m_spacing;
+                  nextX = x + m_size + actualSpacing;
+               }
+               m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+               x = nextX;
+            }
+         }
+         break;
+      }
+      case Centered:
+      {
+         int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
+         if (columns > 0)
+         {
+            const int actualSpacing = (maxWidth - columns * m_size) / (columns + 1);
+            x = actualSpacing;
+            for (row = 0; row < model()->rowCount(); ++row)
+            {
+               nextX = x + m_size + actualSpacing;
+               if (nextX > maxWidth)
+               {
+                  x = actualSpacing;
+                  y += m_size + m_spacing;
+                  nextX = x + m_size + actualSpacing;
+               }
+               m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+               x = nextX;
+            }
+         }
+         break;
+      }
+      case Simple:
          for (row = 0; row < model()->rowCount(); ++row)
          {
-            nextX = x + m_size + actualSpacing;
+            nextX = x + m_size + m_spacing;
             if (nextX > maxWidth)
             {
                x = m_spacing;
                y += m_size + m_spacing;
-               nextX = x + m_size + actualSpacing;
+               nextX = x + m_size + m_spacing;
             }
             m_rectForRow[row] = QRectF(x, y, m_size, m_size);
             x = nextX;
          }
-         m_idealHeight = y + m_size + m_spacing;
-      }
-      break;
+         break;
    }
-   case Centered:
-   {
-      int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
-      if (columns > 0)
-      {
-         const int actualSpacing = (maxWidth - columns * m_size) / (columns + 1);
-         x = actualSpacing;
-         for (row = 0; row < model()->rowCount(); ++row)
-         {
-            nextX = x + m_size + actualSpacing;
-            if (nextX > maxWidth)
-            {
-               x = actualSpacing;
-               y += m_size + m_spacing;
-               nextX = x + m_size + actualSpacing;
-            }
-            m_rectForRow[row] = QRectF(x, y, m_size, m_size);
-            x = nextX;
-         }
-         m_idealHeight = y + m_size + m_spacing;
-      }
-      break;
-   }
-   case Simple:
-      for (row = 0; row < model()->rowCount(); ++row)
-      {
-         nextX = x + m_size + m_spacing;
-         if (nextX > maxWidth)
-         {
-            x = m_spacing;
-            y += m_size + m_spacing;
-            nextX = x + m_size + m_spacing;
-         }
-         m_rectForRow[row] = QRectF(x, y, m_size, m_size);
-         x = nextX;
-      }
-      break;
-   }
-
+   m_idealHeight = y + m_size + m_spacing;
    m_hashIsDirty = false;
    viewport()->update();
 }
@@ -406,4 +404,78 @@ void GridView::updateGeometries()
    horizontalScrollBar()->setRange(0, qMax(0, RowHeight - viewport()->width()));
 
    emit(visibleItemsChangedMaybe());
+}
+
+QString GridView::getLayout() const
+{
+   switch (m_viewMode)
+   {
+      case Simple:
+         return "simple";
+      case Anchored:
+         return "anchored";
+      case Centered:
+      default:
+         return "centered";
+   }
+}
+
+void GridView::setLayout(QString layout)
+{
+   if (layout == "anchored")
+      m_viewMode = Anchored;
+   else if (layout == "centered")
+      m_viewMode = Centered;
+   else if (layout == "fixed")
+      m_viewMode = Simple;
+}
+
+int GridView::getSpacing() const
+{
+   return m_spacing;
+}
+
+void GridView::setSpacing(const int spacing)
+{
+   m_spacing = spacing;
+}
+
+GridItem::GridItem(QWidget* parent) : QWidget(parent)
+, thumbnailVerticalAlignmentFlag(Qt::AlignBottom)
+, padding(11)
+{
+}
+
+int GridItem::getPadding() const
+{
+   return padding;
+}
+
+void GridItem::setPadding(const int value)
+{
+   padding = value;
+}
+
+QString GridItem::getThumbnailVerticalAlign() const
+{
+   switch (thumbnailVerticalAlignmentFlag)
+   {
+   case Qt::AlignTop:
+      return "top";
+   case Qt::AlignVCenter:
+      return "center";
+   case Qt::AlignBottom:
+   default:
+      return "bottom";
+   }
+}
+
+void GridItem::setThumbnailVerticalAlign(const QString valign)
+{
+   if (valign == "top")
+      thumbnailVerticalAlignmentFlag = Qt::AlignTop;
+   else if (valign == "center")
+      thumbnailVerticalAlignmentFlag = Qt::AlignVCenter;
+   else if (valign == "bottom")
+      thumbnailVerticalAlignmentFlag = Qt::AlignBottom;
 }
