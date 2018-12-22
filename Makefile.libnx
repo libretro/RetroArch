@@ -1,3 +1,5 @@
+include version.all
+
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
@@ -104,7 +106,7 @@ EXEFS_SRC := exefs_src
 #ROMFS := switch/romfs
 
 APP_TITLE := RetroArch
-APP_VERSION := 1.7.5
+APP_VERSION := $(RARCH_VERSION)
 APP_AUTHOR := libretro Team
 APP_ICON := pkg/libnx/retroarch.jpg
 

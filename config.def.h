@@ -285,6 +285,8 @@ static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;
 static bool quick_menu_show_add_to_favorites            = true;
+static bool quick_menu_show_start_recording             = true;
+static bool quick_menu_show_start_streaming             = true;
 static bool quick_menu_show_reset_core_association      = true;
 static bool quick_menu_show_options                     = true;
 static bool quick_menu_show_controls                    = true;
@@ -373,6 +375,10 @@ static bool show_advanced_settings            = false;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
 static const uint32_t menu_title_color        = 0xff64ff64;
+static const uint32_t menu_bg_dark_color      = 0xc0202020;
+static const uint32_t menu_bg_light_color     = 0xc0404040;
+static const uint32_t menu_border_dark_color  = 0xc0204020;
+static const uint32_t menu_border_light_color = 0xc0408040;
 
 #else
 static bool default_block_config_read = false;

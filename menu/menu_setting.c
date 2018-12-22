@@ -1819,6 +1819,9 @@ static void setting_get_string_representation_toggle_gamepad_combo(
       case INPUT_TOGGLE_L_R:
          strlcpy(s, "L + R", len);
          break;
+      case INPUT_TOGGLE_HOLD_START:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
+         break;
    }
 }
 
@@ -3574,6 +3577,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
 
          if (settings->bools.history_list_enable)
          {
@@ -6827,7 +6831,6 @@ static bool setting_append_list(
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-
             CONFIG_UINT(
                list, list_info,
                &settings->uints.video_record_threads,
@@ -6847,10 +6850,10 @@ static bool setting_append_list(
                list, list_info,
                global->record.output_dir,
                sizeof(global->record.output_dir),
-               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -7668,6 +7671,62 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_TITLE_COLOR,
                   MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
                   menu_title_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_bg_dark_color,
+                  MENU_ENUM_LABEL_BG_DARK_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
+                  menu_bg_dark_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_bg_light_color,
+                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
+                  menu_bg_light_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_border_dark_color,
+                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
+                  menu_border_dark_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_border_light_color,
+                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
+                  MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
+                  menu_border_light_color,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8858,6 +8917,36 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
                quick_menu_show_add_to_favorites,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_start_recording,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+               quick_menu_show_start_recording,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_start_streaming,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+               quick_menu_show_start_streaming,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

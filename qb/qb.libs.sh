@@ -115,18 +115,19 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	fi
 }
 
-check_header() #$1 = HAVE_$1  $2..$5 = header files
+check_header() #$1 = HAVE_$1  $2, $3, ... = header files
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
-	CHECKHEADER="$2"
-	printf %s\\n "#include <$2>" > "$TEMP_C"
-	[ "$3" != '' ] && CHECKHEADER="$3" && printf %s\\n "#include <$3>" >> "$TEMP_C"
-	[ "$4" != '' ] && CHECKHEADER="$4" && printf %s\\n "#include <$4>" >> "$TEMP_C"
-	[ "$5" != '' ] && CHECKHEADER="$5" && printf %s\\n "#include <$5>" >> "$TEMP_C"
-	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
-	answer='no'
+	rm -f -- "$TEMP_C"
 	val="$1"
 	header="$2"
+	shift
+	for head do
+		CHECKHEADER="$head"
+		printf %s\\n "#include <$head>" >> "$TEMP_C"
+	done
+	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
+	answer='no'
 	eval "set -- $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
@@ -136,11 +137,18 @@ check_header() #$1 = HAVE_$1  $2..$5 = header files
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 }
 
-check_macro() #$1 = HAVE_$1  $2 = macro name
+check_macro() #$1 = HAVE_$1  $2 = macro name  $3 = header name [included only if non-empty]
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
-	ECHOBUF="Checking presence of predefined macro $2"
+	if [ "${3}" ]; then
+		ECHOBUF="Checking presence of predefined macro $2 in $3"
+		header_include="#include <$3>"
+	else
+		ECHOBUF="Checking presence of predefined macro $2"
+		header_include=""
+	fi
 	cat << EOF > "$TEMP_C"
+$header_include
 #ifndef $2
 #error $2 is not defined
 #endif

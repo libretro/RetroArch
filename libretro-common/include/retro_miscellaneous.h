@@ -166,7 +166,7 @@ typedef struct
 #endif
 #  endif
 #else
-#  define PRI_SIZET "zu"
+#  define PRI_SIZET "lu"
 #endif
 
 #endif

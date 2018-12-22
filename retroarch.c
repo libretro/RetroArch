@@ -140,6 +140,7 @@
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
+#define HOLD_START_DELAY_SEC 2
 
 /* Descriptive names for options without short variant.
  *
@@ -2507,6 +2508,34 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
+      case INPUT_TOGGLE_HOLD_START:
+      {
+         static rarch_timer_t timer = {0};
+
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         {
+            /* timer only runs while start is held down */
+            rarch_timer_end(&timer);
+            return false;
+         }
+
+         if (!rarch_timer_is_running(&timer))
+         {
+            /* user started holding down the start button, start the timer */
+            rarch_timer_begin(&timer, HOLD_START_DELAY_SEC);
+         }
+
+         rarch_timer_tick(&timer);
+
+         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         {
+            /* start has been held down long enough, stop timer and enter menu */
+            rarch_timer_end(&timer);
+            return true;
+         }
+
+         return false;
+      }
       default:
       case INPUT_TOGGLE_NONE:
          return false;

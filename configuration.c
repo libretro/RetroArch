@@ -1402,6 +1402,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_load_state",      &settings->bools.quick_menu_show_save_load_state, true, quick_menu_show_save_load_state, false);
    SETTING_BOOL("quick_menu_show_undo_save_load_state", &settings->bools.quick_menu_show_undo_save_load_state, true, quick_menu_show_undo_save_load_state, false);
    SETTING_BOOL("quick_menu_show_add_to_favorites",     &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
+   SETTING_BOOL("quick_menu_show_start_recording",      &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
+   SETTING_BOOL("quick_menu_show_start_streaming",      &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
    SETTING_BOOL("quick_menu_show_reset_core_association", &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
    SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
    SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
@@ -1912,6 +1914,10 @@ void config_set_defaults(void)
    settings->uints.menu_entry_normal_color     = menu_entry_normal_color;
    settings->uints.menu_entry_hover_color      = menu_entry_hover_color;
    settings->uints.menu_title_color            = menu_title_color;
+   settings->uints.menu_bg_dark_color          = menu_bg_dark_color;
+   settings->uints.menu_bg_light_color         = menu_bg_light_color;
+   settings->uints.menu_border_dark_color      = menu_border_dark_color;
+   settings->uints.menu_border_light_color     = menu_border_light_color;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -1945,7 +1951,7 @@ void config_set_defaults(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       settings->uints.input_joypad_map[i] = i;
-#ifdef SWITCH // Switch prefered default dpad mode
+#ifdef SWITCH /* Switch prefered default dpad mode */
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
 #else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
@@ -2829,6 +2835,14 @@ static bool config_load_file(const char *path, bool set_defaults,
          &settings->uints.menu_entry_hover_color);
    config_get_hex_base(conf, "menu_title_color",
          &settings->uints.menu_title_color);
+   config_get_hex_base(conf, "menu_bg_dark_color",
+         &settings->uints.menu_bg_dark_color);
+   config_get_hex_base(conf, "menu_bg_light_color",
+         &settings->uints.menu_bg_light_color);
+   config_get_hex_base(conf, "menu_border_dark_color",
+         &settings->uints.menu_border_dark_color);
+   config_get_hex_base(conf, "menu_border_light_color",
+         &settings->uints.menu_border_light_color);
 #endif
 
    /* Float settings */
@@ -4333,6 +4347,14 @@ bool config_save_file(const char *path)
          settings->uints.menu_entry_hover_color);
    config_set_hex(conf, "menu_title_color",
          settings->uints.menu_title_color);
+   config_set_hex(conf, "menu_bg_dark_color",
+         settings->uints.menu_bg_dark_color);
+   config_set_hex(conf, "menu_bg_light_color",
+         settings->uints.menu_bg_light_color);
+   config_set_hex(conf, "menu_border_dark_color",
+         settings->uints.menu_border_dark_color);
+   config_set_hex(conf, "menu_border_light_color",
+         settings->uints.menu_border_light_color);
 #endif
 
 

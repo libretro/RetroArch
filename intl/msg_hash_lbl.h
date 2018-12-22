@@ -223,6 +223,8 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON,
       "input_split_joycon")
 MSG_HASH(MENU_ENUM_LABEL_CORE_LIST,
       "load_core")
+MSG_HASH(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
+      "sideload_core")
 MSG_HASH(MENU_ENUM_LABEL_CORE_OPTIONS,
       "core_options")
 MSG_HASH(MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
@@ -1123,6 +1125,14 @@ MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_STYLE,
    "menu_timedate_style")
 MSG_HASH(MENU_ENUM_LABEL_TITLE_COLOR,
       "menu_title_color")
+MSG_HASH(MENU_ENUM_LABEL_BG_DARK_COLOR,
+      "menu_bg_dark_color")
+MSG_HASH(MENU_ENUM_LABEL_BG_LIGHT_COLOR,
+      "menu_bg_light_color")
+MSG_HASH(MENU_ENUM_LABEL_BORDER_DARK_COLOR,
+      "menu_border_dark_color")
+MSG_HASH(MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
+      "menu_border_light_color")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
       "ui_companion_enable")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
@@ -1515,6 +1525,10 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "quick_menu_show_undo_save_load_state")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "quick_menu_show_add_to_favorites")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
+      "quick_menu_show_start_recording")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
+      "quick_menu_show_start_streaming")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
       "quick_menu_show_reset_core_association")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,

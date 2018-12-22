@@ -9,7 +9,7 @@ Files specified later in the chain **will override** earlier ones if the same ke
 * To create an index `libretrodb_tool <db file> create-index <index name> <field name>`
 * To find an entry with an index `libretrodb_tool <db file> find <index name> <value>`
 
-# Compiling a single database with `c_converter`
+# Compiling a single DAT into a single RDB with `c_converter`
 ```
 git clone git@github.com:libretro/libretro-super.git
 cd libretro-super
@@ -20,7 +20,19 @@ cd libretro-db
 c_converter "NAME_OF_RDB_FILE.rdb" "NAME_OF_SOURCE_DAT.dat"
 ```
 
-# Compiling all databases with libretro-build-database.sh
+# Compiling multiple DATs into a single RDB with `c_converter`
+Specify `rom.crc` as the second parameter to use CRC as the unique fingerprint.
+```
+git clone git@github.com:libretro/libretro-super.git
+cd libretro-super
+./libretro-fetch.sh retroarch
+cd retroarch
+./configure
+cd libretro-db
+c_converter "NAME_OF_RDB_FILE.rdb" "rom.crc" "NAME_OF_SOURCE_DAT_1.dat" "NAME_OF_SOURCE_DAT_2.dat" "NAME_OF_SOURCE_DAT_3.dat"
+```
+
+# Compiling all RDBs with libretro-build-database.sh
 **This approach builds and uses the `c_converter` program to compile the databases**
 
 ```

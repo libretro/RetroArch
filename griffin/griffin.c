@@ -1466,6 +1466,7 @@ SSL
 ============================================================ */
 #if defined(HAVE_SSL)
 #if defined(HAVE_NETWORKING)
+#if defined(HAVE_BUILTINMBEDTLS)
 #include "../deps/mbedtls/aes.c"
 #include "../deps/mbedtls/aesni.c"
 #include "../deps/mbedtls/arc4.c"
@@ -1541,5 +1542,6 @@ SSL
 #include "../deps/mbedtls/ssl_tls.c"
 
 #include "../libretro-common/net/net_socket_ssl.c"
+#endif
 #endif
 #endif

@@ -214,6 +214,7 @@ else
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
    HAVE_DISCORD='no'
+   HAVE_SSL='no'
 fi
 
 check_lib '' STDIN_CMD "$CLIB" fcntl
@@ -234,6 +235,8 @@ check_pkgconf ALSA alsa
 check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
 check_lib '' SIXEL -lsixel
+
+check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
 
 if [ "$HAVE_OSS" != 'no' ]; then
    check_header OSS sys/soundcard.h
@@ -314,6 +317,37 @@ fi
 
 check_pkgconf FLAC flac
 check_val '' FLAC '-lFLAC'
+
+if [ "$HAVE_SSL" = 'no' ]; then
+   HAVE_BUILTINMBEDTLS=no
+fi
+
+if [ "$HAVE_SSL" != 'no' ]; then
+   check_header MBEDTLS \
+      mbedtls/config.h \
+      mbedtls/certs.h \
+      mbedtls/debug.h \
+      mbedtls/platform.h \
+      mbedtls/net_sockets.h \
+      mbedtls/ssl.h \
+      mbedtls/ctr_drbg.h \
+      mbedtls/entropy.h
+
+   check_lib '' MBEDTLS -lmbedtls
+   check_lib '' MBEDX509 -lmbedx509
+   check_lib '' MBEDCRYPTO -lmbedcrypto
+
+   if [ "$HAVE_MBEDTLS" = 'no' ] ||
+      [ "$HAVE_MBEDX509" = 'no' ] ||
+      [ "$HAVE_MBEDCRYPTO" = 'no' ]; then
+      if [ "$HAVE_BUILTINMBEDTLS" != 'yes' ]; then
+         die : 'Notice: System mbedtls libraries not found, disabling SSL support.'
+         HAVE_SSL=no
+      fi
+   else
+      HAVE_SSL=yes
+   fi
+fi
 
 check_pkgconf LIBUSB libusb-1.0 1.0.13
 check_val '' LIBUSB -lusb-1.0 libusb-1.0
@@ -477,7 +511,7 @@ if [ "$HAVE_WAYLAND_PROTOS" = yes ] && [ "$HAVE_WAYLAND" = yes ]; then
     check_pkgconf WAYLAND_SCANNER wayland-scanner 1.15
     ./gfx/common/wayland/generate_wayland_protos.sh
 else
-    die : 'Notice: wayland-egl or wayland-protocols not present. Skiping Wayland code paths.'
+    die : 'Notice: wayland-egl or wayland-protocols not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
 

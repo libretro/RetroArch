@@ -25,6 +25,7 @@
 #include <net/net_socket.h>
 #include <net/net_socket_ssl.h>
 
+#if defined(HAVE_BUILTINMBEDTLS)
 #include "../../deps/mbedtls/mbedtls/config.h"
 #include "../../deps/mbedtls/mbedtls/certs.h"
 #include "../../deps/mbedtls/mbedtls/debug.h"
@@ -33,7 +34,18 @@
 #include "../../deps/mbedtls/mbedtls/ssl.h"
 #include "../../deps/mbedtls/mbedtls/ctr_drbg.h"
 #include "../../deps/mbedtls/mbedtls/entropy.h"
+#else
+#include <mbedtls/config.h>
+#include <mbedtls/certs.h>
+#include <mbedtls/debug.h>
+#include <mbedtls/platform.h>
+#include <mbedtls/net_sockets.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#endif
 
+/* Not part of the mbedtls upstream source */
 #include "../../deps/mbedtls/cacert.h"
 
 #define DEBUG_LEVEL 0
@@ -163,7 +175,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *
       return -1;
    }
 
-   if (isagain((int)ret))
+   if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
       return 0;
 
    *error = true;

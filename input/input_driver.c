@@ -2683,7 +2683,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
          && settings->bools.input_descriptor_label_show)
-      snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
+      snprintf(buf, size, "%s%s (axis)", prefix, bind->joyaxis_label);
    else
    {
       unsigned axis        = 0;
