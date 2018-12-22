@@ -245,10 +245,10 @@ install: $(TARGET)
 	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets/xmb; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets/glui; \
+		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets; \
 		cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		cp -r media/assets/ozone/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		cp media/assets/COPYING $(DESTDIR)$(DOC_DIR)/COPYING.assets; \
 		echo "Asset copying done."; \
 	fi
