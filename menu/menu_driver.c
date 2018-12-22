@@ -1979,6 +1979,8 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
          return false;
       }
 
+      menu_navigation_set_selection(0);
+
       return true;
    }
 

@@ -1654,7 +1654,7 @@ bool task_push_start_builtin_core(
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    retroarch_set_current_core_type(type, true);
-      printf("Step 1\n");
+
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
@@ -1717,7 +1717,6 @@ bool task_push_load_content_with_core_from_menu(
 
    return true;
 }
-
 
 bool task_push_load_subsystem_with_core_from_menu(
       const char *fullpath,
