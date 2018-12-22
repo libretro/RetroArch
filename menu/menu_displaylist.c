@@ -3648,7 +3648,8 @@ static unsigned menu_displaylist_parse_cores(
       return items_found;
    }
 
-   info->download_core = true;
+   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+      info->download_core = true;
 
    dir_list_sort(str_list, true);
 
@@ -4151,6 +4152,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
 #if defined(HAVE_NETWORKING)
    if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
+   {
       if (info->download_core)
       {
          menu_entries_append_enum(info->list,
@@ -4158,7 +4160,14 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0);
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST),
+               MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
+               MENU_SETTING_ACTION, 0, 0);
       }
+   }
 #endif
 
    if (info->push_builtin_cores)
@@ -8070,7 +8079,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          info->need_refresh       = true;
          info->need_push          = true;
-         info->push_builtin_cores = true;
+         if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            info->push_builtin_cores = true;
          break;
       case DISPLAYLIST_DEFAULT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
