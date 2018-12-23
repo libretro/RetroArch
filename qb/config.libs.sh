@@ -556,7 +556,7 @@ fi
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
+if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ] || [ "$HAVE_OZONE" != 'no' ]; then
    if [ "$HAVE_RGUI" = 'no' ]; then
       HAVE_MATERIALUI=no
       HAVE_XMB=no
