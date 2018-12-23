@@ -5646,7 +5646,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_THEME,
-    "Select a different theme for the icon. Changes will take effect after you restart the program."
+    "Select a different icon theme for RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
