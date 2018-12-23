@@ -39,5 +39,6 @@
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
+        <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
     </application>
 </manifest>
