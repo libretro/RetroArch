@@ -710,7 +710,7 @@ typedef struct video_poke_interface
          const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
-   void (*unload_texture)(void *data, uintptr_t id);
+   void (*unload_texture)(void *data, uintptr_t id, bool threaded);
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);

@@ -1195,15 +1195,13 @@ static uintptr_t thread_load_texture(void *video_data, void *data,
    return thr->poke->load_texture(thr->driver_data, data, threaded, filter_type);
 }
 
-static void thread_unload_texture(void *video_data, uintptr_t id)
+static void thread_unload_texture(void *video_data, uintptr_t id, bool threaded)
 {
    thread_video_t *thr = (thread_video_t*)video_data;
-
    if (!thr)
       return;
-
    if (thr->poke && thr->poke->unload_texture)
-      thr->poke->unload_texture(thr->driver_data, id);
+      thr->poke->unload_texture(thr->driver_data, id, threaded);
 }
 
 static void thread_apply_state_changes(void *data)
@@ -1425,7 +1423,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    return pkt.data.font_init.return_value;
 }
 
-unsigned video_thread_texture_load(void *data,
+unsigned video_thread_custom_cmd(void *data,
       custom_command_method_t func)
 {
    thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);

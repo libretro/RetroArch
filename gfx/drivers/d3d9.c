@@ -1978,14 +1978,14 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    info.type     = filter_type;
 
    if (threaded)
-      return video_thread_texture_load(&info,
+      return video_thread_custom_cmd(&info,
             d3d9_video_texture_load_wrap_d3d);
 
    d3d9_video_texture_load_d3d(&info, &id);
    return id;
 }
 
-static void d3d9_unload_texture(void *data, uintptr_t id)
+static void d3d9_unload_texture(void *data, uintptr_t id, bool threaded)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)
