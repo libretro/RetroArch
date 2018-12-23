@@ -291,6 +291,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
    ,m_viewType(VIEW_TYPE_LIST)
+   ,m_thumbnailType(THUMBNAIL_TYPE_BOXART)
    ,m_gridProgressBar(NULL)
    ,m_gridProgressWidget(NULL)
    ,m_currentGridHash()
