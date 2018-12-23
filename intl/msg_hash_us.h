@@ -3558,7 +3558,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Enable or disable savestates, cheats, rewind, pause, and slow-motion for all games."
+    "Enables hardcore mode, this will enable or disable savestates, cheats, rewind, pause, and slow-motion.\nToggling this setting at runtime will restart your game."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
