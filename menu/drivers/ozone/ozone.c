@@ -195,8 +195,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          setsysExit();
       }
       else
-         fallback_color_theme = true;
 #endif
+         fallback_color_theme = true;
    }
    else
       fallback_color_theme = true;
