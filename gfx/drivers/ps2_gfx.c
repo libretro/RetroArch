@@ -18,7 +18,6 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-#include <loadcore.h>
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>

@@ -986,8 +986,10 @@ bool config_file_write(config_file_t *conf, const char *path)
          return false;
 
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+#if !defined(PS2)
       buf = calloc(1, 0x4000);
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+#endif
 
       config_file_dump(conf, file);
 
