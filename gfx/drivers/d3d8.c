@@ -1845,7 +1845,7 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    info.type     = filter_type;
 
    if (threaded)
-      return video_thread_custom_cmd(&info,
+      return video_thread_texture_load(&info,
             d3d8_video_texture_load_wrap_d3d);
 
    d3d8_video_texture_load_d3d(&info, &id);
