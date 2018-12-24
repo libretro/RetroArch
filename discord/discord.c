@@ -49,8 +49,6 @@
 #include <file/file_path.h>
 #include "../file_path_special.h"
 
-static int FrustrationLevel       = 0;
-
 static int64_t start_time         = 0;
 static int64_t pause_time         = 0;
 static int64_t ellapsed_time      = 0;
@@ -61,16 +59,33 @@ static unsigned discord_status    = 0;
 struct netplay_room *room;
 
 static char user_id[128];
+static char user_name[128];
+static char avatar_path[PATH_MAX_LENGTH];
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
 DiscordRichPresence discord_presence;
 
+char* discord_get_own_username(void)
+{
+   return user_name;
+}
+
+char* discord_get_own_avatar(void)
+{
+   return avatar_path;
+}
+
+bool discord_is_ready()
+{
+   return discord_ready;
+}
+
 static bool discord_download_avatar(const char* user_id, const char* avatar_id)
 {
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
-   static char fullpath[PATH_MAX_LENGTH];
+   static char avatar_path[PATH_MAX_LENGTH];
 
    static char buf[PATH_MAX_LENGTH];
 
@@ -79,9 +94,9 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
    fill_pathname_application_special(buf,
             sizeof(buf),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(fullpath, buf, avatar_id, sizeof(fullpath));
+   fill_pathname_join(avatar_path, buf, avatar_id, sizeof(avatar_path));
 
-   if(filestream_exists(fullpath))
+   if(filestream_exists(avatar_path))
       return true;
    else
    {
@@ -102,6 +117,7 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
+   strlcpy(user_name, connectedUser->username, sizeof(user_name));
    RARCH_LOG("[Discord] connected to user: %s#%s - avatar id: %s\n",
       connectedUser->username,
       connectedUser->discriminator,

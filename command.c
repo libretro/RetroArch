@@ -1834,9 +1834,6 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-#ifdef HAVE_DISCORD
-   static bool discord_inited = false;
-#endif
    bool boolean               = false;
 
    switch (cmd)
@@ -2986,26 +2983,24 @@ TODO: Add a setting for these tweaks */
 
             if (!settings->bools.discord_enable)
                return false;
-            if (discord_inited)
+            if (discord_is_ready())
                return true;
 
             discord_init();
-            discord_inited = true;
          }
 #endif
          break;
       case CMD_EVENT_DISCORD_DEINIT:
 #ifdef HAVE_DISCORD
-         if (!discord_inited)
+         if (!discord_is_ready())
             return false;
 
          discord_shutdown();
-         discord_inited = false;
 #endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
 #ifdef HAVE_DISCORD
-         if (!data || !discord_inited)
+         if (!data || !discord_is_ready())
             return false;
 
          {
