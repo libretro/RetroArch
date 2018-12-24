@@ -2612,7 +2612,7 @@ static int cheevos_iterate(coro_t *coro)
 
    static cheevos_finder_t finders[] =
    {
-      {SNES_MD5,    "SNES (8Mb padding)",                snes_exts},
+      {SNES_MD5,    "SNES (discards header)",            snes_exts},
       {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
       {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
       {NES_MD5,     "NES (discards header)",             NULL},
@@ -2902,7 +2902,12 @@ found:
 
       MD5_Init(&coro->md5);
 
-      coro->offset = 0;
+      /* if the file contains header, ignore it */
+      if (coro->len - ((coro->len / 0x2000) * 0x2000) == 512)
+          coro->offset = 512;
+      else
+        coro->offset = 0;
+
       coro->count  = 0;
 
       CORO_GOSUB(EVAL_MD5);
@@ -2912,17 +2917,6 @@ found:
          MD5_Final(coro->hash, &coro->md5);
          coro->gameid = 0;
          CORO_RET();
-      }
-
-      if (coro->count < size_in_megabytes(8))
-      {
-         /*
-            * Inputs:  CHEEVOS_VAR_MD5, CHEEVOS_VAR_OFFSET, CHEEVOS_VAR_COUNT
-            * Outputs: CHEEVOS_VAR_MD5
-            */
-         coro->offset      = 0;
-         coro->count       = size_in_megabytes(8) - coro->count;
-         CORO_GOSUB(FILL_MD5);
       }
 
       MD5_Final(coro->hash, &coro->md5);
