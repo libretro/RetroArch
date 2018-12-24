@@ -26,6 +26,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "../../discord/discord.h"
+#endif
+
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../wifi/wifi_driver.h"
@@ -3504,6 +3508,10 @@ finish:
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }
+#ifdef HAVE_DISCORD
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+      discord_avatar_set_ready(true);
+#endif
 
    if (data)
    {

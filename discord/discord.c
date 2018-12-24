@@ -54,13 +54,14 @@ static int64_t pause_time         = 0;
 static int64_t ellapsed_time      = 0;
 
 static bool discord_ready         = false;
+static bool discord_avatar_ready  = false;
 static unsigned discord_status    = 0;
 
 struct netplay_room *room;
 
 static char user_id[128];
 static char user_name[128];
-static char avatar_path[PATH_MAX_LENGTH];
+static char user_avatar[PATH_MAX_LENGTH];
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
@@ -73,7 +74,17 @@ char* discord_get_own_username(void)
 
 char* discord_get_own_avatar(void)
 {
-   return avatar_path;
+   return user_avatar;
+}
+
+bool discord_avatar_is_ready()
+{
+   return discord_avatar_ready;
+}
+
+void discord_avatar_set_ready(bool ready)
+{
+   discord_avatar_ready = ready;
 }
 
 bool discord_is_ready()
@@ -85,7 +96,7 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
 {
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
-   static char avatar_path[PATH_MAX_LENGTH];
+   static char full_path[PATH_MAX_LENGTH];
 
    static char buf[PATH_MAX_LENGTH];
 
@@ -94,9 +105,10 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
    fill_pathname_application_special(buf,
             sizeof(buf),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(avatar_path, buf, avatar_id, sizeof(avatar_path));
+   fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
+   strlcpy(user_avatar, avatar_id, sizeof(user_avatar));
 
-   if(filestream_exists(avatar_path))
+   if(filestream_exists(full_path))
       return true;
    else
    {
@@ -342,7 +354,7 @@ void discord_init(void)
 
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
-   discord_ready         = true;
+   discord_ready = true;
 }
 
 void discord_shutdown(void)
