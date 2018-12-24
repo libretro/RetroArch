@@ -2502,12 +2502,6 @@ static void video_texture_load_gl(
          );
 }
 
-static void video_texture_unload_gl(
-      uintptr_t *id)
-{
-   glDeleteTextures(1, (GLuint*)id);
-}
-
 #ifdef HAVE_THREADS
 static int video_texture_load_wrap_gl_mipmap(void *data)
 {
@@ -2530,14 +2524,6 @@ static int video_texture_load_wrap_gl(void *data)
          TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
-
-static int video_texture_unload_wrap_gl(void *data)
-{
-   if (!data)
-      return 0;
-   video_texture_unload_gl((uintptr_t *)data);
-   return 0;
-}
 #endif
 
 static uintptr_t gl_load_texture(void *video_data, void *data,
@@ -2559,7 +2545,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_custom_cmd(data, func);
+      return video_thread_texture_load(data, func);
    }
 #endif
 
@@ -2567,23 +2553,14 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl_unload_texture(void *data, uintptr_t id, bool threaded)
+static void gl_unload_texture(void *data, uintptr_t id)
 {
    GLuint glid;
    if (!id)
       return;
+
    glid = (GLuint)id;
-
-#ifdef HAVE_THREADS
-   if (threaded)
-   {
-      custom_command_method_t func = video_texture_unload_wrap_gl;
-      video_thread_custom_cmd(&glid, func);
-      return;
-   }
-#endif
-
-   video_texture_unload_gl(&glid);
+   glDeleteTextures(1, &glid);
 }
 
 static void gl_set_coords(void *handle_data, void *shader_data,
