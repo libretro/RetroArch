@@ -724,6 +724,8 @@ enum rarch_content_type path_is_media_type(const char *path)
    /* hack, to detect livestreams so the ffmpeg core can be started */
    if (
       strstr(path, "udp://")  ||
+      strstr(path, "http://") ||
+      strstr(path, "https://")||
       strstr(path, "tcp://")  ||
       strstr(path, "rtmp://") ||
       strstr(path, "rtp://")
