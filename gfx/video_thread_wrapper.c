@@ -1425,7 +1425,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    return pkt.data.font_init.return_value;
 }
 
-unsigned video_thread_custom_cmd(void *data,
+unsigned video_thread_texture_load(void *data,
       custom_command_method_t func)
 {
    thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);

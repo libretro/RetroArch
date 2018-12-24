@@ -83,7 +83,7 @@ bool video_thread_font_init(
       custom_font_command_method_t func,
       bool is_threaded);
 
-unsigned video_thread_custom_cmd(void *data,
+unsigned video_thread_texture_load(void *data,
       custom_command_method_t func);
 
 RETRO_END_DECLS
