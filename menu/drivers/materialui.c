@@ -2057,6 +2057,12 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
+            if (system->load_no_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+               menu_displaylist_setting(&entry);
+            }
+
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
 #endif
@@ -2066,12 +2072,6 @@ static int materialui_list_push(void *data, void *userdata,
                   entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
                   menu_displaylist_setting(&entry);
                }
-            }
-
-            if (system->load_no_content)
-            {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_load_content)
