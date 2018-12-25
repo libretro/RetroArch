@@ -4296,6 +4296,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
    menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
+   static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
 
@@ -5032,6 +5033,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_sort    = true;
          info->need_refresh = true;
          info->need_push    = true;
+         core_selected      = true;
 
          {
             unsigned cores_names_len        = 0;
@@ -7082,6 +7084,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_horizontal_content_actions(menu, info);
          info->need_refresh = true;
          info->need_push    = true;
+
+         if (core_selected)
+         {
+            info->need_clear = true;
+            core_selected = false;
+         }
+
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
