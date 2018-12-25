@@ -7081,6 +7081,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(menu, info);
          info->need_refresh = true;
+         info->need_clear   = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
