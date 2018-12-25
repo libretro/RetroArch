@@ -101,11 +101,11 @@ struct retro_keybind
 
    /* Joypad key. Joypad POV (hats)
     * are embedded into this key as well. */
-   uint64_t joykey;
+   uint16_t joykey;
 
    /* Default key binding value -
     * for resetting bind to default */
-   uint64_t def_joykey;
+   uint16_t def_joykey;
 
    /* Joypad axis. Negative and positive axes
     * are embedded into this variable. */

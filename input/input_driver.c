@@ -962,7 +962,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
          for (port = 0; port < port_max; port++)
          {
-            uint64_t              joykey      = 0;
+            uint16_t              joykey      = 0;
             uint32_t              joyaxis     = 0;
             const struct retro_keybind *mtkey = &input_config_binds[port][i];
 
@@ -980,7 +980,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
             if (sec)
             {
-               if ((uint16_t)joykey == NO_BTN || !sec->button(joypad_info.joy_idx, (uint16_t)joykey))
+               if (joykey == NO_BTN || !sec->button(joypad_info.joy_idx, joykey))
                {
                   int16_t  axis        = sec->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
@@ -992,7 +992,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
             if (!bit_pressed && first)
             {
-               if ((uint16_t)joykey == NO_BTN || !first->button(joypad_info.joy_idx, (uint16_t)joykey))
+               if (joykey == NO_BTN || !first->button(joypad_info.joy_idx, joykey))
                {
                   int16_t  axis        = first->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
@@ -1715,12 +1715,12 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          /* If the result is zero, it's got a digital button attached to it */
          if ( res == 0 )
          {
-            uint64_t key = bind->joykey;
+            uint16_t key = bind->joykey;
 
             if ( key == NO_BTN )
                key = joypad_info.auto_binds[ ident ].joykey;
 
-            if ( drv->button(joypad_info.joy_idx, (uint16_t)key))
+            if ( drv->button(joypad_info.joy_idx, key))
                res = 0x7fff;
          }
       }
@@ -1766,17 +1766,17 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       {
          int16_t digital_left  = 0;
          int16_t digital_right = 0;
-         uint64_t key_minus    = bind_minus->joykey;
-         uint64_t key_plus     = bind_plus->joykey;
+         uint16_t key_minus    = bind_minus->joykey;
+         uint16_t key_plus     = bind_plus->joykey;
 
          if (key_minus == NO_BTN)
             key_minus = joypad_info.auto_binds[ident_minus].joykey;
          if (key_plus == NO_BTN)
             key_plus = joypad_info.auto_binds[ident_plus].joykey;
 
-         if (drv->button(joypad_info.joy_idx, (uint16_t)key_minus))
+         if (drv->button(joypad_info.joy_idx, key_minus))
             digital_left  = -0x7fff;
-         if (drv->button(joypad_info.joy_idx, (uint16_t)key_plus))
+         if (drv->button(joypad_info.joy_idx, key_plus))
             digital_right = 0x7fff;
 
          return digital_right + digital_left;
