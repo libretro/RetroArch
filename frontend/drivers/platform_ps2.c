@@ -1,6 +1,5 @@
 /* RetroArch - A frontend for libretro.
- * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2017 - Daniel De Matteis
+ * Copyright (C) 2010-2018 - Francisco Javier Trujillo Mata - fjtrujy
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -166,13 +165,6 @@ static const char *getMountParams(const char *command, char *BlockDevice) {
 
 static void create_path_names(void)
 {
-#ifndef IS_SALAMANDER
-#if defined(HAVE_LOGGER)
-   
-#elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("ux0:/temp/retroarch-log.txt"); // It really depend from where we are executing this
-#endif
-#endif
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
          "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -232,7 +224,6 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
    const char *mountPoint;
    int bootDeviceID;
 
-   //TODO: I DONT KNOW YET, WHY IT CRASHES IF UNCOMENT THIS PART 
    getcwd(cwd, sizeof(cwd));
    bootDeviceID=getBootDeviceID(cwd);
    //Mount the HDD partition, if required.
@@ -332,6 +323,14 @@ static void frontend_ps2_init(void *data)
    audsrv_init();
 
    SDL_Init(SDL_INIT_TIMER);
+
+
+retro_sleep(100);
+
+#if defined(HAVE_FILE_LOGGER)
+   retro_main_log_file_init("retroarch.log");
+   verbosity_enable();
+#endif
 }
 
 static void frontend_ps2_deinit(void *data)
@@ -467,7 +466,7 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "host:/",
+         "host:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2018 - Francisco Javier Trujillo Mata
+ *  Copyright (C) 2018 - Francisco Javier Trujillo Mata - fjtrujy
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,7 +18,6 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-#include <loadcore.h>
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>
@@ -46,7 +45,7 @@ static GSGLOBAL *init_GSGlobal(void) {
 	GSGLOBAL *gsGlobal = gsKit_init_global();
 
       gsGlobal->PSM = GS_PSM_CT16;
-	gsGlobal->PSMZ = GS_PSMZ_16S;
+	gsGlobal->PSMZ = GS_PSMZ_16;
 	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
 	gsGlobal->ZBuffering = GS_SETTING_OFF;
       gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
@@ -66,10 +65,7 @@ static GSGLOBAL *init_GSGlobal(void) {
 }
 
 static GSTEXTURE * prepare_new_texture(void) {
-      GSTEXTURE *texture = malloc(sizeof *texture);
-      texture->Width = 0;
-      texture->Height = 0;
-      texture->Mem = NULL;
+      GSTEXTURE *texture = calloc(1, sizeof(*texture));
       return texture;
 }
 
@@ -102,7 +98,7 @@ static void color_correction16(uint16_t *buffer, uint32_t dimensions)
     uint16_t x16;
     for (i = 0; i < dimensions; i++) {
       x16 = buffer[i];
-      buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | (x16 & 0x3E0) | ((x16 >> 10) & 0x1F);
+      buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | ((x16 >> 1) & 0x3E0) | ((x16 >> 11) & 0x1F);
     }
 }
 
