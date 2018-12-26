@@ -69,71 +69,21 @@ typedef struct
 
 static uint16_t *rgui_framebuf_data      = NULL;
 
-/* Note: if we knew what colour format each of these
- * special cases required, we could do away with all
- * this nonsense and handle it inside a single colour
- * conversion function...
- * In the meantime, we'll use the existing obfuscated
- * values for all the non-standard platforms, and leave
- * it messy... */
-#if defined(GEKKO) || defined(PSP)
+#if defined(PS2)
 
-/* Is this supposed to be 4444 ABGR?
- * Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define HOVER_COLOR(settings)        ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
-#define NORMAL_COLOR(settings)       0x7FFF
-#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
-#define BG_DARK_COLOR(settings)      ((6 << 12) | (1 << 8) | (1 << 4) | (1 << 0))
-#define BG_LIGHT_COLOR(settings)     ((6 << 12) | (2 << 8) | (2 << 4) | (2 << 0))
-#define BORDER_DARK_COLOR(settings)  ((6 << 12) | (1 << 8) | (1 << 5) | (1 << 0))
-#define BORDER_LIGHT_COLOR(settings) ((6 << 12) | (2 << 8) | (2 << 5) | (2 << 0))
-
-#elif defined(PS2)
-
-/* Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define HOVER_COLOR(settings)        0x03E0
-#define NORMAL_COLOR(settings)       0x7FFF
-#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
-#define BG_DARK_COLOR(settings)      ((0 << 15) | (1 << 12) | (1 << 7) | (1 << 2))
-#define BG_LIGHT_COLOR(settings)     ((0 << 15) | (2 << 12) | (2 << 7) | (2 << 2))
-#define BORDER_DARK_COLOR(settings)  ((0 << 15) | (1 << 12) | (1 << 8) | (1 << 2))
-#define BORDER_LIGHT_COLOR(settings) ((0 << 15) | (2 << 12) | (2 << 8) | (2 << 2))
-
-#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
-
-#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
-#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
-#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_title_color))
-/* Is this supposed to be RGB565?
- * Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define BG_DARK_COLOR(settings)      ((((31 * (54)) / 255) << 11) | (((63 * (54)) / 255) << 5) | ((31 * (54)) / 255))
-#define BG_LIGHT_COLOR(settings)     BG_DARK_COLOR(settings)
-#define BORDER_DARK_COLOR(settings)  ((((31 * (54)) / 255) << 11) | (((63 * (109)) / 255) << 5) | ((31 * (54)) / 255))
-#define BORDER_LIGHT_COLOR(settings) BORDER_DARK_COLOR(settings)
-
-static uint16_t argb32_to_rgba4444(uint32_t col)
+static uint16_t argb32_to_abgr1555(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xff) >> 4;
-   unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8)  & 0xff) >> 4;
-   unsigned b = ((col & 0xff)      ) >> 4;
-   return (r << 12) | (g << 8) | (b << 4) | a;
+   unsigned a = ((col >> 24) & 0xff) >> 7;
+   unsigned r = ((col >> 16) & 0xff) >> 3;
+   unsigned g = ((col >> 8)  & 0xff) >> 3;
+   unsigned b = ((col & 0xff)      ) >> 3;
+   return (a << 15) | (b << 10) | (g << 5) | r;
 }
+
+#define argb32_to_pixel_platform_format(color) argb32_to_abgr1555(color)
 
 #else
 
-/* This is the only sane case... */
-#define HOVER_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
-#define NORMAL_COLOR(settings)       (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
-#define TITLE_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_title_color))
-#define BG_DARK_COLOR(settings)      (argb32_to_rgba4444(settings->uints.menu_bg_dark_color))
-#define BG_LIGHT_COLOR(settings)     (argb32_to_rgba4444(settings->uints.menu_bg_light_color))
-#define BORDER_DARK_COLOR(settings)  (argb32_to_rgba4444(settings->uints.menu_border_dark_color))
-#define BORDER_LIGHT_COLOR(settings) (argb32_to_rgba4444(settings->uints.menu_border_light_color))
-
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
@@ -143,7 +93,17 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
+#define argb32_to_pixel_platform_format(color) argb32_to_rgba4444(color)
+
 #endif
+
+#define HOVER_COLOR(settings)        (argb32_to_pixel_platform_format(settings->uints.menu_entry_hover_color))
+#define NORMAL_COLOR(settings)       (argb32_to_pixel_platform_format(settings->uints.menu_entry_normal_color))
+#define TITLE_COLOR(settings)        (argb32_to_pixel_platform_format(settings->uints.menu_title_color))
+#define BG_DARK_COLOR(settings)      (argb32_to_pixel_platform_format(settings->uints.menu_bg_dark_color))
+#define BG_LIGHT_COLOR(settings)     (argb32_to_pixel_platform_format(settings->uints.menu_bg_light_color))
+#define BORDER_DARK_COLOR(settings)  (argb32_to_pixel_platform_format(settings->uints.menu_border_dark_color))
+#define BORDER_LIGHT_COLOR(settings) (argb32_to_pixel_platform_format(settings->uints.menu_border_light_color))
 
 static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
 {
