@@ -1,5 +1,5 @@
 BUILD_PRX          = 0
-DEBUG              = 1
+DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 1
@@ -13,6 +13,7 @@ EE_BIN2O = bin2o
 IRX_DIR = $(PS2SDK)/iop/irx
 
 TARGET = retroarchps2.elf
+TARGET_RELEASE = retroarchps2-release.elf
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
@@ -93,6 +94,9 @@ run:
 	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
 
 debug: clean prepare all run
+
+release: clean all
+	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
 
 #Specific file name and output per IRX Module
 $(EE_IRX_OBJ):
