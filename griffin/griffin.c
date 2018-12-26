@@ -773,7 +773,7 @@ AUDIO
 #elif defined(PSP) || defined(VITA)
 #include "../audio/drivers/psp_audio.c"
 #elif defined(PS2)
-// #include "../audio/drivers/ps2_audio.c"
+#include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"

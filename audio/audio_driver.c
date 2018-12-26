@@ -122,6 +122,9 @@ static const audio_driver_t *audio_drivers[] = {
 #if defined(PSP) || defined(VITA)
   &audio_psp,
 #endif
+#if defined(PS2)
+  &audio_ps2,
+#endif
 #ifdef _3DS
    &audio_ctr_csnd,
    &audio_ctr_dsp,

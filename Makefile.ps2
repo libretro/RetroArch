@@ -1,12 +1,12 @@
 BUILD_PRX          = 0
-DEBUG              = 0
+DEBUG              = 1
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 1
 HAVE_THREADS       = 0
 BIG_STACK          = 0
 WHOLE_ARCHIVE_LINK = 0
-PS2_IP = 192.168.2.150
+PS2_IP = 192.168.1.150
 
 #Configuration for IRX
 EE_BIN2O = bin2o
@@ -31,16 +31,16 @@ INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
 INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 GPVAL = -G0
-CFLAGS = $(OPTIMIZE_LV)  -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
-RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_IMAGEVIEWER -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
+RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
 LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L. -s
 LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lgskit -ldmakit -lpad -lmc -lhdd -lsdl -lc -lfileXio -lpatches -lpoweroff -ldebug -lc
+LIBS += -lgskit -ldmakit -laudsrv -lpad -lmc -lhdd -lsdl -lc -lfileXio -lpatches -lpoweroff -lc
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
