@@ -60,7 +60,7 @@
 #include <time.h>
 #endif
 
-#if defined(VITA) || defined(BSD)
+#if defined(VITA) || defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
