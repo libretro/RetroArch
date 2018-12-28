@@ -128,7 +128,21 @@ int32_t d3d_translate_filter(unsigned type)
 
 void d3d_input_driver(const char* input_name, const char* joypad_name, const input_driver_t** input, void** input_data)
 {
-#if defined(_XBOX) || defined(__WINRT__)
+#if defined(__WINRT__)
+   /* Plain xinput is supported on UWP, but it supports joypad only (uwp driver was added later) */
+   if (string_is_equal(input_name, "xinput"))
+   {
+      void *xinput = input_xinput.init(joypad_name);
+      *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
+      *input_data = xinput;
+   }
+   else
+   {
+      void *uwp = input_uwp.init(joypad_name);
+      *input = uwp ? (const input_driver_t*)&input_uwp : NULL;
+      *input_data = uwp;
+   }
+#elif defined(_XBOX)
    void *xinput = input_xinput.init(joypad_name);
    *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
    *input_data = xinput;

@@ -227,6 +227,7 @@ enum input_driver_enum
    INPUT_WII,
    INPUT_WIIU,
    INPUT_XINPUT,
+   INPUT_UWP,
    INPUT_UDEV,
    INPUT_LINUXRAW,
    INPUT_COCOA,
@@ -437,7 +438,9 @@ static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#if defined(XENON)
+#ifdef __WINRT__
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
+#elif defined(XENON)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
@@ -867,6 +870,8 @@ const char *config_get_default_input(void)
          return "xenon360";
       case INPUT_XINPUT:
          return "xinput";
+      case INPUT_UWP:
+         return "uwp";
       case INPUT_WII:
          return "gx";
       case INPUT_WIIU:

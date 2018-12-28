@@ -834,6 +834,7 @@ extern input_driver_t input_xenon360;
 extern input_driver_t input_gx;
 extern input_driver_t input_wiiu;
 extern input_driver_t input_xinput;
+extern input_driver_t input_uwp;
 extern input_driver_t input_linuxraw;
 extern input_driver_t input_udev;
 extern input_driver_t input_cocoa;

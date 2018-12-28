@@ -34,6 +34,7 @@ using namespace Windows::ApplicationModel::Activation;
 using namespace Windows::UI::Core;
 using namespace Windows::UI::Input;
 using namespace Windows::UI::ViewManagement;
+using namespace Windows::Devices::Input;
 using namespace Windows::System;
 using namespace Windows::System::Profile;
 using namespace Windows::Foundation;
@@ -158,6 +159,20 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
    { 0, RETROK_UNKNOWN }
 };
 
+struct uwp_input_state_t {
+	short mouse_screen_x = 0, mouse_screen_y = 0;
+	short mouse_rel_x = 0, mouse_rel_y = 0;
+	bool mouse_left = false, mouse_right = false, mouse_middle = false;
+	bool mouse_button4 = false, mouse_button5 = false;
+	short mouse_wheel_left = 0, mouse_wheel_up = 0;
+
+	short touch_screen_x = 0, touch_screen_y = 0;
+	short touch_rel_x = 0, touch_rel_y = 0;
+	bool touch_touched = false;
+};
+
+struct uwp_input_state_t uwp_current_input, uwp_next_input;
+
 // The main function is only used to initialize our IFrameworkView class.
 [Platform::MTAThread]
 int main(Platform::Array<Platform::String^>^)
@@ -225,10 +240,22 @@ void App::SetWindow(CoreWindow^ window)
 		ref new TypedEventHandler<CoreWindow^, CoreWindowEventArgs^>(this, &App::OnWindowClosed);
 
 	window->KeyDown +=
-		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKeyDown);
+		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
 
 	window->KeyUp +=
-		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKeyUp);
+		ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
+
+	window->PointerPressed +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
+
+	window->PointerReleased +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
+
+	window->PointerMoved +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
+
+	window->PointerWheelChanged +=
+		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
 
 	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
@@ -255,7 +282,6 @@ void App::Load(Platform::String^ entryPoint)
 		CoreApplication::Exit();
 		return;
 	}
-	input_keymaps_init_keyboard_lut(rarch_key_map_uwp); // TODO (krzys_h): move this to the input driver
 	m_initialized = true;
 }
 
@@ -356,17 +382,7 @@ void App::OnWindowActivated(CoreWindow^ sender, WindowActivatedEventArgs^ args)
 	m_windowFocused = args->WindowActivationState != CoreWindowActivationState::Deactivated;
 }
 
-void App::OnKeyDown(CoreWindow^ sender, KeyEventArgs^ args)
-{
-	OnKey(sender, args, true);
-}
-
-void App::OnKeyUp(CoreWindow^ sender, KeyEventArgs^ args)
-{
-	OnKey(sender, args, false);
-}
-
-void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args, bool down)
+void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args)
 {
 	uint16_t mod = 0;
 	if ((sender->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
@@ -385,7 +401,39 @@ void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args, bool down)
 
 	unsigned keycode = input_keymaps_translate_keysym_to_rk((unsigned)args->VirtualKey);
 
-	input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+	input_keyboard_event(!args->KeyStatus.IsKeyReleased, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+}
+
+void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)
+{
+	if (args->CurrentPoint->PointerDevice->PointerDeviceType == PointerDeviceType::Mouse)
+	{
+		uwp_next_input.mouse_left = args->CurrentPoint->Properties->IsLeftButtonPressed;
+		uwp_next_input.mouse_middle = args->CurrentPoint->Properties->IsMiddleButtonPressed;
+		uwp_next_input.mouse_right = args->CurrentPoint->Properties->IsRightButtonPressed;
+		uwp_next_input.mouse_button4 = args->CurrentPoint->Properties->IsXButton1Pressed;
+		uwp_next_input.mouse_button5 = args->CurrentPoint->Properties->IsXButton2Pressed;
+		uwp_next_input.mouse_screen_x = args->CurrentPoint->Position.X;
+		uwp_next_input.mouse_screen_y = args->CurrentPoint->Position.Y;
+		uwp_next_input.mouse_rel_x = uwp_next_input.mouse_screen_x - uwp_current_input.mouse_screen_x;
+		uwp_next_input.mouse_rel_y = uwp_next_input.mouse_screen_y - uwp_current_input.mouse_screen_y;
+		if (args->CurrentPoint->Properties->IsHorizontalMouseWheel)
+		{
+			uwp_next_input.mouse_wheel_left += args->CurrentPoint->Properties->MouseWheelDelta;
+		}
+		else
+		{
+			uwp_next_input.mouse_wheel_up += args->CurrentPoint->Properties->MouseWheelDelta;
+		}
+	}
+	else
+	{
+		uwp_next_input.touch_touched = args->CurrentPoint->IsInContact;
+		uwp_next_input.touch_screen_x = args->CurrentPoint->Position.X;
+		uwp_next_input.touch_screen_y = args->CurrentPoint->Position.Y;
+		uwp_next_input.touch_rel_x = uwp_next_input.touch_screen_x - uwp_current_input.touch_screen_x;
+		uwp_next_input.touch_rel_y = uwp_next_input.touch_screen_y - uwp_current_input.touch_screen_y;
+	}
 }
 
 void App::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
@@ -475,5 +523,73 @@ extern "C" {
 	void* uwp_get_corewindow(void)
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
+	}
+
+	void uwp_input_next_frame(void)
+	{
+		uwp_current_input = uwp_next_input;
+		uwp_next_input.mouse_rel_x = 0;
+		uwp_next_input.mouse_rel_y = 0;
+		uwp_next_input.mouse_wheel_up %= WHEEL_DELTA;
+		uwp_next_input.mouse_wheel_left %= WHEEL_DELTA;
+		uwp_next_input.touch_rel_x = 0;
+		uwp_next_input.touch_rel_y = 0;
+	}
+
+	bool uwp_keyboard_pressed(unsigned key)
+	{
+		unsigned sym = rarch_keysym_lut[(enum retro_key)key];
+		return (CoreWindow::GetForCurrentThread()->GetKeyState((VirtualKey)sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
+	}
+
+	int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen)
+	{
+		int16_t state = 0;
+
+		switch (id)
+		{
+		case RETRO_DEVICE_ID_MOUSE_X:
+			return screen ? uwp_current_input.mouse_screen_x : uwp_current_input.mouse_rel_x;
+		case RETRO_DEVICE_ID_MOUSE_Y:
+			return screen ? uwp_current_input.mouse_screen_y : uwp_current_input.mouse_rel_y;
+		case RETRO_DEVICE_ID_MOUSE_LEFT:
+			return uwp_current_input.mouse_left;
+		case RETRO_DEVICE_ID_MOUSE_RIGHT:
+			return uwp_current_input.mouse_right;
+		case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+			return uwp_current_input.mouse_wheel_up > WHEEL_DELTA;
+		case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+			return uwp_current_input.mouse_wheel_up < -WHEEL_DELTA;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+			return uwp_current_input.mouse_wheel_left > WHEEL_DELTA;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+			return uwp_current_input.mouse_wheel_left < -WHEEL_DELTA;
+		case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+			return uwp_current_input.mouse_middle;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+			return uwp_current_input.mouse_button4;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+			return uwp_current_input.mouse_button5;
+		}
+
+		return 0;
+	}
+
+	// TODO: I don't have any touch-enabled Windows devices to test if this actually works
+	int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen)
+	{
+		switch (id)
+		{
+		case RETRO_DEVICE_ID_POINTER_X:
+			return screen ? uwp_current_input.touch_screen_x : uwp_current_input.touch_rel_x;
+		case RETRO_DEVICE_ID_POINTER_Y:
+			return screen ? uwp_current_input.touch_screen_y : uwp_current_input.touch_rel_y;
+		case RETRO_DEVICE_ID_POINTER_PRESSED:
+			return uwp_current_input.touch_touched;
+		default:
+			break;
+		}
+
+		return 0;
 	}
 }

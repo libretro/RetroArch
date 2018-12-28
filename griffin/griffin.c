@@ -603,6 +603,7 @@ INPUT
 #include "../input/drivers_joypad/dos_joypad.c"
 #elif defined(__WINRT__)
 #include "../input/drivers/xdk_xinput_input.c"
+#include "../input/drivers/uwp_input.c"
 #endif
 
 #ifdef HAVE_WAYLAND
