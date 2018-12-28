@@ -869,6 +869,11 @@ ifeq ($(TARGET), retroarch_switch)
           frontend/drivers/platform_switch.o
 endif
 
+ifeq ($(TARGET), retroarch_orbis)
+   OBJ += gfx/drivers_context/orbis_ctx.o \
+          frontend/drivers/platform_orbis.o
+endif
+
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o \

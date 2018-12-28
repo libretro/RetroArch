@@ -1,4 +1,4 @@
-TARGET		    := retroarch_ps4
+TARGET		    := retroarch_orbis
 DEBUG               ?= 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
@@ -61,7 +61,7 @@ else
 	#OBJ += input/drivers/psp_input.o
 	#OBJ += input/drivers_joypad/psp_joypad.o
 	#OBJ += audio/drivers/psp_audio.o
-	OBJ += frontend/drivers/platform_orbis.o
+	#OBJ += frontend/drivers/platform_orbis.o
 endif
 
 
