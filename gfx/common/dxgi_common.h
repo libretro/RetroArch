@@ -444,6 +444,7 @@ static INLINE HRESULT DXGIGetAdapterDesc1(DXGIAdapter adapter, DXGI_ADAPTER_DESC
 {
    return adapter->lpVtbl->GetDesc1(adapter, desc);
 }
+#ifndef __WINRT__
 static INLINE ULONG DXGIReleaseDisplayControl(DXGIDisplayControl display_control)
 {
    return display_control->lpVtbl->Release(display_control);
@@ -612,6 +613,7 @@ static INLINE HRESULT DXGICheckPresentDurationSupport(
          swap_chain_media, desired_present_duration, closest_smaller_present_duration,
          closest_larger_present_duration);
 }
+#endif
 static INLINE ULONG DXGIReleaseSwapChain(DXGISwapChain swap_chain)
 {
    return swap_chain->lpVtbl->Release(swap_chain);
@@ -793,7 +795,6 @@ void dxgi_copy(
       void*       dst_data);
 
 void dxgi_update_title(video_frame_info_t* video_info);
-void dxgi_input_driver(const char* name, const input_driver_t** input, void** input_data);
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 

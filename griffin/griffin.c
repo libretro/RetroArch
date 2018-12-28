@@ -601,6 +601,8 @@ INPUT
 #elif defined(DJGPP)
 #include "../input/drivers/dos_input.c"
 #include "../input/drivers_joypad/dos_joypad.c"
+#elif defined(__WINRT__)
+#include "../input/drivers/xdk_xinput_input.c"
 #endif
 
 #ifdef HAVE_WAYLAND
@@ -947,7 +949,7 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
@@ -1259,7 +1261,7 @@ MENU
 #include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../menu/drivers_display/menu_display_gdi.c"
 #endif
 

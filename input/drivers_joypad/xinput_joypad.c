@@ -42,12 +42,20 @@
 
 #ifdef HAVE_DINPUT
 #include "dinput_joypad.h"
+#else
+int g_xinput_pad_indexes[MAX_USERS];
+bool g_xinput_block_pads;
+#endif
+
+#if defined(__WINRT__)
+#include <Xinput.h>
 #endif
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
+ * Windows 10 API version doesn't have an include guard at all and just uses #pragma once instead
  */
-#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H))
+#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__)
 
 #define XINPUT_GAMEPAD_DPAD_UP          0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
@@ -173,7 +181,7 @@ const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 static bool load_xinput_dll(void)
 {
    const char *version = "1.4";
@@ -210,7 +218,7 @@ static bool xinput_joypad_init(void *data)
    unsigned i, j;
    XINPUT_STATE dummy_state;
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    if (!g_xinput_dll)
       if (!load_xinput_dll())
          return false;
@@ -219,6 +227,9 @@ static bool xinput_joypad_init(void *data)
     * First try to load ordinal 100 (XInputGetStateEx).
     */
    g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, (const char*)100);
+#elif defined(__WINRT__)
+   /* XInputGetStateEx is not available on WinRT */
+   g_XInputGetStateEx = NULL;
 #else
    g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetStateEx;
 #endif
@@ -230,7 +241,7 @@ static bool xinput_joypad_init(void *data)
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
       g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, "XInputGetState");
 #else
 	  g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetState;
@@ -239,7 +250,7 @@ static bool xinput_joypad_init(void *data)
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
          dylib_close(g_xinput_dll);
 #endif
          return false; /* DLL was loaded but did not contain the correct function. */
@@ -247,7 +258,7 @@ static bool xinput_joypad_init(void *data)
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
 #else
    g_XInputSetState = (XInputSetState_t)XInputSetState;
@@ -255,7 +266,7 @@ static bool xinput_joypad_init(void *data)
    if (!g_XInputSetState)
    {
       RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif
       return false; /* DLL was loaded but did not contain the correct function. */
@@ -277,7 +288,7 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[1].connected) &&
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
-      return false;
+      return true;
 
    RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected +
          g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
@@ -347,7 +358,7 @@ static void xinput_joypad_destroy(void)
    for (i = 0; i < 4; ++i)
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    dylib_close(g_xinput_dll);
 
    g_xinput_dll        = NULL;
@@ -499,6 +510,7 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
+#ifdef HAVE_DINPUT
       if (g_xinput_states[i].connected)
       {
          if (g_XInputGetStateEx && g_XInputGetStateEx(i,
@@ -506,6 +518,28 @@ static void xinput_joypad_poll(void)
                == ERROR_DEVICE_NOT_CONNECTED)
             g_xinput_states[i].connected = false;
       }
+#else
+      /* Normally, dinput handles device insertion/removal for us, but
+       * since dinput is not available on UWP we have to do it ourselves */
+      /* Also note that on UWP, the controllers are not available on startup
+       * and are instead 'plugged in' a moment later because Microsoft reasons */
+      // TODO: This may be bad for performance?
+      bool new_connected = g_XInputGetStateEx && g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
+      if (new_connected != g_xinput_states[i].connected)
+      {
+         if (new_connected)
+         {
+            /* This is kinda ugly, but it's the same thing that dinput does */
+            xinput_joypad_destroy();
+            xinput_joypad_init(NULL);
+            return;
+         }
+         else
+         {
+            g_xinput_states[i].connected = new_connected;
+         }
+      }
+#endif
    }
 
 #ifdef HAVE_DINPUT

@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -33,6 +33,10 @@
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#endif
+
+#ifdef __WINRT__
+#error "UWP does not support D3D10"
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -556,8 +560,12 @@ static void d3d10_gfx_free(void* data)
       Release(d3d10->device);
    }
 
+#ifdef HAVE_MONITOR
    win32_monitor_from_window();
+#endif
+#ifdef HAVE_WINDOW
    win32_destroy_window();
+#endif
    free(d3d10);
 }
 
@@ -566,31 +574,39 @@ d3d10_gfx_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
    unsigned i;
+#ifdef HAVE_MONITOR
    MONITORINFOEX   current_mon;
    HMONITOR        hm_to_use;
    WNDCLASSEX      wndclass = { 0 };
+#endif
    settings_t*     settings = config_get_ptr();
    d3d10_video_t*  d3d10    = (d3d10_video_t*)calloc(1, sizeof(*d3d10));
 
    if (!d3d10)
       return NULL;
 
+#ifdef HAVE_WINDOW
    win32_window_reset();
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
+#endif
 
+#ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d10->cur_mon_id);
+#endif
 
    d3d10->vp.full_width  = video->width;
    d3d10->vp.full_height = video->height;
 
+#ifdef HAVE_MONITOR
    if (!d3d10->vp.full_width)
       d3d10->vp.full_width = 
          current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d10->vp.full_height)
       d3d10->vp.full_height = 
          current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+#endif
 
    if (!win32_set_video_mode(d3d10,
             d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
@@ -598,7 +614,7 @@ d3d10_gfx_init(const video_info_t* video,
       RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
       goto error;
    }
-   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    {
       UINT                 flags = 0;
@@ -611,7 +627,9 @@ d3d10_gfx_init(const video_info_t* video,
       desc.BufferDesc.RefreshRate.Numerator   = 60;
       desc.BufferDesc.RefreshRate.Denominator = 1;
       desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#if HAVE_WINDOW
       desc.OutputWindow          = main_window.hwnd;
+#endif
       desc.SampleDesc.Count      = 1;
       desc.SampleDesc.Quality    = 0;
       desc.Windowed              = TRUE;
@@ -1598,7 +1616,12 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_gfx_load_texture,
    d3d10_gfx_unload_texture,
    NULL, /* set_video_mode */
+#ifndef __WINRT__
    win32_get_refresh_rate,
+#else
+   /* UWP does not expose this information easily */
+   NULL,
+#endif
    d3d10_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

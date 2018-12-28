@@ -125,3 +125,28 @@ int32_t d3d_translate_filter(unsigned type)
 
    return (int32_t)D3D_TEXTURE_FILTER_POINT;
 }
+
+void d3d_input_driver(const char* input_name, const char* joypad_name, const input_driver_t** input, void** input_data)
+{
+#if defined(_XBOX) || defined(__WINRT__)
+   void *xinput = input_xinput.init(joypad_name);
+   *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
+   *input_data = xinput;
+#else
+#if _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
+   if (string_is_equal(input_name, "raw"))
+   {
+      *input_data = input_winraw.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         return;
+      }
+   }
+#endif
+
+   *input_data = input_dinput.init(joypad_name);
+   *input = *input_data ? &input_dinput : NULL;
+#endif
+}

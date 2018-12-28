@@ -359,12 +359,14 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
+#ifndef __WINRT__
   if (settings->bools.menu_show_core_updater)
      menu_entries_append_enum(info->list,
            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
            msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
            MENU_ENUM_LABEL_CORE_DELETE,
            MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+#endif
 
    return 0;
 }
@@ -3102,6 +3104,7 @@ static unsigned menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
    count++;
 #elif defined(HAVE_NETWORKING)
+#ifndef __WINRT__
    if (settings->bools.menu_show_core_updater)
    {
       menu_entries_append_enum(info->list,
@@ -3111,6 +3114,7 @@ static unsigned menu_displaylist_parse_options(
             MENU_SETTING_ACTION, 0, 0);
       count++;
    }
+#endif
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
@@ -4150,7 +4154,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORKING) && !defined(__WINRT__)
    if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
    {
       if (info->download_core)

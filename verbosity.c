@@ -37,6 +37,11 @@
 #include <android/log.h>
 #endif
 
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
@@ -60,7 +65,11 @@
  * will write to this file. */
 static FILE *log_file_fp         = NULL;
 static void* log_file_buf        = NULL;
+#if _DEBUG
+static bool main_verbosity       = true;
+#else
 static bool main_verbosity       = false;
+#endif
 static bool log_file_initialized = false;
 
 #ifdef NXLINK
@@ -193,7 +202,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
 
    {
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       char buffer[1024];
 #endif
 #ifdef HAVE_FILE_LOGGER
@@ -202,7 +211,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE *fp = stderr;
 #endif
 
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       buffer[0] = '\0';
       vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
@@ -212,7 +221,13 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(fp);
       }
 
+#if defined(HAVE_QT)
       ui_companion_driver_log_msg(buffer);
+#endif
+
+#if defined(__WINRT__)
+      OutputDebugStringA(buffer);
+#endif
 #else
 #if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
           if (nxlink_connected)

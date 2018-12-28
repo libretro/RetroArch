@@ -306,6 +306,7 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
 
 static bool load_dynamic_core(void)
 {
+#ifndef __WINRT__ /* Can't lookup symbols in itself on UWP */
    function_t sym       = dylib_proc(NULL, "retro_init");
 
    if (sym)
@@ -319,6 +320,7 @@ static bool load_dynamic_core(void)
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
       retroarch_fail(1, "init_libretro_sym()");
    }
+#endif
 
    if (string_is_empty(path_get(RARCH_PATH_CORE)))
    {

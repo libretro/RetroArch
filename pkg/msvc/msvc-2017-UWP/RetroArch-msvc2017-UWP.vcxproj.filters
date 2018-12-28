@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="uwp">
+      <UniqueIdentifier>{1246fa09-e114-4a52-88c2-657b2f13d9fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="griffin">
+      <UniqueIdentifier>{32de9679-6494-4933-afa2-430fd975e506}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cores">
+      <UniqueIdentifier>{73676219-cf54-454f-b6fa-9b192c1454f8}</UniqueIdentifier>
+      <Extensions>
+      </Extensions>
+    </Filter>
+    <Filter Include="core_deps">
+      <UniqueIdentifier>{bf1e643d-c518-4a77-a355-ae8a93efc18b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{ba77ad30-f536-4bb8-ad9d-2870e8a9bd39}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="msvc-2017-UWP_TemporaryKey.pfx" />
+    <None Include="libwinpthread-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="cores\mednafen_snes_libretro.dll">
+      <Filter>cores</Filter>
+    </None>
+    <None Include="cores\pcsx_rearmed_libretro.dll">
+      <Filter>cores</Filter>
+    </None>
+    <None Include="zlib1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="avcodec-57.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="avformat-57.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="avutil-55.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libass-9.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libbluray-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libbz2-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libcelt0-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="LIBEAY32.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libexpat-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libffi-6.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libfontconfig-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libfreetype-6.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libfribidi-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libgcc_s_seh-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libglib-2.0-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libgmp-10.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libgnutls-30.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libgraphite2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libgsm.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libharfbuzz-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libhogweed-4.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libiconv-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libicudt58.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libicuin58.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libicuuc58.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libidn2-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libintl-8.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libjasper-4.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libjpeg-8.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="liblcms2-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="liblzma-5.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libmng-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libmodplug-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libmp3lame-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libnettle-6.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libogg-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libopencore-amrnb-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libopencore-amrwb-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libopenjp2-7.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libopus-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libp11-kit-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libpcre-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libpcre2-16-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libpng16-16.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="librtmp-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libspeex-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libstdc++-6.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libtasn1-6.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libtheoradec-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libtheoraenc-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libtiff-5.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libunistring-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libvorbis-0.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libvorbisenc-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libvpx-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libwavpack-1.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libwebp-7.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libwebpdemux-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libwebpmux-3.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libx264-155.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libx265.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="libxml2-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="SSLEAY32.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="swresample-2.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="swscale-4.dll">
+      <Filter>core_deps</Filter>
+    </None>
+    <None Include="xvidcore.dll">
+      <Filter>core_deps</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\uwp\uwp_main.h">
+      <Filter>uwp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\uwp\uwp_func.h">
+      <Filter>uwp</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\griffin\griffin.c">
+      <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
+      <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\uwp\uwp_main.cpp">
+      <Filter>uwp</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
