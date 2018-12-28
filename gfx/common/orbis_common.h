@@ -16,11 +16,7 @@ typedef struct
     ScePglConfig pgl_config;
 #endif
 
-    struct
-    {
-        unsigned short width;
-        unsigned short height;
-    } native_window;
+    SceWindow native_window;
     bool resize;
     unsigned width, height;
     float refresh_rate;
