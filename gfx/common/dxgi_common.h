@@ -270,6 +270,9 @@ typedef IDXGISurface1*          DXGISurface;
 typedef IDXGIOutput*            DXGIOutput;
 typedef IDXGIDevice*            DXGIDevice;
 typedef IDXGIFactory1*          DXGIFactory;
+#ifdef __WINRT__
+typedef IDXGIFactory2*          DXGIFactory2;
+#endif
 typedef IDXGIAdapter1*          DXGIAdapter;
 typedef IDXGIDisplayControl*    DXGIDisplayControl;
 typedef IDXGIOutputDuplication* DXGIOutputDuplication;
@@ -414,6 +417,14 @@ static INLINE HRESULT DXGICreateSwapChain(
    return factory->lpVtbl->CreateSwapChain(
          factory, (IUnknown*)device, desc, (IDXGISwapChain**)swap_chain);
 }
+#ifdef __WINRT__
+static INLINE HRESULT DXGICreateSwapChainForCoreWindow(
+      DXGIFactory2 factory, void* device, void* corewindow, DXGI_SWAP_CHAIN_DESC1* desc, DXGIOutput restrict_to, DXGISwapChain* swap_chain)
+{
+   return factory->lpVtbl->CreateSwapChainForCoreWindow(
+         factory, (IUnknown*)device, (IUnknown*)corewindow, desc, restrict_to, (IDXGISwapChain1**)swap_chain);
+}
+#endif
 static INLINE HRESULT
 DXGICreateSoftwareAdapter(DXGIFactory factory, HMODULE module, DXGIAdapter* adapter)
 {
@@ -423,6 +434,12 @@ static INLINE HRESULT DXGIEnumAdapters(DXGIFactory factory, UINT id, DXGIAdapter
 {
    return factory->lpVtbl->EnumAdapters1(factory, id, adapter);
 }
+#ifdef __WINRT__
+static INLINE HRESULT DXGIEnumAdapters2(DXGIFactory2 factory, UINT id, DXGIAdapter* adapter)
+{
+   return factory->lpVtbl->EnumAdapters1(factory, id, adapter);
+}
+#endif
 static INLINE BOOL DXGIIsCurrent(DXGIFactory factory)
 {
    return factory->lpVtbl->IsCurrent(factory);
@@ -760,6 +777,12 @@ static INLINE HRESULT DXGICreateFactory(DXGIFactory* factory)
 {
    return CreateDXGIFactory1(uuidof(IDXGIFactory1), (void**)factory);
 }
+#ifdef __WINRT__
+static INLINE HRESULT DXGICreateFactory2(DXGIFactory2* factory)
+{
+   return CreateDXGIFactory1(uuidof(IDXGIFactory2), (void**)factory);
+}
+#endif
 
 /* internal */
 

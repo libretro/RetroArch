@@ -35,10 +35,6 @@
 
 #include "wiiu/wiiu_dbg.h"
 
-#ifdef __WINRT__
-#error "TODO (krzys_h): DX12 could be doable on UWP?"
-#endif
-
 static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 {
    if (D3D12GetCompletedValue(d3d12->queue.fence) < d3d12->queue.fenceValue)
@@ -881,9 +877,11 @@ static void d3d12_gfx_free(void* data)
 static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+#ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
    WNDCLASSEX     wndclass = { 0 };
+#endif
    settings_t*    settings = config_get_ptr();
    d3d12_video_t* d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
@@ -931,8 +929,13 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_queue(d3d12))
       goto error;
 
+#ifdef __WINRT__
+   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, uwp_get_corewindow()))
+      goto error;
+#else
    if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
       goto error;
+#endif
 
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth);

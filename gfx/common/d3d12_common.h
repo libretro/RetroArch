@@ -1001,6 +1001,7 @@ static INLINE void D3D12ClearStoredMessages(D3D12InfoQueue info_queue)
 {
    info_queue->lpVtbl->ClearStoredMessages(info_queue);
 }
+#ifndef __WINRT__
 static INLINE HRESULT D3D12GetMessageA(
       D3D12InfoQueue info_queue,
       UINT64         message_index,
@@ -1009,6 +1010,7 @@ static INLINE HRESULT D3D12GetMessageA(
 {
    return info_queue->lpVtbl->GetMessageA(info_queue, message_index, message, message_byte_length);
 }
+#endif
 static INLINE UINT64 D3D12GetNumMessagesAllowedByStorageFilter(D3D12InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetNumMessagesAllowedByStorageFilter(info_queue);
@@ -1341,7 +1343,11 @@ static_assert(
 typedef struct
 {
    unsigned    cur_mon_id;
+#ifdef __WINRT__
+   DXGIFactory2 factory;
+#else
    DXGIFactory factory;
+#endif
    DXGIAdapter adapter;
    D3D12Device device;
 

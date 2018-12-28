@@ -324,7 +324,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
-#elif defined(HAVE_D3D12)
+#elif defined(HAVE_D3D12) && false
+/* FIXME: DX12 performance on Xbox is horrible for some reason, so use d3d11 as default */
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
 #elif defined(HAVE_D3D11)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;

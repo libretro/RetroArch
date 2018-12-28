@@ -274,14 +274,14 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(HAVE_D3D10)
-   &video_d3d10,
+#if defined(HAVE_D3D12)
+   &video_d3d12,
 #endif
 #if defined(HAVE_D3D11)
    &video_d3d11,
 #endif
-#if defined(HAVE_D3D12)
-   &video_d3d12,
+#if defined(HAVE_D3D10)
+   &video_d3d10,
 #endif
 #if defined(HAVE_D3D9)
    &video_d3d9,
