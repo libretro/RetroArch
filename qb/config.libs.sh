@@ -413,7 +413,12 @@ if [ "$HAVE_MPV" != 'no' ]; then
    check_pkgconf MPV libmpv
 fi
 
-if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+   HAVE_FFMPEG='no'
+   die : 'Notice: Threads are not available, FFmpeg will also be disabled.'
+fi
+
+if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_pkgconf AVCODEC libavcodec 54
    check_pkgconf AVFORMAT libavformat 54
    check_pkgconf AVDEVICE libavdevice
@@ -438,7 +443,6 @@ if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
       die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
    fi
 else
-   die : 'Notice: Not building with threading support. Will skip FFmpeg.'
    HAVE_FFMPEG='no'
 fi
 
