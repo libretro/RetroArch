@@ -38,7 +38,7 @@
     <ProjectGuid>{f5e937b6-1ba0-4446-b94b-f3bbdef908f4}</ProjectGuid>
     <Keyword>DirectXApp</Keyword>
     <RootNamespace>RetroArchUWP</RootNamespace>
-    <DefaultLanguage>pl-PL</DefaultLanguage>
+    <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
@@ -252,15 +252,6 @@
       <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Image Include="Assets\LockScreenLogo.scale-200.png" />
-    <Image Include="Assets\SplashScreen.scale-200.png" />
-    <Image Include="Assets\Square150x150Logo.scale-200.png" />
-    <Image Include="Assets\Square44x44Logo.scale-200.png" />
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Image Include="Assets\StoreLogo.png" />
-    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
-  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
@@ -496,6 +487,35 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_func.h" />
     <ClInclude Include="..\..\..\uwp\uwp_main.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LargeTile.scale-100.png" />
+    <Image Include="Assets\LargeTile.scale-200.png" />
+    <Image Include="Assets\LargeTile.scale-400.png" />
+    <Image Include="Assets\SmallTile.scale-100.png" />
+    <Image Include="Assets\SmallTile.scale-200.png" />
+    <Image Include="Assets\SmallTile.scale-400.png" />
+    <Image Include="Assets\SplashScreen.scale-100.png" />
+    <Image Include="Assets\SplashScreen.scale-200.png" />
+    <Image Include="Assets\SplashScreen.scale-400.png" />
+    <Image Include="Assets\Square150x150Logo.scale-100.png" />
+    <Image Include="Assets\Square150x150Logo.scale-200.png" />
+    <Image Include="Assets\Square150x150Logo.scale-400.png" />
+    <Image Include="Assets\Square44x44Logo.altform-unplated_targetsize-16.png" />
+    <Image Include="Assets\Square44x44Logo.altform-unplated_targetsize-256.png" />
+    <Image Include="Assets\Square44x44Logo.altform-unplated_targetsize-48.png" />
+    <Image Include="Assets\Square44x44Logo.scale-100.png" />
+    <Image Include="Assets\Square44x44Logo.scale-200.png" />
+    <Image Include="Assets\Square44x44Logo.scale-400.png" />
+    <Image Include="Assets\Square44x44Logo.targetsize-16.png" />
+    <Image Include="Assets\Square44x44Logo.targetsize-256.png" />
+    <Image Include="Assets\Square44x44Logo.targetsize-48.png" />
+    <Image Include="Assets\StoreLogo.scale-100.png" />
+    <Image Include="Assets\StoreLogo.scale-200.png" />
+    <Image Include="Assets\StoreLogo.scale-400.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-100.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-400.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
