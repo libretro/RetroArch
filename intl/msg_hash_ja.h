@@ -3919,10 +3919,10 @@ MSG_HASH(
       "カスタムリフレッシュレートを使用")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Select the output port connected to the CRT display.")
+      "CRTディスプレイに接続されている出力ポートを選択します。")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Output Display ID")
+      "出力ディスプレイの識別番号")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
     "録画を開始"
@@ -4015,45 +4015,45 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
       "メニューの色テーマ")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "ベーシックホワイト"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "ベーシックブラック"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "色テーマを選択します。"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use preferred system color theme")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use your operating system's color theme (if any) - overrides theme settings.")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
+      "最低")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
+      "低")
 MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
+      "普通")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
+      "高")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+      "最高")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "No music available."
+    "音楽ファイルがありません。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "No videos available."
+    "動画ファイルがありません。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "No images available."
+    "画像ファイルがありません。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "No favorites available."
+    "お気に入りがありません。"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Remember Window Position and Size")
+      "ウィンドウの位置とサイズを記憶")
