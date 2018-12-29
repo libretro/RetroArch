@@ -12,6 +12,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string/stdstring.h>
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -88,8 +89,10 @@ void *d3d_matrix_multiply(void *_pout,
    for (i = 0; i < 4; i++)
    {
       for (j = 0; j < 4; j++)
-         pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j] + pm1->m[i][1] * pm2->m[1][j] + 
-                         pm1->m[i][2] * pm2->m[2][j] + pm1->m[i][3] * pm2->m[3][j];
+         pout->m[i][j] = pm1->m[i][0] * 
+            pm2->m[0][j] + pm1->m[i][1] * pm2->m[1][j] + 
+                           pm1->m[i][2] * pm2->m[2][j] + 
+                           pm1->m[i][3] * pm2->m[3][j];
    }
    return pout;
 }
@@ -129,7 +132,8 @@ int32_t d3d_translate_filter(unsigned type)
 void d3d_input_driver(const char* input_name, const char* joypad_name, const input_driver_t** input, void** input_data)
 {
 #if defined(__WINRT__)
-   /* Plain xinput is supported on UWP, but it supports joypad only (uwp driver was added later) */
+   /* Plain xinput is supported on UWP, but it 
+    * supports joypad only (uwp driver was added later) */
    if (string_is_equal(input_name, "xinput"))
    {
       void *xinput = input_xinput.init(joypad_name);
