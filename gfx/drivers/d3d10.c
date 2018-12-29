@@ -627,7 +627,7 @@ d3d10_gfx_init(const video_info_t* video,
       desc.BufferDesc.RefreshRate.Numerator   = 60;
       desc.BufferDesc.RefreshRate.Denominator = 1;
       desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-#if HAVE_WINDOW
+#ifdef HAVE_WINDOW
       desc.OutputWindow          = main_window.hwnd;
 #endif
       desc.SampleDesc.Count      = 1;

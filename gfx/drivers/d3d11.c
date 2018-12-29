@@ -656,7 +656,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
       desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-#if HAVE_WINDOW
+#ifdef HAVE_WINDOW
       desc.OutputWindow                       = main_window.hwnd;
 #endif
       desc.SampleDesc.Count                   = 1;
@@ -664,7 +664,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #if 0
       desc.Scaling                            = DXGI_SCALING_STRETCH;
 #endif
-#if HAVE_WINDOW
+#ifdef HAVE_WINDOW
       desc.Windowed                           = TRUE;
 #endif
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)

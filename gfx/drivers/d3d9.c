@@ -1297,7 +1297,8 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_joypad_driver,
+      settings->arrays.input_joypad_driver, input, input_data);
 
    RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
