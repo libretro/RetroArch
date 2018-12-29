@@ -72,6 +72,29 @@ char user_path[512];
 
 static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 
+#ifdef __cplusplus
+extern "C"
+#endif
+int main(int argc, char *argv[])
+{
+   int ret;
+
+   sceSystemServiceHideSplashScreen();
+
+
+	uintptr_t intptr=0;
+	sscanf(argv[1],"%p",&intptr);
+	myConf=(OrbisGlobalConf *)intptr;
+	ret=ps4LinkInitWithConf(myConf->confLink);
+	if(!ret)
+	{
+		ps4LinkFinish();
+		return -1;
+	}
+
+   return rarch_main(argc, argv, NULL);
+}
+
 static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -87,19 +110,6 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
    retro_main_log_file_init("host0:/temp/retroarch-log.txt");
 #endif
 #endif
-
-   int ret;
-
-	uintptr_t intptr=0;
-	sscanf(argv[1],"%p",&intptr);
-	myConf=(OrbisGlobalConf *)intptr;
-	ret=ps4LinkInitWithConf(myConf->confLink);
-	if(!ret)
-	{
-		ps4LinkFinish();
-		return;
-	}
-
 
    strlcpy(eboot_path, "host0:/", sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -282,11 +292,7 @@ static void frontend_orbis_exitspawn(char *s, size_t len)
 
 static int frontend_orbis_get_rating(void)
 {
-#ifdef VITA
    return 6; /* Go with a conservative figure for now. */
-#else
-   return 4;
-#endif
 }
 
 enum frontend_architecture frontend_orbis_get_architecture(void)
@@ -302,52 +308,14 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MSG_UNKNOWN;
 
-#ifdef VITA
    menu_entries_append_enum(list,
-         "app0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "ur0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "ux0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "uma0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "imc0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-#else
-   menu_entries_append_enum(list,
-         "ms0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "ef0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "host0:/",
+         "app0",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
 #endif
-#endif
-
    return 0;
+
 }
 
 frontend_ctx_driver_t frontend_ctx_orbis = {
@@ -381,9 +349,5 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
-#ifdef VITA
-   "vita",
-#else
    "orbis",
-#endif
 };
