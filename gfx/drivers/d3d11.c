@@ -687,11 +687,20 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       }
       else
       {
+#if defined(__WINRT__)
          if (FAILED(D3D11CreateDevice(
                      NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                      requested_feature_levels, number_feature_levels,
                      D3D11_SDK_VERSION, &d3d11->device,
                      &d3d11->supportedFeatureLevel, &d3d11->context)))
+#else
+         if (FAILED(D3D11CreateDeviceAndSwapChain(
+                     NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
+                     requested_feature_levels, number_feature_levels,
+                     D3D11_SDK_VERSION, &desc,
+                     (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
+                     &d3d11->supportedFeatureLevel, &d3d11->context)))
+#endif
             goto error;
       }
 

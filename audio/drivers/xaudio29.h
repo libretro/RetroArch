@@ -1266,33 +1266,27 @@ inline HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
     typedef HRESULT(__stdcall *XAudio2CreateWithVersionInfoFunc)(_Outptr_ IXAudio2**, UINT32, XAUDIO2_PROCESSOR, DWORD);
     typedef HRESULT(__stdcall *XAudio2CreateInfoFunc)(_Outptr_ IXAudio2**, UINT32, XAUDIO2_PROCESSOR);
 
-    static HMODULE s_dllInstance = nullptr;
-    static XAudio2CreateWithVersionInfoFunc s_pfnAudio2CreateWithVersion = nullptr;
-    static XAudio2CreateInfoFunc s_pfnAudio2Create = nullptr;
+    static HMODULE s_dllInstance = NULL;
+    static XAudio2CreateWithVersionInfoFunc s_pfnAudio2CreateWithVersion = NULL;
+    static XAudio2CreateInfoFunc s_pfnAudio2Create = NULL;
 
-    if (s_dllInstance == nullptr)
+    if (s_dllInstance == NULL)
     {
         s_dllInstance = LoadLibraryEx(XAUDIO2_DLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (s_dllInstance == nullptr)
-        {
+        if (s_dllInstance == NULL)
             return HRESULT_FROM_WIN32(GetLastError());
-        }
 
         s_pfnAudio2CreateWithVersion = (XAudio2CreateWithVersionInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2CreateWithVersionInfo");
-        if (s_pfnAudio2CreateWithVersion == nullptr)
+        if (s_pfnAudio2CreateWithVersion == NULL)
         {
             s_pfnAudio2Create = (XAudio2CreateInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2Create");
-            if (s_pfnAudio2Create == nullptr)
-            {
+            if (s_pfnAudio2Create == NULL)
                 return HRESULT_FROM_WIN32(GetLastError());
-            }
         }
     }
 
-    if (s_pfnAudio2CreateWithVersion != nullptr)
-    {
+    if (s_pfnAudio2CreateWithVersion != NULL)
         return (*s_pfnAudio2CreateWithVersion)(ppXAudio2, Flags, XAudio2Processor, NTDDI_VERSION);
-    }
     return (*s_pfnAudio2Create)(ppXAudio2, Flags, XAudio2Processor);
 }
 #else
