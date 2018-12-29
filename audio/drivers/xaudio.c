@@ -222,8 +222,13 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
+#if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL, AudioCategory_GameEffects)))
+      goto error;
+#else
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
       goto error;
+#endif
 
    xaudio2_set_wavefmt(&wfx, channels, samplerate);
 

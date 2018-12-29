@@ -43,6 +43,11 @@
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 
+#ifdef __WINRT__
+#include "../../uwp/uwp_func.h"
+#endif
+
+#ifndef __WINRT__
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
@@ -145,6 +150,7 @@ static void gfx_set_dwm(void)
       RARCH_ERR("Failed to set composition state ...\n");
    dwm_composition_disabled = settings->bools.video_disable_composition;
 }
+#endif
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
@@ -165,7 +171,9 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    GetVersionEx((OSVERSIONINFO*)&vi);
 
    server = vi.wProductType != VER_NT_WORKSTATION;
+#ifndef __WINRT__
    serverR2 = GetSystemMetrics(SM_SERVERR2);
+#endif
 
    switch (si.wProcessorArchitecture)
    {
@@ -302,10 +310,19 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       strlcat(s, " ", len);
       strlcat(s, vi.szCSDVersion, len);
    }
+
+#ifdef __WINRT__
+   if (!string_is_empty(uwp_device_family))
+   {
+      strlcat(s, " ", len);
+      strlcat(s, uwp_device_family, len);
+   }
+#endif
 }
 
 static void frontend_win32_init(void *data)
 {
+#ifndef __WINRT__
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
 #ifdef HAVE_DYNAMIC
@@ -324,6 +341,7 @@ static void frontend_win32_init(void *data)
 		if (!isDPIAwareProc())
 			if (setDPIAwareProc)
 				setDPIAwareProc();
+#endif
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
@@ -385,13 +403,14 @@ enum frontend_architecture frontend_win32_get_architecture(void)
 static int frontend_win32_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
+   file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+         MSG_UNKNOWN;
+#ifndef __WINRT__
    size_t i          = 0;
    unsigned drives   = GetLogicalDrives();
    char    drive[]   = " :\\";
-   file_list_t *list = (file_list_t*)data;
-   enum msg_hash_enums enum_idx = load_content ?
-      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MSG_UNKNOWN;
 
    for (i = 0; i < 32; i++)
    {
@@ -403,6 +422,22 @@ static int frontend_win32_parse_drive_list(void *data, bool load_content)
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0);
    }
+#else
+   /* TODO (krzys_h): UWP storage sandboxing */
+
+   char *home_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   fill_pathname_home_dir(home_dir,
+      PATH_MAX_LENGTH * sizeof(char));
+
+   menu_entries_append_enum(list,
+         home_dir,
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+
+   free(home_dir);
+#endif
 #endif
 
    return 0;
@@ -411,6 +446,7 @@ static int frontend_win32_parse_drive_list(void *data, bool load_content)
 static void frontend_win32_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
+#ifndef __WINRT__
    gfx_set_dwm();
 
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
@@ -459,6 +495,57 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
       ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+#else
+   /* On UWP, we have to use the writable directory instead of the install directory */
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+      "~\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+      "~\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+      "~\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+      "~\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+      "~\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+      "~\\database\\cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+      "~\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
+      "~\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
+      "~\\recordings", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+      "~\\config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      "~\\config\\remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
+      "~\\assets\\wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+      "~\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+      "~\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   /* This one is an exception: cores have to be loaded from the install directory,
+    * since this is the only place UWP apps can take .dlls from */
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
+      ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+      "~\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+      "~\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+      "~\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+      "~\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+      "~\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SRAM],
+      "~\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+      "~\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+      "~\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+#endif
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -502,6 +589,7 @@ static uint64_t frontend_win32_get_mem_used(void)
 #endif
 }
 
+#ifndef __WINRT__
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
@@ -560,6 +648,7 @@ static void frontend_win32_detach_console(void)
 #endif
 #endif
 }
+#endif
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
@@ -583,8 +672,13 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
    NULL,                            /* destroy_sighandler_state */
+#ifndef __WINRT__
    frontend_win32_attach_console,   /* attach_console */
    frontend_win32_detach_console,   /* detach_console */
+#else
+   NULL,
+   NULL,
+#endif
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */

@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -39,6 +39,10 @@
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
+#endif
+
+#ifdef __WINRT__
+#include "../../uwp/uwp_func.h"
 #endif
 
 static D3D11Device           cached_device_d3d11;
@@ -566,8 +570,12 @@ static void d3d11_gfx_free(void* data)
       Release(d3d11->device);
    }
 
+#ifdef HAVE_MONITOR
    win32_monitor_from_window();
+#endif
+#ifdef HAVE_WINDOW
    win32_destroy_window();
+#endif
    free(d3d11);
 }
 
@@ -575,29 +583,37 @@ static void d3d11_gfx_free(void* data)
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    unsigned       i;
+#ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
    WNDCLASSEX     wndclass = { 0 };
+#endif
    settings_t*    settings = config_get_ptr();
    d3d11_video_t* d3d11    = (d3d11_video_t*)calloc(1, sizeof(*d3d11));
 
    if (!d3d11)
       return NULL;
 
+#ifdef HAVE_WINDOW
    win32_window_reset();
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
+#endif
 
+#ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d11->cur_mon_id);
+#endif
 
    d3d11->vp.full_width  = video->width;
    d3d11->vp.full_height = video->height;
 
+#ifdef HAVE_MONITOR
    if (!d3d11->vp.full_width)
       d3d11->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d11->vp.full_height)
       d3d11->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+#endif
 
    if (!win32_set_video_mode(d3d11, d3d11->vp.full_width, d3d11->vp.full_height, video->fullscreen))
    {
@@ -605,7 +621,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       goto error;
    }
 
-   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    {
       UINT                 flags              = 0;
@@ -617,26 +633,45 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             D3D_FEATURE_LEVEL_10_0,
             D3D_FEATURE_LEVEL_9_3
          };
+#ifdef __WINRT__
+      /* UWP requires the use of newer version of the factory which requires newer version of this struct */
+      DXGI_SWAP_CHAIN_DESC1 desc              = { 0 };
+#else
       DXGI_SWAP_CHAIN_DESC desc               = { 0 };
+#endif
       UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
 
-      desc.BufferCount                        = 1;
+#ifdef __WINRT__
+      /* UWP forces us to do double-buffering */
+      desc.BufferCount = 2;
+      desc.Width                              = d3d11->vp.full_width;
+      desc.Height                             = d3d11->vp.full_height;
+      desc.Format                             = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
+      desc.BufferCount = 1;
       desc.BufferDesc.Width                   = d3d11->vp.full_width;
       desc.BufferDesc.Height                  = d3d11->vp.full_height;
       desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
       desc.BufferDesc.RefreshRate.Numerator   = 60;
       desc.BufferDesc.RefreshRate.Denominator = 1;
+#endif
       desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#if HAVE_WINDOW
       desc.OutputWindow                       = main_window.hwnd;
+#endif
       desc.SampleDesc.Count                   = 1;
       desc.SampleDesc.Quality                 = 0;
 #if 0
       desc.Scaling                            = DXGI_SCALING_STRETCH;
 #endif
+#if HAVE_WINDOW
       desc.Windowed                           = TRUE;
+#endif
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
       /* On phone, no swap effects are supported. */
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+#elif defined(__WINRT__)
+      desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #endif
@@ -646,37 +681,47 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #endif
       if(cached_device_d3d11 && cached_context)
       {
-         IDXGIFactory* dxgiFactory    = NULL;
-         IDXGIDevice* dxgiDevice      = NULL;
-         IDXGIAdapter* adapter        = NULL;
-
          d3d11->device                = cached_device_d3d11;
          d3d11->context               = cached_context;
          d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
-
-         d3d11->device->lpVtbl->QueryInterface(
-               d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
-         dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
-         adapter->lpVtbl->GetParent(
-               adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
-         dxgiFactory->lpVtbl->CreateSwapChain(
-               dxgiFactory, (IUnknown*)d3d11->device,
-               &desc, (IDXGISwapChain**)&d3d11->swapChain);
-
-         dxgiFactory->lpVtbl->Release(dxgiFactory);
-         adapter->lpVtbl->Release(adapter);
-         dxgiDevice->lpVtbl->Release(dxgiDevice);
       }
       else
       {
-         if (FAILED(D3D11CreateDeviceAndSwapChain(
+         if (FAILED(D3D11CreateDevice(
                      NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                      requested_feature_levels, number_feature_levels,
-                     D3D11_SDK_VERSION, &desc,
-                     (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
+                     D3D11_SDK_VERSION, &d3d11->device,
                      &d3d11->supportedFeatureLevel, &d3d11->context)))
             goto error;
       }
+
+      IDXGIDevice* dxgiDevice      = NULL;
+      IDXGIAdapter* adapter        = NULL;
+
+      d3d11->device->lpVtbl->QueryInterface(
+            d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
+      dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
+#ifndef __WINRT__
+      IDXGIFactory* dxgiFactory = NULL;
+      adapter->lpVtbl->GetParent(
+         adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
+      if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
+             dxgiFactory, (IUnknown*)d3d11->device,
+             &desc, (IDXGISwapChain**)&d3d11->swapChain)))
+         goto error;
+#else
+      IDXGIFactory2* dxgiFactory = NULL;
+      adapter->lpVtbl->GetParent(
+         adapter, uuidof(IDXGIFactory2), (void**)&dxgiFactory);
+      if (FAILED(dxgiFactory->lpVtbl->CreateSwapChainForCoreWindow(
+             dxgiFactory, (IUnknown*)d3d11->device, uwp_get_corewindow(),
+             &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
+         goto error;
+#endif
+
+      dxgiFactory->lpVtbl->Release(dxgiFactory);
+      adapter->lpVtbl->Release(adapter);
+      dxgiDevice->lpVtbl->Release(dxgiDevice);
    }
 
    {
@@ -1141,6 +1186,11 @@ static bool d3d11_gfx_frame(
       d3d11->resize_viewport = true;
       video_driver_set_size(&video_info->width, &video_info->height);
    }
+
+#ifdef __WINRT__
+   /* UWP requires double-buffering, so make sure we bind to the appropariate backbuffer */
+   D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
+#endif
 
    PERF_START();
 
@@ -1622,7 +1672,12 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_load_texture,
    d3d11_gfx_unload_texture,
    NULL, /* set_video_mode */
+#ifndef __WINRT__
    win32_get_refresh_rate,
+#else
+   /* UWP does not expose this information easily */
+   NULL,
+#endif
    d3d11_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

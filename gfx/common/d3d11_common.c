@@ -20,7 +20,7 @@
 #include "d3d11_common.h"
 #include "d3dcompiler_common.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
 HRESULT WINAPI D3D11CreateDeviceAndSwapChain(

@@ -142,6 +142,7 @@ JuanVCS
 Justin Jacobs (dorkster)
 Justin Weiss (justinweiss)
 Ken Rossato (rossato)
+Krzysztof Haładyn (krzys_h)
 kurumushi
 kwyxz
 l3iggs
