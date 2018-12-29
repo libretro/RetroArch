@@ -1028,29 +1028,12 @@ void fill_pathname_expand_special(char *out_path,
          out_path  += src_size;
          size      -= src_size;
 
-         if (
-            (in_path[1] == '/')
-#ifdef _WIN32
-            || (in_path[1] == '\\')
-#endif
-            )
-         {
-            in_path += 2;
-         }
-         else
-         {
-            in_path++;
-         }
+         in_path++;
       }
+
+      free(home_dir);
    }
-   else if ((in_path[0] == ':') &&
-         (
-         (in_path[1] == '/')
-#ifdef _WIN32
-         || (in_path[1] == '\\')
-#endif
-         )
-            )
+   else if (in_path[0] == ':')
    {
       char *application_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
@@ -1064,12 +1047,13 @@ void fill_pathname_expand_special(char *out_path,
          size_t src_size   = strlcpy(out_path, application_dir, size);
          retro_assert(src_size < size);
 
-         free(application_dir);
-
          out_path  += src_size;
          size      -= src_size;
-         in_path   += 2;
+
+         in_path++;
       }
+
+      free(application_dir);
    }
 #endif
 
