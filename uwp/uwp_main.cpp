@@ -14,13 +14,13 @@
  */
 
 #include "uwp_main.h"
-#include <retroarch.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
-#include <frontend/frontend.h>
-#include <input/input_keymaps.h>
-#include <input/input_driver.h>
-#include <verbosity.h>
+#include "../retroarch.h"
+#include "../frontend/frontend.h"
+#include "../input/input_keymaps.h"
+#include "../input/input_driver.h"
+#include "../verbosity.h"
 #include "uwp_func.h"
 
 #include <ppltasks.h>
