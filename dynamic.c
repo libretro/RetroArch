@@ -1470,8 +1470,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             memcpy(hwr,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
-            memset(hwr + offsetof(struct retro_hw_render_callback, stencil),
-                  0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
+            memset((uint8_t*)hwr + offsetof(struct retro_hw_render_callback, stencil),
+               0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
          }
          else
             memcpy(hwr, cb, sizeof(*cb));
