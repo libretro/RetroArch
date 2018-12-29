@@ -193,8 +193,8 @@ static bool orbis_ctx_bind_api(void *data,
     (void)data;
     ctx_orbis_api = api;
 
-    if (api == GFX_CTX_OPENGL_API)
-        if (eglBindAPI(EGL_OPENGL_API) != EGL_FALSE)
+    if (api == GFX_CTX_OPENGL_ES_API)
+        if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE)
             return true;
 
     return false;
