@@ -1505,7 +1505,7 @@ bool d3d12_init_pipeline(
       D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
       D3D12PipelineState*                 out);
 
-bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd);
+bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 

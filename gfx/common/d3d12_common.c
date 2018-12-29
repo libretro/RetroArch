@@ -215,13 +215,8 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
    return true;
 }
 
-#ifdef __WINRT__
 bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       int width, int height, void* corewindow)
-#else
-bool d3d12_init_swapchain(d3d12_video_t* d3d12,
-      int width, int height, HWND hwnd)
-#endif
 {
    unsigned i;
 #ifdef __WINRT__
@@ -229,6 +224,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
 #else
    DXGI_SWAP_CHAIN_DESC desc;
+   HWND hwnd                 = (HWND)corewindow;
    memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC));
 #endif
 
@@ -324,7 +320,7 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
 static void
 d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
-   int i;
+   unsigned i;
 
    if (!handle.ptr)
       return;
@@ -336,7 +332,7 @@ d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIP
    assert(heap->map[i]);
 
    heap->map[i] = false;
-   if (heap->start > i)
+   if (heap->start > (int)i)
       heap->start = i;
 }
 

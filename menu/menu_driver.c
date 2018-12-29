@@ -2665,7 +2665,7 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
 {
-   int i = 0;
+   unsigned i = 0;
    if (subsystem && subsystem_current_count > 0)
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)
