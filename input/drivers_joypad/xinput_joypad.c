@@ -288,7 +288,11 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[1].connected) &&
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
+#ifdef __WINRT__
+      return true;
+#else
       return false;
+#endif
 
    RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected +
          g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
