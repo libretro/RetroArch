@@ -164,7 +164,7 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef _XBOX
    &xdk_joypad,
 #endif
-#if defined(PS4)
+#if defined(ORBIS)
    &ps4_joypad,
 #endif
 #if defined(PSP) || defined(VITA)

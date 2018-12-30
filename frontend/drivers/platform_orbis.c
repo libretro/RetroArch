@@ -92,6 +92,9 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+   orbisPadInitWithConf(myConf->confPad);
+   scePadClose(myConf->confPad->padHandle);
+
    return rarch_main(argc, argv, NULL);
 }
 

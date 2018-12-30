@@ -240,6 +240,7 @@ enum joypad_driver_enum
    JOYPAD_GX,
    JOYPAD_WIIU,
    JOYPAD_XDK,
+   JOYPAD_PS4,
    JOYPAD_PSP,
    JOYPAD_PS2,
    JOYPAD_CTR,
@@ -488,6 +489,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 #elif defined(_XBOX)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
+#elif defined(ORBIS)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
 #elif defined(PSP) || defined(VITA)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
 #elif defined(PS2)
@@ -898,6 +901,8 @@ const char *config_get_default_joypad(void)
 
    switch (default_driver)
    {
+      case JOYPAD_PS4:
+         return "ps4";
       case JOYPAD_PS3:
          return "ps3";
       case JOYPAD_XINPUT:

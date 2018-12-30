@@ -144,7 +144,7 @@ input_driver_t input_ps4 = {
    NULL,
    NULL,
    ps4_input_get_capabilities,
-   "orbis",
+   "ps4",
    ps4_input_grab_mouse,
    NULL,
    ps4_input_set_rumble,
