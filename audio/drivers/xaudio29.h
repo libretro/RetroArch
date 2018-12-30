@@ -33,6 +33,8 @@
 
 #include <sdkddkver.h>
 
+#include <retro_inline.h>
+
 #if(_WIN32_WINNT < _WIN32_WINNT_WIN8)
 #error "This version of XAudio2 is available only in Windows 8 or later. Use the XAudio2 headers and libraries from the DirectX SDK with applications that target Windows 7 and earlier versions."
 #endif // (_WIN32_WINNT < _WIN32_WINNT_WIN8)
@@ -1257,7 +1259,7 @@ XAUDIO2_STDAPI XAudio2CreateWithVersionInfo(_Outptr_ IXAudio2** ppXAudio2,
     XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR),
     DWORD ntddiVersion X2DEFAULT(NTDDI_VERSION));
 
-inline HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
+static INLINE HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
     UINT32 Flags X2DEFAULT(0),
     XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR))
 {
