@@ -48,9 +48,6 @@
 
 #ifdef _XBOX
 #define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
-#else
-#define HAVE_MONITOR
-#define HAVE_WINDOW
 #endif
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)

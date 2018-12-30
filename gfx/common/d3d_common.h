@@ -20,8 +20,16 @@
 #include "../../config.h"
 #endif
 
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(__WINRT__) && !defined(_XBOX)
+
+#ifndef HAVE_WINDOW
 #define HAVE_WINDOW
+#endif
+
+#ifndef HAVE_MONITOR
+#define HAVE_MONITOR
+#endif
+
 #endif
 
 #include <boolean.h>

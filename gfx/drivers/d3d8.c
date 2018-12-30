@@ -47,11 +47,6 @@
 
 #ifdef _XBOX
 #define D3D8_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
-#else
-#ifndef __WINRT__
-#define HAVE_MONITOR
-#define HAVE_WINDOW
-#endif
 #endif
 
 #ifdef HAVE_MENU
