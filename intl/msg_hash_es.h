@@ -7,7 +7,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
     "Acelera el procesador de video"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
     "Brillo de pantalla"
     )
@@ -674,6 +674,18 @@ MSG_HASH(
     "Cargar núcleo"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Instalar or Restaurar un núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+    "Falló la instalación del núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+    "Núcleo instalado exitosamente"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
     "Opciones"
     )
@@ -759,7 +771,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Estado de la bandeja de discos"
+    "Abrir/Cerrar la bandeja de discos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -844,6 +856,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FPS_SHOW,
     "Mostrar FPS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Incluir detalles de memoria"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
@@ -1250,6 +1266,10 @@ MSG_HASH(
     "Avanzar frame"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "Mostrar FPS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
     "Pantalla completa"
     )
@@ -1297,10 +1317,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
     "Pausar"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    "Reiniciar RetroArch"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
     "Cerrar RetroArch"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
     "Resetear juego"
@@ -2049,10 +2076,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
     "MIDI"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+    "Reiniciar RetroArch"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Cerrar RetroArch"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
     "Soporte de analógico"
@@ -2921,8 +2955,56 @@ MSG_HASH(
     "Cambia la forma en que se muestra la fecha y hora"
     )
 MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+     "YYYY-MM-DD HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+     "YYYY-MM-DD HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+     "MM-DD-YYYY HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+     "HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+     "HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+     "DD/MM HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+     "MM/DD HH:MM"
+    )
+ MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+     "HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
     "Color de títulos del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
+    "Color oscuro del fondo del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
+    "Color claro del fondo del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
+    "Color oscuro del borde del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
+    "Color claro del borde del menú"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
@@ -3175,6 +3257,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
     "Escala en ventana"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+    "Hilos de grabación (Threads)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
@@ -3486,7 +3572,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Duplica puntos pero desactiva guardado rápido, trucos, rebobinar, y cámara lenta para todos los juegos"
+    "Duplica puntos pero desactiva guardado rápido, trucos, rebobinar, y cámara lenta."
+    "Cambiar esto reiniciará el juego."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -3595,6 +3682,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FPS_SHOW,
     "Muestra la velocidad de cuadros por segundo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+    "Muestra el contador de frames"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+    "Muestra la cantidad de memoria usada/total"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
@@ -4839,6 +4934,14 @@ MSG_HASH(
     "Seleccionar que núcleo usar"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Instalar un núcleo desde el Actualizador en línea"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Instalr o restaurar un núcleo desde la carpeta de descargas"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
     "Seleccionar que contenido iniciar"
     )
@@ -4850,10 +4953,17 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
     "Mostrar información especifica del dispositivo"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Reiniciar el programa"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Salir del programa"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
     "Establece el ancho de la ventana. Al dejarlo en 0 hará que intente ser lo mas grande posible"
@@ -4861,6 +4971,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
     "Establece el alto de la ventana. Al dejarlo en 0 hará que intente ser lo mas grande posible"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+    "Tomará precedencia sobre Escala en Ventana"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -6037,14 +6151,25 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
     "Mostrar/ocultar la opción de 'Ayuda'"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Mostrar salir de RetroArch"
+    "Mostrar Reiniciar RetroArch"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Mostrar/ocultar la opción de 'Salir de RetroArch'"
+    "Mostrar/ocultar la opción de 'Reiniciar RetroArch'"
     )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Mostrar Cerrar RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Muestrar/Ocultar la opción de 'Cerrar RetroArch'"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
     "Mostrar reiniciar"
@@ -6103,27 +6228,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-    "Show Start Recording"
+    "Mostrar Comenzar grabación"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-    "Show/hide the 'Start Recording' option."
+    "Mostrar/ocultar la opción de 'Comenzar grabación'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-    "Show Start Streaming"
+    "Mostrar Comenzar Streamingg"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-    "Show/hide the 'Start Streaming' option."
+    "Mostrar/ocultar la opción de 'Comenzar Streaming'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-    "Show Reset Core Association"
+    "Mostrar Restablecer asociación de núcleo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-    "Show/hide the 'Reset Core Association' option."
+    "Mostrar/ocultar la opción de 'Restablecer asociación de núcleo'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7576,7 +7701,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla. Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
+    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla.\n"
+    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."                                                                                                       
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -7774,5 +7900,11 @@ MSG_HASH(
     MSG_MISSING_ASSETS,
     "ADVERTENCIA: Faltan recursos, use el Actualizador si está disponible"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Remember Window Position and Size")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+    "Recordar posición y tamaño de la ventana"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HOLD_START,
+    "Mantener Start (2 segundos)"
+    )
