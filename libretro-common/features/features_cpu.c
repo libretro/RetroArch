@@ -482,10 +482,14 @@ static void cpulist_read_from(CpuList* list, const char* filename)
  **/
 unsigned cpu_features_get_core_amount(void)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
+#ifdef __WINRT__
+   GetNativeSystemInfo(&sysinfo);
+#else
    GetSystemInfo(&sysinfo);
+#endif
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;
