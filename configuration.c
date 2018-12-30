@@ -214,6 +214,7 @@ enum input_driver_enum
    INPUT_X,
    INPUT_WAYLAND,
    INPUT_DINPUT,
+   INPUT_PS4,
    INPUT_PS3,
    INPUT_PSP,
    INPUT_PS2,
@@ -439,6 +440,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
+#elif defined(ORBIS)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
 #elif defined(__CELLOS_LV2__)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
@@ -829,6 +832,8 @@ const char *config_get_default_input(void)
    {
       case INPUT_ANDROID:
          return "android";
+      case INPUT_PS4:
+         return "ps4";
       case INPUT_PS3:
          return "ps3";
       case INPUT_PSP:
