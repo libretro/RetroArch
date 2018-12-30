@@ -660,6 +660,9 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("DS4 Controller", "qnx", QNX_DUALSHOCK_BINDS),
 #endif
+#if defined(ORBIS)
+   DECL_AUTOCONF_DEVICE("PS4 Controller", "ps4", PS3INPUT_DEFAULT_BINDS),
+#endif
 #if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("DS3 Controller", "vita", PSPINPUT_DEFAULT_BINDS),
