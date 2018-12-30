@@ -34,6 +34,7 @@
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_preprocess.h"
 
+#include "../common/d3d_common.h"
 #include "../common/d3d11_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3dcompiler_common.h"
@@ -596,12 +597,14 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
 #ifdef HAVE_WINDOW
    win32_window_reset();
+#endif
+#ifdef HAVE_MONITOR
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
 #endif
 
-#ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d11->cur_mon_id);
 #endif
 

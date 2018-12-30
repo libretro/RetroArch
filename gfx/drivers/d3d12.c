@@ -22,6 +22,7 @@
 
 #include "../video_driver.h"
 #include "../font_driver.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3d12_common.h"
@@ -890,12 +891,14 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
 #ifdef HAVE_WINDOW
    win32_window_reset();
+#endif
+#ifdef HAVE_MONITOR
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
 #endif
 
-#ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
 #endif
 
