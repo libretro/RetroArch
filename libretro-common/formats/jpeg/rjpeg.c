@@ -419,7 +419,7 @@ static INLINE int rjpeg__jpeg_huff_decode(rjpeg__jpeg *j, rjpeg__huffman *h)
 
    /* convert the huffman code to the symbol id */
    c = ((j->code_buffer >> (32 - k)) & rjpeg__bmask[k]) + h->delta[k];
-   assert((((j->code_buffer) >> (32 - h->size[c])) & rjpeg__bmask[h->size[c]]) == h->code[c]);
+   retro_assert((((j->code_buffer) >> (32 - h->size[c])) & rjpeg__bmask[h->size[c]]) == h->code[c]);
 
    /* convert the id to a symbol */
    j->code_bits -= k;
@@ -441,7 +441,7 @@ static INLINE int rjpeg__extend_receive(rjpeg__jpeg *j, int n)
 
    sgn = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
    k = rjpeg_lrot(j->code_buffer, n);
-   assert(n >= 0 && n < (int) (sizeof(rjpeg__bmask)/sizeof(*rjpeg__bmask)));
+   retro_assert(n >= 0 && n < (int) (sizeof(rjpeg__bmask)/sizeof(*rjpeg__bmask)));
    j->code_buffer = k & ~rjpeg__bmask[n];
    k &= rjpeg__bmask[n];
    j->code_bits -= n;
