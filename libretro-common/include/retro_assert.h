@@ -26,6 +26,7 @@
 #include <assert.h>
 
 #ifdef RARCH_INTERNAL
+#include <stdio.h>
 #define retro_assert(cond) do { \
    if (!(cond)) { printf("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
 } while(0)
