@@ -150,8 +150,8 @@ static bool orbis_ctx_set_video_mode(void *data,
 
     orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
-    ctx_orbis->width = ATTR_ORBISGL_HEIGHT;
-    ctx_orbis->height = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->width = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->height = ATTR_ORBISGL_HEIGHT;
 
     ctx_orbis->native_window.width = ctx_orbis->width;
     ctx_orbis->native_window.height = ctx_orbis->height;
