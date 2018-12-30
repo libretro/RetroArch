@@ -119,7 +119,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
-#if defined(PSP) || defined(VITA)
+#if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
 #endif
 #ifdef _3DS

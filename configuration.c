@@ -361,7 +361,7 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 #elif defined(WIIU)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
-#elif defined(PSP) || defined(VITA)
+#elif defined(PSP) || defined(VITA) || defined(ORBIS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(PS2)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
@@ -679,8 +679,10 @@ const char *config_get_default_audio(void)
       case AUDIO_WIIU:
          return "AX";
       case AUDIO_PSP:
-#ifdef VITA
+#if defined(VITA)
          return "vita";
+#elif defined(ORBIS)
+         return "orbis";
 #else
          return "psp";
 #endif

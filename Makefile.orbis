@@ -60,7 +60,7 @@ else
 
 	OBJ += input/drivers/ps4_input.o
 	OBJ += input/drivers_joypad/ps4_joypad.o
-	#OBJ += audio/drivers/psp_audio.o
+	OBJ += audio/drivers/psp_audio.o
 	#OBJ += frontend/drivers/platform_orbis.o
 endif
 
