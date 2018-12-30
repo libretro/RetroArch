@@ -3572,7 +3572,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Enables hardcore mode, this will enable or disable savestates, cheats, rewind, pause, and slow-motion.\nToggling this setting at runtime will restart your game."
+    "Enables hardcore mode, this will enable or disable savestates, cheats, rewind, pause, and slow-motion.\n"
+    "Toggling this setting at runtime will restart your game."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4953,11 +4954,15 @@ MSG_HASH(
     "Show information specific to the device."
     )
 #ifdef HAVE_LAKKA
-MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Restart the program.")
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Restart the program."
+    )
 #else
-MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Quit the program.")
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Quit the program."
+    )
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -6147,15 +6152,23 @@ MSG_HASH(
     "Show/hide the 'Help' option."
     )
 #ifdef HAVE_LAKKA
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Show Restart RetroArch")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-      "Show/hide the 'Restart RetroArch' option.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Show Restart RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Show/hide the 'Restart RetroArch' option."
+    )
 #else
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Show Quit RetroArch")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-      "Show/hide the 'Quit RetroArch' option.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Show Quit RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Show/hide the 'Quit RetroArch' option."
+    )
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
@@ -7688,7 +7701,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    "V-Sync is enabled until performance falls below the target refresh rate.\n"
+    "This can minimize stuttering when performance falls below realtime, and can be more energy efficient."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -7886,7 +7900,11 @@ MSG_HASH(
     MSG_MISSING_ASSETS,
     "Warning: Missing assets, use the Online Updater if available"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Remember Window Position and Size")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_HOLD_START,
-      "Hold Start (2 seconds)")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+    "Remember Window Position and Size"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HOLD_START,
+    "Hold Start (2 seconds)"
+    )
