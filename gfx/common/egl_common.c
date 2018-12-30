@@ -419,7 +419,12 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 {
-   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, NULL);
+   EGLint window_attribs[] = {
+	   EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+	   EGL_NONE,
+   };
+
+   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
    if (egl->surf == EGL_NO_SURFACE)
       return false;
