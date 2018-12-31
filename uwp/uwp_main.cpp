@@ -162,15 +162,22 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
 };
 
 struct uwp_input_state_t {
-	short mouse_screen_x = 0, mouse_screen_y = 0;
-	short mouse_rel_x = 0, mouse_rel_y = 0;
-	bool mouse_left = false, mouse_right = false, mouse_middle = false;
-	bool mouse_button4 = false, mouse_button5 = false;
-	short mouse_wheel_left = 0, mouse_wheel_up = 0;
-
-	short touch_screen_x = 0, touch_screen_y = 0;
-	short touch_rel_x = 0, touch_rel_y = 0;
-	bool touch_touched = false;
+   short mouse_screen_x;
+   short mouse_screen_y;
+   short mouse_rel_x;
+   short mouse_rel_y;
+   bool mouse_left;
+   bool mouse_right;
+   bool mouse_middle;
+   bool mouse_button4;
+   bool mouse_button5;
+   short mouse_wheel_left;
+   short mouse_wheel_up;
+   short touch_screen_x;
+   short touch_screen_y;
+   short touch_rel_x;
+   short touch_rel_y;
+   bool touch_touched;
 };
 
 struct uwp_input_state_t uwp_current_input, uwp_next_input;
@@ -537,13 +544,13 @@ extern "C" {
 
 	void uwp_input_next_frame(void)
 	{
-		uwp_current_input = uwp_next_input;
-		uwp_next_input.mouse_rel_x = 0;
-		uwp_next_input.mouse_rel_y = 0;
-		uwp_next_input.mouse_wheel_up %= WHEEL_DELTA;
+		uwp_current_input                = uwp_next_input;
+		uwp_next_input.mouse_rel_x       = 0;
+		uwp_next_input.mouse_rel_y       = 0;
+		uwp_next_input.mouse_wheel_up   %= WHEEL_DELTA;
 		uwp_next_input.mouse_wheel_left %= WHEEL_DELTA;
-		uwp_next_input.touch_rel_x = 0;
-		uwp_next_input.touch_rel_y = 0;
+		uwp_next_input.touch_rel_x       = 0;
+		uwp_next_input.touch_rel_y       = 0;
 	}
 
 	bool uwp_keyboard_pressed(unsigned key)
