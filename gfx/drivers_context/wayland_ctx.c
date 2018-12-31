@@ -1618,7 +1618,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
                   wl->input.dpy, wl->surface,
-                  wl->width, wl->height, wl->swap_interval))
+                  wl->width * wl->buffer_scale, wl->height * wl->buffer_scale, wl->swap_interval))
             goto error;
 #endif
          break;
