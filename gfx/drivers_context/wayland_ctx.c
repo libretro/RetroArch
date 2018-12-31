@@ -870,8 +870,8 @@ static void gfx_ctx_wl_get_video_size(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   *width  = wl->width;
-   *height = wl->height;
+   *width  = wl->width  * wl->buffer_scale;
+   *height = wl->height * wl->buffer_scale;
 }
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
