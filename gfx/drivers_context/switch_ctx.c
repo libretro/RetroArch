@@ -46,10 +46,20 @@ void switch_ctx_destroy(void *data)
 static void switch_ctx_get_video_size(void *data,
                                       unsigned *width, unsigned *height)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
 
-    *width = 1280;
-    *height = 720;
+   switch (appletGetOperationMode())
+      {
+         default:
+         case AppletOperationMode_Handheld:
+            *width = 1280;
+            *height = 720;
+            break;
+         case AppletOperationMode_Docked:
+            *width = 1920;
+            *height = 1080;
+            break;
+      }
 }
 
 static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
@@ -86,6 +96,10 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
     setenv("NV50_PROG_CHIPSET", "0x120", 1);
 #endif
 
+    // Needs to be here
+    gfxInitResolutionDefault(); // 1080p
+    gfxConfigureResolution(1920, 1080);
+
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
                           &major, &minor, &n, attribs, NULL))
@@ -114,7 +128,18 @@ static void switch_ctx_check_window(void *data, bool *quit,
     {
         *width = new_width;
         *height = new_height;
+        switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+
+        ctx_nx->width = *width;
+        ctx_nx->height = *height;
+
+        ctx_nx->native_window.width = ctx_nx->width;
+        ctx_nx->native_window.height = ctx_nx->height;
+        ctx_nx->resize = true;
+
         *resize = true;
+        printf("[NXGL]: Resizing to %dx%d\n", *width, *height);
+        gfxConfigureCrop(0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
     }
 
     *quit = (bool)false;
@@ -133,8 +158,7 @@ static bool switch_ctx_set_video_mode(void *data,
 
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
 
-    ctx_nx->width = 1280;
-    ctx_nx->height = 720;
+    switch_ctx_get_video_size(data, &ctx_nx->width, &ctx_nx->height);
 
     ctx_nx->native_window.width = ctx_nx->width;
     ctx_nx->native_window.height = ctx_nx->height;
@@ -154,10 +178,12 @@ static bool switch_ctx_set_video_mode(void *data,
         goto error;
 #endif
 
+    gfxConfigureCrop(0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
+
     return true;
 
 error:
-    printf("[ctx_nx]: EGL error: %d.\n", eglGetError());
+    printf("[NXGL]: EGL error: %d.\n", eglGetError());
     switch_ctx_destroy(data);
 
     return false;
