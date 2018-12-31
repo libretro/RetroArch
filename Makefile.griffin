@@ -158,8 +158,6 @@ else ifeq ($(libogc_platform), 1)
       endif
    endif
 
-   LIBS += -logc
-
    ifeq ($(EXTERNAL_LIBOGC), 1)
       LIBS += -lfat
    endif
@@ -175,6 +173,8 @@ else ifeq ($(libogc_platform), 1)
         LIBS += -lbba
       endif
    endif
+
+   LIBS += -logc
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
