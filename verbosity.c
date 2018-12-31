@@ -65,11 +65,7 @@
  * will write to this file. */
 static FILE *log_file_fp         = NULL;
 static void* log_file_buf        = NULL;
-#if _DEBUG
-static bool main_verbosity       = true;
-#else
 static bool main_verbosity       = false;
-#endif
 static bool log_file_initialized = false;
 
 #ifdef NXLINK
