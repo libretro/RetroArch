@@ -431,13 +431,9 @@ void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)
 		uwp_next_input.mouse_rel_x = uwp_next_input.mouse_screen_x - uwp_current_input.mouse_screen_x;
 		uwp_next_input.mouse_rel_y = uwp_next_input.mouse_screen_y - uwp_current_input.mouse_screen_y;
 		if (args->CurrentPoint->Properties->IsHorizontalMouseWheel)
-		{
 			uwp_next_input.mouse_wheel_left += args->CurrentPoint->Properties->MouseWheelDelta;
-		}
 		else
-		{
 			uwp_next_input.mouse_wheel_up += args->CurrentPoint->Properties->MouseWheelDelta;
-		}
 	}
 	else
 	{
@@ -527,13 +523,13 @@ extern "C" {
 
 	void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
-		*quit = App::GetInstance()->IsWindowClosed();
+		*quit   = App::GetInstance()->IsWindowClosed();
 		*resize = App::GetInstance()->CheckWindowResized();
 		if (*resize)
 		{
 			float dpi = DisplayInformation::GetForCurrentView()->LogicalDpi;
-			*width = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Width, dpi);
-			*height = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Height, dpi);
+			*width    = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Width, dpi);
+			*height   = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Height, dpi);
 		}
 	}
 
