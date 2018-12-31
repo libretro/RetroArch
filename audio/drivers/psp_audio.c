@@ -140,12 +140,23 @@ static void *psp_audio_init(const char *device,
    (void)device;
    (void)latency;
 
+#ifdef ORBIS
+   psp->buffer      = (uint32_t*)
+      malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+#else
    /* Cache aligned, not necessary but helpful. */
    psp->buffer      = (uint32_t*)
       memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+#endif
    memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+
+#ifdef ORBIS
+   psp->zeroBuffer      = (uint32_t*)
+      malloc(AUDIO_OUT_COUNT * sizeof(uint32_t));
+#else
    psp->zeroBuffer  = (uint32_t*)
       memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
+#endif
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
    psp->read_pos    = 0;
