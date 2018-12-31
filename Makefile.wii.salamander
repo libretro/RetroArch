@@ -42,11 +42,12 @@ endif
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -lwiiuse -logc -lbte
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
-LIBS += -lfat
+LIBS := -lfat
 endif
+
+LIBS += -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
