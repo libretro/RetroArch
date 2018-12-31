@@ -72,32 +72,6 @@ char user_path[512];
 
 static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 
-#ifdef __cplusplus
-extern "C"
-#endif
-int main(int argc, char *argv[])
-{
-   int ret;
-
-   sceSystemServiceHideSplashScreen();
-
-
-	uintptr_t intptr=0;
-	sscanf(argv[1],"%p",&intptr);
-	myConf=(OrbisGlobalConf *)intptr;
-	ret=ps4LinkInitWithConf(myConf->confLink);
-	if(!ret)
-	{
-		ps4LinkFinish();
-		return -1;
-	}
-
-   orbisPadInitWithConf(myConf->confPad);
-   scePadClose(myConf->confPad->padHandle);
-
-   return rarch_main(argc, argv, NULL);
-}
-
 static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -113,6 +87,25 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
    retro_main_log_file_init("host0:/temp/retroarch-log.txt");
 #endif
 #endif
+
+   int ret;
+
+   sceSystemServiceHideSplashScreen();
+
+
+	uintptr_t intptr=0;
+	sscanf(argv[1],"%p",&intptr);
+   argv[1] = NULL;
+	myConf=(OrbisGlobalConf *)intptr;
+	ret=ps4LinkInitWithConf(myConf->confLink);
+	if(!ret)
+	{
+		ps4LinkFinish();
+		return;
+	}
+
+   orbisPadInitWithConf(myConf->confPad);
+   scePadClose(myConf->confPad->padHandle);
 
    strlcpy(eboot_path, "host0:/", sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -163,7 +156,7 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
    params          = (struct rarch_main_wrap*)params_data;
    params->verbose = true;
 
-   if (!string_is_empty(argv[1]))
+   if (!string_is_empty(argv[2]))
    {
       static char path[PATH_MAX_LENGTH] = {0};
       struct rarch_main_wrap      *args =
@@ -171,7 +164,7 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
 
       if (args)
       {
-         strlcpy(path, argv[1], sizeof(path));
+         strlcpy(path, argv[2], sizeof(path));
 
          args->touched        = true;
          args->no_content     = false;
@@ -186,7 +179,7 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("argv[1]: %s\n", argv[1]);
          RARCH_LOG("argv[2]: %s\n", argv[2]);
 
-         RARCH_LOG("Auto-start game %s.\n", argv[1]);
+         RARCH_LOG("Auto-start game %s.\n", argv[2]);
       }
    }
 #endif
