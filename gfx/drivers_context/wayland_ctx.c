@@ -1058,8 +1058,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl->width  = width;
-         wl->height = height;
+         wl->width  = width  / wl->buffer_scale;
+         wl->height = height / wl->buffer_scale;
 
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
