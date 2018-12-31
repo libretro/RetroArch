@@ -128,6 +128,7 @@ extern frontend_ctx_driver_t frontend_ctx_xenon;
 extern frontend_ctx_driver_t frontend_ctx_emscripten;
 extern frontend_ctx_driver_t frontend_ctx_dos;
 extern frontend_ctx_driver_t frontend_ctx_switch;
+extern frontend_ctx_driver_t frontend_ctx_orbis;
 extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**

@@ -77,6 +77,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #ifdef SWITCH
    &frontend_ctx_switch,
 #endif
+#if defined(ORBIS)
+   &frontend_ctx_orbis,
+#endif
    &frontend_ctx_null,
    NULL
 };
