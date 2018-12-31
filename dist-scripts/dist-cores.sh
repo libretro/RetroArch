@@ -18,6 +18,13 @@ cd ..
 LDFLAGS=-L. ./configure --disable-dynamic
 cd dist-scripts
 
+elif [ $PLATFORM = "ps2" ] ; then
+platform=ps2
+SALAMANDER=NO
+EXT=a
+
+mkdir -p ../pkg/${platform}/cores/
+
 elif [ $PLATFORM = "psp1" ] ; then
 platform=psp1
 SALAMANDER=yes
@@ -230,7 +237,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    fi
 
    # Do manual executable step
-   if [ $PLATFORM = "dex-ps3" ] ; then
+   if [ $PLATFORM = "ps2" ] ; then
+      make -C ../ -f Makefile.${platform} package -j3
+   elif [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM -c ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
@@ -253,6 +262,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
             cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/SSNE10000/USRDIR/cores/info/"${name}_libretro.info"
          fi
       fi
+   elif [ $PLATFORM = "ps2" ] ; then
+      mv -f ../retroarchps2-release.elf ../pkg/${platform}/cores/retroarchps2_${name}.elf
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
@@ -288,6 +299,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    # Remove executable files
    if [ $platform = "ps3" ] ; then
       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
+   elif [ $PLATFORM = "ps2" ] ; then
+      rm -f ../retroarchps2.elf
    elif [ $PLATFORM = "psp1" ] ; then
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then

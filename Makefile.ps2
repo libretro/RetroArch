@@ -95,8 +95,10 @@ run:
 
 debug: clean prepare all run
 
-release: clean all
+package:
 	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
+
+release: clean all package
 
 #Specific file name and output per IRX Module
 $(EE_IRX_OBJ):
