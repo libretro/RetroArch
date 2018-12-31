@@ -409,9 +409,8 @@ else
    check_val '' ZLIB '-lz'
 fi
 
-if [ "$HAVE_MPV" != 'no' ]; then
-   check_pkgconf MPV libmpv
-fi
+check_pkgconf MPV mpv
+check_val '' MPV -lmpv
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
    HAVE_FFMPEG='no'
