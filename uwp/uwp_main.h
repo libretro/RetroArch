@@ -38,7 +38,9 @@ namespace RetroArchUWP
       void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ args);
       void OnResuming(Platform::Object^ sender, Platform::Object^ args);
 
+#if _MSC_VER >= 1800
       void OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args);
+#endif
 
       // Window event handlers.
       void OnWindowSizeChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowSizeChangedEventArgs^ args);
@@ -49,9 +51,11 @@ namespace RetroArchUWP
       void OnPointer(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args);
 
       // DisplayInformation event handlers.
+#if _MSC_VER >= 1800
       void OnDpiChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
       void OnOrientationChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
       void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
+#endif
 
    public:
       bool IsInitialized() { return m_initialized; }

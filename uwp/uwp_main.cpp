@@ -36,7 +36,9 @@ using namespace Windows::UI::Input;
 using namespace Windows::UI::ViewManagement;
 using namespace Windows::Devices::Input;
 using namespace Windows::System;
+#if _MSC_VER >= 1800
 using namespace Windows::System::Profile;
+#endif
 using namespace Windows::Foundation;
 using namespace Windows::Graphics::Display;
 
@@ -257,19 +259,21 @@ void App::SetWindow(CoreWindow^ window)
 	window->PointerWheelChanged +=
 		ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
 
+#if _MSC_VER >= 1800
 	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
 	currentDisplayInformation->DpiChanged +=
 		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnDpiChanged);
 
-	currentDisplayInformation->OrientationChanged +=
-		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnOrientationChanged);
-
 	DisplayInformation::DisplayContentsInvalidated +=
 		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnDisplayContentsInvalidated);
 
+	currentDisplayInformation->OrientationChanged +=
+		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnOrientationChanged);
+
 	Windows::UI::Core::SystemNavigationManager::GetForCurrentView()->BackRequested +=
 		ref new EventHandler<Windows::UI::Core::BackRequestedEventArgs^>(this, &App::OnBackRequested);
+#endif
 }
 
 // Initializes scene resources, or loads a previously saved app state.
@@ -359,11 +363,13 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 	// does not occur if the app was previously terminated.
 }
 
+#if _MSC_VER >= 1800
 void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
 {
 	/* Prevent the B controller button on Xbox One from quitting the app */
 	args->Handled = true;
 }
+#endif
 
 // Window event handlers.
 
@@ -443,6 +449,7 @@ void App::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
 
 // DisplayInformation event handlers.
 
+#if _MSC_VER >= 1800
 void App::OnDpiChanged(DisplayInformation^ sender, Object^ args)
 {
 	m_windowResized = true;
@@ -457,6 +464,7 @@ void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 {
 	// Probably can be ignored?
 }
+#endif
 
 // Taken from DirectX UWP samples - on Xbox, everything is scaled 200% so getting the DPI calculation correct is crucial
 static inline float ConvertDipsToPixels(float dips, float dpi)
@@ -477,6 +485,7 @@ extern "C" {
 	{
 		if (App::GetInstance()->IsInitialized())
 		{
+#if _MSC_VER >= 1800
 			if (fullscreen != ApplicationView::GetForCurrentView()->IsFullScreenMode)
 			{
 				if (fullscreen)
@@ -484,6 +493,7 @@ extern "C" {
 				else
 					ApplicationView::GetForCurrentView()->ExitFullScreenMode();
 			}
+#endif
 			ApplicationView::GetForCurrentView()->TryResizeView(Size(width, height));
 		}
 		else
