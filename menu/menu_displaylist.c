@@ -387,6 +387,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   settings_t *settings                  = config_get_ptr();
 
    tmp[0] = feat_str[0] = '\0';
 
@@ -504,40 +505,39 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-
    for(controller = 0; controller < MAX_USERS; controller++)
    {
-       if (input_is_autoconfigured(controller))
-       {
+      if (input_is_autoconfigured(controller))
+      {
             snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
-                 controller,
-                 input_config_get_device_name(controller),
-                 input_autoconfigure_get_device_name_index(controller));
+               controller,
+               input_config_get_device_name(controller),
+               input_autoconfigure_get_device_name_index(controller));
             menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device display name: %s",
-                 controller,
-                 input_config_get_device_display_name(controller) ?
-                    input_config_get_device_display_name(controller) : "N/A");
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device config name: %s",
-                 controller,
-                 input_config_get_device_display_name(controller) ?
-                    input_config_get_device_config_name(controller) : "N/A");
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
-                 controller,
-                 input_config_get_vid(controller),
-                 input_config_get_pid(controller));
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-       }
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            {
+               snprintf(tmp, sizeof(tmp), " Device display name: %s",
+                  input_config_get_device_display_name(controller) ?
+                  input_config_get_device_display_name(controller) : "N/A");
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               snprintf(tmp, sizeof(tmp), " Device config name: %s",
+                  input_config_get_device_display_name(controller) ?
+                  input_config_get_device_config_name(controller) : "N/A");
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
+                  input_config_get_vid(controller),
+                  input_config_get_pid(controller));
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            }
+      }
    }
 
    if (frontend)

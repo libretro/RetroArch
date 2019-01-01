@@ -4938,6 +4938,10 @@ MSG_HASH(
     "Select which core to use."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_START_CORE,
+    "Start core without content."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
     "Install a core from the online updater."
     )
