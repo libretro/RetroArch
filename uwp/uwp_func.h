@@ -33,6 +33,8 @@ bool uwp_keyboard_pressed(unsigned key);
 int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen);
 int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen);
 
+void uwp_fill_installed_core_packages(struct string_list *list);
+
 extern const struct rarch_key_map rarch_key_map_uwp[];
 
 #ifdef __cplusplus

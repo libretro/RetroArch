@@ -50,7 +50,7 @@
 #define UINT32_MAX 0xffffffffu
 #endif
 
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_AMD64) || defined(_M_X64)
 #define CPU_X86
 #endif
 

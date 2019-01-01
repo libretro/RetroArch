@@ -1,0 +1,2 @@
+[ExternalPackages]
+"..\AppPackages\RetroArch-UWP-cores-nonfree\RetroArch-UWP-cores-nonfree_1.0.0.0_Test\RetroArch-UWP-cores-nonfree_1.0.0.0_x86_x64_arm.appxbundle"
