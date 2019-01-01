@@ -32,6 +32,8 @@ DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 ifneq ($(findstring BSD,$(OS)),)
    CFLAGS += -DBSD
    LDFLAGS += -L/usr/local/lib
+   UDEV_CFLAGS += -I/usr/local/include/libepoll-shim
+   UDEV_LIBS += -lepoll-shim
 endif
 
 ifneq ($(findstring DOS,$(OS)),)
