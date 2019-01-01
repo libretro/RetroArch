@@ -30,6 +30,7 @@
 
 @interface Context()
 - (bool)_initConversionFilters;
+@property (nonatomic) id<CAMetalDrawable> nextDrawable;
 @end
 
 @implementation Context
@@ -494,8 +495,11 @@
 
 - (id<MTLCommandBuffer>)blitCommandBuffer
 {
-   if (!_blitCommandBuffer)
+   if (!_blitCommandBuffer) {
       _blitCommandBuffer = [_commandQueue commandBuffer];
+      _blitCommandBuffer.label = @"blit";
+      [_blitCommandBuffer enqueue];
+   }
    return _blitCommandBuffer;
 }
 
@@ -640,7 +644,7 @@
    {
       // pending blits for mipmaps or render passes for slang shaders
       [_blitCommandBuffer commit];
-      [_blitCommandBuffer waitUntilCompleted];
+      //[_blitCommandBuffer waitUntilCompleted];
       _blitCommandBuffer = nil;
    }
    
@@ -655,15 +659,15 @@
       dispatch_semaphore_signal(inflight);
    }];
    
-   if (self.nextDrawable)
+   id<CAMetalDrawable> drawable = self.nextDrawable;
+   _drawable = nil;
+   if (drawable != nil)
    {
-      [_commandBuffer presentDrawable:self.nextDrawable];
+      [_commandBuffer presentDrawable:drawable];
    }
    
    [_commandBuffer commit];
-   
    _commandBuffer = nil;
-   _drawable = nil;
    [self _nextChain];
 }
 

@@ -44,7 +44,6 @@ typedef struct
 
 /*! @brief Returns the command buffer for the current frame */
 @property (nonatomic, readonly) id<MTLCommandBuffer> commandBuffer;
-@property (nonatomic, readonly) id<CAMetalDrawable> nextDrawable;
 
 /*! @brief Main render encoder to back buffer */
 @property (nonatomic, readonly) id<MTLRenderCommandEncoder> rce;

@@ -44,6 +44,11 @@ typedef enum apple_view_type {
 
 #endif
 
+#import <os/signpost.h>
+
+extern os_log_t g_log, g_poi;
+extern void init_logging();
+
 @protocol ApplePlatform
 
 /*! @brief renderView returns the current render view based on the viewType */

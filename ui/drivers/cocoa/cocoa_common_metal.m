@@ -43,6 +43,14 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
+os_log_t g_log, g_poi;
+
+void init_logging()
+{
+   g_log = os_log_create("com.libretro.retroarch", "cocoa");
+   g_poi = os_log_create("com.libretro.retroarch", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+}
+
 @implementation MetalView
 
 - (void)keyDown:(NSEvent*)theEvent

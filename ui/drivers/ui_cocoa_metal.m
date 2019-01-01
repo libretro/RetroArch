@@ -40,6 +40,7 @@
 
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#include <os/signpost.h>
 
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
@@ -207,7 +208,7 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-   unsigned i;
+   //unsigned i;
    apple_platform   = self;
 
    self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
@@ -220,6 +221,7 @@ static char** waiting_argv;
    
    [[self.window contentView] setAutoresizesSubviews:YES];
 
+   /*
     for (i = 0; i < waiting_argc; i++)
     {
         if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
@@ -233,11 +235,12 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
+   */
    
    [self.window makeMainWindow];
    [self.window makeKeyWindow];
    
-   [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
+   //[self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 #pragma mark - ApplePlatform
@@ -345,6 +348,8 @@ static char** waiting_argv;
 
 - (void) rarch_main
 {
+    init_logging();
+    os_signpost_id_t sp_iterate = os_signpost_id_generate(g_log);
     do
     {
        int ret;
@@ -356,15 +361,21 @@ static char** waiting_argv;
 #endif
        if (application)
           application->process_events();
+   
+       os_signpost_interval_begin(g_log, sp_iterate, "runloop_iterate");
 
        ret = runloop_iterate(&sleep_ms);
+   
+       os_signpost_interval_end(g_log, sp_iterate, "runloop_iterate");
 
        if (ret == 1 && sleep_ms > 0)
+       {
+          os_signpost_event_emit(g_poi, sp_iterate, "runloop_iterate", "sleep=%{xcode:duration}d", sleep_ms*1000000);
           retro_sleep(sleep_ms);
+       }
 
        task_queue_check();
 
-       while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
        if (ret == -1)
        {
 #ifdef HAVE_QT
@@ -405,10 +416,10 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && [filenames objectAtIndex:0])
+   if (filenames.count == 1 && filenames[0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-      NSString *__core                 = [filenames objectAtIndex:0];
+      NSString *__core                 = filenames[0];
       const char *core_name            = system ? system->library_name : NULL;
 
       if (core_name)
@@ -615,6 +626,116 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 
 @end
 
+@interface RAApplication : NSApplication {
+   bool _shouldKeepRunning;
+}
+
+- (void)run;
+- (void)rarchRun;
+- (void)terminate:(id)sender;
+
+@end
+
+@implementation RAApplication
+
+- (void)run
+{
+   [[NSNotificationCenter defaultCenter] postNotificationName:NSApplicationWillFinishLaunchingNotification
+                                                       object:NSApp];
+   [[NSNotificationCenter defaultCenter] postNotificationName:NSApplicationDidFinishLaunchingNotification
+                                                       object:NSApp];
+   
+   for (int i = 0; i < waiting_argc; i++)
+   {
+      if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
+      {
+         waiting_argv[i]   = NULL;
+         waiting_argv[i+1] = NULL;
+         waiting_argc -= 2;
+      }
+   }
+   if (rarch_main(waiting_argc, waiting_argv, NULL))
+      return;
+   
+   waiting_argc = 0;
+   
+   _shouldKeepRunning = YES;
+   
+   init_logging();
+   os_signpost_id_t sp_iterate = os_signpost_id_generate(g_log);
+   
+   do
+   {
+      NSEvent *event =
+      [self nextEventMatchingMask:NSEventMaskAny
+                        untilDate:[NSDate distantPast]
+                           inMode:NSDefaultRunLoopMode
+                          dequeue:YES];
+      
+      if (event)
+      {
+         [self sendEvent:event];
+         [self updateWindows];
+      }
+      
+      int ret;
+      unsigned sleep_ms = 0;
+      
+      os_signpost_interval_begin(g_log, sp_iterate, "runloop_iterate");
+      
+      ret = runloop_iterate(&sleep_ms);
+      
+      os_signpost_interval_end(g_log, sp_iterate, "runloop_iterate");
+      
+      if (ret == 1 && sleep_ms > 0)
+      {
+         os_signpost_event_emit(g_poi, sp_iterate, "runloop_iterate", "sleep=%{xcode:duration}d", sleep_ms*1000000);
+         retro_sleep(sleep_ms);
+      }
+      
+      task_queue_check();
+      
+      if (ret == -1)
+      {
+#ifdef HAVE_QT
+         ui_application_qt.quit();
+#endif
+         _shouldKeepRunning = NO;
+      }
+      
+   } while (_shouldKeepRunning);
+   
+   main_exit(NULL);
+}
+
+- (void)terminate:(id)sender
+{
+   _shouldKeepRunning = NO;
+}
+
+@end
+
+int RAApplicationMain(int argc, const char **argv)
+{
+   @autoreleasepool
+   {
+      NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+      Class principalClass =
+      NSClassFromString([infoDictionary objectForKey:@"NSPrincipalClass"]);
+      NSApplication *applicationObject = [principalClass sharedApplication];
+      
+      NSString *mainNibName = [infoDictionary objectForKey:@"NSMainNibFile"];
+      NSNib *mainNib = [[NSNib alloc] initWithNibNamed:mainNibName bundle:[NSBundle mainBundle]];
+      [mainNib instantiateWithOwner:applicationObject topLevelObjects:nil];
+      if ([applicationObject respondsToSelector:@selector(run)])
+      {
+         [applicationObject run];
+      }
+   }
+   
+   return 0;
+}
+
 int main(int argc, char *argv[])
 {
    if (argc == 2)
@@ -626,8 +747,9 @@ int main(int argc, char *argv[])
 
    waiting_argc = argc;
    waiting_argv = argv;
-
-   return NSApplicationMain(argc, (const char **) argv);
+   
+   return RAApplicationMain(argc, (const char **) argv);
+   //return NSApplicationMain(argc, (const char **) argv);
 }
 
 typedef struct ui_companion_cocoa
@@ -693,21 +815,17 @@ static void *ui_companion_cocoa_get_main_window(void *data)
 }
 
 ui_companion_driver_t ui_companion_cocoa = {
-   ui_companion_cocoa_init,
-   ui_companion_cocoa_deinit,
-   ui_companion_cocoa_iterate,
-   ui_companion_cocoa_toggle,
-   ui_companion_cocoa_event_command,
-   ui_companion_cocoa_notify_content_loaded,
-   ui_companion_cocoa_notify_list_pushed,
-   NULL, /* notify_refresh */
-   NULL, /* msg_queue_push */
-   NULL, /* render_messagebox */
-   ui_companion_cocoa_get_main_window,
-   NULL, /* log_msg */
-   &ui_browser_window_cocoa,
-   &ui_msg_window_cocoa,
-   &ui_window_cocoa,
-   &ui_application_cocoa,
-   "cocoa",
+   .init                   = ui_companion_cocoa_init,
+   .deinit                 = ui_companion_cocoa_deinit,
+   .iterate                = ui_companion_cocoa_iterate,
+   .toggle                 = ui_companion_cocoa_toggle,
+   .event_command          = ui_companion_cocoa_event_command,
+   .notify_content_loaded  = ui_companion_cocoa_notify_content_loaded,
+   .notify_list_loaded     = ui_companion_cocoa_notify_list_pushed,
+   .get_main_window        = ui_companion_cocoa_get_main_window,
+   .browser_window         = &ui_browser_window_cocoa,
+   .msg_window             = &ui_msg_window_cocoa,
+   .window                 = &ui_window_cocoa,
+   .application            = &ui_application_cocoa,
+   .ident                  = "cocoa",
 };

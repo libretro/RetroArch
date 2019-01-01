@@ -38,13 +38,16 @@ static bool ui_application_cocoa_pending_events(void)
 
 static void ui_application_cocoa_process_events(void)
 {
-    while (1)
-    {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (!event)
+   @autoreleasepool
+   {
+      while (1)
+      {
+         NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+         if (!event)
             break;
-        [NSApp sendEvent: event];
-    }
+         [NSApp sendEvent: event];
+      }
+   }
 }
 
 static void ui_application_cocoa_run(void *args)

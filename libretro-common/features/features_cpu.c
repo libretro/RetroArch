@@ -99,7 +99,7 @@
 #endif
 
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
-#ifdef __MACH__
+#if defined(__MACH__) && !defined(_POSIX_MONOTONIC_CLOCK)
 #include <sys/time.h>
 
 #ifndef CLOCK_MONOTONIC
@@ -123,7 +123,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 }
 #endif
 
-#if defined(__MACH__) && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+#if defined(__MACH__) && TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
 #else
 #define ra_clock_gettime clock_gettime
 #endif

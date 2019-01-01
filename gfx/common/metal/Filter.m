@@ -51,7 +51,7 @@
 - (void)apply:(id<MTLCommandBuffer>)cb in:(id<MTLTexture>)tin out:(id<MTLTexture>)tout
 {
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
-   ce.label = @"filter kernel";
+   ce.label = @"filter cb";
    [ce pushDebugGroup:@"filter kernel"];
    
    [ce setComputePipelineState:_kernel];
@@ -74,7 +74,7 @@
 - (void)apply:(id<MTLCommandBuffer>)cb inBuf:(id<MTLBuffer>)tin outTex:(id<MTLTexture>)tout
 {
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
-   ce.label = @"filter kernel";
+   ce.label = @"filter cb";
    [ce pushDebugGroup:@"filter kernel"];
    
    [ce setComputePipelineState:_kernel];

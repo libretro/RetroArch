@@ -61,6 +61,7 @@
    id<MTLDevice> _device;
    id<MTLLibrary> _library;
    Context *_context;
+   BOOL _needsResize;
    
    CAMetalLayer *_layer;
    
@@ -109,7 +110,7 @@
       {
          // 0 indicates full screen, so we'll use the view's dimensions, which should already be full screen
          // If this turns out to be the wrong assumption, we can use NSScreen to query the dimensions
-         CGSize size = view.frame.size;
+         CGSize size = view.bounds.size;
          mode.width = (unsigned int)size.width;
          mode.height = (unsigned int)size.height;
       }
@@ -218,6 +219,9 @@
 
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
+   if (_viewport->full_width == width && _viewport->full_height == height)
+      return;
+   
 #if 0
    RARCH_LOG("[Metal]: setViewportWidth size %dx%d\n", width, height);
 #endif
@@ -225,7 +229,8 @@
    _viewport->full_width = width;
    _viewport->full_height = height;
    video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
-   _layer.drawableSize = CGSizeMake(width, height);
+   //_layer.drawableSize = CGSizeMake(width, height);
+   _needsResize = YES;
    video_driver_update_viewport(_viewport, forceFull, _keepAspect);
    
    // update matrix
@@ -331,6 +336,11 @@
 
 - (void)_beginFrame
 {
+   if (_needsResize)
+   {
+      _needsResize = NO;
+      _layer.drawableSize = CGSizeMake(_viewport->full_width, _viewport->full_height);
+   }
    video_viewport_t vp = *_viewport;
    video_driver_update_viewport(_viewport, NO, _keepAspect);
    if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
@@ -406,7 +416,7 @@
 
 - (void)setNeedsResize
 {
-   // TODO(sgc): resize all drawables
+   _needsResize = YES;
 }
 
 - (void)setRotation:(unsigned)rotation
@@ -879,7 +889,11 @@ typedef struct MTLALIGN(16)
       }
    }
    
-   id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
+   id<MTLCommandBuffer> cb = nil;;
+   if (_shader->passes > 1 && _engine.pass[0].rt.view != nil)
+   {
+      cb = ctx.blitCommandBuffer;
+   }
    
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
    rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
@@ -906,6 +920,7 @@ typedef struct MTLALIGN(16)
 #endif
       
       [rce setRenderPipelineState:_engine.pass[i]._state];
+      rce.label = _engine.pass[i]._state.label;
       
       _engine.pass[i].frame_count = (uint32_t)_frameCount;
       if (_shader->pass[i].frame_count_mod)

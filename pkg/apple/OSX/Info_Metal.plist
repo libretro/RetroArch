@@ -44,6 +44,6 @@
 	<key>NSMainNibFile</key>
 	<string>MainMenu_Metal</string>
 	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
+	<string>RAApplication</string>
 </dict>
 </plist>

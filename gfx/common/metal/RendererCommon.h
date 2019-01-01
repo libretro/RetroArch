@@ -14,7 +14,7 @@
 
 // TODO(sgc): implement triple buffering
 /*! @brief maximum inflight frames */
-#define MAX_INFLIGHT 1
+#define MAX_INFLIGHT 2
 #define CHAIN_LENGTH 3
 
 /* macOS requires constants in a buffer to have a 256 byte alignment. */
