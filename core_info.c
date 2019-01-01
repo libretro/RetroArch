@@ -32,6 +32,10 @@
 #include "core_info.h"
 #include "file_path_special.h"
 
+#ifdef __WINRT__
+#include "uwp/uwp_func.h"
+#endif
+
 static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;
 static core_info_t *core_info_current               = NULL;
@@ -232,11 +236,31 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
    const char       *path_basedir   = libretro_info_dir;
-   struct string_list *contents     = dir_list_new(
-                                      path, exts,
-                                      false,
-                                      show_hidden_files,
-                                      false, false);
+   struct string_list *contents     = string_list_new();
+   bool ok;
+
+   ok = dir_list_append(contents, path, exts,
+         false, show_hidden_files, false, false);
+
+#ifdef __WINRT__
+   /* UWP: browse the optional packages for additional cores */
+   struct string_list *core_packages = string_list_new();
+   uwp_fill_installed_core_packages(core_packages);
+   for (i = 0; i < core_packages->size; i++)
+   {
+      dir_list_append(contents, core_packages->elems[i].data, exts,
+            false, show_hidden_files, false, false);
+   }
+   string_list_free(core_packages);
+#else
+   /* Keep the old 'directory not found' behavior */
+   if (!ok)
+   {
+      string_list_free(contents);
+      contents = NULL;
+   }
+#endif
+
    if (!contents)
       return NULL;
 
@@ -430,12 +454,12 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info_list_resolve_all_firmware(core_info_list);
    }
 
-   dir_list_free(contents);
+   string_list_free(contents);
    return core_info_list;
 
 error:
    if (contents)
-      dir_list_free(contents);
+      string_list_free(contents);
    core_info_list_free(core_info_list);
    return NULL;
 }

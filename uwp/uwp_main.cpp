@@ -21,9 +21,12 @@
 #include "../input/input_keymaps.h"
 #include "../input/input_driver.h"
 #include "../verbosity.h"
+#include "../libretro-common/include/encodings/utf.h"
+#include "../libretro-common/include/lists/string_list.h"
 #include "uwp_func.h"
 
 #include <ppltasks.h>
+#include <collection.h>
 
 using namespace RetroArchUWP;
 
@@ -38,6 +41,7 @@ using namespace Windows::Devices::Input;
 using namespace Windows::System;
 using namespace Windows::System::Profile;
 using namespace Windows::Foundation;
+using namespace Windows::Foundation::Collections;
 using namespace Windows::Graphics::Display;
 
 char uwp_dir_install[PATH_MAX_LENGTH];
@@ -290,6 +294,11 @@ void App::Load(Platform::String^ entryPoint)
 		return;
 	}
 	m_initialized = true;
+
+	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
+
+	catalog->PackageInstalling +=
+		ref new TypedEventHandler<PackageCatalog^, PackageInstallingEventArgs^>(this, &App::OnPackageInstalling);
 }
 
 // This method is called after the window becomes active.
@@ -461,6 +470,17 @@ void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 	// Probably can be ignored?
 }
 
+void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs^ args)
+{
+	/* TODO: This doesn't seem to work even though it's exactly the same as in sample app and it works there */
+	if (args->IsComplete)
+	{
+		char msg[512];
+		snprintf(msg, sizeof(msg), "Package \"%ls\" installed, a restart may be necessary", args->Package->DisplayName->Data());
+		runloop_msg_queue_push(msg, 1, 5 * 60, false);
+	}
+}
+
 // Taken from DirectX UWP samples - on Xbox, everything is scaled 200% so getting the DPI calculation correct is crucial
 static inline float ConvertDipsToPixels(float dips, float dpi)
 {
@@ -526,6 +546,18 @@ extern "C" {
 	void* uwp_get_corewindow(void)
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
+	}
+
+	void uwp_fill_installed_core_packages(struct string_list *list)
+	{
+		for (auto package : Windows::ApplicationModel::Package::Current->Dependencies)
+		{
+			if (package->IsOptional)
+			{
+				string_list_elem_attr attr{};
+				string_list_append(list, utf16_to_utf8_string_alloc((package->InstalledLocation->Path + L"\\cores")->Data()), attr);
+			}
+		}
 	}
 
 	void uwp_input_next_frame(void)

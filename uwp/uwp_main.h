@@ -53,6 +53,8 @@ namespace RetroArchUWP
       void OnOrientationChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
       void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
 
+      void OnPackageInstalling(Windows::ApplicationModel::PackageCatalog^ sender, Windows::ApplicationModel::PackageInstallingEventArgs^ args);
+
    public:
       bool IsInitialized() { return m_initialized; }
       bool IsWindowClosed() { return m_windowClosed; }

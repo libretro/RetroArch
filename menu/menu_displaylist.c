@@ -3609,6 +3609,7 @@ static unsigned menu_displaylist_parse_cores(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
+   bool ok;
 
    if (string_is_empty(path))
    {
@@ -3619,8 +3620,28 @@ static unsigned menu_displaylist_parse_cores(
       return items_found;
    }
 
-   str_list = dir_list_new(path, info->exts,
+   str_list = string_list_new();
+   ok = dir_list_append(str_list, path, info->exts,
          true, settings->bools.show_hidden_files, true, false);
+
+#ifdef __WINRT__
+   /* UWP: browse the optional packages for additional cores */
+   struct string_list *core_packages = string_list_new();
+   uwp_fill_installed_core_packages(core_packages);
+   for (i = 0; i < core_packages->size; i++)
+   {
+      dir_list_append(str_list, core_packages->elems[i].data, info->exts,
+            true, settings->bools.show_hidden_files, true, false);
+   }
+   string_list_free(core_packages);
+#else
+   /* Keep the old 'directory not found' behavior */
+   if (!ok)
+   {
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+#endif
 
    {
       char *out_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
