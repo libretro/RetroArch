@@ -1028,7 +1028,16 @@ void fill_pathname_expand_special(char *out_path,
          out_path  += src_size;
          size      -= src_size;
 
-         in_path++;
+         if (!path_char_is_slash(out_path[-1]))
+         {
+            src_size = strlcpy(out_path, path_default_slash(), size);
+            retro_assert(src_size < size);
+
+            out_path += src_size;
+            size -= src_size;
+         }
+
+         in_path += 2;
       }
 
       free(home_dir);
@@ -1050,7 +1059,16 @@ void fill_pathname_expand_special(char *out_path,
          out_path  += src_size;
          size      -= src_size;
 
-         in_path++;
+         if (!path_char_is_slash(out_path[-1]))
+         {
+            src_size = strlcpy(out_path, path_default_slash(), size);
+            retro_assert(src_size < size);
+
+            out_path += src_size;
+            size -= src_size;
+         }
+
+         in_path += 2;
       }
 
       free(application_dir);
