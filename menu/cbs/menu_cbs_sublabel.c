@@ -189,6 +189,7 @@ default_sublabel_macro(action_bind_sublabel_netplay_nickname,              MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_username,              MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME)
 default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD)
 default_sublabel_macro(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
+default_sublabel_macro(action_bind_sublabel_start_core,                    MENU_ENUM_SUBLABEL_START_CORE)
 default_sublabel_macro(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
 default_sublabel_macro(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 default_sublabel_macro(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
@@ -1703,6 +1704,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
+            break;
+         case MENU_ENUM_LABEL_START_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_start_core);
             break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_list);
