@@ -3395,7 +3395,7 @@ found:
                *coro->settings->arrays.cheevos_password = '\0';
                strncpy(
                      coro->settings->arrays.cheevos_token,
-                     cheevos_locals.token, sizeof(cheevos_locals.token)
+                     cheevos_locals.token, sizeof(coro->settings->arrays.cheevos_token)
                );
                CORO_RET();
             }

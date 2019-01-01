@@ -59,7 +59,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_PUBLIC_ADDRESS,
-    "Public address"
+    "UPNP Port Mapping Successful"
+    )
+MSG_HASH(
+    MSG_UPNP_FAILED,
+    "UPNP Port Mapping Failed"
     )
 MSG_HASH(
     MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
