@@ -82,7 +82,11 @@ static void* win32_display_server_init(void)
       return NULL;
 
 #ifdef HAS_TASKBAR_EXT
-   CoInitialize(NULL);
+   if (FAILED(CoInitialize(NULL)))
+   {
+      RARCH_ERR("COM initialization failed, ITaskbarList3 disabled\n");
+      return dispserv;
+   }
 
 #ifdef __cplusplus
    /* When compiling in C++ mode, GUIDs are references instead of pointers */
@@ -98,6 +102,7 @@ static void* win32_display_server_init(void)
    {
       g_taskbarList = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
+      CoUninitialize();
    }
 #endif
 
@@ -117,6 +122,7 @@ static void win32_display_server_destroy(void *data)
    {
       ITaskbarList3_Release(g_taskbarList);
       g_taskbarList = NULL;
+      CoUninitialize();
    }
 #endif
 
