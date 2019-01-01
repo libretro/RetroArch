@@ -43,6 +43,8 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
+#include "../input/input_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -499,6 +501,36 @@ default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
+static int action_bind_sublabel_systeminfo_controller_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char tmp[len];
+   unsigned controller;
+
+   for(controller = 0; controller < MAX_USERS; controller++)
+   {
+      if (input_is_autoconfigured(controller))
+      {
+            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+               controller,
+               input_config_get_device_name(controller),
+               input_autoconfigure_get_device_name_index(controller));
+
+            if (string_is_equal(path, tmp))
+               break;
+      }
+   }
+   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
+      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : "N/A",
+      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : "N/A",
+      input_config_get_vid(controller), input_config_get_pid(controller));
+   strlcpy(s, tmp, len);
+
+   return 0;
+}
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1858,6 +1890,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CPU_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_cpu_cores);
+            break;
+         case MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_controller_entry);
             break;
          case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_black_frame_insertion);
