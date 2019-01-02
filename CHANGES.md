@@ -5,8 +5,9 @@
 - CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
 - DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
-- DISCORD: Register the application name properly
-- DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster
+- DISCORD: Register the application name properly.
+- DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster.
+- INPUT/SDL: Flush the joypad events. Decreases cpu usage over time with the SDL joypad driver.
 - LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
