@@ -2081,7 +2081,7 @@ void cheevos_populate_menu(void *data)
    cheevo_t *cheevo              = cheevos_locals.core.cheevos;
    end                           = cheevo + cheevos_locals.core.count;
 
-   if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable 
+   if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable
       && cheevos_loaded)
    {
       if (!cheevos_hardcore_paused)
@@ -2904,10 +2904,10 @@ found:
 
       /* Checks for the existence of a headered SNES file.
          Unheadered files fall back to GENERIC_MD5. */
-      
+
       const int SNES_HEADER_LEN = 0x200;
-      
-      if (coro->len % 0x2000 != SNES_HEADER_LEN || coro->len <= SNES_HEADER_LEN)
+
+      if (coro->len < 0x2000 || coro->len % 0x2000 != SNES_HEADER_LEN)
       {
           coro->gameid = 0;
           CORO_RET();
@@ -2918,7 +2918,7 @@ found:
 
       CORO_GOSUB(EVAL_MD5);
       MD5_Final(coro->hash, &coro->md5);
-      
+
       CORO_GOTO(GET_GAMEID);
 
       /**************************************************************************
@@ -3001,10 +3001,8 @@ found:
          CORO_RET();
       }
 
-      /* from FCEU core - check if Trainer included in ROM data */
       MD5_Init(&coro->md5);
-      coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
-            ? sizeof(coro->header) : 0);
+      coro->offset = sizeof(coro->header);
       coro->count  = coro->len - coro->offset;
       CORO_GOSUB(EVAL_MD5);
 
