@@ -306,7 +306,9 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
 
 static bool load_dynamic_core(void)
 {
-#ifndef __WINRT__ /* Can't lookup symbols in itself on UWP */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* Can't lookup symbols in itself on UWP */
+#else
    function_t sym       = dylib_proc(NULL, "retro_init");
 
    if (sym)

@@ -56,7 +56,7 @@
 
 #include "record/record_driver.h"
 
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
 #endif
 
@@ -439,7 +439,7 @@ static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
 #elif defined(XENON)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
@@ -2238,7 +2238,7 @@ static config_file_t *open_default_config_file(void)
    (void)path_size;
 
 #if defined(_WIN32) && !defined(_XBOX)
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
    fill_pathname_home_dir(app_path, path_size);
 #else

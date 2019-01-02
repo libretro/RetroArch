@@ -359,7 +359,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
-#ifndef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
   if (settings->bools.menu_show_core_updater)
      menu_entries_append_enum(info->list,
            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
@@ -3104,7 +3105,8 @@ static unsigned menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
    count++;
 #elif defined(HAVE_NETWORKING)
-#ifndef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
    if (settings->bools.menu_show_core_updater)
    {
       menu_entries_append_enum(info->list,
@@ -3624,7 +3626,7 @@ static unsigned menu_displaylist_parse_cores(
    ok = dir_list_append(str_list, path, info->exts,
          true, settings->bools.show_hidden_files, true, false);
 
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
    struct string_list *core_packages = string_list_new();
    uwp_fill_installed_core_packages(core_packages);
@@ -4175,7 +4177,9 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#if defined(HAVE_NETWORKING) && !defined(__WINRT__)
+#if defined(HAVE_NETWORKING)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
    if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
    {
       if (info->download_core)
@@ -4193,6 +4197,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_SETTING_ACTION, 0, 0);
       }
    }
+#endif
 #endif
 
    if (info->push_builtin_cores)

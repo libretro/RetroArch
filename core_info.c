@@ -32,7 +32,7 @@
 #include "core_info.h"
 #include "file_path_special.h"
 
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
 #endif
 
@@ -242,7 +242,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    ok = dir_list_append(contents, path, exts,
          false, show_hidden_files, false, false);
 
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
    struct string_list *core_packages = string_list_new();
    uwp_fill_installed_core_packages(core_packages);
