@@ -2902,24 +2902,23 @@ found:
 
       MD5_Init(&coro->md5);
 
-      /* if the file contains header, ignore it */
-      if (coro->len - ((coro->len / 0x2000) * 0x2000) == 512)
-          coro->offset = 512;
-      else
-        coro->offset = 0;
+      /* Checks for the existence of a headered SNES file.
+         Unheadered files fall back to GENERIC_MD5. */
+      
+      const int SNES_HEADER_LEN = 0x200;
+      
+      if (coro->len % 0x2000 != SNES_HEADER_LEN || coro->len <= SNES_HEADER_LEN)
+      {
+          coro->gameid = 0;
+          CORO_RET();
+      }
 
+      coro->offset = 512;
       coro->count  = 0;
 
       CORO_GOSUB(EVAL_MD5);
-
-      if (coro->count == 0)
-      {
-         MD5_Final(coro->hash, &coro->md5);
-         coro->gameid = 0;
-         CORO_RET();
-      }
-
       MD5_Final(coro->hash, &coro->md5);
+      
       CORO_GOTO(GET_GAMEID);
 
       /**************************************************************************
