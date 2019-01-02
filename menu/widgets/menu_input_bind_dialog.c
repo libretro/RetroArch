@@ -585,8 +585,6 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       input_driver_keyboard_mapping_set_block( true );
       menu_input_key_bind_poll_bind_state( &binds, menu_bind_port, timed_out );
 
-#ifdef ANDROID
-
 	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
 	  binds.buffer = *( binds.output );
 
@@ -614,16 +612,6 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
          /*reset hold countdown*/
          rarch_timer_begin_new_time( &binds.timer_hold, settings->uints.input_bind_hold );
       }
-
-#else
-
-      if ( ( binds.skip && !menu_input_binds.skip ) ||
-         menu_input_key_bind_poll_find_trigger( &menu_input_binds, &binds, &( binds.buffer ) ) )
-      {
-         complete = true;
-      }
-
-#endif
 
       if ( complete )
       {
