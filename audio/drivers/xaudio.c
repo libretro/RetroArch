@@ -201,9 +201,12 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 {
    xaudio2_t *handle = NULL;
    WAVEFORMATEX wfx  = {0};
+   HRESULT hr;
 
 #ifndef _XBOX
-   CoInitializeEx(0, COINIT_MULTITHREADED);
+   hr = CoInitialize(NULL);
+   if (FAILED(hr))
+      return NULL;
 #endif
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
@@ -255,6 +258,9 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 
 error:
    xaudio2_free(handle);
+#ifndef _XBOX
+   CoUninitialize();
+#endif
    return NULL;
 }
 
@@ -404,6 +410,10 @@ static void xa_free(void *data)
    if (xa->xa)
       xaudio2_free(xa->xa);
    free(xa);
+
+#ifndef _XBOX
+   CoUninitialize();
+#endif
 }
 
 static size_t xa_write_avail(void *data)
