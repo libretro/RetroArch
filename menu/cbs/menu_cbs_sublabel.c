@@ -508,7 +508,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char tmp[len];
+   char tmp[4096];
    unsigned controller;
 
    for(controller = 0; controller < MAX_USERS; controller++)
