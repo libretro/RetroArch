@@ -134,16 +134,13 @@ static bool ps4_joypad_init(void *data)
 
 static bool ps4_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   RARCH_LOG("[JOYPAD] BUTTONS %x\n" , port_num);
    if (port_num >= PS4_MAX_ORBISPADS)
       return false;
-   RARCH_LOG("[JOYPAD] BUTTONS %x\n" , (pad_state[port_num] & (UINT64_C(1) << joykey)));
    return (pad_state[port_num] & (UINT64_C(1) << joykey));
 }
 
 static void ps4_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-   RARCH_LOG("[JOYPAD] BUTTONS %x\n" , port_num);
 	if (port_num < PS4_MAX_ORBISPADS)
    {
 		BITS_COPY16_PTR( state, pad_state[port_num] );
@@ -162,7 +159,6 @@ static void ps4_joypad_poll(void)
    unsigned player;
    unsigned players_count = num_players;
    ScePadData buttons;
-   RARCH_LOG("[JOYPAD] Polling \n");
 
    for (player = 0; player < players_count; player++)
    {
@@ -171,11 +167,9 @@ static void ps4_joypad_poll(void)
       unsigned p  = player;
    
       int ret = scePadReadState(ds_joypad_states[player].handle,&buttons);
-      RARCH_LOG("[JOYPAD] Returned %x\n" , ret);
       if (ret == 0)
       {
          int32_t state_tmp = buttons.buttons;
-         RARCH_LOG("[JOYPAD] BUTTONS %x\n" , buttons.buttons);
          pad_state[i] = 0;
 
          pad_state[i] |= (state_tmp & ORBISPAD_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -183,7 +177,7 @@ static void ps4_joypad_poll(void)
          pad_state[i] |= (state_tmp & ORBISPAD_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_OPTIONS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-         //pad_state[i] |= (state_tmp & ORBISPAD_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+         pad_state[i] |= (state_tmp & ORBISPAD_TOUCH_PAD) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_CROSS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
@@ -194,7 +188,6 @@ static void ps4_joypad_poll(void)
          pad_state[i] |= (state_tmp & ORBISPAD_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
          pad_state[i] |= (state_tmp & ORBISPAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-         RARCH_LOG("[JOYPAD] BUTTONS %x\n" , pad_state[i]);
       }
    }
 
@@ -202,16 +195,12 @@ static void ps4_joypad_poll(void)
 
 static bool ps4_joypad_query_pad(unsigned pad)
 {
-      RARCH_LOG("[JOYPAD] BUTTONS %x\n" , pad);
-
    return pad < PS4_MAX_ORBISPADS && pad_state[pad];
 }
 
 static bool ps4_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-      RARCH_LOG("[JOYPAD] BUTTONS %x\n" , pad);
-
    return false;
 }
 
