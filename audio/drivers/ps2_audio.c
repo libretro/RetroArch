@@ -57,17 +57,15 @@ static void audioMainLoop(void *data)
    while (ps2->running)
    {
       WaitSema(ps2->lock);
-      if (fifo_read_avail(ps2->buffer) >= sizeof(out_tmp)) {
-         fifo_read(ps2->buffer, out_tmp, sizeof(out_tmp));
-      } else {
-         memset(out_tmp, 0, sizeof(out_tmp));
-      }
+      size_t size = MIN(fifo_read_avail(ps2->buffer), sizeof(out_tmp)); 
+      fifo_read(ps2->buffer, out_tmp, size);
+      
       iSignalSema(ps2->lock);
       iSignalSema(ps2->cond_lock);
 
       int ret;
-      audsrv_wait_audio(sizeof(out_tmp));
-      ret = audsrv_play_audio(out_tmp, sizeof(out_tmp));
+      audsrv_wait_audio(size);
+      ret = audsrv_play_audio(out_tmp, size);
    }
 
    audsrv_stop_audio();
@@ -83,7 +81,7 @@ static void audioCreateThread(ps2_audio_t *ps2) {
 	thread.stack=audioThreadStack;
 	thread.stack_size=sizeof(audioThreadStack);
 	thread.gp_reg=&_gp;
-	thread.initial_priority=0x50;
+	thread.initial_priority=0x40;
 	thread.attr=thread.option=0;
 
    /*Backup the PS2 content to be used in the thread */
@@ -256,6 +254,27 @@ static bool ps2_audio_use_float(void *data)
 {
    (void)data;
    return false;
+}
+
+static size_t psp_write_avail(void *data)
+{
+   size_t val;
+   ps2_audio_t* ps2 = (ps2_audio_t*)data;
+
+   if (!ps2||!ps2->running)
+      return 0;
+   
+   WaitSema(ps2->lock);
+   size_t size = AUDIO_BUFFER - fifo_read_avail(ps2->buffer); 
+   iSignalSema(ps2->lock);
+
+   
+   return size;
+}
+
+static size_t psp_buffer_size(void *data)
+{
+   return AUDIO_BUFFER ;
 }
 
 audio_driver_t audio_ps2 = {

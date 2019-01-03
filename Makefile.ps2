@@ -1,8 +1,8 @@
 BUILD_PRX          = 0
-DEBUG              = 1
+DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
-HAVE_FILE_LOGGER   = 1
+HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 BIG_STACK          = 0
 WHOLE_ARCHIVE_LINK = 0
