@@ -41,4 +41,4 @@ typedef unsigned long     uint64_t;
 #define UINT32_C(val) val##ui
 #define UINT64_C(val) val##ul
 
-#endif //STDINT_H
+#endif /* STDINT_H */
