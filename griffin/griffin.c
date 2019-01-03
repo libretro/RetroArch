@@ -927,6 +927,7 @@ FILE
 #include "../libretro-common/file/nbio/nbio_linux.c"
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#include "../libretro-common/file/nbio/nbio_orbis.c"
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================

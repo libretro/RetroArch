@@ -196,6 +196,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        file_path_special.o \
