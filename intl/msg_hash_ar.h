@@ -7,8 +7,9 @@ MSG_HASH(
       "Unknown compiler"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Native"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Device disconnected from port"
@@ -144,6 +145,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,

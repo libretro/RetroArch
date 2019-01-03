@@ -7,8 +7,9 @@ MSG_HASH(
       "Compilateur inconnu"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Native"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Périphérique déconnecté du port"
@@ -104,6 +105,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Donne aux cœurs bénéficiant de l'accélération graphique leur propre contexte. Évite d'avoir à supposer des changements d'état matériel entre deux images."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -989,6 +994,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "Réglages")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Filtre linéaire pour le menu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+      "Horizontal Animation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Appearance")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
