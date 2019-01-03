@@ -201,6 +201,11 @@ enum
    XMB_TEXTURE_INPUT_RB,
    XMB_TEXTURE_INPUT_LT,
    XMB_TEXTURE_INPUT_RT,
+   XMB_TEXTURE_INPUT_ADC,
+   XMB_TEXTURE_INPUT_BIND_ALL,
+   XMB_TEXTURE_INPUT_MOUSE,
+   XMB_TEXTURE_INPUT_LGUN,
+   XMB_TEXTURE_INPUT_TURBO,
    XMB_TEXTURE_CHECKMARK,
    XMB_TEXTURE_MENU_ADD,
    XMB_TEXTURE_BRIGHTNESS,
@@ -2390,6 +2395,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
                      return xmb->textures.list[XMB_TEXTURE_HELP];
                   case MENU_ENUM_LABEL_QUIT_RETROARCH:
+                  case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
                      return xmb->textures.list[XMB_TEXTURE_EXIT];
                   /* Settings icons*/
                   case MENU_ENUM_LABEL_DRIVER_SETTINGS:
@@ -2430,6 +2436,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_SAVING];
                   case MENU_ENUM_LABEL_LOGGING_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_LOG];
+                  case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
                   case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
                   case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
@@ -2497,6 +2504,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
                   case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
                   case MENU_ENUM_LABEL_RESTART_RETROARCH:
+                  case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+                  case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
                      return xmb->textures.list[XMB_TEXTURE_RELOAD];
                   case MENU_ENUM_LABEL_SHUTDOWN:
                      return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
@@ -2508,6 +2517,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
                   case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
                   case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+                  case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
                      return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
                   case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
                   case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
@@ -2520,7 +2530,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
                      return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_TOGGLE];
                   case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+                  case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
                      return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
+                  case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
+                     return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
+                  case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
+                     return xmb->textures.list[XMB_TEXTURE_RESUME];
                   default:
                      break;
                   }
@@ -2648,26 +2663,40 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
+         /* This part is only utilized by Input User # Binds */
          unsigned input_id;
          if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 1)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
             if ( type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+            if ( type == input_id + 3)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
             if ( type == input_id + 4)
                return xmb->textures.list[XMB_TEXTURE_RELOAD];
             if ( type == input_id + 5)
                return xmb->textures.list[XMB_TEXTURE_SAVING];
+            if ( type == input_id + 6)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+               return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
+            if ( type == input_id + 42)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
+            /* align to use the same code of Quickmenu controls*/
             input_id = input_id + 7;
          }
          else
          {
+            /* Quickmenu controls repeats the same icons for all users*/
             input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
             while (type > (input_id + 23))
             {
                input_id = (input_id + 24) ;
             }
          }
+         /* This is utilized for both Input Binds and Quickmenu controls*/
          if ( type == input_id )
             return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
          if ( type == (input_id + 1))
@@ -4842,6 +4871,16 @@ static const char *xmb_texture_path(unsigned id)
          return "input_SELECT.png";
       case XMB_TEXTURE_INPUT_START:
          return "input_START.png";
+      case XMB_TEXTURE_INPUT_ADC:
+         return "input_ADC.png";
+      case XMB_TEXTURE_INPUT_BIND_ALL:
+         return "input_BIND_ALL.png";
+      case XMB_TEXTURE_INPUT_MOUSE:
+         return "input_MOUSE.png";
+      case XMB_TEXTURE_INPUT_LGUN:
+         return "input_LGUN.png";
+      case XMB_TEXTURE_INPUT_TURBO:
+         return "input_TURBO.png";
       case XMB_TEXTURE_CHECKMARK:
          return "menu_check.png";
       case XMB_TEXTURE_MENU_ADD:
