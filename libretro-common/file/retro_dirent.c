@@ -50,6 +50,11 @@
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
 #  include <psp2/io/stat.h>
+#elif defined(ORBIS)
+#  include <orbisFile.h>
+#  include <ps4link.h>
+#  include <sys/dirent.h>
+#  include <sys/fcntl.h>
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
@@ -98,6 +103,9 @@ struct RDIR
    CellFsErrno error;
    int directory;
    CellFsDirent entry;
+#elif defined(ORBIS)
+   int directory;
+   struct dirent entry; 
 #else
    DIR *directory;
    const struct dirent *entry;
@@ -159,6 +167,8 @@ struct RDIR *retro_opendir(const char *name)
    rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
    rdir->error     = cellFsOpendir(name, &rdir->directory);
+#elif defined(ORBIS)
+   rdir->directory = orbisDopen(name);
 #else
    rdir->directory = opendir(name);
    rdir->entry     = NULL;
@@ -175,7 +185,7 @@ bool retro_dirent_error(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    return (rdir->directory == INVALID_HANDLE_VALUE);
-#elif defined(VITA) || defined(PSP) || defined(PS2)
+#elif defined(VITA) || defined(PSP) || defined(PS2) || defined(ORBIS)
    return (rdir->directory < 0);
 #elif defined(__CELLOS_LV2__)
    return (rdir->error != CELL_FS_SUCCEEDED);
@@ -207,6 +217,8 @@ int retro_readdir(struct RDIR *rdir)
    uint64_t nread;
    rdir->error = cellFsReaddir(rdir->directory, &rdir->entry, &nread);
    return (nread != 0);
+#elif defined(ORBIS)
+   return (orbisDread(rdir->directory, &rdir->entry) > 0);
 #else
    return ((rdir->entry = readdir(rdir->directory)) != NULL);
 #endif
@@ -231,7 +243,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
       free(name);
 #endif
    return (char*)rdir->entry.cFileName;
-#elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
+#elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__) || defined(ORBIS)
    return rdir->entry.d_name;
 #elif defined(PS2)
    return rdir->entry.name;
@@ -270,6 +282,14 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
+#elif defined(ORBIS)
+   const struct dirent *entry = &rdir->entry;
+   if (entry->d_type==DT_DIR)
+   {
+      return true;
+   }
+   if (!(entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK))
+      return false;
 #else
    struct stat buf;
 #if defined(DT_DIR)
@@ -311,6 +331,8 @@ void retro_closedir(struct RDIR *rdir)
    fileXioDclose(rdir->directory);
 #elif defined(__CELLOS_LV2__)
    rdir->error = cellFsClosedir(rdir->directory);
+#elif defined(ORBIS)
+   orbisDclose(rdir->directory);
 #else
    if (rdir->directory)
       closedir(rdir->directory);
