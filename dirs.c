@@ -309,7 +309,11 @@ void dir_check_defaults(void)
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
+#ifdef ORBIS
+   if (filestream_exists("host0:app/custom.ini"))
+#else
    if (filestream_exists("custom.ini"))
+#endif
       return;
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
