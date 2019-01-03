@@ -121,9 +121,11 @@ typedef struct gfx_ctx_wayland_data
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    struct wl_list all_outputs;
+   output_info_t *current_output;
    int swap_interval;
    bool core_hw_context_enable;
 
+   unsigned last_buffer_scale;
    unsigned buffer_scale;
 
    struct
@@ -581,7 +583,32 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
    return active_touch_positions[id].active;
 }
 
+/* Surface callbacks. */
+static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height);
+static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
+                             struct wl_output *output)
+{
+    // TODO: track all outputs the surface is on, pick highest scale
+    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+    output_info_t *oi;
 
+    wl_list_for_each(oi, &wl->all_outputs, link) {
+       if (oi->output == output) {
+          RARCH_LOG("[Wayland]: Entering output #%d, scale %d\n", oi->global_id, oi->scale);
+          wl->current_output = oi;
+          wl->last_buffer_scale = wl->buffer_scale;
+          wl->buffer_scale = oi->scale;
+          break;
+       }
+    };
+}
+
+static void nop() { }
+
+static const struct wl_surface_listener wl_surface_listener = {
+    wl_surface_enter,
+    nop,
+};
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -748,18 +775,6 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
    shell_surface_handle_configure,
    shell_surface_handle_popup_done,
 };
-
-static output_info_t *get_current_output(gfx_ctx_wayland_data_t *wl)
-{
-   // Just return the first one.
-   output_info_t *oi;
-
-   wl_list_for_each(oi, &wl->all_outputs, link) {
-      return oi;
-   }
-
-   return NULL;
-}
 
 static void display_handle_geometry(void *data,
       struct wl_output *output,
@@ -1047,8 +1062,8 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    flush_wayland_fd(&wl->input);
 
-   new_width  = *width  * wl->buffer_scale;
-   new_height = *height * wl->buffer_scale;
+   new_width  = *width  * wl->last_buffer_scale;
+   new_height = *height * wl->last_buffer_scale;
 
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
@@ -1066,11 +1081,12 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
          break;
    }
 
-   if (new_width != *width * wl->buffer_scale || new_height != *height * wl->buffer_scale)
+   if (new_width != *width * wl->last_buffer_scale || new_height != *height * wl->last_buffer_scale)
    {
       *resize = true;
       *width  = new_width;
       *height = new_height;
+      wl->last_buffer_scale = wl->buffer_scale;
    }
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
@@ -1111,6 +1127,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
    }
 
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    return true;
 }
 
@@ -1147,26 +1164,21 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl)
-      return false;
-
-   output_info_t *oi = get_current_output(wl);
-
-   if (!oi || oi->physical_width == 0 || oi->physical_height == 0)
+   if (!wl || !wl->current_output || wl->current_output->physical_width == 0 || wl->current_output->physical_height == 0)
       return false;
 
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)oi->physical_width;
+         *value = (float)wl->current_output->physical_width;
          break;
 
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)oi->physical_height;
+         *value = (float)wl->current_output->physical_height;
          break;
 
       case DISPLAY_METRIC_DPI:
-         *value = (float)oi->width * 25.4f / (float)oi->physical_width;
+         *value = (float)wl->current_output->width * 25.4f / (float)wl->current_output->physical_width;
          break;
 
       default:
@@ -1279,6 +1291,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    frontend_driver_destroy_signal_handler_state();
 
    wl->input.dpy = wl_display_connect(NULL);
+   wl->last_buffer_scale = 1;
    wl->buffer_scale = 1;
 
    if (!wl->input.dpy)
@@ -1539,6 +1552,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->surface                = wl_compositor_create_surface(wl->compositor);
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
    switch (wl_api)
    {
@@ -1909,15 +1923,10 @@ static float gfx_ctx_wl_get_refresh_rate(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl)
+   if (!wl || !wl->current_output)
       return false;
 
-   output_info_t *oi = get_current_output(wl);
-
-   if (!oi)
-      return false;
-
-   return (float) oi->refresh_rate / 1000.0f;
+   return (float) wl->current_output->refresh_rate / 1000.0f;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
