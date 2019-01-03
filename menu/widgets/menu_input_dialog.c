@@ -91,11 +91,16 @@ unsigned menu_input_dialog_get_kb_idx(void)
 
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+extern u32 __nx_applet_type;
 #endif
 
 bool menu_input_dialog_get_display_kb(void)
 {
 #ifdef HAVE_LIBNX
+   /* swkbd only works on "real" titles */
+   if (__nx_applet_type != AppletType_Application && __nx_applet_type != AppletType_SystemApplication)
+      return menu_input_dialog_keyboard_display;
+
    if (!menu_input_dialog_keyboard_display)
       return false;
 
@@ -128,7 +133,7 @@ bool menu_input_dialog_get_display_kb(void)
          {
             /* input_keyboard_line_append expects a null-terminated
                string, so just make one (yes, the touch keyboard is
-               a list of null-terminated characters) */
+               a list of "null-terminated characters") */
             char oldchar = buf[i+1];
             buf[i+1] = '\0';
             input_keyboard_line_append(&buf[i]);
