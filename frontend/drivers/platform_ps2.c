@@ -85,30 +85,47 @@ char user_path[512];
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 
-//Only paths residing on "basic" devices (devices that don't require mounting) 
-//can be specified here, since this system doesn't perform mounting based on the path.
+/* Only paths residing on "basic" devices 
+ * (devices that don't require mounting) 
+ * can be specified here, since this system 
+ * doesn't perform mounting based on the path.
+ */
 #define DEFAULT_PATH    "mass:"
 
-static int getBootDeviceID(char *path) {
-    int result = BOOT_DEVICE_HOST;
+static int getBootDeviceID(char *path)
+{
+   if (!strncmp(path, "mc0:", 4))
+      return BOOT_DEVICE_MC0;
+   else if (!strncmp(path, "mc1:", 4))
+      return BOOT_DEVICE_MC1;
+   else if (!strncmp(path, "cdrom0:", 7))
+      return BOOT_DEVICE_CDROM;
+   else if (!strncmp(path, "mass:", 5) || !strncmp(path, "mass0:", 6))
+      return BOOT_DEVICE_MASS;
+   else if (!strncmp(path, "hdd:", 4) || !strncmp(path, "hdd0:", 5))
+      return BOOT_DEVICE_HDD;
+   else if (!strncmp(path, "host", 4) && ((path[4]>='0' && path[4]<='9') || path[4]==':'))
+      return BOOT_DEVICE_HOST;
+   else
+      return BOOT_DEVICE_UNKNOWN;
 
-    if(!strncmp(path, "mc0:", 4)) result=BOOT_DEVICE_MC0;
-    else if(!strncmp(path, "mc1:", 4)) result=BOOT_DEVICE_MC1;
-    else if(!strncmp(path, "cdrom0:", 7)) result=BOOT_DEVICE_CDROM;
-    else if(!strncmp(path, "mass:", 5) || !strncmp(path, "mass0:", 6)) result=BOOT_DEVICE_MASS;
-    else if(!strncmp(path, "hdd:", 4) || !strncmp(path, "hdd0:", 5)) result=BOOT_DEVICE_HDD;
-    else if(!strncmp(path, "host", 4) && ((path[4]>='0' && path[4]<='9') || path[4]==':')) result=BOOT_DEVICE_HOST;
-    else result=BOOT_DEVICE_UNKNOWN;
-
-    return result;
+   return BOOT_DEVICE_HOST;
 }
 
-//HACK! If booting from a USB device, keep trying to open this program again until it succeeds. This will ensure that the emulator will be able to load its files.
-static void waitUntilDeviceIsReady(const char *path) {
+/* HACK! If booting from a USB device, keep trying to 
+ * open this program again until it succeeds. 
+ *
+ * This will ensure that the emulator will be able to load its files.
+ */
+
+static void waitUntilDeviceIsReady(const char *path)
+{
    FILE *file;
 
-   while((file=fopen(path, "rb"))==NULL){
-      //Wait for a while first, or the IOP will get swamped by requests from the EE.
+   while((file=fopen(path, "rb"))==NULL)
+   {
+      /* Wait for a while first, or the IOP 
+       * will get swamped by requests from the EE. */
       nopdelay();
       nopdelay();
       nopdelay();
@@ -122,47 +139,54 @@ static void waitUntilDeviceIsReady(const char *path) {
    fclose(file);
 }
 
-void setPWDOnPFS(const char *FullCWD_path) {
-    int i;
-    char *path;
-    
-    path=NULL;
-    for(i=strlen(FullCWD_path); i>=0; i--){ /* Try to seperate the CWD from the path to this ELF. */
-        if(FullCWD_path[i]==':'){
-            if((path=malloc(i+6+2))!=NULL){
-                strcpy(path, "pfs0:/");
-                strncat(path, FullCWD_path, i+1);
-                path[i+1+6]='\0';
-            }
-            break;
-        }
-        else if((FullCWD_path[i]=='\\')||(FullCWD_path[i]=='/')){
-            if((path=malloc(i+6+1))!=NULL){
-                strcpy(path, "pfs0:/");
-                strncat(path, FullCWD_path, i);
-                path[i+6]='\0';
-            }
-            break;
-        }
-    }
-    
-    if(path!=NULL){
-        chdir(path);
-        free(path);
-    }
+void setPWDOnPFS(const char *FullCWD_path)
+{
+   int i;
+   char *path=NULL;
+   for (i=strlen(FullCWD_path); i>=0; i--)
+   {
+      /* Try to seperate the CWD from the path to this ELF. */
+      if (FullCWD_path[i]==':')
+      {
+         if ((path=malloc(i+6+2))!=NULL)
+         {
+            strcpy(path, "pfs0:/");
+            strncat(path, FullCWD_path, i+1);
+            path[i+1+6]='\0';
+         }
+         break;
+      }
+      else if ((FullCWD_path[i]=='\\')||(FullCWD_path[i]=='/'))
+      {
+         if ((path=malloc(i+6+1))!=NULL)
+         {
+            strcpy(path, "pfs0:/");
+            strncat(path, FullCWD_path, i);
+            path[i+6]='\0';
+         }
+         break;
+      }
+   }
+
+   if (path!=NULL)
+   {
+      chdir(path);
+      free(path);
+   }
 }
 
-static const char *getMountParams(const char *command, char *BlockDevice) {
-   const char *MountPath;
+static const char *getMountParams(const char *command, char *BlockDevice)
+{
    int BlockDeviceNameLen;
+   const char *MountPath=NULL;
 
-   MountPath=NULL;
-   if(strlen(command)>6 && (MountPath=strchr(&command[5], ':'))!=NULL){
+   if (strlen(command)>6 && (MountPath=strchr(&command[5], ':'))!=NULL)
+   {
       BlockDeviceNameLen=(unsigned int)MountPath-(unsigned int)command;
       strncpy(BlockDevice, command, BlockDeviceNameLen);
       BlockDevice[BlockDeviceNameLen]='\0';
-      
-      MountPath++;    //This is the location of the mount path;
+
+      MountPath++;    /* This is the location of the mount path; */
    }
 
    return MountPath;
@@ -209,14 +233,16 @@ static void create_path_names(void)
 
 static void poweroffCallback(void *arg)
 {
-	//Close all files and unmount all partitions.
-	//close(fd);
+#if 0
+	/* Close all files and unmount all partitions. */
+	close(fd);
 
-	//If you use PFS, close all files and unmount all partitions.
-	//fileXioDevctl("pfs:", PDIOC_CLOSEALL, NULL, 0, NULL, 0)
+	/* If you use PFS, close all files and unmount all partitions. */
+	fileXioDevctl("pfs:", PDIOC_CLOSEALL, NULL, 0, NULL, 0)
 
-	//Shut down DEV9, if you used it.
-	//while(fileXioDevctl("dev9x:", DDIOC_OFF, NULL, 0, NULL, 0) < 0){};
+	/* Shut down DEV9, if you used it. */
+	while(fileXioDevctl("dev9x:", DDIOC_OFF, NULL, 0, NULL, 0) < 0){};
+#endif
 
 	printf("Shutdown!");
 	poweroffShutdown();
@@ -231,34 +257,37 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
 
    getcwd(cwd, sizeof(cwd));
    bootDeviceID=getBootDeviceID(cwd);
-   //Mount the HDD partition, if required.
-   if(bootDeviceID==BOOT_DEVICE_HDD){
-   /* Try not to adjust this unless you know what you are doing. The tricky part i keeping the NULL character in the middle of that argument list separated from the number 4. */
-   static const char PS2HDD_args[]="-o\0""2";
-   static const char PS2FS_args[]="-o\0""8";
 
-   if(!HDDModulesLoaded){
-      SifExecModuleBuffer(poweroff_irx_start, poweroff_irx_size, 0, NULL, NULL);
-      SifExecModuleBuffer(ps2dev9_irx_start, ps2dev9_irx_size, 0, NULL, NULL);
-      SifExecModuleBuffer(ps2atad_irx_start, ps2atad_irx_size, 0, NULL, NULL);
-      SifExecModuleBuffer(ps2hdd_irx_start, ps2hdd_irx_size, sizeof(PS2HDD_args), PS2HDD_args, NULL);
-      SifExecModuleBuffer(ps2fs_irx_start, ps2fs_irx_size, sizeof(PS2FS_args), PS2FS_args, NULL);
-      HDDModulesLoaded=1;
-   }
-      
-      //Attempt to mount the partition.
-      if((mountPoint=getMountParams(cwd, blockDevice))!=NULL && !strncmp(mountPoint, "pfs:", 4)){
+   /* Mount the HDD partition, if required. */
+   if (bootDeviceID==BOOT_DEVICE_HDD)
+   {
+      /* Try not to adjust this unless you know what you are doing. The tricky part i keeping the NULL character in the middle of that argument list separated from the number 4. */
+      static const char PS2HDD_args[]="-o\0""2";
+      static const char PS2FS_args[]="-o\0""8";
+
+      if (!HDDModulesLoaded)
+      {
+         SifExecModuleBuffer(poweroff_irx_start, poweroff_irx_size, 0, NULL, NULL);
+         SifExecModuleBuffer(ps2dev9_irx_start, ps2dev9_irx_size, 0, NULL, NULL);
+         SifExecModuleBuffer(ps2atad_irx_start, ps2atad_irx_size, 0, NULL, NULL);
+         SifExecModuleBuffer(ps2hdd_irx_start, ps2hdd_irx_size, sizeof(PS2HDD_args), PS2HDD_args, NULL);
+         SifExecModuleBuffer(ps2fs_irx_start, ps2fs_irx_size, sizeof(PS2FS_args), PS2FS_args, NULL);
+         HDDModulesLoaded=1;
+      }
+
+      /* Attempt to mount the partition. */
+      if ((mountPoint=getMountParams(cwd, blockDevice))!=NULL && !strncmp(mountPoint, "pfs:", 4))
+      {
          fileXioMount("pfs0:", blockDevice, FIO_MT_RDWR);
-         
+
          setPWDOnPFS(&mountPoint[4]);
       }
-   } else if(bootDeviceID==BOOT_DEVICE_CDROM){
-      chdir(DEFAULT_PATH);
-   } else if(bootDeviceID==BOOT_DEVICE_MASS){
-      waitUntilDeviceIsReady(argv[0]);
-   } else if (bootDeviceID==BOOT_DEVICE_UNKNOWN) {
-
    }
+   else if (bootDeviceID==BOOT_DEVICE_CDROM)
+      chdir(DEFAULT_PATH);
+   else if (bootDeviceID==BOOT_DEVICE_MASS)
+      waitUntilDeviceIsReady(argv[0]);
+   else if (bootDeviceID==BOOT_DEVICE_UNKNOWN) { }
 
    create_path_names();
 
@@ -304,37 +333,39 @@ static void frontend_ps2_init(void *data)
 {
    SifInitRpc(0);
 #if !defined(DEBUG)
-   while(!SifIopReset(NULL, 0)){}; // Comment this line if you don't wanna debug the output
+   /* Comment this line if you don't wanna debug the output */
+   while(!SifIopReset(NULL, 0)){};
 #endif
 
    while(!SifIopSync()){};
    SifInitRpc(0);
    sbv_patch_enable_lmb();
 
-   // Controllers
+   /* Controllers */
    SifLoadModule("rom0:SIO2MAN", 0, NULL);
    SifLoadModule("rom0:PADMAN", 0, NULL);
 
-   // I/O Files
+   /* I/O Files */
    SifExecModuleBuffer(iomanX_irx_start, iomanX_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(fileXio_irx_start, fileXio_irx_size, 0, NULL, NULL);
 
-   // Memory Card
+   /* Memory Card */
    SifExecModuleBuffer(mcman_irx_start, mcman_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(mcserv_irx_start, mcserv_irx_size, 0, NULL, NULL);
    
-   // USB
+   /* USB */
    SifExecModuleBuffer(usbd_irx_start, usbd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(usbhdfsd_irx_start, usbhdfsd_irx_size, 0, NULL, NULL);
 
-   // Audio
+   /* Audio */
    SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
 
    SDL_Init(SDL_INIT_TIMER);
 
-   //Initializes audsrv library
-   if(audsrv_init()) {
+   /* Initializes audsrv library */
+   if (audsrv_init())
+   {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
@@ -380,7 +411,9 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
 #endif
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
-   // exitspawn_kernel(path, args, argp); // I don't know what this is doing
+#if 0
+   exitspawn_kernel(path, args, argp); /* I don't know what this is doing */
+#endif
 #endif
 }
 
@@ -435,7 +468,7 @@ static void frontend_ps2_exitspawn(char *core_path, size_t core_path_size)
 static void frontend_ps2_shutdown(bool unused)
 {
    poweroffInit();
-   //Set callback function
+   /* Set callback function */
 	poweroffSetCallback(&poweroffCallback, NULL);
 }
 
