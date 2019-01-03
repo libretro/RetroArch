@@ -306,7 +306,7 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
       MSG_UNKNOWN;
 
    menu_entries_append_enum(list,
-         "app0",
+         "host0:app",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);

@@ -731,6 +731,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    optstring = "hs:fvS:A:c:U:DN:d:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
+#ifdef ORBIS
+   argv = &(argv[2]);
+   argc = argc - 2;
+#endif
+
 #ifndef HAVE_MENU
    if (argc == 1)
    {
