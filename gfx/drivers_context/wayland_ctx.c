@@ -1523,8 +1523,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
 	   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
-	   
-	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "RetroArch");
+
+	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
 	   
 	   if (wl->deco_manager) {
@@ -1547,8 +1547,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   
 	   wl->zxdg_toplevel = zxdg_surface_v6_get_toplevel(wl->zxdg_surface);
 	   zxdg_toplevel_v6_add_listener(wl->zxdg_toplevel, &zxdg_toplevel_v6_listener, wl);
-	   
-	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "RetroArch");
+
+	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "retroarch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
 	   
 	   if (wl->deco_manager) {
