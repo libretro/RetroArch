@@ -68,6 +68,19 @@ typedef struct touch_pos
    unsigned y;
 } touch_pos_t;
 
+typedef struct output_info
+{
+   struct wl_output *output;
+   uint32_t global_id;
+   unsigned width;
+   unsigned height;
+   unsigned physical_width;
+   unsigned physical_height;
+   int refresh_rate;
+   unsigned scale;
+   struct wl_list link; // wl->all_outputs
+} output_info_t;
+
 static int num_active_touches;
 static touch_pos_t active_touch_positions[MAX_TOUCHES];
 
@@ -87,9 +100,6 @@ typedef struct gfx_ctx_wayland_data
    int prev_height;
    unsigned width;
    unsigned height;
-   unsigned physical_width;
-   unsigned physical_height;
-   int refresh_rate;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -110,6 +120,7 @@ typedef struct gfx_ctx_wayland_data
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
+   struct wl_list all_outputs;
    int swap_interval;
    bool core_hw_context_enable;
 
@@ -738,6 +749,18 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
    shell_surface_handle_popup_done,
 };
 
+static output_info_t *get_current_output(gfx_ctx_wayland_data_t *wl)
+{
+   // Just return the first one.
+   output_info_t *oi;
+
+   wl_list_for_each(oi, &wl->all_outputs, link) {
+      return oi;
+   }
+
+   return NULL;
+}
+
 static void display_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
@@ -756,9 +779,9 @@ static void display_handle_geometry(void *data,
    (void)model;
    (void)transform;
 
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->physical_width         = physical_width;
-   wl->physical_height        = physical_height;
+   output_info_t *oi = (output_info_t*)data;
+   oi->physical_width         = physical_width;
+   oi->physical_height        = physical_height;
 
    RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
          physical_width, physical_height);
@@ -774,10 +797,10 @@ static void display_handle_mode(void *data,
    (void)output;
    (void)flags;
 
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->width                  = width;
-   wl->height                 = height;
-   wl->refresh_rate           = refresh;
+   output_info_t *oi = (output_info_t*)data;
+   oi->width                  = width;
+   oi->height                 = height;
+   oi->refresh_rate           = refresh;
 
    /* Certain older Wayland implementations report in Hz,
     * but it should be mHz. */
@@ -796,10 +819,10 @@ static void display_handle_scale(void *data,
       struct wl_output *output,
       int32_t factor)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi = (output_info_t*)data;
 
-   RARCH_LOG("[Wayland]: Setting buffer scale factor to %d.\n", factor);
-   wl->buffer_scale = factor;
+   RARCH_LOG("[Wayland]: Display scale factor %d.\n", factor);
+   oi->scale = factor;
 }
 
 static const struct wl_output_listener output_listener = {
@@ -813,7 +836,6 @@ static const struct wl_output_listener output_listener = {
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
-   struct wl_output *output   = NULL;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    (void)version;
@@ -823,9 +845,12 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
             id, &wl_compositor_interface, 3);
    else if (string_is_equal(interface, "wl_output"))
    {
-      output = (struct wl_output*)wl_registry_bind(reg,
+      output_info_t *oi = calloc(1, sizeof(output_info_t));
+      oi->global_id = id;
+      oi->output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
-      wl_output_add_listener(output, &output_listener, wl);
+      wl_output_add_listener(oi->output, &output_listener, oi);
+      wl_list_insert(&wl->all_outputs, &oi->link);
       wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, "xdg_wm_base"))
@@ -855,9 +880,16 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 static void registry_handle_global_remove(void *data,
       struct wl_registry *registry, uint32_t id)
 {
-   (void)data;
-   (void)registry;
-   (void)id;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi, *tmp;
+
+   wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link) {
+      if (oi->global_id == id) {
+         wl_list_remove(&oi->link);
+         free(oi);
+         break;
+      }
+   }
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -1115,21 +1147,26 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl || wl->physical_width == 0 || wl->physical_height == 0)
+   if (!wl)
+      return false;
+
+   output_info_t *oi = get_current_output(wl);
+
+   if (!oi || oi->physical_width == 0 || oi->physical_height == 0)
       return false;
 
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)wl->physical_width;
+         *value = (float)oi->physical_width;
          break;
 
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)wl->physical_height;
+         *value = (float)oi->physical_height;
          break;
 
       case DISPLAY_METRIC_DPI:
-         *value = (float)wl->width * 25.4f / (float)wl->physical_width;
+         *value = (float)oi->width * 25.4f / (float)oi->physical_width;
          break;
 
       default:
@@ -1203,6 +1240,8 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       return NULL;
 
    (void)video_driver;
+
+   wl_list_init(&wl->all_outputs);
 
 #ifdef HAVE_EGL
    switch (wl_api)
@@ -1870,7 +1909,15 @@ static float gfx_ctx_wl_get_refresh_rate(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   return (float) wl->refresh_rate / 1000.0f;
+   if (!wl)
+      return false;
+
+   output_info_t *oi = get_current_output(wl);
+
+   if (!oi)
+      return false;
+
+   return (float) oi->refresh_rate / 1000.0f;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
