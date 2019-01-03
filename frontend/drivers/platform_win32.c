@@ -43,6 +43,10 @@
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 
+#ifndef SM_SERVERR2
+#define SM_SERVERR2 89
+#endif
+
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "../../uwp/uwp_func.h"
 #endif
