@@ -25,6 +25,7 @@ Amiga1200Gamer (amigagamer)
 Andre Leiradella (leiradel)
 Andrés (fr500)
 Anthony J. Bentley (bentley)
+Antonio Jose Ramos Marquez (psxdev)
 AridRayne
 Arto Vainiolehto (arakerlu)
 asako (asakous)
