@@ -806,16 +806,16 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
                if (!netplay->device_clients[device])
                   break;
             }
-            if (device >= MAX_INPUT_DEVICES && share_mode)
+            if (device >= MAX_INPUT_DEVICES &&
+                netplay->config_devices[1] == RETRO_DEVICE_NONE && share_mode)
             {
-               /* No device was totally free, maybe one is shareable? */
-               for (device = 0; device < MAX_INPUT_DEVICES; device++)
+               /* No device free and no device specifically asked for, but only
+                * one device, so share it */
+               if (netplay->device_share_modes[0])
                {
-                  if (netplay->device_clients[device] && netplay->device_share_modes[device])
-                  {
-                     share_mode = netplay->device_share_modes[device];
-                     break;
-                  }
+                  device = 0;
+                  share_mode = netplay->device_share_modes[0];
+                  break;
                }
             }
             if (device >= MAX_INPUT_DEVICES)
