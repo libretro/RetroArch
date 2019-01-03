@@ -153,16 +153,9 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
 static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool force_aspect) {
       float x1, y1, x2, y2;
       if (force_aspect) {
-         float delta = 1.0f;
-         float texture_aspect_ratio = texture->Width / texture->Height;
-         float gsGlobal_aspect_ratio = gsGlobal->Width / gsGlobal->Height;
-         if (texture_aspect_ratio < gsGlobal_aspect_ratio) {
-            //height
-            delta = gsGlobal->Height / texture->Height;
-         } else {
-            //width
-            delta = gsGlobal->Width / texture->Width;
-         }
+         float width_proportion = (float)gsGlobal->Width / (float)texture->Width;
+         float height_proportion = (float)gsGlobal->Height / (float)texture->Height;
+         float delta = MIN(width_proportion, height_proportion);
          float newWidth = texture->Width * delta;
          float newHeight = texture->Height * delta;
          
