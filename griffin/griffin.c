@@ -950,8 +950,12 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../frontend/drivers/platform_win32.c"
+#endif
+
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "../frontend/drivers/platform_uwp.c"
 #endif
 
 #ifdef _XBOX
