@@ -55,6 +55,17 @@
 
 typedef struct
 {
+   uint16_t hover_color;
+   uint16_t normal_color;
+   uint16_t title_color;
+   uint16_t bg_dark_color;
+   uint16_t bg_light_color;
+   uint16_t border_dark_color;
+   uint16_t border_light_color;
+} rgui_colors_t;
+
+typedef struct
+{
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
@@ -65,6 +76,7 @@ typedef struct
    bool border_thickness;
    float scroll_y;
    char *msgbox;
+   rgui_colors_t colors;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -97,13 +109,16 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 
 #endif
 
-#define HOVER_COLOR(settings)        (argb32_to_pixel_platform_format(settings->uints.menu_entry_hover_color))
-#define NORMAL_COLOR(settings)       (argb32_to_pixel_platform_format(settings->uints.menu_entry_normal_color))
-#define TITLE_COLOR(settings)        (argb32_to_pixel_platform_format(settings->uints.menu_title_color))
-#define BG_DARK_COLOR(settings)      (argb32_to_pixel_platform_format(settings->uints.menu_bg_dark_color))
-#define BG_LIGHT_COLOR(settings)     (argb32_to_pixel_platform_format(settings->uints.menu_bg_light_color))
-#define BORDER_DARK_COLOR(settings)  (argb32_to_pixel_platform_format(settings->uints.menu_border_dark_color))
-#define BORDER_LIGHT_COLOR(settings) (argb32_to_pixel_platform_format(settings->uints.menu_border_light_color))
+static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
+{
+   rgui->colors.hover_color = argb32_to_pixel_platform_format(settings->uints.menu_entry_hover_color);
+   rgui->colors.normal_color = argb32_to_pixel_platform_format(settings->uints.menu_entry_normal_color);
+   rgui->colors.title_color = argb32_to_pixel_platform_format(settings->uints.menu_title_color);
+   rgui->colors.bg_dark_color = argb32_to_pixel_platform_format(settings->uints.menu_bg_dark_color);
+   rgui->colors.bg_light_color = argb32_to_pixel_platform_format(settings->uints.menu_bg_light_color);
+   rgui->colors.border_dark_color = argb32_to_pixel_platform_format(settings->uints.menu_border_dark_color);
+   rgui->colors.border_light_color = argb32_to_pixel_platform_format(settings->uints.menu_border_light_color);
+}
 
 static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
 {
@@ -282,8 +297,8 @@ static void rgui_render_background(rgui_t *rgui)
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
-         dark_color = BORDER_DARK_COLOR(settings);
-         light_color = BORDER_LIGHT_COLOR(settings);
+         dark_color = rgui->colors.border_dark_color;
+         light_color = rgui->colors.border_light_color;
          
          rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5,
                         dark_color, light_color, rgui_border_filler);
@@ -365,8 +380,8 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
    if (rgui_framebuf_data)
    {
-      dark_color = BG_DARK_COLOR(settings);
-      light_color = BG_LIGHT_COLOR(settings);
+      dark_color = rgui->colors.bg_dark_color;
+      light_color = rgui->colors.bg_light_color;
       
       rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + 5, width - 10, height - 10,
                      dark_color, light_color, rgui_bg_filler);
@@ -374,8 +389,8 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       if (settings->bools.menu_rgui_border_filler_enable)
       {
          
-         dark_color = BORDER_DARK_COLOR(settings);
-         light_color = BORDER_LIGHT_COLOR(settings);
+         dark_color = rgui->colors.border_dark_color;
+         light_color = rgui->colors.border_light_color;
          
          rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y, width - 5, 5,
                         dark_color, light_color, rgui_border_filler);
@@ -388,7 +403,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       }
    }
 
-   normal_color = NORMAL_COLOR(settings);
+   normal_color = rgui->colors.normal_color;
 
    for (i = 0; i < list->size; i++)
    {
@@ -478,8 +493,8 @@ static void rgui_render(void *data, bool is_idle)
    {
       if (rgui_framebuf_data)
       {
-         dark_color = BG_DARK_COLOR(settings);
-         light_color = BG_LIGHT_COLOR(settings);
+         dark_color = rgui->colors.bg_dark_color;
+         light_color = rgui->colors.bg_light_color;
          
          rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 0, fb_height, fb_width, 4,
                         dark_color, light_color, rgui_bg_filler);
@@ -566,8 +581,8 @@ static void rgui_render(void *data, bool is_idle)
 
    menu_animation_ticker(&ticker);
 
-   hover_color  = HOVER_COLOR(settings);
-   normal_color = NORMAL_COLOR(settings);
+   hover_color  = rgui->colors.hover_color;
+   normal_color = rgui->colors.normal_color;
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
@@ -583,7 +598,7 @@ static void rgui_render(void *data, bool is_idle)
                RGUI_TERM_START_X(fb_width),
                RGUI_TERM_START_X(fb_width),
                back_msg,
-               TITLE_COLOR(settings));
+               rgui->colors.title_color);
    }
 
    string_to_upper(title_buf);
@@ -593,7 +608,7 @@ static void rgui_render(void *data, bool is_idle)
             (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
                   - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
             RGUI_TERM_START_X(fb_width),
-            title_buf, TITLE_COLOR(settings));
+            title_buf, rgui->colors.title_color);
 
    if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
@@ -748,6 +763,9 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata              = rgui;
+
+   /* Prepare RGUI colors, to improve performance */
+   prepare_rgui_colors(rgui, settings);
 
    /* 4 extra lines to cache  the checked background */
    rgui_framebuf_data = (uint16_t*)
