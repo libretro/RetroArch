@@ -18,7 +18,7 @@
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
 - PS2: Initial PlayStation2 port.
-- PS4: Initial PlayStation2 port.
+- PS4: Initial PlayStation4 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
 - SCANNER: Fix GDI disc scanning.
 - SHADERS: Fix auto shader preset loading on D3D10, D3D11, D3D12
