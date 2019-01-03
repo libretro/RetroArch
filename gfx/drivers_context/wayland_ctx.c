@@ -718,8 +718,8 @@ static void shell_surface_handle_configure(void *data,
    (void)shell_surface;
    (void)edges;
 
-   wl->width  = wl->buffer_scale * width;
-   wl->height = wl->buffer_scale * height;
+   wl->width  = width;
+   wl->height = height;
 
    RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
          wl->width, wl->height);
@@ -1009,13 +1009,14 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height,
       bool is_shutdown)
 {
+   // this function works with SCALED sizes, it's used from the renderer
    unsigned new_width, new_height;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    flush_wayland_fd(&wl->input);
 
-   new_width  = *width;
-   new_height = *height;
+   new_width  = *width  * wl->buffer_scale;
+   new_height = *height * wl->buffer_scale;
 
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
@@ -1033,7 +1034,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
          break;
    }
 
-   if (new_width != *width || new_height != *height)
+   if (new_width != *width * wl->buffer_scale || new_height != *height * wl->buffer_scale)
    {
       *resize = true;
       *width  = new_width;
@@ -1058,9 +1059,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl->width  = width  / wl->buffer_scale;
-         wl->height = height / wl->buffer_scale;
-
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
             wl->vk.context.invalid_swapchain = true;
@@ -1509,7 +1507,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         wl->win        = wl_egl_window_create(wl->surface, wl->width, wl->height);
+         wl->win        = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
 #endif
          break;
       case GFX_CTX_NONE:
