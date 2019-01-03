@@ -75,6 +75,11 @@
 #include <unistd.h>
 #endif
 
+#if defined(ORBIS)
+#include <orbisFile.h>
+#include <sys/fcntl.h>
+#include <sys/dirent.h>
+#endif
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
@@ -114,6 +119,9 @@ enum stat_mode
 
 static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 {
+#if defined(ORBIS)
+   return false; //by now
+#endif
 #if defined(VITA) || defined(PSP)
    SceIoStat buf;
    char *tmp  = strdup(path);
@@ -226,7 +234,21 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
  */
 bool path_is_directory(const char *path)
 {
+#ifdef ORBIS
+   if (!path)
+   {
+   	   return false;
+   }
+   int dfd = orbisDopen(path);
+   if (dfd < 0)
+   {
+   	   return false;
+   }
+   orbisDclose(dfd);
+   return true;
+#else
    return path_stat(path, IS_DIRECTORY, NULL);
+#endif
 }
 
 bool path_is_character_special(const char *path)
@@ -252,7 +274,7 @@ static bool path_mkdir_error(int ret)
 {
 #if defined(VITA)
    return (ret == SCE_ERROR_ERRNO_EEXIST);
-#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
+#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(ORBIS)
    return (ret == -1);
 #else
    return (ret < 0 && errno == EEXIST);
@@ -323,6 +345,8 @@ bool path_mkdir(const char *dir)
       int ret = sceIoMkdir(dir, 0777);
 #elif defined(PS2)
       int ret =fileXioMkdir(dir, 0777);
+#elif defined(ORBIS)
+      int ret =orbisMkdir(dir, 0755);
 #elif defined(__QNX__)
       int ret = mkdir(dir, 0777);
 #else
