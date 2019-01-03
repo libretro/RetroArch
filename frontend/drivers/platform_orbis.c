@@ -34,6 +34,7 @@
 #include <ps4link.h>
 #include <orbisKeyboard.h>
 #include <debugnet.h>
+#include <orbisFile.h>
 
 #include <pthread.h>
 
@@ -84,7 +85,7 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("host0:/temp/retroarch-log.txt");
+   retro_main_log_file_init("host0:app/temp/retroarch-log.txt");
 #endif
 #endif
 
@@ -103,13 +104,13 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
 		ps4LinkFinish();
 		return;
 	}
-
+   orbisFileInit();
    orbisPadInitWithConf(myConf->confPad);
    scePadClose(myConf->confPad->padHandle);
 
-   strlcpy(eboot_path, "host0:/", sizeof(eboot_path));
+   strlcpy(eboot_path, "host0:app", sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   strlcpy(user_path, "host0:/data/retroarch/", sizeof(user_path));
+   strlcpy(user_path, "host0:app/data/retroarch/", sizeof(user_path));
 
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
