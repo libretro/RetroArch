@@ -25,6 +25,9 @@
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
 #define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
 
+#define NTSC_WIDTH 640
+#define NTSC_HEIGHT 448
+
 typedef struct ps2_video
 {
    GSGLOBAL *gsGlobal;
@@ -44,11 +47,17 @@ typedef struct ps2_video
 static GSGLOBAL *init_GSGlobal(void) {
 	GSGLOBAL *gsGlobal = gsKit_init_global();
 
-      gsGlobal->PSM = GS_PSM_CT16;
+   gsGlobal->Mode = GS_MODE_NTSC;
+   gsGlobal->Interlace = GS_INTERLACED;
+   gsGlobal->Field = GS_FIELD;
+   gsGlobal->Width = NTSC_WIDTH;
+   gsGlobal->Height = NTSC_HEIGHT;
+   
+   gsGlobal->PSM = GS_PSM_CT16;
 	gsGlobal->PSMZ = GS_PSMZ_16;
 	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
 	gsGlobal->ZBuffering = GS_SETTING_OFF;
-      gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+   gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
 	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
 		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);

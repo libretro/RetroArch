@@ -20,12 +20,11 @@
 #include <loadfile.h>
 #include <unistd.h>
 #include <sbv_patches.h>
-#include <fileXio_rpc.h>
-#include <audsrv.h>
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
 #include <SDL/SDL.h>
+#include <audsrv.h>
 
 
 enum BootDeviceIDs{
@@ -72,6 +71,12 @@ extern unsigned int usbd_irx_size;
 
 extern unsigned char usbhdfsd_irx_start[];
 extern unsigned int usbhdfsd_irx_size;
+
+extern unsigned char mcman_irx_start[];
+extern unsigned int mcman_irx_size;
+
+extern unsigned char mcserv_irx_start[];
+extern unsigned int mcserv_irx_size;
 
 static unsigned char HDDModulesLoaded=0;
 
@@ -306,26 +311,33 @@ static void frontend_ps2_init(void *data)
    SifInitRpc(0);
    sbv_patch_enable_lmb();
 
+   // Controllers
+   SifLoadModule("rom0:SIO2MAN", 0, NULL);
+   SifLoadModule("rom0:PADMAN", 0, NULL);
+
+   // I/O Files
    SifExecModuleBuffer(iomanX_irx_start, iomanX_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(fileXio_irx_start, fileXio_irx_size, 0, NULL, NULL);
+
+   // Memory Card
+   SifExecModuleBuffer(mcman_irx_start, mcman_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(mcserv_irx_start, mcserv_irx_size, 0, NULL, NULL);
    
-   SifLoadModule("rom0:SIO2MAN", 0, NULL);
-   SifLoadModule("rom0:MCMAN", 0, NULL);
-   SifLoadModule("rom0:MCSERV", 0, NULL);
-   SifLoadModule("rom0:PADMAN", 0, NULL);
-   
+   // USB
    SifExecModuleBuffer(usbd_irx_start, usbd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(usbhdfsd_irx_start, usbhdfsd_irx_size, 0, NULL, NULL);
+
+   // Audio
    SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
 
-   fileXioInit();
-   audsrv_init();
-
    SDL_Init(SDL_INIT_TIMER);
 
+   //Initializes audsrv library
+   if(audsrv_init()) {
+      RARCH_ERR("audsrv library not initalizated\n");
+   }
 
-retro_sleep(100);
 
 #if defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("retroarch.log");
