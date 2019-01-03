@@ -17,6 +17,8 @@
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
+- PS2: Initial PlayStation2 port.
+- PS4: Initial PlayStation2 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
 - SCANNER: Fix GDI disc scanning.
 - SHADERS: Fix auto shader preset loading on D3D10, D3D11, D3D12
@@ -33,7 +35,8 @@
 - WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
 - WINDOWS: Remember window size and position if so desired
 - WINDOWS: SSL/TLS connections now work properly.
-
+- UWP: Initial UWP port.
+- XBONE: Initial Xbox One port.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
