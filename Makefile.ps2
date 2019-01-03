@@ -5,7 +5,6 @@ HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 BIG_STACK          = 0
-WHOLE_ARCHIVE_LINK = 0
 PS2_IP = 192.168.1.150
 
 #Configuration for IRX
@@ -22,11 +21,6 @@ else
    OPTIMIZE_LV	:= -O2
 endif
 
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
-endif
-
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
 INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
@@ -39,12 +33,11 @@ RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -
 
 LIBDIR =
 LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L. -s
-LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lgskit -ldmakit -laudsrv -lpad -lmc -lhdd -lsdl -lc -lfileXio -lpatches -lpoweroff -lc
+LIBS += -lretro_ps2 -lgskit -ldmakit -laudsrv -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
-IRX = iomanX.irx fileXio.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
+IRX = iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
 IRX_OBJ = $(IRX:.irx=.o)
 EE_OBJS += $(IRX_OBJ)
 
@@ -108,10 +101,7 @@ $(EE_IRX_OBJ):
 include $(PS2SDK)/samples/Makefile.pref 
 include $(PS2SDK)/samples/Makefile.eeglobal
 
-   
+#Linking with C++
 $(EE_BIN): $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o
 	$(EE_CXX) $(EE_NO_CRT) -T$(PS2SDK)/ee/startup/linkfile $(EE_CXXFLAGS) \
 		-o $(EE_BIN) $(PS2SDK)/ee/startup/crt0.o $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(EE_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ) $(EE_LDFLAGS) $(EE_LIBS)
-
-
-   

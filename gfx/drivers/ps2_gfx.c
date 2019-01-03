@@ -25,6 +25,9 @@
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
 #define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
 
+#define NTSC_WIDTH 640
+#define NTSC_HEIGHT 448
+
 typedef struct ps2_video
 {
    GSGLOBAL *gsGlobal;
@@ -47,8 +50,8 @@ static GSGLOBAL *init_GSGlobal(void) {
    gsGlobal->Mode = GS_MODE_NTSC;
    gsGlobal->Interlace = GS_INTERLACED;
    gsGlobal->Field = GS_FIELD;
-   gsGlobal->Width = 640;
-   gsGlobal->Height = 448;
+   gsGlobal->Width = NTSC_WIDTH;
+   gsGlobal->Height = NTSC_HEIGHT;
    
    gsGlobal->PSM = GS_PSM_CT16;
 	gsGlobal->PSMZ = GS_PSMZ_16;
