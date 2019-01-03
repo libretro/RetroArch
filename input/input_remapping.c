@@ -245,7 +245,7 @@ bool input_remapping_save_file(const char *path)
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
    }
 
-   ret = config_file_write(conf, remap_file);
+   ret = config_file_write(conf, remap_file, true);
    config_file_free(conf);
 
    free(remap_file);

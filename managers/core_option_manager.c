@@ -253,7 +253,7 @@ bool core_option_manager_flush(core_option_manager_t *opt)
    }
 
    RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
-   return config_file_write(opt->conf, opt->conf_path);
+   return config_file_write(opt->conf, opt->conf_path, true);
 }
 
 /**
@@ -279,7 +279,7 @@ bool core_option_manager_flush_game_specific(
                core_option_manager_get_val(opt, i));
 }
 
-   return config_file_write(opt->conf, path);
+   return config_file_write(opt->conf, path, true);
 }
 
 /**

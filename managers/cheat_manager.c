@@ -52,7 +52,6 @@
 #include "../input/input_driver.h"
 #include "../configuration.h"
 
-
 unsigned cheat_manager_get_buf_size(void)
 {
    return cheat_manager_state.buf_size;
@@ -227,7 +226,7 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    }
 
-   ret = config_file_write(conf, cheats_file);
+   ret = config_file_write(conf, cheats_file, true);
    config_file_free(conf);
 
    return ret;
