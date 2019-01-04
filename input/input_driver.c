@@ -104,10 +104,13 @@ static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_X11
    &input_x,
 #endif
+#ifdef __WINRT__
+   &input_uwp,
+#endif
 #ifdef XENON
    &input_xenon360,
 #endif
-#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
+#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1) || defined(__WINRT__)
    &input_xinput,
 #endif
 #ifdef GEKKO
@@ -137,7 +140,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef DJGPP
    &input_dos,
 #endif
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
    /* winraw only available since XP */
    &input_winraw,
 #endif

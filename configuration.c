@@ -56,6 +56,10 @@
 
 #include "record/record_driver.h"
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "uwp/uwp_func.h"
+#endif
+
 static const char* invalid_filename_chars[] = {
    /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
    "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
@@ -223,6 +227,7 @@ enum input_driver_enum
    INPUT_WII,
    INPUT_WIIU,
    INPUT_XINPUT,
+   INPUT_UWP,
    INPUT_UDEV,
    INPUT_LINUXRAW,
    INPUT_COCOA,
@@ -319,6 +324,13 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
+#elif defined(HAVE_D3D12) && false
+/* FIXME: DX12 performance on Xbox is horrible for some reason, so use d3d11 as default */
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
+#elif defined(HAVE_D3D11)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
+#elif defined(HAVE_D3D10)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D10;
 #elif defined(HAVE_D3D9)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
 #elif defined(HAVE_D3D8)
@@ -427,7 +439,9 @@ static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#if defined(XENON)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
+#elif defined(XENON)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
@@ -857,6 +871,8 @@ const char *config_get_default_input(void)
          return "xenon360";
       case INPUT_XINPUT:
          return "xinput";
+      case INPUT_UWP:
+         return "uwp";
       case INPUT_WII:
          return "gx";
       case INPUT_WIIU:
@@ -2221,8 +2237,13 @@ static config_file_t *open_default_config_file(void)
 
    (void)path_size;
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   fill_pathname_application_path(app_path, path_size);
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
+   fill_pathname_home_dir(app_path, path_size);
+#else
+   fill_pathname_application_dir(app_path, path_size);
+#endif
    fill_pathname_resolve_relative(conf_path, app_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 

@@ -870,8 +870,8 @@ static void gfx_ctx_wl_get_video_size(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   *width  = wl->width;
-   *height = wl->height;
+   *width  = wl->width  * wl->buffer_scale;
+   *height = wl->height * wl->buffer_scale;
 }
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
@@ -1058,8 +1058,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl->width  = width;
-         wl->height = height;
+         wl->width  = width  / wl->buffer_scale;
+         wl->height = height / wl->buffer_scale;
 
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
@@ -1618,7 +1618,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
                   wl->input.dpy, wl->surface,
-                  wl->width, wl->height, wl->swap_interval))
+                  wl->width * wl->buffer_scale, wl->height * wl->buffer_scale, wl->swap_interval))
             goto error;
 #endif
          break;

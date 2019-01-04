@@ -409,11 +409,18 @@ else
    check_val '' ZLIB '-lz'
 fi
 
-if [ "$HAVE_MPV" != 'no' ]; then
-   check_pkgconf MPV libmpv
+check_pkgconf MPV mpv
+check_val '' MPV -lmpv
+
+if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+   HAVE_FFMPEG='no'
+   die : 'Notice: Threads are not available, FFmpeg will also be disabled.'
 fi
 
-if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+check_header DRMINGW exchndl.h
+check_lib '' DRMINGW -lexchndl
+
+if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_pkgconf AVCODEC libavcodec 54
    check_pkgconf AVFORMAT libavformat 54
    check_pkgconf AVDEVICE libavdevice
@@ -438,7 +445,6 @@ if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
       die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
    fi
 else
-   die : 'Notice: Not building with threading support. Will skip FFmpeg.'
    HAVE_FFMPEG='no'
 fi
 
@@ -556,7 +562,7 @@ fi
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
+if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ] || [ "$HAVE_OZONE" != 'no' ]; then
    if [ "$HAVE_RGUI" = 'no' ]; then
       HAVE_MATERIALUI=no
       HAVE_XMB=no

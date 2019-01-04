@@ -601,6 +601,9 @@ INPUT
 #elif defined(DJGPP)
 #include "../input/drivers/dos_input.c"
 #include "../input/drivers_joypad/dos_joypad.c"
+#elif defined(__WINRT__)
+#include "../input/drivers/xdk_xinput_input.c"
+#include "../input/drivers/uwp_input.c"
 #endif
 
 #ifdef HAVE_WAYLAND
@@ -770,7 +773,7 @@ AUDIO
 #elif defined(PSP) || defined(VITA)
 #include "../audio/drivers/psp_audio.c"
 #elif defined(PS2)
-// #include "../audio/drivers/ps2_audio.c"
+#include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
@@ -951,6 +954,10 @@ FRONTEND
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "../frontend/drivers/platform_uwp.c"
+#endif
+
 #ifdef _XBOX
 #include "../frontend/drivers/platform_xdk.c"
 #endif
@@ -966,6 +973,8 @@ FRONTEND
 #include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(ORBIS)
+#include "../frontend/drivers/platform_orbis.c"
 #elif defined(PS2)
 #include "../frontend/drivers/platform_ps2.c"
 #elif defined(_3DS)
@@ -1259,7 +1268,7 @@ MENU
 #include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../menu/drivers_display/menu_display_gdi.c"
 #endif
 

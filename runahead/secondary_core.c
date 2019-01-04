@@ -18,6 +18,7 @@
 #include "mem_util.h"
 
 #include "../core.h"
+#include "../configuration.h"
 #include "../dynamic.h"
 #include "../paths.h"
 #include "../content.h"
@@ -50,6 +51,7 @@ void clear_controller_port_map(void);
 
 static char *get_temp_directory_alloc(void)
 {
+   settings_t *settings   = config_get_ptr();
    char *path       = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
@@ -67,6 +69,8 @@ static char *get_temp_directory_alloc(void)
    path = utf16_to_utf8_string_alloc(wideStr);
    free(wideStr);
 #endif
+#elif defined ANDROID
+   path = strcpy_alloc_force(settings->paths.directory_libretro);
 #else
    path = "/tmp";
    if (getenv("TMPDIR"))

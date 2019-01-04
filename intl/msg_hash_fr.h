@@ -7,8 +7,9 @@ MSG_HASH(
       "Compilateur inconnu"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Native"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Périphérique déconnecté du port"
@@ -104,6 +105,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Donne aux cœurs bénéficiant de l'accélération graphique leur propre contexte. Évite d'avoir à supposer des changements d'état matériel entre deux images."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -828,8 +833,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
       "Overlay suivant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
       "Pause")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+      "Redémarrer RetroArch")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
       "Quitter RetroArch")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Redémarrer le jeu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -984,6 +994,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "Réglages")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Filtre linéaire pour le menu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+      "Horizontal Animation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Appearance")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -1162,8 +1174,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PRESENT,
       "Présent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
       "Confidentialité")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+      "Redémarrer RetroArch")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
       "Quitter RetroArch")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
       "Support de l'analogique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -3179,10 +3196,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "Afficher l'aide")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
       "Afficher/cacher l'option 'Afficher l'aide'.")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+      "Afficher Redémarrer RetroArch")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+      "Afficher/cacher l'option 'Redémarrer RetroArch'.")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
       "Afficher Quitter RetroArch")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
       "Afficher/cacher l'option 'Quitter RetroArch'.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
       "Afficher Redémarrer")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,

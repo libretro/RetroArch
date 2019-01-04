@@ -23,6 +23,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#if defined(DEBUG) && defined(HAVE_DRMINGW)
+#include "exchndl.h"
+#endif
 #endif
 
 #include <stdlib.h>
@@ -1255,7 +1258,7 @@ static void retroarch_validate_cpu_features(void)
 
 static void retroarch_main_init_media(void)
 {
-   settings_t *settings     = config_get_ptr();
+   settings_t *settings = config_get_ptr();
    const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
    bool builtin_imageviewer = false;
    bool builtin_mediaplayer = false;
@@ -1316,6 +1319,10 @@ bool retroarch_main_init(int argc, char *argv[])
    bool init_failed = false;
    global_t  *global = global_get_ptr();
 
+#if defined(DEBUG) && defined(HAVE_DRMINGW)
+   char log_file_name[128];
+#endif
+
    retroarch_init_state();
 
    if (setjmp(error_sjlj_context) > 0)
@@ -1334,7 +1341,6 @@ bool retroarch_main_init(int argc, char *argv[])
    if (verbosity_is_enabled())
    {
       char str[128];
-
       str[0] = '\0';
 
       RARCH_LOG_OUTPUT("=== Build =======================================\n");
@@ -1347,6 +1353,14 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
       RARCH_LOG_OUTPUT("=================================================\n");
    }
+
+#if defined(DEBUG) && defined(HAVE_DRMINGW)
+   RARCH_LOG("Initializing Dr.MingW Exception handler\n");
+   fill_str_dated_filename(log_file_name, "crash",
+         "log", sizeof(log_file_name));
+   ExcHndlInit();
+   ExcHndlSetLogFileNameA(log_file_name);
+#endif
 
    retroarch_validate_cpu_features();
 

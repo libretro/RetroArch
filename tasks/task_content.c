@@ -1899,6 +1899,7 @@ bool content_init(void)
    temporary_content                          = string_list_new();
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
@@ -1913,7 +1914,6 @@ bool content_init(void)
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
    content_ctx.set_supports_no_game_enable    = false;
-   content_ctx.patch_is_blocked               = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;

@@ -1,23 +1,42 @@
 # 1.7.6 (future)
+- ANDROID: Fix Xperia Play input binding
+- CHEEVOS: Reset when hardcore mode is toggled
+- CORE UPDATER: Allow sideloading cores from the menu
 - CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
-- MIDI: Add a Linux ALSA driver for MIDI.
+- DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
+- DISCORD: Register the application name properly.
+- DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster.
+- INPUT/SDL: Flush the joypad events. Decreases cpu usage over time with the SDL joypad driver.
 - LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
-- LOCALIZATION: Update Simplified Chinese translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Simplified Chinese translation.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
+- MIDI: Add a Linux ALSA driver for MIDI.
+- NETPLAY: Force fast-save-states when netlay is enabled
+- PS2: Initial PlayStation2 port.
+- PS4: Initial PlayStation4 port.
+- RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
 - SCANNER: Fix GDI disc scanning.
+- SHADERS: Fix auto shader preset loading on D3D10, D3D11, D3D12
+- SUBSYSTEM: Allow more than 10 subsystems
+- SUBSYSTEM: Cores that use subsystem for complex scenarios can now load content without starting a regular content first
+- SUBSYSTEM: Remember the last used folder to make loading subsystem type content faster
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
 - VULKAN: Fix RGUI crashing at startup.
 - VULKAN: Fix secondary screens in overlays not working.
 - WAYLAND: Implement idle-inhibit support (needed for screensaver suspend).
-- WINDOWS/WSA: Network Information info is blank until first network operation.
-- WINDOWS: SSL/TLS connections now work properly.
 - WIIU: Initial netplay peer-to-peer support. Network information working.
+- WINDOWS/WSA: Network Information info is blank until first network operation.
+- WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
+- WINDOWS: Remember window size and position if so desired
+- WINDOWS: SSL/TLS connections now work properly.
+- UWP: Initial UWP port.
+- XBONE: Initial Xbox One port.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

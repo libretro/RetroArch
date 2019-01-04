@@ -158,8 +158,6 @@ else ifeq ($(libogc_platform), 1)
       endif
    endif
 
-   LIBS += -logc
-
    ifeq ($(EXTERNAL_LIBOGC), 1)
       LIBS += -lfat
    endif
@@ -175,6 +173,8 @@ else ifeq ($(libogc_platform), 1)
         LIBS += -lbba
       endif
    endif
+
+   LIBS += -logc
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
@@ -431,7 +431,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
-   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
    
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")

@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -65,7 +65,7 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 /* clang-format on */
 #endif
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
 static const char* d3d12_dll_name = "d3d12.dll";
 
@@ -159,15 +159,24 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
    D3D12EnableDebugLayer(d3d12->debugController);
 #endif
 
+#ifdef __WINRT__
+   DXGICreateFactory2(&d3d12->factory);
+#else
    DXGICreateFactory(&d3d12->factory);
+#endif
 
    {
       int i = 0;
 
       while (true)
       {
+#ifdef __WINRT__
+         if (FAILED(DXGIEnumAdapters2(d3d12->factory, i++, &d3d12->adapter)))
+            return false;
+#else
          if (FAILED(DXGIEnumAdapters(d3d12->factory, i++, &d3d12->adapter)))
             return false;
+#endif
 
          if (SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))
             break;
@@ -207,17 +216,28 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
 }
 
 bool d3d12_init_swapchain(d3d12_video_t* d3d12,
-      int width, int height, HWND hwnd)
+      int width, int height, void* corewindow)
 {
    unsigned i;
+#ifdef __WINRT__
+   DXGI_SWAP_CHAIN_DESC1 desc;
+   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
+#else
    DXGI_SWAP_CHAIN_DESC desc;
-
+   HWND hwnd                 = (HWND)corewindow;
    memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC));
+#endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
+#ifdef __WINRT__
+   desc.Width                = width;
+   desc.Height               = height;
+   desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
    desc.BufferDesc.Width     = width;
    desc.BufferDesc.Height    = height;
    desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+#endif
    desc.SampleDesc.Count     = 1;
 #if 0
    desc.BufferDesc.RefreshRate.Numerator   = 60;
@@ -225,16 +245,25 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    desc.SampleDesc.Quality                 = 0;
 #endif
    desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#ifdef HAVE_WINDOW
    desc.OutputWindow = hwnd;
    desc.Windowed     = TRUE;
+#endif
 #if 0
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-   DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
 
+#ifdef __WINRT__
+   DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
+#else
+   DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
+#endif
+
+#ifdef HAVE_WINDOW
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
+#endif
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
@@ -291,7 +320,7 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
 static void
 d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
-   int i;
+   unsigned i;
 
    if (!handle.ptr)
       return;
@@ -303,7 +332,7 @@ d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIP
    assert(heap->map[i]);
 
    heap->map[i] = false;
-   if (heap->start > i)
+   if (heap->start > (int)i)
       heap->start = i;
 }
 

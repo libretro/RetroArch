@@ -306,6 +306,9 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
 
 static bool load_dynamic_core(void)
 {
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* Can't lookup symbols in itself on UWP */
+#else
    function_t sym       = dylib_proc(NULL, "retro_init");
 
    if (sym)
@@ -319,6 +322,7 @@ static bool load_dynamic_core(void)
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
       retroarch_fail(1, "init_libretro_sym()");
    }
+#endif
 
    if (string_is_empty(path_get(RARCH_PATH_CORE)))
    {
@@ -1468,8 +1472,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             memcpy(hwr,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
-            memset(hwr + offsetof(struct retro_hw_render_callback, stencil),
-                  0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
+            memset((uint8_t*)hwr + offsetof(struct retro_hw_render_callback, stencil),
+               0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
          }
          else
             memcpy(hwr, cb, sizeof(*cb));

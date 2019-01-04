@@ -278,7 +278,7 @@ static bool vga_font_init_first(
 }
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 static const font_renderer_t *gdi_font_backends[] = {
    &gdi_font,
    NULL,
@@ -666,7 +666,7 @@ static bool font_init_first(
          return switch_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       case FONT_DRIVER_RENDER_GDI:
          return gdi_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);

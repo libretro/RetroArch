@@ -55,6 +55,8 @@
 
 #ifdef HAVE_DR_MP3
 #define DR_MP3_IMPLEMENTATION
+#include <retro_assert.h>
+#define DRMP3_ASSERT(expression) retro_assert(expression)
 #include <dr/dr_mp3.h>
 #endif
 

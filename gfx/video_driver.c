@@ -274,14 +274,14 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(HAVE_D3D10)
-   &video_d3d10,
+#if defined(HAVE_D3D12)
+   &video_d3d12,
 #endif
 #if defined(HAVE_D3D11)
    &video_d3d11,
 #endif
-#if defined(HAVE_D3D12)
-   &video_d3d12,
+#if defined(HAVE_D3D10)
+   &video_d3d10,
 #endif
 #if defined(HAVE_D3D9)
    &video_d3d9,
@@ -340,7 +340,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_XSHM
    &video_xshm,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &video_gdi,
 #endif
 #ifdef DJGPP
@@ -357,6 +357,9 @@ static const video_driver_t *video_drivers[] = {
 };
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
+#if defined(ORBIS)
+   &orbis_ctx,
+#endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif
@@ -416,7 +419,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &gfx_ctx_gdi,
 #endif
 #ifdef HAVE_SIXEL

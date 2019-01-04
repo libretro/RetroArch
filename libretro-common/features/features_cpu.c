@@ -174,9 +174,9 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
-#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__)
+#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_X64) || defined(_M_AMD64)
    __asm__ volatile ("rdtsc" : "=A" (time_ticks));
-#elif defined(__GNUC__) && defined(__x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__) || defined(_M_IX86)
    unsigned a, d;
    __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
@@ -482,10 +482,14 @@ static void cpulist_read_from(CpuList* list, const char* filename)
  **/
 unsigned cpu_features_get_core_amount(void)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   GetNativeSystemInfo(&sysinfo);
+#else
    GetSystemInfo(&sysinfo);
+#endif
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;

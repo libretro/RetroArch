@@ -37,6 +37,11 @@
 #include <android/log.h>
 #endif
 
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
@@ -118,9 +123,11 @@ void retro_main_log_file_init(const char *path)
    log_file_fp          = (FILE*)fopen_utf8(path, "wb");
    log_file_initialized = true;
 
+#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
    log_file_buf = calloc(1, 0x4000);
    setvbuf(log_file_fp, (char*)log_file_buf, _IOFBF, 0x4000);
+#endif
 }
 
 void retro_main_log_file_deinit(void)
@@ -191,7 +198,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
 
    {
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       char buffer[1024];
 #endif
 #ifdef HAVE_FILE_LOGGER
@@ -200,7 +207,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE *fp = stderr;
 #endif
 
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       buffer[0] = '\0';
       vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
@@ -210,7 +217,13 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(fp);
       }
 
+#if defined(HAVE_QT)
       ui_companion_driver_log_msg(buffer);
+#endif
+
+#if defined(__WINRT__)
+      OutputDebugStringA(buffer);
+#endif
 #else
 #if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
           if (nxlink_connected)

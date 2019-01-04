@@ -305,7 +305,7 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    }
 
 end:
-   if (info)
+   if (info && !path_is_compressed)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
             path,

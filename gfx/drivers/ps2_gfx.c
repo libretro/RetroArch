@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2018 - Francisco Javier Trujillo Mata
+ *  Copyright (C) 2018 - Francisco Javier Trujillo Mata - fjtrujy
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,13 +18,15 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-#include <loadcore.h>
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>
 
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
 #define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
+
+#define NTSC_WIDTH 640
+#define NTSC_HEIGHT 448
 
 typedef struct ps2_video
 {
@@ -45,11 +47,17 @@ typedef struct ps2_video
 static GSGLOBAL *init_GSGlobal(void) {
 	GSGLOBAL *gsGlobal = gsKit_init_global();
 
-      gsGlobal->PSM = GS_PSM_CT16;
-	gsGlobal->PSMZ = GS_PSMZ_16S;
+   gsGlobal->Mode = GS_MODE_NTSC;
+   gsGlobal->Interlace = GS_INTERLACED;
+   gsGlobal->Field = GS_FIELD;
+   gsGlobal->Width = NTSC_WIDTH;
+   gsGlobal->Height = NTSC_HEIGHT;
+   
+   gsGlobal->PSM = GS_PSM_CT16;
+	gsGlobal->PSMZ = GS_PSMZ_16;
 	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
 	gsGlobal->ZBuffering = GS_SETTING_OFF;
-      gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+   gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
 	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
 		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
@@ -66,10 +74,7 @@ static GSGLOBAL *init_GSGlobal(void) {
 }
 
 static GSTEXTURE * prepare_new_texture(void) {
-      GSTEXTURE *texture = malloc(sizeof *texture);
-      texture->Width = 0;
-      texture->Height = 0;
-      texture->Mem = NULL;
+      GSTEXTURE *texture = calloc(1, sizeof(*texture));
       return texture;
 }
 
@@ -102,7 +107,7 @@ static void color_correction16(uint16_t *buffer, uint32_t dimensions)
     uint16_t x16;
     for (i = 0; i < dimensions; i++) {
       x16 = buffer[i];
-      buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | (x16 & 0x3E0) | ((x16 >> 10) & 0x1F);
+      buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | ((x16 >> 1) & 0x3E0) | ((x16 >> 11) & 0x1F);
     }
 }
 
@@ -148,16 +153,9 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
 static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool force_aspect) {
       float x1, y1, x2, y2;
       if (force_aspect) {
-         float delta = 1.0f;
-         float texture_aspect_ratio = texture->Width / texture->Height;
-         float gsGlobal_aspect_ratio = gsGlobal->Width / gsGlobal->Height;
-         if (texture_aspect_ratio < gsGlobal_aspect_ratio) {
-            //height
-            delta = gsGlobal->Height / texture->Height;
-         } else {
-            //width
-            delta = gsGlobal->Width / texture->Width;
-         }
+         float width_proportion = (float)gsGlobal->Width / (float)texture->Width;
+         float height_proportion = (float)gsGlobal->Height / (float)texture->Height;
+         float delta = MIN(width_proportion, height_proportion);
          float newWidth = texture->Width * delta;
          float newHeight = texture->Height * delta;
          

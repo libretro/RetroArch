@@ -634,6 +634,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;

@@ -32,6 +32,8 @@ DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 ifneq ($(findstring BSD,$(OS)),)
    CFLAGS += -DBSD
    LDFLAGS += -L/usr/local/lib
+   UDEV_CFLAGS += -I/usr/local/include/libepoll-shim
+   UDEV_LIBS += -lepoll-shim
 endif
 
 ifneq ($(findstring DOS,$(OS)),)
@@ -80,6 +82,11 @@ ifeq ($(DEBUG), 1)
    DEFINES += -DDEBUG -D_DEBUG
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
+endif
+
+ifeq ($(HAVE_DRMINGW), 1)
+   CFLAGS   += -DHAVE_DRMINGW
+   LDFLAGS += $(DRMINGW_LIBS)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -243,12 +250,24 @@ install: $(TARGET)
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
 	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
-	@if test -d media/assets; then \
+	@if test -d media/assets && test $(HAVE_ASSETS); then \
 		echo "Installing media assets..."; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets; \
-		cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		cp -r media/assets/ozone/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		if test $(HAVE_ZARCH) = 1; then \
+			cp -r media/assets/zarch/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		fi; \
+		if test $(HAVE_MATERIALUI) = 1; then \
+			cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		fi; \
+		if test $(HAVE_NUKLEAR) = 1; then \
+			cp -r media/assets/nuklear/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		fi; \
+		if test $(HAVE_XMB) = 1; then \
+			cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		fi; \
+		if test $(HAVE_OZONE) = 1; then \
+			cp -r media/assets/ozone/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		fi; \
 		cp media/assets/COPYING $(DESTDIR)$(DOC_DIR)/COPYING.assets; \
 		echo "Asset copying done."; \
 	fi
