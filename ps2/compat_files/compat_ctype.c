@@ -20,7 +20,13 @@
 
 #define ULLONG_MAX UINT64_C(0xffffffffffffffff)
 
-/* Do not link from libc */
+/* All the functions included in this file either could be:
+   - Because the PS2SDK doesn't contains this specific functionality
+   - Because the PS2SDK implementation is wrong
+
+   Overrriding these methods here, make that the RetroArch will execute this code
+   rather than the code in the linked libraries   
+ */
 
 int islower(int c)
 {

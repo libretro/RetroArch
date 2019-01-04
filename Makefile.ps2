@@ -5,6 +5,7 @@ HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 BIG_STACK          = 0
+MUTE_WARNINGS      = 0
 PS2_IP = 192.168.1.150
 
 #Configuration for IRX
@@ -19,20 +20,26 @@ ifeq ($(DEBUG), 1)
 	RARCH_DEFINES += -DDEBUG
 else
    OPTIMIZE_LV	:= -O2
+	LDFLAGS :=  -s
 endif
+
+ifeq ($(MUTE_WARNINGS), 1)
+   DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses
+endif
+
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
 INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 GPVAL = -G0
-CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
-LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L. -s
+LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 LIBS += -lretro_ps2 -lgskit -ldmakit -laudsrv -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
 #IRX modules
@@ -60,7 +67,7 @@ endif
 CFLAGS += $(RARCH_DEFINES)
 
 # Missing objecst on the PS2SDK
-EE_OBJS += ps2/compat_ctype.o
+EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o
 
 #EE_OBJS = griffin/griffin.o bootstrap/ps2/kernel_functions.o
 EE_OBJS += griffin/griffin.o

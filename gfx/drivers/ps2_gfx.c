@@ -230,7 +230,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       return false;
 
    if (frame_count%120==0) {
-      printf("ps2_gfx_frame %i\n", frame_count);
+      printf("ps2_gfx_frame %d\n", frame_count);
    }
    gsKit_vram_clear(ps2->gsGlobal);
 

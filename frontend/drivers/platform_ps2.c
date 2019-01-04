@@ -23,7 +23,6 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
-#include <SDL/SDL.h>
 #include <audsrv.h>
 
 
@@ -360,8 +359,6 @@ static void frontend_ps2_init(void *data)
    /* Audio */
    SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
-
-   SDL_Init(SDL_INIT_TIMER);
 
    /* Initializes audsrv library */
    if (audsrv_init())
