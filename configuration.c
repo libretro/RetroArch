@@ -190,6 +190,7 @@ enum audio_driver_enum
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
+   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -391,6 +392,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
+#elif defined(HAVE_COREAUDIO3)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_XAUDIO)

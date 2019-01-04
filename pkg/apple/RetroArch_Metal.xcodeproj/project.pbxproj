@@ -33,6 +33,8 @@
 		05422E522140C8DB00F09961 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		05422E532140C8DB00F09961 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		05422E542140C8DB00F09961 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
+		0564A5F221DE84340029E4DC /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0564A5F121DE84340029E4DC /* AudioToolbox.framework */; };
+		0564A5F421DE845A0029E4DC /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0564A5F321DE845A0029E4DC /* AVFoundation.framework */; };
 		05770B9920E805160013DABC /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05A8C7B420DB75A500FF7857 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
 		05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
@@ -152,6 +154,9 @@
 		055312AE20DE130A00C4D7F4 /* pixconv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pixconv.c; sourceTree = "<group>"; };
 		055312AF20DE130A00C4D7F4 /* scaler_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler_filter.c; sourceTree = "<group>"; };
 		055312B020DE130A00C4D7F4 /* scaler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler.c; sourceTree = "<group>"; };
+		0564A5EE21DE7B4A0029E4DC /* coreaudio3.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = coreaudio3.m; sourceTree = "<group>"; };
+		0564A5F121DE84340029E4DC /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		0564A5F321DE845A0029E4DC /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		0566C78420E49E6800BC768F /* video_frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_frame.h; sourceTree = "<group>"; };
 		0566C78620E49E6800BC768F /* vector_4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vector_4.h; sourceTree = "<group>"; };
 		0566C78720E49E6800BC768F /* vector_3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vector_3.h; sourceTree = "<group>"; };
@@ -694,6 +699,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0564A5F421DE845A0029E4DC /* AVFoundation.framework in Frameworks */,
+				0564A5F221DE84340029E4DC /* AudioToolbox.framework in Frameworks */,
 				05C3666621BA2E1F00C7ABCD /* Accelerate.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
@@ -866,6 +873,7 @@
 		0586261321B31031006E4DD5 /* drivers */ = {
 			isa = PBXGroup;
 			children = (
+				0564A5EE21DE7B4A0029E4DC /* coreaudio3.m */,
 				0586261621B31031006E4DD5 /* coreaudio.c */,
 				0586261B21B31031006E4DD5 /* nullaudio.c */,
 				0586262221B31031006E4DD5 /* rsound.c */,
@@ -1801,6 +1809,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0564A5F321DE845A0029E4DC /* AVFoundation.framework */,
+				0564A5F121DE84340029E4DC /* AudioToolbox.framework */,
 				05C3666521BA2E1E00C7ABCD /* Accelerate.framework */,
 				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
 				053FC25421433F1700D98D46 /* QtCore.framework */,

@@ -410,6 +410,7 @@ static void retroarch_print_features(void)
    _PSUPP(vg,              "OpenVG",          "Video context driver");
 
    _PSUPP(coreaudio,       "CoreAudio",       "Audio driver");
+   _PSUPP(coreaudio3,      "CoreAudioV3",     "Audio driver");
    _PSUPP(alsa,            "ALSA",            "Audio driver");
    _PSUPP(oss,             "OSS",             "Audio driver");
    _PSUPP(jack,            "Jack",            "Audio driver");
