@@ -97,8 +97,8 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 #endif
 
     // Needs to be here
-    gfxInitResolutionDefault(); // 1080p
-    gfxConfigureResolution(1920, 1080);
+   ctx_nx->win = nwindowGetDefault();
+   nwindowSetDimensions(ctx_nx->win, 1920, 1080);
 
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
@@ -139,7 +139,7 @@ static void switch_ctx_check_window(void *data, bool *quit,
 
         *resize = true;
         printf("[NXGL]: Resizing to %dx%d\n", *width, *height);
-        gfxConfigureCrop(0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
+        nwindowSetCrop(ctx_nx->win, 0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
     }
 
     *quit = (bool)false;
@@ -174,11 +174,11 @@ static bool switch_ctx_set_video_mode(void *data,
 #endif
 
 #ifdef HAVE_EGL
-    if (!egl_create_surface(&ctx_nx->egl, &ctx_nx->native_window))
+    if (!egl_create_surface(&ctx_nx->egl, ctx_nx->win))
         goto error;
 #endif
 
-    gfxConfigureCrop(0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
+    nwindowSetCrop(ctx_nx->win, 0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
 
     return true;
 
