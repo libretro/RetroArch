@@ -94,6 +94,19 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
 
 #define argb32_to_pixel_platform_format(color) argb32_to_abgr1555(color)
 
+#elif defined(PSP) || defined(GEKKO)
+
+static uint16_t argb32_to_abgr4444(uint32_t col)
+{
+   unsigned a = ((col >> 24) & 0xff) >> 4;
+   unsigned r = ((col >> 16) & 0xff) >> 4;
+   unsigned g = ((col >> 8)  & 0xff) >> 4;
+   unsigned b = ((col & 0xff)      ) >> 4;
+   return (a << 12) | (b << 8) | (g << 4) | r;
+}
+
+#define argb32_to_pixel_platform_format(color) argb32_to_abgr4444(color)
+
 #else
 
 static uint16_t argb32_to_rgba4444(uint32_t col)
