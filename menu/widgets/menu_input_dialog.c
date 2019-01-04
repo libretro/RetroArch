@@ -141,6 +141,10 @@ bool menu_input_dialog_get_display_kb(void)
          }
       }
 
+      /* fail-safe */
+      if (menu_input_dialog_keyboard_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
       return false;
    }
    else
