@@ -58,10 +58,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_COMMAND
-#include "command.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
@@ -90,6 +86,7 @@
 #endif
 
 #include "autosave.h"
+#include "command.h"
 #include "config.features.h"
 #include "content.h"
 #include "core_type.h"
@@ -122,8 +119,6 @@
 #include "version_git.h"
 
 #include "retroarch.h"
-
-#include "command.h"
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/run_ahead.h"
