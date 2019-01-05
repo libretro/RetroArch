@@ -569,7 +569,8 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_STRIPES=no
       HAVE_ZARCH=no
       HAVE_OZONE=no
-      die : 'Notice: RGUI not available, MaterialUI, XMB, Ozone and ZARCH will also be disabled.'
+      HAVE_QT=no
+      die : 'Notice: RGUI not available, other menus will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no

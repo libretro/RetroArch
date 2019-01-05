@@ -35,6 +35,7 @@
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
+#include "command.h"
 #include "configuration.h"
 #include "core_info.h"
 #include "driver.h"
