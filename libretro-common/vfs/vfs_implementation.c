@@ -303,12 +303,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
    {
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
-      char *path_local    = utf8_to_local_string_alloc(path);
+      char *path_local    = utf8_to_local_string_alloc_expand_environment_strings(path);
       stream->fd          = open(path_local, flags, 0);
       if (path_local)
          free(path_local);
 #else
-      wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+      wchar_t * path_wide = utf8_to_utf16_string_alloc_expand_environment_strings(path);
       stream->fd          = _wopen(path_wide, flags, 0);
       if (path_wide)
          free(path_wide);
@@ -524,7 +524,7 @@ int retro_vfs_file_remove_impl(const char *path)
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   path_local = utf8_to_local_string_alloc(path);
+   path_local = utf8_to_local_string_alloc_expand_environment_strings(path);
 
    if (path_local)
    {
@@ -535,7 +535,7 @@ int retro_vfs_file_remove_impl(const char *path)
          return 0;
    }
 #else
-   path_wide = utf8_to_utf16_string_alloc(path);
+   path_wide = utf8_to_utf16_string_alloc_expand_environment_strings(path);
 
    if (path_wide)
    {
@@ -570,8 +570,8 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   old_path_local = utf8_to_local_string_alloc(old_path);
-   new_path_local = utf8_to_local_string_alloc(new_path);
+   old_path_local = utf8_to_local_string_alloc_expand_environment_strings(old_path);
+   new_path_local = utf8_to_local_string_alloc_expand_environment_strings(new_path);
 
    if (old_path_local)
    {
@@ -589,8 +589,8 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    if (new_path_local)
       free(new_path_local);
 #else
-   old_path_wide = utf8_to_utf16_string_alloc(old_path);
-   new_path_wide = utf8_to_utf16_string_alloc(new_path);
+   old_path_wide = utf8_to_utf16_string_alloc_expand_environment_strings(old_path);
+   new_path_wide = utf8_to_utf16_string_alloc_expand_environment_strings(new_path);
 
    if (old_path_wide)
    {

@@ -40,7 +40,7 @@ void *fopen_utf8(const char * filename, const char * mode)
    return fopen(filename, mode);
 #elif defined(LEGACY_WIN32)
    FILE             *ret = NULL;
-   char * filename_local = utf8_to_local_string_alloc(filename);
+   char * filename_local = utf8_to_local_string_alloc_expand_environment_strings(filename);
 
    if (!filename_local)
       return NULL;
@@ -49,7 +49,7 @@ void *fopen_utf8(const char * filename, const char * mode)
       free(filename_local);
    return ret;
 #else
-   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
+   wchar_t * filename_w = utf8_to_utf16_string_alloc_expand_environment_strings(filename);
    wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
    FILE* ret = _wfopen(filename_w, mode_w);
    free(filename_w);

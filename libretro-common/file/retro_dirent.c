@@ -137,13 +137,13 @@ struct RDIR *retro_opendir(const char *name)
       snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
 
 #if defined(LEGACY_WIN32)
-   path_local      = utf8_to_local_string_alloc(path_buf);
+   path_local      = utf8_to_local_string_alloc_expand_environment_strings(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);
 
    if (path_local)
       free(path_local);
 #else
-   path_wide       = utf8_to_utf16_string_alloc(path_buf);
+   path_wide       = utf8_to_utf16_string_alloc_expand_environment_strings(path_buf);
    rdir->directory = FindFirstFileW(path_wide, &rdir->entry);
 
    if (path_wide)
