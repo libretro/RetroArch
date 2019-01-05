@@ -37,25 +37,104 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-static int FrustrationLevel       = 0;
+#ifdef HAVE_MENU
+#include "../../menu/widgets/menu_input_dialog.h"
+#include "../../menu/menu_cbs.h"
+#endif
+
+#include <net/net_http.h>
+#include "../network/net_http_special.h"
+#include "../tasks/tasks_internal.h"
+#include <streams/file_stream.h>
+#include <file/file_path.h>
+#include "../file_path_special.h"
 
 static int64_t start_time         = 0;
 static int64_t pause_time         = 0;
 static int64_t ellapsed_time      = 0;
 
 static bool discord_ready         = false;
+static bool discord_avatar_ready  = false;
 static unsigned discord_status    = 0;
 
 struct netplay_room *room;
 
+static char user_id[128];
+static char user_name[128];
+static char user_avatar[PATH_MAX_LENGTH];
+
+static char cdn_url[] = "https://cdn.discordapp.com/avatars";
+
 DiscordRichPresence discord_presence;
+
+char* discord_get_own_username(void)
+{
+   return user_name;
+}
+
+char* discord_get_own_avatar(void)
+{
+   return user_avatar;
+}
+
+bool discord_avatar_is_ready()
+{
+   return discord_avatar_ready;
+}
+
+void discord_avatar_set_ready(bool ready)
+{
+   discord_avatar_ready = ready;
+}
+
+bool discord_is_ready()
+{
+   return discord_ready;
+}
+
+static bool discord_download_avatar(const char* user_id, const char* avatar_id)
+{
+   static char url[PATH_MAX_LENGTH];
+   static char url_encoded[PATH_MAX_LENGTH];
+   static char full_path[PATH_MAX_LENGTH];
+
+   static char buf[PATH_MAX_LENGTH];
+
+   file_transfer_t *transf = NULL;
+
+   fill_pathname_application_special(buf,
+            sizeof(buf),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+   fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
+   strlcpy(user_avatar, avatar_id, sizeof(user_avatar));
+
+   if(filestream_exists(full_path))
+      return true;
+   else
+   {
+      snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
+      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      snprintf(buf, sizeof(buf), "%s.png", avatar_id);
+
+      transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+      transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+      strlcpy(transf->path, buf, sizeof(transf->path));
+
+      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+      task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+
+      return false;
+   }
+}
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
+   strlcpy(user_name, connectedUser->username, sizeof(user_name));
    RARCH_LOG("[Discord] connected to user: %s#%s - avatar id: %s\n",
       connectedUser->username,
       connectedUser->discriminator,
       connectedUser->userId);
+   discord_download_avatar(connectedUser->userId, connectedUser->avatar);
 }
 
 static void handle_discord_disconnected(int errcode, const char* message)
@@ -93,14 +172,55 @@ static void handle_discord_spectate(const char* secret)
    RARCH_LOG("[Discord] spectate (%s)\n", secret);
 }
 
+static void handle_discord_join_response(void *ignore, const char *line)
+{
+   /* To-Do: needs in-game widgets
+   if (strstr(line, "yes"))
+      Discord_Respond(user_id, DISCORD_REPLY_YES);
+
+
+
+#ifdef HAVE_MENU
+   menu_input_dialog_end();
+   rarch_menu_running_finished();
+#endif
+*/
+}
+
 static void handle_discord_join_request(const DiscordUser* request)
 {
-   int response = -1;
-   char yn[4];
-   RARCH_LOG("[Discord] join request from %s#%s - %s\n",
+   static char url[PATH_MAX_LENGTH];
+   static char url_encoded[PATH_MAX_LENGTH];
+   static char filename[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
+
+   RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
       request->username,
       request->discriminator,
-      request->userId);
+      request->userId,
+      request->avatar);
+
+   discord_download_avatar(request->userId, request->avatar);
+
+#ifdef HAVE_MENU
+      menu_input_ctx_line_t line;
+      /* To-Do: needs in-game widgets
+      rarch_menu_running();
+      */
+
+      memset(&line, 0, sizeof(line));
+      snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+      line.label         = buf;
+      line.label_setting = "no_setting";
+      line.cb            = handle_discord_join_response;
+
+      /* To-Do: needs in-game widgets
+         To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
+         To-Do: show avatar of the user connecting
+      if (!menu_input_dialog_start(&line))
+         return;
+      */
+#endif
 }
 
 void discord_update(enum discord_presence presence)
@@ -192,10 +312,11 @@ void discord_update(enum discord_presence presence)
             room->gamename, room->gamecrc, room->corename);
          RARCH_LOG("%s\n", join_secret);
          discord_presence.joinSecret = strdup(join_secret);
-         discord_presence.spectateSecret = "SPECSPECSPEC";
-         discord_presence.partyId = party_id;
+         /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
+         discord_presence.partyId = strdup(party_id);
          discord_presence.partyMax = 0;
          discord_presence.partySize = 0;
+         RARCH_LOG("[Discord] joining: \n Secret: %s\n Party: %s\n", discord_presence.joinSecret, discord_presence.partyId);
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
@@ -226,13 +347,14 @@ void discord_init(void)
    handlers.spectateGame = handle_discord_spectate;
    handlers.joinRequest  = handle_discord_join_request;
 
-   /* To-Do: Add the arguments RetroArch was started with to the register URI*/
-   const char command[256] = "retroarch";
-
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
-   Discord_Register(settings->arrays.discord_app_id, NULL);
 
-   discord_ready         = true;
+   char command[PATH_MAX_LENGTH];
+   strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+
+   RARCH_LOG("[Discord] registering startup command: %s\n", command);
+   Discord_Register(settings->arrays.discord_app_id, command);
+   discord_ready = true;
 }
 
 void discord_shutdown(void)

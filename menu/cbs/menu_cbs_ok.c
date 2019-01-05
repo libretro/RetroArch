@@ -26,6 +26,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "../../discord/discord.h"
+#endif
+
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../wifi/wifi_driver.h"
@@ -3343,7 +3347,7 @@ static void cb_generic_dir_download(void *task_data,
 }
 
 /* expects http_transfer_t*, file_transfer_t* */
-static void cb_generic_download(void *task_data,
+void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
@@ -3359,6 +3363,7 @@ static void cb_generic_download(void *task_data,
       goto finish;
 
    output_path[0] = '\0';
+   char buf[PATH_MAX_LENGTH];;
 
    /* we have to determine dir_path at the time of writting or else
     * we'd run into races when the user changes the setting during an
@@ -3423,6 +3428,14 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
          break;
+      case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
+      {
+         fill_pathname_application_special(buf,
+            PATH_MAX_LENGTH * sizeof(char),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+         dir_path = buf;
+         break;
+      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -3495,6 +3508,10 @@ finish:
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }
+#ifdef HAVE_DISCORD
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+      discord_avatar_set_ready(true);
+#endif
 
    if (data)
    {
