@@ -108,6 +108,10 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
+#ifdef HAVE_EASTEREGG
+#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
+#endif
+
 static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
 static bool *load_no_content_hook   = NULL;
@@ -777,6 +781,43 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
          SYMBOL_VIDEOPROCESSOR(retro_get_region);
          SYMBOL_VIDEOPROCESSOR(retro_get_memory_data);
          SYMBOL_VIDEOPROCESSOR(retro_get_memory_size);
+#endif
+         break;
+      case CORE_TYPE_GONG:
+#ifdef HAVE_EASTEREGG
+         SYMBOL_GONG(retro_init);
+         SYMBOL_GONG(retro_deinit);
+
+         SYMBOL_GONG(retro_api_version);
+         SYMBOL_GONG(retro_get_system_info);
+         SYMBOL_GONG(retro_get_system_av_info);
+
+         SYMBOL_GONG(retro_set_environment);
+         SYMBOL_GONG(retro_set_video_refresh);
+         SYMBOL_GONG(retro_set_audio_sample);
+         SYMBOL_GONG(retro_set_audio_sample_batch);
+         SYMBOL_GONG(retro_set_input_poll);
+         SYMBOL_GONG(retro_set_input_state);
+
+         SYMBOL_GONG(retro_set_controller_port_device);
+
+         SYMBOL_GONG(retro_reset);
+         SYMBOL_GONG(retro_run);
+
+         SYMBOL_GONG(retro_serialize_size);
+         SYMBOL_GONG(retro_serialize);
+         SYMBOL_GONG(retro_unserialize);
+
+         SYMBOL_GONG(retro_cheat_reset);
+         SYMBOL_GONG(retro_cheat_set);
+
+         SYMBOL_GONG(retro_load_game);
+         SYMBOL_GONG(retro_load_game_special);
+
+         SYMBOL_GONG(retro_unload_game);
+         SYMBOL_GONG(retro_get_region);
+         SYMBOL_GONG(retro_get_memory_data);
+         SYMBOL_GONG(retro_get_memory_size);
 #endif
          break;
    }

@@ -1311,6 +1311,12 @@ static void retroarch_main_init_media(void)
          }
          break;
 #endif
+#ifdef HAVE_EASTEREGG
+      case RARCH_CONTENT_GONG:
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+         retroarch_set_current_core_type(CORE_TYPE_GONG, false);
+         break;
+#endif
       default:
          break;
    }
@@ -2590,6 +2596,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
+   static uint64_t seq              = 0;
 #endif
 
 #ifdef HAVE_LIBNX
@@ -2860,6 +2867,32 @@ static enum runloop_state runloop_check_state(
             if (settings->bools.audio_enable_menu &&
                   !libretro_running)
                audio_driver_menu_sample();
+
+#ifdef HAVE_EASTEREGG
+            {
+               if (string_is_empty(runloop_system.info.library_name) && trigger_input.data[0])
+               {
+                  seq |= trigger_input.data[0] & 0xF0;
+
+                  if (seq == 1157460427127406720ULL)
+                  {
+                     content_ctx_info_t content_info;
+                     content_info.argc                   = 0;
+                     content_info.argv                   = NULL;
+                     content_info.args                   = NULL;
+                     content_info.environ_get            = NULL;
+
+                     task_push_start_builtin_core(
+                           &content_info,
+                           CORE_TYPE_GONG, NULL, NULL);
+                  }
+
+                  seq <<= 8;
+               }
+               else if (!string_is_empty(runloop_system.info.library_name))
+                  seq = 0;
+            }
+#endif
          }
 
          old_input                 = current_input;
@@ -2877,8 +2910,12 @@ static enum runloop_state runloop_check_state(
    }
    else
 #endif
+   {
+      seq = 0;
+
       if (runloop_idle)
          return RUNLOOP_STATE_SLEEP;
+   }
 
    /* Check game focus toggle */
    {

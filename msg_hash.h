@@ -141,6 +141,8 @@ enum msg_file_type
 
    FILE_TYPE_DIRECT_LOAD,
 
+   FILE_TYPE_GONG,
+
    FILE_TYPE_LAST
 };
 

@@ -1584,6 +1584,12 @@ ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
 endif
 
+# Easter Egg
+ifeq ($(HAVE_EASTEREGG),1)
+  DEFINES += -DHAVE_EASTEREGG
+  OBJ += cores/libretro-gong/gong.o
+endif
+
 # Video4Linux 2
 
 ifeq ($(HAVE_V4L2),1)

@@ -779,6 +779,10 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_XM:
          return RARCH_CONTENT_MUSIC;
 #endif
+#ifdef HAVE_EASTEREGG
+      case FILE_TYPE_GONG:
+         return RARCH_CONTENT_GONG;
+#endif
 
       case FILE_TYPE_NONE:
       default:

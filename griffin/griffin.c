@@ -1554,3 +1554,7 @@ SSL
 #endif
 #endif
 #endif
+
+#ifdef HAVE_EASTEREGG
+#include "../cores/libretro-gong/gong.c"
+#endif
