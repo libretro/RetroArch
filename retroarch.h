@@ -305,9 +305,6 @@ typedef struct global
 #endif
 } global_t;
 
-unsigned _argc;
-char _argv[4096];
-
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -393,6 +390,8 @@ void rarch_menu_running(void);
 void rarch_menu_running_finished(void);
 
 bool retroarch_is_on_main_thread(void);
+
+char *get_retroarch_launch_arguments(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
 

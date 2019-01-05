@@ -276,6 +276,8 @@ static retro_time_t frame_limit_last_time                       = 0.0;
 
 extern bool input_driver_flushing_input;
 
+static char launch_arguments[4096];
+
 #ifdef HAVE_DYNAMIC
 bool retroarch_core_set_on_cmdline(void)
 {
@@ -641,11 +643,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    char buf[4096];
    for (unsigned i = 0; i < argc; i++)
    {
-      snprintf(buf, sizeof(buf), "%s %s", _argv, argv[i]);
-      strlcpy(_argv, buf, sizeof(_argv));
+      snprintf(buf, sizeof(buf), "%s %s", launch_arguments, argv[i]);
+      strlcpy(launch_arguments, buf, sizeof(launch_arguments));
    }
-   _argc = argc;
-   string_trim_whitespace_left(_argv);
+   string_trim_whitespace_left(launch_arguments);
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -3662,4 +3663,9 @@ struct retro_system_info *runloop_get_libretro_system_info(void)
 {
    struct retro_system_info *system = &runloop_system.info;
    return system;
+}
+
+char *get_retroarch_launch_arguments(void)
+{
+   return launch_arguments;
 }

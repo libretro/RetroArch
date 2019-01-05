@@ -350,7 +350,7 @@ void discord_init(void)
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
    char command[PATH_MAX_LENGTH];
-   strlcpy(command, _argv, sizeof(command));
+   strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
 
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
