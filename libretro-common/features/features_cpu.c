@@ -68,7 +68,6 @@
 #if defined(PS2)
 #include <kernel.h>
 #include <timer.h>
-#include <SDL/SDL.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -191,7 +190,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif defined(VITA)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(PS2)
-   time_ticks = SDL_GetTicks()*294912; // 294,912MHZ / 1000 msecs
+   time_ticks = clock()*294912; // 294,912MHZ / 1000 msecs
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
@@ -241,7 +240,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
-      return SDL_GetTicks()*1000;
+      return clock()*1000;
 #elif defined(__mips__) || defined(DJGPP)
    struct timeval tv;
    gettimeofday(&tv,NULL);
