@@ -2275,7 +2275,7 @@ static config_file_t *open_default_config_file(void)
          fill_pathname_resolve_relative(conf_path, app_path,
                file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
          config_set_bool(conf, "config_save_on_exit", true);
-         saved = config_file_write(conf, conf_path);
+         saved = config_file_write(conf, conf_path, true);
       }
 
       if (!saved)
@@ -2311,7 +2311,7 @@ static config_file_t *open_default_config_file(void)
       if (conf)
       {
          config_set_bool(conf, "config_save_on_exit", true);
-         saved = config_file_write(conf, conf_path);
+         saved = config_file_write(conf, conf_path, true);
       }
 
       if (!saved)
@@ -2386,7 +2386,7 @@ static config_file_t *open_default_config_file(void)
          {
             /* Since this is a clean config file, we can safely use config_save_on_exit. */
             config_set_bool(conf, "config_save_on_exit", true);
-            saved = config_file_write(conf, conf_path);
+            saved = config_file_write(conf, conf_path, true);
          }
 
          if (!saved)
@@ -4046,7 +4046,7 @@ static bool config_save_keybinds_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   ret = config_file_write(conf, path);
+   ret = config_file_write(conf, path, true);
    config_file_free(conf);
    return ret;
 }
@@ -4155,7 +4155,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             &input_config_binds[user][i], false, false);
    }
 
-   ret = config_file_write(conf, autoconf_file);
+   ret = config_file_write(conf, autoconf_file, false);
 
    config_file_free(conf);
    free(buf);
@@ -4405,7 +4405,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   ret = config_file_write(conf, path);
+   ret = config_file_write(conf, path, true);
    config_file_free(conf);
 
    return ret;
@@ -4677,17 +4677,17 @@ bool config_save_overrides(int override_type)
          case OVERRIDE_CORE:
             /* Create a new config file from core_path */
             RARCH_LOG ("[overrides] path %s\n", core_path);
-            ret = config_file_write(conf, core_path);
+            ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
             /* Create a new config file from core_path */
             RARCH_LOG ("[overrides] path %s\n", game_path);
-            ret = config_file_write(conf, game_path);
+            ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
             /* Create a new config file from content_path */
             RARCH_LOG ("[overrides] path %s\n", content_path);
-            ret = config_file_write(conf, content_path);
+            ret = config_file_write(conf, content_path, true);
             break;
          default:
             break;

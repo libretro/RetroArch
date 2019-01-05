@@ -976,7 +976,7 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-bool config_file_write(config_file_t *conf, const char *path)
+bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!string_is_empty(path))
    {
@@ -991,19 +991,19 @@ bool config_file_write(config_file_t *conf, const char *path)
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
 #endif
 
-      config_file_dump(conf, file);
+      config_file_dump(conf, file, sort);
 
       if (file != stdout)
          fclose(file);
       free(buf);
    }
    else
-      config_file_dump(conf, stdout);
+      config_file_dump(conf, stdout, sort);
 
    return true;
 }
 
-void config_file_dump(config_file_t *conf, FILE *file)
+void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -1014,7 +1014,11 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   if (sort)
+      list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   else
+      list = (struct config_entry_list*)conf->entries;
+
    conf->entries = list;
 
    while (list)
