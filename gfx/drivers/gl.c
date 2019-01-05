@@ -2240,9 +2240,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          buffer, is_idle);
 }
 
-#if 0
 #define READ_RAW_GL_FRAME_TEST
-#endif
 
 #if defined(READ_RAW_GL_FRAME_TEST)
 static void* gl_read_frame_raw(void *data, unsigned *width_p,
