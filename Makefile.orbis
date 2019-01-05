@@ -55,6 +55,7 @@ else
 	endif
 
 	include Makefile.common
+	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
