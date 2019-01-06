@@ -32,6 +32,7 @@ static char padBuf[256] __attribute__((aligned(64)));
 
 static uint64_t pad_state[PS2_MAX_PADS];
 
+extern uint64_t lifecycle_state;
 
 static const char *ps2_joypad_name(unsigned pad)
 {
@@ -45,6 +46,8 @@ static bool ps2_joypad_init(void *data)
 
    for (i = 0; i < players_count; i++)
    {
+      int ret, port, slot;
+
       bool auto_configure = input_autoconfigure_connect( ps2_joypad_name(i),
                                                          NULL,
                                                          ps2_joypad.ident,
@@ -56,9 +59,6 @@ static bool ps2_joypad_init(void *data)
       }
 
       padInit(i);
-
-      int ret;
-      int port, slot;
 
       port = 0; // 0 -> Connector 1, 1 -> Connector 2
       slot = 0; // Always zero if not using multitap
@@ -101,15 +101,13 @@ static void ps2_joypad_poll(void)
    unsigned players_count = PS2_MAX_PADS;
    struct padButtonStatus buttons;
 
-   for (player = 0; player < players_count; player++)
-   {
+   for (player = 0; player < players_count; player++) {
       unsigned j, k;
       unsigned i  = player;
       unsigned p  = player;
    
       int ret = padRead(player, player, &buttons); // port, slot, buttons
-      if (ret != 0)
-      {
+      if (ret != 0) {
          int32_t state_tmp = 0xffff ^ buttons.btns;
 
          pad_state[i] = 0;
