@@ -570,8 +570,7 @@ if [ "$HAVE_MATERIALUI" = no ] &&
    [ "$HAVE_STRIPES" = no ] &&
    [ "$HAVE_ZARCH" = no ]; then
    HAVE_MENU=no
-   die : 'Notice: No menu drivers available, the Qt menu will also be disabled.'
-   # TODO: RetroArch will crash on start if only the Qt menu driver is enabled.
+   die : 'Notice: No menu drivers available.'
 fi
 
 if [ "$HAVE_MENU" != 'no' ]; then
