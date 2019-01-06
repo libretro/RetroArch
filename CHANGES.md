@@ -14,6 +14,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Simplified Chinese translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
@@ -38,6 +39,7 @@
 - WINDOWS: SSL/TLS connections now work properly.
 - UWP: Initial UWP port.
 - XBONE: Initial Xbox One port.
+- XMB/OZONE: Add more icons
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

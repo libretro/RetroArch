@@ -201,6 +201,11 @@ enum
    XMB_TEXTURE_INPUT_RB,
    XMB_TEXTURE_INPUT_LT,
    XMB_TEXTURE_INPUT_RT,
+   XMB_TEXTURE_INPUT_ADC,
+   XMB_TEXTURE_INPUT_BIND_ALL,
+   XMB_TEXTURE_INPUT_MOUSE,
+   XMB_TEXTURE_INPUT_LGUN,
+   XMB_TEXTURE_INPUT_TURBO,
    XMB_TEXTURE_CHECKMARK,
    XMB_TEXTURE_MENU_ADD,
    XMB_TEXTURE_BRIGHTNESS,
@@ -2270,6 +2275,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_ADD_FAVORITE];
+      case MENU_ENUM_LABEL_PARENT_DIRECTORY:
+      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
+      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
@@ -2284,34 +2292,50 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-         return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_SAVE_STATE:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
+      case MENU_ENUM_LABEL_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
+      case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+      case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
+      case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
+      case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
-      case MENU_ENUM_LABEL_PARENT_DIRECTORY:
-      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
       case MENU_ENUM_LABEL_DELETE_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_RESTART_CONTENT:
+      case MENU_ENUM_LABEL_REBOOT:
+      case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
+      case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+      case MENU_ENUM_LABEL_RESTART_RETROARCH:
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+      case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RENAME_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_RENAME];
       case MENU_ENUM_LABEL_RESUME_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
-      case MENU_ENUM_LABEL_FAVORITES:
+      case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+      case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+      case MENU_ENUM_LABEL_FAVORITES: /* "Start Directory" */
       case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
          return xmb->textures.list[XMB_TEXTURE_RDB];
 
-      /* Menu collection submenus*/
+      /* Menu collection submenus */
       case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
@@ -2323,210 +2347,183 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
 
-      default:
-      /* Menu icons are here waiting for theme support*/
-      {
-            settings_t *settings = config_get_ptr();
-            if (settings->uints.menu_xmb_theme != XMB_ICON_THEME_FLATUI &&
-                settings->uints.menu_xmb_theme != XMB_ICON_THEME_PIXEL )
-            {
-               switch (enum_idx)
-               {
-                  /* Menu icons */
-                  case MENU_ENUM_LABEL_CONTENT_SETTINGS:
-                  case MENU_ENUM_LABEL_UPDATE_ASSETS:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-                  case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
-                     return xmb->textures.list[XMB_TEXTURE_QUICKMENU];
-                  case MENU_ENUM_LABEL_START_CORE:
-                  case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
-                     return xmb->textures.list[XMB_TEXTURE_RUN];
-                  case MENU_ENUM_LABEL_CORE_LIST:
-                  case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
-                  case MENU_ENUM_LABEL_CORE_SETTINGS:
-                  case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-                  case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
-                     return xmb->textures.list[XMB_TEXTURE_CORE];
-                  case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-                  case MENU_ENUM_LABEL_SCAN_FILE:
-                     return xmb->textures.list[XMB_TEXTURE_FILE];
-                  case MENU_ENUM_LABEL_ONLINE_UPDATER:
-                  case MENU_ENUM_LABEL_UPDATER_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_UPDATER];
-                  case MENU_ENUM_LABEL_UPDATE_LAKKA:
-                     return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-                  case MENU_ENUM_LABEL_UPDATE_CHEATS:
-                     return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-                  case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-                     return xmb->textures.list[XMB_TEXTURE_IMAGE];
-                  case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
-                  case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_OVERLAY];
-                  case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
-                  case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
-                  case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
-                  case MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-                     return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
-                  case MENU_ENUM_LABEL_INFORMATION:
-                  case MENU_ENUM_LABEL_INFORMATION_LIST:
-                  case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-                  case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-                     return xmb->textures.list[XMB_TEXTURE_INFO];
-                  case MENU_ENUM_LABEL_UPDATE_DATABASES:
-                  case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
-                     return xmb->textures.list[XMB_TEXTURE_RDB];
-                  case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-                     return xmb->textures.list[XMB_TEXTURE_CURSOR];
-                  case MENU_ENUM_LABEL_HELP_LIST:
-                  case MENU_ENUM_LABEL_HELP_CONTROLS:
-                  case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-                  case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-                  case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-                  case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-                  case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-                     return xmb->textures.list[XMB_TEXTURE_HELP];
-                  case MENU_ENUM_LABEL_QUIT_RETROARCH:
-                     return xmb->textures.list[XMB_TEXTURE_EXIT];
-                  /* Settings icons*/
-                  case MENU_ENUM_LABEL_DRIVER_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_DRIVERS];
-                  case MENU_ENUM_LABEL_VIDEO_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_VIDEO];
-                  case MENU_ENUM_LABEL_AUDIO_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_AUDIO];
-                  case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_MIXER];
-                  case MENU_ENUM_LABEL_INPUT_SETTINGS:
-                  case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-                  case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
-                  case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
-                     return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
-                  case MENU_ENUM_LABEL_LATENCY_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_LATENCY];
-                  case MENU_ENUM_LABEL_SAVING_SETTINGS:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
-                  case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
-                  case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-                  case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
-                     return xmb->textures.list[XMB_TEXTURE_SAVING];
-                  case MENU_ENUM_LABEL_LOGGING_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_LOG];
-                  case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
-                  case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
-                  case MENU_ENUM_LABEL_RECORDING_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_RECORD];
-                  case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
-                     return xmb->textures.list[XMB_TEXTURE_STREAM];
-                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
-                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
-                  case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
-                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
-                  case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
-                  case MENU_ENUM_LABEL_CORE_DELETE:
-                     return xmb->textures.list[XMB_TEXTURE_CLOSE];
-                  case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_OSD];
-                  case MENU_ENUM_LABEL_SHOW_WIMP:
-                  case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_UI];
+      case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+      case MENU_ENUM_LABEL_UPDATE_ASSETS:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+         return xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+      case MENU_ENUM_LABEL_START_CORE:
+      case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
+         return xmb->textures.list[XMB_TEXTURE_RUN];
+      case MENU_ENUM_LABEL_CORE_LIST:
+      case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
+      case MENU_ENUM_LABEL_CORE_SETTINGS:
+      case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
+         return xmb->textures.list[XMB_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+      case MENU_ENUM_LABEL_SCAN_FILE:
+         return xmb->textures.list[XMB_TEXTURE_FILE];
+      case MENU_ENUM_LABEL_ONLINE_UPDATER:
+      case MENU_ENUM_LABEL_UPDATER_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_UPDATER];
+      case MENU_ENUM_LABEL_UPDATE_LAKKA:
+         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+      case MENU_ENUM_LABEL_UPDATE_CHEATS:
+         return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
+      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+         return xmb->textures.list[XMB_TEXTURE_IMAGE];
+      case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
+      case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_OVERLAY];
+      case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+      case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+      case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+      case MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+         return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
+      case MENU_ENUM_LABEL_INFORMATION:
+      case MENU_ENUM_LABEL_INFORMATION_LIST:
+      case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+      case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
+         return xmb->textures.list[XMB_TEXTURE_INFO];
+      case MENU_ENUM_LABEL_UPDATE_DATABASES:
+      case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
+         return xmb->textures.list[XMB_TEXTURE_RDB];
+      case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
+         return xmb->textures.list[XMB_TEXTURE_CURSOR];
+      case MENU_ENUM_LABEL_HELP_LIST:
+      case MENU_ENUM_LABEL_HELP_CONTROLS:
+      case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
+      case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
+      case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
+      case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+      case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return xmb->textures.list[XMB_TEXTURE_HELP];
+      case MENU_ENUM_LABEL_QUIT_RETROARCH:
+      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
+         return xmb->textures.list[XMB_TEXTURE_EXIT];
+      case MENU_ENUM_LABEL_DRIVER_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_DRIVERS];
+      case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_VIDEO];
+      case MENU_ENUM_LABEL_AUDIO_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_AUDIO];
+      case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_MIXER];
+      case MENU_ENUM_LABEL_INPUT_SETTINGS:
+      case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
+      case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+      case MENU_ENUM_LABEL_START_NET_RETROPAD:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+      case MENU_ENUM_LABEL_LATENCY_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_LATENCY];
+      case MENU_ENUM_LABEL_SAVING_SETTINGS:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
+      case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
+      case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+      case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
+         return xmb->textures.list[XMB_TEXTURE_SAVING];
+      case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_LOG];
+      case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
+      case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
+      case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
+      case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_RECORD];
+      case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+         return xmb->textures.list[XMB_TEXTURE_STREAM];
+      case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
+      case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
+      case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_CORE_DELETE:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE];
+      case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_OSD];
+      case MENU_ENUM_LABEL_SHOW_WIMP:
+      case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_UI];
 #ifdef HAVE_LAKKA_SWITCH
-                  case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+      case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
-                  case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
-                     return xmb->textures.list[XMB_TEXTURE_POWER];
+      case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+         return xmb->textures.list[XMB_TEXTURE_POWER];
 #endif
-                  case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_POWER];
-                  case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENTS];
-                  case MENU_ENUM_LABEL_NETWORK_INFORMATION:
-                  case MENU_ENUM_LABEL_NETWORK_SETTINGS:
-                  case MENU_ENUM_LABEL_WIFI_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_NETWORK];
-                  case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
-                  case MENU_ENUM_LABEL_USER_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_USER];
-                  case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
-                  case MENU_ENUM_LABEL_SCAN_DIRECTORY:
-                  case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
-                  case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
-                     return xmb->textures.list[XMB_TEXTURE_FOLDER];
-                  case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_PRIVACY];
-                  case MENU_ENUM_LABEL_REWIND_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_REWIND];
-                  case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
-                     return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
-                  case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_NOTIFICATIONS];
+      case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_POWER];
+      case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENTS];
+      case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
+      case MENU_ENUM_LABEL_USER_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_USER];
+      case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_PRIVACY];
+      case MENU_ENUM_LABEL_REWIND_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_REWIND];
+      case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
+      case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
-                  case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
-                     return xmb->textures.list[XMB_TEXTURE_RUN];
-                  case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
-                     return xmb->textures.list[XMB_TEXTURE_CLOSE];
-                  case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
-                     return xmb->textures.list[XMB_TEXTURE_ROOM];
-                  case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
-                     return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         return xmb->textures.list[XMB_TEXTURE_RUN];
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE];
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+         return xmb->textures.list[XMB_TEXTURE_ROOM];
+      case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+         return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_ENUM_LABEL_NETWORK_INFORMATION:
+      case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_WIFI_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
-                  case MENU_ENUM_LABEL_REBOOT:
-                  case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
-                  case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
-                  case MENU_ENUM_LABEL_RESTART_RETROARCH:
-                     return xmb->textures.list[XMB_TEXTURE_RELOAD];
-                  case MENU_ENUM_LABEL_SHUTDOWN:
-                     return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
-                  case MENU_ENUM_LABEL_CONFIGURATIONS:
-                  case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-                  case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
-                  case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-                  case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-                  case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
-                  case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
-                  case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
-                     return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
-                  case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
-                  case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
-                     return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
-                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
-                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
-                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
-                  case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
-                     return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
-                  case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
-                     return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_TOGGLE];
-                  case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
-                     return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
-                  default:
-                     break;
-                  }
-            }
-            break;
-      }
+      case MENU_ENUM_LABEL_SHUTDOWN:
+         return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
+      case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
+      case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+         return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+         return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+         return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_TOGGLE];
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
+         return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
+      case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
+         return xmb->textures.list[XMB_TEXTURE_RESUME];
+      case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+         return xmb->textures.list[XMB_TEXTURE_MOVIE];
+      default:
+         break;
    }
 
    switch(type)
@@ -2650,24 +2647,38 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       {
          unsigned input_id;
          if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
+         /* Input User # Binds only */
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 1)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
             if ( type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+            if ( type == input_id + 3)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
             if ( type == input_id + 4)
                return xmb->textures.list[XMB_TEXTURE_RELOAD];
             if ( type == input_id + 5)
                return xmb->textures.list[XMB_TEXTURE_SAVING];
+            if ( type == input_id + 6)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+               return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
+            if ( type == input_id + 42)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
+            /* align to use the same code of Quickmenu controls */
             input_id = input_id + 7;
          }
          else
          {
+            /* Quickmenu controls repeats the same icons for all users */
             input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
             while (type > (input_id + 23))
             {
                input_id = (input_id + 24) ;
             }
          }
+         /* This is utilized for both Input # Binds and Quickmenu controls */
          if ( type == input_id )
             return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
          if ( type == (input_id + 1))
@@ -4842,6 +4853,16 @@ static const char *xmb_texture_path(unsigned id)
          return "input_SELECT.png";
       case XMB_TEXTURE_INPUT_START:
          return "input_START.png";
+      case XMB_TEXTURE_INPUT_ADC:
+         return "input_ADC.png";
+      case XMB_TEXTURE_INPUT_BIND_ALL:
+         return "input_BIND_ALL.png";
+      case XMB_TEXTURE_INPUT_MOUSE:
+         return "input_MOUSE.png";
+      case XMB_TEXTURE_INPUT_LGUN:
+         return "input_LGUN.png";
+      case XMB_TEXTURE_INPUT_TURBO:
+         return "input_TURBO.png";
       case XMB_TEXTURE_CHECKMARK:
          return "menu_check.png";
       case XMB_TEXTURE_MENU_ADD:
@@ -4901,6 +4922,16 @@ static void xmb_context_reset_textures(
                case XMB_TEXTURE_DEFAULT_CONTENT:
                   goto error;
             }
+            /* Draw Setting icon if the entry has submenus, (aesthetic improvement for incomplete themes) */
+            if (xmb->depth > 0)
+            {
+               if (
+                     !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR)
+                  )
+                  /* If there is no setting icon draw subsetting, (already checked that this is valid) */
+                  menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+            }
+
          }
       }
    }
