@@ -2432,6 +2432,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+      case MENU_ENUM_LABEL_START_NET_RETROPAD:
          return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_LATENCY];
@@ -2519,6 +2520,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
+      case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+         return xmb->textures.list[XMB_TEXTURE_MOVIE];
       default:
          break;
    }
