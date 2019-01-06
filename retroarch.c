@@ -637,7 +637,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
    const char *optstring = NULL;
    bool explicit_menu    = false;
+   unsigned i;
    global_t  *global     = global_get_ptr();
+
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -691,7 +693,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    /* Copy the args into a buffer so launch arguments can be reused */
 
-   for (unsigned i = 0; i < argc; i++)
+   for (i = 0; i < argc; i++)
    {
       strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
       strlcat(launch_arguments, " ", sizeof(launch_arguments));
