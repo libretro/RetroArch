@@ -961,7 +961,8 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';
 
-   strlcat(out_path, path, size);
+   if (path)
+      strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_delim_concat(char *out_path, const char *dir,
