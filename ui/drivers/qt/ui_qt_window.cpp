@@ -1909,35 +1909,38 @@ void MainWindow::setCoreActions()
 
                   core_info_get_list(&coreInfoList);
 
-                  for (j = 0; j < coreInfoList->count; j++)
+                  if (coreInfoList)
                   {
-                     const core_info_t *info = &coreInfoList->list[j];
-
-                     if (core == info->path)
+                     for (j = 0; j < coreInfoList->count; j++)
                      {
-                        if (m_launchWithComboBox->findText(info->core_name) == -1)
+                        const core_info_t *info = &coreInfoList->list[j];
+
+                        if (core == info->path)
                         {
-                           int i = 0;
-                           bool found_existing = false;
-
-                           for (i = 0; i < m_launchWithComboBox->count(); i++)
+                           if (m_launchWithComboBox->findText(info->core_name) == -1)
                            {
-                              QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+                              int i = 0;
+                              bool found_existing = false;
 
-                              if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
+                              for (i = 0; i < m_launchWithComboBox->count(); i++)
                               {
-                                 found_existing = true;
-                                 break;
-                              }
-                           }
+                                 QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
 
-                           if (!found_existing)
-                           {
-                              QVariantMap comboBoxMap;
-                              comboBoxMap["core_name"] = info->core_name;
-                              comboBoxMap["core_path"] = info->path;
-                              comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
-                              m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
+                                 if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
+                                 {
+                                    found_existing = true;
+                                    break;
+                                 }
+                              }
+
+                              if (!found_existing)
+                              {
+                                 QVariantMap comboBoxMap;
+                                 comboBoxMap["core_name"] = info->core_name;
+                                 comboBoxMap["core_path"] = info->path;
+                                 comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
+                                 m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
+                              }
                            }
                         }
                      }
