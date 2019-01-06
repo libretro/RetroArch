@@ -277,7 +277,7 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ] && [ "$HAVE_MENU" != 'no' ]; then
+if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -570,7 +570,6 @@ if [ "$HAVE_MATERIALUI" = no ] &&
    [ "$HAVE_STRIPES" = no ] &&
    [ "$HAVE_ZARCH" = no ]; then
    HAVE_MENU=no
-   HAVE_QT=no
    die : 'Notice: No menu drivers available, the Qt menu will also be disabled.'
    # TODO: RetroArch will crash on start if only the Qt menu driver is enabled.
 fi

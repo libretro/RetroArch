@@ -119,13 +119,17 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
 {
    bool dontAsk = false;
    bool answer = false;
+
+#ifdef HAVE_MENU
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
+#endif
 
    (void)task_data;
    (void)user_data;
    (void)err;
+
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 #endif
@@ -2507,7 +2511,9 @@ void MainWindow::onTimeout()
 
 void MainWindow::onStopClicked()
 {
+#ifdef HAVE_MENU
    menu_navigation_set_selection(0);
+#endif
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
    setCurrentCoreLabel();
    activateWindow();
@@ -2594,7 +2600,9 @@ void MainWindow::onUnloadCoreMenuAction()
 {
    QAction *action = qobject_cast<QAction*>(sender());
 
+#ifdef HAVE_MENU
    menu_navigation_set_selection(0);
+#endif
 
    if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
    {

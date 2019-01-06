@@ -769,15 +769,18 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
             strlcpy(file, path, sizeof(file));
          break;
    }
-
+#ifdef HAVE_MENU
    if (menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true);
    else
+#endif
+   {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
             1, 100, true);
+   }
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
