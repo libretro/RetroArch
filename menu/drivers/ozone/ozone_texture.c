@@ -150,6 +150,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
+      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_EXIT];
       /* Settings icons*/
       case MENU_ENUM_LABEL_DRIVER_SETTINGS:
@@ -178,6 +179,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+      case MENU_ENUM_LABEL_START_NET_RETROPAD:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LATENCY];
@@ -191,6 +193,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_LOGGING_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOG];
       case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+      case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP];
       case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
@@ -258,6 +261,8 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
       case MENU_ENUM_LABEL_RESTART_RETROARCH:
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+      case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_SHUTDOWN:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN];
@@ -269,6 +274,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
@@ -281,7 +287,14 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_TOGGLE];
       case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG];
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
+      case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
+      case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
       default:
             break;
    }
@@ -385,26 +398,40 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          (type <= MENU_SETTINGS_INPUT_DESC_END)
       )
       {
+         /* This part is only utilized by Input User # Binds */
          unsigned input_id;
          if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id + 1)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
             if ( type == input_id + 2)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+            if ( type == input_id + 3)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL];
             if ( type == input_id + 4)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
             if ( type == input_id + 5)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
+            if ( type == input_id + 6)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
+            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
+            if ( type == input_id + 42)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
+            /* align to use the same code of Quickmenu controls*/
             input_id = input_id + 7;
          }
          else
          {
+            /* Quickmenu controls repeats the same icons for all users*/
             input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
             while (type > (input_id + 23))
             {
                input_id = (input_id + 24) ;
             }
          }
+         /* This is utilized for both Input Binds and Quickmenu controls*/
          if ( type == input_id )
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D];
          if ( type == (input_id + 1))
@@ -683,6 +710,16 @@ switch (id)
          return "menu_apply_toggle.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG:
          return "menu_apply_cog.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC:
+         return "input_ADC.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL:
+         return "input_BIND_ALL.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE:
+         return "input_MOUSE.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN:
+         return "input_LGUN.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO:
+         return "input_TURBO.png";
    }
    return NULL;
 }
