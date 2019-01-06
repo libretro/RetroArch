@@ -778,9 +778,12 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
           menu/menu_animation.o \
-          menu/drivers_display/menu_display_null.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o
+
+   ifeq ($(HAVE_MENU_COMMON),1)
+		OBJ += menu/drivers_display/menu_display_null.o
+	endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -830,7 +833,7 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-   ifeq ($(HAVE_MENU),1)
+   ifeq ($(HAVE_MENU_COMMON),1)
       OBJ += menu/drivers_display/menu_display_vita2d.o
    endif
 
@@ -1114,8 +1117,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
              gfx/common/metal/MenuDisplay.o \
              gfx/common/metal_common.o \
              gfx/drivers/metal.o \
-             menu/drivers_display/menu_display_metal.o \
              gfx/drivers_font/metal_raster_font.o
+		ifeq ($(HAVE_MENU_COMMON), 1)
+			OBJ += menu/drivers_display/menu_display_metal.o
+		endif
    endif
 
    ifeq ($(HAVE_MPV), 1)
@@ -1297,16 +1302,20 @@ endif
 ifeq ($(HAVE_D3D10), 1)
    OBJ += gfx/drivers/d3d10.o \
           gfx/common/d3d10_common.o \
-          gfx/drivers_font/d3d10_font.o \
-          menu/drivers_display/menu_display_d3d10.o
+          gfx/drivers_font/d3d10_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_d3d10.o
+	endif
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_common.o \
-          gfx/drivers_font/d3d11_font.o \
-          menu/drivers_display/menu_display_d3d11.o
+          gfx/drivers_font/d3d11_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_d3d11.o
+	endif
    DEFINES += -DHAVE_D3D11
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1316,8 +1325,10 @@ endif
 ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/d3d12_common.o \
-          gfx/drivers_font/d3d12_font.o \
-          menu/drivers_display/menu_display_d3d12.o
+          gfx/drivers_font/d3d12_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_d3d12.o
+	endif
    DEFINES += -DHAVE_D3D12
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1757,9 +1768,11 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += gfx/drivers/gdi_gfx.o \
           gfx/drivers_context/gdi_ctx.o \
           gfx/drivers_font/gdi_font.o \
-          gfx/display_servers/dispserv_win32.o \
-          menu/drivers_display/menu_display_gdi.o
+          gfx/display_servers/dispserv_win32.o
 
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_gdi.o
+	endif
    LIBS += -lmsimg32 -lhid -lsetupapi
 endif
 

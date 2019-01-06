@@ -1402,13 +1402,16 @@ static bool d3d11_gfx_frame(
 
    d3d11->sprites.enabled = true;
 
+#ifdef HAVE_MENU
    if (d3d11->menu.enabled)
    {
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
       menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+   else
+#endif
+      if (video_info->statistics_show)
    {
       struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
 

@@ -2590,10 +2590,10 @@ static enum runloop_state runloop_check_state(
    bool focused                     = true;
    bool pause_nonactive             = settings->bools.pause_nonactive;
    bool fs_toggle_triggered         = false;
+   static uint64_t seq              = 0;
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
-   static uint64_t seq              = 0;
 #endif
 
 #ifdef HAVE_LIBNX

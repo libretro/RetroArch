@@ -77,7 +77,7 @@ char* discord_get_own_avatar(void)
    return user_avatar;
 }
 
-bool discord_avatar_is_ready()
+bool discord_avatar_is_ready(void)
 {
    return discord_avatar_ready;
 }
@@ -87,12 +87,14 @@ void discord_avatar_set_ready(bool ready)
    discord_avatar_ready = ready;
 }
 
-bool discord_is_ready()
+bool discord_is_ready(void)
 {
    return discord_ready;
 }
 
-static bool discord_download_avatar(const char* user_id, const char* avatar_id)
+#ifdef HAVE_MENU
+static bool discord_download_avatar(
+      const char* user_id, const char* avatar_id)
 {
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
@@ -110,22 +112,21 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
 
    if(filestream_exists(full_path))
       return true;
-   else
-   {
-      snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
-      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
-      snprintf(buf, sizeof(buf), "%s.png", avatar_id);
 
-      transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
-      transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
-      strlcpy(transf->path, buf, sizeof(transf->path));
+   snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
+   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+   snprintf(buf, sizeof(buf), "%s.png", avatar_id);
 
-      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
-      task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+   strlcpy(transf->path, buf, sizeof(transf->path));
 
-      return false;
-   }
+   RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+   task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+
+   return false;
 }
+#endif
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
@@ -134,7 +135,9 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
       connectedUser->username,
       connectedUser->discriminator,
       connectedUser->userId);
+#ifdef HAVE_MENU
    discord_download_avatar(connectedUser->userId, connectedUser->avatar);
+#endif
 }
 
 static void handle_discord_disconnected(int errcode, const char* message)
@@ -149,11 +152,12 @@ static void handle_discord_error(int errcode, const char* message)
 
 static void handle_discord_join(const char* secret)
 {
-   RARCH_LOG("[Discord] join (%s)\n", secret);
+   char tmp_hostname[32];
    static struct string_list *list =  NULL;
+
+   RARCH_LOG("[Discord] join (%s)\n", secret);
    list = string_split(secret, "|");
 
-   char tmp_hostname[32];
    snprintf(tmp_hostname,
       sizeof(tmp_hostname),
       "%s|%s", list->elems[0].data, list->elems[1].data);
@@ -193,6 +197,9 @@ static void handle_discord_join_request(const DiscordUser* request)
    static char url_encoded[PATH_MAX_LENGTH];
    static char filename[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
+#ifdef HAVE_MENU
+   menu_input_ctx_line_t line;
+#endif
 
    RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
       request->username,
@@ -200,25 +207,23 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId,
       request->avatar);
 
-   discord_download_avatar(request->userId, request->avatar);
-
 #ifdef HAVE_MENU
-      menu_input_ctx_line_t line;
-      /* To-Do: needs in-game widgets
+   discord_download_avatar(request->userId, request->avatar);
+   /* To-Do: needs in-game widgets
       rarch_menu_running();
       */
 
-      memset(&line, 0, sizeof(line));
-      snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
-      line.label         = buf;
-      line.label_setting = "no_setting";
-      line.cb            = handle_discord_join_response;
+   memset(&line, 0, sizeof(line));
+   snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+   line.label         = buf;
+   line.label_setting = "no_setting";
+   line.cb            = handle_discord_join_response;
 
-      /* To-Do: needs in-game widgets
-         To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
-         To-Do: show avatar of the user connecting
+   /* To-Do: needs in-game widgets
+      To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
+      To-Do: show avatar of the user connecting
       if (!menu_input_dialog_start(&line))
-         return;
+      return;
       */
 #endif
 }
@@ -241,8 +246,8 @@ void discord_update(enum discord_presence presence)
    switch (presence)
    {
       case DISCORD_PRESENCE_MENU:
-         discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
-         discord_presence.largeImageKey = "base";
+         discord_presence.details        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
+         discord_presence.largeImageKey  = "base";
          discord_presence.largeImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
          discord_presence.instance = 0;
          break;
@@ -257,9 +262,9 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *system_id  = core_info->system_id ? core_info->system_id : "core";
-
-            char *label = NULL;
+            const char *system_id        = core_info->system_id 
+               ? core_info->system_id : "core";
+            char *label                  = NULL;
             playlist_t *current_playlist = playlist_get_cached();
 
             if (current_playlist)
@@ -284,13 +289,13 @@ void discord_update(enum discord_presence presence)
             pause_time = 0;
             ellapsed_time = 0;
 
-            discord_presence.smallImageKey = "playing";
+            discord_presence.smallImageKey  = "playing";
             discord_presence.smallImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING);
             discord_presence.startTimestamp = start_time;
-            discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
+            discord_presence.details        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
 
-            discord_presence.state = label;
-            discord_presence.instance = 0;
+            discord_presence.state          = label;
+            discord_presence.instance       = 0;
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
@@ -303,20 +308,22 @@ void discord_update(enum discord_presence presence)
             room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
             room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
 
-         char party_id[128];
-         snprintf(party_id, sizeof(party_id), "%d|%s", room->id, room->nickname);
-         char join_secret[128];
-         snprintf(join_secret, sizeof(join_secret), "%s|%d|%s|%u|%s", 
-            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
-            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port,
-            room->gamename, room->gamecrc, room->corename);
-         RARCH_LOG("%s\n", join_secret);
-         discord_presence.joinSecret = strdup(join_secret);
-         /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
-         discord_presence.partyId = strdup(party_id);
-         discord_presence.partyMax = 0;
-         discord_presence.partySize = 0;
-         RARCH_LOG("[Discord] joining: \n Secret: %s\n Party: %s\n", discord_presence.joinSecret, discord_presence.partyId);
+         {
+            char party_id[128];
+            char join_secret[128];
+            snprintf(party_id, sizeof(party_id), "%d|%s", room->id, room->nickname);
+            snprintf(join_secret, sizeof(join_secret), "%s|%d|%s|%u|%s", 
+                  room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
+                  room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port,
+                  room->gamename, room->gamecrc, room->corename);
+            RARCH_LOG("%s\n", join_secret);
+            discord_presence.joinSecret = strdup(join_secret);
+            /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
+            discord_presence.partyId = strdup(party_id);
+            discord_presence.partyMax = 0;
+            discord_presence.partySize = 0;
+            RARCH_LOG("[Discord] joining: \n Secret: %s\n Party: %s\n", discord_presence.joinSecret, discord_presence.partyId);
+         }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
@@ -333,7 +340,9 @@ void discord_update(enum discord_presence presence)
 
 void discord_init(void)
 {
+   char command[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
+
    DiscordEventHandlers handlers;
 
    RARCH_LOG("[Discord] initializing ..\n");
@@ -349,7 +358,6 @@ void discord_init(void)
 
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
-   char command[PATH_MAX_LENGTH];
    strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
 
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
@@ -365,7 +373,7 @@ void discord_shutdown(void)
    discord_ready = false;
 }
 
-void discord_run_callbacks()
+void discord_run_callbacks(void)
 {
    Discord_RunCallbacks();
 }

@@ -1470,6 +1470,7 @@ static bool d3d12_gfx_frame(
 
    d3d12->sprites.enabled = true;
 
+#ifdef HAVE_MENU
    if (d3d12->menu.enabled)
    {
       D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
@@ -1477,7 +1478,9 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
       menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+   else
+#endif
+      if (video_info->statistics_show)
    {
       struct font_params *osd_params = (struct font_params*)
          &video_info->osd_stat_params;
