@@ -637,7 +637,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
    const char *optstring = NULL;
    bool explicit_menu    = false;
-   char buf[4096];
    global_t  *global     = global_get_ptr();
 
    const struct option opts[] = {
@@ -694,8 +693,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    for (unsigned i = 0; i < argc; i++)
    {
-      snprintf(buf, sizeof(buf), "%s %s", launch_arguments, argv[i]);
-      strlcpy(launch_arguments, buf, sizeof(launch_arguments));
+      strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
+      strlcat(launch_arguments, " ", sizeof(launch_arguments));
    }
    string_trim_whitespace_left(launch_arguments);
 
