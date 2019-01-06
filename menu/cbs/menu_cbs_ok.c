@@ -3351,6 +3351,7 @@ void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
    bool extract                          = true;
 #endif
@@ -3363,7 +3364,6 @@ void cb_generic_download(void *task_data,
       goto finish;
 
    output_path[0] = '\0';
-   char buf[PATH_MAX_LENGTH];;
 
    /* we have to determine dir_path at the time of writting or else
     * we'd run into races when the user changes the setting during an
