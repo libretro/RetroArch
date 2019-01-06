@@ -70,6 +70,26 @@ static time_t _gmtotime_t (
    return seconds_from_1970;
 }
 
+time_t ps2_time(time_t *t) {
+   time_t tim;
+   sceCdCLOCK clocktime; /* defined in libcdvd.h */
+
+   sceCdReadClock(&clocktime); /* libcdvd.a */
+   configConvertToLocalTime(&clocktime);
+
+   tim =   _gmtotime_t (DEC(clocktime.year)+ STARTING_YEAR,
+                        DEC(clocktime.month),
+                        DEC(clocktime.day),
+                        DEC(clocktime.hour),
+                        DEC(clocktime.minute),
+                        DEC(clocktime.second));
+
+	if(t)
+		*t = tim;
+		
+	return tim;
+}
+
 /* Protected methods in libc */ 
 void _ps2sdk_time_init(void)
 {
@@ -88,21 +108,7 @@ clock_t clock(void)
 }
 
 time_t time(time_t *t) {
-   time_t tim;
-   sceCdCLOCK clocktime; /* defined in libcdvd.h */
-
-   sceCdReadClock(&clocktime); /* libcdvd.a */
-   configConvertToLocalTime(&clocktime);
-
-   tim =   _gmtotime_t (DEC(clocktime.year)+ STARTING_YEAR,
-                        DEC(clocktime.month),
-                        DEC(clocktime.day),
-                        DEC(clocktime.hour),
-                        DEC(clocktime.minute),
-                        DEC(clocktime.second));
-
-	if(t)
-		*t = tim;
-		
-	return tim;
+   time_t tim = -1;
+   /* TODO: This function need to be implemented again because the SDK one is not working fine */
+   return time;
 }
