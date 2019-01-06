@@ -154,6 +154,8 @@ void MainWindow::onThumbnailDownloadFinished()
          {
             RARCH_LOG("[Qt]: Thumbnail download finished successfully.\n");
             /* reload thumbnail image */
+            m_playlistModel->reloadThumbnailPath(m_thumbnailDownloadFile.fileName());
+            updateVisibleItems();
             emit itemChanged();
          }
          else

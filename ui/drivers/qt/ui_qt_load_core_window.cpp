@@ -31,7 +31,7 @@ extern "C" {
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-};
+}
 
 #define CORE_NAME_COLUMN 0
 #define CORE_VERSION_COLUMN 1
