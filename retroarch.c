@@ -640,16 +640,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
    const char *optstring = NULL;
    bool explicit_menu    = false;
+   unsigned i;
    global_t  *global     = global_get_ptr();
 
-   /* Nasty hack to copy the args into a global so discord can register the same arguments for launch */
-   char buf[4096];
-   for (unsigned i = 0; i < argc; i++)
-   {
-      snprintf(buf, sizeof(buf), "%s %s", launch_arguments, argv[i]);
-      strlcpy(launch_arguments, buf, sizeof(launch_arguments));
-   }
-   string_trim_whitespace_left(launch_arguments);
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -700,6 +693,15 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 #endif
       { NULL, 0, NULL, 0 }
    };
+
+   /* Copy the args into a buffer so launch arguments can be reused */
+
+   for (i = 0; i < argc; i++)
+   {
+      strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
+      strlcat(launch_arguments, " ", sizeof(launch_arguments));
+   }
+   string_trim_whitespace_left(launch_arguments);
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
     * we handle it differently.
