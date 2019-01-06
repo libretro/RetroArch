@@ -2590,10 +2590,12 @@ static enum runloop_state runloop_check_state(
    bool focused                     = true;
    bool pause_nonactive             = settings->bools.pause_nonactive;
    bool fs_toggle_triggered         = false;
-   static uint64_t seq              = 0;
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
+#ifdef HAVE_EASTEREGG
+   static uint64_t seq              = 0;
+#endif
 #endif
 
 #ifdef HAVE_LIBNX
@@ -2908,8 +2910,9 @@ static enum runloop_state runloop_check_state(
    else
 #endif
    {
+#if defined(HAVE_MENU) && defined(HAVE_EASTEREGG)
       seq = 0;
-
+#endif
       if (runloop_idle)
          return RUNLOOP_STATE_SLEEP;
    }
