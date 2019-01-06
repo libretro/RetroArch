@@ -277,7 +277,7 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
+if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ] && [ "$HAVE_MENU" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -562,16 +562,21 @@ fi
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ] || [ "$HAVE_OZONE" != 'no' ]; then
-   if [ "$HAVE_RGUI" = 'no' ]; then
-      HAVE_MATERIALUI=no
-      HAVE_XMB=no
-      HAVE_STRIPES=no
-      HAVE_ZARCH=no
-      HAVE_OZONE=no
-      HAVE_QT=no
-      die : 'Notice: RGUI not available, other menus will also be disabled.'
-   elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+if [ "$HAVE_MATERIALUI" = no ] &&
+   [ "$HAVE_OZONE" = no ] &&
+   [ "$HAVE_RGUI" = no ] &&
+   [ "$HAVE_XMB" = no ] &&
+   [ "$HAVE_NUKLEAR" = no ] &&
+   [ "$HAVE_STRIPES" = no ] &&
+   [ "$HAVE_ZARCH" = no ]; then
+   HAVE_MENU=no
+   HAVE_QT=no
+   die : 'Notice: No menu drivers available, the Qt menu will also be disabled.'
+   # TODO: RetroArch will crash on start if only the Qt menu driver is enabled.
+fi
+
+if [ "$HAVE_MENU" != 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
@@ -580,11 +585,12 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
          die : 'Notice: Hardware rendering context not available.'
       else
          HAVE_MATERIALUI=no
+         HAVE_OZONE=no
          HAVE_XMB=no
+         HAVE_NUKLEAR=no
          HAVE_STRIPES=no
          HAVE_ZARCH=no
-         HAVE_OZONE=no
-         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI, Ozone and ZARCH will also be disabled.'
+         die : 'Notice: Hardware rendering context not available, menu drivers will also be disabled.'
       fi
    fi
 fi

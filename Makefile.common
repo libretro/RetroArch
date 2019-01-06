@@ -642,7 +642,7 @@ ifeq ($(HAVE_NEON),1)
           $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
-HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
+HW_CONTEXT_MENU_DRIVERS=$(HAVE_MENU)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
    ifeq ($(HAVE_GL_CONTEXT),1)
@@ -657,6 +657,10 @@ endif
 ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 0
+   endif
+
+   ifeq ($(HAVE_RGUI),)
+      HAVE_RGUI = 1
    endif
 
    ifeq ($(HAVE_MATERIALUI),)
@@ -680,6 +684,7 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    endif
 else
    HAVE_ZARCH       ?= 0
+   HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_NUKLEAR     ?= 0
    HAVE_XMB         ?= 0
@@ -687,53 +692,57 @@ else
    HAVE_OZONE       ?= 0
 endif
 
-ifeq ($(HAVE_RGUI), 1)
-   OBJ += menu/drivers/rgui.o
-   DEFINES += -DHAVE_MENU -DHAVE_RGUI
+ifeq ($(HAVE_MENU), 1)
+   DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
+
+   ifeq ($(HAVE_RGUI), 1)
+      OBJ += menu/drivers/rgui.o
+      DEFINES += -DHAVE_RGUI
+   endif
+
    ifeq ($(HAVE_MATERIALUI), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
-      HAVE_MENU_COMMON = 1
       HAVE_ASSETS = 1
    endif
+
    ifeq ($(HAVE_NUKLEAR), 1)
-      OBJ += menu/drivers/nuklear/nk_common.o
-      OBJ += menu/drivers/nuklear/nk_menu.o
-      OBJ += menu/drivers/nuklear/nk_wnd_debug.o
-      OBJ += menu/drivers/nuklear.o
+      OBJ += menu/drivers/nuklear/nk_common.o \
+             menu/drivers/nuklear/nk_menu.o \
+             menu/drivers/nuklear/nk_wnd_debug.o \
+             menu/drivers/nuklear.o
       DEFINES += -DHAVE_NUKLEAR
       HAVE_ASSETS = 1
    endif
+
    ifeq ($(HAVE_ZARCH), 1)
       OBJ += menu/drivers/zarch.o
       DEFINES += -DHAVE_ZARCH
       HAVE_ASSETS = 1
    endif
-endif
 
-ifeq ($(HAVE_XMB), 1)
-   OBJ += menu/drivers/xmb.o
-   DEFINES += -DHAVE_XMB
-   HAVE_MENU_COMMON = 1
-   HAVE_ASSETS = 1
-endif
+   ifeq ($(HAVE_XMB), 1)
+      OBJ += menu/drivers/xmb.o
+      DEFINES += -DHAVE_XMB
+      HAVE_ASSETS = 1
+   endif
 
-ifeq ($(HAVE_OZONE), 1)
-   OBJ += menu/drivers/ozone/ozone.o
-   OBJ += menu/drivers/ozone/ozone_entries.o
-   OBJ += menu/drivers/ozone/ozone_display.o
-   OBJ += menu/drivers/ozone/ozone_texture.o
-   OBJ += menu/drivers/ozone/ozone_theme.o
-   OBJ += menu/drivers/ozone/ozone_sidebar.o
-   DEFINES += -DHAVE_OZONE
-   HAVE_MENU_COMMON = 1
-   HAVE_ASSETS = 1
-endif
+   ifeq ($(HAVE_OZONE), 1)
+      OBJ += menu/drivers/ozone/ozone.o \
+             menu/drivers/ozone/ozone_entries.o \
+             menu/drivers/ozone/ozone_display.o \
+             menu/drivers/ozone/ozone_texture.o \
+             menu/drivers/ozone/ozone_theme.o \
+             menu/drivers/ozone/ozone_sidebar.o
+      DEFINES += -DHAVE_OZONE
+      HAVE_ASSETS = 1
+   endif
 
-ifeq ($(HAVE_STRIPES), 1)
-   OBJ += menu/drivers/stripes.o
-   DEFINES += -DHAVE_STRIPES
+   ifeq ($(HAVE_STRIPES), 1)
+      OBJ += menu/drivers/stripes.o
+      DEFINES += -DHAVE_STRIPES
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
@@ -1118,9 +1127,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
              gfx/common/metal_common.o \
              gfx/drivers/metal.o \
              gfx/drivers_font/metal_raster_font.o
-		ifeq ($(HAVE_MENU_COMMON), 1)
-			OBJ += menu/drivers_display/menu_display_metal.o
-		endif
+
+      ifeq ($(HAVE_MENU_COMMON), 1)
+         OBJ += menu/drivers_display/menu_display_metal.o
+      endif
    endif
 
    ifeq ($(HAVE_MPV), 1)
@@ -1304,8 +1314,8 @@ ifeq ($(HAVE_D3D10), 1)
           gfx/common/d3d10_common.o \
           gfx/drivers_font/d3d10_font.o
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_d3d10.o
-	endif
+      OBJ += menu/drivers_display/menu_display_d3d10.o
+   endif
    DEFINES += -DHAVE_D3D10
 endif
 
@@ -1327,8 +1337,8 @@ ifeq ($(HAVE_D3D12), 1)
           gfx/common/d3d12_common.o \
           gfx/drivers_font/d3d12_font.o
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_d3d12.o
-	endif
+      OBJ += menu/drivers_display/menu_display_d3d12.o
+   endif
    DEFINES += -DHAVE_D3D12
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
