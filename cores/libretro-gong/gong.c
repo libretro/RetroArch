@@ -33,8 +33,8 @@
 #define GONG_CORE_PREFIX(s) s
 #endif
 
-#define WIDTH 320
-#define HEIGHT 240
+#define WIDTH 356
+#define HEIGHT 200
 #define FPS (60000.0f / 1000.0f)
 
 static retro_log_printf_t GONG_CORE_PREFIX(log_cb);
@@ -144,7 +144,7 @@ void GONG_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *inf
    info->geometry.base_height  = HEIGHT;
    info->geometry.max_width    = WIDTH;
    info->geometry.max_height   = HEIGHT;
-   info->geometry.aspect_ratio = 4.0f / 3.0f;
+   info->geometry.aspect_ratio = 16.0f / 9.0f;
    info->timing.fps            = FPS;
    info->timing.sample_rate    = 44100.0;
 }
