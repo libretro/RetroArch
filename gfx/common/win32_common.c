@@ -593,11 +593,13 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
                keysym             = (unsigned)wparam;
             else
 #endif
+#ifdef HAVE_DINPUT
             {
                /* extended keys will map to dinput if the high bit is set */
                if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
                   keysym |= 0x80;
             }
+#endif
             /* Key released? */
             if (message == WM_KEYUP || message == WM_SYSKEYUP)
                keydown            = false;
