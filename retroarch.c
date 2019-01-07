@@ -2954,8 +2954,10 @@ static enum runloop_state runloop_check_state(
    /* Check menu toggle */
    {
       static bool old_pressed = false;
+      char *menu_driver       = settings->arrays.menu_driver;
       bool pressed            = BIT256_GET(
-            current_input, RARCH_MENU_TOGGLE);
+            current_input, RARCH_MENU_TOGGLE) &&
+            !string_is_equal(menu_driver, "null");
 
       if (menu_event_kb_is_set(RETROK_F1) == 1)
       {
