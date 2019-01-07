@@ -208,7 +208,9 @@ bool menu_shader_manager_set_preset(void *data,
    }
    config_file_free(conf);
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
 
    return true;
 }
@@ -394,7 +396,10 @@ int menu_shader_manager_clear_num_passes(void)
    if (shader->passes)
       shader->passes = 0;
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
+
    video_shader_resolve_parameters(NULL, shader);
 
    return 0;

@@ -61,8 +61,9 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#include "../menu/menu_shader.h"
 #endif
+
+#include "../menu/menu_shader.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
@@ -290,11 +291,8 @@ static bool content_load(content_ctx_info_t *info)
       content_clear_subsystem();
    }
 
-
-#ifdef HAVE_MENU
-   /* TODO/FIXME - can we get rid of this? */
    menu_shader_manager_init();
-#endif
+
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
@@ -832,8 +830,6 @@ static bool content_file_init(
    return ret;
 }
 
-
-#ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -867,7 +863,6 @@ static void menu_content_environment_get(int *argc, char *argv[],
          path_get(RARCH_PATH_CORE);
 
 }
-#endif
 
 /**
  * task_load_content:
@@ -1115,10 +1110,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
@@ -1308,10 +1301,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
@@ -1560,10 +1551,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    if (firmware_update_status(&content_ctx))
       goto end;
