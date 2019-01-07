@@ -42,6 +42,9 @@
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
+#include <QStackedWidget>
+
+#include "qt/filedropwidget.h"
 
 extern "C" {
 #include <retro_assert.h>
@@ -188,11 +191,11 @@ protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
 private:
-    void updateMargins();
+   void updateMargins();
 
-    QPixmap *m_pixmap;
-    int m_pixmapWidth;
-    int m_pixmapHeight;
+   QPixmap *m_pixmap;
+   int m_pixmapWidth;
+   int m_pixmapHeight;
 };
 
 class TreeView : public QTreeView
@@ -291,6 +294,13 @@ public:
    void setThumbnailVerticalAlign(const QString valign);
 };
 
+class FileSystemProxyModel : public QSortFilterProxyModel
+{
+protected:
+   virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
+   void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+};
+
 class MainWindow : public QMainWindow
 {
    Q_OBJECT
@@ -300,6 +310,12 @@ public:
    {
       VIEW_TYPE_ICONS,
       VIEW_TYPE_LIST
+   };
+
+   enum BrowserType
+   {
+      BROWSER_TYPE_PLAYLISTS,
+      BROWSER_TYPE_FILES
    };
 
    enum Theme
@@ -323,7 +339,10 @@ public:
    TreeView* dirTreeView();
    PlaylistModel* playlistModel();
    ListWidget* playlistListWidget();
+   QStackedWidget* centralWidget();
    TableView* contentTableView();
+   QTableView* fileTableView();
+   FileDropWidget* playlistViews();
    GridView* contentGridView();
    QWidget* contentGridWidget();
    QWidget* searchWidget();
@@ -363,11 +382,13 @@ public:
    QString getCurrentPlaylistPath();
    QModelIndex getCurrentContentIndex();
    QHash<QString, QString> getCurrentContentHash();
+   QHash<QString, QString> getFileContentHash(const QModelIndex &index);
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
    QString getScrubbedString(QString str);
    void setDefaultCustomProperties();
+   void setIconViewZoom(int zoomValue);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -439,10 +460,13 @@ private slots:
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentListItemDataChanged(QListWidgetItem *item);
-   void currentItemChanged(const QModelIndex &index);
+   void onCurrentItemChanged(const QModelIndex &index);
+   void onCurrentItemChanged(const QHash<QString, QString> &hash);
+   void onCurrentFileChanged(const QModelIndex &index);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void onContentItemDoubleClicked(const QModelIndex &index);
+   void onFileDoubleClicked(const QModelIndex &index);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();
@@ -459,6 +483,7 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
+   void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
@@ -507,9 +532,12 @@ private:
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
    bool currentPlaylistIsSpecial();
    bool currentPlaylistIsAll();
+   void applySearch();
+   void updateItemsCount();
 
    PlaylistModel *m_playlistModel;
    QSortFilterProxyModel *m_proxyModel;
+   FileSystemProxyModel *m_proxyFileModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
    QString m_currentCore;
@@ -517,8 +545,12 @@ private:
    QLabel *m_statusLabel;
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
+   QFileSystemModel *m_fileModel;
    ListWidget *m_listWidget;
+   QStackedWidget *m_centralWidget;
    TableView *m_tableView;
+   QTableView *m_fileTableView;
+   FileDropWidget *m_playlistViews;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;
    QDockWidget *m_searchDock;
@@ -561,8 +593,6 @@ private:
    QProgressBar *m_gridProgressBar;
    QWidget *m_gridProgressWidget;
    QHash<QString, QString> m_currentGridHash;
-   ViewType m_lastViewType;
-   ThumbnailType m_lastThumbnailType;
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
@@ -596,6 +626,12 @@ private:
 
    QTimer *m_thumbnailTimer;
    GridItem m_gridItem;
+   BrowserType m_currentBrowser;
+   QRegExp m_searchRegExp;
+   QByteArray m_fileTableHeaderState;
+   QWidget *m_zoomWidget;
+   QString m_itemsCountLiteral;
+   QLabel *m_itemsCountLabel;
 
 protected:
    void closeEvent(QCloseEvent *event);

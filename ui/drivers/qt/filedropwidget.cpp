@@ -100,9 +100,6 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    bool allPlaylist = currentPlaylistIsAll();
    bool actionsAdded = false;
 
-   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
-      return;
-
    menu.reset(new QMenu(this));
 
    if (!specialPlaylist)
