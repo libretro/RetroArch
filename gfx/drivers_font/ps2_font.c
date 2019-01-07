@@ -58,11 +58,9 @@ static void ps2_upload_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM) {
 	int pgindx;
    int TexSize = gsKit_texture_size(gsFontM->Texture->Width, gsFontM->Texture->Height, gsFontM->Texture->PSM);
 
-   free(gsFontM->Texture->VramClut);
    gsFontM->Texture->VramClut = gsKit_vram_alloc(gsGlobal, FONTM_VRAM_SIZE, GSKIT_ALLOC_USERBUFFER);
 	
    for (pgindx = 0; pgindx < GS_FONTM_PAGE_COUNT; ++pgindx) {
-      free(gsFontM->Vram[pgindx]);
       gsFontM->Vram[pgindx] = gsKit_vram_alloc(gsGlobal, TexSize, GSKIT_ALLOC_USERBUFFER);
       gsFontM->LastPage[pgindx] = (u32) -1;
    }
