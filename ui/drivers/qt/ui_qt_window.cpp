@@ -1589,6 +1589,7 @@ void MainWindow::selectBrowserDir(QString path)
          m_proxyFileModel->setFilterRegExp(m_searchRegExp);
       }
    }
+   setCoreActions();
 }
 
 QTabWidget* MainWindow::browserAndPlaylistTabWidget()
@@ -1981,85 +1982,179 @@ void MainWindow::setCoreActions()
             }
          }
       }
-   }
 
-   if (!hash["db_name"].isEmpty())
-   {
-      QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
-      int i = 0;
-
-      if (defaultCores.count() > 0)
+      if (!hash["db_name"].isEmpty())
       {
-         QString currentPlaylistItemDataString;
-         bool allPlaylists = false;
-         int row = 0;
+         QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
+         int i = 0;
 
-         if (currentPlaylistItem)
+         if (defaultCores.count() > 0)
          {
-            currentPlaylistItemDataString = currentPlaylistItem->data(Qt::UserRole).toString();
-            allPlaylists = (currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
-         }
+            QString currentPlaylistItemDataString;
+            bool allPlaylists = false;
+            int row = 0;
 
-         for (row = 0; row < m_listWidget->count(); row++)
-         {
-            if (allPlaylists)
+            if (currentPlaylistItem)
             {
-               QListWidgetItem *listItem = m_listWidget->item(row);
-               QString listItemString = listItem->data(Qt::UserRole).toString();
-               QFileInfo info;
-
-               info.setFile(listItemString);
-
-               if (listItemString == ALL_PLAYLISTS_TOKEN)
-                  continue;
+               currentPlaylistItemDataString = currentPlaylistItem->data(Qt::UserRole).toString();
+               allPlaylists = (currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
             }
 
-            for (i = 0; i < defaultCores.count(); i++)
+            for (row = 0; row < m_listWidget->count(); row++)
             {
-               QString playlist = defaultCores.at(i)["playlist_filename"];
-               QString core = defaultCores.at(i)["core_path"];
-               QString currentPlaylistFileName = hash["db_name"];
-
-               playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
-
-               if (currentPlaylistFileName == playlist)
+               if (allPlaylists)
                {
-                  core_info_list_t *coreInfoList = NULL;
-                  unsigned j = 0;
+                  QListWidgetItem *listItem = m_listWidget->item(row);
+                  QString listItemString = listItem->data(Qt::UserRole).toString();
+                  QFileInfo info;
 
-                  core_info_get_list(&coreInfoList);
+                  info.setFile(listItemString);
 
-                  if (coreInfoList)
+                  if (listItemString == ALL_PLAYLISTS_TOKEN)
+                     continue;
+               }
+
+               for (i = 0; i < defaultCores.count(); i++)
+               {
+                  QString playlist = defaultCores.at(i)["playlist_filename"];
+                  QString core = defaultCores.at(i)["core_path"];
+                  QString currentPlaylistFileName = hash["db_name"];
+
+                  playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+
+                  if (currentPlaylistFileName == playlist)
                   {
-                     for (j = 0; j < coreInfoList->count; j++)
+                     core_info_list_t *coreInfoList = NULL;
+                     unsigned j = 0;
+
+                     core_info_get_list(&coreInfoList);
+
+                     if (coreInfoList)
                      {
-                        const core_info_t *info = &coreInfoList->list[j];
-
-                        if (core == info->path)
+                        for (j = 0; j < coreInfoList->count; j++)
                         {
-                           if (m_launchWithComboBox->findText(info->core_name) == -1)
+                           const core_info_t *info = &coreInfoList->list[j];
+
+                           if (core == info->path)
                            {
-                              int i = 0;
-                              bool found_existing = false;
-
-                              for (i = 0; i < m_launchWithComboBox->count(); i++)
+                              if (m_launchWithComboBox->findText(info->core_name) == -1)
                               {
-                                 QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+                                 int i = 0;
+                                 bool found_existing = false;
 
-                                 if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
+                                 for (i = 0; i < m_launchWithComboBox->count(); i++)
                                  {
-                                    found_existing = true;
-                                    break;
+                                    QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+
+                                    if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
+                                    {
+                                       found_existing = true;
+                                       break;
+                                    }
+                                 }
+
+                                 if (!found_existing)
+                                 {
+                                    QVariantMap comboBoxMap;
+                                    comboBoxMap["core_name"] = info->core_name;
+                                    comboBoxMap["core_path"] = info->path;
+                                    comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
+                                    m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
                                  }
                               }
+                           }
+                        }
+                     }
+                  }
+               }
 
-                              if (!found_existing)
+               if (!allPlaylists)
+                  break;
+            }
+         }
+      }
+   }
+
+   else if (m_currentBrowser == BROWSER_TYPE_FILES)
+   {
+      if (m_fileModel->rootPath().isEmpty())
+      {
+         QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
+         int i = 0;
+
+         if (defaultCores.count() > 0)
+         {
+            QString currentPlaylistItemDataString;
+            bool allPlaylists = false;
+            int row = 0;
+
+            if (currentPlaylistItem)
+            {
+               currentPlaylistItemDataString = currentPlaylistItem->data(Qt::UserRole).toString();
+               allPlaylists = (currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
+            }
+
+            for (row = 0; row < m_listWidget->count(); row++)
+            {
+               if (allPlaylists)
+               {
+                  QListWidgetItem *listItem = m_listWidget->item(row);
+                  QString listItemString = listItem->data(Qt::UserRole).toString();
+                  QFileInfo info;
+
+                  info.setFile(listItemString);
+
+                  if (listItemString == ALL_PLAYLISTS_TOKEN)
+                     continue;
+               }
+
+               for (i = 0; i < defaultCores.count(); i++)
+               {
+                  QString playlist = defaultCores.at(i)["playlist_filename"];
+                  QString core = defaultCores.at(i)["core_path"];
+                  QString currentPlaylistFileName = m_fileModel->rootPath();
+
+                  playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+
+                  if (currentPlaylistFileName == playlist)
+                  {
+                     core_info_list_t *coreInfoList = NULL;
+                     unsigned j = 0;
+
+                     core_info_get_list(&coreInfoList);
+
+                     if (coreInfoList)
+                     {
+                        for (j = 0; j < coreInfoList->count; j++)
+                        {
+                           const core_info_t *info = &coreInfoList->list[j];
+
+                           if (core == info->path)
+                           {
+                              if (m_launchWithComboBox->findText(info->core_name) == -1)
                               {
-                                 QVariantMap comboBoxMap;
-                                 comboBoxMap["core_name"] = info->core_name;
-                                 comboBoxMap["core_path"] = info->path;
-                                 comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
-                                 m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
+                                 int i = 0;
+                                 bool found_existing = false;
+
+                                 for (i = 0; i < m_launchWithComboBox->count(); i++)
+                                 {
+                                    QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+
+                                    if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
+                                    {
+                                       found_existing = true;
+                                       break;
+                                    }
+                                 }
+
+                                 if (!found_existing)
+                                 {
+                                    QVariantMap comboBoxMap;
+                                    comboBoxMap["core_name"] = info->core_name;
+                                    comboBoxMap["core_path"] = info->path;
+                                    comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
+                                    m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
+                                 }
                               }
                            }
                         }
@@ -2067,9 +2162,6 @@ void MainWindow::setCoreActions()
                   }
                }
             }
-
-            if (!allPlaylists)
-               break;
          }
       }
    }
