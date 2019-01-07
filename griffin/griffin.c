@@ -498,6 +498,10 @@ FONTS
 #include "../gfx/drivers_font/xdk1_xfonts.c"
 #endif
 
+#if defined(PS2)
+#include "../gfx/drivers_font/ps2_font.c"
+#endif
+
 #if defined(VITA)
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif

@@ -161,6 +161,7 @@ extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
+extern font_renderer_t ps2_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;

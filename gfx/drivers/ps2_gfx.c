@@ -196,6 +196,9 @@ static void *ps2_gfx_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
+   if (video->font_enable) {
+      font_driver_init_osd(ps2, false, video->is_threaded, FONT_DRIVER_RENDER_PS2);
+   }
    ps2->rgb32 = video->rgb32;
    ps2->fullscreen = video->fullscreen;
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
@@ -223,7 +226,6 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    static float fps = 0.0;
 #endif
    ps2_video_t *ps2 = (ps2_video_t*)data;
-   bool texture_empty = true;
 
    if (!width || !height)
       return false;
@@ -241,11 +243,25 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect);
    }
 
-   texture_empty = !ps2->menuTexture->Width || !ps2->menuTexture->Height;
-   if (ps2->menuVisible && !texture_empty) {
-      vram_alloc(ps2->gsGlobal, ps2->menuTexture);
-      gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
-      prim_texture(ps2->gsGlobal, ps2->menuTexture, 2, ps2->fullscreen);
+   if (ps2->menuVisible) {
+      bool texture_empty = !ps2->menuTexture->Width || !ps2->menuTexture->Height;
+      if (!texture_empty) {
+         vram_alloc(ps2->gsGlobal, ps2->menuTexture);
+         gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
+         prim_texture(ps2->gsGlobal, ps2->menuTexture, 2, ps2->fullscreen);
+      }
+   } else if (video_info->statistics_show) {
+      struct font_params *osd_params = (struct font_params*)
+         &video_info->osd_stat_params;
+
+      if (osd_params) {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
+
+   if(!string_is_empty(msg)) {
+      font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
    gsKit_sync_flip(ps2->gsGlobal);
@@ -291,6 +307,8 @@ static void ps2_gfx_free(void *data)
 
    gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
+
+   font_driver_free_osd();
 
    deinitTexture(ps2->menuTexture);
    deinitTexture(ps2->coreTexture);
@@ -364,6 +382,14 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    ps2->fullscreen = fullscreen;
 }
 
+static void ps2_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
+      const void *params, void *font)
+{
+   font_driver_render_msg(video_info, font, msg, params);
+}
+
 static const video_poke_interface_t ps2_poke_interface = {
    NULL,          /* get_flags  */
    NULL,          /* set_coords */
@@ -382,7 +408,7 @@ static const video_poke_interface_t ps2_poke_interface = {
    ps2_apply_state_changes,
    ps2_set_texture_frame,
    ps2_set_texture_enable,
-   NULL,                        /* set_osd_msg */
+   ps2_set_osd_msg,             /* set_osd_msg */
    NULL,                        /* show_mouse  */
    NULL,                        /* grab_mouse_toggle */
    NULL,                        /* get_current_shader */
