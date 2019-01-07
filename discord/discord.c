@@ -61,6 +61,7 @@ struct netplay_room *room;
 
 static char user_id[128];
 static char user_name[128];
+static char party_name[128];
 static char user_avatar[PATH_MAX_LENGTH];
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
@@ -131,6 +132,10 @@ static bool discord_download_avatar(
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
    strlcpy(user_name, connectedUser->username, sizeof(user_name));
+   strlcpy(party_name, connectedUser->username, sizeof(user_name));
+   strlcat(party_name, "|", sizeof(party_name));
+   strlcat(party_name, connectedUser->discriminator, sizeof(party_name));
+
    RARCH_LOG("[Discord] connected to user: %s#%s - avatar id: %s\n",
       connectedUser->username,
       connectedUser->discriminator,
@@ -150,25 +155,89 @@ static void handle_discord_error(int errcode, const char* message)
    RARCH_LOG("[Discord] error (%d: %s)\n", errcode, message);
 }
 
+
+#if 0
+static int action_ok_push_netplay_refresh_rooms(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char url [2048] = "http://newlobby.libretro.com/list/";
+#ifndef RARCH_CONSOLE
+   task_push_netplay_lan_scan(netplay_lan_scan_callback);
+#endif
+   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+   return 0;
+}
+#endif
+
+static void handle_discord_join_cb(void *task_data, void *user_data, const char *err)
+{
+   struct netplay_room *room;
+   char tmp_hostname[32];
+
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+
+   if (!data || err)
+      goto finish;
+
+   data->data = (char*)realloc(data->data, data->len + 1);
+   data->data[data->len] = '\0';
+
+   netplay_rooms_parse(data->data);
+   room = netplay_room_get(0);
+
+   if (room)
+   {
+      RARCH_LOG("[Discord] joining lobby at: %s:%d\n",
+         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
+         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+         deinit_netplay();
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+      snprintf(tmp_hostname, sizeof(tmp_hostname), "%s:%d",
+         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
+         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
+
+      task_push_netplay_crc_scan(room->gamecrc,
+         room->gamename, tmp_hostname, room->corename);
+
+   }
+
+finish:
+
+   if (err)
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+}
+
 static void handle_discord_join(const char* secret)
 {
+   char url [2048] = "http://lobby.libretro.com/";
    char tmp_hostname[32];
    static struct string_list *list =  NULL;
 
-   RARCH_LOG("[Discord] join (%s)\n", secret);
+   RARCH_LOG("[Discord] join secret: (%s)\n", secret);
    list = string_split(secret, "|");
+
+   strlcat(url, list->elems[0].data, sizeof(url));
+   strlcat(url, "/", sizeof(url));
+   RARCH_LOG("[Discord] querying lobby id: %s at %s\n", list->elems[0].data, url);
+
 
    snprintf(tmp_hostname,
       sizeof(tmp_hostname),
       "%s|%s", list->elems[0].data, list->elems[1].data);
 
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      deinit_netplay();
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-   task_push_netplay_crc_scan(atoi(list->elems[3].data),
-      list->elems[2].data,
-      tmp_hostname, list->elems[4].data);
+   task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
 }
 
 static void handle_discord_spectate(const char* secret)
@@ -309,20 +378,16 @@ void discord_update(enum discord_presence presence)
             room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
 
          {
-            char party_id[128];
             char join_secret[128];
-            snprintf(party_id, sizeof(party_id), "%d|%s", room->id, room->nickname);
-            snprintf(join_secret, sizeof(join_secret), "%s|%d|%s|%u|%s", 
-                  room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
-                  room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port,
-                  room->gamename, room->gamecrc, room->corename);
-            RARCH_LOG("%s\n", join_secret);
+            snprintf(join_secret, sizeof(join_secret), "%d|%s", room->id, room->nickname);
             discord_presence.joinSecret = strdup(join_secret);
             /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
-            discord_presence.partyId = strdup(party_id);
+            discord_presence.partyId = strdup(party_name);
             discord_presence.partyMax = 0;
             discord_presence.partySize = 0;
-            RARCH_LOG("[Discord] joining: \n Secret: %s\n Party: %s\n", discord_presence.joinSecret, discord_presence.partyId);
+
+            RARCH_LOG("[Discord] join secret: %s\n", join_secret);
+            RARCH_LOG("[Discord] party id: %s\n", party_name);
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:

@@ -85,26 +85,26 @@ float osk_dark[16] =  {
 
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_OZONE)
-   &menu_ctx_ozone,
-#endif
-#if defined(HAVE_XUI)
-   &menu_ctx_xui,
-#endif
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
 #if defined(HAVE_NUKLEAR)
    &menu_ctx_nuklear,
 #endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
 #endif
 #if defined(HAVE_STRIPES)
    &menu_ctx_stripes,
 #endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
+#if defined(HAVE_XUI)
+   &menu_ctx_xui,
 #endif
 #if defined(HAVE_ZARCH)
    &menu_ctx_zarch,
@@ -2072,8 +2072,9 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    if (menu_driver_data)
       return true;
 
-   menu_driver_data               = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+   if (menu_driver_ctx->init)
+      menu_driver_data               = (menu_handle_t*)
+         menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;

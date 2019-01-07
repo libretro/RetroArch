@@ -45,7 +45,7 @@ typedef struct ps2_video
 
 // PRIVATE METHODS
 static GSGLOBAL *init_GSGlobal(void) {
-	GSGLOBAL *gsGlobal = gsKit_init_global();
+   GSGLOBAL *gsGlobal = gsKit_init_global();
 
    gsGlobal->Mode = GS_MODE_NTSC;
    gsGlobal->Interlace = GS_INTERLACED;
@@ -54,28 +54,26 @@ static GSGLOBAL *init_GSGlobal(void) {
    gsGlobal->Height = NTSC_HEIGHT;
    
    gsGlobal->PSM = GS_PSM_CT16;
-	gsGlobal->PSMZ = GS_PSMZ_16;
-	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
-	gsGlobal->ZBuffering = GS_SETTING_OFF;
+   gsGlobal->PSMZ = GS_PSMZ_16;
+   gsGlobal->DoubleBuffering = GS_SETTING_OFF;
+   gsGlobal->ZBuffering = GS_SETTING_OFF;
    gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
-	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
-		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
+   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC, 
+               D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
 
-	// Initialize the DMAC
-	dmaKit_chan_init(DMA_CHANNEL_GIF);
+   /* Initialize the DMAC */
+   dmaKit_chan_init(DMA_CHANNEL_GIF);
 
-	gsKit_init_screen(gsGlobal);
-      gsKit_mode_switch(gsGlobal, GS_ONESHOT);
+   gsKit_init_screen(gsGlobal);
+   gsKit_mode_switch(gsGlobal, GS_ONESHOT);
 
-	gsKit_clear(gsGlobal, GS_BLACK);
-
-      return gsGlobal;
+   return gsGlobal;
 }
 
 static GSTEXTURE * prepare_new_texture(void) {
-      GSTEXTURE *texture = calloc(1, sizeof(*texture));
-      return texture;
+   GSTEXTURE *texture = calloc(1, sizeof(*texture));
+   return texture;
 }
 
 static void init_ps2_video(ps2_video_t *ps2) {
@@ -93,22 +91,22 @@ static void deinitTexture(GSTEXTURE *texture) {
 
 static void color_correction32(uint32_t *buffer, uint32_t dimensions)
 {
-    uint32_t i;
-    uint32_t x32;
-    for (i = 0; i < dimensions; i++) {
+   uint32_t i;
+   uint32_t x32;
+   for (i = 0; i < dimensions; i++) {
       x32 = buffer[i];
       buffer[i] = ((x32 >> 16) & 0xFF) | ((x32 << 16) & 0xFF0000) | (x32 & 0xFF00FF00);
-    }
+   }
 }
 
 static void color_correction16(uint16_t *buffer, uint32_t dimensions)
 {
-    uint32_t i;
-    uint16_t x16;
-    for (i = 0; i < dimensions; i++) {
+   uint32_t i;
+   uint16_t x16;
+   for (i = 0; i < dimensions; i++) {
       x16 = buffer[i];
       buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | ((x16 >> 1) & 0x3E0) | ((x16 >> 11) & 0x1F);
-    }
+   }
 }
 
 static void transfer_texture(GSTEXTURE *texture, const void *frame, 
@@ -144,7 +142,7 @@ if (color_correction) {
 
 static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
    uint32_t size = gsKit_texture_size(texture->Width, texture->Height, texture->PSM);
-   texture->Vram=gsKit_vram_alloc(gsGlobal, size, GSKIT_ALLOC_USERBUFFER);
+   texture->Vram = gsKit_vram_alloc(gsGlobal, size, GSKIT_ALLOC_USERBUFFER);
    if(texture->Vram == GSKIT_ALLOC_ERROR) {
       printf("VRAM Allocation Failed. Will not upload texture.\n");
    }
@@ -152,24 +150,24 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
 
 static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool force_aspect) {
       float x1, y1, x2, y2;
-      if (force_aspect) {
-         float width_proportion = (float)gsGlobal->Width / (float)texture->Width;
-         float height_proportion = (float)gsGlobal->Height / (float)texture->Height;
-         float delta = MIN(width_proportion, height_proportion);
-         float newWidth = texture->Width * delta;
-         float newHeight = texture->Height * delta;
-         
-         x1 = (gsGlobal->Width - newWidth) / 2.0f;
-         y1 = (gsGlobal->Height - newHeight) / 2.0f;
-         x2 = newWidth + x1;
-         y2 = newHeight + y1;
+   if (force_aspect) {
+      float width_proportion = (float)gsGlobal->Width / (float)texture->Width;
+      float height_proportion = (float)gsGlobal->Height / (float)texture->Height;
+      float delta = MIN(width_proportion, height_proportion);
+      float newWidth = texture->Width * delta;
+      float newHeight = texture->Height * delta;
+      
+      x1 = (gsGlobal->Width - newWidth) / 2.0f;
+      y1 = (gsGlobal->Height - newHeight) / 2.0f;
+      x2 = newWidth + x1;
+      y2 = newHeight + y1;
 
-      } else {
-         x1 = 0.0f;
-         y1 = 0.0f;
-         x2 = gsGlobal->Width;
-         y2 = gsGlobal->Height;
-      }
+   } else {
+      x1 = 0.0f;
+      y1 = 0.0f;
+      x2 = gsGlobal->Width;
+      y2 = gsGlobal->Height;
+   }
 
    gsKit_prim_sprite_texture( gsGlobal, texture,
                               x1, //X1
@@ -225,13 +223,15 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    static float fps = 0.0;
 #endif
    ps2_video_t *ps2 = (ps2_video_t*)data;
+   bool texture_empty = true;
 
    if (!width || !height)
       return false;
 
    if (frame_count%120==0) {
-      printf("ps2_gfx_frame %d\n", frame_count);
+      printf("ps2_gfx_frame %lu\n", frame_count);
    }
+   gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
 
    if (frame) {
@@ -241,7 +241,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect);
    }
 
-   bool texture_empty = !ps2->menuTexture->Width || !ps2->menuTexture->Height;
+   texture_empty = !ps2->menuTexture->Width || !ps2->menuTexture->Height;
    if (ps2->menuVisible && !texture_empty) {
       vram_alloc(ps2->gsGlobal, ps2->menuTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);

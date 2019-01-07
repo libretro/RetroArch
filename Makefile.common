@@ -753,6 +753,8 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+OBJ += menu/menu_shader.o
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
@@ -760,7 +762,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_entries.o \
           menu/menu_setting.o \
           menu/menu_networking.o \
-          menu/menu_shader.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_dialog.o \

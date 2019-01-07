@@ -578,18 +578,20 @@ if [ "$HAVE_MENU" != 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
-         die : 'Notice: Hardware rendering context not available.'
-      elif [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
-         die : 'Notice: Hardware rendering context not available.'
       else
+         if [ "$HAVE_CACA" != 'yes' ] && [ "$HAVE_SIXEL" != 'yes' ] &&
+            [ "$HAVE_SDL" != 'yes' ] && [ "$HAVE_SDL2" != 'yes' ]; then
+            HAVE_MENU=no
+            HAVE_RGUI=no
+         fi
          HAVE_MATERIALUI=no
          HAVE_OZONE=no
          HAVE_XMB=no
          HAVE_NUKLEAR=no
          HAVE_STRIPES=no
          HAVE_ZARCH=no
-         die : 'Notice: Hardware rendering context not available, menu drivers will also be disabled.'
       fi
+      die : 'Notice: Hardware rendering context not available.'
    fi
 fi
 

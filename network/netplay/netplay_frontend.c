@@ -640,15 +640,6 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 {
    RARCH_LOG("[netplay] announcing netplay game... \n");
 
-#ifdef HAVE_DISCORD
-   if (discord_is_inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
-#endif
-
    if (task_data)
    {
       unsigned i, ip_len, port_len;
@@ -793,6 +784,15 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
          free(host_string);
       }
+
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+      {
+         discord_userdata_t userdata;
+         userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
+         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      }
+#endif
 
       string_list_free(lines);
       free(buf);

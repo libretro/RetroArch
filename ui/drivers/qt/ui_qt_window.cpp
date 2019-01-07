@@ -1737,7 +1737,6 @@ label_noext - the display name of the content that is guaranteed not to contain 
 */
 void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 {
-#ifdef HAVE_MENU
    content_ctx_info_t content_info;
    QByteArray corePathArray;
    QByteArray contentPathArray;
@@ -1851,41 +1850,43 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+#ifdef HAVE_MENU
    menu_navigation_set_selection(0);
+#endif
+
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-   if (!task_push_load_content_from_playlist_from_menu(
-            corePath, contentPath, contentLabel,
-            &content_info,
-            NULL, NULL))
+   if (!task_push_load_content_with_new_core_from_companion_ui(
+         corePath, contentPath, &content_info,
+         NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       return;
    }
 
+#ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 }
 
 void MainWindow::onRunClicked()
 {
-#ifdef HAVE_MENU
    QHash<QString, QString> contentHash;
+  
    switch (m_currentBrowser)
    {
-   case BROWSER_TYPE_FILES:
-      contentHash = getFileContentHash(m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
-      break;
-   case BROWSER_TYPE_PLAYLISTS:
-      contentHash = getCurrentContentHash();
-      break;
+      case BROWSER_TYPE_FILES:
+         contentHash = getFileContentHash(m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
+         break;
+      case BROWSER_TYPE_PLAYLISTS:
+         contentHash = getCurrentContentHash();
+         break;
    }
-
+  
    if (contentHash.isEmpty())
       return;
-
+  
    loadContent(contentHash);
-#endif
 }
 
 bool MainWindow::isContentLessCore()

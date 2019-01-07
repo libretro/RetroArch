@@ -386,6 +386,10 @@ void drivers_init(int flags)
       if (flags & DRIVER_MENU_MASK)
          menu_driver_init(video_is_threaded);
    }
+#else
+   /* Qt uses core info, even if the menu is disabled */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
