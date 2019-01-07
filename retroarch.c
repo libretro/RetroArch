@@ -753,52 +753,55 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    /* First pass: Read the config file path and any directory overrides, so
     * they're in place when we load the config */
-   for (;;)
+   if (argc)
    {
-      int c = getopt_long(argc, argv, optstring, opts, NULL);
+      for (;;)
+      {
+         int c = getopt_long(argc, argv, optstring, opts, NULL);
 
 #if 0
-      fprintf(stderr, "c is: %c (%d), optarg is: [%s]\n", c, c, string_is_empty(optarg) ? "" : optarg);
+         fprintf(stderr, "c is: %c (%d), optarg is: [%s]\n", c, c, string_is_empty(optarg) ? "" : optarg);
 #endif
 
-      if (c == -1)
-         break;
-
-      switch (c)
-      {
-         case 'h':
-            retroarch_print_help(argv[0]);
-            exit(0);
-
-         case 'c':
-            RARCH_LOG("Set config file to : %s\n", optarg);
-            path_set(RARCH_PATH_CONFIG, optarg);
+         if (c == -1)
             break;
 
-         case RA_OPT_APPENDCONFIG:
-            path_set(RARCH_PATH_CONFIG_APPEND, optarg);
-            break;
+         switch (c)
+         {
+            case 'h':
+               retroarch_print_help(argv[0]);
+               exit(0);
 
-         case 's':
-            strlcpy(global->name.savefile, optarg,
-                  sizeof(global->name.savefile));
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
-            break;
+            case 'c':
+               RARCH_LOG("Set config file to : %s\n", optarg);
+               path_set(RARCH_PATH_CONFIG, optarg);
+               break;
 
-         case 'S':
-            strlcpy(global->name.savestate, optarg,
-                  sizeof(global->name.savestate));
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
-            break;
+            case RA_OPT_APPENDCONFIG:
+               path_set(RARCH_PATH_CONFIG_APPEND, optarg);
+               break;
 
-         /* Must handle '?' otherwise you get an infinite loop */
-         case '?':
-            retroarch_print_help(argv[0]);
-            retroarch_fail(1, "retroarch_parse_input()");
-            break;
-         /* All other arguments are handled in the second pass */
+            case 's':
+               strlcpy(global->name.savefile, optarg,
+                     sizeof(global->name.savefile));
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+               break;
+
+            case 'S':
+               strlcpy(global->name.savestate, optarg,
+                     sizeof(global->name.savestate));
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+               break;
+
+            /* Must handle '?' otherwise you get an infinite loop */
+            case '?':
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "retroarch_parse_input()");
+               break;
+            /* All other arguments are handled in the second pass */
+         }
       }
    }
 
@@ -807,346 +810,350 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    /* Second pass: All other arguments override the config file */
    optind = 1;
-   for (;;)
+
+   if (argc)
    {
-      int c = getopt_long(argc, argv, optstring, opts, NULL);
-
-      if (c == -1)
-         break;
-
-      switch (c)
+      for (;;)
       {
-         case 'd':
-            {
-               unsigned new_port;
-               unsigned id              = 0;
-               struct string_list *list = string_split(optarg, ":");
-               int    port              = 0;
+         int c = getopt_long(argc, argv, optstring, opts, NULL);
 
-               if (list && list->size == 2)
+         if (c == -1)
+            break;
+
+         switch (c)
+         {
+            case 'd':
                {
-                  port = (int)strtol(list->elems[0].data, NULL, 0);
-                  id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
+                  unsigned new_port;
+                  unsigned id              = 0;
+                  struct string_list *list = string_split(optarg, ":");
+                  int    port              = 0;
+
+                  if (list && list->size == 2)
+                  {
+                     port = (int)strtol(list->elems[0].data, NULL, 0);
+                     id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
+                  }
+                  string_list_free(list);
+
+                  if (port < 1 || port > MAX_USERS)
+                  {
+                     RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
+                     retroarch_print_help(argv[0]);
+                     retroarch_fail(1, "retroarch_parse_input()");
+                  }
+                  new_port = port -1;
+
+                  input_config_set_device(new_port, id);
+
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
                }
-               string_list_free(list);
+               break;
 
-               if (port < 1 || port > MAX_USERS)
+            case 'A':
                {
-                  RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
+                  unsigned new_port;
+                  int port = (int)strtol(optarg, NULL, 0);
+
+                  if (port < 1 || port > MAX_USERS)
+                  {
+                     RARCH_ERR("Connect dualanalog to a valid port.\n");
+                     retroarch_print_help(argv[0]);
+                     retroarch_fail(1, "retroarch_parse_input()");
+                  }
+                  new_port = port - 1;
+
+                  input_config_set_device(new_port, RETRO_DEVICE_ANALOG);
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
+               }
+               break;
+
+            case 'f':
+               rarch_force_fullscreen = true;
+               break;
+
+            case 'v':
+               verbosity_enable();
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+               break;
+
+            case 'N':
+               {
+                  unsigned new_port;
+                  int port = (int)strtol(optarg, NULL, 0);
+
+                  if (port < 1 || port > MAX_USERS)
+                  {
+                     RARCH_ERR("%s\n",
+                           msg_hash_to_str(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
+                     retroarch_print_help(argv[0]);
+                     retroarch_fail(1, "retroarch_parse_input()");
+                  }
+                  new_port = port - 1;
+                  input_config_set_device(port - 1, RETRO_DEVICE_NONE);
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
+               }
+               break;
+
+            case 'r':
+               strlcpy(global->record.path, optarg,
+                     sizeof(global->record.path));
+               if (recording_is_enabled())
+                  recording_set_state(true);
+               break;
+
+   #ifdef HAVE_DYNAMIC
+            case 'L':
+               if (path_is_directory(optarg))
+               {
+                  settings_t *settings  = config_get_ptr();
+
+                  if (rarch_first_start)
+                     core_set_on_cmdline = true;
+
+                  path_clear(RARCH_PATH_CORE);
+                  strlcpy(settings->paths.directory_libretro, optarg,
+                        sizeof(settings->paths.directory_libretro));
+
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+                  RARCH_WARN("Using old --libretro behavior. "
+                        "Setting libretro_directory to \"%s\" instead.\n",
+                        optarg);
+               }
+               else if (filestream_exists(optarg))
+               {
+                  if (rarch_first_start)
+                     core_set_on_cmdline = true;
+
+                  rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+
+                  /* We requested explicit core, so use PLAIN core type. */
+                  retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
+               }
+               else
+               {
+                  RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
+                        optarg);
+               }
+
+               break;
+   #endif
+            case 'P':
+            case 'R':
+               bsv_movie_set_start_path(optarg);
+
+               if (c == 'P')
+                  bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_PLAYBACK, NULL);
+               else
+                  bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_PLAYBACK, NULL);
+
+               if (c == 'R')
+                  bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_RECORDING, NULL);
+               else
+                  bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_RECORDING, NULL);
+               break;
+
+            case 'M':
+               if (string_is_equal(optarg, "noload-nosave"))
+               {
+                  rarch_is_sram_load_disabled = true;
+                  rarch_is_sram_save_disabled = true;
+               }
+               else if (string_is_equal(optarg, "noload-save"))
+                  rarch_is_sram_load_disabled = true;
+               else if (string_is_equal(optarg, "load-nosave"))
+                  rarch_is_sram_save_disabled = true;
+               else if (string_is_not_equal(optarg, "load-save"))
+               {
+                  RARCH_ERR("Invalid argument in --sram-mode.\n");
                   retroarch_print_help(argv[0]);
                   retroarch_fail(1, "retroarch_parse_input()");
                }
-               new_port = port -1;
+               break;
 
-               input_config_set_device(new_port, id);
-
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
-            }
-            break;
-
-         case 'A':
-            {
-               unsigned new_port;
-               int port = (int)strtol(optarg, NULL, 0);
-
-               if (port < 1 || port > MAX_USERS)
-               {
-                  RARCH_ERR("Connect dualanalog to a valid port.\n");
-                  retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
-               }
-               new_port = port - 1;
-
-               input_config_set_device(new_port, RETRO_DEVICE_ANALOG);
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
-            }
-            break;
-
-         case 'f':
-            rarch_force_fullscreen = true;
-            break;
-
-         case 'v':
-            verbosity_enable();
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-            break;
-
-         case 'N':
-            {
-               unsigned new_port;
-               int port = (int)strtol(optarg, NULL, 0);
-
-               if (port < 1 || port > MAX_USERS)
-               {
-                  RARCH_ERR("%s\n",
-                        msg_hash_to_str(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
-                  retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
-               }
-               new_port = port - 1;
-               input_config_set_device(port - 1, RETRO_DEVICE_NONE);
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
-            }
-            break;
-
-         case 'r':
-            strlcpy(global->record.path, optarg,
-                  sizeof(global->record.path));
-            if (recording_is_enabled())
-               recording_set_state(true);
-            break;
-
-#ifdef HAVE_DYNAMIC
-         case 'L':
-            if (path_is_directory(optarg))
-            {
-               settings_t *settings  = config_get_ptr();
-
-               if (rarch_first_start)
-                  core_set_on_cmdline = true;
-
-               path_clear(RARCH_PATH_CORE);
-               strlcpy(settings->paths.directory_libretro, optarg,
-                     sizeof(settings->paths.directory_libretro));
-
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
-               RARCH_WARN("Using old --libretro behavior. "
-                     "Setting libretro_directory to \"%s\" instead.\n",
-                     optarg);
-            }
-            else if (filestream_exists(optarg))
-            {
-               if (rarch_first_start)
-                  core_set_on_cmdline = true;
-
-               rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-
-               /* We requested explicit core, so use PLAIN core type. */
-               retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-            }
-            else
-            {
-               RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
-                     optarg);
-            }
-
-            break;
-#endif
-         case 'P':
-         case 'R':
-            bsv_movie_set_start_path(optarg);
-
-            if (c == 'P')
-               bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_PLAYBACK, NULL);
-            else
-               bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_PLAYBACK, NULL);
-
-            if (c == 'R')
-               bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_RECORDING, NULL);
-            else
-               bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_RECORDING, NULL);
-            break;
-
-         case 'M':
-            if (string_is_equal(optarg, "noload-nosave"))
-            {
-               rarch_is_sram_load_disabled = true;
-               rarch_is_sram_save_disabled = true;
-            }
-            else if (string_is_equal(optarg, "noload-save"))
-               rarch_is_sram_load_disabled = true;
-            else if (string_is_equal(optarg, "load-nosave"))
-               rarch_is_sram_save_disabled = true;
-            else if (string_is_not_equal(optarg, "load-save"))
-            {
-               RARCH_ERR("Invalid argument in --sram-mode.\n");
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
-            }
-            break;
-
-#ifdef HAVE_NETWORKING
-         case 'H':
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-            break;
-
-         case 'C':
-            {
-               settings_t *settings  = config_get_ptr();
+   #ifdef HAVE_NETWORKING
+            case 'H':
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-               strlcpy(settings->paths.netplay_server, optarg,
-                     sizeof(settings->paths.netplay_server));
-            }
-            break;
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+               break;
 
-         case RA_OPT_STATELESS:
-            {
-               settings_t *settings  = config_get_ptr();
+            case 'C':
+               {
+                  settings_t *settings  = config_get_ptr();
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+                  strlcpy(settings->paths.netplay_server, optarg,
+                        sizeof(settings->paths.netplay_server));
+               }
+               break;
 
-               configuration_set_bool(settings,
-                     settings->bools.netplay_stateless_mode, true);
+            case RA_OPT_STATELESS:
+               {
+                  settings_t *settings  = config_get_ptr();
 
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
-            }
-            break;
+                  configuration_set_bool(settings,
+                        settings->bools.netplay_stateless_mode, true);
 
-         case RA_OPT_CHECK_FRAMES:
-            {
-               settings_t *settings  = config_get_ptr();
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
+               }
+               break;
 
-               configuration_set_int(settings,
-                     settings->ints.netplay_check_frames,
-                     (int)strtoul(optarg, NULL, 0));
-            }
-            break;
+            case RA_OPT_CHECK_FRAMES:
+               {
+                  settings_t *settings  = config_get_ptr();
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 
-         case RA_OPT_PORT:
-            {
-               settings_t *settings  = config_get_ptr();
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-               configuration_set_uint(settings,
-                     settings->uints.netplay_port,
-                     (int)strtoul(optarg, NULL, 0));
-            }
-            break;
+                  configuration_set_int(settings,
+                        settings->ints.netplay_check_frames,
+                        (int)strtoul(optarg, NULL, 0));
+               }
+               break;
 
-#if defined(HAVE_NETWORK_CMD)
-         case RA_OPT_COMMAND:
-#ifdef HAVE_COMMAND
-            if (command_network_send((const char*)optarg))
+            case RA_OPT_PORT:
+               {
+                  settings_t *settings  = config_get_ptr();
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
+                  configuration_set_uint(settings,
+                        settings->uints.netplay_port,
+                        (int)strtoul(optarg, NULL, 0));
+               }
+               break;
+
+   #if defined(HAVE_NETWORK_CMD)
+            case RA_OPT_COMMAND:
+   #ifdef HAVE_COMMAND
+               if (command_network_send((const char*)optarg))
+                  exit(0);
+               else
+                  retroarch_fail(1, "network_cmd_send()");
+   #endif
+               break;
+   #endif
+
+   #endif
+
+            case RA_OPT_BPS:
+               strlcpy(global->name.bps, optarg,
+                     sizeof(global->name.bps));
+               rarch_bps_pref = true;
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
+               break;
+
+            case 'U':
+               strlcpy(global->name.ups, optarg,
+                     sizeof(global->name.ups));
+               rarch_ups_pref = true;
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
+               break;
+
+            case RA_OPT_IPS:
+               strlcpy(global->name.ips, optarg,
+                     sizeof(global->name.ips));
+               rarch_ips_pref = true;
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
+               break;
+
+            case RA_OPT_NO_PATCH:
+               rarch_ctl(RARCH_CTL_SET_PATCH_BLOCKED, NULL);
+               break;
+
+            case 'D':
+               frontend_driver_detach_console();
+               break;
+
+            case RA_OPT_MENU:
+               explicit_menu = true;
+               break;
+
+            case RA_OPT_NICK:
+               {
+                  settings_t *settings  = config_get_ptr();
+
+                  has_set_username = true;
+
+                  strlcpy(settings->paths.username, optarg,
+                        sizeof(settings->paths.username));
+               }
+               break;
+
+            case RA_OPT_SIZE:
+               if (sscanf(optarg, "%ux%u",
+                        recording_driver_get_width(),
+                        recording_driver_get_height()) != 2)
+               {
+                  RARCH_ERR("Wrong format for --size.\n");
+                  retroarch_print_help(argv[0]);
+                  retroarch_fail(1, "retroarch_parse_input()");
+               }
+               break;
+
+            case RA_OPT_RECORDCONFIG:
+               strlcpy(global->record.config, optarg,
+                     sizeof(global->record.config));
+               break;
+
+            case RA_OPT_MAX_FRAMES:
+               runloop_max_frames  = (unsigned)strtoul(optarg, NULL, 10);
+               break;
+
+            case RA_OPT_MAX_FRAMES_SCREENSHOT:
+               runloop_max_frames_screenshot = true;
+               break;
+
+            case RA_OPT_MAX_FRAMES_SCREENSHOT_PATH:
+               strlcpy(runloop_max_frames_screenshot_path, optarg, sizeof(runloop_max_frames_screenshot_path));
+               break;
+
+            case RA_OPT_SUBSYSTEM:
+               path_set(RARCH_PATH_SUBSYSTEM, optarg);
+               break;
+
+            case RA_OPT_FEATURES:
+               retroarch_print_features();
                exit(0);
-            else
-               retroarch_fail(1, "network_cmd_send()");
-#endif
-            break;
-#endif
 
-#endif
+            case RA_OPT_EOF_EXIT:
+               bsv_movie_ctl(BSV_MOVIE_CTL_SET_END_EOF, NULL);
+               break;
 
-         case RA_OPT_BPS:
-            strlcpy(global->name.bps, optarg,
-                  sizeof(global->name.bps));
-            rarch_bps_pref = true;
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
-            break;
+            case RA_OPT_VERSION:
+               retroarch_print_version();
+               exit(0);
 
-         case 'U':
-            strlcpy(global->name.ups, optarg,
-                  sizeof(global->name.ups));
-            rarch_ups_pref = true;
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
-            break;
+   #ifdef HAVE_FILE_LOGGER
+            case RA_OPT_LOG_FILE:
+               retro_main_log_file_init(optarg);
+               break;
+   #endif
 
-         case RA_OPT_IPS:
-            strlcpy(global->name.ips, optarg,
-                  sizeof(global->name.ips));
-            rarch_ips_pref = true;
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
-            break;
+            case 'c':
+            case 'h':
+            case RA_OPT_APPENDCONFIG:
+            case 's':
+            case 'S':
+               break; /* Handled in the first pass */
 
-         case RA_OPT_NO_PATCH:
-            rarch_ctl(RARCH_CTL_SET_PATCH_BLOCKED, NULL);
-            break;
-
-         case 'D':
-            frontend_driver_detach_console();
-            break;
-
-         case RA_OPT_MENU:
-            explicit_menu = true;
-            break;
-
-         case RA_OPT_NICK:
-            {
-               settings_t *settings  = config_get_ptr();
-
-               has_set_username = true;
-
-               strlcpy(settings->paths.username, optarg,
-                     sizeof(settings->paths.username));
-            }
-            break;
-
-         case RA_OPT_SIZE:
-            if (sscanf(optarg, "%ux%u",
-                     recording_driver_get_width(),
-                     recording_driver_get_height()) != 2)
-            {
-               RARCH_ERR("Wrong format for --size.\n");
+            case '?':
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
-            }
-            break;
 
-         case RA_OPT_RECORDCONFIG:
-            strlcpy(global->record.config, optarg,
-                  sizeof(global->record.config));
-            break;
-
-         case RA_OPT_MAX_FRAMES:
-            runloop_max_frames  = (unsigned)strtoul(optarg, NULL, 10);
-            break;
-
-         case RA_OPT_MAX_FRAMES_SCREENSHOT:
-            runloop_max_frames_screenshot = true;
-            break;
-
-         case RA_OPT_MAX_FRAMES_SCREENSHOT_PATH:
-            strlcpy(runloop_max_frames_screenshot_path, optarg, sizeof(runloop_max_frames_screenshot_path));
-            break;
-
-         case RA_OPT_SUBSYSTEM:
-            path_set(RARCH_PATH_SUBSYSTEM, optarg);
-            break;
-
-         case RA_OPT_FEATURES:
-            retroarch_print_features();
-            exit(0);
-
-         case RA_OPT_EOF_EXIT:
-            bsv_movie_ctl(BSV_MOVIE_CTL_SET_END_EOF, NULL);
-            break;
-
-         case RA_OPT_VERSION:
-            retroarch_print_version();
-            exit(0);
-
-#ifdef HAVE_FILE_LOGGER
-         case RA_OPT_LOG_FILE:
-            retro_main_log_file_init(optarg);
-            break;
-#endif
-
-         case 'c':
-         case 'h':
-         case RA_OPT_APPENDCONFIG:
-         case 's':
-         case 'S':
-            break; /* Handled in the first pass */
-
-         case '?':
-            retroarch_print_help(argv[0]);
-            retroarch_fail(1, "retroarch_parse_input()");
-
-         default:
-            RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
-            retroarch_fail(1, "retroarch_parse_input()");
+            default:
+               RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
+               retroarch_fail(1, "retroarch_parse_input()");
+         }
       }
    }
 
