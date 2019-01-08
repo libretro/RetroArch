@@ -41,6 +41,7 @@
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../command.h"
+#include "../../dynamic.h"
 #include "../../retroarch.h"
 
 /* Only used before init_netplay */
@@ -857,19 +858,38 @@ static void netplay_announce(void)
    char *username                   = NULL;
    char *corename                   = NULL;
    char *gamename                   = NULL;
+   char *subsystemname              = NULL;
    char *coreversion                = NULL;
    char *frontend_ident             = NULL;
    settings_t *settings             = config_get_ptr();
    struct retro_system_info *system = runloop_get_libretro_system_info();
    uint32_t content_crc             = content_get_crc();
+   struct string_list *subsystem    = path_get_subsystem_list();
+
+   if (subsystem)
+   {
+      for (unsigned i = 0; i < subsystem->size; i++)
+      {
+         strlcat(buf, path_basename(subsystem->elems[i].data), sizeof(buf));
+         if (i < subsystem->size - 1)
+            strlcat(buf, "|", sizeof(buf));
+      }
+      RARCH_LOG("%s\n", buf);
+      net_http_urlencode(&gamename, buf);
+      net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
+   }
+   else
+   {
+      net_http_urlencode(&gamename,
+         !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
+         path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+      net_http_urlencode(&subsystemname, "N/A");
+   }
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
    net_http_urlencode(&username, settings->paths.username);
    net_http_urlencode(&corename, system->library_name);
-   net_http_urlencode(&gamename,
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
-      path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode(&coreversion, system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
@@ -877,14 +897,15 @@ static void netplay_announce(void)
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d&mitm_server=%s"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s&frontend=%s",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
+      "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       settings->arrays.netplay_mitm_server,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION, frontend_architecture);
+      PACKAGE_VERSION, frontend_architecture, subsystemname);
 #if 0
    RARCH_LOG("[netplay] announcement URL: %s\n", buf);
 #endif
