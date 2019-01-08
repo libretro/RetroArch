@@ -8140,19 +8140,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                if (tmp_str_list && tmp_str_list->size > 0)
                {
                   core_option_manager_t *coreopts = NULL;
+                  const char *val                 = NULL;
 
                   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                   if (coreopts)
                   {
+                     settings_t *settings            = config_get_ptr();
                      unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
-                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
 
-                     i--;
+                     if (settings->bools.game_specific_options)
+                     {
+                        val = core_option_manager_get_val(coreopts, i-1);
+                        i--;
+                     }
+                     else
+                        val = core_option_manager_get_val(coreopts, i);
 
                      option                          = (struct core_option*)&coreopts->opts[i];
 
