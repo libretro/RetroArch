@@ -27,6 +27,7 @@ OBJ := ctr/ctr_system.o \
 		 frontend/drivers/platform_null.o \
 		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/compat_strcasestr.o \
+		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
