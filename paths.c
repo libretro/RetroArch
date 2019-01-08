@@ -311,7 +311,7 @@ static bool path_init_subsystem(void)
    /* For subsystems, we know exactly which RAM types are supported. */
 
    info = libretro_find_subsystem_info(
-         subsystem_data,
+         system->subsystem.data,
          system->subsystem.size,
          path_get(RARCH_PATH_SUBSYSTEM));
 
