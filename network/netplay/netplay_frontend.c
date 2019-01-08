@@ -868,7 +868,9 @@ static void netplay_announce(void)
 
    if (subsystem)
    {
-      for (unsigned i = 0; i < subsystem->size; i++)
+      unsigned i;
+
+      for (i = 0; i < subsystem->size; i++)
       {
          strlcat(buf, path_basename(subsystem->elems[i].data), sizeof(buf));
          if (i < subsystem->size - 1)

@@ -690,8 +690,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    };
 
    /* Copy the args into a buffer so launch arguments can be reused */
-
-   for (i = 0; i < argc; i++)
+   for (i = 0; i < (unsigned)argc; i++)
    {
       strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
       strlcat(launch_arguments, " ", sizeof(launch_arguments));
