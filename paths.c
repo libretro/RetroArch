@@ -258,7 +258,6 @@ void path_set_special(char **argv, unsigned num_content)
    char str[PATH_MAX_LENGTH];
    global_t   *global   = global_get_ptr();
 
-
    /* First content file is the significant one. */
    path_set_basename(argv[0]);
 
