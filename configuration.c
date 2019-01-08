@@ -1395,11 +1395,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef GEKKO
    SETTING_BOOL("video_vfilter",                 &settings->bools.video_vfilter, true, video_vfilter, false);
 #endif
-#ifdef HAVE_MENU
-   SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->bools.threaded_data_runloop_enable, true, threaded_data_runloop_enable, false);
 #endif
+#ifdef HAVE_MENU
+   SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, true, false);
