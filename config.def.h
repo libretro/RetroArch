@@ -405,7 +405,7 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
-#elif defined(SWITCH)
+#elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
 #else
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;

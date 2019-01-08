@@ -218,6 +218,7 @@ enum input_driver_enum
    INPUT_X,
    INPUT_WAYLAND,
    INPUT_DINPUT,
+   INPUT_PS4,
    INPUT_PS3,
    INPUT_PSP,
    INPUT_PS2,
@@ -244,6 +245,7 @@ enum joypad_driver_enum
    JOYPAD_GX,
    JOYPAD_WIIU,
    JOYPAD_XDK,
+   JOYPAD_PS4,
    JOYPAD_PSP,
    JOYPAD_PS2,
    JOYPAD_CTR,
@@ -371,7 +373,7 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 #elif defined(WIIU)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
-#elif defined(PSP) || defined(VITA)
+#elif defined(PSP) || defined(VITA) || defined(ORBIS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(PS2)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
@@ -453,6 +455,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
+#elif defined(ORBIS)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
 #elif defined(__CELLOS_LV2__)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
@@ -499,6 +503,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 #elif defined(_XBOX)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
+#elif defined(ORBIS)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
 #elif defined(PSP) || defined(VITA)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
 #elif defined(PS2)
@@ -687,8 +693,10 @@ const char *config_get_default_audio(void)
       case AUDIO_WIIU:
          return "AX";
       case AUDIO_PSP:
-#ifdef VITA
+#if defined(VITA)
          return "vita";
+#elif defined(ORBIS)
+         return "orbis";
 #else
          return "psp";
 #endif
@@ -843,6 +851,8 @@ const char *config_get_default_input(void)
    {
       case INPUT_ANDROID:
          return "android";
+      case INPUT_PS4:
+         return "ps4";
       case INPUT_PS3:
          return "ps3";
       case INPUT_PSP:
@@ -909,6 +919,8 @@ const char *config_get_default_joypad(void)
 
    switch (default_driver)
    {
+      case JOYPAD_PS4:
+         return "ps4";
       case JOYPAD_PS3:
          return "ps3";
       case JOYPAD_XINPUT:

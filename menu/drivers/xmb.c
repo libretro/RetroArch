@@ -4997,6 +4997,11 @@ static void xmb_context_reset_background(const char *iconpath)
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 
+#ifdef ORBIS
+   // to avoid weird behaviour on orbis with remote host
+   RARCH_LOG("[XMB] after task\n");
+   sleep(5);
+#endif
    if (path)
       free(path);
 }

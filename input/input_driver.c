@@ -80,6 +80,9 @@ void fire_connection_listener(unsigned port, input_device_driver_t *driver)
 }
 
 static const input_driver_t *input_drivers[] = {
+#ifdef ORBIS
+   &input_ps4,
+#endif
 #ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
@@ -163,6 +166,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #endif
 #ifdef _XBOX
    &xdk_joypad,
+#endif
+#if defined(ORBIS)
+   &ps4_joypad,
 #endif
 #if defined(PSP) || defined(VITA)
    &psp_joypad,
