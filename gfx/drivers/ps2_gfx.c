@@ -204,8 +204,7 @@ static void *ps2_gfx_init(const video_info_t *video,
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
    ps2->force_aspect = video->force_aspect;
 
-   if (input && input_data)
-   {
+   if (input && input_data) {
       settings_t *settings = config_get_ptr();
       ps2input = input_ps2.init(settings->arrays.input_joypad_driver);
       *input = ps2input ? &input_ps2 : NULL;
