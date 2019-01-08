@@ -136,17 +136,13 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 #elif defined(PS2)
       return fioLseek(fileno(stream->fp), (off_t)offset, whence);
 #elif defined(ORBIS)
-      int ret;
-      ret = orbisLseek(stream->fd, offset, whence);
+      int ret = orbisLseek(stream->fd, offset, whence);
+
       RARCH_LOG("[VFS]retro_vfs_file_seek_internal orbisLseek return %d on fd=%d filename=%s\n", ret, stream->fd, stream->orig_path);
+
       if (ret < 0)
-      {
          return -1;
-      }
-      else
-      {
-         return 0;
-      }
+      return 0;
 #else
       return fseeko(stream->fp, (off_t)offset, whence);
 #endif
@@ -471,13 +467,8 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
       RARCH_LOG("[VFS]retro_vfs_file_tell_impl orbisLseek fd=%d path=%s ret=%d\n", stream->fd, stream->orig_path, ret);  
       if(ret < 0)
-      {
          return -1;
-      }
-      else
-      {
-         return ret;
-      }
+      return ret;
 #else
 /* VC2005 and up have a special 64-bit ftell */
 #ifdef ATLEAST_VC2005
@@ -499,7 +490,8 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int seek_position)
+int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int seek_position)
 {
    int whence = -1;
    switch (seek_position)
@@ -518,7 +510,8 @@ int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64
    return retro_vfs_file_seek_internal(stream, offset, whence);
 }
 
-int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len)
+int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len)
 {
    if (!stream || !s)
       goto error;
@@ -527,15 +520,11 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
    {
 #ifdef ORBIS
       int64_t ret = orbisRead(stream->fd, s, (size_t)len);
+
       RARCH_LOG("[VFS]retro_vfs_file_read_impl orbisRead fd=%d path=%s bytesread=%d\n", stream->fd, stream->orig_path, ret);
       if( ret < 0)
-      {
          return -1;
-      }
-      else
-      {
-         return 0;
-      }
+      return 0;
 #else
       return fread(s, 1, (size_t)len, stream->fp);
 #endif
@@ -571,15 +560,12 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
    {
 #ifdef ORBIS
       int64_t ret = orbisWrite(stream->fd, s, (size_t)len);
+
       RARCH_LOG("[VFS]retro_vfs_file_write_impl orbisWrite fd=%d path=%s byteswrite=%d\n", stream->fd, stream->orig_path, ret);
+
       if( ret < 0)
-      {
          return -1;
-      }
-      else
-      {
-         return 0;
-      }	   
+      return 0;
 #else
       return fwrite(s, 1, (size_t)len, stream->fp);
 #endif
@@ -642,7 +628,7 @@ int retro_vfs_file_remove_impl(const char *path)
 #endif
 #else
 #ifdef ORBIS
-   //by now no remove 
+   /* stub for now */
    return 0;
 #else
    if (remove(path) == 0)
@@ -710,7 +696,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    return -1;
 #else
 #ifdef ORBIS
-   //by now no remove 
+   /* stub for now */
    return 0;
 #else
    return rename(old_path, new_path)==0 ? 0 : -1;

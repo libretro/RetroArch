@@ -47,15 +47,19 @@ struct nbio_orbis_t
 
 static void *nbio_orbis_open(const char * filename, unsigned int mode)
 {
-   RARCH_LOG("[NBIO_ORBIS] open %s\n" , filename);
-   static const int o_flags[] =   { O_RDONLY, O_RDWR|O_CREAT|O_TRUNC, O_RDWR, O_RDONLY, O_RDWR|O_CREAT|O_TRUNC };
+   static const int o_flags[]  =   { O_RDONLY, O_RDWR | O_CREAT | O_TRUNC,
+      O_RDWR, O_RDONLY, O_RDWR | O_CREAT | O_TRUNC };
    void *buf                   = NULL;
    struct nbio_orbis_t* handle = NULL;
    size_t len                  = 0;
    int fd                      = orbisOpen(filename, o_flags[mode], 0644);
+
+   RARCH_LOG("[NBIO_ORBIS] open %s\n" , filename);
+
    if (fd < 0)
       return NULL;
    handle                = (struct nbio_orbis_t*)malloc(sizeof(struct nbio_orbis_t));
+
 
    if (!handle)
       goto error;
@@ -77,10 +81,12 @@ static void *nbio_orbis_open(const char * filename, unsigned int mode)
 
    if (len)
       buf                = malloc(len);
+
    if (!buf)
    {
       RARCH_LOG("[NBIO_ORBIS]  open error malloc %d bytes\n",len);
    }
+
    if (len && !buf)
       goto error;
 
@@ -110,7 +116,6 @@ static void nbio_orbis_begin_read(void *data)
    if (handle->op >= 0)
    {
       RARCH_LOG("[NBIO_ORBIS] ERROR - attempted file read operation while busy\n");
-      //abort();
       return;
    }
 
@@ -130,7 +135,6 @@ static void nbio_orbis_begin_write(void *data)
    if (handle->op >= 0)
    {
       RARCH_LOG("[NBIO_ORBIS] ERROR - attempted file write operation while busy\n");
-     //abort();
       return;
    }
 
@@ -208,19 +212,17 @@ static void nbio_orbis_resize(void *data, size_t len)
    if (handle->op >= 0)
    {
       RARCH_LOG("[NBIO_ORBIS] ERROR - attempted file resize operation while busy\n");
-      //abort();
       return;
    }
    if (len < handle->len)
    {
       RARCH_LOG("[NBIO_ORBIS] ERROR - attempted file shrink operation, not implemented");
-      //abort();
       return;
    }
 
-   handle->len  = len;
-   handle->data = realloc(handle->data, handle->len);
-   handle->op   = -1;
+   handle->len      = len;
+   handle->data     = realloc(handle->data, handle->len);
+   handle->op       = -1;
    handle->progress = handle->len;
 }
 
@@ -257,7 +259,6 @@ static void nbio_orbis_free(void *data)
    if (handle->op >= 0)
    {
       RARCH_LOG("[NBIO_ORBIS] ERROR - attempted free() while busy\n");
-      //abort();
       return;
    }
    RARCH_LOG("[NBIO_ORBIS] free close fd=%d\n",handle->fd);

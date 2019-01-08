@@ -126,14 +126,14 @@ enum stat_mode
 static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 {
 #if defined(ORBIS)
-   return false; //by now
+   return false; /* for now */
 #endif
 #if defined(VITA) || defined(PSP)
    SceIoStat buf;
    char *tmp  = strdup(path);
    size_t len = strlen(tmp);
    if (tmp[len-1] == '/')
-      tmp[len-1]='\0';
+      tmp[len-1] = '\0';
 
    if (sceIoGetstat(tmp, &buf) < 0)
    {
@@ -146,7 +146,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
    char *tmp  = strdup(path);
    size_t len = strlen(tmp);
    if (tmp[len-1] == '/')
-      tmp[len-1]='\0';
+      tmp[len-1] = '\0';
 
    if (fileXioGetStat(tmp, &buf) < 0)
    {
@@ -159,10 +159,10 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
     if (cellFsStat(path, &buf) < 0)
        return false;
 #elif defined(_WIN32)
-   struct _stat buf;
-   char *path_local;
-   wchar_t *path_wide;
    DWORD file_info;
+   struct _stat buf;
+   char *path_local   = NULL;
+   wchar_t *path_wide = NULL;
 
    if (!path || !*path)
       return false;
@@ -219,7 +219,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #endif
       case IS_CHARACTER_SPECIAL:
 #if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
-         return false;
+         break;
 #else
          return S_ISCHR(buf.st_mode);
 #endif
@@ -241,15 +241,12 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 bool path_is_directory(const char *path)
 {
 #ifdef ORBIS
+   int dfd;
    if (!path)
-   {
-   	   return false;
-   }
-   int dfd = orbisDopen(path);
+      return false;
+   dfd = orbisDopen(path);
    if (dfd < 0)
-   {
-   	   return false;
-   }
+      return false;
    orbisDclose(dfd);
    return true;
 #else

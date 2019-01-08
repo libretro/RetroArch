@@ -285,9 +285,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #elif defined(ORBIS)
    const struct dirent *entry = &rdir->entry;
    if (entry->d_type==DT_DIR)
-   {
       return true;
-   }
    if (!(entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK))
       return false;
 #else
