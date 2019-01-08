@@ -341,7 +341,6 @@ static void retroarch_override_setting_free_state(void)
    }
 }
 
-
 static void global_free(void)
 {
    global_t *global = NULL;
@@ -637,7 +636,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    bool explicit_menu    = false;
    unsigned i;
    global_t  *global     = global_get_ptr();
-
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -2416,7 +2414,6 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -2448,7 +2445,6 @@ void runloop_msg_queue_push(const char *msg,
    runloop_msg_queue_unlock();
 #endif
 }
-
 
 void runloop_get_status(bool *is_paused, bool *is_idle,
       bool *is_slowmotion, bool *is_perfcnt_enable)
@@ -2703,7 +2699,6 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-
 #ifdef HAVE_OVERLAY
    {
       static char prev_overlay_restore = false;
@@ -2801,7 +2796,6 @@ static enum runloop_state runloop_check_state(
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
-
 
       {
          enum menu_action action;
@@ -3545,7 +3539,6 @@ int runloop_iterate(unsigned *sleep_ms)
       bool is_locked_fps       = (runloop_paused ||
                                   input_nonblock_state) |
                                   !!recording_data;
-
 
       if (!runloop_frame_time_last || is_locked_fps)
          delta = runloop_frame_time.reference;

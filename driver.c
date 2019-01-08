@@ -408,7 +408,6 @@ void drivers_init(int flags)
       midi_driver_init();
 }
 
-
 /**
  * uninit_drivers:
  * @flags              : Bitmask of drivers to deinitialize.

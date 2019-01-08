@@ -186,7 +186,6 @@ u8_t uip_pbuf_header(struct uip_pbuf *p,s16_t hdr_size_inc)
 
 	if(hdr_size_inc==0 || p==NULL) return 0;
 
-
 	payload = p->payload;
 	if(p->flags==UIP_PBUF_FLAG_POOL || p->flags==UIP_PBUF_FLAG_RAM) {
 		p->payload = (u8_t*)p->payload-hdr_size_inc;

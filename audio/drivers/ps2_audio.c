@@ -43,7 +43,6 @@ static u8 audioThreadStack[4 * 1024] __attribute__ ((aligned(16)));
 #define AUDIO_BITS 16
 #define AUDIO_PRIORITY 0x7F /* LOWER VALUE GRATHER PRIORITY*/
 
-
 static void audioMainLoop(void *data)
 {
    char out_tmp[AUDIO_OUT_BUFFER];
@@ -66,7 +65,6 @@ static void audioMainLoop(void *data)
    audsrv_stop_audio();
    ExitDeleteThread();
 }
-
 
 static void audioCreateThread(ps2_audio_t *ps2)
 {

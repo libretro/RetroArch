@@ -544,7 +544,6 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-
 config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;

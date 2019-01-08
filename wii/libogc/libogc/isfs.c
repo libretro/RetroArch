@@ -108,7 +108,6 @@ struct isfs_cb
 	void *funcargv[8];
 };
 
-
 static s32 hId = -1;
 static s32 _fs_fd = -1;
 static char _dev_fs[] ATTRIBUTE_ALIGN(32) = "/dev/fs";
@@ -839,6 +838,5 @@ s32 ISFS_GetUsageAsync(const char* filepath, u32* usage1, u32* usage2,isfscallba
 	param->fsusage.vector[2].len = sizeof(u32);
 	return IOS_IoctlvAsync(_fs_fd,ISFS_IOCTL_GETUSAGE,1,2,param->fsusage.vector,__isfsFunctionCB,param);
 }
-
 
 #endif /* defined(HW_RVL) */

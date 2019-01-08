@@ -63,7 +63,6 @@
 #define MEM_ALIGN(mem)			((void*)(((u32_t)(mem)+MEM_ALIGNMENT-1)&~(u32_t)(MEM_ALIGNMENT-1)))
 #define MEM_ALIGN_SIZE(size)	(((size)+MEM_ALIGNMENT-1)&~(u32_t)(MEM_ALIGNMENT-1))
 
-
 #if BYTE_ORDER == BIG_ENDIAN
 	#ifndef htole16
 		#define htole16		bswap16

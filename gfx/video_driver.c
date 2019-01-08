@@ -119,7 +119,6 @@
 #define video_driver_context_unlock()  ((void)0)
 #endif
 
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -147,7 +146,6 @@ static bool                video_driver_state_out_rgb32      = false;
 static bool                video_driver_crt_switching_active = false;
 
 static struct retro_system_av_info video_driver_av_info;
-
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
@@ -953,7 +951,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
-
 
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
@@ -2025,7 +2022,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
    return false;
 }
 
-
 bool video_driver_frame_filter_alive(void)
 {
    return !!video_driver_state_filter;
@@ -2424,7 +2420,6 @@ void video_driver_frame(const void *data, unsigned width,
          pitch               = video_driver_scaler_ptr->scaler->out_stride;
       }
    }
-
 
    if (data)
       frame_cache_data = data;
@@ -3150,7 +3145,6 @@ void video_context_driver_make_current(bool release)
       current_video_context.make_current(release);
 }
 
-
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
    if (!video_context_data || !aspect)
@@ -3347,8 +3341,6 @@ bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
 
    return false;
 }
-
-
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 {

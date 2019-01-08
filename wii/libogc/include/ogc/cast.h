@@ -85,7 +85,6 @@ static inline void CAST_SetGQR7(u32 type,u32 scale)
 	__set_gqr(GQR7,val);
 }
 
-
 /******************************************************************/
 /*																  */
 /* cast from int to float										  */

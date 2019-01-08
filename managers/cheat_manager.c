@@ -271,7 +271,6 @@ static void cheat_manager_new(unsigned size)
 {
    unsigned i;
 
-
    cheat_manager_free();
 
    cheat_manager_state.buf_size = size;
@@ -412,7 +411,6 @@ bool cheat_manager_load(const char *path, bool append)
    config_file_free(conf);
    conf = NULL;
 
-
    cheat_manager_alloc_if_empty();
 
    if (append)
@@ -431,7 +429,6 @@ bool cheat_manager_load(const char *path, bool append)
       orig_size = 0;
       cheat_manager_new(cheats);
    }
-
 
    for (i = orig_size; i < cheats; i++)
    {
@@ -460,12 +457,10 @@ error:
    return false;
 }
 
-
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 {
    unsigned i;
    unsigned orig_size;
-
 
    if (!cheat_manager_state.cheats)
    {
@@ -844,7 +839,6 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 
    cheat_manager_state.memory_initialized = true;
 
-
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true);
 
 #ifdef HAVE_MENU
@@ -971,7 +965,6 @@ int cheat_manager_search(enum cheat_search_type search_type)
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true);
       return 0;
    }
-
 
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
 

@@ -142,7 +142,6 @@ typedef struct gl2_renderchain
 
 #endif
 
-
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
 #endif

@@ -320,7 +320,6 @@ DECLARE_INTERFACE_(ID3DXKeyframedAnimationSet, ID3DXAnimationSet)
     STDMETHOD(UnregisterAnimation)(THIS_ UINT Index) PURE;
 };
 
-
 /*
  * ID3DXCompressedAnimationSet:
  * ----------------------------
@@ -677,7 +676,6 @@ D3DXFrameCalculateBoundingSphere
     FLOAT *pObjectRadius
     );
 
-
 /*
  * D3DXCreateKeyframedAnimationSet:
  * --------------------------------
@@ -712,7 +710,6 @@ D3DXCreateKeyframedAnimationSet
     CONST D3DXKEY_CALLBACK *pCallbackKeys,
     LPD3DXKEYFRAMEDANIMATIONSET *ppAnimationSet
     );
-
 
 /*
  * D3DXCreateCompressedAnimationSet:
@@ -759,7 +756,6 @@ D3DXCreateAnimationController
     UINT MaxNumEvents,
     LPD3DXANIMATIONCONTROLLER *ppAnimController
     );
-
 
 #ifdef __cplusplus
 }

@@ -156,7 +156,6 @@ void core_option_manager_get(core_option_manager_t *opt, void *data)
    var->value = NULL;
 }
 
-
 /**
  * core_option_manager_new:
  * @conf_path        : Filesystem path to write core option config file to.

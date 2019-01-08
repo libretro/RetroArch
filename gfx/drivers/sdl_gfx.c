@@ -500,7 +500,6 @@ static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
    vid->menu.active = state;
 }
 
-
 static void sdl_show_mouse(void *data, bool state)
 {
    (void)data;

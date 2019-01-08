@@ -21,8 +21,6 @@ extern u32 __SYS_GetRTC(u32 *gctime);
 extern syssram* __SYS_LockSram();
 extern u32 __SYS_UnlockSram(u32 write);
 
-
-
 u32 _DEFUN(gettick,(),
 	_NOARGS)
 
@@ -34,7 +32,6 @@ u32 _DEFUN(gettick,(),
 	);
 	return result;
 }
-
 
 u64 _DEFUN(gettime,(),
 						  _NOARGS)

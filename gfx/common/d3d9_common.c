@@ -99,7 +99,6 @@ typedef HRESULT (__stdcall
         LPD3DXFONT*             ppFont);
 #endif
 
-
 #ifdef HAVE_D3DX
 static D3D9XCreateFontIndirect_t    D3D9CreateFontIndirect;
 static D3D9CreateTextureFromFile_t  D3D9CreateTextureFromFile;

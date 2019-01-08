@@ -936,7 +936,6 @@ void fill_pathname_join_noext(char *out_path,
    path_remove_extension(out_path);
 }
 
-
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path

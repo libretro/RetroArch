@@ -962,7 +962,6 @@ const char *config_get_default_joypad(void)
    return "null";
 }
 
-
 /**
  * config_get_default_camera:
  *
@@ -2267,7 +2266,6 @@ static config_file_t *open_default_config_file(void)
       /* Try to create a new config file. */
       conf = config_file_new(NULL);
 
-
       if (conf)
       {
          /* Since this is a clean config file, we can
@@ -2633,7 +2631,6 @@ static void config_get_hex_base(config_file_t *conf,
 }
 #endif
 
-
 /**
  * config_load:
  * @path                : path to be read from.
@@ -2840,7 +2837,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }
 
-
    /* Hexadecimal settings  */
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
@@ -3024,7 +3020,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
 
-
    if (!string_is_empty(settings->paths.directory_screenshot))
    {
       if (string_is_equal(settings->paths.directory_screenshot, "default"))
@@ -3090,7 +3085,6 @@ static bool config_load_file(const char *path, bool set_defaults,
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-
 
 #ifdef HAVE_LAKKA
    settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
@@ -3186,7 +3180,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    recording_driver_update_streaming_url();
 
    ret = true;
-
 
 end:
    if (conf)
@@ -3498,7 +3491,6 @@ bool config_load_remap(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-
    strlcpy(remap_directory,
          settings->paths.directory_input_remapping,
          path_size);
@@ -3564,7 +3556,6 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: no content-dir-specific remap found at %s.\n", content_path);
       input_remapping_set_defaults(false);
    }
-
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
@@ -3790,8 +3781,6 @@ static void parse_config_file(void)
    RARCH_ERR("[Config]: couldn't find config at path: \"%s\"\n",
          path_get(RARCH_PATH_CONFIG));
 }
-
-
 
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
@@ -4052,7 +4041,6 @@ static bool config_save_keybinds_file(const char *path)
 }
 #endif
 
-
 /**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
@@ -4169,7 +4157,6 @@ error:
    free(path_new);
    return false;
 }
-
 
 /**
  * config_save_file:
@@ -4377,7 +4364,6 @@ bool config_save_file(const char *path)
    config_set_hex(conf, "menu_border_light_color",
          settings->uints.menu_border_light_color);
 #endif
-
 
    video_driver_save_settings(conf);
 
@@ -4650,7 +4636,6 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
-
 
          /* blacklist these since they are handled by remaps */
          /* to-do: add setting to control blacklisting

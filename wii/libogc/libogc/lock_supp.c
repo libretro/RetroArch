@@ -12,7 +12,6 @@
 #include "processor.h"
 #include "mutex.h"
 
-
 int __libogc_lock_init(int *lock,int recursive)
 {
 	s32 ret;
@@ -50,7 +49,6 @@ int __libogc_lock_acquire(int *lock)
 	plock = (mutex_t)*lock;
 	return LWP_MutexLock(plock);
 }
-
 
 int __libogc_lock_release(int *lock)
 {

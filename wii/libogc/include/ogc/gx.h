@@ -75,7 +75,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup vtxattrin Vertex data input type
  * @{
  */
@@ -85,7 +84,6 @@
 #define GX_INDEX16			3			/*!< Input data is set by a 16bit index */
 
 /*! @} */
-
 
 /*! \addtogroup compsize Number of components in an attribute
  * @{
@@ -358,7 +356,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup texgentyp Texture coordinate generation type
  * @{
  */
@@ -501,7 +498,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevcolorarg TEV color combiner input
  * @{
  */
@@ -525,7 +521,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevalphaarg TEV alpha combiner input
  * @{
  */
@@ -540,7 +535,6 @@
 #define GX_CA_ZERO			7				/*!< Use to pass zero value */
 
 /*! @} */
-
 
 /*! \addtogroup tevstage TEV stage
  * \details The GameCube's Graphics Processor (GP) can use up to 16 stages to compute a texel for a particular surface.
@@ -570,7 +564,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevop TEV combiner operator
  * @{
  */
@@ -590,7 +583,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevbias TEV bias value
  * @{
  */
@@ -601,7 +593,6 @@
 #define GX_MAX_TEVBIAS			3
 
 /*! @} */
-
 
 /*! \addtogroup tevclampmode TEV clamping mode
  * \note These modes are used for a function which is not implementable on production (i.e. retail) GameCube hardware.
@@ -616,7 +607,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevscale TEV scale value
  * @{
  */
@@ -629,7 +619,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup tevcoloutreg TEV color/output register
  * @{
  */
@@ -641,7 +630,6 @@
 #define GX_MAX_TEVREG			4
 
 /*! @} */
-
 
 /*! \addtogroup cullmode Backface culling mode
  * @{
@@ -757,7 +745,6 @@
 #define GX_TEV_KASEL_K3_A				0x1F			/*!< K3[A] register */
 /*! @} */
 
-
 /*! \addtogroup tevswapsel TEV color swap table entry
  * @{
  */
@@ -769,7 +756,6 @@
 #define GX_MAX_TEVSWAP					4
 
 /*! @} */
-
 
 /* tev color chan */
 #define GX_CH_RED						0
@@ -902,7 +888,6 @@
 #define GX_FOG_REVEXP2 					GX_FOG_PERSP_REVEXP2
 /*! @} */
 
-
 /* pixel format */
 #define GX_PF_RGB8_Z24					0
 #define GX_PF_RGBA6_Z24					1
@@ -932,7 +917,6 @@
 
 /*! @} */
 
-
 /*! \addtogroup gammamode Gamma values
  * @{
  */
@@ -942,7 +926,6 @@
 #define GX_GM_2_2						2
 
 /*! @} */
-
 
 /*! \addtogroup copymode EFB copy mode
  * \brief Controls whether all lines, only even lines, or only odd lines are copied from the EFB.
@@ -2624,7 +2607,6 @@ void GX_SetTevAlphaIn(u8 tevstage,u8 a,u8 b,u8 c,u8 d);
  * \return none
  */
 void GX_SetTevColorOp(u8 tevstage,u8 tevop,u8 tevbias,u8 tevscale,u8 clamp,u8 tevregid);
-
 
 /*!
  * \fn void GX_SetTevAlphaOp(u8 tevstage,u8 tevop,u8 tevbias,u8 tevscale,u8 clamp,u8 tevregid)

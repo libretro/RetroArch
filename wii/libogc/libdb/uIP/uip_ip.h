@@ -120,7 +120,6 @@ struct uip_pbuf;
 struct uip_netif;
 struct ip_addr;
 
-
 void uip_ipinit();
 
 u32_t uip_ipaddr(const u8_t *cp);
@@ -130,6 +129,5 @@ s8_t uip_ipoutput(struct uip_pbuf *p,struct uip_ip_addr *src,struct uip_ip_addr 
 s8_t uip_ipoutput_if(struct uip_pbuf *p,struct uip_ip_addr *src,struct uip_ip_addr *dst,u8_t ttl,u8_t tos,u8_t proto,struct uip_netif *netif);
 struct uip_netif* uip_iproute(struct uip_ip_addr *dst);
 u8_t uip_ipaddr_isbroadcast(struct uip_ip_addr *addr,struct uip_netif *netif);
-
 
 #endif

@@ -134,7 +134,6 @@ endif
 
 LIBS += -lm
 
-
 ifeq ($(HAVE_NEON),1)
 DEFINES += -DHAVE_NEON=1
 else
@@ -162,7 +161,6 @@ CPUOPTS += -DARCH_BFIN=0
 
 #We can reasonably assume MMX will be there on all x86 CPUs from 1997 and up at least
 #SSE2 can be assumed from Pentium 4 and up - can be switched on or off with the switch HAVE_SSE2
-
 
 ifeq ($(ARCH_X86),1)
 CPUOPTS += -DHAVE_AMD3DNOW_INLINE=0
@@ -756,7 +754,6 @@ else
 DEFINES += -DCONFIG_LIBSPEEX_ENCODER=0
 endif
 
-
 ifeq ($(HAVE_LIBOPUS),1)
 DEFINES += -DCONFIG_LIBOPUS_ENCODER=1 \
 			  -DCONFIG_OPUS_PARSER=1 \
@@ -1265,7 +1262,6 @@ DEFINES += -DCONFIG_LIBOPUS_DECODER=0
 DEFINES += -DCONFIG_OPUS_MUXER=0
 endif
 
-
 #libavutil
 ifeq ($(INTERNAL_LIBAVUTIL),1)
 DEFINES += -DHAVE_AV_CONFIG_H
@@ -1335,7 +1331,6 @@ endif
 ifeq ($(ARCH_ARM),1)
 LIBAVUTIL_SOURCE += $(filter-out $(AVUTIL_BLACKLIST),$(wildcard $(AVUTIL_DIR)/arm/*.c))
 endif
-
 
 ifeq ($(ARCH_PPC),1)
 LIBAVUTIL_SOURCE += $(AVUTIL_DIR)/ppc/cpu.c \
@@ -1467,7 +1462,6 @@ DEFINES += -DCONFIG_XVMC=1
 else
 DEFINES += -DCONFIG_XVMC=0
 endif
-
 
 AVCODEC_BLACKLIST := \
         $(AVCODEC_DIR)/arm/neontest.c \

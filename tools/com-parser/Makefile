@@ -5,11 +5,8 @@ GENDEPS     = 1
 TARGET_ARCH = amd64
 OS         ?= win32
 
-
 OBJ :=
 OBJ += com-parse.o
-
-
 
 EXE_EXT := $(suffix $(wildcard $(MAKE).*))
 
@@ -102,9 +99,7 @@ else
    endif
 endif
 
-
 INCLUDE_DIRS += -I. -I../../deps/peglib
-
 
 $(info os       : $(OS))
 $(info host     : $(ARCH))
@@ -120,7 +115,6 @@ all: $(TARGET)$(EXE_EXT)
 	rm $*.tmp
 
 SHELL:=$(SHELL) -o pipefail
-
 
 ifeq ($(GENDEPS),0)
    DEPFLAGS :=
@@ -142,7 +136,6 @@ endif
 $(TARGET)$(EXE_EXT): $(OBJ) .$(TARGET).last
 	@touch .$(TARGET).last
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBS) $(LD_OUT)$@
-
 
 %.depend: ;
 %.last: ;

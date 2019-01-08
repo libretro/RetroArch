@@ -471,7 +471,6 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
 }
 #endif
 
-
 static bool android_input_init_handle(void)
 {
 #ifdef HAVE_DYNAMIC

@@ -93,7 +93,6 @@ void __attribute__((weak)) __libctru_init(void (*retAddr)(void))
    __system_allocateHeaps();
 }
 
-
 Result __sync_fini(void) __attribute__((weak));
 
 extern char** __system_argv;
@@ -298,7 +297,6 @@ void wait_for_input(void)
       svcSleepThread(1000000);
    }
 }
-
 
 long sysconf(int name)
 {

@@ -269,7 +269,6 @@ void set_save_state_in_background(bool state);
 
 extern const char* const input_builtin_autoconfs[];
 
-
 RETRO_END_DECLS
 
 #endif

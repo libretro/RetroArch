@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
 
    sceSystemServiceHideSplashScreen();
 
-
 	uintptr_t intptr=0;
 	sscanf(argv[1],"%p",&intptr);
 	myConf=(OrbisGlobalConf *)intptr;
@@ -214,7 +213,6 @@ static void frontend_orbis_shutdown(bool unused)
    (void)unused;
    return;
 }
-
 
 static void frontend_orbis_init(void *data)
 {

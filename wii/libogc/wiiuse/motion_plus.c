@@ -56,7 +56,6 @@ static void wiiuse_set_motion_plus_clear1(struct wiimote_t *wm,ubyte *data,uword
 	wiiuse_write_data(wm,WM_EXP_MEM_ENABLE1,&val,1,wiiuse_set_motion_plus_clear2);
 }
 
-
 void wiiuse_set_motion_plus(struct wiimote_t *wm, int status)
 {
 	ubyte val;

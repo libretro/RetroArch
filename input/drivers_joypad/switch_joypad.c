@@ -17,7 +17,6 @@
 #include "../../command.h"
 #include "string.h"
 
-
 #ifdef HAVE_LIBNX
 
 #ifndef MAX_PADS

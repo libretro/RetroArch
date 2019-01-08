@@ -656,7 +656,6 @@ static void frontend_switch_shutdown(bool unused)
 /* runloop_get_system_info isnt initialized that early.. */
 extern void retro_get_system_info(struct retro_system_info *info);
 
-
 static void frontend_switch_init(void *data)
 {
 

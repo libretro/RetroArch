@@ -86,7 +86,6 @@ typedef enum D2D1_PROPERTY_TYPE
 
 } D2D1_PROPERTY_TYPE;
 
-
 /// <summary>
 /// This defines the list of system properties present on the root effect property
 /// interface.
@@ -107,7 +106,6 @@ typedef enum D2D1_PROPERTY
 
 } D2D1_PROPERTY;
 
-
 /// <summary>
 /// This defines the indices of sub-properties that may be present on any parent
 /// property.
@@ -124,7 +122,6 @@ typedef enum D2D1_SUBPROPERTY
     D2D1_SUBPROPERTY_FORCE_DWORD = 0xffffffff
 
 } D2D1_SUBPROPERTY;
-
 
 /// <summary>
 /// Specifies how the bitmap can be used.
@@ -163,7 +160,6 @@ typedef enum D2D1_BITMAP_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_BITMAP_OPTIONS);
 
-
 /// <summary>
 /// Specifies the composite mode that will be applied.
 /// </summary>
@@ -186,7 +182,6 @@ typedef enum D2D1_COMPOSITE_MODE
 
 } D2D1_COMPOSITE_MODE;
 
-
 /// <summary>
 /// This specifies the precision that should be used in buffers allocated by D2D.
 /// </summary>
@@ -201,7 +196,6 @@ typedef enum D2D1_BUFFER_PRECISION
     D2D1_BUFFER_PRECISION_FORCE_DWORD = 0xffffffff
 
 } D2D1_BUFFER_PRECISION;
-
 
 /// <summary>
 /// This describes how the individual mapping operation should be performed.
@@ -234,7 +228,6 @@ typedef enum D2D1_MAP_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_MAP_OPTIONS);
 
-
 /// <summary>
 /// This is used to specify the quality of image scaling with
 /// ID2D1DeviceContext::DrawImage and with the 2D Affine Transform Effect.
@@ -251,7 +244,6 @@ typedef enum D2D1_INTERPOLATION_MODE
 
 } D2D1_INTERPOLATION_MODE;
 
-
 /// <summary>
 /// This specifies what units should be accepted by the D2D API.
 /// </summary>
@@ -262,7 +254,6 @@ typedef enum D2D1_UNIT_MODE
     D2D1_UNIT_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_UNIT_MODE;
-
 
 /// <summary>
 /// Defines a color space.
@@ -288,7 +279,6 @@ typedef enum D2D1_COLOR_SPACE
 
 } D2D1_COLOR_SPACE;
 
-
 /// <summary>
 /// This specifies options that apply to the device context for its lifetime.
 /// </summary>
@@ -306,7 +296,6 @@ typedef enum D2D1_DEVICE_CONTEXT_OPTIONS
 } D2D1_DEVICE_CONTEXT_OPTIONS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_DEVICE_CONTEXT_OPTIONS);
-
 
 /// <summary>
 /// Defines how the world transform, dots per inch (dpi), and stroke width affect
@@ -334,7 +323,6 @@ typedef enum D2D1_STROKE_TRANSFORM_TYPE
 
 } D2D1_STROKE_TRANSFORM_TYPE;
 
-
 /// <summary>
 /// A blend mode that applies to all primitives drawn on the context.
 /// </summary>
@@ -348,7 +336,6 @@ typedef enum D2D1_PRIMITIVE_BLEND
     D2D1_PRIMITIVE_BLEND_FORCE_DWORD = 0xffffffff
 
 } D2D1_PRIMITIVE_BLEND;
-
 
 /// <summary>
 /// This specifies the threading mode used while simultaneously creating the device,
@@ -372,7 +359,6 @@ typedef enum D2D1_THREADING_MODE
     D2D1_THREADING_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_THREADING_MODE;
-
 
 /// <summary>
 /// This specifies how colors are interpolated.
@@ -414,7 +400,6 @@ typedef struct D2D1_BITMAP_PROPERTIES1
 
 } D2D1_BITMAP_PROPERTIES1;
 
-
 /// <summary>
 /// Describes mapped memory from the ID2D1Bitmap1::Map API.
 /// </summary>
@@ -424,7 +409,6 @@ typedef struct D2D1_MAPPED_RECT
     BYTE *bits;
 
 } D2D1_MAPPED_RECT;
-
 
 /// <summary>
 /// This controls advanced settings of the Direct2D imaging pipeline.
@@ -443,7 +427,6 @@ typedef struct D2D1_RENDERING_CONTROLS
     D2D1_SIZE_U tileSize;
 
 } D2D1_RENDERING_CONTROLS;
-
 
 /// <summary>
 /// This identifies a certain input connection of a certain effect.
@@ -486,7 +469,6 @@ typedef struct D2D1_POINT_DESCRIPTION
 
 } D2D1_POINT_DESCRIPTION;
 
-
 /// <summary>
 /// Creation properties for an image brush.
 /// </summary>
@@ -499,7 +481,6 @@ typedef struct D2D1_IMAGE_BRUSH_PROPERTIES
 
 } D2D1_IMAGE_BRUSH_PROPERTIES;
 
-
 /// <summary>
 /// Describes the extend modes and the interpolation mode of an ID2D1BitmapBrush.
 /// </summary>
@@ -510,7 +491,6 @@ typedef struct D2D1_BITMAP_BRUSH_PROPERTIES1
     D2D1_INTERPOLATION_MODE interpolationMode;
 
 } D2D1_BITMAP_BRUSH_PROPERTIES1;
-
 
 /// <summary>
 /// This defines how geometries should be drawn and widened.
@@ -532,7 +512,6 @@ typedef struct D2D1_STROKE_STYLE_PROPERTIES1
 
 } D2D1_STROKE_STYLE_PROPERTIES1;
 
-
 /// <summary>
 /// Specifies how the layer contents should be prepared.
 /// </summary>
@@ -546,7 +525,6 @@ typedef enum D2D1_LAYER_OPTIONS1
 } D2D1_LAYER_OPTIONS1;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_LAYER_OPTIONS1);
-
 
 /// <summary>
 /// All parameters related to pushing a layer.
@@ -562,7 +540,6 @@ typedef struct D2D1_LAYER_PARAMETERS1
     D2D1_LAYER_OPTIONS1 layerOptions;
 
 } D2D1_LAYER_PARAMETERS1;
-
 
 /// <summary>
 /// Defines when font resources should be subset during printing.
@@ -588,7 +565,6 @@ typedef enum D2D1_PRINT_FONT_SUBSET_MODE
 
 } D2D1_PRINT_FONT_SUBSET_MODE;
 
-
 /// <summary>
 /// This describes the drawing state.
 /// </summary>
@@ -603,7 +579,6 @@ typedef struct D2D1_DRAWING_STATE_DESCRIPTION1
     D2D1_UNIT_MODE unitMode;
 
 } D2D1_DRAWING_STATE_DESCRIPTION1;
-
 
 /// <summary>
 /// The creation properties for a ID2D1PrintControl object.
@@ -625,7 +600,6 @@ typedef struct D2D1_PRINT_CONTROL_PROPERTIES
 
 } D2D1_PRINT_CONTROL_PROPERTIES;
 
-
 /// <summary>
 /// This specifies the options while simultaneously creating the device, factory,
 /// and device context.
@@ -641,7 +615,6 @@ typedef struct D2D1_CREATION_PROPERTIES
     D2D1_DEVICE_CONTEXT_OPTIONS options;
 
 } D2D1_CREATION_PROPERTIES;
-
 
 EXTERN_C CONST IID IID_ID2D1GdiMetafileSink;
 EXTERN_C CONST IID IID_ID2D1GdiMetafile;
@@ -663,9 +636,7 @@ EXTERN_C CONST IID IID_ID2D1Device;
 EXTERN_C CONST IID IID_ID2D1Factory1;
 EXTERN_C CONST IID IID_ID2D1Multithread;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// User-implementable interface for introspecting on a metafile.
@@ -682,7 +653,6 @@ interface DX_DECLARE_INTERFACE("82237326-8111-4f7c-bcf4-b5c1175564fe") ID2D1GdiM
         DWORD recordDataSize 
         ) PURE;
 }; // interface ID2D1GdiMetafileSink
-
 
 /// <summary>
 /// Interface encapsulating a GDI/GDI+ metafile.
@@ -704,7 +674,6 @@ interface DX_DECLARE_INTERFACE("2f543dc3-cfc1-4211-864f-cfd91c6f3395") ID2D1GdiM
         _Out_ D2D1_RECT_F *bounds 
         ) PURE;
 }; // interface ID2D1GdiMetafile
-
 
 /// <summary>
 /// Caller-supplied implementation of an interface to receive the recorded command
@@ -844,7 +813,6 @@ interface DX_DECLARE_INTERFACE("54d7898a-a061-40a7-bec7-e465bcba2c4f") ID2D1Comm
         ) PURE;
 }; // interface ID2D1CommandSink
 
-
 /// <summary>
 /// The commandList interface.
 /// </summary>
@@ -865,7 +833,6 @@ interface DX_DECLARE_INTERFACE("b4f34a19-2383-4d76-94f6-ec343657c3dc") ID2D1Comm
         ) PURE;
 }; // interface ID2D1CommandList
 
-
 /// <summary>
 /// Converts Direct2D primitives stored in an ID2D1CommandList into a fixed page
 /// representation. The print sub-system then consumes the primitives.
@@ -884,7 +851,6 @@ interface DX_DECLARE_INTERFACE("2c1d867d-c290-41c8-ae7e-34a98702e9a5") ID2D1Prin
     STDMETHOD(Close)(
         ) PURE;
 }; // interface ID2D1PrintControl
-
 
 /// <summary>
 /// Provides a brush that can take any effect, command list or bitmap and use it to
@@ -931,7 +897,6 @@ interface DX_DECLARE_INTERFACE("fe9e984d-3f95-407c-b5db-cb94d4e8f87c") ID2D1Imag
         ) CONST PURE;
 }; // interface ID2D1ImageBrush
 
-
 /// <summary>
 /// A bitmap brush allows a bitmap to be used to fill a geometry.  Interpolation
 /// mode is specified with D2D1_INTERPOLATION_MODE
@@ -950,7 +915,6 @@ interface DX_DECLARE_INTERFACE("41343a53-e41a-49a2-91cd-21793bbb62e5") ID2D1Bitm
         ) CONST PURE;
 }; // interface ID2D1BitmapBrush1
 
-
 /// <summary>
 /// Extends a stroke style to allow nominal width strokes.
 /// </summary>
@@ -960,7 +924,6 @@ interface DX_DECLARE_INTERFACE("10a72a66-e91c-43f4-993f-ddf4b82b0b4a") ID2D1Stro
     STDMETHOD_(D2D1_STROKE_TRANSFORM_TYPE, GetStrokeTransformType)(
         ) CONST PURE;
 }; // interface ID2D1StrokeStyle1
-
 
 /// <summary>
 /// The ID2D1PathGeometry1 interface adds functionality to ID2D1PathGeometry. In
@@ -1015,7 +978,6 @@ interface DX_DECLARE_INTERFACE("62baa2d2-ab54-41b7-b872-787e0106a421") ID2D1Path
         return ComputePointAndSegmentAtLength(length, startSegment, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, pointDescription);
     }
 }; // interface ID2D1PathGeometry1
-
 
 /// <summary>
 /// Represents a set of run-time bindable and discoverable properties that allow a
@@ -1291,7 +1253,6 @@ interface DX_DECLARE_INTERFACE("483473d7-cd46-4f9d-9d3a-3112aa80159d") ID2D1Prop
     }
 }; // interface ID2D1Properties
 
-
 /// <summary>
 /// The effect interface. Properties control how the effect is rendered. The effect
 /// is Drawn with the DrawImage call.
@@ -1362,7 +1323,6 @@ interface DX_DECLARE_INTERFACE("28211a43-7d89-476f-8181-2d6159b220ad") ID2D1Effe
     }
 }; // interface ID2D1Effect
 
-
 /// <summary>
 /// Represents a bitmap that can be used as a surface for an ID2D1DeviceContext or
 /// mapped into system memory, and can contain additional color context information.
@@ -1407,7 +1367,6 @@ interface DX_DECLARE_INTERFACE("a898a84c-3873-4588-b08b-ebbf978df041") ID2D1Bitm
         ) PURE;
 }; // interface ID2D1Bitmap1
 
-
 /// <summary>
 /// Represents a color context that can be used with an ID2D1Bitmap1 object.
 /// </summary>
@@ -1434,7 +1393,6 @@ interface DX_DECLARE_INTERFACE("1c4820bb-5771-4518-a581-2fe4dd0ec657") ID2D1Colo
         UINT32 profileSize 
         ) CONST PURE;
 }; // interface ID2D1ColorContext
-
 
 /// <summary>
 /// Represents an collection of gradient stops that can then be the source resource
@@ -1488,7 +1446,6 @@ interface DX_DECLARE_INTERFACE("ae1572f4-5dd0-4777-998b-9279472ae63b") ID2D1Grad
         ) CONST PURE;
 }; // interface ID2D1GradientStopCollection1
 
-
 /// <summary>
 /// Represents drawing state.
 /// </summary>
@@ -1513,7 +1470,6 @@ interface DX_DECLARE_INTERFACE("689f1f85-c72e-4e33-8f19-85754efd5ace") ID2D1Draw
     
     using ID2D1DrawingStateBlock::SetDescription;
 }; // interface ID2D1DrawingStateBlock1
-
 
 /// <summary>
 /// The device context represents a set of state and a command buffer that is used
@@ -2156,7 +2112,6 @@ interface DX_DECLARE_INTERFACE("e8f7fe7a-191c-466d-ad95-975678bda998") ID2D1Devi
     }
 }; // interface ID2D1DeviceContext
 
-
 /// <summary>
 /// The device defines a resource domain whose objects and device contexts can be
 /// used together.
@@ -2215,7 +2170,6 @@ interface DX_DECLARE_INTERFACE("47dd575d-ac05-4cdd-8049-9b02cd16f44c") ID2D1Devi
         return CreatePrintControl(wicFactory, documentTarget, &printControlProperties, printControl);
     }
 }; // interface ID2D1Device
-
 
 /// <summary>
 /// Creates Direct2D resources.
@@ -2363,7 +2317,6 @@ interface DX_DECLARE_INTERFACE("bb12d362-daee-4b9a-aa1d-14ba401cfa1f") ID2D1Fact
     }
 }; // interface ID2D1Factory1
 
-
 /// <summary>
 /// A locking mechanism from a Direct2D factory that Direct2D uses to control
 /// exclusive resource access in an app that is uses multiple threads.
@@ -2391,13 +2344,9 @@ interface DX_DECLARE_INTERFACE("31e6e7bc-e0ff-4d46-8c64-a0a8c41c15d3") ID2D1Mult
         ) PURE;
 }; // interface ID2D1Multithread
 
-
-
 #endif
 
-
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1GdiMetafileSink ID2D1GdiMetafileSink;
 
@@ -2490,7 +2439,6 @@ extern "C"
 #endif
         
 #include <d2d1_1helper.h>
-
 
 #ifndef D2D_USE_C_DEFINITIONS
 

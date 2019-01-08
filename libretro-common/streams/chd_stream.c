@@ -251,7 +251,6 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    else
       pregap = 0;
 
-
    stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;

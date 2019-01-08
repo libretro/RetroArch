@@ -419,7 +419,6 @@ err_t lp_acl_write(struct bd_addr *bdaddr,struct pbuf *p,u16_t len,u8_t pb);
 err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch);
 err_t lp_write_flush_timeout(struct bd_addr *bdaddr, u16_t flushto);
 
-
 #define HCI_EVENT_PIN_REQ(pcb,bdaddr,ret) \
                          if((pcb)->pin_req != NULL) { \
                            (ret = (pcb)->pin_req((pcb)->cbarg,(bdaddr))); \

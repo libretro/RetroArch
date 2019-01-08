@@ -127,7 +127,6 @@ TARGETS := $(TARGET).vpk
 DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
 POSTCOMPILE = mv -f $*.Tdepend $*.depend
 
-
 all: $(TARGETS)
 
 %.o: %.cpp
@@ -139,7 +138,6 @@ all: $(TARGETS)
 %.o: %.c %.depend
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
 	$(POSTCOMPILE)
-
 
 %.o: %.S
 %.o: %.S %.depend

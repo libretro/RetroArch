@@ -75,7 +75,6 @@ typedef HRESULT (__stdcall
         LPD3DXFONT*             ppFont);
 #endif
 
-
 #ifdef HAVE_D3DX
 static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;

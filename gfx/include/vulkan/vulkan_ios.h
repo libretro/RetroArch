@@ -26,7 +26,6 @@ extern "C" {
 **
 */
 
-
 #define VK_MVK_ios_surface 1
 #define VK_MVK_IOS_SURFACE_SPEC_VERSION   2
 #define VK_MVK_IOS_SURFACE_EXTENSION_NAME "VK_MVK_ios_surface"
@@ -39,7 +38,6 @@ typedef struct VkIOSSurfaceCreateInfoMVK {
     VkIOSSurfaceCreateFlagsMVK    flags;
     const void*                   pView;
 } VkIOSSurfaceCreateInfoMVK;
-
 
 typedef VkResult (VKAPI_PTR *PFN_vkCreateIOSSurfaceMVK)(VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 

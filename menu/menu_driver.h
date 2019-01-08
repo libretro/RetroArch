@@ -399,7 +399,6 @@ typedef struct menu_display_ctx_driver
    void (*scissor_end)(video_frame_info_t *video_info);
 } menu_display_ctx_driver_t;
 
-
 typedef struct
 {
    unsigned rpl_entry_selection_ptr;

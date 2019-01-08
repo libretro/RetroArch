@@ -303,7 +303,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    else
       input_config_set_device_config_name(params->idx, "N/A");
 
-
    input_autoconfigure_joypad_reindex_devices();
 }
 

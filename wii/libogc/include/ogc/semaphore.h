@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __SEMAPHORE_H__
 #define __SEMAPHORE_H__
 
@@ -35,7 +34,6 @@ distribution.
 \brief Thread subsystem IV
 
 */
-
 
 #include <gctypes.h>
 
@@ -45,12 +43,10 @@ distribution.
 extern "C" {
 #endif
 
-
 /*! \typedef u32 sem_t
 \brief typedef for the semaphore handle
 */
 typedef u32 sem_t;
-
 
 /*! \fn s32 LWP_SemInit(sem_t *sem,u32 start,u32 max)
 \brief Initializes a semaphore.
@@ -62,7 +58,6 @@ typedef u32 sem_t;
 */
 s32 LWP_SemInit(sem_t *sem,u32 start,u32 max);
 
-
 /*! \fn s32 LWP_SemDestroy(sem_t sem)
 \brief Close and destroy a semaphore, release all threads and handles locked on this semaphore.
 \param[in] sem handle to the sem_t structure.
@@ -71,7 +66,6 @@ s32 LWP_SemInit(sem_t *sem,u32 start,u32 max);
 */
 s32 LWP_SemDestroy(sem_t sem);
 
-
 /*! \fn s32 LWP_SemWait(sem_t sem)
 \brief Count down semaphore counter and enter lock if counter <=0
 \param[in] sem handle to the sem_t structure.
@@ -79,7 +73,6 @@ s32 LWP_SemDestroy(sem_t sem);
 \return 0 on success, <0 on error
 */
 s32 LWP_SemWait(sem_t sem);
-
 
 /*! \fn s32 LWP_SemPost(sem_t sem)
 \brief Count up semaphore counter and release lock if counter >0

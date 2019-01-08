@@ -59,7 +59,6 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
-
 typedef struct touch_pos
 {
    bool active;
@@ -70,7 +69,6 @@ typedef struct touch_pos
 
 static int num_active_touches;
 static touch_pos_t active_touch_positions[MAX_TOUCHES];
-
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -130,7 +128,6 @@ typedef struct gfx_ctx_wayland_data
    gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_wayland_data_t;
-
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
@@ -508,7 +505,6 @@ static const struct wl_touch_listener touch_listener = {
    touch_handle_cancel,
 };
 
-
 static void seat_handle_capabilities(void *data,
       struct wl_seat *seat, unsigned caps)
 {
@@ -572,8 +568,6 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
    *touch_y = active_touch_positions[id].y;
    return active_touch_positions[id].active;
 }
-
-
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -1114,7 +1108,6 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 	}
 }
 
-
 static bool gfx_ctx_wl_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
@@ -1329,7 +1322,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       default:
          break;
    }
-
 
    wl->input.keyboard_focus = true;
    wl->input.mouse.focus = true;

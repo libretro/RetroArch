@@ -210,7 +210,6 @@ void guPerspective(Mtx44 mt,f32 fovy,f32 aspect,f32 n,f32 f);
  */
 void guOrtho(Mtx44 mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 f);
 
-
 /*!
  * \fn void guLightPerspective(Mtx mt,f32 fovY,f32 aspect,f32 scaleS,f32 scaleT,f32 transS,f32 transT)
  * \brief Sets a 3x4 perspective projection matrix from field of view and aspect ratio parameters, two scale values, and two
@@ -302,7 +301,6 @@ void guLightOrtho(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 scaleS,f32 scaleT,f32 trans
  */
 void guLightFrustum(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 scaleS,f32 scaleT,f32 transS,f32 transT);
 
-
 /*!
  * \fn void guLookAt(Mtx mt,guVector *camPos,guVector *camUp,guVector *target)
  * \brief Sets a world-space to camera-space transformation matrix.
@@ -323,7 +321,6 @@ void guLightFrustum(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 scaleS,f32 scaleT,f
  * \return none
  */
 void guLookAt(Mtx mt,guVector *camPos,guVector *camUp,guVector *target);
-
 
 /*!
  * \fn void guVecHalfAngle(guVector *a,guVector *b,guVector *half)

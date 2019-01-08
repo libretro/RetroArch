@@ -608,7 +608,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
 
-
       sublabel_str = menu_entry_get_sublabel(&entry);
       menu_entry_free(&entry);
 
@@ -997,7 +996,6 @@ static void materialui_render_menu_list(
       free(rich_label);
    }
 }
-
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 {
@@ -2204,7 +2202,6 @@ static int materialui_pointer_down(void *userdata,
             )
             menu_navigation_set_selection(ii);
       }
-
 
    }
 

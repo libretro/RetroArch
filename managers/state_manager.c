@@ -394,7 +394,6 @@ static void state_manager_raw_decompress(const void *patch,
  * This means that on average, ~2 * maxcompsize is
  * unused at any given moment. */
 
-
 /* These are called very few constant times per frame,
  * keep it as simple as possible. */
 static INLINE void write_size_t(void *ptr, size_t val)
@@ -659,7 +658,6 @@ void state_manager_event_init(unsigned rewind_buffer_size)
 
    state_manager_push_do(rewind_state.state);
 }
-
 
 bool state_manager_frame_is_reversed(void)
 {

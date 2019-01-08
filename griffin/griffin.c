@@ -230,7 +230,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
-
 #if defined(HAVE_VIVANTE_FBDEV)
 #include "../gfx/drivers_context/vivante_fbdev_ctx.c"
 #endif
@@ -1030,7 +1029,6 @@ GIT
 #include "../version_git.c"
 #endif
 
-
 /*============================================================
 RETROARCH
 ============================================================ */
@@ -1277,7 +1275,6 @@ MENU
 #endif
 
 #endif
-
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"

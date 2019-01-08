@@ -103,7 +103,6 @@
 interface __declspec(uuid("A410B984-9839-4819-A0BE-2856AE6B3ADB")) IXAPO;
 interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParameters;
 
-
 #if !defined(GUID_DEFS_ONLY) // ignore rest if only GUID definitions requested
     #include <windows.h>
     #include <objbase.h>
@@ -123,7 +122,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
 
     // unicode string length, including terminator, used with XAPO_REGISTRATION_PROPERTIES
     #define XAPO_REGISTRATION_STRING_LENGTH 256
-
 
     // XAPO property flags, used with XAPO_REGISTRATION_PROPERTIES.Flags:
     // Number of channels of input and output buffers must match,
@@ -178,10 +176,8 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
     // in-place processing when possible.
     #define XAPO_FLAG_INPLACE_SUPPORTED        0x00000010
 
-
 //--------------<D-A-T-A---T-Y-P-E-S>---------------------------------------//
     #pragma pack(push, 1) // set packing alignment to ensure consistency across arbitrary build environments
-
 
     // XAPO registration properties, describes general XAPO characteristics, used with IXAPO::GetRegistrationProperties
     typedef struct XAPO_REGISTRATION_PROPERTIES {
@@ -196,7 +192,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         UINT32 MinOutputBufferCount;                           // minimum number of output buffers required for processing, can be 0, must match MinInputBufferCount when XAPO_FLAG_BUFFERCOUNT_MUST_MATCH used
         UINT32 MaxOutputBufferCount;                           // maximum number of output buffers supported for processing, must be >= MinOutputBufferCount, must match MaxInputBufferCount when XAPO_FLAG_BUFFERCOUNT_MUST_MATCH used
     } XAPO_REGISTRATION_PROPERTIES;
-
 
     // LockForProcess buffer parameters:
     // Defines buffer parameters that remain constant while an XAPO is locked.
@@ -251,7 +246,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         UINT32            ValidFrameCount; // number of frames of valid data, must be within respective [0, XAPO_LOCKFORPROCESS_BUFFER_PARAMETERS.MaxFrameCount], always XAPO_LOCKFORPROCESS_BUFFER_PARAMETERS.MaxFrameCount for CBR/user-defined XAPOs, does not affect BufferFlags
     } XAPO_PROCESS_BUFFER_PARAMETERS;
 
-
 //--------------<M-A-C-R-O-S>-----------------------------------------------//
     // Memory allocation macros that allow one module to allocate memory and
     // another to free it, by guaranteeing that the same heap manager is used
@@ -261,7 +255,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
     // such as WAVEFORMATEX that are subsequently returned to the application.
     #define XAPOAlloc(size) CoTaskMemAlloc(size)
     #define XAPOFree(p)     CoTaskMemFree(p)
-
 
 //--------------<I-N-T-E-R-F-A-C-E-S>---------------------------------------//
     // IXAPO:
@@ -525,8 +518,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         STDMETHOD_(UINT32, CalcOutputFrames) (THIS_ UINT32 InputFrameCount) PURE;
     };
 
-
-
     // IXAPOParameters:
     // Optional XAPO COM interface that allows an XAPO to use
     // effect-specific parameters.
@@ -572,7 +563,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         STDMETHOD_(void, GetParameters) (THIS_ _Out_writes_bytes_(ParameterByteSize) void* pParameters, UINT32 ParameterByteSize) PURE;
     };
 
-
 //--------------<M-A-C-R-O-S>-----------------------------------------------//
     // macros to allow XAPO interfaces to be used in C code
     #if !defined(__cplusplus)
@@ -616,7 +606,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         #define IXAPO_CalcOutputFrames(This, InputFrameCount) \
             ( (This)->lpVtbl->CalcOutputFrames(This, InputFrameCount) )
 
-
         // IXAPOParameters
         #define IXAPOParameters_QueryInterface(This, riid, ppInterface) \
             ( (This)->lpVtbl->QueryInterface(This, riid, ppInterface) )
@@ -633,7 +622,6 @@ interface __declspec(uuid("26D95C66-80F2-499A-AD54-5AE7F01C6D98")) IXAPOParamete
         #define IXAPOParameters_GetParameters(This, pParameters, ParameterByteSize) \
             ( (This)->lpVtbl->GetParameters(This, pParameters, ParameterByteSize) )
     #endif // !defined(__cplusplus)
-
 
     #pragma pack(pop) // revert packing alignment
 #endif // !defined(GUID_DEFS_ONLY)

@@ -117,7 +117,6 @@ void calculate_orientation(struct accel_t* ac, struct vec3w_t* accel, struct ori
 	}
 }
 
-
 /**
  *	@brief Calculate the gravity forces on each axis.
  *
@@ -198,7 +197,6 @@ void calc_joystick_state(struct joystick_t* js, float x, float y) {
 	js->ang = RAD_TO_DEGREE(atan2f(rx, ry));
 	js->mag = hypotf(rx, ry);
 }
-
 
 void apply_smoothing(struct accel_t* ac, struct orient_t* orient, int type) {
 	switch (type) {

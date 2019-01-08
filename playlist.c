@@ -490,7 +490,6 @@ size_t playlist_size(playlist_t *playlist)
    return playlist->size;
 }
 
-
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {

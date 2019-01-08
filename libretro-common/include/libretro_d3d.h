@@ -54,7 +54,6 @@ struct retro_hw_render_interface_d3d11
   pD3DCompile D3DCompile;
 };
 
-
 #endif
 
 #endif /* LIBRETRO_DIRECT3D_H__ */

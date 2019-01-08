@@ -79,7 +79,6 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
 
-
       /* Menu collection submenus*/
       case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
