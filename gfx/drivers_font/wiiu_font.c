@@ -87,7 +87,6 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
                  sizeof(*font->ubo_tex));
 
-
    return font;
 }
 
@@ -215,7 +214,6 @@ static void wiiu_font_render_line(
    if (!count)
       return;
 
-
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.v + wiiu->vertex_cache.current, count * sizeof(wiiu->vertex_cache.v));
 
    if(font->atlas->dirty)
@@ -228,7 +226,6 @@ static void wiiu_font_render_line(
                     font->texture.surface.imageSize);
       font->atlas->dirty = false;
    }
-
 
    GX2SetPixelTexture(&font->texture, sprite_shader.ps.samplerVars[0].location);
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, font->ubo_tex);

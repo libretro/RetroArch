@@ -25,7 +25,6 @@
 
 #include <memalign.h>
 
-
 void *memalign_alloc(size_t boundary, size_t size)
 {
    void **place   = NULL;

@@ -26,6 +26,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "../../discord/discord.h"
+#endif
+
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../wifi/wifi_driver.h"
@@ -1122,7 +1126,6 @@ static int file_load_with_detect_core_wrapper(
                PATH_MAX_LENGTH * sizeof(char)))
          ret = -1;
 
-
       if (     !is_carchive && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
          fill_pathname_join(menu->detect_content_path,
@@ -1546,7 +1549,6 @@ static int default_action_ok_load_content_from_playlist_from_menu(const char *_p
    return 0;
 }
 
-
 #define default_action_ok_set(funcname, _id, _flush) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -1656,7 +1658,6 @@ static int action_ok_file_load(const char *path,
    return default_action_ok_load_content_with_core_from_menu(full_path_new,
          CORE_TYPE_PLAIN);
 }
-
 
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2151,7 +2152,6 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
    menu_input_dialog_end();
 }
 
-
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
 {
@@ -2169,7 +2169,6 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                NULL,
                NULL);
    }
-
 
    menu_input_dialog_end();
 }
@@ -2628,7 +2627,6 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3008,7 +3006,6 @@ static int action_ok_cheat_copy_before(const char *path,
 
    runloop_msg_queue_push(msg, 1, 180, true);
 
-
    return 0 ;
 }
 
@@ -3149,7 +3146,6 @@ static int action_ok_file_load_detect_core(const char *path,
 
    return 0;
 }
-
 
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3343,10 +3339,11 @@ static void cb_generic_dir_download(void *task_data,
 }
 
 /* expects http_transfer_t*, file_transfer_t* */
-static void cb_generic_download(void *task_data,
+void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
    bool extract                          = true;
 #endif
@@ -3423,6 +3420,14 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
          break;
+      case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
+      {
+         fill_pathname_application_special(buf,
+            PATH_MAX_LENGTH * sizeof(char),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+         dir_path = buf;
+         break;
+      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -3495,6 +3500,10 @@ finish:
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }
+#ifdef HAVE_DISCORD
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+      discord_avatar_set_ready(true);
+#endif
 
    if (data)
    {
@@ -3507,7 +3516,6 @@ finish:
       free(transf);
 }
 #endif
-
 
 static int action_ok_download_generic(const char *path,
       const char *label, const char *menu_label,
@@ -3661,7 +3669,7 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   if (config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path, true))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
@@ -3803,7 +3811,6 @@ static int action_ok_delete_entry(const char *path,
 
    return 0;
 }
-
 
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4015,7 +4022,6 @@ static int action_ok_netplay_connect_room(const char *path,
 #endif
    return 0;
 }
-
 
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4326,7 +4332,7 @@ static void netplay_lan_scan_callback(void *task_data,
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://newlobby.libretro.com/list/";
+   char url [2048] = "http://lobby.libretro.com/list/";
 #ifndef RARCH_CONSOLE
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
@@ -4334,7 +4340,6 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
    return 0;
 }
 #endif
-
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)

@@ -44,7 +44,6 @@ typedef struct gca_pad_data
    int16_t analog_state[3][2]; // analog state
 } gca_pad_t;
 
-
 static void update_pad_state(wiiu_gca_instance_t *instance);
 static void unregister_pad(wiiu_gca_instance_t *instance, int port);
 
@@ -279,7 +278,6 @@ static void update_analog_state(gca_pad_t *pad)
    }
 }
 
-
 /**
  * The USB packet provides a 9-byte data packet for each pad.
  *
@@ -301,8 +299,6 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
    update_buttons(pad);
    update_analog_state(pad);
 }
-
-
 
 static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
 {

@@ -89,7 +89,6 @@ bool video_display_server_set_window_decorations(bool on)
    return false;
 }
 
-
 bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center)
 {

@@ -246,7 +246,6 @@ end:
    return ret;
 }
 
-
 #ifdef HAVE_LIBRETRODB
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)

@@ -701,7 +701,6 @@ bool input_keyboard_line_append(const char *word);
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
-
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -805,6 +804,7 @@ extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
 extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
 extern input_device_driver_t ps2_joypad;
@@ -825,6 +825,7 @@ extern input_driver_t input_android;
 extern input_driver_t input_sdl;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
+extern input_driver_t input_ps4;
 extern input_driver_t input_ps3;
 extern input_driver_t input_psp;
 extern input_driver_t input_ps2;

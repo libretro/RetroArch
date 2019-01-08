@@ -49,7 +49,6 @@ extern "C" {
 #include "coretypes.h"
 #include <streams/file_stream.h>
 
-
 /***************************************************************************
 
     Compressed Hunks of Data header format. All numbers are stored in
@@ -171,7 +170,6 @@ extern "C" {
 
 ***************************************************************************/
 
-
 /***************************************************************************
     CONSTANTS
 ***************************************************************************/
@@ -279,15 +277,12 @@ enum _chd_error
 };
 typedef enum _chd_error chd_error;
 
-
-
 /***************************************************************************
     TYPE DEFINITIONS
 ***************************************************************************/
 
 /* opaque types */
 typedef struct _chd_file chd_file;
-
 
 /* extract header structure (NOT the on-disk header structure) */
 typedef struct _chd_header chd_header;
@@ -321,7 +316,6 @@ struct _chd_header
 	UINT32		obsolete_hunksize;			/* obsolete field -- do not use! */
 };
 
-
 /* structure for returning information about a verification pass */
 typedef struct _chd_verify_result chd_verify_result;
 struct _chd_verify_result
@@ -332,12 +326,9 @@ struct _chd_verify_result
 	UINT8		metasha1[CHD_SHA1_BYTES];	/* SHA1 checksum of metadata */
 };
 
-
-
 /***************************************************************************
     FUNCTION PROTOTYPES
 ***************************************************************************/
-
 
 /* ----- CHD file management ----- */
 
@@ -364,30 +355,20 @@ RFILE *chd_core_file(chd_file *chd);
 /* return an error string for the given CHD error */
 const char *chd_error_string(chd_error err);
 
-
-
 /* ----- CHD header management ----- */
 
 /* return a pointer to the extracted CHD header data */
 const chd_header *chd_get_header(chd_file *chd);
-
-
-
 
 /* ----- core data read/write ----- */
 
 /* read one hunk from the CHD file */
 chd_error chd_read(chd_file *chd, UINT32 hunknum, void *buffer);
 
-
-
 /* ----- metadata management ----- */
 
 /* get indexed metadata of a particular sort */
 chd_error chd_get_metadata(chd_file *chd, UINT32 searchtag, UINT32 searchindex, void *output, UINT32 outputlen, UINT32 *resultlen, UINT32 *resulttag, UINT8 *resultflags);
-
-
-
 
 /* ----- codec interfaces ----- */
 

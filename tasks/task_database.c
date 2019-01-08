@@ -1032,7 +1032,6 @@ static int task_database_iterate_playlist_lutro(
    return 0;
 }
 
-
 static int task_database_iterate_serial_lookup(
       db_handle_t *_db,
       database_state_handle_t *db_state,

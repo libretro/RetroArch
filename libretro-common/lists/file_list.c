@@ -136,7 +136,6 @@ size_t file_list_get_directory_ptr(const file_list_t *list)
    return list->list[size].directory_ptr;
 }
 
-
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!list)

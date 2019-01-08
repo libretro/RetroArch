@@ -52,7 +52,6 @@
 #include <dr/dr_flac.h>
 #endif
 
-
 #ifdef HAVE_DR_MP3
 #define DR_MP3_IMPLEMENTATION
 #include <retro_assert.h>
@@ -402,7 +401,6 @@ audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 #endif
 }
 
-
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size)
 {
 #ifdef HAVE_DR_FLAC
@@ -641,7 +639,6 @@ error:
 }
 #endif
 
-
 #ifdef HAVE_DR_FLAC
 static bool audio_mixer_play_flac(
       audio_mixer_sound_t* sound,
@@ -747,7 +744,6 @@ error:
    return false;
 }
 #endif
-
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       float volume, audio_mixer_stop_cb_t stop_cb)

@@ -7,12 +7,14 @@
 - DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
 - DISCORD: Register the application name properly.
 - DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster.
+- INPUT: Add new menu toggle (hold start button for 2 seconds)
 - INPUT/SDL: Flush the joypad events. Decreases cpu usage over time with the SDL joypad driver.
 - LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Simplified Chinese translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
@@ -37,6 +39,7 @@
 - WINDOWS: SSL/TLS connections now work properly.
 - UWP: Initial UWP port.
 - XBONE: Initial Xbox One port.
+- XMB/OZONE: Add more icons
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

@@ -80,7 +80,6 @@ static void mainLoop(void* data)
 
    RARCH_LOG("[Audio]: start mainLoop cpu %u tid %u\n", svcGetCurrentProcessorNumber(), swa->thread.handle);
 
-
    while (swa->running)
    {
       size_t buf_avail, avail, to_write;

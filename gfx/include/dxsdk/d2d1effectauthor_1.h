@@ -22,9 +22,7 @@
 EXTERN_C CONST IID IID_ID2D1EffectContext1;
 EXTERN_C CONST IID IID_ID2D1EffectContext2;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// The internal context handed to effect authors to create transforms from effects
@@ -47,7 +45,6 @@ interface DX_DECLARE_INTERFACE("84ab595a-fc81-4546-bacd-e8ef4d8abe7a") ID2D1Effe
         _COM_Outptr_ ID2D1LookupTable3D **lookupTable 
         ) PURE;
 }; // interface ID2D1EffectContext1
-
 
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2
 
@@ -78,14 +75,11 @@ interface DX_DECLARE_INTERFACE("577ad2a0-9fc7-4dda-8b18-dab810140052") ID2D1Effe
         ) PURE;
 }; // interface ID2D1EffectContext2
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1EffectContext1 ID2D1EffectContext1;
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2

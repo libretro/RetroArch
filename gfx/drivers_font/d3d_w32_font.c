@@ -30,7 +30,6 @@
 
 #include "../../configuration.h"
 
-
 typedef struct d3dx_font_desc
 {
     INT Height;
@@ -87,7 +86,6 @@ static void *d3dfonts_w32_init_font(void *video_data,
             &desc, (void**)&d3dfonts->font))
       goto error;
 
-
    d3d9x_font_get_text_metrics(d3dfonts->font, &metrics);
 
    d3dfonts->ascent     = metrics.tmAscent;
@@ -112,7 +110,6 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
    free(d3dfonts);
 }
 
-
 static int d3dfonts_w32_get_message_width(void* data, const char* msg,
       unsigned msg_len, float scale)
 {
@@ -127,7 +124,6 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
 
    return box.right - box.left;
 }
-
 
 static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
       void *data, const char *msg, const struct font_params *params)

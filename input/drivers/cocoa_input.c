@@ -136,7 +136,6 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
    return 0;
 }
 
-
 static void *cocoa_input_init(const char *joypad_driver)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple));

@@ -4,7 +4,7 @@ LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
 
 ifeq ($(HAVE_STACK_USAGE), 1)
-   CFLAGS += -fstack-usage
+   DEF_FLAGS += -fstack-usage
 endif
 
 ifeq ($(HAVE_GL_CONTEXT),)
@@ -29,11 +29,6 @@ endif
 
 ifeq ($(HAVE_VIDEO_PROCESSOR), 1)
    DEFINES += -DHAVE_VIDEO_PROCESSOR
-endif
-
-ifeq ($(HAVE_MENU), 1)
-   DEFINES += -DHAVE_MENU
-   HAVE_MENU_COMMON = 1
 endif
 
 ifeq ($(HAVE_SOCKET_LEGACY), 1)
@@ -65,13 +60,11 @@ ifeq ($(HAVE_PRESERVE_DYLIB),1)
 endif
 
 ifeq ($(GL_DEBUG), 1)
-   CFLAGS += -DGL_DEBUG
-   CXXFLAGS += -DGL_DEBUG
+   DEF_FLAGS += -DGL_DEBUG
 endif
 
 ifeq ($(VULKAN_DEBUG), 1)
-   CFLAGS += -DVULKAN_DEBUG
-   CXXFLAGS += -DVULKAN_DEBUG
+   DEF_FLAGS += -DVULKAN_DEBUG
 endif
 
 ifeq ($(HAVE_HARD_FLOAT), 1)
@@ -83,23 +76,23 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-   CFLAGS += -DHAVE_FILE_LOGGER
+   DEF_FLAGS += -DHAVE_FILE_LOGGER
 endif
 
 ifeq ($(HAVE_SHADERPIPELINE), 1)
-   CFLAGS += -DHAVE_SHADERPIPELINE
+   DEF_FLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
+DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
 #
 ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
-   CFLAGS += -DHAVE_NETPLAYDISCOVERY
+   DEF_FLAGS += -DHAVE_NETPLAYDISCOVERY
 endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
-	CFLAGS += -DHAVE_LOGGER
+	DEF_FLAGS += -DHAVE_LOGGER
 	DEFINES += -DHAVE_LOGGER
 	OBJ += network/net_logger.o
 endif
@@ -151,7 +144,7 @@ endif
 
 # General object files
 DEFINES += -DHAVE_DR_MP3
-CFLAGS  += -DHAVE_DR_MP3
+DEF_FLAGS += -DHAVE_DR_MP3
 
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
@@ -196,6 +189,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        file_path_special.o \
@@ -342,7 +336,7 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/ui_qt_browser_window.o \
           ui/drivers/qt/ui_qt_load_core_window.o \
           ui/drivers/qt/ui_qt_msg_window.o \
-          ui/drivers/qt/flowlayout.o \
+          ui/drivers/qt/gridview.o \
           ui/drivers/qt/shaderparamsdialog.o \
           ui/drivers/qt/coreoptionsdialog.o \
           ui/drivers/qt/filedropwidget.o \
@@ -357,7 +351,7 @@ ifeq ($(HAVE_QT), 1)
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
-                  ui/drivers/qt/flowlayout.h \
+                  ui/drivers/qt/gridview.h \
                   ui/drivers/qt/shaderparamsdialog.h \
                   ui/drivers/qt/coreoptionsdialog.h \
                   ui/drivers/qt/filedropwidget.h \
@@ -644,7 +638,7 @@ ifeq ($(HAVE_NEON),1)
           $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
-HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
+HW_CONTEXT_MENU_DRIVERS=$(HAVE_MENU)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
    ifeq ($(HAVE_GL_CONTEXT),1)
@@ -659,6 +653,10 @@ endif
 ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 0
+   endif
+
+   ifeq ($(HAVE_RGUI),)
+      HAVE_RGUI = 1
    endif
 
    ifeq ($(HAVE_MATERIALUI),)
@@ -682,6 +680,7 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    endif
 else
    HAVE_ZARCH       ?= 0
+   HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_NUKLEAR     ?= 0
    HAVE_XMB         ?= 0
@@ -689,53 +688,57 @@ else
    HAVE_OZONE       ?= 0
 endif
 
-ifeq ($(HAVE_RGUI), 1)
-   OBJ += menu/drivers/rgui.o
-   DEFINES += -DHAVE_MENU -DHAVE_RGUI
+ifeq ($(HAVE_MENU), 1)
+   DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
+
+   ifeq ($(HAVE_RGUI), 1)
+      OBJ += menu/drivers/rgui.o
+      DEFINES += -DHAVE_RGUI
+   endif
+
    ifeq ($(HAVE_MATERIALUI), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
-      HAVE_MENU_COMMON = 1
       HAVE_ASSETS = 1
    endif
+
    ifeq ($(HAVE_NUKLEAR), 1)
-      OBJ += menu/drivers/nuklear/nk_common.o
-      OBJ += menu/drivers/nuklear/nk_menu.o
-      OBJ += menu/drivers/nuklear/nk_wnd_debug.o
-      OBJ += menu/drivers/nuklear.o
+      OBJ += menu/drivers/nuklear/nk_common.o \
+             menu/drivers/nuklear/nk_menu.o \
+             menu/drivers/nuklear/nk_wnd_debug.o \
+             menu/drivers/nuklear.o
       DEFINES += -DHAVE_NUKLEAR
       HAVE_ASSETS = 1
    endif
+
    ifeq ($(HAVE_ZARCH), 1)
       OBJ += menu/drivers/zarch.o
       DEFINES += -DHAVE_ZARCH
       HAVE_ASSETS = 1
    endif
-endif
 
-ifeq ($(HAVE_XMB), 1)
-   OBJ += menu/drivers/xmb.o
-   DEFINES += -DHAVE_XMB
-   HAVE_MENU_COMMON = 1
-   HAVE_ASSETS = 1
-endif
+   ifeq ($(HAVE_XMB), 1)
+      OBJ += menu/drivers/xmb.o
+      DEFINES += -DHAVE_XMB
+      HAVE_ASSETS = 1
+   endif
 
-ifeq ($(HAVE_OZONE), 1)
-   OBJ += menu/drivers/ozone/ozone.o
-   OBJ += menu/drivers/ozone/ozone_entries.o
-   OBJ += menu/drivers/ozone/ozone_display.o
-   OBJ += menu/drivers/ozone/ozone_texture.o
-   OBJ += menu/drivers/ozone/ozone_theme.o
-   OBJ += menu/drivers/ozone/ozone_sidebar.o
-   DEFINES += -DHAVE_OZONE
-   HAVE_MENU_COMMON = 1
-   HAVE_ASSETS = 1
-endif
+   ifeq ($(HAVE_OZONE), 1)
+      OBJ += menu/drivers/ozone/ozone.o \
+             menu/drivers/ozone/ozone_entries.o \
+             menu/drivers/ozone/ozone_display.o \
+             menu/drivers/ozone/ozone_texture.o \
+             menu/drivers/ozone/ozone_theme.o \
+             menu/drivers/ozone/ozone_sidebar.o
+      DEFINES += -DHAVE_OZONE
+      HAVE_ASSETS = 1
+   endif
 
-ifeq ($(HAVE_STRIPES), 1)
-   OBJ += menu/drivers/stripes.o
-   DEFINES += -DHAVE_STRIPES
+   ifeq ($(HAVE_STRIPES), 1)
+      OBJ += menu/drivers/stripes.o
+      DEFINES += -DHAVE_STRIPES
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
@@ -746,6 +749,8 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+OBJ += menu/menu_shader.o
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
@@ -753,7 +758,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_entries.o \
           menu/menu_setting.o \
           menu/menu_networking.o \
-          menu/menu_shader.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_dialog.o \
@@ -780,9 +784,12 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
           menu/menu_animation.o \
-          menu/drivers_display/menu_display_null.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o
+
+   ifeq ($(HAVE_MENU_COMMON),1)
+		OBJ += menu/drivers_display/menu_display_null.o
+	endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -832,14 +839,14 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-   ifeq ($(HAVE_MENU),1)
+   ifeq ($(HAVE_MENU_COMMON),1)
       OBJ += menu/drivers_display/menu_display_vita2d.o
    endif
 
    OBJ += gfx/drivers/vita2d_gfx.o \
           gfx/drivers_font/vita2d_font.o
 
-   CFLAGS += -I$(DEPS_DIR)/libvita2d/include
+   DEF_FLAGS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -940,7 +947,7 @@ endif
 
 ifeq ($(HAVE_DBUS), 1)
    LIBS += $(DBUS_LIBS)
-   CFLAGS += $(DBUS_CFLAGS)
+   DEF_FLAGS += $(DBUS_CFLAGS)
    OBJ += gfx/common/dbus_common.o
 endif
 
@@ -1035,7 +1042,7 @@ endif
 
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
-   CFLAGS += -I/usr/include/sixel
+   DEF_FLAGS += -I/usr/include/sixel
    OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
           gfx/drivers_context/sixel_ctx.o
    LIBS += -lsixel
@@ -1047,7 +1054,7 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   CFLAGS += -I/usr/include/libdrm
+   DEF_FLAGS += -I/usr/include/libdrm
    LIBS += -ldrm
 endif
 
@@ -1116,8 +1123,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
              gfx/common/metal/MenuDisplay.o \
              gfx/common/metal_common.o \
              gfx/drivers/metal.o \
-             menu/drivers_display/menu_display_metal.o \
              gfx/drivers_font/metal_raster_font.o
+
+      ifeq ($(HAVE_MENU_COMMON), 1)
+         OBJ += menu/drivers_display/menu_display_metal.o
+      endif
    endif
 
    ifeq ($(HAVE_MPV), 1)
@@ -1299,16 +1309,20 @@ endif
 ifeq ($(HAVE_D3D10), 1)
    OBJ += gfx/drivers/d3d10.o \
           gfx/common/d3d10_common.o \
-          gfx/drivers_font/d3d10_font.o \
-          menu/drivers_display/menu_display_d3d10.o
+          gfx/drivers_font/d3d10_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d10.o
+   endif
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_common.o \
-          gfx/drivers_font/d3d11_font.o \
-          menu/drivers_display/menu_display_d3d11.o
+          gfx/drivers_font/d3d11_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_d3d11.o
+	endif
    DEFINES += -DHAVE_D3D11
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1318,8 +1332,10 @@ endif
 ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/d3d12_common.o \
-          gfx/drivers_font/d3d12_font.o \
-          menu/drivers_display/menu_display_d3d12.o
+          gfx/drivers_font/d3d12_font.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d12.o
+   endif
    DEFINES += -DHAVE_D3D12
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1330,7 +1346,7 @@ ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o \
           gfx/common/dxgi_common.o
-   CFLAGS += -Wno-unknown-pragmas
+   DEF_FLAGS += -Wno-unknown-pragmas
 endif
 
 ifeq ($(HAVE_D3D8), 1)
@@ -1446,7 +1462,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
-   CFLAGS  += -I$(DEPS_DIR)/7zip
+   DEF_FLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
@@ -1475,8 +1491,8 @@ endif
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
    DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
-   CFLAGS  += -DHAVE_DR_FLAC
-   CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
+   DEF_FLAGS += -DHAVE_DR_FLAC
+   DEF_FLAGS += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
@@ -1534,7 +1550,7 @@ ifeq ($(HAVE_ZLIB), 1)
 endif
 
 ifeq ($(HAVE_CHD), 1)
-   CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+   DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
@@ -1584,6 +1600,12 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
+endif
+
+# Easter Egg
+ifeq ($(HAVE_EASTEREGG),1)
+  DEFINES += -DHAVE_EASTEREGG
+  OBJ += cores/libretro-gong/gong.o
 endif
 
 # Video4Linux 2
@@ -1753,9 +1775,11 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += gfx/drivers/gdi_gfx.o \
           gfx/drivers_context/gdi_ctx.o \
           gfx/drivers_font/gdi_font.o \
-          gfx/display_servers/dispserv_win32.o \
-          menu/drivers_display/menu_display_gdi.o
+          gfx/display_servers/dispserv_win32.o
 
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_gdi.o
+	endif
    LIBS += -lmsimg32 -lhid -lsetupapi
 endif
 
@@ -1826,7 +1850,7 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -I$(DEPS_DIR)/libiosuhax
-   CFLAGS  += -I$(DEPS_DIR)/libiosuhax
+   DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
@@ -1834,7 +1858,7 @@ endif
 
 ifeq ($(WANT_LIBFAT), 1)
    DEFINES += -I$(DEPS_DIR)/libfat/include
-   CFLAGS  += -I$(DEPS_DIR)/libfat/include
+   DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \
           $(DEPS_DIR)/libfat/disc.o \
@@ -1868,7 +1892,7 @@ endif
 # Help at https://modmyclassic.com/comp
 
 ifeq ($(HAVE_CLASSIC), 1)
-  CFLAGS += -DHAVE_CLASSIC
+  DEF_FLAGS += -DHAVE_CLASSIC
 endif
 
 ifeq ($(HAVE_C_A7A7), 1)
@@ -1880,12 +1904,11 @@ ifeq ($(HAVE_C_A7A7), 1)
                 -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
                 -fmerge-all-constants -fno-math-errno \
                 -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-   CFLAGS += $(C_A7A7_OPT)
-   CXXFLAGS += $(C_A7A7_OPT)
+   DEF_FLAGS += $(C_A7A7_OPT)
    ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-      CFLAGS += -march=armv7-a
+      DEF_FLAGS += -march=armv7-a
    else
-      CFLAGS += -march=armv7ve
+      DEF_FLAGS += -march=armv7ve
       # If gcc is 5.0 or later
       ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
          LDFLAGS += -static-libgcc -static-libstdc++
@@ -1894,6 +1917,6 @@ ifeq ($(HAVE_C_A7A7), 1)
 endif
 
 ifeq ($(HAVE_HAKCHI), 1)
-   CFLAGS += -DHAVE_HAKCHI
+   DEF_FLAGS += -DHAVE_HAKCHI
 endif
 ##################################

@@ -35,7 +35,6 @@ RETRO_BEGIN_DECLS
 
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
 
-
 #define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* bool * --
                                             * Boolean value that tells the front end to save states in the
@@ -390,6 +389,8 @@ void rarch_menu_running(void);
 void rarch_menu_running_finished(void);
 
 bool retroarch_is_on_main_thread(void);
+
+char *get_retroarch_launch_arguments(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
 

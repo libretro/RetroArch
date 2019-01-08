@@ -286,6 +286,9 @@ void menu_cbs_init(void *data,
 
 int menu_cbs_exit(void);
 
+void cb_generic_download(void *task_data,
+      void *user_data, const char *err);
+
 RETRO_END_DECLS
 
 #endif

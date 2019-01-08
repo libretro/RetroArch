@@ -37,7 +37,6 @@
 
 #define RTGA_COMPUTE_Y(r, g, b) ((uint8_t)((((r) * 77) + ((g) * 150) +  (29 * (b))) >> 8))
 
-
 struct rtga
 {
    uint8_t *buff_data;

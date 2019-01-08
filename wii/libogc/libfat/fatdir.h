@@ -28,7 +28,6 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #ifndef _FATDIR_H
 #define _FATDIR_H
 
@@ -68,6 +67,5 @@ extern DIR_ITER* _FAT_diropen_r(struct _reent *r, DIR_ITER *dirState, const char
 extern int _FAT_dirreset_r (struct _reent *r, DIR_ITER *dirState);
 extern int _FAT_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *filestat);
 extern int _FAT_dirclose_r (struct _reent *r, DIR_ITER *dirState);
-
 
 #endif // _FATDIR_H

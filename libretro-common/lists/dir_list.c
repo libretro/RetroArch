@@ -53,7 +53,6 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    int a_type = a->attr.i;
    int b_type = b->attr.i;
 
-
    /* Sort directories before files. */
    if (a_type != b_type)
       return b_type - a_type;

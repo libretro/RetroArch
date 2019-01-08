@@ -5,13 +5,11 @@
 
 #include "mini-hb-menu/common.h"
 
-
 extern const loaderFuncs_s loader_Ninjhax1;
 extern const loaderFuncs_s loader_Ninjhax2;
 extern const loaderFuncs_s loader_Rosalina;
 
 static void (*launch_3dsx)(const char* path, argData_s* args, executableMetadata_s* em);
-
 
 static int exec_3dsx_actual(const char* path, const char** args, bool appendPath){
 	struct stat sBuff; 

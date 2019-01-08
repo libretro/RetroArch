@@ -135,8 +135,6 @@ error:
    return false;
 }
 
-
-
 static void *dinput_init(const char *joypad_driver)
 {
    struct dinput_input *di = NULL;
@@ -245,7 +243,6 @@ static void dinput_poll(void *data)
 
       di->mouse_rel_x = mouse_state.lX;
       di->mouse_rel_y = mouse_state.lY;
-
 
       if (!mouse_state.rgbButtons[0])
          unset_doubleclick_on_titlebar();

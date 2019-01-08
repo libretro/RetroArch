@@ -244,8 +244,6 @@ static const struct cmd_map map[] = {
 };
 #endif
 
-
-
 bool command_set_shader(const char *arg)
 {
    char msg[256];
@@ -272,7 +270,6 @@ bool command_set_shader(const char *arg)
    return true;
 #endif
 }
-
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
@@ -425,7 +422,6 @@ static bool command_network_init(command_t *handle, uint16_t port)
    RARCH_LOG("%s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
-
 
    if (fd < 0)
       goto error;
@@ -1150,7 +1146,6 @@ static void command_event_init_cheats(void)
    cheat_manager_alloc_if_empty() ;
    cheat_manager_load_game_specific_cheats() ;
 
-
    if (settings != NULL && settings->bools.apply_cheats_after_load)
       cheat_manager_apply_cheats();
 }
@@ -1347,7 +1342,6 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
-
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
@@ -1369,7 +1363,6 @@ static bool command_event_init_core(enum rarch_core_type *data)
 
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
-
 
    rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
    return true;
@@ -1634,7 +1627,6 @@ static void command_event_save_current_config(enum override_type type)
          break;
    }
 
-
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
 }
@@ -1834,9 +1826,6 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-#ifdef HAVE_DISCORD
-   static bool discord_inited = false;
-#endif
    bool boolean               = false;
 
    switch (cmd)
@@ -2986,26 +2975,24 @@ TODO: Add a setting for these tweaks */
 
             if (!settings->bools.discord_enable)
                return false;
-            if (discord_inited)
+            if (discord_is_ready())
                return true;
 
             discord_init();
-            discord_inited = true;
          }
 #endif
          break;
       case CMD_EVENT_DISCORD_DEINIT:
 #ifdef HAVE_DISCORD
-         if (!discord_inited)
+         if (!discord_is_ready())
             return false;
 
          discord_shutdown();
-         discord_inited = false;
 #endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
 #ifdef HAVE_DISCORD
-         if (!data || !discord_inited)
+         if (!data || !discord_is_ready())
             return false;
 
          {

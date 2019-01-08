@@ -64,7 +64,6 @@ typedef struct
    const char* fname;
 } dat_converter_token_t;
 
-
 typedef struct dat_converter_map_t dat_converter_map_t;
 typedef struct dat_converter_list_t dat_converter_list_t;
 typedef union dat_converter_list_item_t dat_converter_list_item_t;
@@ -99,7 +98,6 @@ union dat_converter_list_item_t
    dat_converter_token_t token;
    dat_converter_list_t* list;
 };
-
 
 struct dat_converter_bt_node_t
 {
@@ -211,7 +209,6 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(
 
    return NULL;
 }
-
 
 static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
 {

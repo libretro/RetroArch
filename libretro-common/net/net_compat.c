@@ -447,7 +447,6 @@ error:
    return NULL;
 }
 
-
 /* convert presentation format to network format */
 static const char *
 inet_ntop6x(const unsigned char *src, char *dst, size_t size)

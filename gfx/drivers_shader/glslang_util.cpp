@@ -377,7 +377,6 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
    return true;
 }
 
-
 #if defined(HAVE_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {

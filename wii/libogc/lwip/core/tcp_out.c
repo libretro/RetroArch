@@ -666,7 +666,6 @@ tcp_rexmit(struct tcp_pcb *pcb)
 
 }
 
-
 void
 tcp_keepalive(struct tcp_pcb *pcb)
 {
@@ -710,12 +709,4 @@ tcp_keepalive(struct tcp_pcb *pcb)
 }
 
 #endif /* LWIP_TCP */
-
-
-
-
-
-
-
-
 

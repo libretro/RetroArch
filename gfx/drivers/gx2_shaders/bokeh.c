@@ -62,7 +62,6 @@ static struct
    },
 };
 
-
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
@@ -738,7 +737,6 @@ static GX2UniformVar uniform_vars[] = {
    {"global.OutputSize", GX2_SHADER_VAR_TYPE_FLOAT, 1, 16, 0},
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},
 };
-
 
 GX2Shader bokeh_shader =
 {

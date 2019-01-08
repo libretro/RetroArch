@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <errno.h>
 #include "asm.h"
@@ -70,7 +69,6 @@ void __lwp_mutex_init()
 {
 	__lwp_objmgr_initinfo(&_lwp_mutex_objects,LWP_MAX_MUTEXES,sizeof(mutex_st));
 }
-
 
 static __inline__ mutex_st* __lwp_mutex_open(mutex_t lock)
 {

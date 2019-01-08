@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __EXI_H__
 #define __EXI_H__
 
@@ -36,7 +35,6 @@ distribution.
 \brief EXI subsystem
 
 */
-
 
 #include "gctypes.h"
 
@@ -53,7 +51,6 @@ distribution.
  * @}
  */
 
-
 /*!
  * \addtogroup exi_channels EXI channels
  * @{
@@ -68,7 +65,6 @@ distribution.
  * @}
  */
 
-
 /*!
  * \addtogroup exi_devices EXI devices
  * @{
@@ -82,7 +78,6 @@ distribution.
 /*!
  * @}
  */
-
 
 /*!
  * \addtogroup exi_speed EXI device frequencies
@@ -100,7 +95,6 @@ distribution.
  * @}
  */
 
-
 /*!
  * \addtogroup exi_flags EXI device operation flags
  * @{
@@ -115,7 +109,6 @@ distribution.
 /*!
  * @}
  */
-
 
 /*!
  * \addtogroup exi_mcident EXI memory card identifier
@@ -133,7 +126,6 @@ distribution.
  * @}
  */
 
-
 #ifdef __cplusplus
    extern "C" {
 #endif /* __cplusplus */
@@ -145,7 +137,6 @@ distribution.
 */
 typedef s32 (*EXICallback)(s32 chn,s32 dev);
 
-
 /*! \fn s32 EXI_ProbeEx(s32 nChn)
 \brief Performs an extended probe of the EXI channel
 \param[in] nChn EXI channel to probe
@@ -154,7 +145,6 @@ typedef s32 (*EXICallback)(s32 chn,s32 dev);
 */
 s32 EXI_ProbeEx(s32 nChn);
 
-
 /*! \fn s32 EXI_Probe(s32 nChn)
 \brief Probes the EXI channel
 \param[in] nChn EXI channel to probe
@@ -162,7 +152,6 @@ s32 EXI_ProbeEx(s32 nChn);
 \return 1 on success, <=0 on error
 */
 s32 EXI_Probe(s32 nChn);
-
 
 /*! \fn s32 EXI_Lock(s32 nChn,s32 nDev,EXICallback unlockCB)
 \brief Try to lock the desired EXI channel on the given device.
@@ -174,7 +163,6 @@ s32 EXI_Probe(s32 nChn);
 */
 s32 EXI_Lock(s32 nChn,s32 nDev,EXICallback unlockCB);
 
-
 /*! \fn s32 EXI_Unlock(s32 nChn)
 \brief Unlock the desired EXI channel.
 \param[in] nChn EXI channel to unlock
@@ -182,7 +170,6 @@ s32 EXI_Lock(s32 nChn,s32 nDev,EXICallback unlockCB);
 \return 1 on success, <=0 on error
 */
 s32 EXI_Unlock(s32 nChn);
-
 
 /*! \fn s32 EXI_Select(s32 nChn,s32 nDev,s32 nFrq)
 \brief Selects the spedified EXI channel on the given device with the given frequency
@@ -194,7 +181,6 @@ s32 EXI_Unlock(s32 nChn);
 */
 s32 EXI_Select(s32 nChn,s32 nDev,s32 nFrq);
 
-
 /*! \fn s32 EXI_SelectSD(s32 nChn,s32 nDev,s32 nFrq)
 \brief Performs a special select, for SD cards or adapters respectively, on the given device with the given frequence
 \param[in] nChn EXI channel to select
@@ -205,7 +191,6 @@ s32 EXI_Select(s32 nChn,s32 nDev,s32 nFrq);
 */
 s32 EXI_SelectSD(s32 nChn,s32 nDev,s32 nFrq);
 
-
 /*! \fn s32 EXI_Deselect(s32 nChn)
 \brief Deselects the EXI channel.
 \param[in] nChn EXI channel to deselect
@@ -214,7 +199,6 @@ s32 EXI_SelectSD(s32 nChn,s32 nDev,s32 nFrq);
 */
 s32 EXI_Deselect(s32 nChn);
 
-
 /*! \fn s32 EXI_Sync(s32 nChn)
 \brief Synchronize or finish respectively the last EXI transfer.
 \param[in] nChn EXI channel to select
@@ -222,7 +206,6 @@ s32 EXI_Deselect(s32 nChn);
 \return 1 on success, <=0 on error
 */
 s32 EXI_Sync(s32 nChn);
-
 
 /*! \fn s32 EXI_Imm(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb)
 \brief Initializes an immediate mode EXI transfer.
@@ -236,7 +219,6 @@ s32 EXI_Sync(s32 nChn);
 */
 s32 EXI_Imm(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb);
 
-
 /*! \fn s32 EXI_ImmEx(s32 nChn,void *pData,u32 nLen,u32 nMode)
 \brief Initializes an extended immediate mode EXI transfer.
 \param[in] nChn EXI channel to select
@@ -247,7 +229,6 @@ s32 EXI_Imm(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb);
 \return 1 on success, <=0 on error
 */
 s32 EXI_ImmEx(s32 nChn,void *pData,u32 nLen,u32 nMode);
-
 
 /*! \fn s32 EXI_Dma(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb)
 \brief Initializes a DMA mode EXI transfer.
@@ -261,7 +242,6 @@ s32 EXI_ImmEx(s32 nChn,void *pData,u32 nLen,u32 nMode);
 */
 s32 EXI_Dma(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb);
 
-
 /*! \fn s32 EXI_GetState(s32 nChn)
 \brief Get the EXI state
 \param[in] nChn EXI channel to select
@@ -269,7 +249,6 @@ s32 EXI_Dma(s32 nChn,void *pData,u32 nLen,u32 nMode,EXICallback tc_cb);
 \return EXI channels state flag.
 */
 s32 EXI_GetState(s32 nChn);
-
 
 /*! \fn s32 EXI_GetID(s32 nChn,s32 nDev,u32 *nId)
 \brief Get the ID of the connected EXI device on the given channel
@@ -281,7 +260,6 @@ s32 EXI_GetState(s32 nChn);
 */
 s32 EXI_GetID(s32 nChn,s32 nDev,u32 *nId);
 
-
 /*! \fn s32 EXI_Attach(s32 nChn,EXICallback ext_cb)
 \brief Attach the device on the given channel
 \param[in] nChn EXI channel to select
@@ -291,7 +269,6 @@ s32 EXI_GetID(s32 nChn,s32 nDev,u32 *nId);
 */
 s32 EXI_Attach(s32 nChn,EXICallback ext_cb);
 
-
 /*! \fn s32 EXI_Detach(s32 nChn)
 \brief Detach the device on the given channel
 \param[in] nChn EXI channel to select
@@ -300,14 +277,12 @@ s32 EXI_Attach(s32 nChn,EXICallback ext_cb);
 */
 s32 EXI_Detach(s32 nChn);
 
-
 /*! \fn void EXI_ProbeReset()
 \brief Resets certain internal flags and counters and performs a probe on all 3 channels.
 
 \return nothing
 */
 void EXI_ProbeReset();
-
 
 /*! \fn EXICallback EXI_RegisterEXICallback(s32 nChn,EXICallback exi_cb)
 \brief Register a callback function in the EXI driver for the EXI interrupt.

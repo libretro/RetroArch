@@ -52,7 +52,6 @@ typedef struct file_list
    size_t size;
 } file_list_t;
 
-
 void *file_list_get_userdata_at_offset(const file_list_t *list,
       size_t index);
 

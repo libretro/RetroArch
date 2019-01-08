@@ -41,7 +41,12 @@ void FileDropWidget::paintEvent(QPaintEvent *event)
 
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Delete)
+   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   {
+      event->accept();
+      emit enterPressed();
+   }
+   else if (event->key() == Qt::Key_Delete)
    {
       event->accept();
       emit deletePressed();

@@ -267,7 +267,6 @@ static void autosave_free(autosave_t *handle)
    handle->buffer = NULL;
 }
 
-
 bool autosave_init(void)
 {
    unsigned i;
@@ -1193,7 +1192,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
             path);
 
       data = get_serialized_data(path, info.size) ;
-
 
       if (!data)
       {

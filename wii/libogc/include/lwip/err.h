@@ -44,7 +44,6 @@ typedef s8_t err_t;
 #define ERR_MEM  -1      /* Out of memory error.     */
 #define ERR_BUF  -2      /* Buffer error.            */
 
-
 #define ERR_ABRT -3      /* Connection aborted.      */
 #define ERR_RST  -4      /* Connection reset.        */
 #define ERR_CLSD -5      /* Connection closed.       */
@@ -60,7 +59,6 @@ typedef s8_t err_t;
 
 #define ERR_IF   -11     /* Low-level netif error    */
 #define ERR_ISCONN -12   /* Already connected.       */
-
 
 #ifdef LWIP_DEBUG
 extern char *lwip_strerr(err_t err);

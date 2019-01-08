@@ -15,6 +15,7 @@ public:
    FileDropWidget(QWidget *parent = 0);
 signals:
    void filesDropped(QStringList files);
+   void enterPressed();
    void deletePressed();
 protected:
    void dragEnterEvent(QDragEnterEvent *event);

@@ -195,7 +195,7 @@ CFLAGS += -D__LIBRETRO__
 
 include Makefile.common
 
-CFLAGS   += $(DEFINES) $(INCFLAGS) $(GLFLAGS)
+CFLAGS += $(DEFINES) $(INCFLAGS) $(GLFLAGS) $(DEF_FLAGS)
 CFLAGS += -Wall $(fpic)
 
 ifeq ($(DEBUG), 1)

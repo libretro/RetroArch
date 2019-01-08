@@ -110,7 +110,6 @@ struct bte_pcb
 	struct l2cap_pcb *ctl_pcb;
 	struct l2cap_pcb *data_pcb;
 
-
 	s32 (*recv)(void *arg,void *buffer,u16 len);
 	s32 (*conn_cfm)(void *arg,struct bte_pcb *pcb,u8 err);
 	s32 (*disconn_cfm)(void *arg,struct bte_pcb *pcb,u8 err);

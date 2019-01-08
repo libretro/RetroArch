@@ -43,7 +43,6 @@ static u8 audioThreadStack[4 * 1024] __attribute__ ((aligned(16)));
 #define AUDIO_BITS 16
 #define AUDIO_PRIORITY 0x7F /* LOWER VALUE GRATHER PRIORITY*/
 
-
 static void audioMainLoop(void *data)
 {
    char out_tmp[AUDIO_OUT_BUFFER];
@@ -67,7 +66,6 @@ static void audioMainLoop(void *data)
    ExitDeleteThread();
 }
 
-
 static void audioCreateThread(ps2_audio_t *ps2)
 {
    int ret;
@@ -81,26 +79,27 @@ static void audioCreateThread(ps2_audio_t *ps2)
    thread.attr=thread.option=0;
 
    /*Backup the PS2 content to be used in the thread */
-   backup_ps2         = ps2;
+   backup_ps2 = ps2;
 
-   ps2->running       = true;
+   ps2->running = true;
    ps2->worker_thread = CreateThread(&thread);
 
-   if (ps2->worker_thread >= 0)
-   {
+   if (ps2->worker_thread >= 0) {
       ret = StartThread(ps2->worker_thread, NULL);
-      if (ret < 0)
+      if (ret < 0) {
          printf("sound_init: StartThread returned %d\n", ret);
-   }
-   else
+      }
+   } else {
       printf("CreateThread failed: %d\n", ps2->worker_thread);
+   }
 }
 
 static void audioStopNDeleteThread(ps2_audio_t *ps2)
 {
    ps2->running = false;
-   if (ps2->worker_thread)
+   if (ps2->worker_thread) {
       ps2->worker_thread = 0;
+   }
 }
 
 static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
@@ -108,14 +107,13 @@ static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
    int err;
    struct audsrv_fmt_t format;
 
-   format.bits     = AUDIO_BITS;
-   format.freq     = rate;
+   format.bits = AUDIO_BITS;
+   format.freq = rate;
    format.channels = AUDIO_CHANNELS;
 
-   err             = audsrv_set_format(&format);
+   err = audsrv_set_format(&format);
 
-   if (err)
-   {
+   if (err){
       printf("set format returned %d\n", err);
       printf("audsrv returned error string: %s\n", audsrv_get_error_string());
    }
@@ -128,16 +126,16 @@ static void audioCreateSemas(ps2_audio_t *ps2)
    ee_sema_t lock_info;
    ee_sema_t cond_lock_info;
 
-   lock_info.max_count       = 1;
-   lock_info.init_count      = 1;
-   lock_info.option          = 0;
-   ps2->lock                 = CreateSema(&lock_info);
+   lock_info.max_count = 1;
+   lock_info.init_count = 1;
+   lock_info.option = 0;
+   ps2->lock = CreateSema(&lock_info);
 
    cond_lock_info.init_count = 1;
    cond_lock_info.max_count  = 1;
-   cond_lock_info.option     = 0;
+   cond_lock_info.option = 0;
 
-   ps2->cond_lock            = CreateSema(&cond_lock_info);
+   ps2->cond_lock = CreateSema(&cond_lock_info);
 }
 
 static void *ps2_audio_init(const char *device,
@@ -164,18 +162,15 @@ static void ps2_audio_free(void *data)
    if(!ps2)
       return;
 
-   if(ps2->running)
-   {
+   if(ps2->running){
       audioStopNDeleteThread(ps2);
 
-      if (ps2->lock)
-      {
+      if (ps2->lock){
          iDeleteSema(ps2->lock);
          ps2->lock = 0;
       }
 
-      if (ps2->cond_lock)
-      {
+      if (ps2->cond_lock){
          iDeleteSema(ps2->cond_lock);
          ps2->cond_lock = 0;
       }
@@ -192,14 +187,14 @@ static ssize_t ps2_audio_write(void *data, const void *buf, size_t size)
    if (!ps2->running)
       return -1;
 
-   if (ps2->nonblocking)
-   {
+   if (ps2->nonblocking){
       if (fifo_write_avail(ps2->buffer) < size)
          return 0;
    }
 
-   while (fifo_write_avail(ps2->buffer) < size)
+   while (fifo_write_avail(ps2->buffer) < size) {
       WaitSema(ps2->cond_lock);
+   }
 
    WaitSema(ps2->lock);
    fifo_write(ps2->buffer, buf, size);
@@ -213,8 +208,9 @@ static bool ps2_audio_alive(void *data)
    bool alive = false;
 
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-   if (ps2)
+   if (ps2) {
       alive = ps2->running;
+   }
 
    return alive;
 }
@@ -224,8 +220,7 @@ static bool ps2_audio_stop(void *data)
    bool stop = true;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
-   if (ps2)
-   {
+   if (ps2) {
       audioStopNDeleteThread(ps2);
       audsrv_stop_audio();
    }
@@ -235,13 +230,13 @@ static bool ps2_audio_stop(void *data)
 
 static bool ps2_audio_start(void *data, bool is_shutdown)
 {
-   bool       start = true;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
+   bool start = true;
 
-   if(ps2)
-   {
-      if (!ps2->running && !ps2->worker_thread)
+   if (ps2) {
+      if (!ps2->running && !ps2->worker_thread) {
          audioCreateThread(ps2);
+      }
    }
 
    return start;
@@ -250,8 +245,10 @@ static bool ps2_audio_start(void *data, bool is_shutdown)
 static void ps2_audio_set_nonblock_state(void *data, bool toggle)
 {
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-   if (ps2)
+
+   if (ps2) {
       ps2->nonblocking = toggle;
+   }
 }
 
 static bool ps2_audio_use_float(void *data)
@@ -263,8 +260,7 @@ static size_t ps2_audio_write_avail(void *data)
 {
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
-   if (ps2 && ps2->running)
-   {
+   if (ps2 && ps2->running) {
       size_t size;
       WaitSema(ps2->lock);
       size = AUDIO_BUFFER - fifo_read_avail(ps2->buffer); 

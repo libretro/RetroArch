@@ -57,7 +57,6 @@
  *
  */
 
-
 #include "uip_pbuf.h"
 #include "uip_netif.h"
 #include "uip_arp.h"
@@ -77,7 +76,6 @@ struct uip_stats uip_stat;
 #else
 #define UIP_STAT(s)
 #endif /* UIP_STATISTICS == 1 */
-
 
 #define ARP_TRY_HARD 0x01
 

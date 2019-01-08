@@ -128,7 +128,6 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
-
 static void ctr_update_viewport(ctr_video_t* ctr, video_frame_info_t *video_info)
 {
    int x                = 0;
@@ -202,7 +201,6 @@ static void ctr_update_viewport(ctr_video_t* ctr, video_frame_info_t *video_info
    ctr->should_resize = false;
 
 }
-
 
 static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 {
@@ -534,7 +532,6 @@ static bool ctr_frame(void* data, const void* frame,
       ctr_set_bottom_screen_enable(ctr, !ctr_bottom_screen_enabled);
    }
 
-
    if (ctr->p3d_event_pending)
    {
       gspWaitForEvent(GSPGPU_EVENT_P3D, false);
@@ -575,7 +572,6 @@ static bool ctr_frame(void* data, const void* frame,
       lastTick = currentTick;
       frames = 0;
    }
-
 
 #ifdef CTR_INSPECT_MEMORY_USAGE
    uint32_t ctr_get_stack_usage(void);
@@ -821,14 +817,12 @@ static bool ctr_frame(void* data, const void* frame,
                         CTRGU_RGBA8,
                         gfxTopLeftFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-
    if ((ctr->video_mode == CTR_VIDEO_MODE_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
       ctrGuDisplayTransfer(true, ctr->drawbuffers.top.right,
                            240,
                            400,
                            CTRGU_RGBA8,
                            gfxTopRightFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
-
 
    /* Swap buffers : */
 
@@ -851,7 +845,6 @@ static bool ctr_frame(void* data, const void* frame,
       topFramebufferInfo.
          framebuf_widthbytesize = 240 * 3;
    }
-
 
    topFramebufferInfo.format    = (1<<8)|(1<<5)|GSP_BGR8_OES;
    topFramebufferInfo.
@@ -979,7 +972,6 @@ static void ctr_set_texture_enable(void* data, bool state, bool full_screen)
       ctr->menu_texture_enable = state;
 }
 
-
 static void ctr_set_rotation(void* data, unsigned rotation)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
@@ -1069,7 +1061,6 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    texture->data = linearAlloc(texture->width * texture->height * sizeof(uint32_t));
    texture->type = filter_type;
 
-
    if (!texture->data)
    {
       free(texture);
@@ -1107,7 +1098,6 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
          dst++;
          src++;
       }
-
 
       GSPGPU_FlushDataCache(tmpdata, image->width  * image->height * sizeof(uint32_t));
       ctrGuCopyImage(true, tmpdata, image->width, image->height, CTRGU_RGBA8, false,

@@ -303,7 +303,6 @@ DECL_AXIS_EX(r_x_minus, -3, "R Analog left") \
 DECL_AXIS_EX(r_y_plus,  +2, "R Analog up") \
 DECL_AXIS_EX(r_y_minus, -2, "R Analog down")
 
-
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
 DECL_BTN_EX(select,       2, "-") \
@@ -659,6 +658,9 @@ const char* const input_builtin_autoconfs[] =
 #ifdef __QNX__
    DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("DS4 Controller", "qnx", QNX_DUALSHOCK_BINDS),
+#endif
+#if defined(ORBIS)
+   DECL_AUTOCONF_DEVICE("PS4 Controller", "ps4", PS3INPUT_DEFAULT_BINDS),
 #endif
 #if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),

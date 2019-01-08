@@ -35,7 +35,6 @@
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(uint32_t) + (sizeof(float)* 4) + sizeof(uint16_t) + (sizeof(wchar_t)*(x)) )
 #define FONTFILEVERSION 5
 
-
 #ifdef _XBOX360
 struct XPR_HEADER
 {

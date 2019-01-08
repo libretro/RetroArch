@@ -19,7 +19,6 @@
 #include "../../config.h"
 #endif
 
-
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
 
@@ -59,11 +58,17 @@ static void *orbis_ctx_init(video_frame_info_t *video_info, void *video_driver)
     EGLint n;
     EGLint major, minor;
     static const EGLint attribs[] = {
-        EGL_BLUE_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
         EGL_RED_SIZE, 8,
-        EGL_ALPHA_SIZE, 8,
-        EGL_NONE};
+         EGL_GREEN_SIZE, 8,
+         EGL_BLUE_SIZE, 8,
+         EGL_ALPHA_SIZE, 8,
+         EGL_DEPTH_SIZE, 16,
+         EGL_STENCIL_SIZE, 0,
+         EGL_SAMPLE_BUFFERS, 0,
+         EGL_SAMPLES, 0,
+         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+         EGL_NONE};
 #endif
 
     orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)calloc(1, sizeof(*ctx_orbis));
@@ -144,8 +149,8 @@ static bool orbis_ctx_set_video_mode(void *data,
 
     orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
-    ctx_orbis->width = ATTR_ORBISGL_HEIGHT;
-    ctx_orbis->height = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->width = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->height = ATTR_ORBISGL_HEIGHT;
 
     ctx_orbis->native_window.width = ctx_orbis->width;
     ctx_orbis->native_window.height = ctx_orbis->height;
@@ -219,7 +224,7 @@ static void orbis_ctx_set_swap_interval(void *data,
     orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
 #ifdef HAVE_EGL
-    egl_set_swap_interval(&ctx_orbis->egl, swap_interval);
+    egl_set_swap_interval(&ctx_orbis->egl, 0);
 #endif
 }
 

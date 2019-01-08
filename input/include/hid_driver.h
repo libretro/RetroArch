@@ -71,8 +71,6 @@ struct hid_driver
 #define HID_MAX_SLOT() hid_instance.max_slot
 #define HID_PAD_CONNECTION_PTR(slot) &(hid_instance.pad_list[(slot)])
 
-
-
 struct hid_driver_instance {
    hid_driver_t *os_driver;
    void *os_driver_data;

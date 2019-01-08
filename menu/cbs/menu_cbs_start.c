@@ -164,7 +164,6 @@ static int action_start_shader_pass(unsigned type, const char *label)
    return 0;
 }
 
-
 static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;

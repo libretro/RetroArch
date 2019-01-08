@@ -217,7 +217,6 @@ static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
    }
 }
 
-
 static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 {
    math_matrix_4x4 rot;

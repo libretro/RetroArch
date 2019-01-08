@@ -68,7 +68,6 @@
 #if defined(PS2)
 #include <kernel.h>
 #include <timer.h>
-#include <SDL/SDL.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -127,7 +126,6 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #else
 #define ra_clock_gettime clock_gettime
 #endif
-
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -191,7 +189,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif defined(VITA)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(PS2)
-   time_ticks = SDL_GetTicks()*294912; // 294,912MHZ / 1000 msecs
+   time_ticks = clock()*294912; // 294,912MHZ / 1000 msecs
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
@@ -241,7 +239,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
-      return SDL_GetTicks()*1000;
+      return clock()*1000;
 #elif defined(__mips__) || defined(DJGPP)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -708,7 +706,6 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_MMXEXT;
    }
 
-
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
 
@@ -732,7 +729,6 @@ uint64_t cpu_features_get(void)
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
-
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */

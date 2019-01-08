@@ -46,7 +46,6 @@
 #define NETWORK_COMPAT_HEADERS 1
 #endif
 
-
 #ifdef NETWORK_COMPAT_HEADERS
 #include <sys/socket.h>
 #include <netdb.h>
@@ -158,7 +157,6 @@ static int rsnd_poll(struct pollfd *fd, int numfd, int timeout);
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
 
-
 /* Determine whether we're running big- or little endian */
 static INLINE int rsnd_is_little_endian(void)
 {
@@ -242,7 +240,6 @@ static int rsnd_connect_server( rsound_t *rd )
 
    rd->conn_type = RSD_CONN_TCP;
 
-
    rd->conn.socket = net_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
    if ( rd->conn.socket < 0 )
       goto error;
@@ -311,7 +308,6 @@ static int rsnd_send_header_info(rsound_t *rd)
 #define CHANNEL 22
 #define FRAMESIZE 34
 #define FORMAT 42
-
 
    uint32_t temp_rate = rd->rate;
    uint16_t temp_channels = rd->channels;
@@ -980,7 +976,6 @@ static int rsnd_close_ctl(rsound_t *rd)
    return 0;
 }
 
-
 // Sends delay info request to server on the ctl socket. This code section isn't critical, and will work if it works.
 // It will never block.
 static int rsnd_send_info_query(rsound_t *rd)
@@ -1296,7 +1291,6 @@ static int rsnd_reset(rsound_t *rd)
    return 0;
 }
 
-
 int rsd_stop(rsound_t *rd)
 {
    retro_assert(rd != NULL);
@@ -1403,7 +1397,6 @@ int rsd_exec(rsound_t *rsound)
    return fd;
 }
 
-
 /* ioctl()-ish param setting :D */
 int rsd_set_param(rsound_t *rd, enum rsd_settings option, void* param)
 {
@@ -1492,7 +1485,6 @@ void rsd_delay_wait(rsound_t *rd)
    {
       /* Latency of stream in ms */
       int latency_ms = rsd_delay_ms(rd);
-
 
       /* Should we sleep for a while to keep the latency low? */
       if ( rd->max_latency < latency_ms )

@@ -54,7 +54,6 @@ struct d3d_matrix
    };
 };
 
-
 typedef struct d3d_texture
 {
    void *data;

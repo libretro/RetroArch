@@ -2,7 +2,6 @@
 #include <wiiu/types.h>
 #include "enum.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif

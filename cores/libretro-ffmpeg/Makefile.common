@@ -16,7 +16,6 @@ AVUTIL_DIR     	 := $(BASE_DIR)/libavutil
 SWSCALE_DIR    	 := $(BASE_DIR)/libswscale
 SWRESAMPLE_DIR 	 := $(BASE_DIR)/libswresample
 
-
 INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/include/compat
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \

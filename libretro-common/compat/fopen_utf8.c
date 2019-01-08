@@ -31,11 +31,10 @@
 #endif
 #endif
 
-#ifdef _WIN32
-#undef fopen
-
 void *fopen_utf8(const char * filename, const char * mode)
 {
+#if defined(_WIN32)
+#undef fopen
 #if defined(_XBOX)
    return fopen(filename, mode);
 #elif defined(LEGACY_WIN32)
@@ -56,5 +55,7 @@ void *fopen_utf8(const char * filename, const char * mode)
    free(mode_w);
    return ret;
 #endif
-}
+#else
+   return fopen(filename, mode);
 #endif
+}

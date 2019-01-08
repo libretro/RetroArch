@@ -230,7 +230,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
-
 #if defined(HAVE_VIVANTE_FBDEV)
 #include "../gfx/drivers_context/vivante_fbdev_ctx.c"
 #endif
@@ -498,6 +497,10 @@ FONTS
 #include "../gfx/drivers_font/xdk1_xfonts.c"
 #endif
 
+#if defined(PS2)
+#include "../gfx/drivers_font/ps2_font.c"
+#endif
+
 #if defined(VITA)
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif
@@ -569,6 +572,9 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
+#elif defined(ORBIS)
+#include "../input/drivers/ps4_input.c"
+#include "../input/drivers_joypad/ps4_joypad.c"
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
@@ -770,7 +776,7 @@ AUDIO
 #include "../audio/drivers/wiiu_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/drivers/rwebaudio.c"
-#elif defined(PSP) || defined(VITA)
+#elif defined(PSP) || defined(VITA) || defined(ORBIS)
 #include "../audio/drivers/psp_audio.c"
 #elif defined(PS2)
 #include "../audio/drivers/ps2_audio.c"
@@ -927,6 +933,7 @@ FILE
 #include "../libretro-common/file/nbio/nbio_linux.c"
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#include "../libretro-common/file/nbio/nbio_orbis.c"
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
@@ -1025,7 +1032,6 @@ GIT
 #ifdef HAVE_GIT_VERSION
 #include "../version_git.c"
 #endif
-
 
 /*============================================================
 RETROARCH
@@ -1273,7 +1279,6 @@ MENU
 #endif
 
 #endif
-
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
@@ -1553,4 +1558,8 @@ SSL
 #include "../libretro-common/net/net_socket_ssl.c"
 #endif
 #endif
+#endif
+
+#ifdef HAVE_EASTEREGG
+#include "../cores/libretro-gong/gong.c"
 #endif

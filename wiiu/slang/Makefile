@@ -44,9 +44,6 @@ SLANG_SHADERS := $(call rwildcard,$(SLANG_DIR)/,*.slang)
 SLANG_SHADERS := $(filter-out $(BLACKLIST),$(SLANG_SHADERS))
 SLANG_SHADERS := $(SLANG_SHADERS:.slang=.gsh)
 
-
-
-
 all: $(SLANG_SHADERS)
 parser: $(SLANG_PARSER)
 

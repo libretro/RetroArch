@@ -15,14 +15,13 @@
 #include "../led_driver.h"
 #include "../../verbosity.h"
 
-static void null_init(void) { }
-static void null_free(void) { }
-static void null_set(int led, int state) { }
+static void null_led_init(void) { }
+static void null_led_free(void) { }
+static void null_led_set(int led, int state) { }
 
 const led_driver_t null_led_driver = {
-   null_init,
-   null_free,
-   null_set,
+   null_led_init,
+   null_led_free,
+   null_led_set,
    "null"
 };
-

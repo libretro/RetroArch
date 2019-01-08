@@ -46,7 +46,6 @@ enum
    RARCH_FILE_UNSUPPORTED
 };
 
-
 /**
  * path_is_compressed_file:
  * @path               : path

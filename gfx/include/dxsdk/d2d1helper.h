@@ -809,7 +809,6 @@ namespace D2D1
             return Translation(SizeF(x, y));
         }
 
-
         static
         COM_DECLSPEC_NOTHROW
         D2D1FORCEINLINE

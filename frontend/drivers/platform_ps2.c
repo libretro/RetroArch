@@ -23,9 +23,8 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
-#include <SDL/SDL.h>
 #include <audsrv.h>
-
+#include <libpad.h>
 
 enum BootDeviceIDs{
     BOOT_DEVICE_UNKNOWN = -1,
@@ -361,14 +360,16 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
 
-   SDL_Init(SDL_INIT_TIMER);
-
    /* Initializes audsrv library */
-   if (audsrv_init())
-   {
+   if (audsrv_init()) {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
+   /* Initializes pad library 
+      Must be init with 0 as parameter*/
+   if (padInit(0) != 1) {
+      RARCH_ERR("padInit library not initalizated\n");
+   }
 
 #if defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("retroarch.log");
@@ -386,6 +387,10 @@ static void frontend_ps2_deinit(void *data)
 #endif
 
 #endif
+
+   padEnd();
+   audsrv_quit();
+
    fileXioUmount("pfs0:");
    fileXioExit();
 

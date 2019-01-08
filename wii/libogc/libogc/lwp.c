@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <errno.h>
 #include "asm.h"
@@ -300,7 +299,6 @@ BOOL LWP_ThreadIsSuspended(lwp_t thethread)
 	__lwp_thread_dispatchenable();
 	return state;
 }
-
 
 s32 LWP_JoinThread(lwp_t thethread,void **value_ptr)
 {
