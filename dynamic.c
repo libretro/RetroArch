@@ -177,7 +177,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
    rarch_system_info_t *system  = runloop_get_system_info();
@@ -239,7 +238,6 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                }
                subsystem_data[i].roms = subsystem_data_roms[i];
             }
-
 
             subsystem_current_count = size <= SUBSYSTEM_MAX_SUBSYSTEMS ? size : SUBSYSTEM_MAX_SUBSYSTEMS;
 #if 0

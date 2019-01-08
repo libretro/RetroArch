@@ -169,7 +169,6 @@ typedef OPAQUE IXAudio2EngineCallback IXAudio2EngineCallback;
 typedef OPAQUE IXAudio2SubmixVoice IXAudio2SubmixVoice;
 #endif
 
-
 typedef struct XAUDIO2_BUFFER
 {
    UINT32 Flags;

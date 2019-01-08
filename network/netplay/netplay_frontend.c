@@ -273,7 +273,6 @@ bool init_netplay_deferred(const char* server, unsigned port)
    return netplay_client_deferred;
 }
 
-
 /**
  * netplay_poll:
  * @netplay              : pointer to netplay object
@@ -1138,7 +1137,6 @@ static void netplay_force_future(netplay_t *netplay)
    netplay->run_ptr = netplay->self_ptr;
    netplay->run_frame_count = netplay->self_frame_count;
 
-
    /* We need to ignore any intervening data from the other side,
     * and never rewind past this */
    netplay_update_unread_ptr(netplay);
@@ -1507,8 +1505,6 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          0, 180, false);
    return false;
 }
-
-
 
 /**
  * netplay_driver_ctl

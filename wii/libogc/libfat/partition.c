@@ -169,7 +169,6 @@ sec_t FindFirstValidPartition(const DISC_INTERFACE* disc)
 	return ret;
 }
 
-
 PARTITION* _FAT_partition_constructor_buf (const DISC_INTERFACE* disc, uint32_t cacheSize, uint32_t sectorsPerPage, sec_t startSector, uint8_t *sectorBuffer)
 {
 	PARTITION* partition;
@@ -308,7 +307,6 @@ PARTITION* _FAT_partition_constructor (const DISC_INTERFACE* disc, uint32_t cach
 	_FAT_mem_free(sectorBuffer);
 	return ret;
 }
-
 
 void _FAT_partition_destructor (PARTITION* partition) {
 	FILE_STRUCT* nextFile;

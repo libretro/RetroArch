@@ -367,7 +367,6 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
       image->copy_data_over = false;
       image->is_finished    = true;
 
-
       return false;
    }
 

@@ -35,7 +35,6 @@ void GPU_SetFloatUniform(GPU_SHADER_TYPE type, u32 startreg, u32* data, u32 numr
 	GPUCMD_AddWrites(GPUREG_VSH_FLOATUNIFORM_DATA+regOffset, data, numreg*4);
 }
 
-
 //takes PAs as arguments
 void GPU_SetViewport(u32* depthBuffer, u32* colorBuffer, u32 x, u32 y, u32 w, u32 h)
 {
@@ -306,7 +305,6 @@ void GPU_FinishDrawing()
 	GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_INVALIDATE, 0x00000001);
 	GPUCMD_AddWrite(GPUREG_EARLYDEPTH_CLEAR, 0x00000001);
 }
-
 
 void GPU_Finalize(void)
 {

@@ -319,7 +319,6 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
          chain->chain.dev, "modelViewProj", (const void*)&matrix);
 }
 
-
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,

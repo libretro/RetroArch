@@ -107,7 +107,6 @@ MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARG
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
 
-
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
 CFLAGS	+=	-mword-relocations \
@@ -151,7 +150,6 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
-
 LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lm
 
 ifeq ($(DEBUG), 1)
@@ -159,7 +157,6 @@ ifeq ($(DEBUG), 1)
 else
 	LIBS	+= -lctru
 endif
-
 
 ifeq ($(BUILD_3DSX), 1)
 	TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
@@ -270,7 +267,6 @@ $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
-
 clean:
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
@@ -284,5 +280,4 @@ clean:
 	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
-
 

@@ -42,6 +42,5 @@
 #define NULL ((void *)0)
 #endif
 
-
 #endif /* __LWIP_DEF_H__ */
 

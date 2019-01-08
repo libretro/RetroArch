@@ -148,7 +148,6 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
-
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {

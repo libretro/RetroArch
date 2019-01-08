@@ -164,7 +164,6 @@ static void ps3_input_free_input(void *data)
    free(data);
 }
 
-
 static void* ps3_input_init(const char *joypad_driver)
 {
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));

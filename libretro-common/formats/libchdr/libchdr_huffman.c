@@ -232,7 +232,6 @@ enum huffman_error huffman_import_tree_rle(struct huffman_decoder* decoder, stru
 	return bitstream_overflow(bitbuf) ? HUFFERR_INPUT_BUFFER_TOO_SMALL : HUFFERR_NONE;
 }
 
-
 /*-------------------------------------------------
  *  import_tree_huffman - import a huffman-encoded
  *  huffman tree from a source data stream

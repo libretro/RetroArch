@@ -43,8 +43,6 @@ struct sswt_cb
     sys_sem_t *psem;
 };
 
-
-
 void
 sys_mbox_fetch(sys_mbox_t mbox, void **msg)
 {
@@ -53,7 +51,6 @@ sys_mbox_fetch(sys_mbox_t mbox, void **msg)
   struct sys_timeout *tmptimeout;
   sys_timeout_handler h;
   void *arg;
-
 
  again:
   timeouts = sys_arch_timeouts();
@@ -135,7 +132,6 @@ sys_sem_wait(sys_sem_t sem)
         LWIP_DEBUGF(SYS_DEBUG, ("ssw h=%p(%p)\n", (void *)h, (void *)arg));
         h(arg);
       }
-
 
       /* We try again to fetch a message from the mbox. */
       goto again;
@@ -235,10 +231,6 @@ sys_untimeout(sys_timeout_handler h, void *arg)
     return;
 }
 
-
-
-
-
 static void
 sswt_handler(void *arg)
 {
@@ -279,7 +271,6 @@ sys_sem_wait_timeout(sys_sem_t sem, u32_t timeout)
 
 }
 
-
 void
 sys_msleep(u32_t ms)
 {
@@ -289,6 +280,5 @@ sys_msleep(u32_t ms)
 
   sys_sem_free(delaysem);
 }
-
 
 #endif /* NO_SYS */

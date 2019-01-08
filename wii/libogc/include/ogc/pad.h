@@ -85,7 +85,6 @@ s8 PAD_StickY(int pad);
 u8 PAD_TriggerL(int pad);
 u8 PAD_TriggerR(int pad);
 
-
 sampling_callback PAD_SetSamplingCallback(sampling_callback cb);
 
 /*+----------------------------------------------------------------------------------------------+*/

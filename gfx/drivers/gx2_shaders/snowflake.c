@@ -20,7 +20,6 @@
 #include "gx2_shader_inl.h"
 #include "menu_shaders.h"
 
-
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
@@ -555,7 +554,6 @@ static struct
    },
 };
 
-
 static GX2AttribVar attributes[] =
 {
    { "Position",  GX2_SHADER_VAR_TYPE_FLOAT4, 0, 0},
@@ -584,7 +582,6 @@ static GX2UniformVar uniform_vars[] = {
    {"global.OutputSize", GX2_SHADER_VAR_TYPE_FLOAT, 1, 16, 0},
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},
 };
-
 
 GX2Shader snowflake_shader =
 {

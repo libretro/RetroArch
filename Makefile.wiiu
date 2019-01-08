@@ -242,7 +242,6 @@ ifneq ($(WANT_IOSUHAX), 1)
 LIBS += -liosuhax
 endif
 
-
 RPX_OBJ           = $(BUILD_DIR)/wiiu/system/stubs_rpl.o
 HBL_ELF_OBJ       = $(BUILD_DIR)/wiiu/system/dynamic.o $(BUILD_DIR)/wiiu/system/stubs_elf.o
 
@@ -264,12 +263,10 @@ endif
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $(BUILD_DIR)/$*.depend
 
-
 all: $(TARGETS)
 
 %: $(BUILD_DIR)/%
 	cp $< $@
-
 
 $(BUILD_DIR)/%.o: %.cpp %.depend
 	@$(if $(Q), echo CXX $<,)

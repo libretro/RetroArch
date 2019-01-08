@@ -102,7 +102,6 @@ static void menu_display_vita2d_viewport(menu_display_ctx_draw_t *draw,
 #endif
 }
 
-
 static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {

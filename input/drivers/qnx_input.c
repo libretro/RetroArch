@@ -307,7 +307,6 @@ static void qnx_handle_device(qnx_input_t *qnx,
    RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
 }
 
-
 /* Find currently connected gamepads. */
 static void qnx_discover_controllers(qnx_input_t *qnx)
 {

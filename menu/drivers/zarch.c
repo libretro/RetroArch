@@ -163,7 +163,6 @@ struct zui_tabbed
    bool inited;
 };
 
-
 static enum zarch_layout_type zarch_layout = LAY_HOME;
 
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
@@ -414,7 +413,6 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
 
    return active || (tab->active_id == id);
 }
-
 
 static void zarch_zui_render_lay_settings(zui_t *zui)
 {
@@ -944,7 +942,6 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
       zarch_zui_draw_cursor(
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X),
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
-
 
    if (!zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
       zui->item.active = 0;

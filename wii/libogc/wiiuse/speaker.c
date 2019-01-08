@@ -93,7 +93,6 @@ void wiiuse_set_speaker(struct wiimote_t *wm,int status)
 		}
 	}
 
-
 	buf = 0x04;
 	wiiuse_sendcmd(wm,WM_CMD_SPEAKER_MUTE,&buf,1,NULL);
 

@@ -21,7 +21,6 @@
 static input_device_driver_t *pad_drivers[MAX_USERS];
 extern pad_connection_listener_t wiiu_pad_connection_listener;
 
-
 static bool ready = false;
 
 static bool wiiu_joypad_init(void *data);

@@ -370,7 +370,6 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    }
 }
 
-
 void ozone_change_tab(ozone_handle_t *ozone, 
       enum msg_hash_enums tab, 
       enum menu_settings_type type)

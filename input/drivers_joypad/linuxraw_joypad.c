@@ -371,7 +371,6 @@ static bool linuxraw_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && linuxraw_pads[pad].fd >= 0;
 }
 
-
 input_device_driver_t linuxraw_joypad = {
    linuxraw_joypad_init,
    linuxraw_joypad_query_pad,

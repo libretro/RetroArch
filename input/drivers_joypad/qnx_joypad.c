@@ -120,7 +120,6 @@ static bool qnx_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-
 static void qnx_joypad_destroy(void)
 {
 }

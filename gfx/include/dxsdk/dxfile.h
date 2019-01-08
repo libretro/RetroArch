@@ -119,7 +119,6 @@ DECLARE_INTERFACE_(IDirectXFileSaveObject, IUnknown)
     STDMETHOD(SaveData) (THIS_ LPDIRECTXFILEDATA) PURE;
 };
 
-
 #undef INTERFACE
 #define INTERFACE IDirectXFileObject
 
@@ -193,7 +192,6 @@ DEFINE_GUID(IID_IDirectXFileBinary,         0x3d82ab46, 0x62da, 0x11cf, 0xab, 0x
 
 DEFINE_GUID(TID_DXFILEHeader,   0x3d82ab43, 0x62da, 0x11cf, 0xab, 0x39, 0x0, 0x20, 0xaf, 0x71, 0xe4, 0x33);
 
-
 /*
  * DirectX File errors.
  */
@@ -230,7 +228,6 @@ DEFINE_GUID(TID_DXFILEHeader,   0x3d82ab43, 0x62da, 0x11cf, 0xab, 0x39, 0x0, 0x2
 #define DXFILEERR_NOMOREDATA                MAKE_DDHRESULT(874)
 #define DXFILEERR_BADCACHEFILE              MAKE_DDHRESULT(875)
 #define DXFILEERR_NOINTERNET                MAKE_DDHRESULT(876)
-
 
 #ifdef __cplusplus
 };

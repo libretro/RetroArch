@@ -993,7 +993,6 @@ void font_driver_flush(unsigned width, unsigned height, void *font_data,
       font->renderer->flush(width, height, font->renderer_data, video_info);
 }
 
-
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
@@ -1057,7 +1056,6 @@ font_data_t *font_driver_init_first(
 
    return NULL;
 }
-
 
 void font_driver_init_osd(
       void *video_data,

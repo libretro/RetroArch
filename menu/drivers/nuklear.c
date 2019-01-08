@@ -117,7 +117,6 @@ error:
    return NULL;
 }
 
-
 static void nk_menu_input_gamepad(nk_menu_handle_t *nk)
 {
    switch (nk->action)
@@ -195,7 +194,6 @@ static void nk_menu_main(nk_menu_handle_t *nk)
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
 
-
 static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 {
    unsigned ticker_limit, i;
@@ -211,7 +209,6 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
-
 
    for (i = 0; i < 16; i++)
    {

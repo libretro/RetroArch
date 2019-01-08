@@ -288,7 +288,6 @@ unsigned state_tracker_get_uniform(state_tracker_t *tracker,
 
    state_tracker_update_input(&tracker->input_state[0], &tracker->input_state[1]);
 
-
    for (i = 0; i < elems; i++)
       state_tracker_update_element(
             &uniforms[i], &tracker->info[i], frame_count);

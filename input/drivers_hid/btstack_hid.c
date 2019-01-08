@@ -459,7 +459,6 @@ extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 
 /* linked_list.h */
 
-
 void linked_item_set_user(linked_item_t *item, void *user_data);
 
 void * linked_item_get_user(linked_item_t *item);
@@ -477,8 +476,6 @@ linked_item_t * linked_list_get_last_item(linked_list_t * list);
 void test_linked_list(void);
 
 /* run_loop.h */
-
-
 
 /* Set timer based on current time in milliseconds. */
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
@@ -525,7 +522,6 @@ uint32_t embedded_get_ticks(void);
 /* utils.h */
 
 /* Connection handle type. */
-
 
 /* helper for BT little endian format. */
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
@@ -591,7 +587,6 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
 /* UNIX domain socket for BTstack. */
 #define BTSTACK_UNIX            "/tmp/BTstack"
-
 
 /* Optional
  *
@@ -975,14 +970,12 @@ static struct btstack_hid_adapter *btpad_find_connection_for(
    return 0;
 }
 
-
 static void btpad_queue_reset(void)
 {
    insert_position = 0;
    read_position   = 0;
    can_run         = 1;
 }
-
 
 static void btpad_queue_btstack_set_power_mode(
       struct btpad_queue_command *cmd, uint8_t on)
@@ -996,8 +989,6 @@ static void btpad_queue_btstack_set_power_mode(
    btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
-
-
 
 static void btpad_set_inquiry_state(bool on)
 {
@@ -1347,8 +1338,6 @@ static void btstack_set_poweron(bool on)
       btstack_thread = NULL;
    }
 }
-
-
 
 static bool btstack_hid_joypad_query(void *data, unsigned pad)
 {

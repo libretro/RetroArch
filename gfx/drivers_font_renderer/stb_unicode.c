@@ -145,7 +145,6 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
          + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
 
-
    stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
          self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
 
@@ -158,7 +157,6 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    /* atlas_slot->glyph.advance_y   = 0 ; */
    atlas_slot->glyph.draw_offset_x  = x0 * self->scale_factor;
    atlas_slot->glyph.draw_offset_y  = -y1 * self->scale_factor;
-
 
    self->atlas.dirty = true;
    atlas_slot->last_used = self->usage_counter++;

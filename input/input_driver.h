@@ -701,7 +701,6 @@ bool input_keyboard_line_append(const char *word);
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
-
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];

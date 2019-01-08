@@ -134,7 +134,6 @@ struct udev_input
    struct udev *udev;
    struct udev_monitor *monitor;
 
-
    const input_device_driver_t *joypad;
 
    int fd;

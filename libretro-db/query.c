@@ -353,7 +353,6 @@ static void query_raise_unexpected_char(
    *error = tmp_error_buff;
 }
 
-
 static void query_argument_free(struct argument *arg)
 {
    unsigned i;
@@ -398,7 +397,6 @@ static struct buffer query_chomp(struct buffer buff)
          && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
-
 
 static struct buffer query_expect_eof(struct buffer buff, const char ** error)
 {
@@ -612,7 +610,6 @@ static struct buffer query_expect_char(struct buffer buff,
       buff.offset++;
    return buff;
 }
-
 
 static struct buffer query_parse_argument(struct buffer buff,
       struct argument *arg, const char **error)

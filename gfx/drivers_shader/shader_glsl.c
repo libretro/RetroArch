@@ -99,7 +99,6 @@ struct shader_uniforms
    struct shader_uniforms_frame prev[PREV_TEXTURES];
 };
 
-
 static const char *glsl_prefixes[] = {
    "",
    "ruby",
@@ -400,7 +399,6 @@ static bool gl_glsl_link_program(GLuint prog)
    glUseProgram(prog);
    return true;
 }
-
 
 static bool gl_glsl_compile_program(
       void *data,
@@ -1411,7 +1409,6 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
          glUniform1i(uni->prev[i].texture, texunit);
          texunit++;
       }
-
 
       if (uni->prev[i].texture_size >= 0)
          glUniform2fv(uni->prev[i].texture_size, 1, prev_info[i].tex_size);

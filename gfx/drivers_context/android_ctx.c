@@ -536,7 +536,6 @@ static void android_gfx_ctx_set_swap_interval(void *data, int swap_interval)
    }
 }
 
-
 static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(const char *symbol)
 {
    switch (android_api)

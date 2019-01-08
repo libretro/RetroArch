@@ -153,7 +153,6 @@ static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 #endif
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
-
 static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
 #ifdef HAVE_COMPRESSION

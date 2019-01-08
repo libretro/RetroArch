@@ -182,7 +182,6 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               GS_TEXT);
 }
 
-
 static void *ps2_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -414,7 +413,6 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL,                        /* get_current_software_framebuffer */
    NULL                         /* get_hw_render_interface */
 };
-
 
 static void ps2_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)

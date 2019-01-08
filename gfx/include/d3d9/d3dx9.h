@@ -68,5 +68,4 @@ enum _D3DXERR {
     D3DXERR_CANNOTREMOVELASTITEM		    = MAKE_DDHRESULT(2908)
 };
 
-
 #endif /*__D3DX9_H__ */

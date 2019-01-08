@@ -181,7 +181,6 @@ static void handle_discord_join_cb(void *task_data, void *user_data, const char 
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
 
-
       RARCH_LOG("[Discord] joining lobby at: %s\n", tmp_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, tmp_hostname, room->corename);
@@ -217,7 +216,6 @@ static void handle_discord_join(const char* secret)
    strlcat(url, "/", sizeof(url));
    RARCH_LOG("[Discord] querying lobby id: %s at %s\n", list->elems[0].data, url);
 
-
    snprintf(tmp_hostname,
       sizeof(tmp_hostname),
       "%s|%s", list->elems[0].data, list->elems[1].data);
@@ -235,8 +233,6 @@ static void handle_discord_join_response(void *ignore, const char *line)
    /* To-Do: needs in-game widgets
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
-
-
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();

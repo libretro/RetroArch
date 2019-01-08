@@ -43,7 +43,6 @@
 
 #include "../font_driver.h"
 
-
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
 {
    {0},                                         /* GX2_TV_SCAN_MODE_NONE  */
@@ -484,7 +483,6 @@ static void gx2_overlay_vertex_geom(void *data, unsigned image,
    wiiu_video_t            *gx2 = (wiiu_video_t *)data;
    struct gx2_overlay_data *o = NULL;
 
-
    if (gx2)
       o = (struct gx2_overlay_data *)&gx2->overlay[image];
 
@@ -668,7 +666,6 @@ static void wiiu_gfx_free(void *data)
    if (!wiiu)
       return;
 
-
    /* clear leftover image */
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
@@ -817,8 +814,6 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
          if (!height)
             height = wiiu->color_buffer.surface.height;
 
-
-
          memset(&wiiu->pass[i].texture, 0, sizeof(wiiu->pass[i].texture));
          wiiu->pass[i].texture.surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
          wiiu->pass[i].texture.surface.width       = width;
@@ -836,7 +831,6 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 
          GX2CalcSurfaceSizeAndAlignment(&wiiu->pass[i].texture.surface);
          GX2InitTextureRegs(&wiiu->pass[i].texture);
-
 
          if ((i != (wiiu->shader_preset->passes - 1)) || (width != wiiu->vp.width)
                || (height != wiiu->vp.height))
@@ -1001,7 +995,6 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
-
       for (int k = 0; k < wiiu->shader_preset->num_parameters; k++)
       {
          if (string_is_equal(id, wiiu->shader_preset->parameters[k].id))
@@ -1128,7 +1121,6 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          }
       }
 
-
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
                     wiiu->texture.surface.imageSize);
 
@@ -1239,8 +1231,6 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                                   wiiu->pass[i].gfd->ps->samplerVars[j].location);
                continue;
             }
-
-
 
             for (int k = 0; k < wiiu->shader_preset->luts; k++)
             {
@@ -1528,7 +1518,6 @@ static bool wiiu_gfx_set_shader(void *data,
       }
    }
 
-
    return true;
 
 }
@@ -1542,7 +1531,6 @@ static struct video_shader *wiiu_gfx_get_current_shader(void *data)
 
    return wiiu->shader_preset;
 }
-
 
 static void wiiu_gfx_set_rotation(void *data,
                                   unsigned rotation)
@@ -1625,7 +1613,6 @@ static void wiiu_gfx_set_filtering(void *data, unsigned index, bool smooth)
    if (wiiu)
       wiiu->smooth = smooth;
 }
-
 
 static void wiiu_gfx_apply_state_changes(void *data)
 {

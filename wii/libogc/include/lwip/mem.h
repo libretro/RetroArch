@@ -41,7 +41,6 @@ typedef u32_t mem_size_t;
 typedef u16_t mem_size_t;
 #endif /* MEM_SIZE > 64000 */
 
-
 void mem_init(void);
 
 void *mem_malloc(mem_size_t size);

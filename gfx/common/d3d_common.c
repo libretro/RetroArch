@@ -36,7 +36,6 @@ void *d3d_matrix_transpose(void *_pout, const void *_pm)
    return pout;
 }
 
-
 void *d3d_matrix_identity(void *_pout)
 {
    struct d3d_matrix *pout = (struct d3d_matrix*)_pout;

@@ -324,7 +324,6 @@ static bool secondary_core_create(void)
    return true;
 }
 
-
 void secondary_core_set_variable_update(void)
 {
    has_variable_update = true;

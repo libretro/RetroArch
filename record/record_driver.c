@@ -155,7 +155,6 @@ const record_driver_t *ffemu_find_backend(const char *ident)
    return NULL;
 }
 
-
 /**
  * gfx_ctx_init_first:
  * @backend                 : Recording backend handle.

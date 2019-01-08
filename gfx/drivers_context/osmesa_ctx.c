@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>

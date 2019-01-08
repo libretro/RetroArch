@@ -137,7 +137,6 @@ static uint32_t load_dol_image(const void *dolstart)
 	return dolfile->entry_point;
 }
 
-
 /* if we name this main, GCC inserts the __eabi symbol,
  * even when we specify -mno-eabi. */
 

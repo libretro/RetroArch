@@ -50,7 +50,6 @@ static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
 
-
 #ifdef HAVE_OVERLAY
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {

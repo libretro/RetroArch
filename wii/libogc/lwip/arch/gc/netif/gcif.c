@@ -171,7 +171,6 @@
 
 #define BBA_NAPI_WEIGHT 16
 
-
 #define X(a,b)  b,a
 struct bba_descr {
 	u32 X(X(next_packet_ptr:12, packet_len:12), status:8);
@@ -181,7 +180,6 @@ struct bba_descr {
     ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w)	\
     ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
-
 
 struct bba_priv {
 	u8 flag;
@@ -401,7 +399,6 @@ static inline void bba_ins(u32 reg,void *val,u32 len)
 	bba_insnosel(reg,val,len);
 	bba_deselect();
 }
-
 
 static inline void bba_outs(u32 reg,void *val,u32 len)
 {

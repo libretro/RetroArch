@@ -130,7 +130,6 @@ static bool ps2_joypad_rumble(unsigned pad,
    return false;
 }
 
-
 static void ps2_joypad_destroy(void)
 {
    unsigned port;

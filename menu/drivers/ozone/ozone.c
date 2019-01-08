@@ -361,7 +361,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
          strlcat(filename, ".png", sizeof(filename));
 
-
 #ifdef HAVE_DISCORD
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
          {

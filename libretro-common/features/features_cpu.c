@@ -127,7 +127,6 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #define ra_clock_gettime clock_gettime
 #endif
 
-
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 #endif
@@ -707,7 +706,6 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_MMXEXT;
    }
 
-
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
 
@@ -731,7 +729,6 @@ uint64_t cpu_features_get(void)
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
-
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */

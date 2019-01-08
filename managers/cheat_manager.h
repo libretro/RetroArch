@@ -24,7 +24,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 enum cheat_handler_type
 {
    CHEAT_HANDLER_TYPE_EMU = 0,

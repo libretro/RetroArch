@@ -16,7 +16,6 @@
 ** limitations under the License.
 */
 
-
 #ifndef VK_PLATFORM_H_
 #define VK_PLATFORM_H_
 

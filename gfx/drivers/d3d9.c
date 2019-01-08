@@ -1057,7 +1057,6 @@ static bool d3d9_restore(void *data)
    return true;
 }
 
-
 static void d3d9_set_nonblock_state(void *data, bool state)
 {
    int interval                 = 0;
@@ -1665,7 +1664,6 @@ static bool d3d9_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
@@ -1888,7 +1886,6 @@ static void d3d9_set_menu_texture_frame(void *data,
             }
          }
       }
-
 
       if (d3d->menu)
          d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)d3d->menu->tex);

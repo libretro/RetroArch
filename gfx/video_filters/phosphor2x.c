@@ -58,7 +58,6 @@ struct filter_data
    float scan_range_565[64];
 };
 
-
 #define clamp8(x) ((x) > 255 ? 255 : ((x < 0) ? 0 : (uint32_t)x))
 #define clamp6(x) ((x) > 63 ? 63 : ((x < 0) ? 0 : (uint32_t)x))
 

@@ -2622,8 +2622,6 @@ static int cheevos_iterate(coro_t *coro)
 
    CORO_ENTER();
 
-
-
       cheevos_locals.addrs_patched = false;
 
       coro->settings               = config_get_ptr();

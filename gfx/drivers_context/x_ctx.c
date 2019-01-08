@@ -491,7 +491,6 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
    if (!x11_connect())
       goto error;
 
-
    switch (x_api)
    {
       case GFX_CTX_OPENGL_API:

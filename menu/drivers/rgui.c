@@ -821,7 +821,6 @@ error:
    return NULL;
 }
 
-
 static void rgui_free(void *data)
 {
    const uint8_t *font_fb;

@@ -228,7 +228,6 @@ static bool psp_audio_alive(void *data)
    return psp->running;
 }
 
-
 static bool psp_audio_stop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
@@ -293,7 +292,6 @@ static size_t psp_buffer_size(void *data)
    /* TODO */
    return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
 }
-
 
 audio_driver_t audio_psp = {
    psp_audio_init,

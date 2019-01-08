@@ -149,7 +149,6 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- ICMP options ---------- */
 #define ICMP_TTL                255
 
-
 /* ---------- DHCP options ---------- */
 /* Define LWIP_DHCP to 1 if you want DHCP configuration of
    interfaces. DHCP is not implemented in lwIP 0.5.1, however, so
@@ -215,6 +214,5 @@ a lot of data that needs to be copied, this should be set high. */
 
 #define DBG_MIN_LEVEL                   DBG_LEVEL_OFF
 #endif
-
 
 #endif /* __LWIPOPTS_H__ */

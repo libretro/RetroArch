@@ -72,7 +72,6 @@ typedef enum D2D1_SVG_PAINT_TYPE
 
 } D2D1_SVG_PAINT_TYPE;
 
-
 /// <summary>
 /// Specifies the units for an SVG length.
 /// </summary>
@@ -91,7 +90,6 @@ typedef enum D2D1_SVG_LENGTH_UNITS
     D2D1_SVG_LENGTH_UNITS_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_LENGTH_UNITS;
-
 
 /// <summary>
 /// Specifies a value for the SVG display property.
@@ -112,7 +110,6 @@ typedef enum D2D1_SVG_DISPLAY
 
 } D2D1_SVG_DISPLAY;
 
-
 /// <summary>
 /// Specifies a value for the SVG visibility property.
 /// </summary>
@@ -132,7 +129,6 @@ typedef enum D2D1_SVG_VISIBILITY
 
 } D2D1_SVG_VISIBILITY;
 
-
 /// <summary>
 /// Specifies a value for the SVG overflow property.
 /// </summary>
@@ -151,7 +147,6 @@ typedef enum D2D1_SVG_OVERFLOW
     D2D1_SVG_OVERFLOW_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_OVERFLOW;
-
 
 /// <summary>
 /// Specifies a value for the SVG stroke-linecap property.
@@ -177,7 +172,6 @@ typedef enum D2D1_SVG_LINE_CAP
 
 } D2D1_SVG_LINE_CAP;
 
-
 /// <summary>
 /// Specifies a value for the SVG stroke-linejoin property.
 /// </summary>
@@ -202,7 +196,6 @@ typedef enum D2D1_SVG_LINE_JOIN
     D2D1_SVG_LINE_JOIN_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_LINE_JOIN;
-
 
 /// <summary>
 /// The alignment portion of the SVG preserveAspectRatio attribute.
@@ -263,7 +256,6 @@ typedef enum D2D1_SVG_ASPECT_ALIGN
 
 } D2D1_SVG_ASPECT_ALIGN;
 
-
 /// <summary>
 /// The meetOrSlice portion of the SVG preserveAspectRatio attribute.
 /// </summary>
@@ -284,7 +276,6 @@ typedef enum D2D1_SVG_ASPECT_SCALING
     D2D1_SVG_ASPECT_SCALING_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_ASPECT_SCALING;
-
 
 /// <summary>
 /// Represents a path commmand. Each command may reference floats from the segment
@@ -407,7 +398,6 @@ typedef enum D2D1_SVG_PATH_COMMAND
 
 } D2D1_SVG_PATH_COMMAND;
 
-
 /// <summary>
 /// Defines the coordinate system used for SVG gradient or clipPath elements.
 /// </summary>
@@ -426,7 +416,6 @@ typedef enum D2D1_SVG_UNIT_TYPE
     D2D1_SVG_UNIT_TYPE_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_UNIT_TYPE;
-
 
 /// <summary>
 /// Defines the type of SVG string attribute to set or get.
@@ -450,7 +439,6 @@ typedef enum D2D1_SVG_ATTRIBUTE_STRING_TYPE
     D2D1_SVG_ATTRIBUTE_STRING_TYPE_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_ATTRIBUTE_STRING_TYPE;
-
 
 /// <summary>
 /// Defines the type of SVG POD attribute to set or get.
@@ -531,7 +519,6 @@ typedef enum D2D1_SVG_ATTRIBUTE_POD_TYPE
 
 } D2D1_SVG_ATTRIBUTE_POD_TYPE;
 
-
 /// <summary>
 /// Represents an SVG length.
 /// </summary>
@@ -541,7 +528,6 @@ typedef struct D2D1_SVG_LENGTH
     D2D1_SVG_LENGTH_UNITS units;
 
 } D2D1_SVG_LENGTH;
-
 
 /// <summary>
 /// Represents all SVG preserveAspectRatio settings.
@@ -568,7 +554,6 @@ typedef struct D2D1_SVG_PRESERVE_ASPECT_RATIO
 
 } D2D1_SVG_PRESERVE_ASPECT_RATIO;
 
-
 /// <summary>
 /// Represents an SVG viewBox.
 /// </summary>
@@ -581,7 +566,6 @@ typedef struct D2D1_SVG_VIEWBOX
 
 } D2D1_SVG_VIEWBOX;
 
-
 EXTERN_C CONST IID IID_ID2D1SvgAttribute;
 EXTERN_C CONST IID IID_ID2D1SvgPaint;
 EXTERN_C CONST IID IID_ID2D1SvgStrokeDashArray;
@@ -589,7 +573,6 @@ EXTERN_C CONST IID IID_ID2D1SvgPointCollection;
 EXTERN_C CONST IID IID_ID2D1SvgPathData;
 EXTERN_C CONST IID IID_ID2D1SvgElement;
 EXTERN_C CONST IID IID_ID2D1SvgDocument;
-
 
 #ifndef D2D_USE_C_DEFINITIONS
 
@@ -617,7 +600,6 @@ interface DX_DECLARE_INTERFACE("c9cdb0dd-f8c9-4e70-b7c2-301c80292c5e") ID2D1SvgA
         _COM_Outptr_ ID2D1SvgAttribute **attribute 
         ) PURE;
 }; // interface ID2D1SvgAttribute
-
 
 /// <summary>
 /// Interface describing an SVG 'fill' or 'stroke' value.
@@ -693,7 +675,6 @@ interface DX_DECLARE_INTERFACE("d59bab0a-68a2-455b-a5dc-9eb2854e2490") ID2D1SvgP
     }
 }; // interface ID2D1SvgPaint
 
-
 /// <summary>
 /// Interface describing an SVG 'stroke-dasharray' value.
 /// </summary>
@@ -767,7 +748,6 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
         ) PURE;
 }; // interface ID2D1SvgStrokeDashArray
 
-
 /// <summary>
 /// Interface describing an SVG 'points' value in a 'polyline' or 'polygon' element.
 /// </summary>
@@ -815,7 +795,6 @@ interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgP
     STDMETHOD_(UINT32, GetPointsCount)(
         ) PURE;
 }; // interface ID2D1SvgPointCollection
-
 
 /// <summary>
 /// Interface describing SVG path data. Path data can be set as the 'd' attribute on
@@ -923,7 +902,6 @@ interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgP
         _COM_Outptr_ ID2D1PathGeometry1 **pathGeometry 
         ) PURE;
 }; // interface ID2D1SvgPathData
-
 
 /// <summary>
 /// Interface for all SVG elements.
@@ -1679,7 +1657,6 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     }
 }; // interface ID2D1SvgElement
 
-
 interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgDocument  : public ID2D1Resource
 {
     
@@ -1814,18 +1791,13 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
     }
 }; // interface ID2D1SvgDocument
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
 
-
 #endif
-
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

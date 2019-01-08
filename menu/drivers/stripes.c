@@ -1899,7 +1899,6 @@ static void stripes_context_reset_horizontal_list(
             continue;
       }
 
-
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
@@ -2046,7 +2045,6 @@ static void stripes_list_open(stripes_handle_t *stripes)
          dir, stripes->selection_ptr_old);
    stripes_list_open_new(stripes, selection_buf,
          dir, selection);
-
 
    entry.duration     = STRIPES_DELAY;
    entry.target_value = stripes->icon_size * -(stripes->depth*2-2);
@@ -2509,7 +2507,6 @@ static int stripes_draw_item(
             node->label_alpha,
             TEXT_ALIGN_LEFT,
             width, height, stripes->font);
-
 
    menu_display_set_alpha(color, MIN(node->alpha, stripes->alpha));
 
@@ -3075,7 +3072,6 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    new_font_size                 = 32.0  * scale_factor;
    stripes->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
-
 
    stripes->thumbnail_width          = 1024.0 * scale_factor;
    stripes->left_thumbnail_width     = 1024.0 * scale_factor;
@@ -4029,7 +4025,6 @@ static void stripes_list_cache(void *data, enum menu_list_type type, unsigned ac
          break;
    }
 }
-
 
 static void stripes_context_destroy(void *data)
 {

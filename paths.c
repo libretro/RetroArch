@@ -423,7 +423,6 @@ static void path_init_savefile_internal(void)
    }
 }
 
-
 void path_fill_names(void)
 {
    global_t *global = global_get_ptr();

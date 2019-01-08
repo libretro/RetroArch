@@ -118,7 +118,6 @@ static int udev_find_vacant_pad(void)
    return -1;
 }
 
-
 static int udev_open_joystick(const char *path)
 {
    unsigned long evbit[NBITS(EV_MAX)]   = {0};

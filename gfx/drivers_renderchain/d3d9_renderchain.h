@@ -414,7 +414,6 @@ static INLINE void d3d9_recompute_pass_sizes(
    link_info.tex_w                   = current_width;
    link_info.tex_h                   = current_height;
 
-
    if (!d3d9_renderchain_set_pass_size(dev,
             (struct shader_pass*)&chain->passes->data[0],
             (struct shader_pass*)&chain->passes->data[

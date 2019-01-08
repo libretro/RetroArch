@@ -159,7 +159,6 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-
    BIND_ACTION_CANCEL(cbs, action_cancel_pop_default);
 
    if (menu_cbs_init_bind_cancel_compare_label(cbs, label) == 0)

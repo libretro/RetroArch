@@ -1126,7 +1126,6 @@ static int file_load_with_detect_core_wrapper(
                PATH_MAX_LENGTH * sizeof(char)))
          ret = -1;
 
-
       if (     !is_carchive && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
          fill_pathname_join(menu->detect_content_path,
@@ -1550,7 +1549,6 @@ static int default_action_ok_load_content_from_playlist_from_menu(const char *_p
    return 0;
 }
 
-
 #define default_action_ok_set(funcname, _id, _flush) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -1660,7 +1658,6 @@ static int action_ok_file_load(const char *path,
    return default_action_ok_load_content_with_core_from_menu(full_path_new,
          CORE_TYPE_PLAIN);
 }
-
 
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2155,7 +2152,6 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
    menu_input_dialog_end();
 }
 
-
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
 {
@@ -2173,7 +2169,6 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                NULL,
                NULL);
    }
-
 
    menu_input_dialog_end();
 }
@@ -2632,7 +2627,6 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3012,7 +3006,6 @@ static int action_ok_cheat_copy_before(const char *path,
 
    runloop_msg_queue_push(msg, 1, 180, true);
 
-
    return 0 ;
 }
 
@@ -3153,7 +3146,6 @@ static int action_ok_file_load_detect_core(const char *path,
 
    return 0;
 }
-
 
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3525,7 +3517,6 @@ finish:
 }
 #endif
 
-
 static int action_ok_download_generic(const char *path,
       const char *label, const char *menu_label,
       unsigned type, size_t idx, size_t entry_idx,
@@ -3821,7 +3812,6 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
-
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4032,7 +4022,6 @@ static int action_ok_netplay_connect_room(const char *path,
 #endif
    return 0;
 }
-
 
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4351,7 +4340,6 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
    return 0;
 }
 #endif
-
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)

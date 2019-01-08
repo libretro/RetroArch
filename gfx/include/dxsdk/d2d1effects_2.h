@@ -71,7 +71,6 @@ typedef enum D2D1_CONTRAST_PROP
 
 } D2D1_CONTRAST_PROP;
 
-
 /// <summary>
 /// The enumeration of the RgbToHue effect's top level properties.
 /// </summary>
@@ -95,7 +94,6 @@ typedef enum D2D1_RGBTOHUE_OUTPUT_COLOR_SPACE
 
 } D2D1_RGBTOHUE_OUTPUT_COLOR_SPACE;
 
-
 /// <summary>
 /// The enumeration of the HueToRgb effect's top level properties.
 /// </summary>
@@ -118,7 +116,6 @@ typedef enum D2D1_HUETORGB_INPUT_COLOR_SPACE
     D2D1_HUETORGB_INPUT_COLOR_SPACE_FORCE_DWORD = 0xffffffff
 
 } D2D1_HUETORGB_INPUT_COLOR_SPACE;
-
 
 /// <summary>
 /// The enumeration of the Chroma Key effect's top level properties.
@@ -153,7 +150,6 @@ typedef enum D2D1_CHROMAKEY_PROP
 
 } D2D1_CHROMAKEY_PROP;
 
-
 /// <summary>
 /// The enumeration of the Emboss effect's top level properties.
 /// </summary>
@@ -175,7 +171,6 @@ typedef enum D2D1_EMBOSS_PROP
 
 } D2D1_EMBOSS_PROP;
 
-
 /// <summary>
 /// The enumeration of the Exposure effect's top level properties.
 /// </summary>
@@ -190,7 +185,6 @@ typedef enum D2D1_EXPOSURE_PROP
     D2D1_EXPOSURE_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_EXPOSURE_PROP;
-
 
 /// <summary>
 /// The enumeration of the Posterize effect's top level properties.
@@ -219,7 +213,6 @@ typedef enum D2D1_POSTERIZE_PROP
 
 } D2D1_POSTERIZE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Sepia effect's top level properties.
 /// </summary>
@@ -241,7 +234,6 @@ typedef enum D2D1_SEPIA_PROP
 
 } D2D1_SEPIA_PROP;
 
-
 /// <summary>
 /// The enumeration of the Sharpen effect's top level properties.
 /// </summary>
@@ -262,7 +254,6 @@ typedef enum D2D1_SHARPEN_PROP
     D2D1_SHARPEN_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_SHARPEN_PROP;
-
 
 /// <summary>
 /// The enumeration of the Straighten effect's top level properties.
@@ -302,7 +293,6 @@ typedef enum D2D1_STRAIGHTEN_SCALE_MODE
 
 } D2D1_STRAIGHTEN_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Temperature And Tint effect's top level properties.
 /// </summary>
@@ -323,7 +313,6 @@ typedef enum D2D1_TEMPERATUREANDTINT_PROP
     D2D1_TEMPERATUREANDTINT_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_TEMPERATUREANDTINT_PROP;
-
 
 /// <summary>
 /// The enumeration of the Vignette effect's top level properties.
@@ -351,7 +340,6 @@ typedef enum D2D1_VIGNETTE_PROP
     D2D1_VIGNETTE_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_VIGNETTE_PROP;
-
 
 /// <summary>
 /// The enumeration of the Edge Detection effect's top level properties.
@@ -400,7 +388,6 @@ typedef enum D2D1_EDGEDETECTION_MODE
 
 } D2D1_EDGEDETECTION_MODE;
 
-
 /// <summary>
 /// The enumeration of the Highlights and Shadows effect's top level properties.
 /// </summary>
@@ -448,7 +435,6 @@ typedef enum D2D1_HIGHLIGHTSANDSHADOWS_INPUT_GAMMA
 
 } D2D1_HIGHLIGHTSANDSHADOWS_INPUT_GAMMA;
 
-
 /// <summary>
 /// The enumeration of the Lookup Table 3D effect's top level properties.
 /// </summary>
@@ -470,7 +456,6 @@ typedef enum D2D1_LOOKUPTABLE3D_PROP
 
 } D2D1_LOOKUPTABLE3D_PROP;
 
-
 #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 
 /// <summary>
@@ -488,7 +473,6 @@ typedef enum D2D1_OPACITY_PROP
 
 } D2D1_OPACITY_PROP;
 
-
 /// <summary>
 /// The enumeration of the Cross Fade effect's top level properties.
 /// </summary>
@@ -503,7 +487,6 @@ typedef enum D2D1_CROSSFADE_PROP
     D2D1_CROSSFADE_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_CROSSFADE_PROP;
-
 
 /// <summary>
 /// The enumeration of the Tint effect's top level properties.
@@ -525,7 +508,6 @@ typedef enum D2D1_TINT_PROP
     D2D1_TINT_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_TINT_PROP;
-
 
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 

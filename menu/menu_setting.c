@@ -52,7 +52,6 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-
 #include "../frontend/frontend_driver.h"
 
 #include "widgets/menu_input_bind_dialog.h"
@@ -187,7 +186,6 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
-
 
    return 0;
 }
@@ -792,8 +790,6 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
 }
 #endif
 
-
-
 #ifdef HAVE_OZONE
 static void setting_get_string_representation_uint_ozone_menu_color_theme(
       rarch_setting_t *setting,
@@ -1042,7 +1038,6 @@ static int setting_action_left_libretro_device_type(
    return 0;
 }
 
-
 static int setting_uint_action_left_crt_switch_resolution_super(
       rarch_setting_t *setting, bool wraparound)
 {
@@ -1089,7 +1084,6 @@ static int setting_action_left_bind_device(rarch_setting_t *setting, bool wrapar
 
    return 0;
 }
-
 
 static int setting_action_left_mouse_index(rarch_setting_t *setting, bool wraparound)
 {
@@ -1227,7 +1221,6 @@ static int setting_string_action_left_driver(rarch_setting_t *setting,
 
    return 0;
 }
-
 
 #ifdef HAVE_NETWORKING
 static int setting_string_action_left_netplay_mitm_server(
@@ -2024,7 +2017,6 @@ void menu_settings_list_current_add_enum_value_idx(
    (*list)[idx].enum_value_idx = enum_idx;
 }
 
-
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
    uint64_t flags = setting->flags;
@@ -2342,7 +2334,6 @@ static int setting_action_start_bind_device(rarch_setting_t *setting)
    return 0;
 }
 
-
 static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 {
    video_viewport_t vp;
@@ -2394,8 +2385,6 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 
    return 0;
 }
-
-
 
 static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
 {
@@ -2617,7 +2606,6 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
-
 
 /**
  * menu_setting_get_label:
@@ -3576,7 +3564,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-
          if (settings->bools.history_list_enable)
          {
             CONFIG_ACTION(
@@ -4300,7 +4287,6 @@ static bool setting_append_list(
                      bool_entries[i].flags);
             }
 
-
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
@@ -4558,7 +4544,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_autosave_interval;
 #endif
 
-
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
@@ -4686,8 +4671,6 @@ static bool setting_append_list(
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-
 
             config_uint_cbs(cheat_manager_state.working_cheat.idx, CHEAT_IDX,
                   NULL,NULL,
@@ -4896,7 +4879,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
 
-
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
@@ -5059,7 +5041,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
 
-
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -5135,8 +5116,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
-
 
          CONFIG_BOOL(
                list, list_info,
@@ -6581,7 +6560,6 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
 
-
             START_SUB_GROUP(
                   list,
                   list_info,
@@ -7514,7 +7492,6 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_pause_libretro,
@@ -7759,7 +7736,6 @@ static bool setting_append_list(
 #endif
          }
 
-
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Navigation", &group_info, &subgroup_info, parent_group);
@@ -7847,7 +7823,6 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 #endif
-
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -8206,7 +8181,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
-
 
 #ifdef HAVE_LAKKA
             CONFIG_BOOL(
@@ -8703,7 +8677,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-
 
 #ifdef HAVE_IMAGEVIEWER
          CONFIG_BOOL(
@@ -9756,7 +9729,6 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
 
-
 #if defined(HAVE_NETWORK_CMD)
             CONFIG_BOOL(
                   list, list_info,
@@ -9829,7 +9801,6 @@ static bool setting_append_list(
 
                   snprintf(s1, sizeof(s1), "%s_user_p%d", msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
                   snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE), user + 1);
-
 
                   CONFIG_BOOL_ALT(
                         list, list_info,
@@ -10668,7 +10639,6 @@ static bool setting_append_list(
       default:
          break;
    }
-
 
    return true;
 }

@@ -166,7 +166,6 @@ static void d3d8_renderchain_set_vertices(
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
 
-
       vert[1].x        =  1.0f;
       vert[1].y        =  1.0f;
       vert[1].z        =  1.0f;
@@ -1004,7 +1003,6 @@ static bool d3d8_restore(void *data)
    return true;
 }
 
-
 static void d3d8_set_nonblock_state(void *data, bool state)
 {
    int      interval            = 0;
@@ -1592,7 +1590,6 @@ static bool d3d8_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
@@ -1732,7 +1729,6 @@ static void d3d8_set_menu_texture_frame(void *data,
             }
          }
       }
-
 
       if (d3d->menu)
          d3d8_unlock_rectangle(d3d->menu->tex);

@@ -252,7 +252,6 @@ struct input_bind_map
    uint8_t retro_key;
 };
 
-
 static const uint8_t buttons[] = {
    RETRO_DEVICE_ID_JOYPAD_R,
    RETRO_DEVICE_ID_JOYPAD_L,
@@ -364,7 +363,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
 };
-
 
 typedef struct turbo_buttons turbo_buttons_t;
 
@@ -586,7 +584,6 @@ float input_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
-
 /**
  * input_poll:
  *
@@ -607,8 +604,6 @@ void input_poll(void)
 
    if (input_driver_block_libretro_input)
       return;
-
-
 
    for (i = 0; i < max_users; i++)
    {
@@ -745,8 +740,6 @@ int16_t input_state(unsigned port, unsigned device,
       if (settings->bools.input_remap_binds_enable && input_driver_mapper)
          input_mapper_state(input_driver_mapper,
                &res, port, device, idx, id);
-
-
 
       /* Don't allow turbo for D-pad. */
       if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
@@ -1477,7 +1470,6 @@ bool input_driver_init_mapper(void)
    RARCH_ERR("Failed to initialize input mapper.\n");
    return false;
 }
-
 
 bool input_driver_grab_mouse(void)
 {

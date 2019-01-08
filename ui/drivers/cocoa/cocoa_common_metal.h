@@ -75,7 +75,6 @@ extern id<ApplePlatform> apple_platform;
 #import <AVFoundation/AVCaptureOutput.h>
 #endif
 
-
 /*********************************************/
 /* RAMenuBase                                */
 /* A menu class that displays RAMenuItemBase */

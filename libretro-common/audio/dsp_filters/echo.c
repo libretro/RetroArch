@@ -157,7 +157,6 @@ error:
    return NULL;
 }
 
-
 static const struct dspfilter_implementation echo_plug = {
    echo_init,
    echo_process,
