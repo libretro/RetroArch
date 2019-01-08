@@ -4343,7 +4343,7 @@ static void netplay_lan_scan_callback(void *task_data,
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://newlobby.libretro.com/list/";
+   char url [2048] = "http://lobby.libretro.com/list/";
 #ifndef RARCH_CONSOLE
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif

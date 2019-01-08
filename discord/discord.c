@@ -155,20 +155,6 @@ static void handle_discord_error(int errcode, const char* message)
    RARCH_LOG("[Discord] error (%d: %s)\n", errcode, message);
 }
 
-
-#if 0
-static int action_ok_push_netplay_refresh_rooms(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char url [2048] = "http://newlobby.libretro.com/list/";
-#ifndef RARCH_CONSOLE
-   task_push_netplay_lan_scan(netplay_lan_scan_callback);
-#endif
-   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
-   return 0;
-}
-#endif
-
 static void handle_discord_join_cb(void *task_data, void *user_data, const char *err)
 {
    struct netplay_room *room;
@@ -187,17 +173,16 @@ static void handle_discord_join_cb(void *task_data, void *user_data, const char 
 
    if (room)
    {
-      RARCH_LOG("[Discord] joining lobby at: %s:%d\n",
-         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
-         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-      snprintf(tmp_hostname, sizeof(tmp_hostname), "%s:%d",
+      snprintf(tmp_hostname, sizeof(tmp_hostname), "%s|%d",
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
 
+
+      RARCH_LOG("[Discord] joining lobby at: %s\n", tmp_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, tmp_hostname, room->corename);
 
