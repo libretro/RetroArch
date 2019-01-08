@@ -56,6 +56,13 @@ typedef struct
    bool o_size;
    uint32_t o_height;
    uint32_t o_width;
+
+   NWindow *win;
+   Framebuffer fb;
+
+   // needed for the switch font driver
+   uint32_t *out_buffer;
+   uint32_t stride;
 } switch_video_t;
 
 typedef struct
@@ -72,8 +79,10 @@ typedef struct
     bool resize;
     unsigned width, height;
     float refresh_rate;
+    NWindow *win;
 } switch_ctx_data_t;
 
 void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend);
+void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uint32_t stride, bool blend);
 
 #endif
