@@ -183,13 +183,12 @@ bool config_file_write(config_file_t *conf, const char *path, bool val);
 
 /* Dump the current config to an already opened file.
  * Does not close the file. */
-void config_file_dump(config_file_t *conf, FILE *file);
+void config_file_dump(config_file_t *conf, FILE *file, bool val);
 
 #ifdef ORBIS
 void config_file_dump_orbis(config_file_t *conf, int fd);
 #endif
 
-void config_file_dump(config_file_t *conf, FILE *file, bool val);
 
 bool config_file_exists(const char *path);
 

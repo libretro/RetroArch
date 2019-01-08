@@ -326,6 +326,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
       stream->buf = (char*)calloc(1, 0x4000);
       setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
 #endif
+#endif
    }
    else
    {

@@ -986,7 +986,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 #ifdef ORBIS
       int fd = orbisOpen(path,O_RDWR|O_CREAT,0644);
       RARCH_LOG("[Config]config_file_write orbisOpen path=%s fd=%d\n", path, fd);
-      if (fd<0)
+      if (fd < 0)
          return false;
       config_file_dump_orbis(conf,fd);
       orbisClose(fd);
