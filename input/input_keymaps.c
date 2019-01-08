@@ -44,7 +44,7 @@
 #include "SDL.h"
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(HAVE_WAYLAND)
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif
@@ -848,7 +848,7 @@ const struct rarch_key_map rarch_key_map_x11[] = {
 };
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(HAVE_WAYLAND)
 const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_BACKSPACE, RETROK_BACKSPACE },
    { KEY_TAB, RETROK_TAB },
@@ -1423,7 +1423,7 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-#if defined(_WIN32) && _WIN32_WINNT >= 0x0501
+#if defined(_WIN32) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_BACK, RETROK_BACKSPACE },
    { VK_TAB, RETROK_TAB },
@@ -1537,6 +1537,11 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_OEM_7, RETROK_QUOTE },
    { 0, RETROK_UNKNOWN }
 };
+#endif
+
+#ifdef __WINRT__
+/* Refer to uwp_main.cpp - on WinRT these constants are defined as C++ enum classes
+ * so they can't be placed in a C source file */
 #endif
 
 enum retro_key rarch_keysym_lut[RETROK_LAST];

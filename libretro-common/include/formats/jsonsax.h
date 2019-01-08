@@ -29,7 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 enum
 {
   JSONSAX_OK = 0,

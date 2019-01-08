@@ -234,7 +234,6 @@ static void gfx_ctx_opendingux_set_swap_interval(
 #endif
 }
 
-
 static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
 {
 #ifdef HAVE_EGL

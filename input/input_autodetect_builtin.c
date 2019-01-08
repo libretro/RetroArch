@@ -303,7 +303,6 @@ DECL_AXIS_EX(r_x_minus, -3, "R Analog left") \
 DECL_AXIS_EX(r_y_plus,  +2, "R Analog up") \
 DECL_AXIS_EX(r_y_minus, -2, "R Analog down")
 
-
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
 DECL_BTN_EX(select,       2, "-") \

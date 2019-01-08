@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_NETPLAY_H
 #define __RARCH_NETPLAY_H
 

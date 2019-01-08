@@ -640,7 +640,6 @@ _pixman_choose_implementation (void);
 pixman_bool_t
 _pixman_disabled (const char *name);
 
-
 /*
  * Utilities
  */

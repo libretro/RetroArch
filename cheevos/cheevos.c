@@ -2622,8 +2622,6 @@ static int cheevos_iterate(coro_t *coro)
 
    CORO_ENTER();
 
-
-
       cheevos_locals.addrs_patched = false;
 
       coro->settings               = config_get_ptr();
@@ -3395,7 +3393,7 @@ found:
                *coro->settings->arrays.cheevos_password = '\0';
                strncpy(
                      coro->settings->arrays.cheevos_token,
-                     cheevos_locals.token, sizeof(cheevos_locals.token)
+                     cheevos_locals.token, sizeof(coro->settings->arrays.cheevos_token)
                );
                CORO_RET();
             }

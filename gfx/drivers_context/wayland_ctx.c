@@ -59,7 +59,6 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
-
 typedef struct touch_pos
 {
    bool active;
@@ -70,7 +69,6 @@ typedef struct touch_pos
 
 static int num_active_touches;
 static touch_pos_t active_touch_positions[MAX_TOUCHES];
-
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -130,7 +128,6 @@ typedef struct gfx_ctx_wayland_data
    gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_wayland_data_t;
-
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
@@ -327,14 +324,17 @@ static void pointer_handle_button(void *data,
       {
          wl->input.mouse.left = true;
 
-         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->xdg_toplevel) {
-			 if (wl->xdg_toplevel)
-			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
-			 else if (wl->zxdg_toplevel)
-			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
-			 else if (wl->shell)
-			   wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT)) {
+			 if (wl->xdg_toplevel) {
+				 xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
 			 }
+			 else if (wl->zxdg_toplevel) {
+				 zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
+			 }
+			 else if (wl->shell) {
+				 wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
+			 }
+		 }
       }
       else if (button == BTN_RIGHT)
          wl->input.mouse.right = true;
@@ -505,7 +505,6 @@ static const struct wl_touch_listener touch_listener = {
    touch_handle_cancel,
 };
 
-
 static void seat_handle_capabilities(void *data,
       struct wl_seat *seat, unsigned caps)
 {
@@ -569,8 +568,6 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
    *touch_y = active_touch_positions[id].y;
    return active_touch_positions[id].active;
 }
-
-
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -870,8 +867,8 @@ static void gfx_ctx_wl_get_video_size(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   *width  = wl->width;
-   *height = wl->height;
+   *width  = wl->width  * wl->buffer_scale;
+   *height = wl->height * wl->buffer_scale;
 }
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
@@ -1058,8 +1055,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl->width  = width;
-         wl->height = height;
+         wl->width  = width  / wl->buffer_scale;
+         wl->height = height / wl->buffer_scale;
 
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
@@ -1110,7 +1107,6 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 		 wl_shell_surface_set_title(wl->shell_surf, title);
 	}
 }
-
 
 static bool gfx_ctx_wl_get_metrics(void *data,
       enum display_metric_types type, float *value)
@@ -1326,7 +1322,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       default:
          break;
    }
-
 
    wl->input.keyboard_focus = true;
    wl->input.mouse.focus = true;
@@ -1618,7 +1613,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
                   wl->input.dpy, wl->surface,
-                  wl->width, wl->height, wl->swap_interval))
+                  wl->width * wl->buffer_scale, wl->height * wl->buffer_scale, wl->swap_interval))
             goto error;
 #endif
          break;

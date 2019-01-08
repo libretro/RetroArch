@@ -302,6 +302,7 @@ static bool quick_menu_show_save_content_dir_overrides  = true;
 
 static bool kiosk_mode_enable            = false;
 
+static bool menu_horizontal_animation    = true;
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
@@ -400,6 +401,8 @@ static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
+#elif defined(PS2)
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
 #elif defined(SWITCH) || defined(ORBIS)
@@ -804,7 +807,23 @@ static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
-#if _MSC_VER == 1600
+#if _MSC_VER >= 1910
+#ifndef __WINRT__
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
+#endif
+#else
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
+#elif  defined(__arm__) || defined(_M_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
+#endif
+#endif
+#elif _MSC_VER == 1600
 #if defined(__x86_64__) || defined(_M_X64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)

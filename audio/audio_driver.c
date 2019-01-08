@@ -122,6 +122,9 @@ static const audio_driver_t *audio_drivers[] = {
 #if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
 #endif
+#if defined(PS2)
+  &audio_ps2,
+#endif
 #ifdef _3DS
    &audio_ctr_csnd,
    &audio_ctr_dsp,
@@ -394,7 +397,6 @@ static void audio_driver_mixer_init(unsigned out_rate)
    audio_mixer_init(out_rate);
 }
 
-
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    unsigned new_rate     = 0;
@@ -632,7 +634,6 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.data_in                  = audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
-
 
    if (audio_driver_dsp)
    {
@@ -1501,7 +1502,6 @@ error:
    return false;
 }
 
-
 bool audio_driver_stop(void)
 {
    if (!current_audio || !current_audio->stop
@@ -1590,7 +1590,6 @@ void audio_set_bool(enum audio_action action, bool val)
          break;
    }
 }
-
 
 void audio_set_float(enum audio_action action, float val)
 {

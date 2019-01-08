@@ -293,11 +293,12 @@ static void* ui_companion_qt_init(void)
    widget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
+   QObject::connect(widget, SIGNAL(enterPressed()), mainwindow, SLOT(onDropWidgetEnterPressed()));
    QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
    QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    layout = new QVBoxLayout();
-   layout->addWidget(mainwindow->contentTableWidget());
+   layout->addWidget(mainwindow->contentTableView());
    layout->addWidget(mainwindow->contentGridWidget());
 
    widget->setLayout(layout);
@@ -513,6 +514,11 @@ static void* ui_companion_qt_init(void)
    if (qsettings->contains("all_playlists_grid_max_count"))
       mainwindow->setAllPlaylistsGridMaxCount(qsettings->value("all_playlists_grid_max_count", 5000).toInt());
 
+   if (qsettings->contains("thumbnail_cache_limit"))
+      mainwindow->setThumbnailCacheLimit(qsettings->value("thumbnail_cache_limit", 500).toInt());
+   else
+      mainwindow->setThumbnailCacheLimit(500);
+
    if (qsettings->contains("geometry"))
       if (qsettings->contains("save_geometry"))
          mainwindow->restoreGeometry(qsettings->value("geometry").toByteArray());
@@ -551,6 +557,25 @@ static void* ui_companion_qt_init(void)
 
       /* we set it to the same thing a second time so that m_lastViewType is also equal to the startup view type */
       mainwindow->setCurrentViewType(mainwindow->getCurrentViewType());
+   }
+   else
+      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+
+   if (qsettings->contains("icon_view_thumbnail_type"))
+   {
+      QString thumbnailType = qsettings->value("icon_view_thumbnail_type", "boxart").toString();
+
+      if (thumbnailType == "boxart")
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
+      else if (thumbnailType == "screenshot")
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
+      else if (thumbnailType == "title")
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+      else
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
+
+      /* we set it to the same thing a second time so that m_lastThumbnailType is also equal to the startup view type */
+      mainwindow->setCurrentThumbnailType(mainwindow->getCurrentThumbnailType());
    }
    else
       mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);

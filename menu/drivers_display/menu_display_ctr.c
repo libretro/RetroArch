@@ -59,7 +59,6 @@ static void menu_display_ctr_viewport(menu_display_ctx_draw_t *draw,
 
 }
 
-
 static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
@@ -132,7 +131,6 @@ static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
          GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
          GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
          GPU_RGBA8);
-
 
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),

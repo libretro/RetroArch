@@ -318,7 +318,6 @@ static size_t ax_audio_buffer_size(void* data)
    return AX_AUDIO_COUNT;
 }
 
-
 audio_driver_t audio_ax =
 {
    ax_audio_init,

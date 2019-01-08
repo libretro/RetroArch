@@ -201,7 +201,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-
    if (core_info->display_name)
    {
       fill_pathname_join_concat_noext(tmp,
@@ -359,12 +358,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
   if (settings->bools.menu_show_core_updater)
      menu_entries_append_enum(info->list,
            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
            msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
            MENU_ENUM_LABEL_CORE_DELETE,
            MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+#endif
 
    return 0;
 }
@@ -385,6 +387,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   settings_t *settings                  = config_get_ptr();
 
    tmp[0] = feat_str[0] = '\0';
 
@@ -502,40 +505,39 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-
    for(controller = 0; controller < MAX_USERS; controller++)
    {
-       if (input_is_autoconfigured(controller))
-       {
+      if (input_is_autoconfigured(controller))
+      {
             snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
-                 controller,
-                 input_config_get_device_name(controller),
-                 input_autoconfigure_get_device_name_index(controller));
+               controller,
+               input_config_get_device_name(controller),
+               input_autoconfigure_get_device_name_index(controller));
             menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device display name: %s",
-                 controller,
-                 input_config_get_device_display_name(controller) ?
-                    input_config_get_device_display_name(controller) : "N/A");
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device config name: %s",
-                 controller,
-                 input_config_get_device_display_name(controller) ?
-                    input_config_get_device_config_name(controller) : "N/A");
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
-                 controller,
-                 input_config_get_vid(controller),
-                 input_config_get_pid(controller));
-            menu_entries_append_enum(info->list, tmp, "",
-                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-       }
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            {
+               snprintf(tmp, sizeof(tmp), " Device display name: %s",
+                  input_config_get_device_display_name(controller) ?
+                  input_config_get_device_display_name(controller) : "N/A");
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               snprintf(tmp, sizeof(tmp), " Device config name: %s",
+                  input_config_get_device_display_name(controller) ?
+                  input_config_get_device_config_name(controller) : "N/A");
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
+                  input_config_get_vid(controller),
+                  input_config_get_pid(controller));
+               menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            }
+      }
    }
 
    if (frontend)
@@ -1768,7 +1770,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error;
       }
 
-
       if (db_info_entry->developer)
       {
          for (k = 0; k < db_info_entry->developer->size; k++)
@@ -2058,7 +2059,6 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    return 0;
 }
 #endif
-
 
 static unsigned deferred_push_video_shader_parameters_common(
       menu_displaylist_info_t *info,
@@ -2445,7 +2445,6 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
          goto loop;
 #endif
 
-
       menu_entries_append_enum(info->list, short_description,
             name, enum_idx, menu_setting_set_flags(setting), 0, 0);
       count++;
@@ -2513,7 +2512,6 @@ static void menu_displaylist_set_new_playlist(
             path,
             sizeof(menu->db_playlist_file));
 }
-
 
 static int menu_displaylist_parse_horizontal_list(
       menu_handle_t *menu,
@@ -2616,7 +2614,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
-
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
          && !cheevos_hardcore_active
@@ -2659,7 +2656,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
 
-
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
          menu_entries_append_enum(info->list,
@@ -2672,7 +2668,7 @@ static int menu_displaylist_parse_load_content_settings(
       {
          if (!recording_is_enabled())
          {
-            if (settings->bools.quick_menu_show_start_recording)
+            if (settings->bools.quick_menu_show_start_recording && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
@@ -2680,7 +2676,7 @@ static int menu_displaylist_parse_load_content_settings(
                      MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
             }
 
-            if (settings->bools.quick_menu_show_start_streaming)
+            if (settings->bools.quick_menu_show_start_streaming && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -2796,7 +2792,6 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
       }
 
-
 #ifdef HAVE_CHEEVOS
       if(settings->bools.cheevos_enable)
       {
@@ -2893,7 +2888,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_reset_core_association)
+      if (settings->bools.quick_menu_show_reset_core_association && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION),
@@ -3102,6 +3097,8 @@ static unsigned menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
    count++;
 #elif defined(HAVE_NETWORKING)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
    if (settings->bools.menu_show_core_updater)
    {
       menu_entries_append_enum(info->list,
@@ -3111,6 +3108,7 @@ static unsigned menu_displaylist_parse_options(
             MENU_SETTING_ACTION, 0, 0);
       count++;
    }
+#endif
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
@@ -3605,6 +3603,7 @@ static unsigned menu_displaylist_parse_cores(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
+   bool ok;
 
    if (string_is_empty(path))
    {
@@ -3615,8 +3614,28 @@ static unsigned menu_displaylist_parse_cores(
       return items_found;
    }
 
-   str_list = dir_list_new(path, info->exts,
+   str_list = string_list_new();
+   ok = dir_list_append(str_list, path, info->exts,
          true, settings->bools.show_hidden_files, true, false);
+
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* UWP: browse the optional packages for additional cores */
+   struct string_list *core_packages = string_list_new();
+   uwp_fill_installed_core_packages(core_packages);
+   for (i = 0; i < core_packages->size; i++)
+   {
+      dir_list_append(str_list, core_packages->elems[i].data, info->exts,
+            true, settings->bools.show_hidden_files, true, false);
+   }
+   string_list_free(core_packages);
+#else
+   /* Keep the old 'directory not found' behavior */
+   if (!ok)
+   {
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+#endif
 
    {
       char *out_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -4151,6 +4170,8 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       file_list_sort_on_alt(info->list);
 
 #if defined(HAVE_NETWORKING)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#else
    if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
    {
       if (info->download_core)
@@ -4168,6 +4189,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_SETTING_ACTION, 0, 0);
       }
    }
+#endif
 #endif
 
    if (info->push_builtin_cores)
@@ -4296,6 +4318,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
    menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
+   static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
 
@@ -4725,7 +4748,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             path_playlist[0] = '\0';
 
-
             fill_pathname_join(
                   path_playlist,
                   settings->paths.directory_playlist,
@@ -5032,6 +5054,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_sort    = true;
          info->need_refresh = true;
          info->need_push    = true;
+         core_selected      = true;
 
          {
             unsigned cores_names_len        = 0;
@@ -5426,7 +5449,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if ( setting )
             setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
 
-
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_IDX,
                PARSE_ONLY_UINT, false);
@@ -5539,7 +5561,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_START_OR_RESTART,
                PARSE_ONLY_UINT, false);
@@ -5617,8 +5638,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
                PARSE_ONLY_UINT, false);
-
-
 
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH);
          if (setting)
@@ -7082,6 +7101,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_horizontal_content_actions(menu, info);
          info->need_refresh = true;
          info->need_push    = true;
+
+         if (core_selected)
+         {
+            info->need_clear = true;
+            core_selected = false;
+         }
+
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -7844,7 +7870,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
-
             if (video_shader_is_supported(RARCH_SHADER_CG) &&
                   video_shader_get_type_from_ext("cg", &is_preset)
                   != RARCH_SHADER_NONE)
@@ -8101,19 +8126,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                if (tmp_str_list && tmp_str_list->size > 0)
                {
                   core_option_manager_t *coreopts = NULL;
+                  const char *val                 = NULL;
 
                   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                   if (coreopts)
                   {
+                     settings_t *settings            = config_get_ptr();
                      unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
-                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
 
-                     i--;
+                     if (settings->bools.game_specific_options)
+                     {
+                        val = core_option_manager_get_val(coreopts, i-1);
+                        i--;
+                     }
+                     else
+                        val = core_option_manager_get_val(coreopts, i);
 
                      option                          = (struct core_option*)&coreopts->opts[i];
 

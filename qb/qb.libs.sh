@@ -242,8 +242,21 @@ create_config_make()
 
 	printf %s\\n "Creating make config: $outfile"
 
-	{	[ "$HAVE_CC" = 'yes' ] && printf %s\\n "CC = $CC" "CFLAGS = $CFLAGS"
-		[ "$HAVE_CXX" = 'yes' ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
+	{	if [ "$HAVE_CC" = 'yes' ]; then
+			printf %s\\n "CC = $CC"
+
+			if [ "${CFLAGS}" ]; then
+				printf %s\\n "CFLAGS = $CFLAGS"
+			fi
+		fi
+
+		if [ "$HAVE_CXX" = 'yes' ]; then
+			printf %s\\n "CXX = $CXX"
+
+			if [ "${CXXFLAGS}" ]; then
+				printf %s\\n "CXXFLAGS = $CXXFLAGS"
+			fi
+		fi
 
 		printf %s\\n "WINDRES = $WINDRES" \
 			"MOC = $MOC" \

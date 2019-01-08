@@ -25,7 +25,9 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 #include <libudev.h>
+#ifdef __linux__
 #include <linux/types.h>
+#endif
 #include <linux/input.h>
 
 #include <retro_inline.h>
@@ -115,7 +117,6 @@ static int udev_find_vacant_pad(void)
          return i;
    return -1;
 }
-
 
 static int udev_open_joystick(const char *path)
 {

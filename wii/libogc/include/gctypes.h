@@ -47,7 +47,6 @@ typedef volatile float vf32;
 typedef volatile double vf64;
 /*+----------------------------------------------------------------------------------------------+*/
 
-
 typedef unsigned int BOOL;
 /*+----------------------------------------------------------------------------------------------+*/
 // alias type typedefs
@@ -78,7 +77,6 @@ typedef unsigned int BOOL;
 #endif /* BYTE_ORDER */
 /*+----------------------------------------------------------------------------------------------+*/
 
-
 //!	argv structure
 /*!	\struct __argv
 
@@ -105,6 +103,5 @@ extern struct __argv *__system_argv;
 #endif /* __cplusplus */
 
 #endif /* TYPES_H */
-
 
 /* END OF FILE */

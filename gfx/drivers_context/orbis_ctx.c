@@ -19,7 +19,6 @@
 #include "../../config.h"
 #endif
 
-
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
 

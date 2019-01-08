@@ -26,7 +26,6 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #include <time.h>
 #include "filetime.h"
 #include "common.h"
@@ -65,7 +64,6 @@ uint16_t _FAT_filetime_getTimeFromRTC (void) {
 	return 0;
 #endif
 }
-
 
 uint16_t _FAT_filetime_getDateFromRTC (void) {
 #ifdef USE_RTC_TIME

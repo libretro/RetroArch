@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <asm.h>
 #include <processor.h>
 #include "cache.h"

@@ -20,8 +20,41 @@
 #include "d3d11_common.h"
 #include "d3dcompiler_common.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
+
+HRESULT WINAPI D3D11CreateDevice(
+      IDXGIAdapter*   pAdapter,
+      D3D_DRIVER_TYPE DriverType,
+      HMODULE         Software,
+      UINT            Flags,
+      CONST D3D_FEATURE_LEVEL* pFeatureLevels,
+      UINT                     FeatureLevels,
+      UINT                     SDKVersion,
+      ID3D11Device**              ppDevice,
+      D3D_FEATURE_LEVEL*          pFeatureLevel,
+      ID3D11DeviceContext**       ppImmediateContext)
+{
+   static dylib_t                                d3d11_dll;
+   static PFN_D3D11_CREATE_DEVICE                fp;
+
+   if (!d3d11_dll)
+      d3d11_dll = dylib_load("d3d11.dll");
+
+   if (!d3d11_dll)
+      return TYPE_E_CANTLOADLIBRARY;
+
+   if (!fp)
+      fp = (PFN_D3D11_CREATE_DEVICE)dylib_proc(
+            d3d11_dll, "D3D11CreateDevice");
+
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
+
+   return fp(
+         pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
+         ppDevice, pFeatureLevel, ppImmediateContext);
+}
 
 HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       IDXGIAdapter*   pAdapter,

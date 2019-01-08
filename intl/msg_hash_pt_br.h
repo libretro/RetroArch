@@ -174,6 +174,10 @@ MSG_HASH(
     "Dar aos núcleos renderizados por hardware seu próprio contexto privado. Evita ter que assumir mudanças de estado de hardware entre quadros."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+    "Enable horizontal animation for the menu. This will have a performance hit."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
     "Ajusta as configurações de aparência da tela de menu."
     )

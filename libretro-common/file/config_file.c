@@ -547,7 +547,6 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-
 config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;
@@ -979,7 +978,7 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-bool config_file_write(config_file_t *conf, const char *path)
+bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!string_is_empty(path))
    {
@@ -998,10 +997,12 @@ bool config_file_write(config_file_t *conf, const char *path)
          return false;
 
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+#if !defined(PS2)
       buf = calloc(1, 0x4000);
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+#endif
 
-      config_file_dump(conf, file);
+      config_file_dump(conf, file, sort);
 
       if (file != stdout)
          fclose(file);
@@ -1009,10 +1010,11 @@ bool config_file_write(config_file_t *conf, const char *path)
 #endif
    }
    else
-      config_file_dump(conf, stdout);
+      config_file_dump(conf, stdout, sort);
 
    return true;
 }
+
 #ifdef ORBIS
 void config_file_dump_orbis(config_file_t *conf, int fd)
 {
@@ -1041,7 +1043,8 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
    }
 }
 #endif
-void config_file_dump(config_file_t *conf, FILE *file)
+
+void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -1052,7 +1055,11 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   if (sort)
+      list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   else
+      list = (struct config_entry_list*)conf->entries;
+
    conf->entries = list;
 
    while (list)

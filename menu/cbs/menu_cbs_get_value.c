@@ -501,7 +501,6 @@ static void menu_action_setting_disp_set_label_input_desc(
    else
       strlcpy(s, "---", len);
 
-
    *w = 19;
    strlcpy(s2, path, len2);
 }

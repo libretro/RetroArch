@@ -1,11 +1,11 @@
 BUILD_PRX          = 0
-DEBUG              = 1
+DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 BIG_STACK          = 0
-WHOLE_ARCHIVE_LINK = 0
+MUTE_WARNINGS      = 0
 PS2_IP = 192.168.1.150
 
 #Configuration for IRX
@@ -13,38 +13,37 @@ EE_BIN2O = bin2o
 IRX_DIR = $(PS2SDK)/iop/irx
 
 TARGET = retroarchps2.elf
+TARGET_RELEASE = retroarchps2-release.elf
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 	RARCH_DEFINES += -DDEBUG
 else
    OPTIMIZE_LV	:= -O2
+	LDFLAGS :=  -s
 endif
 
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
+ifeq ($(MUTE_WARNINGS), 1)
+   DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses
 endif
 
-INCDIR = -I$(PS2SDK)/ports/include -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/iop/include -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include
+INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
 INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 GPVAL = -G0
-CFLAGS = $(OPTIMIZE_LV)  -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
-LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
-#LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
-LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit -lpad -lsdl
+LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
+LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
-IRX = iomanX.irx fileXio.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
+IRX = iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
 IRX_OBJ = $(IRX:.irx=.o)
 EE_OBJS += $(IRX_OBJ)
 
@@ -67,12 +66,13 @@ endif
 CFLAGS += $(RARCH_DEFINES)
 
 # Missing objecst on the PS2SDK
-EE_OBJS += ps2/compat_ctype.o
+EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o
 
 #EE_OBJS = griffin/griffin.o bootstrap/ps2/kernel_functions.o
 EE_OBJS += griffin/griffin.o
 
 EE_CFLAGS = $(CFLAGS)
+EE_CXXFLAGS = $(CFLAGS)
 EE_LDFLAGS = $(LDFLAGS)
 EE_LIBS = $(LIBS)
 EE_ASFLAGS = $(ASFLAGS)
@@ -95,6 +95,11 @@ run:
 
 debug: clean prepare all run
 
+package:
+	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
+
+release: clean all package
+
 #Specific file name and output per IRX Module
 $(EE_IRX_OBJ):
 	$(EE_BIN2O) $(EE_GPVAL) $(IRX_DIR)/$(@:.o=.irx) $@ $(@:.o=_irx)
@@ -102,4 +107,8 @@ $(EE_IRX_OBJ):
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref 
 include $(PS2SDK)/samples/Makefile.eeglobal
-   
+
+#Linking with C++
+$(EE_BIN): $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o
+	$(EE_CXX) $(EE_NO_CRT) -T$(PS2SDK)/ee/startup/linkfile $(EE_CXXFLAGS) \
+		-o $(EE_BIN) $(PS2SDK)/ee/startup/crt0.o $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(EE_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ) $(EE_LDFLAGS) $(EE_LIBS)

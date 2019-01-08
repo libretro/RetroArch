@@ -36,7 +36,6 @@ distribution.
 #include "processor.h"
 #include "conf.h"
 
-
 static int __conf_inited = 0;
 static u8 __conf_buffer[0x4000] ATTRIBUTE_ALIGN(32);
 static char __conf_txt_buffer[0x101] ATTRIBUTE_ALIGN(32);

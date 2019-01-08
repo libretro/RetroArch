@@ -201,9 +201,10 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 {
    xaudio2_t *handle = NULL;
    WAVEFORMATEX wfx  = {0};
-
-#ifndef _XBOX
-   CoInitializeEx(0, COINIT_MULTITHREADED);
+#if !defined(_XBOX) && !defined(__WINRT__)
+   HRESULT hr        = CoInitialize(NULL);
+   if (FAILED(hr))
+      return NULL;
 #endif
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
@@ -222,8 +223,13 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
+#if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL, AudioCategory_GameEffects)))
+      goto error;
+#else
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
       goto error;
+#endif
 
    xaudio2_set_wavefmt(&wfx, channels, samplerate);
 
@@ -250,6 +256,9 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 
 error:
    xaudio2_free(handle);
+#if !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
+#endif
    return NULL;
 }
 
@@ -399,6 +408,10 @@ static void xa_free(void *data)
    if (xa->xa)
       xaudio2_free(xa->xa);
    free(xa);
+
+#if !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
+#endif
 }
 
 static size_t xa_write_avail(void *data)

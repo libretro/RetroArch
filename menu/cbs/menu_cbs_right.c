@@ -212,7 +212,6 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
    return 0;
 }
 
-
 static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;

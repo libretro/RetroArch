@@ -238,6 +238,4 @@ s32 STM_RebootSystem()
 	return res;
 }
 
-
-
 #endif /* defined(HW_RVL) */

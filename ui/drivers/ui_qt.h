@@ -22,7 +22,7 @@
 #include <QMainWindow>
 #include <QTreeView>
 #include <QListWidget>
-#include <QTableWidget>
+#include <QTableView>
 #include <QFrame>
 #include <QWidget>
 #include <QDialog>
@@ -38,6 +38,10 @@
 #include <QElapsedTimer>
 #include <QSslError>
 #include <QNetworkReply>
+#include <QStyledItemDelegate>
+#include <QCache>
+#include <QSortFilterProxyModel>
+#include <QDir>
 
 extern "C" {
 #include <retro_assert.h>
@@ -84,7 +88,7 @@ class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
-class FlowLayout;
+class GridView;
 class ShaderParamsDialog;
 class CoreOptionsDialog;
 class CoreInfoDialog;
@@ -96,19 +100,58 @@ enum SpecialPlaylist
    SPECIAL_PLAYLIST_HISTORY
 };
 
-class GridItem : public QObject
+enum ThumbnailType
+{
+   THUMBNAIL_TYPE_BOXART,
+   THUMBNAIL_TYPE_SCREENSHOT,
+   THUMBNAIL_TYPE_TITLE_SCREEN,
+};
+
+class PlaylistModel : public QAbstractListModel
 {
    Q_OBJECT
-public:
-   GridItem();
 
-   QPointer<ThumbnailWidget> widget;
-   QPointer<ThumbnailLabel> label;
-   QHash<QString, QString> hash;
-   QImage image;
-   QPixmap pixmap;
-   QFutureWatcher<GridItem*> imageWatcher;
-   QString labelText;
+public:
+   enum Roles
+   {
+      HASH = Qt::UserRole + 1,
+      THUMBNAIL
+   };
+
+   PlaylistModel(QObject *parent = 0);
+
+   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+   QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+   Qt::ItemFlags flags(const QModelIndex &index) const;
+   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+   int rowCount(const QModelIndex &parent = QModelIndex()) const;
+   int columnCount(const QModelIndex &parent = QModelIndex()) const;
+   void addPlaylistItems(const QStringList &paths, bool add = false);
+   void addDir(QString path, QFlags<QDir::Filter> showHidden);
+   void setThumbnailType(const ThumbnailType type);
+   void loadThumbnail(const QModelIndex &index);
+   void reloadThumbnail(const QModelIndex &index);
+   void reloadThumbnailPath(const QString path);
+   void reloadSystemThumbnails(const QString system);
+   void setThumbnailCacheLimit(int limit);
+
+signals:
+   void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
+
+private slots:
+   void onImageLoaded(const QImage image, const QModelIndex &index, const QString &path);
+
+private:
+   QVector<QHash<QString, QString> > m_contents;
+   QCache<QString, QPixmap> m_cache;
+   QSet<QString> m_pendingImages;
+   QVector<QByteArray> m_imageFormats;
+   QRegularExpression m_fileSanitizerRegex;
+   ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
+   QString getThumbnailPath(const QModelIndex &index, QString type) const;
+   QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
+   void getPlaylistItems(QString path);
+   void loadImage(const QModelIndex &index, const QString &path);
 };
 
 class ThumbnailWidget : public QFrame
@@ -164,17 +207,12 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
-class TableWidget : public QTableWidget
+class TableView : public QTableView
 {
    Q_OBJECT
 public:
-   TableWidget(QWidget *parent = 0);
+   TableView(QWidget *parent = 0);
    bool isEditorOpen();
-signals:
-   void enterPressed();
-   void deletePressed();
-protected:
-   void keyPressEvent(QKeyEvent *event);
 };
 
 class ListWidget : public QListWidget
@@ -233,6 +271,26 @@ public slots:
    void appendMessage(const QString& text);
 };
 
+/* Used to store styling since delegates don't inherit QWidget. */
+class GridItem : public QWidget
+{
+   Q_OBJECT
+
+   Q_PROPERTY(QString thumbnailvalign READ getThumbnailVerticalAlign WRITE setThumbnailVerticalAlign)
+   Q_PROPERTY(int padding READ getPadding WRITE setPadding)
+
+public:
+   GridItem(QWidget* parent);
+
+   Qt::AlignmentFlag thumbnailVerticalAlignmentFlag;
+   int padding;
+
+   int getPadding() const;
+   void setPadding(const int value);
+   QString getThumbnailVerticalAlign() const;
+   void setThumbnailVerticalAlign(const QString valign);
+};
+
 class MainWindow : public QMainWindow
 {
    Q_OBJECT
@@ -263,9 +321,10 @@ public:
    MainWindow(QWidget *parent = NULL);
    ~MainWindow();
    TreeView* dirTreeView();
+   PlaylistModel* playlistModel();
    ListWidget* playlistListWidget();
-   TableWidget* contentTableWidget();
-   FlowLayout* contentGridLayout();
+   TableView* contentTableView();
+   GridView* contentGridView();
    QWidget* contentGridWidget();
    QWidget* searchWidget();
    QLineEdit* searchLineEdit();
@@ -289,20 +348,26 @@ public:
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
-   GridItem* doDeferredImageLoad(GridItem *item, QString path);
    void setCurrentViewType(ViewType viewType);
    QString getCurrentViewTypeString();
    ViewType getCurrentViewType();
+   void setCurrentThumbnailType(ThumbnailType thumbnailType);
+   QString getCurrentThumbnailTypeString();
+   ThumbnailType getCurrentThumbnailType();
+   ThumbnailType getThumbnailTypeFromString(QString thumbnailType);
    void setAllPlaylistsListMaxCount(int count);
    void setAllPlaylistsGridMaxCount(int count);
+   void setThumbnailCacheLimit(int count);
    PlaylistEntryDialog* playlistEntryDialog();
    void addFilesToPlaylist(QStringList files);
    QString getCurrentPlaylistPath();
+   QModelIndex getCurrentContentIndex();
    QHash<QString, QString> getCurrentContentHash();
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
    QString getScrubbedString(QString str);
+   void setDefaultCustomProperties();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -317,6 +382,7 @@ signals:
    void showInfoMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
    void itemChanged();
+   void updateThumbnails();
    void gridItemChanged(QString title);
    void gotThumbnailDownload(QString system, QString title);
    void scrollToDownloads(QString path);
@@ -327,15 +393,13 @@ public slots:
    void onBrowserUpClicked();
    void onBrowserStartClicked();
    void initContentTableWidget();
-   void initContentGridLayout();
    void onViewClosedDocksAboutToShow();
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
    void onRunClicked();
    void loadContent(const QHash<QString, QString> &contentHash);
    void onStartCoreClicked();
-   void onTableWidgetEnterPressed();
-   void onTableWidgetDeletePressed();
+   void onDropWidgetEnterPressed();
    void selectBrowserDir(QString path);
    void resizeThumbnails(bool one, bool two, bool three);
    void onResizeThumbnailOne();
@@ -365,24 +429,20 @@ public slots:
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
    void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
+   void changeThumbnailType(ThumbnailType type);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
    void onUnloadCoreMenuAction();
    void onTimeout();
    void onCoreLoaded();
+   void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
-   void onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous);
-   void onCurrentTableItemDataChanged(QTableWidgetItem *item);
    void onCurrentListItemDataChanged(QListWidgetItem *item);
-   void currentItemChanged(const QHash<QString, QString> &hash);
+   void currentItemChanged(const QModelIndex &index);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
-   void addPlaylistItemsToTable(const QStringList &paths, bool all = false);
-   void addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items);
-   void addPlaylistItemsToGrid(const QStringList &paths, bool all = false);
-   void addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items);
-   void onContentItemDoubleClicked(QTableWidgetItem *item);
+   void onContentItemDoubleClicked(const QModelIndex &index);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();
@@ -390,13 +450,7 @@ private slots:
    void onFileBrowserTreeContextMenuRequested(const QPoint &pos);
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
-   void onDeferredImageLoaded();
    void onZoomValueChanged(int value);
-   void onContentGridInited();
-   void onUpdateGridItemPixmapFromImage(GridItem *item);
-   void onPendingItemUpdates();
-   void onGridItemDoubleClicked();
-   void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
    void onShaderParamsClicked();
    void onCoreOptionsClicked();
@@ -404,7 +458,6 @@ private slots:
    void onShowInfoMessage(QString msg);
    void onContributorsClicked();
    void onItemChanged();
-   void onGridItemChanged(QString title);
    void onFileSystemDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
@@ -439,14 +492,14 @@ private slots:
    void onPlaylistThumbnailDownloadReadyRead();
    void onPlaylistThumbnailDownloadCanceled();
 
+   void startTimer();
+   void updateVisibleItems();
+
 private:
    void setCurrentCoreLabel();
    void getPlaylistFiles();
    bool isCoreLoaded();
    bool isContentLessCore();
-   void removeGridItems();
-   void loadImageDeferred(GridItem *item, QString path);
-   void calcGridItemSize(GridItem *item, int zoomValue);
    bool updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash);
    int extractArchive(QString path);
    void removeUpdateTempFiles();
@@ -454,8 +507,9 @@ private:
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
    bool currentPlaylistIsSpecial();
    bool currentPlaylistIsAll();
-   QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
+   PlaylistModel *m_playlistModel;
+   QSortFilterProxyModel *m_proxyModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
    QString m_currentCore;
@@ -464,7 +518,7 @@ private:
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
    ListWidget *m_listWidget;
-   TableWidget *m_tableWidget;
+   TableView *m_tableView;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;
    QDockWidget *m_searchDock;
@@ -496,19 +550,19 @@ private:
    QListWidgetItem *m_historyPlaylistsItem;
    QIcon m_folderIcon;
    QString m_customThemeString;
-   FlowLayout *m_gridLayout;
+   GridView *m_gridView;
    QWidget *m_gridWidget;
    QScrollArea *m_gridScrollArea;
-   QVector<QPointer<GridItem> > m_gridItems;
    QWidget *m_gridLayoutWidget;
    QSlider *m_zoomSlider;
    int m_lastZoomSliderValue;
-   QList<GridItem*> m_pendingItemUpdates;
    ViewType m_viewType;
+   ThumbnailType m_thumbnailType;
    QProgressBar *m_gridProgressBar;
    QWidget *m_gridProgressWidget;
    QHash<QString, QString> m_currentGridHash;
    ViewType m_lastViewType;
+   ThumbnailType m_lastThumbnailType;
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
@@ -539,6 +593,9 @@ private:
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
    QString m_pendingDirScrollPath;
+
+   QTimer *m_thumbnailTimer;
+   GridItem m_gridItem;
 
 protected:
    void closeEvent(QCloseEvent *event);

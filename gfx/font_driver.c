@@ -278,7 +278,7 @@ static bool vga_font_init_first(
 }
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 static const font_renderer_t *gdi_font_backends[] = {
    &gdi_font,
    NULL,
@@ -464,6 +464,36 @@ static bool d3d12_font_init_first(
 }
 #endif
 
+#ifdef PS2
+static const font_renderer_t *ps2_font_backends[] = {
+   &ps2_font
+};
+
+static bool ps2_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; ps2_font_backends[i]; i++)
+   {
+      void *data = ps2_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = ps2_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VITA2D
 static const font_renderer_t *vita2d_font_backends[] = {
    &vita2d_vita_font
@@ -641,6 +671,11 @@ static bool font_init_first(
          return vita2d_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
+#ifdef PS2
+      case FONT_DRIVER_RENDER_PS2:
+         return ps2_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
@@ -666,7 +701,7 @@ static bool font_init_first(
          return switch_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       case FONT_DRIVER_RENDER_GDI:
          return gdi_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
@@ -958,7 +993,6 @@ void font_driver_flush(unsigned width, unsigned height, void *font_data,
       font->renderer->flush(width, height, font->renderer_data, video_info);
 }
 
-
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
@@ -1022,7 +1056,6 @@ font_data_t *font_driver_init_first(
 
    return NULL;
 }
-
 
 void font_driver_init_osd(
       void *video_data,

@@ -30,14 +30,12 @@
  *
  */
 
-
 /* inet.c
  *
  * Functions common to all TCP/IP modules, such as the Internet checksum and the
  * byte order functions.
  *
  */
-
 
 #include "lwip/opt.h"
 

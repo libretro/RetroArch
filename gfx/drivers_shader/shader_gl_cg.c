@@ -131,7 +131,6 @@ struct uniform_cg
       cgGLEnableTextureParameter(param); \
    }
 
-
 #include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
@@ -206,7 +205,6 @@ static void gl_cg_set_uniform_parameter(
          break;
    }
 }
-
 
 #ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
@@ -1168,7 +1166,6 @@ static void *gl_cg_init(void *data, const char *path)
    cg->prg[VIDEO_SHADER_STOCK_BLEND]    = cg->prg[0];
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
-
 
    gl_cg_reset_attrib(cg);
 

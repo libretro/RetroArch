@@ -195,9 +195,13 @@ static bool screenshot_dump(
          calloc(1, sizeof(*state));
    const char *screenshot_dir     = settings->paths.directory_screenshot;
    char shotname[256];
+   struct retro_system_info system_info;
 
    shotname[0]                    = '\0';
    screenshot_path[0]             = '\0';
+
+   if (!core_get_system_info(&system_info))
+         return false;
 
    /* If fullpath is true, name_base already contains a static path + filename to save the screenshot to. */
    if (fullpath)
@@ -232,8 +236,14 @@ static bool screenshot_dump(
       else
       {
          if (settings->bools.auto_screenshot_filename)
-            fill_str_dated_filename(shotname, path_basename(name_base),
-                  IMG_EXT, sizeof(shotname));
+         {
+            if (path_is_empty(RARCH_PATH_CONTENT))
+               fill_str_dated_filename(shotname, system_info.library_name,
+                     IMG_EXT, sizeof(shotname));
+            else
+               fill_str_dated_filename(shotname, path_basename(name_base),
+                     IMG_EXT, sizeof(shotname));
+         }
          else
             snprintf(shotname, sizeof(shotname),
                   "%s.png", path_basename(name_base));

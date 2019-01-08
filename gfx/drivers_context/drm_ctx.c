@@ -154,7 +154,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
-
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
@@ -707,7 +706,6 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
    }
 
-
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -745,7 +743,6 @@ error:
 
    return false;
 }
-
 
 static void gfx_ctx_drm_destroy(void *data)
 {

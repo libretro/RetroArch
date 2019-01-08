@@ -14,7 +14,6 @@ float4 VSMain(float4 position : POSITION, float2 texcoord : TEXCOORD0) : SV_POSI
    return mul(global.modelViewProj, position);
 }
 
-
 static const float atime = (global.time + 1.0) / 4.0;
 
 float rand(float2 co)

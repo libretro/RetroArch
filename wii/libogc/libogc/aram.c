@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -295,7 +294,6 @@ static void __ARCheckSize()
 	static u32 test_data[8] ATTRIBUTE_ALIGN(32);
 	static u32 dummy_data[8] ATTRIBUTE_ALIGN(32);
 	static u32 buffer[8] ATTRIBUTE_ALIGN(32);
-
 
 	while(!(_dspReg[11]&0x0001));
 

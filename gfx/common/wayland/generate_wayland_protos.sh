@@ -3,6 +3,11 @@ WAYSCAN=/usr/bin/wayland-scanner
 WAYLAND_PROTOS=/usr/share/wayland-protocols
 OUTPUT=gfx/common/wayland
 
+if [ ! -d $WAYLAND_PROTOS ]; then
+    WAYSCAN=/usr/local/bin/wayland-scanner
+    WAYLAND_PROTOS=/usr/local/share/wayland-protocols
+fi
+
 if [ ! -d $OUTPUT ]; then
     mkdir $OUTPUT
 fi

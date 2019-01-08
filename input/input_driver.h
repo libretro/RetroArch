@@ -701,7 +701,6 @@ bool input_keyboard_line_append(const char *word);
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
-
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -836,6 +835,7 @@ extern input_driver_t input_xenon360;
 extern input_driver_t input_gx;
 extern input_driver_t input_wiiu;
 extern input_driver_t input_xinput;
+extern input_driver_t input_uwp;
 extern input_driver_t input_linuxraw;
 extern input_driver_t input_udev;
 extern input_driver_t input_cocoa;

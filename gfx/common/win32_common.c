@@ -180,8 +180,6 @@ typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM {
   UINT32 statusFlags;
 } DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM;
 
-
-
 typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM {
   DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
   DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
@@ -345,14 +343,12 @@ INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
    return FALSE;
 }
 
-
 static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
    win32_monitor_all[win32_monitor_count++] = hMonitor;
    return TRUE;
 }
-
 
 void win32_monitor_from_window(void)
 {
@@ -593,11 +589,13 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
                keysym             = (unsigned)wparam;
             else
 #endif
+#ifdef HAVE_DINPUT
             {
                /* extended keys will map to dinput if the high bit is set */
                if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
                   keysym |= 0x80;
             }
+#endif
             /* Key released? */
             if (message == WM_KEYUP || message == WM_SYSKEYUP)
                keydown            = false;
@@ -1334,7 +1332,6 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style,
             &mon_rect, width, height, fullscreen))
       return false;
-
 
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);

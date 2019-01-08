@@ -234,7 +234,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
    else
       push_list = 2;
 
-
    switch (push_list)
    {
       case 1:

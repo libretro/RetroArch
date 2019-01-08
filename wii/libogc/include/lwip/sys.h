@@ -36,7 +36,6 @@
 
 #include "lwip/opt.h"
 
-
 #if NO_SYS
 
 /* For a totally minimal and standalone system, we provide null
@@ -117,7 +116,6 @@ void sys_mbox_post(sys_mbox_t mbox, void *msg);
 u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout);
 void sys_mbox_free(sys_mbox_t mbox);
 void sys_mbox_fetch(sys_mbox_t mbox, void **msg);
-
 
 /* Thread functions. */
 sys_thread_t sys_thread_new(void (* thread)(void *arg), void *arg, int prio);

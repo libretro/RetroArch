@@ -39,7 +39,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 enum trans_stream_error
 {
     TRANS_STREAM_ERROR_NONE = 0,

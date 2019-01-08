@@ -56,6 +56,10 @@
 
 #include "record/record_driver.h"
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "uwp/uwp_func.h"
+#endif
+
 static const char* invalid_filename_chars[] = {
    /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
    "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
@@ -224,6 +228,7 @@ enum input_driver_enum
    INPUT_WII,
    INPUT_WIIU,
    INPUT_XINPUT,
+   INPUT_UWP,
    INPUT_UDEV,
    INPUT_LINUXRAW,
    INPUT_COCOA,
@@ -321,6 +326,13 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
+#elif defined(HAVE_D3D12) && false
+/* FIXME: DX12 performance on Xbox is horrible for some reason, so use d3d11 as default */
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
+#elif defined(HAVE_D3D11)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
+#elif defined(HAVE_D3D10)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D10;
 #elif defined(HAVE_D3D9)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
 #elif defined(HAVE_D3D8)
@@ -429,7 +441,9 @@ static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#if defined(XENON)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
+#elif defined(XENON)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
@@ -867,6 +881,8 @@ const char *config_get_default_input(void)
          return "xenon360";
       case INPUT_XINPUT:
          return "xinput";
+      case INPUT_UWP:
+         return "uwp";
       case INPUT_WII:
          return "gx";
       case INPUT_WIIU:
@@ -957,7 +973,6 @@ const char *config_get_default_joypad(void)
 
    return "null";
 }
-
 
 /**
  * config_get_default_camera:
@@ -1391,11 +1406,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef GEKKO
    SETTING_BOOL("video_vfilter",                 &settings->bools.video_vfilter, true, video_vfilter, false);
 #endif
-#ifdef HAVE_MENU
-   SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->bools.threaded_data_runloop_enable, true, threaded_data_runloop_enable, false);
 #endif
+#ifdef HAVE_MENU
+   SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, true, false);
@@ -2233,8 +2248,13 @@ static config_file_t *open_default_config_file(void)
 
    (void)path_size;
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   fill_pathname_application_path(app_path, path_size);
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
+   fill_pathname_home_dir(app_path, path_size);
+#else
+   fill_pathname_application_dir(app_path, path_size);
+#endif
    fill_pathname_resolve_relative(conf_path, app_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
@@ -2258,7 +2278,6 @@ static config_file_t *open_default_config_file(void)
       /* Try to create a new config file. */
       conf = config_file_new(NULL);
 
-
       if (conf)
       {
          /* Since this is a clean config file, we can
@@ -2266,7 +2285,7 @@ static config_file_t *open_default_config_file(void)
          fill_pathname_resolve_relative(conf_path, app_path,
                file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
          config_set_bool(conf, "config_save_on_exit", true);
-         saved = config_file_write(conf, conf_path);
+         saved = config_file_write(conf, conf_path, true);
       }
 
       if (!saved)
@@ -2302,7 +2321,7 @@ static config_file_t *open_default_config_file(void)
       if (conf)
       {
          config_set_bool(conf, "config_save_on_exit", true);
-         saved = config_file_write(conf, conf_path);
+         saved = config_file_write(conf, conf_path, true);
       }
 
       if (!saved)
@@ -2377,7 +2396,7 @@ static config_file_t *open_default_config_file(void)
          {
             /* Since this is a clean config file, we can safely use config_save_on_exit. */
             config_set_bool(conf, "config_save_on_exit", true);
-            saved = config_file_write(conf, conf_path);
+            saved = config_file_write(conf, conf_path, true);
          }
 
          if (!saved)
@@ -2624,7 +2643,6 @@ static void config_get_hex_base(config_file_t *conf,
 }
 #endif
 
-
 /**
  * config_load:
  * @path                : path to be read from.
@@ -2831,7 +2849,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }
 
-
    /* Hexadecimal settings  */
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
@@ -3015,7 +3032,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
 
-
    if (!string_is_empty(settings->paths.directory_screenshot))
    {
       if (string_is_equal(settings->paths.directory_screenshot, "default"))
@@ -3081,7 +3097,6 @@ static bool config_load_file(const char *path, bool set_defaults,
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-
 
 #ifdef HAVE_LAKKA
    settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
@@ -3177,7 +3192,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    recording_driver_update_streaming_url();
 
    ret = true;
-
 
 end:
    if (conf)
@@ -3489,7 +3503,6 @@ bool config_load_remap(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-
    strlcpy(remap_directory,
          settings->paths.directory_input_remapping,
          path_size);
@@ -3555,7 +3568,6 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: no content-dir-specific remap found at %s.\n", content_path);
       input_remapping_set_defaults(false);
    }
-
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
@@ -3781,8 +3793,6 @@ static void parse_config_file(void)
    RARCH_ERR("[Config]: couldn't find config at path: \"%s\"\n",
          path_get(RARCH_PATH_CONFIG));
 }
-
-
 
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
@@ -4037,12 +4047,11 @@ static bool config_save_keybinds_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   ret = config_file_write(conf, path);
+   ret = config_file_write(conf, path, true);
    config_file_free(conf);
    return ret;
 }
 #endif
-
 
 /**
  * config_save_autoconf_profile:
@@ -4146,7 +4155,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             &input_config_binds[user][i], false, false);
    }
 
-   ret = config_file_write(conf, autoconf_file);
+   ret = config_file_write(conf, autoconf_file, false);
 
    config_file_free(conf);
    free(buf);
@@ -4160,7 +4169,6 @@ error:
    free(path_new);
    return false;
 }
-
 
 /**
  * config_save_file:
@@ -4369,7 +4377,6 @@ bool config_save_file(const char *path)
          settings->uints.menu_border_light_color);
 #endif
 
-
    video_driver_save_settings(conf);
 
 #ifdef HAVE_LAKKA
@@ -4396,7 +4403,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   ret = config_file_write(conf, path);
+   ret = config_file_write(conf, path, true);
    config_file_free(conf);
 
    return ret;
@@ -4642,7 +4649,6 @@ bool config_save_overrides(int override_type)
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
 
-
          /* blacklist these since they are handled by remaps */
          /* to-do: add setting to control blacklisting
          if (settings->uints.input_libretro_device[i]
@@ -4668,17 +4674,17 @@ bool config_save_overrides(int override_type)
          case OVERRIDE_CORE:
             /* Create a new config file from core_path */
             RARCH_LOG ("[overrides] path %s\n", core_path);
-            ret = config_file_write(conf, core_path);
+            ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
             /* Create a new config file from core_path */
             RARCH_LOG ("[overrides] path %s\n", game_path);
-            ret = config_file_write(conf, game_path);
+            ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
             /* Create a new config file from content_path */
             RARCH_LOG ("[overrides] path %s\n", content_path);
-            ret = config_file_write(conf, content_path);
+            ret = config_file_write(conf, content_path, true);
             break;
          default:
             break;

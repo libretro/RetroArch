@@ -147,6 +147,10 @@ MSG_HASH(
     "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+    "Enable horizontal animation for the menu. This will have a performance hit."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
     "Προσαρμόζει τις εμφανισιακές ρυθμίσεις της οθόνης του μενού."
     )

@@ -133,8 +133,6 @@ u16_t uip_ipchksum_pbuf(struct uip_pbuf *p);
  */
 u16_t uip_chksum_pseudo(struct uip_pbuf *p,struct uip_ip_addr *src,struct uip_ip_addr *dst,u8_t proto,u16_t proto_len);
 
-
-
 extern void tcpip_tmr_needed();
 #define tcp_tmr_needed		tcpip_tmr_needed
 

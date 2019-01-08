@@ -55,6 +55,7 @@ else
 	endif
 
 	include Makefile.common
+	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
@@ -63,7 +64,6 @@ else
 	OBJ += audio/drivers/psp_audio.o
 	#OBJ += frontend/drivers/platform_orbis.o
 endif
-
 
 ifeq ($(strip $(PS4SDK)),)
 $(error "Please set PS4SDK in your environment. export PS4SDK=<path to>ps4sdk")
@@ -123,14 +123,12 @@ CXXFLAGS := $(CFLAGS)
 PS4_LIBS := -lps4link -ldebugnet -lorbisFile -lelfloader -lorbisKeyboard -lorbis2d -lpng -lz -lorbisGl -lorbisPad -lorbisAudio -lmod -lorbisFileBrowser -lorbisXbmFont -lSceNet_stub -lScePigletv2VSH_stub -lSceSystemService_stub -lSceUserService_stub -lScePad_stub -lSceAudioOut_stub -lSceIme_stub -lSceSysmodule_stub \
 	-lPs4_extension_kernel_call_standard -lPs4_extension_kernel_execute_dynlib_prepare_dlclose -lPs4_common_kernel -lPs4_common_user -lPs4_common_generic -lPs4LibCInternalAdaptive_stub -lPs4LibKernelAdaptive_stub -lSceLibcInternal_stub -lkernel_stub -lps4Kernel_stub -lPs4_base_stub_resolve_minimal -lPs4_base_kernel_dlsym_standard -lPs4_base_kernel_seek_elf_address_standard -lPs4_base_assembler_register_parameter_standard -lPs4_base_assembler_system_call_standard
 
-
 LIBS	:= $(WHOLE_START) -lretro_orbis $(WHOLE_END) $(PS4_LIBS) 
 
 TARGETS := $(TARGET).elf
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
 POSTCOMPILE = mv -f $*.Tdepend $*.depend
-
 
 all: $(TARGETS)
 
@@ -143,7 +141,6 @@ all: $(TARGETS)
 %.o: %.c %.depend
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
 	$(POSTCOMPILE)
-
 
 %.o: %.S
 %.o: %.S %.depend

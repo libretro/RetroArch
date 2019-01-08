@@ -30,7 +30,6 @@
 
 #define sqr(a) ((a) * (a))
 
-
 const float BASE_DELAY_SEC = 0.002; // 2 ms
 const float VIBRATO_FREQUENCY_DEFAULT_HZ = 2;
 const float VIBRATO_FREQUENCY_MAX_HZ = 14;

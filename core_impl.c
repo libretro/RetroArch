@@ -134,7 +134,6 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
    return true;
 }
 
-
 bool core_deinit(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
@@ -401,7 +400,6 @@ bool core_unload(void)
 
    return true;
 }
-
 
 bool core_unload_game(void)
 {

@@ -700,7 +700,6 @@ u32 PAD_ScanPads()
 	return connected;
 }
 
-
 u16 PAD_ButtonsUp(int pad)
 {
 	if(pad<PAD_CHAN0 || pad>PAD_CHAN3 || __pad_keys[pad].chan==-1) return 0;

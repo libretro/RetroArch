@@ -51,7 +51,6 @@
 #define DXGI_CPU_ACCESS_SCRATCH                 ( 3 )
 #define DXGI_CPU_ACCESS_FIELD                   15
 
-
 typedef struct DXGI_RGB
 {
     float Red;

@@ -73,6 +73,28 @@ char user_path[512];
 
 static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 
+#ifdef __cplusplus
+extern "C"
+#endif
+int main(int argc, char *argv[])
+{
+   int ret;
+
+   sceSystemServiceHideSplashScreen();
+
+	uintptr_t intptr=0;
+	sscanf(argv[1],"%p",&intptr);
+	myConf=(OrbisGlobalConf *)intptr;
+	ret=ps4LinkInitWithConf(myConf->confLink);
+	if(!ret)
+	{
+		ps4LinkFinish();
+		return -1;
+	}
+
+   return rarch_main(argc, argv, NULL);
+}
+
 static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -211,7 +233,6 @@ static void frontend_orbis_shutdown(bool unused)
    (void)unused;
    return;
 }
-
 
 static void frontend_orbis_init(void *data)
 {

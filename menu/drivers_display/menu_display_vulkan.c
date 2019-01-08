@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
@@ -349,7 +349,6 @@ static bool menu_display_vk_font_init_first(
 static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   VkRect2D sci;
    vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
 
    vk->tracker.use_scissor = true;
@@ -362,7 +361,6 @@ static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
 
 static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
-   VkRect2D sci;
    vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
    vk->tracker.use_scissor = false;
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;

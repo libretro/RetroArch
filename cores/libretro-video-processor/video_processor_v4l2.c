@@ -102,7 +102,6 @@ static uint32_t *frame_prev2;
 static uint32_t *frame_prev3;
 static uint32_t *frame_curr;
 
-
 // Frametime debug messages
 struct timeval ft_prevtime = { 0 }, ft_prevtime2 = { 0 };
 char *ft_info = NULL, *ft_info2 = NULL;
@@ -659,7 +658,6 @@ void source_v4l2_normal(int width, int height) {
 
    v4l2_frame_times(bufcp);
 }
-
 
 void source_v4l2_alternate_hack(int width, int height) {
    struct v4l2_buffer bufcp;

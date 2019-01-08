@@ -410,15 +410,12 @@ u32 c_guMtxInverse(Mtx src,Mtx inv)
 	else
         m = inv;
 
-
     // compute the determinant of the upper 3x3 submatrix
     det =   src[0][0]*src[1][1]*src[2][2] + src[0][1]*src[1][2]*src[2][0] + src[0][2]*src[1][0]*src[2][1]
           - src[2][0]*src[1][1]*src[0][2] - src[1][0]*src[0][1]*src[2][2] - src[0][0]*src[2][1]*src[1][2];
 
-
     // check if matrix is singular
     if(det==0.0f)return 0;
-
 
     // compute the inverse of the upper submatrix:
 
@@ -426,7 +423,6 @@ u32 c_guMtxInverse(Mtx src,Mtx inv)
     // and multiply by (1/det)
 
     det = 1.0f / det;
-
 
     m[0][0] =  (src[1][1]*src[2][2] - src[2][1]*src[1][2]) * det;
     m[0][1] = -(src[0][1]*src[2][2] - src[2][1]*src[0][2]) * det;
@@ -439,7 +435,6 @@ u32 c_guMtxInverse(Mtx src,Mtx inv)
     m[2][0] =  (src[1][0]*src[2][1] - src[2][0]*src[1][1]) * det;
     m[2][1] = -(src[0][0]*src[2][1] - src[2][0]*src[0][1]) * det;
     m[2][2] =  (src[0][0]*src[1][1] - src[1][0]*src[0][1]) * det;
-
 
     // compute (invA)*(-C)
     m[0][3] = -m[0][0]*src[0][3] - m[0][1]*src[1][3] - m[0][2]*src[2][3];
@@ -463,11 +458,9 @@ void c_guMtxTranspose(Mtx src,Mtx xPose)
     else
         m = xPose;
 
-
     m[0][0] = src[0][0];   m[0][1] = src[1][0];      m[0][2] = src[2][0];     m[0][3] = 0.0f;
     m[1][0] = src[0][1];   m[1][1] = src[1][1];      m[1][2] = src[2][1];     m[1][3] = 0.0f;
     m[2][0] = src[0][2];   m[2][1] = src[1][2];      m[2][2] = src[2][2];     m[2][3] = 0.0f;
-
 
     // copy back if needed
     if(m==mTmp)
@@ -511,7 +504,6 @@ u32 c_guMtxInvXpose(Mtx src, Mtx xPose)
     m[2][1] = -(src[0][0]*src[1][2] - src[1][0]*src[0][2]) * det;
     m[2][2] =  (src[0][0]*src[1][1] - src[1][0]*src[0][1]) * det;
 
-
     // The 4th columns should be zero
     m[0][3] = 0.0F;
     m[1][3] = 0.0F;
@@ -549,7 +541,6 @@ void c_guMtxReflect(Mtx m,guVector *p,guVector *n)
     m[2][3] = pdotn * n->z;
 }
 
-
 void c_guVecAdd(guVector *a,guVector *b,guVector *ab)
 {
     ab->x = a->x + b->x;
@@ -570,7 +561,6 @@ void c_guVecScale(guVector *src,guVector *dst,f32 scale)
     dst->y = src->y * scale;
     dst->z = src->z * scale;
 }
-
 
 void c_guVecNormalize(guVector *v)
 {

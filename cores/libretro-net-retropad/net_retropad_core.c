@@ -276,7 +276,6 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
-
    NETRETROPAD_CORE_PREFIX(environ_cb) = cb;
    bool no_content = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
@@ -378,7 +377,6 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       pixel += 65;
    }
-
 
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
 

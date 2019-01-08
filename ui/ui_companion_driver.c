@@ -27,7 +27,7 @@
 #include "ui_companion_driver.h"
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
 #endif
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)

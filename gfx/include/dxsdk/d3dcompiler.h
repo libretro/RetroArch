@@ -14,8 +14,6 @@
 
 // Current name of the DLL shipped in the same SDK as this header.
 
-
-
 #define D3DCOMPILER_DLL_W L"d3dcompiler_47.dll"
 #define D3DCOMPILER_DLL_A "d3dcompiler_47.dll"
 
@@ -39,7 +37,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
@@ -559,7 +556,6 @@ D3DDecompressShaders(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
-
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
 
@@ -577,7 +573,6 @@ D3DDisassemble10Effect(_In_ interface ID3D10Effect *pEffect,
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
-
 
 #ifdef __cplusplus
 }

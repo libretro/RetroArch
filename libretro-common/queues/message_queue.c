@@ -93,7 +93,6 @@ void msg_queue_free(msg_queue_t *queue)
    free(queue);
 }
 
-
 /**
  * msg_queue_push:
  * @queue             : pointer to queue object

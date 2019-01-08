@@ -230,7 +230,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
-
 #if defined(HAVE_VIVANTE_FBDEV)
 #include "../gfx/drivers_context/vivante_fbdev_ctx.c"
 #endif
@@ -498,6 +497,10 @@ FONTS
 #include "../gfx/drivers_font/xdk1_xfonts.c"
 #endif
 
+#if defined(PS2)
+#include "../gfx/drivers_font/ps2_font.c"
+#endif
+
 #if defined(VITA)
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif
@@ -604,6 +607,9 @@ INPUT
 #elif defined(DJGPP)
 #include "../input/drivers/dos_input.c"
 #include "../input/drivers_joypad/dos_joypad.c"
+#elif defined(__WINRT__)
+#include "../input/drivers/xdk_xinput_input.c"
+#include "../input/drivers/uwp_input.c"
 #endif
 
 #ifdef HAVE_WAYLAND
@@ -773,7 +779,7 @@ AUDIO
 #elif defined(PSP) || defined(VITA) || defined(ORBIS)
 #include "../audio/drivers/psp_audio.c"
 #elif defined(PS2)
-// #include "../audio/drivers/ps2_audio.c"
+#include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
@@ -955,6 +961,10 @@ FRONTEND
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "../frontend/drivers/platform_uwp.c"
+#endif
+
 #ifdef _XBOX
 #include "../frontend/drivers/platform_xdk.c"
 #endif
@@ -1022,7 +1032,6 @@ GIT
 #ifdef HAVE_GIT_VERSION
 #include "../version_git.c"
 #endif
-
 
 /*============================================================
 RETROARCH
@@ -1265,12 +1274,11 @@ MENU
 #include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../menu/drivers_display/menu_display_gdi.c"
 #endif
 
 #endif
-
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
@@ -1550,4 +1558,8 @@ SSL
 #include "../libretro-common/net/net_socket_ssl.c"
 #endif
 #endif
+#endif
+
+#ifdef HAVE_EASTEREGG
+#include "../cores/libretro-gong/gong.c"
 #endif

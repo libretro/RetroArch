@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_GLSL_H
 #define __RARCH_GLSL_H
 

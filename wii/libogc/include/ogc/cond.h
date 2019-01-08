@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __COND_H__
 #define __COND_H__
 
@@ -45,12 +44,10 @@ distribution.
 extern "C" {
 #endif
 
-
 /*! \typedef u32 cond_t
 \brief typedef for the condition variable handle
 */
 typedef u32 cond_t;
-
 
 /*! \fn s32 LWP_CondInit(cond_t *cond)
 \brief Initialize condition variable
@@ -59,7 +56,6 @@ typedef u32 cond_t;
 \return 0 on success, <0 on error
 */
 s32 LWP_CondInit(cond_t *cond);
-
 
 /*! \fn s32 LWP_CondWait(cond_t cond,mutex_t mutex)
 \brief Wait on condition variable.
@@ -70,7 +66,6 @@ s32 LWP_CondInit(cond_t *cond);
 */
 s32 LWP_CondWait(cond_t cond,mutex_t mutex);
 
-
 /*! \fn s32 LWP_CondSignal(cond_t cond)
 \brief Signal a specific thread waiting on this condition variable to wake up.
 \param[in] cond handle to the cond_t structure
@@ -79,7 +74,6 @@ s32 LWP_CondWait(cond_t cond,mutex_t mutex);
 */
 s32 LWP_CondSignal(cond_t cond);
 
-
 /*! \fn s32 LWP_CondBroadcast(cond_t cond)
 \brief Broadcast all threads waiting on this condition variable to wake up.
 \param[in] cond handle to the cond_t structure
@@ -87,7 +81,6 @@ s32 LWP_CondSignal(cond_t cond);
 \return 0 on success, <0 on error
 */
 s32 LWP_CondBroadcast(cond_t cond);
-
 
 /*! \fn s32 LWP_CondTimedWait(cond_t cond,mutex_t mutex,const struct timespec *abstime)
 \brief Timed wait on a conditionvariable.
@@ -98,7 +91,6 @@ s32 LWP_CondBroadcast(cond_t cond);
 \return 0 on success, <0 on error
 */
 s32 LWP_CondTimedWait(cond_t cond,mutex_t mutex,const struct timespec *abstime);
-
 
 /*! \fn s32 LWP_CondDestroy(cond_t cond)
 \brief Destroy condition variable, release all threads and handles blocked on that condition variable.

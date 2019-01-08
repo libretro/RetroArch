@@ -200,7 +200,6 @@ static int _FAT_directory_mbsncasecmp (const char* s1, const char* s2, size_t le
 	return towlower(wc1) - towlower(wc2);
 }
 
-
 static bool _FAT_directory_entryGetAlias (const u8* entryData, char* destName) {
 	char c;
 	bool caseInfo;
@@ -524,8 +523,6 @@ bool _FAT_directory_entryFromPosition (PARTITION* partition, DIR_ENTRY* entry) {
 
 	return true;
 }
-
-
 
 bool _FAT_directory_entryFromPath (PARTITION* partition, DIR_ENTRY* entry, const char* path, const char* pathEnd) {
 	size_t dirnameLength;

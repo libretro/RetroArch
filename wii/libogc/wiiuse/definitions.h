@@ -40,7 +40,6 @@
 	#define WII_DEBUG(fmt, ...)
 #endif
 
-
 /* Convert between radians and degrees */
 #define RAD_TO_DEGREE(r)	((r * 180.0f) / WIIMOTE_PI)
 #define DEGREE_TO_RAD(d)	(d * (WIIMOTE_PI / 180.0f))

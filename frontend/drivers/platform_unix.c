@@ -1824,7 +1824,6 @@ static void frontend_unix_get_env(int *argc,
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
-
    /* For gamepad-like/console devices:
     *
     * - Explicitly disable input overlay by default

@@ -39,7 +39,7 @@ void* video_display_server_init(void)
    switch (type)
    {
       case RARCH_DISPLAY_WIN32:
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          current_display_server = &dispserv_win32;
 #endif
          break;
@@ -88,7 +88,6 @@ bool video_display_server_set_window_decorations(bool on)
       return current_display_server->set_window_decorations(current_display_server_data, on);
    return false;
 }
-
 
 bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center)

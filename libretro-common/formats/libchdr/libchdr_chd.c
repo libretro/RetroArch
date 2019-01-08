@@ -1545,8 +1545,6 @@ static chd_error read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UI
    return CHDERR_NONE;
 }
 
-
-
 /*-------------------------------------------------
     hunk_read_into_memory - read a hunk into
     memory at the given location

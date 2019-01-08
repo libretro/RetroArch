@@ -401,7 +401,6 @@ static void retro_task_threaded_reset(void)
    slock_unlock(running_lock);
 }
 
-
 static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {

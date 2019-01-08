@@ -25,7 +25,6 @@
 #include "dirs.h"
 #include "command.h"
 #include "configuration.h"
-#include "command.h"
 #include "defaults.h"
 #include "list_special.h"
 #include "file_path_special.h"

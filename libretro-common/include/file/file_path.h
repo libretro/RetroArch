@@ -46,7 +46,6 @@ enum
    RARCH_FILE_UNSUPPORTED
 };
 
-
 /**
  * path_is_compressed_file:
  * @path               : path
@@ -462,6 +461,8 @@ void fill_pathname_slash(char *path, size_t size);
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 void fill_pathname_application_path(char *buf, size_t size);
+void fill_pathname_application_dir(char *buf, size_t size);
+void fill_pathname_home_dir(char *buf, size_t size);
 #endif
 
 /**

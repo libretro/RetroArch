@@ -43,6 +43,8 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
+#include "../input/input_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -187,6 +189,7 @@ default_sublabel_macro(action_bind_sublabel_netplay_nickname,              MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_username,              MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME)
 default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD)
 default_sublabel_macro(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
+default_sublabel_macro(action_bind_sublabel_start_core,                    MENU_ENUM_SUBLABEL_START_CORE)
 default_sublabel_macro(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
 default_sublabel_macro(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 default_sublabel_macro(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
@@ -384,6 +387,7 @@ default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,             
 default_sublabel_macro(action_bind_sublabel_menu_use_preferred_system_color_theme, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
+default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
@@ -499,6 +503,36 @@ default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
+static int action_bind_sublabel_systeminfo_controller_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char tmp[4096];
+   unsigned controller;
+
+   for(controller = 0; controller < MAX_USERS; controller++)
+   {
+      if (input_is_autoconfigured(controller))
+      {
+            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+               controller,
+               input_config_get_device_name(controller),
+               input_autoconfigure_get_device_name_index(controller));
+
+            if (string_is_equal(path, tmp))
+               break;
+      }
+   }
+   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
+      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : "N/A",
+      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : "N/A",
+      input_config_get_vid(controller), input_config_get_pid(controller));
+   strlcpy(s, tmp, len);
+
+   return 0;
+}
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1104,6 +1138,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_framebuffer_opacity);
             break;
+         case MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_horizontal_animation);
+            break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);
             break;
@@ -1672,6 +1709,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
             break;
+         case MENU_ENUM_LABEL_START_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_start_core);
+            break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_list);
             break;
@@ -1858,6 +1898,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CPU_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_cpu_cores);
+            break;
+         case MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_controller_entry);
             break;
          case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_black_frame_insertion);

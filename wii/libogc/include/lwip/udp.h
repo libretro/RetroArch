@@ -101,4 +101,3 @@ void udp_debug_print(struct udp_hdr *udphdr);
 #endif
 #endif /* __LWIP_UDP_H__ */
 
-

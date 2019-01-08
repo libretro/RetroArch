@@ -24,6 +24,16 @@ struct FDiscordUserData {
     FString avatar;
 };
 
+/**
+* Valid response codes for Respond function
+*/
+UENUM(BlueprintType)
+enum class EDiscordJoinResponseCodes : uint8
+{
+	DISCORD_REPLY_NO		UMETA(DisplayName="No"),
+	DISCORD_REPLY_YES		UMETA(DisplayName="Yes"),
+	DISCORD_REPLY_IGNORE	UMETA(DisplayName="Ignore")
+};
 
 DECLARE_LOG_CATEGORY_EXTERN(Discord, Log, All);
 

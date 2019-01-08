@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -22,6 +22,7 @@
 
 #include "../video_driver.h"
 #include "../font_driver.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3d12_common.h"
@@ -864,8 +865,12 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->device);
    Release(d3d12->adapter);
 
+#ifdef HAVE_MONITOR
    win32_monitor_from_window();
+#endif
+#ifdef HAVE_WINDOW
    win32_destroy_window();
+#endif
 
    free(d3d12);
 }
@@ -873,29 +878,39 @@ static void d3d12_gfx_free(void* data)
 static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+#ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
    WNDCLASSEX     wndclass = { 0 };
+#endif
    settings_t*    settings = config_get_ptr();
    d3d12_video_t* d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
    if (!d3d12)
       return NULL;
 
+#ifdef HAVE_WINDOW
    win32_window_reset();
+#endif
+#ifdef HAVE_MONITOR
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
+#endif
 
    win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
+#endif
 
    d3d12->vp.full_width  = video->width;
    d3d12->vp.full_height = video->height;
 
+#ifdef HAVE_MONITOR
    if (!d3d12->vp.full_width)
       d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d12->vp.full_height)
       d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+#endif
 
    if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
    {
@@ -903,7 +918,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       goto error;
    }
 
-   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d12_init_base(d3d12))
       goto error;
@@ -917,8 +932,13 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_queue(d3d12))
       goto error;
 
+#ifdef __WINRT__
+   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, uwp_get_corewindow()))
+      goto error;
+#else
    if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
       goto error;
+#endif
 
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth);
@@ -1450,6 +1470,7 @@ static bool d3d12_gfx_frame(
 
    d3d12->sprites.enabled = true;
 
+#ifdef HAVE_MENU
    if (d3d12->menu.enabled)
    {
       D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
@@ -1457,7 +1478,9 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
       menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+   else
+#endif
+      if (video_info->statistics_show)
    {
       struct font_params *osd_params = (struct font_params*)
          &video_info->osd_stat_params;
@@ -1764,7 +1787,12 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_load_texture,
    d3d12_gfx_unload_texture,
    NULL, /* set_video_mode */
+#ifndef __WINRT__
    win32_get_refresh_rate,
+#else
+   /* UWP does not expose this information easily */
+   NULL,
+#endif
    d3d12_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

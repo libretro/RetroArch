@@ -85,26 +85,26 @@ float osk_dark[16] =  {
 
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_OZONE)
-   &menu_ctx_ozone,
-#endif
-#if defined(HAVE_XUI)
-   &menu_ctx_xui,
-#endif
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
 #if defined(HAVE_NUKLEAR)
    &menu_ctx_nuklear,
 #endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
 #endif
 #if defined(HAVE_STRIPES)
    &menu_ctx_stripes,
 #endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
+#if defined(HAVE_XUI)
+   &menu_ctx_xui,
 #endif
 #if defined(HAVE_ZARCH)
    &menu_ctx_zarch,
@@ -148,7 +148,7 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef WIIU
    &menu_display_ctx_wiiu,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &menu_display_ctx_gdi,
 #endif
 #ifdef DJGPP
@@ -1743,9 +1743,10 @@ static bool menu_init(menu_handle_t *menu_data)
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
-
+#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
       if (settings->bools.config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
    }
 
    if (      settings->bools.bundle_assets_extract_enable
@@ -2071,8 +2072,9 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    if (menu_driver_data)
       return true;
 
-   menu_driver_data               = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+   if (menu_driver_ctx->init)
+      menu_driver_data               = (menu_handle_t*)
+         menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;
@@ -2665,7 +2667,7 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
 {
-   int i = 0;
+   unsigned i = 0;
    if (subsystem && subsystem_current_count > 0)
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)

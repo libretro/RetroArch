@@ -16,26 +16,35 @@ include config.mk
 
 TARGET = retroarch
 
+OBJ :=
+LIBS :=
+DEF_FLAGS :=
+DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64
+DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
+
 OBJDIR_BASE := obj-unix
 
 ifeq ($(DEBUG), 1)
    OBJDIR := $(OBJDIR_BASE)/debug
+   CFLAGS ?= -O0 -g
+   CXXFLAGS ?= -O0 -g
+   DEFINES += -DDEBUG -D_DEBUG
 else
    OBJDIR := $(OBJDIR_BASE)/release
+   CFLAGS ?= -O3
+   CXXFLAGS ?= -O3
+   DEF_FLAGS += -ffast-math
 endif
 
-OBJ :=
-LIBS :=
-DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64
-DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
-
 ifneq ($(findstring BSD,$(OS)),)
-   CFLAGS += -DBSD
+   DEF_FLAGS += -DBSD
    LDFLAGS += -L/usr/local/lib
+   UDEV_CFLAGS += -I/usr/local/include/libepoll-shim
+   UDEV_LIBS += -lepoll-shim
 endif
 
 ifneq ($(findstring DOS,$(OS)),)
-   CFLAGS += -march=i386
+   DEF_FLAGS += -march=i386
    LDFLAGS += -lemu
 endif
 
@@ -75,21 +84,19 @@ ifneq ($(V),1)
    Q := @
 endif
 
-ifeq ($(DEBUG), 1)
-   OPTIMIZE_FLAG = -O0 -g
-   DEFINES += -DDEBUG -D_DEBUG
-else
-   OPTIMIZE_FLAG = -O3 -ffast-math
+ifeq ($(HAVE_DRMINGW), 1)
+   DEF_FLAGS += -DHAVE_DRMINGW
+   LDFLAGS += $(DRMINGW_LIBS)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -mwindows
 endif
 
-CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb
+DEF_FLAGS += -Wall $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb
 
-APPEND_CFLAGS := $(CFLAGS)
-CXXFLAGS += $(APPEND_CFLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
+CFLAGS += $(DEF_FLAGS)
+CXXFLAGS += $(DEF_FLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
 ifeq ($(HAVE_CXX), 1)

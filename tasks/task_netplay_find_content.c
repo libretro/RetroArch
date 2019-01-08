@@ -120,7 +120,6 @@ static void netplay_crc_scan_callback(void *task_data,
             1, 480, true);
    }
 
-
    free(state);
 }
 

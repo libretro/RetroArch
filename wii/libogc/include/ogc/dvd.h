@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __DVD_H__
 #define __DVD_H__
 
@@ -69,7 +68,6 @@ distribution.
  * @}
  */
 
-
 /*!
  * \addtogroup dvd_resetmode DVD reset modes
  * @{
@@ -82,7 +80,6 @@ distribution.
 /*!
  * @}
  */
-
 
 /*!
  * \addtogroup dvd_motorctrlmode DVD motor control modes
@@ -98,11 +95,9 @@ distribution.
  * @}
  */
 
-
 #ifdef __cplusplus
    extern "C" {
 #endif /* __cplusplus */
-
 
 /*!
  * \typedef struct _dvddiskid dvddiskid
@@ -141,13 +136,11 @@ struct _dvddiskid {
  */
 typedef struct _dvdcmdblk dvdcmdblk;
 
-
 /*!
  * \typedef void (*dvdcbcallback)(s32 result,dvdcmdblk *block)
  * \brief function pointer typedef for the user's operations callback
  */
 typedef void (*dvdcbcallback)(s32 result,dvdcmdblk *block);
-
 
 /*!
  * \typedef struct _dvdcmdblk dvdcmdblk
@@ -168,13 +161,11 @@ struct _dvdcmdblk {
 	void *usrdata;
 };
 
-
 /*!
  * \typedef struct _dvddrvinfo dvddrvinfo
  * \brief forward typedef for struct _dvddrvinfo
  */
 typedef struct _dvddrvinfo dvddrvinfo;
-
 
 /*!
  * \typedef struct _dvddrvinfo dvddrvinfo
@@ -194,13 +185,11 @@ struct _dvddrvinfo {
 	u8  pad[24];
 };
 
-
 /*!
  * \typedef struct _dvdfileinfo dvdfileinfo
  * \brief forward typedef for struct _dvdfileinfo
  */
 typedef struct _dvdfileinfo dvdfileinfo;
-
 
 /*!
  * \typedef void (*dvdcallback)(s32 result,dvdfileinfo *info)
@@ -210,7 +199,6 @@ typedef struct _dvdfileinfo dvdfileinfo;
  * \param[in] info pointer to user's file info strucutre
  */
 typedef void (*dvdcallback)(s32 result,dvdfileinfo *info);
-
 
 /*!
  * \typedef struct _dvdfileinfo dvdfileinfo
@@ -224,7 +212,6 @@ struct _dvdfileinfo {
 	dvdcallback cb;
 };
 
-
 /*!
  * \fn void DVD_Init()
  * \brief Initializes the DVD subsystem
@@ -236,7 +223,6 @@ struct _dvdfileinfo {
 void DVD_Init();
 void DVD_Pause();
 
-
 /*!
  * \fn void DVD_Reset(u32 reset_mode)
  * \brief Performs a reset of the drive and FW respectively.
@@ -246,7 +232,6 @@ void DVD_Pause();
  * \return none
  */
 void DVD_Reset(u32 reset_mode);
-
 
 /*!
  * \fn s32 DVD_Mount()
@@ -258,7 +243,6 @@ void DVD_Reset(u32 reset_mode);
  */
 s32 DVD_Mount();
 s32 DVD_GetDriveStatus();
-
 
 /*!
  * \fn s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb)
@@ -282,7 +266,6 @@ s32 DVD_GetDriveStatus();
  */
 s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb);
 
-
 /*!
  * \fn s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd)
  * \brief Controls the drive's motor and behavior.
@@ -296,7 +279,6 @@ s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb);
  */
 s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd);
 
-
 /*!
  * \fn s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb)
  * \brief Controls the drive's motor and behavior.
@@ -308,7 +290,6 @@ s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd);
  * \return none
  */
 s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb);
-
 
 /*!
  * \fn s32 DVD_SetGCMOffset(dvdcmdblk *block,u32 offset)
@@ -322,7 +303,6 @@ s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb);
  * \return \ref dvd_errorcodes "dvd error code"
  */
 s32 DVD_SetGCMOffset(dvdcmdblk *block,s64 offset);
-
 
 /*!
  * \fn s32 DVD_SetGCMOffsetAsync(dvdcmdblk *block,u32 offset,dvdcbcallback cb)

@@ -559,7 +559,6 @@ static err_t netconn_write(struct netconn *conn,const void *dataptr,u32 size,u8 
 	struct api_msg *msg;
 	u16 len,snd_buf;
 
-
 	LWIP_DEBUGF(API_LIB_DEBUG, ("netconn_write(%d)\n",conn->err));
 
 	if(conn==NULL) return ERR_VAL;
@@ -1310,7 +1309,6 @@ static void* net_thread(void *arg)
 	udp_init();
 	tcp_init();
 
-
 	tb.tv_sec = ARP_TMR_INTERVAL/TB_MSPERSEC;
 	tb.tv_nsec = 0;
 	net_arp_ticks = __lwp_wd_calc_ticks(&tb);
@@ -1481,7 +1479,6 @@ s32 if_configex(struct in_addr *local_ip,struct in_addr *netmask,struct in_addr 
 	mask.addr = 0;
 	gw.addr = 0;
 
-
 	if(use_dhcp==FALSE) {
 		if( !gateway || gateway->s_addr==0
 			|| !local_ip || local_ip->s_addr==0
@@ -1574,7 +1571,6 @@ s32 if_config(char *local_ip, char *netmask, char *gateway,bool use_dhcp, int ma
 	}
 	return ret;
 }
-
 
 s32 net_init()
 {

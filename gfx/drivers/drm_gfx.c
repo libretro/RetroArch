@@ -336,8 +336,6 @@ static void drm_surface_update(void *data, const void *frame,
    drm_page_flip(surface);
 }
 
-
-
 static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
 {
    int i,j;
@@ -626,7 +624,6 @@ static bool init_drm(void)
    else
       RARCH_LOG ("DRM: UNIVERSAL PLANES cap set\n");
 
-
    ret = drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1);
    if (ret)
    {
@@ -705,7 +702,6 @@ static bool init_drm(void)
 
    return true;
 }
-
 
 static void *drm_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)

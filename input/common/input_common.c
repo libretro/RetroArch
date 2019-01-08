@@ -75,4 +75,3 @@ int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
    return clamp_axis(value, data->is_negative);
 }
 
-
