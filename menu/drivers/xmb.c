@@ -4922,16 +4922,6 @@ static void xmb_context_reset_textures(
                case XMB_TEXTURE_DEFAULT_CONTENT:
                   goto error;
             }
-            /* Draw Setting icon if the entry has submenus, (aesthetic improvement for incomplete themes) */
-            if (xmb->depth > 0)
-            {
-               if (
-                     !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR)
-                  )
-                  /* If there is no setting icon draw subsetting, (already checked that this is valid) */
-                  menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
-            }
-
          }
       }
    }
