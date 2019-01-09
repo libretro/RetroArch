@@ -380,6 +380,7 @@ static const uint32_t menu_bg_dark_color      = 0xc0202020;
 static const uint32_t menu_bg_light_color     = 0xc0404040;
 static const uint32_t menu_border_dark_color  = 0xc0204020;
 static const uint32_t menu_border_light_color = 0xc0408040;
+static unsigned rgui_color_theme = RGUI_THEME_CUSTOM;
 
 #else
 static bool default_block_config_read = false;
