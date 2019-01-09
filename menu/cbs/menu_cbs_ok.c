@@ -281,12 +281,14 @@ int generic_action_ok_displaylist_push(const char *path,
    enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+   char                  *menu_driver      = settings->arrays.menu_driver;
 
    menu_displaylist_info_init(&info);
 
    info.list                               = menu_stack;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu) ||
+       string_is_equal(menu_driver, "null"))
       goto end;
 
    tmp[0] = '\0';
