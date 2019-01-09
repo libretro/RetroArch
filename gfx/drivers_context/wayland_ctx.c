@@ -337,15 +337,15 @@ static void pointer_handle_button(void *data,
       {
          wl->input.mouse.left = true;
 
-         if (BIT_GET(wl->input.key_state, KEY_LEFTALT)) {
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
+         {
 			 if (wl->xdg_toplevel)
 			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
 			 else if (wl->zxdg_toplevel)
 			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
 			 else if (wl->shell)
 			   wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
-			 }
-		 }
+         }
       }
       else if (button == BTN_RIGHT)
          wl->input.mouse.right = true;
