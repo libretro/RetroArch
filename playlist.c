@@ -119,10 +119,11 @@ void playlist_delete_index(playlist_t *playlist,
    if (!playlist)
       return;
 
+   playlist->size     = playlist->size - 1;
+
    memmove(playlist->entries + idx, playlist->entries + idx + 1,
          (playlist->size - idx) * sizeof(struct playlist_entry));
 
-   playlist->size     = playlist->size - 1;
    playlist->modified = true;
 }
 
