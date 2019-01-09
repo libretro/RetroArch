@@ -122,8 +122,9 @@ static void win32_display_server_destroy(void *data)
    {
       ITaskbarList3_Release(g_taskbarList);
       g_taskbarList = NULL;
-      CoUninitialize();
    }
+
+   CoUninitialize();
 #endif
 
    if (dispserv)
