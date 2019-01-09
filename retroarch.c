@@ -1406,9 +1406,12 @@ bool retroarch_main_init(int argc, char *argv[])
    /* Handle core initialization failure */
    if (init_failed)
    {
-#ifdef HAVE_MENU
       /* Check if menu was active prior to core initialization */
-      if (menu_driver_is_alive())
+      if (!content_launched_from_cli()
+#ifdef HAVE_MENU
+          || menu_driver_is_alive()
+#endif
+         )
       {
          /* Attempt initializing dummy core */
          current_core_type = CORE_TYPE_DUMMY;
@@ -1416,7 +1419,6 @@ bool retroarch_main_init(int argc, char *argv[])
             goto error;
       }
       else
-#endif
       {
          /* Fall back to regular error handling */
          goto error;
