@@ -114,6 +114,9 @@ static bool discord_download_avatar(
    if(filestream_exists(full_path))
       return true;
 
+   if (string_is_empty(avatar_id))
+      return false;
+
    snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
    snprintf(buf, sizeof(buf), "%s.png", avatar_id);
