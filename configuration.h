@@ -300,6 +300,7 @@ typedef struct settings
       bool video_window_save_positions;
 
       bool sustained_performance_mode;
+      bool playlist_use_old_format;
    } bools;
 
    struct

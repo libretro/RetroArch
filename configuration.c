@@ -1556,6 +1556,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
 #endif
 
+   SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, playlist_use_old_format, false);
+
    *size = count;
 
    return tmp;

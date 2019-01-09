@@ -1765,3 +1765,5 @@ MSG_HASH(MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE,
       "no_favorites")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
       "video_3ds_lcd_bottom")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+      "playlist_use_old_format")

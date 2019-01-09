@@ -9462,6 +9462,22 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_use_old_format,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+               playlist_use_old_format,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);

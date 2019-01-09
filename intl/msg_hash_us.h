@@ -8068,3 +8068,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Hold Start (2 seconds)"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Save playlists using old format"
+    )

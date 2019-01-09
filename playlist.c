@@ -25,9 +25,11 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <formats/jsonsax_full.h>
 
 #include "playlist.h"
 #include "verbosity.h"
+#include "configuration.h"
 
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
@@ -52,6 +54,19 @@ struct content_playlist
    char *conf_path;
    struct playlist_entry *entries;
 };
+
+typedef struct
+{
+   JSON_Parser parser;
+   JSON_Writer writer;
+   RFILE *file;
+   playlist_t *playlist;
+   struct playlist_entry *current_entry;
+   unsigned array_depth;
+   unsigned object_depth;
+   char **current_string;
+} JSONContext;
+
 static playlist_t *playlist_cached = NULL;
 
 typedef int (playlist_sort_fun_t)(
@@ -389,10 +404,38 @@ success:
    return true;
 }
 
+static JSON_Writer_HandlerResult JSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
+{
+   JSONContext *context = (JSONContext*)JSON_Writer_GetUserData(writer);
+
+   (void)writer; /* unused */
+   return filestream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
+}
+
+static void JSONLogError(JSONContext *pCtx)
+{
+   if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
+   {
+      JSON_Error error = JSON_Parser_GetError(pCtx->parser);
+      JSON_Location errorLocation = { 0, 0, 0 };
+      (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
+      RARCH_WARN("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
+            (int)errorLocation.line + 1,
+            (int)errorLocation.column + 1,
+            (int)errorLocation.byte,
+            JSON_ErrorString(error));
+   }
+   else if (pCtx->writer && JSON_Writer_GetError(pCtx->writer) != JSON_Error_AbortedByHandler)
+   {
+      RARCH_WARN("Error: could not write output - %s.\n", JSON_ErrorString(JSON_Writer_GetError(pCtx->writer)));
+   }
+}
+
 void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
    RFILE *file = NULL;
+   settings_t *settings = config_get_ptr();
 
    if (!playlist || !playlist->modified)
       return;
@@ -406,20 +449,108 @@ void playlist_write_file(playlist_t *playlist)
       return;
    }
 
-   for (i = 0; i < playlist->size; i++)
-      filestream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
-            playlist->entries[i].path    ? playlist->entries[i].path    : "",
-            playlist->entries[i].label   ? playlist->entries[i].label   : "",
-            playlist->entries[i].core_path,
-            playlist->entries[i].core_name,
-            playlist->entries[i].crc32   ? playlist->entries[i].crc32   : "",
-            playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
-            );
+   if (settings->bools.playlist_use_old_format)
+   {
+      for (i = 0; i < playlist->size; i++)
+         filestream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
+               playlist->entries[i].path    ? playlist->entries[i].path    : "",
+               playlist->entries[i].label   ? playlist->entries[i].label   : "",
+               playlist->entries[i].core_path,
+               playlist->entries[i].core_name,
+               playlist->entries[i].crc32   ? playlist->entries[i].crc32   : "",
+               playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
+               );
+   }
+   else
+   {
+      JSONContext context = {0};
+      context.writer = JSON_Writer_Create(NULL);
+      context.file = file;
+
+      if (!context.writer)
+      {
+         RARCH_ERR("Failed to create JSON writer\n");
+         goto end;
+      }
+
+      JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
+      JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
+      JSON_Writer_SetUserData(context.writer, &context);
+
+      JSON_Writer_WriteStartArray(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      for (i = 0; i < playlist->size; i++)
+      {
+         JSON_Writer_WriteSpace(context.writer, 2);
+         JSON_Writer_WriteStartObject(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "path", strlen("path"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].path ? playlist->entries[i].path : "", playlist->entries[i].path ? strlen(playlist->entries[i].path) : 0, JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "label", strlen("label"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].label ? playlist->entries[i].label : "", playlist->entries[i].label ? strlen(playlist->entries[i].label) : 0, JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "core_path", strlen("core_path"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].core_path, strlen(playlist->entries[i].core_path), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "core_name", strlen("core_name"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].core_name, strlen(playlist->entries[i].core_name), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "crc32", strlen("crc32"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "", playlist->entries[i].crc32 ? strlen(playlist->entries[i].crc32) : 0, JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteString(context.writer, "db_name", strlen("db_name"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "", playlist->entries[i].db_name ? strlen(playlist->entries[i].db_name) : 0, JSON_UTF8);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         JSON_Writer_WriteSpace(context.writer, 2);
+         JSON_Writer_WriteEndObject(context.writer);
+
+         if (i < playlist->size - 1)
+            JSON_Writer_WriteComma(context.writer);
+
+         JSON_Writer_WriteNewLine(context.writer);
+      }
+
+      JSON_Writer_WriteEndArray(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_Free(context.writer);
+   }
 
    playlist->modified = false;
 
    RARCH_LOG("Written to playlist file: %s\n", playlist->conf_path);
-
+end:
    filestream_close(file);
 }
 
@@ -491,14 +622,132 @@ size_t playlist_size(playlist_t *playlist)
    return playlist->size;
 }
 
+static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   pCtx->object_depth++;
+
+   if (pCtx->array_depth == 1)
+   {
+      if (pCtx->object_depth == 1)
+      {
+         if (pCtx->playlist->size < pCtx->playlist->cap)
+         {
+            pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
+         }
+         else
+         {
+            /* hit max item limit */
+            return JSON_Parser_Abort;
+         }
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   if (pCtx->array_depth == 1)
+   {
+      if (pCtx->object_depth == 1)
+      {
+         pCtx->playlist->size++;
+      }
+   }
+
+   pCtx->object_depth--;
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+
+   if (pCtx->array_depth == 1)
+   {
+      if (pCtx->object_depth == 1)
+      {
+         if (pCtx->current_string && length && !string_is_empty(pValue))
+         {
+            *pCtx->current_string = strdup(pValue);
+         }
+         else
+         {
+            /* must be a value for an unknown member we aren't tracking, skip it */
+         }
+      }
+   }
+
+   pCtx->current_string = NULL;
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+
+   if (pCtx->array_depth == 1)
+   {
+      if (pCtx->object_depth == 1)
+      {
+         if (pCtx->current_string)
+         {
+            /* something went wrong */
+            RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
+            return JSON_Parser_Abort;
+         }
+
+         if (string_is_equal(pValue, "path"))
+            pCtx->current_string = &pCtx->current_entry->path;
+         else if (string_is_equal(pValue, "label"))
+            pCtx->current_string = &pCtx->current_entry->label;
+         else if (string_is_equal(pValue, "core_path"))
+            pCtx->current_string = &pCtx->current_entry->core_path;
+         else if (string_is_equal(pValue, "core_name"))
+            pCtx->current_string = &pCtx->current_entry->core_name;
+         else if (string_is_equal(pValue, "crc32"))
+            pCtx->current_string = &pCtx->current_entry->crc32;
+         else if (string_is_equal(pValue, "db_name"))
+            pCtx->current_string = &pCtx->current_entry->db_name;
+         else
+         {
+            /* ignore unknown members */
+         }
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   pCtx->array_depth++;
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   pCtx->array_depth--;
+   return JSON_Parser_Continue;
+}
+
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {
    unsigned i;
-   char buf[PLAYLIST_ENTRIES][1024];
-   intfstream_t *file = intfstream_open_file(
-         path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   bool new_format = true;
+   RFILE *file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
@@ -506,52 +755,151 @@ static bool playlist_read_file(
    if (!file)
       return true;
 
-   for (i = 0; i < PLAYLIST_ENTRIES; i++)
-      buf[i][0] = '\0';
-
-   for (playlist->size = 0; playlist->size < playlist->cap; )
+   /* Detect format of playlist */
    {
-      unsigned i;
-      struct playlist_entry *entry     = NULL;
-      for (i = 0; i < PLAYLIST_ENTRIES; i++)
+      char buf[6] = {0};
+      int64_t bytes_read = filestream_read(file, buf, 5);
+
+      filestream_seek(file, 0, SEEK_SET);
+
+      if (bytes_read == 5)
       {
-         char *last  = NULL;
-         *buf[i]     = '\0';
+         if (string_is_equal(buf, "[\n  {"))
+         {
+            /* new playlist format detected */
+            RARCH_LOG("New playlist format detected.\n");
+            new_format = true;
+         }
+         else
+         {
+            /* old playlist format detected */
+            RARCH_LOG("Old playlist format detected.\n");
+            new_format = false;
+         }
+      }
+      else
+      {
+         /* corrupt playlist? */
+         RARCH_LOG("Could not detect playlist format.\n");
+      }
+   }
 
-         if (!intfstream_gets(file, buf[i], sizeof(buf[i])))
-            goto end;
+   if (new_format)
+   {
+      JSONContext context = {0};
+      context.parser = JSON_Parser_Create(NULL);
+      context.file = file;
+      context.playlist = playlist;
 
-         /* Read playlist entry and terminate string with NUL character
-          * regardless of Windows or Unix line endings
-          */
-         if((last = strrchr(buf[i], '\r')))
-            *last = '\0';
-         else if((last = strrchr(buf[i], '\n')))
-            *last = '\0';
+      if (!context.parser)
+      {
+         RARCH_ERR("Failed to create JSON parser\n");
+         goto end;
       }
 
-      entry = &playlist->entries[playlist->size];
+      /*JSON_Parser_SetTrackObjectMembers(context.parser, JSON_True);*/
+      JSON_Parser_SetAllowBOM(context.parser, JSON_True);
+      JSON_Parser_SetAllowComments(context.parser, JSON_True);
+      JSON_Parser_SetAllowSpecialNumbers(context.parser, JSON_True);
+      JSON_Parser_SetAllowHexNumbers(context.parser, JSON_True);
+      JSON_Parser_SetAllowUnescapedControlCharacters(context.parser, JSON_True);
+      JSON_Parser_SetReplaceInvalidEncodingSequences(context.parser, JSON_True);
 
-      if (!*buf[2] || !*buf[3])
-         continue;
+      /*JSON_Parser_SetNullHandler(context.parser, &JSONNullHandler);
+      JSON_Parser_SetBooleanHandler(context.parser, &JSONBooleanHandler);
+      JSON_Parser_SetNumberHandler(context.parser, &JSONNumberHandler);
+      JSON_Parser_SetSpecialNumberHandler(context.parser, &JSONSpecialNumberHandler);
+      JSON_Parser_SetArrayItemHandler(context.parser, &JSONArrayItemHandler);*/
 
-      if (*buf[0])
-         entry->path      = strdup(buf[0]);
-      if (*buf[1])
-         entry->label     = strdup(buf[1]);
+      JSON_Parser_SetStringHandler(context.parser, &JSONStringHandler);
+      JSON_Parser_SetStartObjectHandler(context.parser, &JSONStartObjectHandler);
+      JSON_Parser_SetEndObjectHandler(context.parser, &JSONEndObjectHandler);
+      JSON_Parser_SetObjectMemberHandler(context.parser, &JSONObjectMemberHandler);
+      JSON_Parser_SetStartArrayHandler(context.parser, &JSONStartArrayHandler);
+      JSON_Parser_SetEndArrayHandler(context.parser, &JSONEndArrayHandler);
+      JSON_Parser_SetUserData(context.parser, &context);
 
-      entry->core_path    = strdup(buf[2]);
-      entry->core_name    = strdup(buf[3]);
-      if (*buf[4])
-         entry->crc32     = strdup(buf[4]);
-      if (*buf[5])
-         entry->db_name   = strdup(buf[5]);
-      playlist->size++;
+      while (!filestream_eof(file))
+      {
+         char chunk[4096] = {0};
+         int64_t length = filestream_read(file, chunk, sizeof(chunk));
+
+         if (!length && !filestream_eof(file))
+         {
+            RARCH_WARN("Could not read JSON input.\n");
+            JSON_Parser_Free(context.parser);
+            goto end;
+         }
+
+         if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+         {
+            RARCH_WARN("Error parsing chunk:\n---snip---\n%s\n---snip---\n", chunk);
+            JSONLogError(&context);
+            JSON_Parser_Free(context.parser);
+            goto end;
+         }
+      }
+
+      if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
+      {
+         RARCH_WARN("Error parsing JSON.\n");
+         JSONLogError(&context);
+         JSON_Parser_Free(context.parser);
+         goto end;
+      }
+
+      JSON_Parser_Free(context.parser);
+   }
+   else
+   {
+      char buf[PLAYLIST_ENTRIES][1024] = {0};
+
+      for (i = 0; i < PLAYLIST_ENTRIES; i++)
+         buf[i][0] = '\0';
+
+      for (playlist->size = 0; playlist->size < playlist->cap; )
+      {
+         unsigned i;
+         struct playlist_entry *entry     = NULL;
+         for (i = 0; i < PLAYLIST_ENTRIES; i++)
+         {
+            char *last  = NULL;
+            *buf[i]     = '\0';
+
+            if (!filestream_gets(file, buf[i], sizeof(buf[i])))
+               goto end;
+
+            /* Read playlist entry and terminate string with NUL character
+             * regardless of Windows or Unix line endings
+             */
+            if((last = strrchr(buf[i], '\r')))
+               *last = '\0';
+            else if((last = strrchr(buf[i], '\n')))
+               *last = '\0';
+         }
+
+         entry = &playlist->entries[playlist->size];
+
+         if (!*buf[2] || !*buf[3])
+            continue;
+
+         if (*buf[0])
+            entry->path      = strdup(buf[0]);
+         if (*buf[1])
+            entry->label     = strdup(buf[1]);
+
+         entry->core_path    = strdup(buf[2]);
+         entry->core_name    = strdup(buf[3]);
+         if (*buf[4])
+            entry->crc32     = strdup(buf[4]);
+         if (*buf[5])
+            entry->db_name   = strdup(buf[5]);
+         playlist->size++;
+      }
    }
 
 end:
-   intfstream_close(file);
-   free(file);
+   filestream_close(file);
    return true;
 }
 

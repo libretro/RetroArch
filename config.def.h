@@ -689,6 +689,9 @@ static const uint16_t network_remote_base_port = 55400;
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
 
+/* File format to use when writing playlists to disk */
+static const bool playlist_use_old_format = false;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 

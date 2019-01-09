@@ -2230,6 +2230,7 @@ enum msg_hash_enums
 #endif
 
    MENU_ENUM_LABEL_VALUE_HOLD_START,
+   MENU_LABEL(PLAYLIST_USE_OLD_FORMAT),
 
    MSG_LAST
 };
