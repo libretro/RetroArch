@@ -410,6 +410,7 @@ typedef struct settings
       unsigned menu_bg_light_color;
       unsigned menu_border_dark_color;
       unsigned menu_border_light_color;
+      unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
