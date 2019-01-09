@@ -138,6 +138,7 @@ struct content_information_ctx
 };
 
 static struct string_list *temporary_content                  = NULL;
+static bool _launched_from_cli                                = true;
 static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_rom_crc                               = 0;
@@ -1603,6 +1604,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
+   _launched_from_cli = false;
+
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
       return false;
@@ -1756,6 +1759,12 @@ void content_clear_subsystem(void)
          pending_subsystem_roms[i] = NULL;
       }
    }
+}
+
+/* Checks if launched from the commandline */
+bool content_launched_from_cli()
+{
+   return _launched_from_cli;
 }
 
 /* Get the current subsystem */
