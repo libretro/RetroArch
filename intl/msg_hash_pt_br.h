@@ -8058,7 +8058,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-      "Lembrar Tamanho e Posição da Janela")
+      "Lembrar Tamanho e Posição da Janela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
