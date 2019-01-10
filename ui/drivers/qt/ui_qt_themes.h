@@ -436,4 +436,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    GridItem {
       qproperty-thumbnailvalign: "center";
    }
+   QLabel#itemsCountLabel {
+      padding-left: 5px;
+   }
 )");
