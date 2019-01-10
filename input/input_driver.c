@@ -1387,15 +1387,15 @@ bool input_driver_owns_driver(void)
 bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
-   settings_t *settings    = config_get_ptr();
-   bool stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
-   bool network_cmd_enable = settings->bools.network_cmd_enable;
-   bool grab_stdin         = input_driver_grab_stdin();
+   settings_t *settings          = config_get_ptr();
+   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
+   bool input_network_cmd_enable = settings->bools.network_cmd_enable;
+   bool grab_stdin               = input_driver_grab_stdin();
 
-   if (!stdin_cmd_enable && !network_cmd_enable)
+   if (!input_stdin_cmd_enable && !input_network_cmd_enable)
       return false;
 
-   if (stdin_cmd_enable && grab_stdin)
+   if (input_stdin_cmd_enable && grab_stdin)
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
@@ -1405,7 +1405,7 @@ bool input_driver_init_command(void)
 
    if (command_network_new(
             input_driver_command,
-            stdin_cmd_enable && !grab_stdin,
+            input_stdin_cmd_enable && !grab_stdin,
             network_cmd_enable,
             settings->uints.network_cmd_port))
       return true;

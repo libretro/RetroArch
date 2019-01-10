@@ -392,9 +392,9 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
-static void audio_driver_mixer_init(unsigned out_rate)
+static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
-   audio_mixer_init(out_rate);
+   audio_mixer_init(audio_out_rate);
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
