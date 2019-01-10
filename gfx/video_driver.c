@@ -2715,7 +2715,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
 
-   video_driver_poke->unload_texture(video_driver_data, *id, video_driver_is_threaded_internal());
+   video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
    return true;
 }

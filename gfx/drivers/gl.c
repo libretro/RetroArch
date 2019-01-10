@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifdef _MSC_VER
 #pragma comment(lib, "opengl32")
 #endif
@@ -127,7 +127,6 @@ void context_bind_hw_render(void *data, bool enable)
    gl_t *gl = (gl_t*)data;
    gl_context_bind_hw_render(gl, enable);
 }
-
 
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl)
@@ -246,7 +245,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
 #endif
-
 
 static void gl_set_projection(gl_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
@@ -688,7 +686,6 @@ static void gl_set_texture_frame(void *data,
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
 
-
    gl_load_texture_data(gl->menu_texture,
          RARCH_WRAP_EDGE, menu_filter,
          video_pixel_get_alignment(width * base_size),
@@ -939,7 +936,6 @@ static void gl_pbo_async_readback(gl_t *gl)
    if (gl->renderchain_driver->unbind_pbo)
       gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
 }
-
 
 static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
@@ -1233,7 +1229,6 @@ static bool gl_frame(void *data, const void *frame,
 
    return true;
 }
-
 
 static void gl_destroy_resources(gl_t *gl)
 {
@@ -2357,8 +2352,6 @@ static bool gl_overlay_load(void *data,
    return true;
 }
 
-
-
 static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl           = (gl_t*)data;
@@ -2395,7 +2388,6 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
    color[12 + 3]  = mod;
 }
 
-
 static const video_overlay_interface_t gl_overlay_interface = {
    gl_overlay_enable,
    gl_overlay_load,
@@ -2412,7 +2404,6 @@ static void gl_get_overlay_interface(void *data,
    *iface = &gl_overlay_interface;
 }
 #endif
-
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
@@ -2458,7 +2449,6 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->should_resize = true;
 }
 
-
 static void gl_apply_state_changes(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -2466,7 +2456,6 @@ static void gl_apply_state_changes(void *data)
    if (gl)
       gl->should_resize = true;
 }
-
 
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
@@ -2502,12 +2491,6 @@ static void video_texture_load_gl(
          );
 }
 
-static void video_texture_unload_gl(
-      uintptr_t *id)
-{
-   glDeleteTextures(1, (GLuint*)id);
-}
-
 #ifdef HAVE_THREADS
 static int video_texture_load_wrap_gl_mipmap(void *data)
 {
@@ -2530,20 +2513,13 @@ static int video_texture_load_wrap_gl(void *data)
          TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
-
-static int video_texture_unload_wrap_gl(void *data)
-{
-   if (!data)
-      return 0;
-   video_texture_unload_gl((uintptr_t*)data);
-   return 0;
-}
 #endif
 
 static uintptr_t gl_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
+
 #ifdef HAVE_THREADS
    if (threaded)
    {
@@ -2558,8 +2534,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      id=video_thread_custom_cmd(data, func);
-      return id;
+      return video_thread_texture_load(data, func);
    }
 #endif
 
@@ -2567,22 +2542,14 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl_unload_texture(void *video_data, uintptr_t data, bool threaded)
+static void gl_unload_texture(void *data, uintptr_t id)
 {
-   if (!data)
+   GLuint glid;
+   if (!id)
       return;
-   GLuint* glid = (GLuint*)data;
 
-#ifdef HAVE_THREADS
-   if (threaded)
-   {
-      custom_command_method_t func = video_texture_unload_wrap_gl;
-      video_thread_custom_cmd((void *)&data, func);
-      return;
-   }
-#endif
-
-   video_texture_unload_gl(&data);
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
 }
 
 static void gl_set_coords(void *handle_data, void *shader_data,
