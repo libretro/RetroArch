@@ -444,6 +444,10 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
       return false;
 
    parameters            = (char*)malloc(param_size);
+
+   if (!parameters)
+      return false;
+
    parameters[0]         = '\0';
 
    /* Read in parameters which override the defaults. */
@@ -1327,6 +1331,9 @@ void video_shader_resolve_relative(struct video_shader *shader,
    unsigned i;
    size_t tmp_path_size = 4096 * sizeof(char);
    char *tmp_path       = (char*)malloc(tmp_path_size);
+
+   if (!tmp_path)
+      return;
 
    tmp_path[0] = '\0';
 

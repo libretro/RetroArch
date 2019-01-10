@@ -4752,7 +4752,7 @@ bool config_save_overrides(int override_type)
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(bool config_save_on_exit, char *path)
+bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
 
@@ -4764,7 +4764,7 @@ bool config_replace(bool config_save_on_exit, char *path)
    if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
       return false;
 
-   if (config_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
+   if (config_replace_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
       config_save_file(path_get(RARCH_PATH_CONFIG));
 
    path_set(RARCH_PATH_CONFIG, path);
