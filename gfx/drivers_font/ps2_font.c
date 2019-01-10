@@ -31,7 +31,7 @@
 
 typedef struct ps2_font_info
 {
-   GSGLOBAL *gsGlobal;
+   ps2_video_t *ps2_video;
    GSFONTM *gsFontM;
 } ps2_font_info_t;
 
@@ -80,11 +80,11 @@ static void *ps2_font_init_font(void *gl_data, const char *font_path,
       float font_size, bool is_threaded)
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t*)calloc(1, sizeof(ps2_font_info_t));
-   ps2_video_t *ps2_video = (ps2_video_t *)gl_data;
-   ps2->gsGlobal = ps2_video->gsGlobal;
+   ps2->ps2_video = (ps2_video_t *)gl_data;
    ps2->gsFontM = gsKit_init_fontm();
 
-   ps2_prepare_font(ps2->gsGlobal, ps2->gsFontM);
+   ps2_prepare_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
+   ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
 
    return ps2;
 }
@@ -105,9 +105,11 @@ static void ps2_font_render_msg(
 
    if (ps2) {
       int x = FONTM_TEXTURE_LEFT_MARGIN;
-      int y = ps2->gsGlobal->Height - FONTM_TEXTURE_BOTTOM_MARGIN;
-      ps2_upload_font(ps2->gsGlobal, ps2->gsFontM);
-      gsKit_fontm_print_scaled(ps2->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION, 
+      int y = ps2->ps2_video->gsGlobal->Height - FONTM_TEXTURE_BOTTOM_MARGIN;
+      if (ps2->ps2_video->clearVRAM) {
+         ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
+      }
+      gsKit_fontm_print_scaled(ps2->ps2_video->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION, 
                                  FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
    }
 }
