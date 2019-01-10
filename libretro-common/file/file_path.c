@@ -219,7 +219,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #endif
       case IS_CHARACTER_SPECIAL:
 #if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
-         break;
+         return false;
 #else
          return S_ISCHR(buf.st_mode);
 #endif
