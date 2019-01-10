@@ -2334,7 +2334,7 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void vulkan_unload_texture(void *data, uintptr_t handle, bool threaded)
+static void vulkan_unload_texture(void *data, uintptr_t handle)
 {
    vk_t *vk                         = (vk_t*)data;
    struct vk_texture *texture       = (struct vk_texture*)handle;

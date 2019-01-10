@@ -610,7 +610,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gdi_unload_texture(void *data, uintptr_t handle, bool threaded)
+static void gdi_unload_texture(void *data, uintptr_t handle)
 {
    struct gdi_texture *texture = (struct gdi_texture*)handle;
 
