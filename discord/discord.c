@@ -80,7 +80,8 @@ char* discord_get_own_avatar(void)
 
 bool discord_avatar_is_ready(void)
 {
-   return discord_avatar_ready;
+   /*To-Do: fix-me, prevent lockups in ozone due to unfinished code*/
+   return false;
 }
 
 void discord_avatar_set_ready(bool ready)
