@@ -44,6 +44,7 @@ static ITaskbarList3 *g_taskbarList = NULL;
 /* MSVC really doesn't want CINTERFACE to be used with shobjidl for some reason, but since we use C++ mode,
  * we need a workaround... so use the names of the COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
+#define ITaskbarList3_HrInit(x) g_taskbarList->HrInit()
 #define ITaskbarList3_Release(x) g_taskbarList->Release()
 #define ITaskbarList3_SetProgressState(a, b, c) g_taskbarList->SetProgressState(b, c)
 #define ITaskbarList3_SetProgressValue(a, b, c, d) g_taskbarList->SetProgressValue(b, c, d)
@@ -98,7 +99,14 @@ static void* win32_display_server_init(void)
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&g_taskbarList);
 #endif
 
-   if (!SUCCEEDED(hr))
+   if (SUCCEEDED(hr))
+   {
+      hr = ITaskbarList3_HrInit(g_taskbarList);
+
+      if (!SUCCEEDED(hr))
+         RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
+   }
+   else
    {
       g_taskbarList = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
@@ -117,7 +125,7 @@ static void win32_display_server_destroy(void *data)
             win32_orig_refresh, (float)win32_orig_refresh, crt_center );
 
 #ifdef HAS_TASKBAR_EXT
-   if (g_taskbarList && win32_taskbar_is_created())
+   if (g_taskbarList)
    {
       ITaskbarList3_Release(g_taskbarList);
       g_taskbarList = NULL;
