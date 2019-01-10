@@ -46,6 +46,11 @@
 
 #ifndef HAVE_MAIN
 #include "../retroarch.h"
+#include "../verbosity.h"
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <objbase.h>
+#endif
 #endif
 
 /**
