@@ -1734,7 +1734,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_system.mmaps.descriptors     = NULL;
          runloop_system.mmaps.num_descriptors = 0;
 
-         runloop_key_event          = NULL;
+         rarch_ctl(RARCH_CTL_UNSET_KEY_EVENT, NULL);
          runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
@@ -2031,6 +2031,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                return false;
             *key_event = &runloop_key_event;
          }
+         break;
+      case RARCH_CTL_UNSET_KEY_EVENT:
+         runloop_key_event          = NULL;
          break;
       case RARCH_CTL_FRONTEND_KEY_EVENT_GET:
          {

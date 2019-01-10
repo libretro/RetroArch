@@ -159,6 +159,7 @@ enum rarch_ctl_state
 
    /* Key event */
    RARCH_CTL_FRONTEND_KEY_EVENT_GET,
+   RARCH_CTL_UNSET_KEY_EVENT,
    RARCH_CTL_KEY_EVENT_GET,
    RARCH_CTL_DATA_DEINIT,
 
