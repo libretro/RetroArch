@@ -98,20 +98,12 @@ void dinput_destroy_context(void)
 
    IDirectInput8_Release(g_dinput_ctx);
    g_dinput_ctx = NULL;
-
-   CoUninitialize();
 }
 
 bool dinput_init_context(void)
 {
    if (g_dinput_ctx)
       return true;
-
-   if (FAILED(CoInitialize(NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to initialize the COM interface\n");
-      return false;
-   }
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
@@ -131,7 +123,6 @@ bool dinput_init_context(void)
 
 error:
    RARCH_ERR("[DINPUT]: Failed to initialize DirectInput.\n");
-   CoUninitialize();
    return false;
 }
 
