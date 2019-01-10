@@ -2399,7 +2399,7 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
-   if (!case_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
+   if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
    {
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
       command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
