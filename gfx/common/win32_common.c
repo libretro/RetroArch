@@ -1150,11 +1150,11 @@ bool win32_suppress_screensaver(void *data, bool enable)
       {
 #if _WIN32_WINNT >= 0x0601
          /* Windows 7, 8, 10 codepath */
+         typedef HANDLE(WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
+         typedef BOOL(WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
+            POWER_REQUEST_TYPE RequestType);
          PowerCreateRequestPtr powerCreateRequest;
          PowerSetRequestPtr    powerSetRequest;
-         typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
-         typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
-               POWER_REQUEST_TYPE RequestType);
          HMODULE kernel32 = GetModuleHandle("kernel32.dll");
 
          if (kernel32)
@@ -1165,25 +1165,25 @@ bool win32_suppress_screensaver(void *data, bool enable)
             powerSetRequest =
                (PowerSetRequestPtr)GetProcAddress(
                      kernel32, "PowerSetRequest");
-         }
 
-         if (powerCreateRequest && powerSetRequest)
-         {
-            POWER_REQUEST_CONTEXT RequestContext;
-            HANDLE Request;
+            if (powerCreateRequest && powerSetRequest)
+            {
+               POWER_REQUEST_CONTEXT RequestContext;
+               HANDLE Request;
 
-            RequestContext.Version                   = 
-               POWER_REQUEST_CONTEXT_VERSION;
-            RequestContext.Flags                     = 
-               POWER_REQUEST_CONTEXT_SIMPLE_STRING;
-            RequestContext.Reason.SimpleReasonString = (LPWSTR)
-               L"RetroArch running";
+               RequestContext.Version                   = 
+                  POWER_REQUEST_CONTEXT_VERSION;
+               RequestContext.Flags                     = 
+                  POWER_REQUEST_CONTEXT_SIMPLE_STRING;
+               RequestContext.Reason.SimpleReasonString = (LPWSTR)
+                  L"RetroArch running";
 
-            Request                                  = 
-               powerCreateRequest(&RequestContext);
+               Request                                  = 
+                  powerCreateRequest(&RequestContext);
 
-            powerSetRequest( Request, PowerRequestDisplayRequired);
-            return true;
+               powerSetRequest( Request, PowerRequestDisplayRequired);
+               return true;
+            }
          }
 #endif
       }

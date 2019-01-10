@@ -69,6 +69,14 @@ void task_push_get_powerstate(void)
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
    powerstate_t *state = (powerstate_t*)calloc(1, sizeof(*state));
 
+   if (!task)
+      return;
+   if (!state)
+   {
+      free(task);
+      return;
+   }
+
    task->type     = TASK_TYPE_NONE;
    task->state    = state;
    task->handler  = task_powerstate_handler;

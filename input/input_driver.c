@@ -1406,7 +1406,7 @@ bool input_driver_init_command(void)
    if (command_network_new(
             input_driver_command,
             input_stdin_cmd_enable && !grab_stdin,
-            network_cmd_enable,
+            input_network_cmd_enable,
             settings->uints.network_cmd_port))
       return true;
 

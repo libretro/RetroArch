@@ -349,21 +349,21 @@ static bool menu_display_vk_font_init_first(
 static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
 
-   vk->tracker.use_scissor = true;
-   vk->tracker.scissor.offset.x = x;
-   vk->tracker.scissor.offset.y = y;
-   vk->tracker.scissor.extent.width = width;
+   vk->tracker.use_scissor           = true;
+   vk->tracker.scissor.offset.x      = x;
+   vk->tracker.scissor.offset.y      = y;
+   vk->tracker.scissor.extent.width  = width;
    vk->tracker.scissor.extent.height = height;
-   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
-   vk->tracker.use_scissor = false;
-   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk_t *vk = (vk_t*)video_info->userdata;
+   vk->tracker.use_scissor  = false;
+   vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

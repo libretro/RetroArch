@@ -451,7 +451,7 @@ void menu_display_font_free(font_data_t *font)
  * to the menu driver */
 font_data_t *menu_display_font(
       enum application_special_type type,
-      float font_size,
+      float menu_font_size,
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
@@ -464,10 +464,10 @@ font_data_t *menu_display_font(
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   return menu_display_font_file(fontpath, font_size, is_threaded);
+   return menu_display_font_file(fontpath, menu_font_size, is_threaded);
 }
 
-font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+font_data_t *menu_display_font_file(char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
    if (!menu_disp)
@@ -475,7 +475,7 @@ font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_thr
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            fontpath, font_size, is_threaded))
+            fontpath, menu_font_size, is_threaded))
       return NULL;
 
    return font_data;

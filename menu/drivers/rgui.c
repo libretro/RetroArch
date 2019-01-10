@@ -1206,7 +1206,6 @@ static void rgui_render(void *data, bool is_idle)
 
    if (rgui->mouse_show)
    {
-      settings_t *settings = config_get_ptr();
       bool cursor_visible  = settings->bools.video_fullscreen ||
          !video_driver_has_windowed();
 

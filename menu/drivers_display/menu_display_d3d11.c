@@ -45,14 +45,14 @@ static void* menu_display_d3d11_get_default_mvp(video_frame_info_t *video_info)
 
 static void menu_display_d3d11_blend_begin(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d11_blend_end(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }

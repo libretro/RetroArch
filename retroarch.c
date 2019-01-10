@@ -373,8 +373,8 @@ static void global_free(void)
    {
       if (!string_is_empty(global->name.remapfile))
          free(global->name.remapfile);
+      memset(global, 0, sizeof(struct global));
    }
-   memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }
 

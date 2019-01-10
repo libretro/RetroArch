@@ -60,9 +60,9 @@ static void *runahead_save_state_alloc(void)
    return savestate;
 }
 
-static void runahead_save_state_free(void *state)
+static void runahead_save_state_free(void *data)
 {
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)state;
+   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)data;
    if (!savestate)
       return;
    free(savestate->data);

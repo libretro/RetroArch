@@ -45,15 +45,15 @@ static void* menu_display_d3d12_get_default_mvp(video_frame_info_t *video_info)
 
 static void menu_display_d3d12_blend_begin(video_frame_info_t *video_info)
 {
-   d3d12_video_t* d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)video_info->userdata;
 
-   d3d12->sprites.pipe = d3d12->sprites.pipe_blend;
+   d3d12->sprites.pipe  = d3d12->sprites.pipe_blend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
 static void menu_display_d3d12_blend_end(video_frame_info_t *video_info)
 {
-   d3d12_video_t* d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)video_info->userdata;
 
    d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);

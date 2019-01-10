@@ -511,7 +511,6 @@ static bool playlist_read_file(
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
    {
-      unsigned i;
       struct playlist_entry *entry     = NULL;
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
       {

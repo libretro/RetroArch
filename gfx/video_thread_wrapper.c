@@ -1403,7 +1403,7 @@ static void video_thread_send_and_wait(thread_video_t *thr,
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
+      void *data, const char *font_path, float video_font_size,
       enum font_driver_render_api api, custom_font_command_method_t func,
       bool is_threaded)
 {
@@ -1419,7 +1419,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.font_handle = font_handle;
    pkt.data.font_init.video_data  = data;
    pkt.data.font_init.font_path   = font_path;
-   pkt.data.font_init.font_size   = font_size;
+   pkt.data.font_init.font_size   = video_font_size;
    pkt.data.font_init.is_threaded = is_threaded;
    pkt.data.font_init.api         = api;
 
