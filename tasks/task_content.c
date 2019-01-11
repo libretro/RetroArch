@@ -1591,10 +1591,13 @@ end:
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
 {
+   global_t *global = global_get_ptr();
+
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -1605,6 +1608,14 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 #endif
 
    _launched_from_cli = false;
+
+   if (global)
+   {
+      if (label)
+         strlcpy(global->name.label, label, sizeof(global->name.label));
+      else
+         global->name.label[0] = '\0';
+   }
 
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
