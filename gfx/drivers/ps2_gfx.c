@@ -69,6 +69,7 @@ static GSGLOBAL *init_GSGlobal(void)
 
    gsKit_init_screen(gsGlobal);
    gsKit_mode_switch(gsGlobal, GS_ONESHOT);
+   gsKit_clear(gsGlobal, GS_BLACK);
 
    return gsGlobal;
 }
