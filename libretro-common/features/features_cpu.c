@@ -198,6 +198,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(HAVE_LIBNX)
+   time_ticks = armGetSystemTick();
 #endif
 
    return time_ticks;
