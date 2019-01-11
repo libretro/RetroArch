@@ -373,8 +373,8 @@ static void global_free(void)
    {
       if (!string_is_empty(global->name.remapfile))
          free(global->name.remapfile);
+      memset(global, 0, sizeof(struct global));
    }
-   memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }
 
@@ -1734,7 +1734,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_system.mmaps.descriptors     = NULL;
          runloop_system.mmaps.num_descriptors = 0;
 
-         runloop_key_event          = NULL;
+         rarch_ctl(RARCH_CTL_UNSET_KEY_EVENT, NULL);
          runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
@@ -1914,6 +1914,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;
+      case RARCH_CTL_UNSET_SHUTDOWN:
+         runloop_shutdown_initiated = false;
+         break;
       case RARCH_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
       case RARCH_CTL_DATA_DEINIT:
@@ -2028,6 +2031,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                return false;
             *key_event = &runloop_key_event;
          }
+         break;
+      case RARCH_CTL_UNSET_KEY_EVENT:
+         runloop_key_event          = NULL;
          break;
       case RARCH_CTL_FRONTEND_KEY_EVENT_GET:
          {
@@ -2396,7 +2402,7 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
-   if (!runloop_shutdown_initiated)
+   if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
    {
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
       command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
@@ -2404,7 +2410,7 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
    }
 
-   runloop_shutdown_initiated = true;
+   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    rarch_menu_running_finished();
 
 #ifdef HAVE_DISCORD
@@ -2484,7 +2490,7 @@ bool runloop_msg_queue_pull(const char **ret)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
@@ -2782,7 +2788,7 @@ static enum runloop_state runloop_check_state(
 
             /* Loads dummy core instead of exiting RetroArch completely.
              * Aborts core shutdown if invoked. */
-            runloop_shutdown_initiated      = false;
+            rarch_ctl(RARCH_CTL_UNSET_SHUTDOWN, NULL);
             runloop_core_shutdown_initiated = false;
          }
          else

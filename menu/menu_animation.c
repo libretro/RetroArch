@@ -473,7 +473,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-bool menu_animation_update(float delta_time)
+bool menu_animation_update(float anim_delta_time)
 {
    unsigned i;
    
@@ -482,8 +482,8 @@ bool menu_animation_update(float delta_time)
 
    for(i = 0; i < da_count(anim.list); i++)
    {
-      struct tween *tween = da_getptr(anim.list, i);
-      tween->running_since += delta_time;
+      struct tween *tween   = da_getptr(anim.list, i);
+      tween->running_since += anim_delta_time;
 
       *tween->subject = tween->easing(
             tween->running_since,
@@ -523,7 +523,7 @@ bool menu_animation_update(float delta_time)
       da_clear(anim.pending);
    }
 
-   anim.in_update = false;
+   anim.in_update      = false;
    animation_is_active = da_count(anim.list) > 0;
 
    return animation_is_active;

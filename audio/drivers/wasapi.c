@@ -589,7 +589,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned u1, unsigned *u2)
 {
    HRESULT hr;
-   bool com_initialized      = false;
    UINT32 frame_count        = 0;
    REFERENCE_TIME dev_period = 0;
    BYTE *dest                = NULL;
@@ -600,11 +599,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
-
-   hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-   WASAPI_HR_CHECK(hr, "CoInitializeEx", goto error);
-
-   com_initialized = true;
 
    w->device = wasapi_init_device(dev_id);
    if (!w->device && dev_id)
@@ -685,8 +679,6 @@ error:
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
-   if (com_initialized)
-      CoUninitialize();
 
    return NULL;
 }
@@ -898,7 +890,6 @@ static void wasapi_free(void *wh)
       _IAudioClient_Stop(w->client);
    WASAPI_RELEASE(w->client);
    WASAPI_RELEASE(w->device);
-   CoUninitialize();
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);

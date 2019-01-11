@@ -288,6 +288,10 @@ void dir_set(enum rarch_dir_type type, const char *path)
 static void check_defaults_dir_create_dir(const char *path)
 {
    char *new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   if (!new_path)
+      return;
+
    new_path[0] = '\0';
    fill_pathname_expand_special(new_path,
          path,

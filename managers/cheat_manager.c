@@ -460,7 +460,7 @@ error:
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 {
    unsigned i;
-   unsigned orig_size;
+   unsigned orig_size = 0;
 
    if (!cheat_manager_state.cheats)
    {
@@ -470,6 +470,7 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    }
    else
    {
+      struct item_cheat *val = NULL;
       orig_size = cheat_manager_state.size;
 
       /* if size is decreasing, free the items that will be lost */
@@ -481,8 +482,12 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
             free(cheat_manager_state.cheats[i].desc);
       }
 
-      cheat_manager_state.cheats = (struct item_cheat*)
-         realloc(cheat_manager_state.cheats, new_size * sizeof(struct item_cheat));
+      val = (struct item_cheat*)
+         realloc(cheat_manager_state.cheats,
+               new_size * sizeof(struct item_cheat));
+
+      if (val)
+         cheat_manager_state.cheats = val;
    }
 
    if (!cheat_manager_state.cheats)
@@ -750,7 +755,15 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             if (!cheat_manager_state.memory_size_list)
                cheat_manager_state.memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
             else
-               cheat_manager_state.memory_size_list = (unsigned*)realloc(cheat_manager_state.memory_size_list, sizeof(unsigned) * cheat_manager_state.num_memory_buffers);
+            {
+               unsigned *val = (unsigned*)realloc(
+                     cheat_manager_state.memory_size_list,
+                     sizeof(unsigned) * 
+                     cheat_manager_state.num_memory_buffers);
+
+               if (val)
+                  cheat_manager_state.memory_size_list = val;
+            }
 
             cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers-1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
             cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers-1] = system->mmaps.descriptors[i].core.len;

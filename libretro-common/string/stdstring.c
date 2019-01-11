@@ -82,6 +82,10 @@ char *string_replace_substring(const char *in,
 
    outlen          = strlen(in) - pattern_len*numhits + replacement_len*numhits;
    out             = (char *)malloc(outlen+1);
+
+   if (!out)
+      return NULL;
+
    outat           = out;
    inat            = in;
    inprev          = in;
@@ -105,18 +109,17 @@ char *string_trim_whitespace_left(char *const s)
 {
    if(s && *s)
    {
-      size_t len = strlen(s);
-      char *cur  = s;
+      size_t len     = strlen(s);
+      char *current  = s;
 
-      while(*cur && isspace((unsigned char)*cur))
+      while(*current && isspace((unsigned char)*current))
       {
-         ++cur;
+         ++current;
          --len;
       }
 
-      if(s != cur)
-         memmove(s, cur, len + 1);
-
+      if(s != current)
+         memmove(s, current, len + 1);
    }
 
    return s;
@@ -127,16 +130,16 @@ char *string_trim_whitespace_right(char *const s)
 {
    if(s && *s)
    {
-      size_t len = strlen(s);
-      char  *cur = s + len - 1;
+      size_t len     = strlen(s);
+      char  *current = s + len - 1;
 
-      while(cur != s && isspace((unsigned char)*cur))
+      while(current != s && isspace((unsigned char)*current))
       {
-         --cur;
+         --current;
          --len;
       }
 
-      cur[isspace((unsigned char)*cur) ? 0 : 1] = '\0';
+      current[isspace((unsigned char)*current) ? 0 : 1] = '\0';
    }
 
    return s;

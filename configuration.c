@@ -1133,6 +1133,9 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    unsigned count                        = 0;
    struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(1, (*size + 1) * sizeof(struct config_array_setting));
 
+   if (!tmp)
+      return NULL;
+
    /* Arrays */
    SETTING_ARRAY("playlist_names",           settings->arrays.playlist_names, false, NULL, true);
    SETTING_ARRAY("playlist_cores",           settings->arrays.playlist_cores, false, NULL, true);
@@ -1177,6 +1180,9 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    unsigned count = 0;
    global_t   *global                  = global_get_ptr();
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
+
+   if (!tmp)
+      return NULL;
 
    /* Paths */
 #ifdef HAVE_XMB
@@ -1568,6 +1574,9 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    unsigned count = 0;
    struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
 
+   if (!tmp)
+      return NULL;
+
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
    SETTING_FLOAT("crt_video_refresh_rate",   &settings->floats.crt_video_refresh_rate, true, crt_refresh_rate, false);
@@ -1603,6 +1612,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 {
    unsigned count                     = 0;
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
+
+   if (!tmp)
+      return NULL;
 
 #ifdef HAVE_NETWORKING
    SETTING_UINT("streaming_mode",  		         &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
@@ -1729,6 +1741,9 @@ static struct config_size_setting *populate_settings_size(settings_t *settings, 
    unsigned count                     = 0;
    struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
 
+   if (!tmp)
+      return NULL;
+
    SETTING_SIZE("rewind_buffer_size",           &settings->sizes.rewind_buffer_size, true, rewind_buffer_size, false);
 
    *size = count;
@@ -1740,6 +1755,9 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 {
    unsigned count                     = 0;
    struct config_int_setting  *tmp    = (struct config_int_setting*)calloc((*size + 1), sizeof(struct config_int_setting));
+
+   if (!tmp)
+      return NULL;
 
    SETTING_INT("state_slot",                   &settings->ints.state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
@@ -2720,11 +2738,11 @@ static bool config_load_file(const char *path, bool set_defaults,
 
       while (extra_path)
       {
-         bool ret = config_append_file(conf, extra_path);
+         bool result = config_append_file(conf, extra_path);
 
          RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
 
-         if (!ret)
+         if (!result)
             RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
          extra_path = strtok_r(NULL, "|", &save);
       }
@@ -4736,7 +4754,7 @@ bool config_save_overrides(int override_type)
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(bool config_save_on_exit, char *path)
+bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
 
@@ -4748,7 +4766,7 @@ bool config_replace(bool config_save_on_exit, char *path)
    if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
       return false;
 
-   if (config_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
+   if (config_replace_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
       config_save_file(path_get(RARCH_PATH_CONFIG));
 
    path_set(RARCH_PATH_CONFIG, path);

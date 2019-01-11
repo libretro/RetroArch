@@ -23,7 +23,7 @@
 #include "ozone_texture.h"
 #include "ozone_sidebar.h"
 
-#ifdef HAVE_DISCORD
+#if 0
 #include "discord/discord.h"
 #endif
 
@@ -352,8 +352,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-#ifdef HAVE_DISCORD
-         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR)
+#if 0
+         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
             strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
          else
 #endif
@@ -361,7 +361,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
          strlcat(filename, ".png", sizeof(filename));
 
-#ifdef HAVE_DISCORD
+#if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
          {
             char buf[PATH_MAX_LENGTH];
@@ -379,7 +379,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                ozone->has_all_assets = false;
                RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
             }
-#ifdef HAVE_DISCORD
+#if 0
          }
 #endif
       }
@@ -956,7 +956,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Icon */
    menu_display_blend_begin(video_info);
-#ifdef HAVE_DISCORD
+#if 0
    if (discord_avatar_is_ready())
       ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_DISCORD_OWN_AVATAR], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
    else
@@ -1148,7 +1148,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
 
-#ifdef HAVE_DISCORD
+#if 0
    static bool reset                      = false;
 
    if (discord_avatar_is_ready() && !reset)

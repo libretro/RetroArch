@@ -52,17 +52,24 @@ void clear_controller_port_map(void);
 static char *get_temp_directory_alloc(void)
 {
    settings_t *settings   = config_get_ptr();
-   char *path       = NULL;
+   char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD pathLength = GetTempPath(0, NULL) + 1;
-   path             = (char*)malloc(pathLength * sizeof(char));
+   DWORD pathLength       = GetTempPath(0, NULL) + 1;
+   path                   = (char*)malloc(pathLength * sizeof(char));
 
-   path[pathLength - 1] = 0;
+   if (!path)
+      return NULL;
+
+   path[pathLength - 1]   = 0;
    GetTempPath(pathLength, path);
 #else
    DWORD pathLength = GetTempPathW(0, NULL) + 1;
    wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
+
+   if (!wideStr)
+      return NULL;
+
    wideStr[pathLength - 1] = 0;
    GetTempPathW(pathLength, wideStr);
 

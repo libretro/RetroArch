@@ -1202,8 +1202,6 @@ static bool d3d10_gfx_frame(
 
    if (d3d10->shader_preset)
    {
-      unsigned i;
-
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
          if (d3d10->shader_preset->pass[i].feedback)
@@ -1233,14 +1231,17 @@ static bool d3d10_gfx_frame(
 
             if (buffer_sem->stage_mask && buffer_sem->uniforms)
             {
-               void* data;
+               void*               uniform_data = NULL;
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
-               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD, 0, (void**)&data);
+               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD,
+                     0, (void**)&uniform_data);
+
                while (uniform->size)
                {
                   if (uniform->data)
-                     memcpy((uint8_t*)data + uniform->offset, uniform->data, uniform->size);
+                     memcpy((uint8_t*)uniform_data + uniform->offset,
+                           uniform->data, uniform->size);
                   uniform++;
                }
                D3D10UnmapBuffer(buffer);

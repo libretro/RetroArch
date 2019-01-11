@@ -46,6 +46,11 @@
 
 #ifndef HAVE_MAIN
 #include "../retroarch.h"
+#include "../verbosity.h"
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <objbase.h>
+#endif
 #endif
 
 /**
@@ -109,6 +114,14 @@ int rarch_main(int argc, char *argv[], void *data)
    const ui_application_t *ui_application = NULL;
 #endif
 
+#if !defined(HAVE_MAIN) && defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (FAILED(CoInitialize(NULL)))
+   {
+      RARCH_ERR("FATAL: Failed to initialize the COM interface\n");
+      return 1;
+   }
+#endif
+
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);
@@ -155,6 +168,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
    if (ui_application && ui_application->run)
       ui_application->run(args);
+#endif
+
+#if !defined(HAVE_MAIN) && defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
 #endif
 
    return 0;

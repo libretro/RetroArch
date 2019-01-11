@@ -491,9 +491,9 @@ static INLINE bool input_joypad_pressed(
       unsigned key)
 {
    /* Auto-binds are per joypad, not per user. */
-   uint64_t                        joykey = (binds[key].joykey != NO_BTN)
+   const uint64_t joykey = (binds[key].joykey != NO_BTN)
       ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-   uint32_t                       joyaxis = (binds[key].joyaxis != AXIS_NONE)
+   const uint32_t joyaxis = (binds[key].joyaxis != AXIS_NONE)
       ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
 
    if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))

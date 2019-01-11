@@ -495,9 +495,12 @@ static xmb_node_t *xmb_alloc_node(void)
 {
    xmb_node_t *node = (xmb_node_t*)malloc(sizeof(*node));
 
-   node->alpha = node->label_alpha  = 0;
-   node->zoom  = node->x = node->y  = 0;
-   node->icon  = node->content_icon = 0;
+   if (!node)
+      return NULL;
+
+   node->alpha    = node->label_alpha  = 0;
+   node->zoom     = node->x = node->y  = 0;
+   node->icon     = node->content_icon = 0;
    node->fullpath = NULL;
 
    return node;
@@ -545,6 +548,9 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
 {
    xmb_node_t *new_node = (xmb_node_t*)malloc(sizeof(*new_node));
+
+   if (!new_node)
+      return NULL;
 
    *new_node            = *old_node;
    new_node->fullpath   = old_node->fullpath ? strdup(old_node->fullpath) : NULL;

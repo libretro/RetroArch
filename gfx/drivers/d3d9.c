@@ -1824,12 +1824,14 @@ static void d3d9_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
+   if (!d3d || !d3d->menu)
+      return;
+
    if (    !d3d->menu->tex            || 
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      if (d3d->menu)
-	     d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,

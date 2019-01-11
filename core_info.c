@@ -201,7 +201,7 @@ static bool core_info_list_iterate(
    if (!current_path)
       return false;
 
-   info_path_base             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   info_path_base             = (char*)malloc(info_path_base_size);
 
    info_path_base[0] = '\0';
 
@@ -230,17 +230,15 @@ static bool core_info_list_iterate(
 static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
-      bool show_hidden_files)
+      bool dir_show_hidden_files)
 {
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
    const char       *path_basedir   = libretro_info_dir;
    struct string_list *contents     = string_list_new();
-   bool ok;
-
-   ok = dir_list_append(contents, path, exts,
-         false, show_hidden_files, false, false);
+   bool                          ok = dir_list_append(contents, path, exts,
+         false, dir_show_hidden_files, false, false);
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
@@ -249,7 +247,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    for (i = 0; i < core_packages->size; i++)
    {
       dir_list_append(contents, core_packages->elems[i].data, exts,
-            false, show_hidden_files, false, false);
+            false, dir_show_hidden_files, false, false);
    }
    string_list_free(core_packages);
 #else
@@ -574,7 +572,11 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!info)
       return false;
 
-   path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   path                   = (char*)malloc(path_size);
+
+   if (!path)
+      return false;
+
    path[0]                = '\0';
 
    for (i = 0; i < info->firmware_count; i++)
@@ -676,12 +678,12 @@ void core_info_deinit_list(void)
 }
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files)
+      const char *exts, bool dir_show_hidden_files)
 {
    if (!(core_info_curr_list = core_info_list_new(dir_cores,
                !string_is_empty(path_info) ? path_info : dir_cores,
                exts,
-               show_hidden_files)))
+               dir_show_hidden_files)))
       return false;
    return true;
 }
@@ -797,13 +799,13 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files)
+      const char *exts, bool dir_show_hidden_files)
 {
    size_t i;
    const char       *path_basedir   = !string_is_empty(path_info) ?
       path_info : dir_cores;
    struct string_list *contents     = dir_list_new(
-         dir_cores, exts, false, show_hidden_files, false, false);
+         dir_cores, exts, false, dir_show_hidden_files, false, false);
    if (!contents)
       return;
 
