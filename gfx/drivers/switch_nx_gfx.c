@@ -448,7 +448,7 @@ static bool switch_frame(void *data, const void *frame,
 
     if (sw->in_menu && !video_info->menu_is_alive && sw->smooth)
     {
-        memset(out_buffer, 0, stride * sw->vp.full_height);;
+        memset(out_buffer, 0, stride * sw->vp.full_height);
         nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
     }
     sw->in_menu = video_info->menu_is_alive;
@@ -462,7 +462,7 @@ static bool switch_frame(void *data, const void *frame,
 #ifdef HAVE_NXRGUI
             gfx_cpy_dsp_buf(out_buffer, nx_backgroundImage, sw->vp.full_width, sw->vp.full_height, stride, false);
 #else
-            memset(out_buffer, 0, stride * sw->vp.full_height);;
+            memset(out_buffer, 0, stride * sw->vp.full_height);
 #endif
             scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
             gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
