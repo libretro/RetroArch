@@ -1748,7 +1748,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
-         corePath, contentPath, &content_info,
+         corePath, contentPath, contentLabel, &content_info,
          NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));

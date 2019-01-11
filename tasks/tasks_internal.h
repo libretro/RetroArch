@@ -184,6 +184,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
