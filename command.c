@@ -2020,9 +2020,6 @@ bool command_event(enum event_command cmd, void *data)
             path_clear(RARCH_PATH_CORE);
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
 #endif
-            core_unload_game();
-            if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               core_unload();
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
