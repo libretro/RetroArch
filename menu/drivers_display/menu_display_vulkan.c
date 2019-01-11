@@ -332,11 +332,11 @@ static void menu_display_vk_blend_end(video_frame_info_t *video_info)
 
 static bool menu_display_vk_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
-      float font_size, bool is_threaded)
+      float menu_font_size, bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    *handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, menu_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_VULKAN_API);
 

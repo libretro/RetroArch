@@ -283,12 +283,12 @@ static bool menu_display_d3d12_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
-      float       font_size,
+      float       menu_font_size,
       bool        is_threaded)
 {
    font_data_t** handle     = (font_data_t**)font_handle;
    font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D12_API);
+         video_data, font_path, menu_font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D12_API);
    if (!new_handle)
       return false;
    *handle = new_handle;

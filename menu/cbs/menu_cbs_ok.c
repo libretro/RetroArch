@@ -4174,12 +4174,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
+   char *new_data                = NULL;
    const char *path              = NULL;
    const char *label             = NULL;
    unsigned menu_type            = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -4191,7 +4192,12 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!data || err)
       goto finish;
 
-   data->data = (char*)realloc(data->data, data->len + 1);
+   new_data = (char*)realloc(data->data, data->len + 1);
+
+   if (!new_data)
+      goto finish;
+
+   data->data            = new_data;
    data->data[data->len] = '\0';
 
    if (!strstr(data->data, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
