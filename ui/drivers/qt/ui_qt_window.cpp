@@ -553,6 +553,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_searchDock->setProperty("default_area", Qt::LeftDockWidgetArea);
    m_searchDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
    m_searchDock->setWidget(m_searchWidget);
+   m_searchDock->setFixedHeight(m_searchDock->minimumSizeHint().height());
 
    addDockWidget(static_cast<Qt::DockWidgetArea>(m_searchDock->property("default_area").toInt()), m_searchDock);
 

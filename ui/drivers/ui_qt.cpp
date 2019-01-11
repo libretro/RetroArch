@@ -501,6 +501,7 @@ static void* ui_companion_qt_init(void)
    coreSelectionDock->setProperty("default_area", Qt::LeftDockWidgetArea);
    coreSelectionDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE));
    coreSelectionDock->setWidget(coreSelectionWidget);
+   coreSelectionDock->setFixedHeight(coreSelectionDock->minimumSizeHint().height());
 
    mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(coreSelectionDock->property("default_area").toInt()), coreSelectionDock);
 
