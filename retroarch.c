@@ -2600,7 +2600,6 @@ static enum runloop_state runloop_check_state(
    static input_bits_t last_input   = {{0}};
 #endif
    static bool runloop_exec         = false;
-   static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
    bool is_alive                    = false;
@@ -2685,9 +2684,10 @@ static enum runloop_state runloop_check_state(
 
    /* Check fullscreen toggle */
    {
-      bool fs_toggle_pressed = BIT256_GET(
+      static bool old_fs_toggle_pressed = false;
+      bool fs_toggle_pressed            = BIT256_GET(
             current_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-      fs_toggle_triggered    = fs_toggle_pressed && !old_fs_toggle_pressed;
+      fs_toggle_triggered               = fs_toggle_pressed && !old_fs_toggle_pressed;
 
       if (fs_toggle_triggered)
       {
