@@ -1742,7 +1742,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   if (d3d9_surface_lock_rect(dest, &rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1762,7 +1762,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect((void*)dest);
+      d3d9_surface_unlock_rect(dest);
    }
    else
       ret = false;
