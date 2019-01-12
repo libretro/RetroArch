@@ -29,6 +29,7 @@
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 
 #include "../video_driver.h"
 #include "../../verbosity.h"

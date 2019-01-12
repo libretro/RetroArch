@@ -986,7 +986,7 @@ chd_error chd_precache(chd_file *chd)
 		size = filestream_tell(chd->file);
 		if (size <= 0)
 			return CHDERR_INVALID_DATA;
-		chd->file_cache = malloc(size);
+		chd->file_cache = (UINT8*)malloc(size);
 		if (chd->file_cache == NULL)
 			return CHDERR_OUT_OF_MEMORY;
 		filestream_seek(chd->file, 0, SEEK_SET);

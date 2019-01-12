@@ -12,6 +12,7 @@
 #include "glslang_util.h"
 #include "slang_preprocess.h"
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 #include "slang_process.h"
 
 #include "../../verbosity.h"
