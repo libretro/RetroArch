@@ -160,15 +160,27 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
    pad->rumble_props.rgdwAxes                = &axis;
    pad->rumble_props.rglDirection            = &direction;
 
+#ifdef __cplusplus
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
+      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+#else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+#endif
 
    axis = DIJOFS_Y;
 
+#ifdef __cplusplus
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
+      RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+#else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+#endif
 }
 
 static BOOL CALLBACK enum_axes_cb(
