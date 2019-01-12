@@ -21,6 +21,7 @@
 
 #include <libretro.h>
 #include <boolean.h>
+#include <retro_assert.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
@@ -65,7 +66,9 @@ typedef struct
    struct playlist_entry *current_entry;
    unsigned array_depth;
    unsigned object_depth;
-   char **current_string;
+   char **current_entry_val;
+   char *current_meta_string;
+   bool in_items;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
@@ -478,16 +481,29 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
       JSON_Writer_SetUserData(context.writer, &context);
 
+      JSON_Writer_WriteStartObject(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "version", strlen("version"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteString(context.writer, "1.0", strlen("1.0"), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "items", strlen("items"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteStartArray(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
       for (i = 0; i < playlist->size; i++)
       {
-         JSON_Writer_WriteSpace(context.writer, 2);
+         JSON_Writer_WriteSpace(context.writer, 4);
          JSON_Writer_WriteStartObject(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "path", strlen("path"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
@@ -495,7 +511,7 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "label", strlen("label"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
@@ -503,7 +519,7 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "core_path", strlen("core_path"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
@@ -511,7 +527,7 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "core_name", strlen("core_name"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
@@ -519,7 +535,7 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "crc32", strlen("crc32"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
@@ -527,14 +543,14 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 4);
+         JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "db_name", strlen("db_name"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "", playlist->entries[i].db_name ? strlen(playlist->entries[i].db_name) : 0, JSON_UTF8);
          JSON_Writer_WriteNewLine(context.writer);
 
-         JSON_Writer_WriteSpace(context.writer, 2);
+         JSON_Writer_WriteSpace(context.writer, 4);
          JSON_Writer_WriteEndObject(context.writer);
 
          if (i < playlist->size - 1)
@@ -543,7 +559,10 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteNewLine(context.writer);
       }
 
+      JSON_Writer_WriteSpace(context.writer, 2);
       JSON_Writer_WriteEndArray(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_WriteEndObject(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
       JSON_Writer_Free(context.writer);
    }
@@ -623,15 +642,53 @@ size_t playlist_size(playlist_t *playlist)
    return playlist->size;
 }
 
+static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   pCtx->array_depth++;
+
+   if (pCtx->object_depth == 1)
+   {
+      if (string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 1)
+      {
+         pCtx->in_items = true;
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   retro_assert(pCtx->array_depth > 0);
+
+   pCtx->array_depth--;
+
+   if (pCtx->object_depth == 1)
+   {
+      if (pCtx->in_items && string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 0)
+      {
+         free(pCtx->current_meta_string);
+         pCtx->current_meta_string = NULL;
+         pCtx->in_items = false;
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
 static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
 {
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
 
    pCtx->object_depth++;
 
-   if (pCtx->array_depth == 1)
+   if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->object_depth == 1)
+      if (pCtx->array_depth == 1)
       {
          if (pCtx->playlist->size < pCtx->playlist->cap)
          {
@@ -652,13 +709,15 @@ static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
 {
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
 
-   if (pCtx->array_depth == 1)
+   if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->object_depth == 1)
+      if (pCtx->array_depth == 1)
       {
          pCtx->playlist->size++;
       }
    }
+
+   retro_assert(pCtx->object_depth > 0);
 
    pCtx->object_depth--;
 
@@ -670,13 +729,13 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
    (void)attributes; /* unused */
 
-   if (pCtx->array_depth == 1)
+   if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->object_depth == 1)
+      if (pCtx->array_depth == 1)
       {
-         if (pCtx->current_string && length && !string_is_empty(pValue))
+         if (pCtx->current_entry_val && length && !string_is_empty(pValue))
          {
-            *pCtx->current_string = strdup(pValue);
+            *pCtx->current_entry_val = strdup(pValue);
          }
          else
          {
@@ -684,8 +743,21 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
          }
       }
    }
+   else if (pCtx->object_depth == 1)
+   {
+      if (pCtx->array_depth == 0)
+      {
+         if (pCtx->current_meta_string && length && !string_is_empty(pValue))
+         {
+            /* handle any top-level playlist metadata here */
+            /*RARCH_LOG("found meta: %s = %s\n", pCtx->current_meta_string, pValue);*/
 
-   pCtx->current_string = NULL;
+            free(pCtx->current_meta_string);
+         }
+      }
+   }
+
+   pCtx->current_entry_val = NULL;
 
    return JSON_Parser_Continue;
 }
@@ -695,50 +767,49 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
    (void)attributes; /* unused */
 
-   if (pCtx->array_depth == 1)
+   if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->object_depth == 1)
+      if (pCtx->array_depth == 1)
       {
-         if (pCtx->current_string)
+         if (pCtx->current_entry_val)
          {
             /* something went wrong */
             RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
             return JSON_Parser_Abort;
          }
 
-         if (string_is_equal(pValue, "path"))
-            pCtx->current_string = &pCtx->current_entry->path;
-         else if (string_is_equal(pValue, "label"))
-            pCtx->current_string = &pCtx->current_entry->label;
-         else if (string_is_equal(pValue, "core_path"))
-            pCtx->current_string = &pCtx->current_entry->core_path;
-         else if (string_is_equal(pValue, "core_name"))
-            pCtx->current_string = &pCtx->current_entry->core_name;
-         else if (string_is_equal(pValue, "crc32"))
-            pCtx->current_string = &pCtx->current_entry->crc32;
-         else if (string_is_equal(pValue, "db_name"))
-            pCtx->current_string = &pCtx->current_entry->db_name;
-         else
+         if (length)
          {
-            /* ignore unknown members */
+            if (string_is_equal(pValue, "path"))
+               pCtx->current_entry_val = &pCtx->current_entry->path;
+            else if (string_is_equal(pValue, "label"))
+               pCtx->current_entry_val = &pCtx->current_entry->label;
+            else if (string_is_equal(pValue, "core_path"))
+               pCtx->current_entry_val = &pCtx->current_entry->core_path;
+            else if (string_is_equal(pValue, "core_name"))
+               pCtx->current_entry_val = &pCtx->current_entry->core_name;
+            else if (string_is_equal(pValue, "crc32"))
+               pCtx->current_entry_val = &pCtx->current_entry->crc32;
+            else if (string_is_equal(pValue, "db_name"))
+               pCtx->current_entry_val = &pCtx->current_entry->db_name;
+            else
+            {
+               /* ignore unknown members */
+            }
+         }
+      }
+   }
+   else if (pCtx->object_depth == 1)
+   {
+      if (pCtx->array_depth == 0)
+      {
+         if (length)
+         {
+            pCtx->current_meta_string = strdup(pValue);
          }
       }
    }
 
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-   pCtx->array_depth++;
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-   pCtx->array_depth--;
    return JSON_Parser_Continue;
 }
 
@@ -758,30 +829,30 @@ static bool playlist_read_file(
 
    /* Detect format of playlist */
    {
-      char buf[6] = {0};
-      int64_t bytes_read = filestream_read(file, buf, 5);
+      char buf[16] = {0};
+      int64_t bytes_read = filestream_read(file, buf, 15);
 
       filestream_seek(file, 0, SEEK_SET);
 
-      if (bytes_read == 5)
+      if (bytes_read == 15)
       {
-         if (string_is_equal(buf, "[\n  {"))
+         if (string_is_equal(buf, "{\n  \"version\": "))
          {
             /* new playlist format detected */
-            RARCH_LOG("New playlist format detected.\n");
+            /*RARCH_LOG("New playlist format detected.\n");*/
             new_format = true;
          }
          else
          {
             /* old playlist format detected */
-            RARCH_LOG("Old playlist format detected.\n");
+            /*RARCH_LOG("Old playlist format detected.\n");*/
             new_format = false;
          }
       }
       else
       {
          /* corrupt playlist? */
-         RARCH_LOG("Could not detect playlist format.\n");
+         RARCH_ERR("Could not detect playlist format.\n");
       }
    }
 
