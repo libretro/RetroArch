@@ -2571,10 +2571,11 @@ enum
 
 static int cheevos_iterate(coro_t *coro)
 {
-   ssize_t num_read = 0;
-   size_t to_read   = 4096;
-   uint8_t *buffer  = NULL;
-   const char *end  = NULL;
+   const int SNES_HEADER_LEN = 0x200;
+   ssize_t num_read          = 0;
+   size_t to_read            = 4096;
+   uint8_t *buffer           = NULL;
+   const char *end           = NULL;
 
    static const uint32_t genesis_exts[] =
    {
@@ -2902,8 +2903,6 @@ found:
 
       /* Checks for the existence of a headered SNES file.
          Unheadered files fall back to GENERIC_MD5. */
-
-      const int SNES_HEADER_LEN = 0x200;
 
       if (coro->len < 0x2000 || coro->len % 0x2000 != SNES_HEADER_LEN)
       {
