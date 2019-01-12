@@ -34,8 +34,8 @@ int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    size_t new_selection_ptr;
-   const char *menu_label      = NULL;
-   enum msg_hash_enums enum_idx = 0;
+   const char *menu_label       = NULL;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
 
    (void)path;
    (void)label;

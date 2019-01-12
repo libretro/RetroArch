@@ -48,7 +48,7 @@ static void InputListElementRealloc(InputListElement *element, unsigned int newS
 {
    if (newSize > element->state_size)
    {
-      element->state = realloc(element->state, newSize * sizeof(int16_t));
+      element->state = (int16_t*)realloc(element->state, newSize * sizeof(int16_t));
       memset(&element->state[element->state_size], 0, (newSize - element->state_size) * sizeof(int16_t));
       element->state_size = newSize;
    }

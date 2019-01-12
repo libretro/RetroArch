@@ -122,7 +122,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
-      return false;
+      return NULL;
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;

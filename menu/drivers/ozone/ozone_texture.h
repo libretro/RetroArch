@@ -34,7 +34,7 @@ enum OZONE_TEXTURE {
    OZONE_TEXTURE_LAST
 };
 
-static char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
+static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
    "retroarch",
    "cursor_border"
 };
@@ -51,7 +51,7 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_LAST
 };
 
-static char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
+static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
    "switch",
@@ -74,7 +74,7 @@ enum OZONE_TAB_TEXTURES {
    OZONE_TAB_TEXTURE_LAST
 };
 
-static char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
+static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
    "retroarch",
    "settings",
    "history",

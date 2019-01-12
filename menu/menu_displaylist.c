@@ -8445,7 +8445,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             unsigned i, size                  = 0;
-            struct video_display_config *list = video_display_server_get_resolution_list(&size);
+            struct video_display_config *list = (struct video_display_config*)
+               video_display_server_get_resolution_list(&size);
 
             if (list)
             {

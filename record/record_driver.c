@@ -405,12 +405,14 @@ bool recording_init(void)
       if (streaming_is_enabled())
       {
          params.config = settings->paths.path_stream_config;
-         params.preset = settings->uints.video_stream_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_stream_quality;
       }
       else
       {
          params.config = settings->paths.path_record_config;
-         params.preset = settings->uints.video_record_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_record_quality;
       }
    }
 
