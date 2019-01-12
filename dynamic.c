@@ -1923,9 +1923,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
  
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 1;
+         const uint32_t supported_vfs_version = 3;
          static struct retro_vfs_interface vfs_iface =
          {
+            /* VFS API v1 */
             retro_vfs_file_get_path_impl,
             retro_vfs_file_open_impl,
             retro_vfs_file_close_impl,
@@ -1935,14 +1936,31 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             retro_vfs_file_read_impl,
             retro_vfs_file_write_impl,
             retro_vfs_file_flush_impl,
-            retro_vfs_file_remove_impl
+            retro_vfs_file_remove_impl,
+            retro_vfs_file_rename_impl,
+            /* VFS API v2 */
+            retro_vfs_file_truncate_impl,
+            /* VFS API v3 */
+            retro_vfs_stat_impl,
+            retro_vfs_mkdir_impl,
+            retro_vfs_opendir_impl,
+            retro_vfs_readdir_impl,
+            retro_vfs_dirent_get_name_impl,
+            retro_vfs_dirent_is_dir_impl,
+            retro_vfs_closedir_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
          if (vfs_iface_info->required_interface_version <= supported_vfs_version)
          {
+            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
+         }
+         else
+         {
+            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            return false;
          }
 
          break;
