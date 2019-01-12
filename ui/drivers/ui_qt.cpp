@@ -657,30 +657,27 @@ static void ui_companion_qt_toggle(void *data, bool force)
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
    settings_t *settings = config_get_ptr();
 
-#ifdef HAVE_DYNAMIC
-   if (!retroarch_core_set_on_cmdline())
-#endif
-      if (settings->bools.ui_companion_toggle || force)
+   if (settings->bools.ui_companion_toggle || force)
+   {
+      if (settings->bools.video_fullscreen)
+         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+
+      win_handle->qtWindow->activateWindow();
+      win_handle->qtWindow->raise();
+      video_driver_show_mouse();
+      win_handle->qtWindow->show();
+
+      if (video_driver_started_fullscreen())
+         win_handle->qtWindow->lower();
+
+      if (!already_started)
       {
-         if (settings->bools.video_fullscreen)
-            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+         already_started = true;
 
-         win_handle->qtWindow->activateWindow();
-         win_handle->qtWindow->raise();
-         video_driver_show_mouse();
-         win_handle->qtWindow->show();
-
-         if (video_driver_started_fullscreen())
-            win_handle->qtWindow->lower();
-
-         if (!already_started)
-         {
-            already_started = true;
-
-            if (win_handle->qtWindow->settings()->value("show_welcome_screen", true).toBool())
-               win_handle->qtWindow->showWelcomeScreen();
-         }
+         if (win_handle->qtWindow->settings()->value("show_welcome_screen", true).toBool())
+            win_handle->qtWindow->showWelcomeScreen();
       }
+   }
 }
 
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)

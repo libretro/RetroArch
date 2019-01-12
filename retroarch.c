@@ -229,7 +229,6 @@ static bool rarch_use_sram                                      = false;
 static bool rarch_ups_pref                                      = false;
 static bool rarch_bps_pref                                      = false;
 static bool rarch_ips_pref                                      = false;
-static bool rarch_first_start                                   = true;
 
 static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
@@ -245,9 +244,6 @@ static bool runloop_remaps_game_active                          = false;
 static bool runloop_remaps_content_dir_active                   = false;
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
-#ifdef HAVE_DYNAMIC
-static bool core_set_on_cmdline                                 = false;
-#endif
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event                 = NULL;
@@ -271,13 +267,6 @@ static retro_time_t frame_limit_last_time                       = 0.0;
 extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
-
-#ifdef HAVE_DYNAMIC
-bool retroarch_core_set_on_cmdline(void)
-{
-   return core_set_on_cmdline;
-}
-#endif
 
 #ifdef HAVE_THREADS
 void runloop_msg_queue_lock(void)
@@ -910,9 +899,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                {
                   settings_t *settings  = config_get_ptr();
 
-                  if (rarch_first_start)
-                     core_set_on_cmdline = true;
-
                   path_clear(RARCH_PATH_CORE);
                   strlcpy(settings->paths.directory_libretro, optarg,
                         sizeof(settings->paths.directory_libretro));
@@ -925,8 +911,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
                else if (filestream_exists(optarg))
                {
-                  if (rarch_first_start)
-                     core_set_on_cmdline = true;
 
                   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1451,16 +1435,11 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
-   if (rarch_first_start)
-      rarch_first_start = false;
    return true;
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
    rarch_is_inited         = false;
-
-   if (rarch_first_start)
-         rarch_first_start = false;
 
    return false;
 }
