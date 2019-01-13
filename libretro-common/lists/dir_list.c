@@ -187,7 +187,7 @@ static int dir_list_read(const char *dir,
       file_path[0] = '\0';
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
-      is_dir = retro_dirent_is_dir(entry, file_path);
+      is_dir = retro_dirent_is_dir(entry, NULL);
 
       if(!is_dir)
          file_ext = path_get_extension(name);

@@ -184,6 +184,7 @@
 #include <memmap.h>
 #include <encodings/utf.h>
 #include <compat/fopen_utf8.h>
+#include <file/file_path.h>
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
@@ -953,6 +954,7 @@ struct retro_vfs_dir_handle
 struct libretro_vfs_implementation_dir
 #endif
 {
+   char* orig_path;
 #if defined(_WIN32)
 #if defined(LEGACY_WIN32)
    WIN32_FIND_DATA entry;
@@ -1012,6 +1014,8 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
    rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir));
    if (!rdir)
       return NULL;
+
+   rdir->orig_path       = strdup(name);
 
 #if defined(_WIN32)
    (void)path_wide;
@@ -1164,6 +1168,9 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
       return false;
 #endif
    /* dirent struct doesn't have d_type, do it the slow way ... */
+   char path[PATH_MAX_LENGTH];
+   path[0] = '\0';
+   fill_pathname_join(path, rdir->orig_path, retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
    if (stat(path, &buf) < 0)
       return false;
    return S_ISDIR(buf.st_mode);
@@ -1191,6 +1198,8 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
       closedir(rdir->directory);
 #endif
 
+   if (rdir->orig_path)
+      free(rdir->orig_path);
    free(rdir);
    return 0;
 }

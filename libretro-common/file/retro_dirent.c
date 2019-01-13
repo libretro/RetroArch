@@ -98,14 +98,14 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
  *
  * retro_dirent_is_dir:
  * @rdir         : pointer to the directory entry.
- * @path         : path to the directory entry.
+ * @unused       : deprecated, included for compatibility reasons, pass NULL
  *
  * Is the directory listing entry a directory?
  *
  * Returns: true if directory listing entry is
  * a directory, false if not.
  */
-bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
+bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
 {
    if (dirent_dirent_is_dir_cb != NULL)
       return dirent_dirent_is_dir_cb((struct retro_vfs_dir_handle *)rdir);
