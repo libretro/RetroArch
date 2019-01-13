@@ -463,6 +463,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
    m_tableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
    m_tableView->horizontalHeader()->setStretchLastSection(true);
+   m_tableView->setWordWrap(false);
 
    m_fileTableView->setModel(m_fileModel);
    m_fileTableView->sortByColumn(0, Qt::AscendingOrder);
@@ -473,6 +474,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_fileTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_fileTableView->horizontalHeader()->setStretchLastSection(true);
    m_fileTableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+   m_fileTableView->setWordWrap(false);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
