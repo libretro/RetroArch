@@ -358,7 +358,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
       return false;
    }
 
-   configs = malloc(*count * sizeof(*configs));
+   configs = (EGLConfig*)malloc(*count * sizeof(*configs));
    if (!configs)
       return false;
 
