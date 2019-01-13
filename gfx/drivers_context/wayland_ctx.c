@@ -657,6 +657,8 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 		wl->width = width;
 		wl->height = height;
 	}
+	
+	wl_egl_window_resize(wl->win, width, height, 0, 0);
 
 	wl->configured = false;
 }
@@ -721,6 +723,8 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 		wl->width = width;
 		wl->height = height;
 	}
+	
+	wl_egl_window_resize(wl->win, width, height, 0, 0);
 
 	wl->configured = false;
 }
