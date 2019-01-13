@@ -20,6 +20,7 @@
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
+- NETPLAY: Allow quick joining subsystem lobbies
 - PS2: Initial PlayStation2 port.
 - PS4: Initial PlayStation4 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming

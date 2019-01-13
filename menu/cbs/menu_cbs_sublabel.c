@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
@@ -580,6 +581,31 @@ static int action_bind_sublabel_subsystem_add(
    return 0;
 }
 
+static int action_bind_sublabel_subsystem_load(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned j = 0;
+   char buf[4096];
+
+   buf[0] = '\0';
+
+   for (j = 0; j < content_get_subsystem_rom_id(); j++)
+   {
+      strlcat(buf, "   ", sizeof(buf));
+      strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
+      if (j != content_get_subsystem_rom_id() - 1)
+         strlcat(buf, "\n", sizeof(buf));
+   }
+
+   if (!string_is_empty(buf))
+      strlcpy(s, buf, len);
+
+   return 0;
+}
+
 static int action_bind_sublabel_remap_kbd_sublabel(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -730,7 +756,7 @@ static int action_bind_sublabel_netplay_room(
          buf[0] = '\0';
          for (i = 0; i < list->size; i++)
          {
-            strlcat(buf, "  ", sizeof(buf));
+            strlcat(buf, "   ", sizeof(buf));
             strlcat(buf, list->elems[i].data, sizeof(buf));
             strlcat(buf, "\n", sizeof(buf));
          }
@@ -1214,6 +1240,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_add);
+            break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_load);
             break;
          case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_cycle_tray_status);
