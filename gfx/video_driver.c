@@ -2054,8 +2054,13 @@ void video_driver_load_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
+#else
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.gamma_correction, "gamma_correction");
+#endif
 
    if (config_get_bool(conf, "flicker_filter_enable",
          &tmp_bool))
@@ -2082,8 +2087,13 @@ void video_driver_save_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    config_set_bool(conf, "gamma_correction",
          global->console.screen.gamma_correction);
+#else
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+#endif
    config_set_bool(conf, "flicker_filter_enable",
          global->console.flickerfilter_enable);
    config_set_bool(conf, "soft_filter_enable",
