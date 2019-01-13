@@ -38,7 +38,9 @@ typedef struct ps2_video
    bool menuVisible;
    bool fullscreen;
 
-   bool rgb32;
+   bool vsync;
+
+   int PSM;
    bool force_aspect;
    int menu_filter;
    int core_filter;
@@ -115,21 +117,17 @@ static void color_correction16(uint16_t *buffer, uint32_t dimensions)
    }
 }
 
-static bool texture_need_prepare(GSTEXTURE *texture, int width, int height, int PSM, int filter)
+static bool texture_need_prepare(GSTEXTURE *texture, int width, int height, int PSM)
 {
-   return !texture->Mem || texture->Width != width || texture->Height != height || texture->PSM != PSM;
+   return texture->Width != width || texture->Height != height || texture->PSM != PSM;
 }
 
 static void transfer_texture(GSTEXTURE *texture, const void *frame, 
-      int width, int height, bool rgb32, int filter, bool color_correction)
+      int width, int height, int PSM, int filter, bool color_correction)
 {
-   
-   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool changed = texture_need_prepare(texture, width, height, rgb32, PSM);
-
    if (color_correction) {
       int pixels = width * height;
-      if (rgb32) {
+      if (PSM == GS_PSM_CT32) {
          uint32_t *buffer = (uint32_t *)frame;
          color_correction32(buffer, pixels);
       } else {
@@ -138,12 +136,10 @@ static void transfer_texture(GSTEXTURE *texture, const void *frame,
       }
    }
 
-   if (changed) {
-      texture->Width = width;
-      texture->Height = height;
-      texture->PSM = PSM;
-      texture->Filter = filter;
-   }
+   texture->Width = width;
+   texture->Height = height;
+   texture->PSM = PSM;
+   texture->Filter = filter;
    texture->Mem = (void *)frame;
 }
 
@@ -191,11 +187,16 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               GS_TEXT);
 }
 
-static void clearVRAMIfNeeded(ps2_video_t *ps2, int width, int height)
+static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int height)
 {
-   int PSM = ps2->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool coreVRAMClear = texture_need_prepare(ps2->coreTexture, width, height, PSM, ps2->core_filter);
-   ps2->clearVRAM = ps2->clearVRAM || coreVRAMClear;
+   if (!ps2->clearVRAM) {
+      if(frame) {
+         bool coreVRAMClear = false;
+         coreVRAMClear = texture_need_prepare(ps2->coreTexture, width, height, ps2->PSM);
+         ps2->clearVRAM = ps2->clearVRAM || coreVRAMClear;
+      }
+   }
+
    if (ps2->clearVRAM) {
       gsKit_clear(ps2->gsGlobal, GS_BLACK);
       gsKit_vram_clear(ps2->gsGlobal);
@@ -204,7 +205,9 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2, int width, int height)
 
 static void refreshScreen(ps2_video_t *ps2)
 {
-   gsKit_sync_flip(ps2->gsGlobal);
+   if (ps2->vsync) {
+      gsKit_sync_flip(ps2->gsGlobal);
+   }
    gsKit_queue_exec(ps2->gsGlobal);
 
    ps2->clearVRAM = false;
@@ -225,10 +228,12 @@ static void *ps2_gfx_init(const video_info_t *video,
    if (video->font_enable) {
       font_driver_init_osd(ps2, false, video->is_threaded, FONT_DRIVER_RENDER_PS2);
    }
-   ps2->rgb32 = video->rgb32;
+   ps2->PSM = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->fullscreen = video->fullscreen;
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
    ps2->force_aspect = video->force_aspect;
+   ps2->vsync = video->vsync;
+   ps2->clearVRAM = true;
 
    if (input && input_data) {
       settings_t *settings = config_get_ptr();
@@ -249,14 +254,16 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    if (!width || !height)
       return false;
 
+#if defined(DEBUG)
    if (frame_count%120==0) {
       printf("ps2_gfx_frame %lu\n", frame_count);
    }
+#endif
 
-   clearVRAMIfNeeded(ps2, width, height);
+   clearVRAMIfNeeded(ps2, frame, width, height);
 
    if (frame) {
-      transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, ps2->core_filter, 1);
+      transfer_texture(ps2->coreTexture, frame, width, height, ps2->PSM, ps2->core_filter, 1);
       if(ps2->clearVRAM) {
          vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       }
@@ -294,8 +301,10 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
 static void ps2_gfx_set_nonblock_state(void *data, bool toggle)
 {
-   (void)data;
-   (void)toggle;
+   ps2_video_t *ps2 = (ps2_video_t*)data;
+
+   if (ps2)
+      ps2->vsync = !toggle;
 }
 
 static bool ps2_gfx_alive(void *data)
@@ -395,11 +404,11 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
    ps2_video_t *ps2 = (ps2_video_t*)data;
    
    bool color_correction = false;
-   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, rgb32, PSM);
+   int PSM = (rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
+   bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, PSM);
    
-   transfer_texture(ps2->menuTexture, frame, width, height, rgb32, ps2->menu_filter, color_correction);
-   ps2->clearVRAM = texture_changed;
+   transfer_texture(ps2->menuTexture, frame, width, height, PSM, ps2->menu_filter, color_correction);
+   ps2->clearVRAM = ps2->menuVisible && texture_changed;
 }
 
 static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
