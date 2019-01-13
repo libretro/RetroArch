@@ -879,6 +879,7 @@ static void netplay_announce(void)
       }
       net_http_urlencode(&gamename, buf);
       net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
+      content_crc = 0;
    }
    else
    {
