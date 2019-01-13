@@ -255,7 +255,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       return false;
 
 #if defined(DEBUG)
-   if (frame_count%120==0) {
+   if (frame_count%60==0) {
       printf("ps2_gfx_frame %lu\n", frame_count);
    }
 #endif
@@ -408,12 +408,16 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
    bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, PSM);
    
    transfer_texture(ps2->menuTexture, frame, width, height, PSM, ps2->menu_filter, color_correction);
-   ps2->clearVRAM = ps2->menuVisible && texture_changed;
+   ps2->clearVRAM = ps2->clearVRAM || texture_changed;
 }
 
 static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
+   if (ps2->menuVisible != enable) {
+      /* If Menu change status, CLEAR VRAM */
+      ps2->clearVRAM = true;
+   }
    ps2->menuVisible = enable;
    ps2->fullscreen = fullscreen;
 }
