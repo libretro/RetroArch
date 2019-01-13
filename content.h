@@ -109,6 +109,9 @@ void content_set_subsystem_info(void);
 /* Get the path to the last selected subsystem rom */
 char* content_get_subsystem_rom(unsigned index);
 
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name);
+
 RETRO_END_DECLS
 
 #endif

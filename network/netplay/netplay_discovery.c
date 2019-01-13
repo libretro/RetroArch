@@ -332,7 +332,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                         if (i < subsystem->size - 1)
                            strlcat(buf, "|", NETPLAY_HOST_LONGSTR_LEN);
                      }
-                     RARCH_LOG("%s\n", buf);
                      strlcpy(ad_packet_buffer.content, buf,
                         NETPLAY_HOST_LONGSTR_LEN);
                      strlcpy(ad_packet_buffer.subsystem_name, path_get(RARCH_PATH_SUBSYSTEM),

@@ -66,7 +66,22 @@ static void netplay_crc_scan_callback(void *task_data,
 
    if (!string_is_empty(state->subsystem_name) && !string_is_equal(state->subsystem_name, "N/A"))
    {
-      RARCH_LOG("[lobby] subsystem not supported\n");
+      content_ctx_info_t content_info  = {0};
+      struct string_list *game_list = string_split(state->content_path, "|");
+      unsigned i = 0;
+
+      task_push_load_new_core(state->core_path, NULL,
+            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+      content_clear_subsystem();
+      if (!content_set_subsystem_by_name(state->subsystem_name))
+         RARCH_LOG("[lobby] subsystem not found in implementation\n");
+
+      for (i = 0; i < game_list->size; i++)
+         content_add_subsystem(game_list->elems[i].data);
+      task_push_load_subsystem_with_core_from_menu(
+         NULL, &content_info,
+         CORE_TYPE_PLAIN, NULL, NULL);
+      string_list_free(game_list);
       return;
    }
 
@@ -301,7 +316,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             }
             task_set_progress(task, (int)(j / playlist_size * 100.0));
          }
-
          free(playlist);
       }
    }
@@ -357,7 +371,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                }
                task_set_progress(task, (int)(j / playlist_size * 100.0));
             }
-
             free(playlist);
          }
       }
@@ -368,7 +381,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          if (found[i] == false)
          {
             state->found = false;
-            filename_match[0] = '\0';
+            break;
          }
       }
 
@@ -377,10 +390,10 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          RARCH_LOG("[lobby] subsystem matching set found %s\n", state->content_path);
          task_set_data(task, state);
          finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-         string_list_free(state->lpl_list);
-         string_list_free(game_list);
-         return;
       }
+      string_list_free(state->lpl_list);
+      string_list_free(game_list);
+      return;
    }
 
    if(filename_match != NULL)

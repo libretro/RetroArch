@@ -741,6 +741,7 @@ static int action_bind_sublabel_netplay_room(
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? buf : na
             );
+         string_list_free(list);
       }
       else
       {
