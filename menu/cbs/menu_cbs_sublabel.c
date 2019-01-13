@@ -692,6 +692,7 @@ static int action_bind_sublabel_netplay_room(
    const char *core_ver   = NULL;
    const char *frontend   = NULL;
    const char *na         = NULL;
+   const char *subsystem  = NULL;
 
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
@@ -705,15 +706,53 @@ static int action_bind_sublabel_netplay_room(
    core_ver   = netplay_room_list[offset].coreversion;
    gamecrc    = netplay_room_list[offset].gamecrc;
    frontend   = netplay_room_list[offset].frontend;
+   subsystem  = netplay_room_list[offset].subsystem_name;
    na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-   snprintf(s, len,
-	   "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
-      string_is_empty(ra_version)    ? na : ra_version,
-      string_is_empty(frontend)      ? na : frontend,
-      corename, core_ver,
-      !string_is_equal(gamename, na) ? gamename : na,
-      gamecrc);
+   if (string_is_empty(subsystem) || string_is_equal(subsystem, "N/A"))
+   {
+      snprintf(s, len,
+         "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
+         string_is_empty(ra_version)    ? na : ra_version,
+         string_is_empty(frontend)      ? na : frontend,
+         corename, core_ver,
+         !string_is_equal(gamename, na) ? gamename : na,
+         gamecrc);
+   }
+   else
+   {
+      if (strstr(gamename, "|"))
+      {
+         char buf[4096];
+         unsigned i               = 0;
+         struct string_list *list = string_split(gamename, "|");
+
+         buf[0] = '\0';
+         for (i = 0; i < list->size; i++)
+         {
+            strlcat(buf, "  ", sizeof(buf));
+            strlcat(buf, list->elems[i].data, sizeof(buf));
+            strlcat(buf, "\n", sizeof(buf));
+         }
+         snprintf(s, len,
+            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGames:\n%s",
+            string_is_empty(ra_version)    ? na : ra_version,
+            string_is_empty(frontend)      ? na : frontend,
+            corename, core_ver, subsystem,
+            !string_is_equal(gamename, na) ? buf : na
+            );
+      }
+      else
+      {
+         snprintf(s, len,
+            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            string_is_empty(ra_version)    ? na : ra_version,
+            string_is_empty(frontend)      ? na : frontend,
+            corename, core_ver, subsystem,
+            !string_is_equal(gamename, na) ? gamename : na,
+            gamecrc);
+      }
+   }
 #if 0
    strlcpy(s, corename, len);
 #endif

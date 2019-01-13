@@ -851,9 +851,9 @@ void netplay_get_architecture(char *frontend_architecture, size_t size)
 
 static void netplay_announce(void)
 {
-   char buf [4600];
+   char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
-   char url [2048]                  = "http://lobby.libretro.com/add/";
+   char url[2048]                   = "http://lobby.libretro.com/add/";
    char *username                   = NULL;
    char *corename                   = NULL;
    char *gamename                   = NULL;
@@ -865,6 +865,8 @@ static void netplay_announce(void)
    uint32_t content_crc             = content_get_crc();
    struct string_list *subsystem    = path_get_subsystem_list();
 
+   buf[0] = '\0';
+
    if (subsystem)
    {
       unsigned i;
@@ -875,7 +877,6 @@ static void netplay_announce(void)
          if (i < subsystem->size - 1)
             strlcat(buf, "|", sizeof(buf));
       }
-      RARCH_LOG("%s\n", buf);
       net_http_urlencode(&gamename, buf);
       net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
    }
