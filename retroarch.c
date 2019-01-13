@@ -3594,7 +3594,10 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_autosave)
       autosave_lock();
 
-   bsv_movie_set_frame_start();
+   /* Used for rewinding while playback/record. */
+   if (bsv_movie_state_handle)
+      bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr]
+         = intfstream_tell(bsv_movie_state_handle->file);
 
    camera_driver_poll();
 
@@ -3661,7 +3664,16 @@ int runloop_iterate(unsigned *sleep_ms)
       input_pop_analog_dpad(auto_binds);
    }
 
-   bsv_movie_set_frame_end();
+   if (bsv_movie_state_handle)
+   {
+      bsv_movie_state_handle->frame_ptr    =
+         (bsv_movie_state_handle->frame_ptr + 1)
+         & bsv_movie_state_handle->frame_mask;
+
+      bsv_movie_state_handle->first_rewind =
+         !bsv_movie_state_handle->did_rewind;
+      bsv_movie_state_handle->did_rewind   = false;
+   }
 
    if (runloop_autosave)
       autosave_unlock();
