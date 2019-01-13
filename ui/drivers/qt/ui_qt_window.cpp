@@ -314,8 +314,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_folderIcon()
    ,m_customThemeString()
    ,m_gridView(new GridView(this))
-   ,m_gridWidget(new QWidget(this))
-   ,m_gridScrollArea(new QScrollArea(m_gridWidget))
+   ,m_playlistViewsAndFooter(new QWidget(this))
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
    ,m_viewType(VIEW_TYPE_LIST)
@@ -408,15 +407,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_lastZoomSliderValue = m_zoomSlider->value();
 
-   m_gridWidget->setLayout(new QVBoxLayout());
+   m_playlistViewsAndFooter->setLayout(new QVBoxLayout());
 
    m_gridView->setSelectionMode(QAbstractItemView::SingleSelection);
    m_gridView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-   m_gridWidget->layout()->addWidget(m_gridView);
-   m_gridWidget->layout()->addWidget(m_tableView);
-   m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
-   m_gridWidget->layout()->setContentsMargins(0, 0, 0, 0);
+   m_playlistViews->addWidget(m_gridView);
+   m_playlistViews->addWidget(m_tableView);
+   m_centralWidget->setObjectName("centralWidget");
+
+   m_playlistViewsAndFooter->layout()->addWidget(m_playlistViews);
+   m_playlistViewsAndFooter->layout()->setAlignment(Qt::AlignCenter);
+   m_playlistViewsAndFooter->layout()->setContentsMargins(0, 0, 0, 0);
 
    m_gridProgressWidget->setLayout(gridProgressLayout);
    gridProgressLayout->setContentsMargins(0, 0, 0, 0);
@@ -424,7 +426,7 @@ MainWindow::MainWindow(QWidget *parent) :
    gridProgressLayout->addWidget(gridProgressLabel);
    gridProgressLayout->addWidget(m_gridProgressBar);
 
-   m_gridWidget->layout()->addWidget(m_gridProgressWidget);
+   m_playlistViewsAndFooter->layout()->addWidget(m_gridProgressWidget);
 
    m_zoomWidget->setLayout(zoomLayout);
    zoomLayout->setContentsMargins(0, 0, 0, 0);
@@ -440,7 +442,7 @@ MainWindow::MainWindow(QWidget *parent) :
    gridFooterLayout->addWidget(m_zoomWidget);
    gridFooterLayout->addWidget(viewTypePushButton);
 
-   static_cast<QVBoxLayout*>(m_gridWidget->layout())->addLayout(gridFooterLayout);
+   static_cast<QVBoxLayout*>(m_playlistViewsAndFooter->layout())->addLayout(gridFooterLayout);
 
    m_gridProgressWidget->hide();
 
@@ -2114,7 +2116,7 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    {
       m_currentBrowser = BROWSER_TYPE_PLAYLISTS;
 
-      m_centralWidget->setCurrentWidget(m_playlistViews);
+      m_centralWidget->setCurrentWidget(m_playlistViewsAndFooter);
 
       onCurrentItemChanged(m_tableView->currentIndex());
    }
@@ -2517,18 +2519,15 @@ void MainWindow::setCurrentViewType(ViewType viewType)
    {
       case VIEW_TYPE_ICONS:
       {
-         m_tableView->hide();
+         m_playlistViews->setCurrentWidget(m_gridView);
          m_zoomWidget->show();
-         m_gridView->show();
          break;
       }
       case VIEW_TYPE_LIST:
       default:
       {
-         m_viewType = VIEW_TYPE_LIST;
-         m_gridView->hide();
+         m_playlistViews->setCurrentWidget(m_tableView);
          m_zoomWidget->hide();
-         m_tableView->show();
          break;
       }
    }
@@ -2583,9 +2582,9 @@ FileDropWidget* MainWindow::playlistViews()
    return m_playlistViews;
 }
 
-QWidget* MainWindow::contentGridWidget()
+QWidget* MainWindow::playlistViewsAndFooter()
 {
-   return m_gridWidget;
+   return m_playlistViewsAndFooter;
 }
 
 GridView* MainWindow::contentGridView()

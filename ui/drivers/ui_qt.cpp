@@ -240,7 +240,7 @@ static void* ui_companion_qt_init(void)
    QDockWidget *coreSelectionDock = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
    QStackedWidget *centralWidget = NULL;
-   QWidget *widget = NULL;
+   QStackedWidget *widget = NULL;
    QWidget *browserWidget = NULL;
    QWidget *playlistWidget = NULL;
    QWidget *coreSelectionWidget = NULL;
@@ -290,7 +290,6 @@ static void* ui_companion_qt_init(void)
    listWidget = mainwindow->playlistListWidget();
 
    widget = mainwindow->playlistViews();
-   widget->setObjectName("tableWidget");
    widget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
@@ -298,14 +297,9 @@ static void* ui_companion_qt_init(void)
    QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
    QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
-   playlistViewsLayout = new QVBoxLayout();
-   playlistViewsLayout->addWidget(mainwindow->contentGridWidget());
-
-   widget->setLayout(playlistViewsLayout);
-
    centralWidget = mainwindow->centralWidget();
 
-   centralWidget->addWidget(widget);
+   centralWidget->addWidget(mainwindow->playlistViewsAndFooter());
    centralWidget->addWidget(mainwindow->fileTableView());
 
    mainwindow->setCentralWidget(centralWidget);

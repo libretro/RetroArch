@@ -344,7 +344,7 @@ public:
    QTableView* fileTableView();
    FileDropWidget* playlistViews();
    GridView* contentGridView();
-   QWidget* contentGridWidget();
+   QWidget* playlistViewsAndFooter();
    QWidget* searchWidget();
    QLineEdit* searchLineEdit();
    QComboBox* launchWithComboBox();
@@ -583,8 +583,7 @@ private:
    QIcon m_folderIcon;
    QString m_customThemeString;
    GridView *m_gridView;
-   QWidget *m_gridWidget;
-   QScrollArea *m_gridScrollArea;
+   QWidget *m_playlistViewsAndFooter;
    QWidget *m_gridLayoutWidget;
    QSlider *m_zoomSlider;
    int m_lastZoomSliderValue;

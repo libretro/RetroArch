@@ -21,7 +21,7 @@ extern "C" {
 }
 
 FileDropWidget::FileDropWidget(QWidget *parent) :
-   QWidget(parent)
+   QStackedWidget(parent)
 {
    setAcceptDrops(true);
 }

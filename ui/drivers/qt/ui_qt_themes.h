@@ -24,12 +24,15 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:rgb(53,53,53);
       selection-background-color:%1;
    }
-   QWidget#playlistWidget, QWidget#browserWidget, QWidget#tableWidget, QWidget#logWidget {
+   QWidget#playlistWidget, QWidget#browserWidget, QStackedWidget#centralWidget, QWidget#logWidget {
       background-color:rgb(66,66,66);
       border-top:1px solid rgba(175,175,175,50%);
       border-left:1px solid rgba(125,125,125,50%);
       border-right:1px solid rgba(125,125,125,50%);
       border-bottom:1px solid rgba(25,25,25,75%);
+   }
+   QStackedWidget#centralWidget {
+      padding: 10px;
    }
    QTextEdit, LogTextEdit {
       background-color:rgb(25,25,25);
