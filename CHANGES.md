@@ -40,6 +40,7 @@
 - UWP: Initial UWP port.
 - XBONE: Initial Xbox One port.
 - XMB/OZONE: Add more icons
+- ???: Easter Egg
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
