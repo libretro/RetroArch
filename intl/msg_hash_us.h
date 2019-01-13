@@ -2045,6 +2045,14 @@ MSG_HASH(
     "Parent directory"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Enable external file access"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Open Windows file access permissions settings"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
     "Pause when menu activated"
     )

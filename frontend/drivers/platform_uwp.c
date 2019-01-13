@@ -271,18 +271,39 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MSG_UNKNOWN;
-   /* TODO (krzys_h): UWP storage sandboxing */
-   char *home_dir               = (char*)malloc(
-         PATH_MAX_LENGTH * sizeof(char));
+   char drive[]                 = " :\\";
+   char *home_dir               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   bool have_any_drives         = false;
 
-   fill_pathname_home_dir(home_dir,
-      PATH_MAX_LENGTH * sizeof(char));
+   fill_pathname_home_dir(home_dir, PATH_MAX_LENGTH * sizeof(char));
+
+   for (drive[0] = 'A'; drive[0] <= 'Z'; drive[0]++)
+   {
+      if (path_is_valid(drive))
+      {
+         menu_entries_append_enum(list,
+            drive,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+         have_any_drives = true;
+      }
+   }
 
    menu_entries_append_enum(list,
-         home_dir,
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+      home_dir,
+      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+      enum_idx,
+      FILE_TYPE_DIRECTORY, 0, 0);
+
+   if (!have_any_drives && string_is_equal(uwp_device_family, "Windows.Desktop"))
+   {
+      menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+         MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+         MENU_SETTING_ACTION, 0, 0);
+   }
 
    free(home_dir);
 #endif
