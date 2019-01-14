@@ -2461,6 +2461,8 @@ bool runloop_msg_queue_pull(const char **ret)
    return true;
 }
 
+#define bsv_movie_is_end_of_file() (bsv_movie_state.movie_end && bsv_movie_state.eof_exit)
+
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -2469,7 +2471,7 @@ bool runloop_msg_queue_pull(const char **ret)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
