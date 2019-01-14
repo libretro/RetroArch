@@ -1121,11 +1121,14 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
+#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
+/* needed for both playlists and netplay lobbies */
+#include "../libretro-common/formats/json/jsonsax_full.c"
+
 /*============================================================
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
@@ -1140,7 +1143,6 @@ NETPLAY
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
-#include "../libretro-common/formats/json/jsonsax_full.c"
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
