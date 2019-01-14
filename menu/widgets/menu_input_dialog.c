@@ -23,6 +23,7 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
+#include "../../switch_performance_profiles.h"
 #include "menu_osk.h"
 #endif
 
@@ -92,6 +93,7 @@ unsigned menu_input_dialog_get_kb_idx(void)
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 extern u32 __nx_applet_type;
+extern void libnx_apply_overclock();
 #endif
 
 bool menu_input_dialog_get_display_kb(void)
@@ -105,6 +107,8 @@ bool menu_input_dialog_get_display_kb(void)
       return false;
 
    SwkbdConfig kbd;
+
+   pcvSetClockRate(PcvModule_Cpu, SWITCH_CPU_SPEEDS_VALUES[SWITCH_DEFAULT_CPU_PROFILE]);
 
    Result rc = swkbdCreate(&kbd, 0);
 
@@ -145,10 +149,14 @@ bool menu_input_dialog_get_display_kb(void)
       if (menu_input_dialog_keyboard_display)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
+      libnx_apply_overclock();
       return false;
    }
    else
+   {
+      libnx_apply_overclock();
       return menu_input_dialog_keyboard_display;
+   }
 #endif
    return menu_input_dialog_keyboard_display;
 }
