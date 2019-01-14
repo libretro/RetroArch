@@ -2581,6 +2581,7 @@ static enum runloop_state runloop_check_state(
    static input_bits_t last_input   = {{0}};
 #endif
    static bool old_quit_key         = false;
+   static bool quit_key             = false;
    static bool runloop_exec         = false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2598,8 +2599,6 @@ static enum runloop_state runloop_check_state(
    static uint64_t seq              = 0;
 #endif
 #endif
-   bool quit_key                    = BIT256_GET(
-         current_input, RARCH_QUIT_KEY);
 
 #ifdef HAVE_LIBNX
    /* Should be called once per frame */
@@ -2721,6 +2720,8 @@ static enum runloop_state runloop_check_state(
 
    /* Check quit key */
    {
+      bool quit_key             = BIT256_GET(
+            current_input, RARCH_QUIT_KEY);
       bool trig_quit_key       = quit_key && !old_quit_key;
 
       old_quit_key             = quit_key;
