@@ -3980,6 +3980,28 @@ static int action_ok_open_uwp_permission_settings(const char *path,
    return 0;
 }
 
+static int action_ok_open_picker(const char *path,
+   const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* new_path;
+   int ret;
+#ifdef __WINRT__
+   new_path = uwp_trigger_picker();
+   if (!new_path)
+      return 0; /* User aborted */
+#else
+   retro_assert(false);
+#endif
+
+   ret = generic_action_ok_displaylist_push(path, new_path,
+      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+      type, idx,
+      entry_idx, ACTION_OK_DL_CONTENT_LIST);
+
+   free(new_path);
+   return ret;
+}
+
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5482,6 +5504,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
             BIND_ACTION_OK(cbs, action_ok_open_uwp_permission_settings);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
+            BIND_ACTION_OK(cbs, action_ok_open_picker);
             break;
          case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_retro_achievements_list);

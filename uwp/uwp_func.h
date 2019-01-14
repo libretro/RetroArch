@@ -28,6 +28,8 @@ extern char uwp_device_family[128];
 
 void uwp_open_broadfilesystemaccess_settings(void);
 bool uwp_is_path_accessible_using_standard_io(char *path);
+bool uwp_drive_exists(const char *path);
+char* uwp_trigger_picker(void);
 
 void* uwp_get_corewindow(void);
 

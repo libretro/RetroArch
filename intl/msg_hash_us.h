@@ -2053,6 +2053,14 @@ MSG_HASH(
     "Open Windows file access permissions settings"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+    "Open..."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+    "Open another directory using the system file picker"
+)
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
     "Pause when menu activated"
     )

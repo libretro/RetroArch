@@ -27,8 +27,10 @@
 #include <wrl/implements.h>
 #include <windows.storage.streams.h>
 #include <robuffer.h>
+#include <collection.h>
 #include <functional>
 
+using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Streams;
@@ -78,8 +80,13 @@ namespace
 			finished = true;
 		});
 
+		/* Don't stall the UI thread - prevents a deadlock */
+		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
 		while (!finished)
-			Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+		{
+			if (corewindow)
+				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+		}
 
 		if (exception != nullptr)
 			throw exception;
@@ -111,6 +118,146 @@ namespace
 			if (*path == '/')
 				*path = '\\';
 			++path;
+		}
+	}
+}
+
+namespace
+{
+	/* Damn you, UWP, why no functions for that either */
+	template<typename T>
+	concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
+	{
+		static_assert(false, "StorageFile and StorageFolder only");
+	}
+	template<>
+	concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
+	{
+		return concurrency::create_task(StorageFile::GetFileFromPathAsync(path));
+	}
+	template<>
+	concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
+	{
+		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
+	}
+
+	template<typename T>
+	concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	{
+		static_assert(false, "StorageFile and StorageFolder only");
+	}
+	template<>
+	concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	{
+		if (path->IsEmpty())
+			retro_assert(false); /* Attempt to read a folder as a file - this really should have been caught earlier */
+		return concurrency::create_task(folder->GetFileAsync(path));
+	}
+	template<>
+	concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	{
+		if (path->IsEmpty())
+			return concurrency::create_task(concurrency::create_async([folder]() { return folder; }));
+		return concurrency::create_task(folder->GetFolderAsync(path));
+	}
+}
+
+namespace
+{
+	/* A list of all StorageFolder objects returned using from the file picker */
+	Platform::Collections::Vector<StorageFolder^> accessible_directories;
+
+	concurrency::task<Platform::String^> TriggerPickerAddDialog()
+	{
+		auto folderPicker = ref new Windows::Storage::Pickers::FolderPicker();
+		folderPicker->SuggestedStartLocation = Windows::Storage::Pickers::PickerLocationId::Desktop;
+		folderPicker->FileTypeFilter->Append("*");
+
+		return concurrency::create_task(folderPicker->PickSingleFolderAsync()).then([](StorageFolder^ folder) {
+			if (folder == nullptr)
+				throw ref new Platform::Exception(E_ABORT, L"Operation cancelled by user");
+
+			/* TODO: check for duplicates */
+			accessible_directories.Append(folder);
+			return folder->Path;
+		});
+	}
+
+	template<typename T>
+	concurrency::task<T^> LocateStorageItem(Platform::String^ path)
+	{
+		/* Look for a matching directory we can use */
+		for each (StorageFolder^ folder in accessible_directories)
+		{
+			std::wstring folder_path = folder->Path->Data();
+			/* Could be C:\ or C:\Users\somebody - remove the trailing slash to unify them */
+			if (folder_path[folder_path.size() - 1] == '\\')
+				folder_path.erase(folder_path.size() - 1);
+			std::wstring file_path = path->Data();
+			if (file_path.find(folder_path) == 0)
+			{
+				/* Found a match */
+				file_path = file_path.length() > folder_path.length() ? file_path.substr(folder_path.length() + 1) : L"";
+				return concurrency::create_task(GetItemInFolderFromPathAsync<T>(folder, ref new Platform::String(file_path.data())));
+			}
+		}
+
+		/* No matches - try accessing directly, and fallback to user prompt */
+		return concurrency::create_task(GetItemFromPathAsync<T>(path)).then([path](concurrency::task<T^> item) {
+			try
+			{
+				T^ storageItem = item.get();
+				return concurrency::create_task(concurrency::create_async([storageItem]() { return storageItem; }));
+			}
+			catch (Platform::AccessDeniedException^ e)
+			{
+				Windows::UI::Popups::MessageDialog^ dialog =
+					ref new Windows::UI::Popups::MessageDialog("Path \"" + path + "\" is not currently accessible. Please open any containing directory to access it.");
+				dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Open file picker"));
+				dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Cancel"));
+				return concurrency::create_task(dialog->ShowAsync()).then([path](Windows::UI::Popups::IUICommand^ cmd) {
+					if (cmd->Label == "Open file picker")
+					{
+						return TriggerPickerAddDialog().then([path](Platform::String^ added_path) {
+							/* Retry */
+							return LocateStorageItem<T>(path);
+						});
+					}
+					else
+					{
+						throw ref new Platform::Exception(E_ABORT, L"Operation cancelled by user");
+					}
+				});
+			}
+		});
+	}
+
+	IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
+	{
+		if (!path || path->IsEmpty())
+			return nullptr;
+
+		if (*(path->End() - 1) == '\\')
+		{
+			/* Ends with a slash, so it's definitely a directory */
+			return RunAsyncAndCatchErrors<StorageFolder^>([&]() {
+				return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
+			}, nullptr);
+		}
+		else
+		{
+			/* No final slash - probably a file (since RetroArch usually slash-terminates dirs), but there is still a chance it's a directory */
+			IStorageItem^ item;
+			item = RunAsyncAndCatchErrors<StorageFile^>([&]() {
+				return concurrency::create_task(LocateStorageItem<StorageFile>(path));
+			}, nullptr);
+			if (!item)
+			{
+				item = RunAsyncAndCatchErrors<StorageFolder^>([&]() {
+					return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
+				}, nullptr);
+			}
+			return item;
 		}
 	}
 }
@@ -160,7 +307,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 	retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
 	return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([&]() {
-		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(dirpath_str)).then([&](StorageFolder^ dir) {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).then([&](StorageFolder^ dir) {
 			if (mode == RETRO_VFS_FILE_ACCESS_READ)
 				return dir->GetFileAsync(filename_str);
 			else
@@ -361,7 +508,7 @@ int retro_vfs_file_remove_impl(const char *path)
 	free(path_wide);
 
 	return RunAsyncAndCatchErrors<int>([&]() {
-		return concurrency::create_task(StorageFile::GetFileFromPathAsync(path_str)).then([&](StorageFile^ file) {
+		return concurrency::create_task(LocateStorageItem<StorageFile>(path_str)).then([&](StorageFile^ file) {
 			return file->DeleteAsync(StorageDeleteOption::PermanentDelete);
 		}).then([&]() {
 			return 0;
@@ -397,8 +544,8 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 	retro_assert(!old_path_str->IsEmpty() && !new_dir_path_str->IsEmpty() && !new_file_name_str->IsEmpty());
 
 	return RunAsyncAndCatchErrors<int>([&]() {
-		concurrency::task<StorageFile^> old_file_task = concurrency::create_task(StorageFile::GetFileFromPathAsync(old_path_str));
-		concurrency::task<StorageFolder^> new_dir_task = concurrency::create_task(StorageFolder::GetFolderFromPathAsync(new_dir_path_str));
+		concurrency::task<StorageFile^> old_file_task = concurrency::create_task(LocateStorageItem<StorageFile>(old_path_str));
+		concurrency::task<StorageFolder^> new_dir_task = concurrency::create_task(LocateStorageItem<StorageFolder>(new_dir_path_str));
 		return concurrency::create_task([&] {
 			/* Run these two tasks in parallel */
 			/* TODO: There may be some cleaner way to express this */
@@ -422,37 +569,6 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 	return stream->orig_path;
 }
 
-
-/* This is ugly, but I can't figure out a better way and there may be no better way... */
-static IStorageItem^ GetFileOrFolderFromPath(Platform::String^ path)
-{
-	if (!path || path->IsEmpty())
-		return nullptr;
-
-	if (*(path->End() - 1) == '\\')
-	{
-		/* Ends with a slash, so it's definitely a directory */
-		return RunAsyncAndCatchErrors<StorageFolder^>([&]() {
-			return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
-		}, nullptr);
-	}
-	else
-	{
-		/* No final slash - probably a file (since RetroArch usually slash-terminates dirs), but there is a chance it's a directory */
-		IStorageItem^ item;
-		item = RunAsyncAndCatchErrors<StorageFile^>([&]() {
-			return concurrency::create_task(StorageFile::GetFileFromPathAsync(path));
-		}, nullptr);
-		if (!item)
-		{
-			item = RunAsyncAndCatchErrors<StorageFolder^>([&]() {
-				return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
-			}, nullptr);
-		}
-		return item;
-	}
-}
-
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
 	if (!path || !*path)
@@ -463,7 +579,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
-	IStorageItem^ item = GetFileOrFolderFromPath(path_str);
+	IStorageItem^ item = LocateStorageFileOrFolder(path_str);
 	if (!item)
 		return 0;
 
@@ -507,7 +623,7 @@ int retro_vfs_mkdir_impl(const char *dir)
 	free(dir_local);
 
 	return RunAsyncAndCatchErrors<int>([&]() {
-		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(parent_path_str)).then([&](StorageFolder^ parent) {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(parent_path_str)).then([&](StorageFolder^ parent) {
 			return parent->CreateFolderAsync(dir_name_str);
 		}).then([&](concurrency::task<StorageFolder^> new_dir) {
 			try
@@ -553,7 +669,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
 	free(name_wide);
 
 	rdir->directory = RunAsyncAndCatchErrors<IVectorView<IStorageItem^>^>([&]() {
-		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(name_str)).then([&](StorageFolder^ folder) {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(name_str)).then([&](StorageFolder^ folder) {
 			return folder->GetItemsAsync();
 		});
 	}, nullptr);
@@ -614,4 +730,29 @@ bool uwp_is_path_accessible_using_standard_io(char *path)
 
 	free(relative_path_abbrev);
 	return result;
+}
+
+bool uwp_drive_exists(const char *path)
+{
+	if (!path || !*path)
+		return 0;
+
+	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+	Platform::String^ path_str = ref new Platform::String(path_wide);
+	free(path_wide);
+
+	return RunAsyncAndCatchErrors<bool>([&]() {
+		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path_str)).then([](StorageFolder^ properties) {
+			return true;
+		});
+	}, false);
+}
+
+char* uwp_trigger_picker(void)
+{
+	return RunAsyncAndCatchErrors<char*>([&]() {
+		return TriggerPickerAddDialog().then([](Platform::String^ path) {
+			return utf16_to_utf8_string_alloc(path->Data());
+		});
+	}, NULL);
 }
