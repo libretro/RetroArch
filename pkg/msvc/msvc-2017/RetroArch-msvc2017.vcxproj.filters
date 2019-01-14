@@ -10,6 +10,15 @@
     <Filter Include="QT">
       <UniqueIdentifier>{e6159cab-0a32-493f-a119-a2f0fd0cc6ef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="QT\ui">
+      <UniqueIdentifier>{714d16e1-8f94-4786-ac9d-1117fef8f13e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="QT\ui\drivers">
+      <UniqueIdentifier>{be7735ef-bdbe-4b4a-a634-d771a760cf88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="QT\ui\drivers\qt">
+      <UniqueIdentifier>{8f2310e1-f7cf-4c0e-9aef-268c670dfe0f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
@@ -21,19 +30,34 @@
     <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <Filter>griffin</Filter>
     </ClCompile>
-    <ClCompile Include="MetaObjects\moc_ui_qt.cpp">
-      <Filter>QT</Filter>
-    </ClCompile>
-    <ClCompile Include="MetaObjects\moc_ui_qt_load_core_window.cpp">
-      <Filter>QT</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
-      <Filter>QT</Filter>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreinfodialog.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreoptionsdialog.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\filedropwidget.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\flowlayout.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\playlistentrydialog.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\shaderparamsdialog.h">
+      <Filter>QT\ui\drivers\qt</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\..\ui\drivers\qt\ui_qt_load_core_window.h">
-      <Filter>QT</Filter>
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\viewoptionsdialog.h">
+      <Filter>QT\ui\drivers\qt</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
+      <Filter>QT\ui\drivers</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
