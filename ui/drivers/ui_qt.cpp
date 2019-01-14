@@ -14,7 +14,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -29,7 +32,10 @@ extern "C" {
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 #include "../../tasks/tasks_internal.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include "ui_qt.h"
 #include "qt/filedropwidget.h"

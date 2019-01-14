@@ -49,7 +49,10 @@
 #include "playlistentrydialog.h"
 #include "viewoptionsdialog.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../version.h"
 #include "../../../verbosity.h"
 #include "../../../retroarch.h"
@@ -76,7 +79,10 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include "../../../AUTHORS.h"
 

@@ -15,10 +15,16 @@
 #include "playlistentrydialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../file_path_special.h"
 #include "../../../configuration.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 FileDropWidget::FileDropWidget(QWidget *parent) :
    QWidget(parent)
