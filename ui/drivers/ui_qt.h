@@ -576,7 +576,7 @@ private:
    CoreInfoLabel *m_coreInfoLabel;
    CoreInfoWidget *m_coreInfoWidget;
    QDockWidget *m_logDock;
-   QWidget *m_logWidget;
+   QFrame *m_logWidget;
    LogTextEdit *m_logTextEdit;
    QVector<QByteArray> m_imageFormats;
    QListWidgetItem *m_historyPlaylistsItem;

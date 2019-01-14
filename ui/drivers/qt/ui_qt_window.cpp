@@ -308,7 +308,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_coreInfoLabel(new CoreInfoLabel(QString(), this))
    ,m_coreInfoWidget(new CoreInfoWidget(m_coreInfoLabel, this))
    ,m_logDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG), this))
-   ,m_logWidget(new QWidget(this))
+   ,m_logWidget(new QFrame(this))
    ,m_logTextEdit(new LogTextEdit(m_logWidget))
    ,m_historyPlaylistsItem(NULL)
    ,m_folderIcon()
@@ -575,6 +575,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_logWidget->setLayout(new QVBoxLayout());
    m_logWidget->layout()->addWidget(m_logTextEdit);
+   m_logWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    m_logDock->setObjectName("logDock");
    m_logDock->setProperty("default_area", Qt::BottomDockWidgetArea);
@@ -592,7 +593,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_dirTree->setContextMenuPolicy(Qt::CustomContextMenu);
    m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-   m_listWidget->setIconSize(QSize(32, 32));
 
    connect(m_searchLineEdit, SIGNAL(returnPressed()), this, SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this, SLOT(onSearchLineEditEdited(const QString&)));

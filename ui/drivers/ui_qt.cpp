@@ -241,8 +241,8 @@ static void* ui_companion_qt_init(void)
    QTabWidget *browserAndPlaylistTabWidget = NULL;
    QStackedWidget *centralWidget = NULL;
    QStackedWidget *widget = NULL;
-   QWidget *browserWidget = NULL;
-   QWidget *playlistWidget = NULL;
+   QFrame *browserWidget = NULL;
+   QFrame *playlistWidget = NULL;
    QWidget *coreSelectionWidget = NULL;
    QWidget *launchWithWidget = NULL;
    ThumbnailWidget *thumbnailWidget = NULL;
@@ -348,15 +348,17 @@ static void* ui_companion_qt_init(void)
    helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
    helpMenu->addAction("About Qt...", qApp, SLOT(aboutQt()));
 
-   playlistWidget = new QWidget();
+   playlistWidget = new QFrame();
    playlistWidget->setLayout(new QVBoxLayout());
    playlistWidget->setObjectName("playlistWidget");
+   playlistWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    playlistWidget->layout()->addWidget(mainwindow->playlistListWidget());
 
-   browserWidget = new QWidget();
+   browserWidget = new QFrame();
    browserWidget->setLayout(new QVBoxLayout());
    browserWidget->setObjectName("browserWidget");
+   browserWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    browserDownloadsButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
    browserUpButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP));
