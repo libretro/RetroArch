@@ -39,6 +39,10 @@
 #endif
 #endif
 
+#ifdef __WINRT__
+#include <uwp/uwp_func.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -557,6 +561,7 @@ static bool content_file_load(
    retro_ctx_load_content_info_t load_info;
    size_t msg_size = 1024 * sizeof(char);
    char *msg       = (char*)malloc(msg_size);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    msg[0]          = '\0';
 
@@ -605,7 +610,6 @@ static bool content_file_load(
       }
       else
       {
-
 #ifdef HAVE_COMPRESSION
          if (     !content_ctx->block_extract
                && need_fullpath
@@ -617,6 +621,21 @@ static bool content_file_load(
                   error_string))
             goto error;
 #endif
+
+#ifdef __WINRT__
+         /* TODO: When support for the 'actual' VFS is added, there will need to be some more logic here */
+         if (!system->supports_vfs && !uwp_is_path_accessible_using_standard_io(path))
+         {
+            strlcpy(msg,
+               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS),
+               msg_size
+            );
+            *error_string = strdup(msg);
+            goto error;
+         }
+#endif
+
+
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);

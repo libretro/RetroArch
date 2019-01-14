@@ -4144,6 +4144,10 @@ MSG_HASH(
     "Libretro core requires special content, but none were provided."
     )
 MSG_HASH(
+    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+    "Loading content from here requires VFS, but core does not support it"
+)
+MSG_HASH(
     MSG_ERROR_PARSING_ARGUMENTS,
     "Error parsing arguments."
     )
