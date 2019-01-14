@@ -201,7 +201,6 @@ const void *MAGIC_POINTER                                       = (void*)(uintpt
 static retro_bits_t has_set_libretro_device;
 
 static bool has_set_core                                        = false;
-static bool has_set_username                                    = false;
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                         = false;
 #endif
@@ -230,7 +229,6 @@ static bool rarch_ups_pref                                      = false;
 static bool rarch_bps_pref                                      = false;
 static bool rarch_ips_pref                                      = false;
 
-static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
 static bool runloop_idle                                        = false;
 static bool runloop_slowmotion                                  = false;
@@ -709,7 +707,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    retroarch_override_setting_free_state();
 
-   has_set_username                      = false;
+   rarch_ctl(RARCH_CTL_USERNAME_UNSET, NULL);
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
@@ -1064,7 +1062,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                {
                   settings_t *settings  = config_get_ptr();
 
-                  has_set_username = true;
+                  rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
 
                   strlcpy(settings->paths.username, optarg,
                         sizeof(settings->paths.username));
@@ -1521,6 +1519,8 @@ error:
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
+   static bool runloop_force_nonblock  = false;
+   static bool has_set_username        = false;
    static bool rarch_block_config_read = false;
    static bool rarch_patch_blocked     = false;
    static bool runloop_missing_bios    = false; /* TODO/FIXME - not used right now? */
@@ -2580,6 +2580,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    static input_bits_t last_input   = {{0}};
 #endif
+   static bool old_quit_key         = false;
    static bool runloop_exec         = false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2597,6 +2598,8 @@ static enum runloop_state runloop_check_state(
    static uint64_t seq              = 0;
 #endif
 #endif
+   bool quit_key                    = BIT256_GET(
+         current_input, RARCH_QUIT_KEY);
 
 #ifdef HAVE_LIBNX
    /* Should be called once per frame */
@@ -2676,7 +2679,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
             || menu_is_alive;
 #else
-;
+         ;
 #endif
 
          if (fullscreen_toggled)
@@ -2718,9 +2721,6 @@ static enum runloop_state runloop_check_state(
 
    /* Check quit key */
    {
-      static bool old_quit_key = false;
-      bool quit_key            = BIT256_GET(
-            current_input, RARCH_QUIT_KEY);
       bool trig_quit_key       = quit_key && !old_quit_key;
 
       old_quit_key             = quit_key;
@@ -2766,11 +2766,7 @@ static enum runloop_state runloop_check_state(
             content_info.environ_get        = NULL;
 
             if (!task_push_start_dummy_core(&content_info))
-            {
-               old_quit_key                 = quit_key;
-               retroarch_main_quit();
-               return RUNLOOP_STATE_QUIT;
-            }
+               goto quit;
 
             /* Loads dummy core instead of exiting RetroArch completely.
              * Aborts core shutdown if invoked. */
@@ -2778,11 +2774,7 @@ static enum runloop_state runloop_check_state(
             runloop_core_shutdown_initiated = false;
          }
          else
-         {
-            old_quit_key                 = quit_key;
-            retroarch_main_quit();
-            return RUNLOOP_STATE_QUIT;
-         }
+            goto quit;
       }
    }
 
@@ -2948,7 +2940,7 @@ static enum runloop_state runloop_check_state(
       char *menu_driver       = settings->arrays.menu_driver;
       bool pressed            = BIT256_GET(
             current_input, RARCH_MENU_TOGGLE) &&
-            !string_is_equal(menu_driver, "null");
+         !string_is_equal(menu_driver, "null");
 
       if (menu_event_kb_is_set(RETROK_F1) == 1)
       {
@@ -3217,25 +3209,20 @@ static enum runloop_state runloop_check_state(
       bool should_slot_decrease            = BIT256_GET(
             current_input, RARCH_STATE_SLOT_MINUS);
       bool should_set                      = false;
+      int cur_state_slot                   = settings->ints.state_slot;
 
       /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
       if (should_slot_increase && !old_should_slot_increase)
       {
-         int cur_state_slot = settings->ints.state_slot;
-         int new_state_slot = cur_state_slot + 1;
-
-         configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+         configuration_set_int(settings, settings->ints.state_slot, cur_state_slot + 1);
 
          should_set = true;
       }
       else if (should_slot_decrease && !old_should_slot_decrease)
       {
-         int cur_state_slot = settings->ints.state_slot;
-         int new_state_slot = cur_state_slot - 1;
-
          if (cur_state_slot > 0)
-            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+            configuration_set_int(settings, settings->ints.state_slot, cur_state_slot - 1);
 
          should_set = true;
       }
@@ -3278,8 +3265,8 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_CHEEVOS
    cheevos_hardcore_active =  settings->bools.cheevos_enable
-                              && settings->bools.cheevos_hardcore_mode_enable
-                              && cheevos_loaded && !cheevos_hardcore_paused;
+      && settings->bools.cheevos_hardcore_mode_enable
+      && cheevos_loaded && !cheevos_hardcore_paused;
 
    if (cheevos_hardcore_active && cheevos_state_loaded_flag)
    {
@@ -3296,7 +3283,7 @@ static enum runloop_state runloop_check_state(
       s[0] = '\0';
 
       if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-            settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
+               settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
          runloop_msg_queue_push(s, 0, t, true);
    }
 
@@ -3484,6 +3471,11 @@ static enum runloop_state runloop_check_state(
    }
 
    return RUNLOOP_STATE_ITERATE;
+
+quit:
+   old_quit_key                 = quit_key;
+   retroarch_main_quit();
+   return RUNLOOP_STATE_QUIT;
 }
 
 void runloop_set(enum runloop_action action)
