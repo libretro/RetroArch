@@ -136,6 +136,7 @@ void path_basedir(char *path);
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, returns empty string
  **/
 void path_parent_dir(char *path);
 
@@ -314,6 +315,7 @@ bool fill_pathname_parent_dir_name(char *out_dir,
  *
  * Copies parent directory of @in_dir into @out_dir.
  * Assumes @in_dir is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, @out_dir will be an empty string.
  **/
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size);
