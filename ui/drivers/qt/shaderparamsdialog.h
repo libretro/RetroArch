@@ -4,9 +4,15 @@
 #include <QDialog>
 #include <QPointer>
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../.././gfx/video_shader_parse.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 class QCloseEvent;
 class QResizeEvent;

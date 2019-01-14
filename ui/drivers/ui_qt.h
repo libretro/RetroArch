@@ -43,13 +43,19 @@
 #include <QSortFilterProxyModel>
 #include <QDir>
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <retro_assert.h>
 #include <retro_common_api.h>
 #include <queues/task_queue.h>
 #include "../ui_companion_driver.h"
 #include "../../gfx/video_driver.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #define ALL_PLAYLISTS_TOKEN "|||ALL|||"
 #define ICON_PATH "/xmb/dot-art/png/"

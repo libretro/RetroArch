@@ -15,7 +15,10 @@
 #include "../ui_qt.h"
 #include "playlistentrydialog.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
@@ -27,7 +30,10 @@ extern "C" {
 #include "../../../configuration.h"
 #include "../../../core_info.h"
 #include "../../../verbosity.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)

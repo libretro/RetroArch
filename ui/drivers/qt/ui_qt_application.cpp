@@ -17,7 +17,10 @@
 #include <QApplication>
 #include <QAbstractEventDispatcher>
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../ui_companion_driver.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
@@ -28,7 +31,10 @@ extern "C" {
 #ifdef Q_OS_UNIX
 #include <locale.h>
 #endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include "../ui_qt.h"
 
@@ -174,7 +180,7 @@ static void ui_application_qt_run(void *args)
 }
 
 #ifdef HAVE_MAIN
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CXX_BUILD)
 extern "C"
 #endif
 int main(int argc, char *argv[])
