@@ -188,7 +188,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
    size_t i, j, k;
    char entry[PATH_MAX_LENGTH];
-   char *filename_match        = NULL;
    bool have_crc               = false;
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
@@ -279,7 +278,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                task_set_data(task, state);
                finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
                string_list_free(state->lpl_list);
-               free(playlist);
+               playlist_free(playlist);
                return;
             }
 
@@ -287,36 +286,26 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
             /* See if the filename is a match. The response depends on whether or not we are doing a CRC
             * search.
-            *
-            * If we are doing a CRC search, we stow a copy of the filename match in filename_match, which
-            * we'll use as our match if the CRC search is exhausted without a match.
-            *
             * Otherwise, on match we complete the task and mark it as successful immediately.
             */
 
-            if(string_is_empty(filename_match) &&
-               !string_is_empty(entry) &&
+            if(!string_is_empty(entry) &&
                string_is_equal(entry, state->content_path) &&
                strstr(state->core_extensions, path_get_extension(playlist_path)))
             {
-               if(have_crc)
-                  filename_match = strdup(playlist_path);
-               else
-               {
-                  RARCH_LOG("[lobby] filename match %s\n", playlist_path);
+               RARCH_LOG("[lobby] filename match %s\n", playlist_path);
 
-                  strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
-                  state->found = true;
-                  task_set_data(task, state);
-                  finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-                  string_list_free(state->lpl_list);
-                  free(playlist);
-                  return;
-                  }
+               strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
+               state->found = true;
+               task_set_data(task, state);
+               finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
+               string_list_free(state->lpl_list);
+               playlist_free(playlist);
+               return;
             }
             task_set_progress(task, (int)(j / playlist_size * 100.0));
          }
-         free(playlist);
+         playlist_free(playlist);
       }
    }
    else
@@ -371,7 +360,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                }
                task_set_progress(task, (int)(j / playlist_size * 100.0));
             }
-            free(playlist);
+            playlist_free(playlist);
          }
       }
 
@@ -393,19 +382,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       }
       string_list_free(state->lpl_list);
       string_list_free(game_list);
-      return;
-   }
-
-   if(filename_match != NULL)
-   {
-      RARCH_LOG("[lobby] CRC match failed; falling back to filename match %s\n", filename_match);
-
-      strlcpy(state->content_path, filename_match, sizeof(state->content_path));
-      state->found = true;
-      task_set_data(task, state);
-      finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-      string_list_free(state->lpl_list);
-      free(filename_match);
       return;
    }
 
