@@ -2572,6 +2572,7 @@ enum
 static int cheevos_iterate(coro_t *coro)
 {
    const int snes_header_len = 0x200;
+   const int lynx_header_len = 0x40;
    ssize_t num_read          = 0;
    size_t to_read            = 4096;
    uint8_t *buffer           = NULL;
@@ -2957,8 +2958,6 @@ found:
 
       /* Checks for the existence of a headered Lynx file.
          Unheadered files fall back to GENERIC_MD5. */
-
-      const int lynx_header_len = 0x40;
 
       if (coro->len <= lynx_header_len ||
         memcmp("LYNX", (void *)coro->data, 5) != 0)
