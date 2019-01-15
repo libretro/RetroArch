@@ -36,6 +36,9 @@ UI
 #ifndef __APPLE__
 #define HAVE_MAIN /* also requires defining in frontend.c */
 #endif
+
+#undef mkdir
+
 #include "../ui/drivers/ui_qt.cpp"
 
 #include "../ui/drivers/qt/ui_qt_window.cpp"
