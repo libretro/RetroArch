@@ -47,6 +47,7 @@ struct retro_hw_render_interface_gskit_ps2
    * in this interface.
    */
    GSTEXTURE *coreTexture;
+   bool clearTexture;
 };
 typedef struct retro_hw_render_interface_gskit_ps2 RETRO_HW_RENDER_INTEFACE_GSKIT_PS2;
 

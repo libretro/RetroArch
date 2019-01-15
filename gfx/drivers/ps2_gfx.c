@@ -418,6 +418,7 @@ static bool ps2_get_hw_render_interface(void* data,
       const struct retro_hw_render_interface** iface)
 {
    ps2_video_t* ps2 = (ps2_video_t*)data;
+   ps2->iface.clearTexture = ps2->clearVRAM;
    *iface = (const struct retro_hw_render_interface*)&ps2->iface;
    return true;
 }
