@@ -94,66 +94,80 @@ void GridView::calculateRectsIfNecessary() const
 
    const int maxWidth = viewport()->width();
 
-   switch (m_viewMode)
+   if (m_size + m_spacing * 2 > maxWidth)
    {
-      case Anchored:
+      m_rectForRow[0] = QRectF(x, y, m_size, m_size);
+
+      for (row = 1; row < model()->rowCount(); ++row)
       {
-         int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
-         if (columns > 0)
+         y += m_size + m_spacing;
+         m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+      }
+   }
+   else
+   {
+      switch (m_viewMode)
+      {
+         case Anchored:
          {
-            const int actualSpacing = (maxWidth - m_spacing - m_size - (columns - 1) * m_size) / columns;
+            int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
+            if (columns > 0)
+            {
+               const int actualSpacing = (maxWidth - m_spacing - m_size - (columns - 1) * m_size) / columns;
+               for (row = 0; row < model()->rowCount(); ++row)
+               {
+                  nextX = x + m_size + actualSpacing;
+                  if (nextX > maxWidth)
+                  {
+                     x = m_spacing;
+                     y += m_size + m_spacing;
+                     nextX = x + m_size + actualSpacing;
+                  }
+                  m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+                  x = nextX;
+               }
+            }
+            break;
+         }
+         case Centered:
+         {
+            int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
+            if (columns > 0)
+            {
+               const int actualSpacing = (maxWidth - columns * m_size) / (columns + 1);
+               x = actualSpacing;
+               for (row = 0; row < model()->rowCount(); ++row)
+               {
+                  nextX = x + m_size + actualSpacing;
+                  if (nextX > maxWidth)
+                  {
+                     x = actualSpacing;
+                     y += m_size + m_spacing;
+                     nextX = x + m_size + actualSpacing;
+                  }
+                  m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+                  x = nextX;
+               }
+            }
+            break;
+         }
+         case Simple:
             for (row = 0; row < model()->rowCount(); ++row)
             {
-               nextX = x + m_size + actualSpacing;
+               nextX = x + m_size + m_spacing;
                if (nextX > maxWidth)
                {
                   x = m_spacing;
                   y += m_size + m_spacing;
-                  nextX = x + m_size + actualSpacing;
+                  nextX = x + m_size + m_spacing;
                }
                m_rectForRow[row] = QRectF(x, y, m_size, m_size);
                x = nextX;
             }
+            break;
          }
-         break;
-      }
-      case Centered:
-      {
-         int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
-         if (columns > 0)
-         {
-            const int actualSpacing = (maxWidth - columns * m_size) / (columns + 1);
-            x = actualSpacing;
-            for (row = 0; row < model()->rowCount(); ++row)
-            {
-               nextX = x + m_size + actualSpacing;
-               if (nextX > maxWidth)
-               {
-                  x = actualSpacing;
-                  y += m_size + m_spacing;
-                  nextX = x + m_size + actualSpacing;
-               }
-               m_rectForRow[row] = QRectF(x, y, m_size, m_size);
-               x = nextX;
-            }
-         }
-         break;
-      }
-      case Simple:
-         for (row = 0; row < model()->rowCount(); ++row)
-         {
-            nextX = x + m_size + m_spacing;
-            if (nextX > maxWidth)
-            {
-               x = m_spacing;
-               y += m_size + m_spacing;
-               nextX = x + m_size + m_spacing;
-            }
-            m_rectForRow[row] = QRectF(x, y, m_size, m_size);
-            x = nextX;
-         }
-         break;
    }
+
    m_idealHeight = y + m_size + m_spacing;
    m_hashIsDirty = false;
    viewport()->update();
