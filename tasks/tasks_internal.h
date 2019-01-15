@@ -113,7 +113,7 @@ bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename);
+      const char *hostname, const char *corename, const char* subsystem);
 
 bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 

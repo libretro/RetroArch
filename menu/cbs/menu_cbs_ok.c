@@ -4016,7 +4016,7 @@ static int action_ok_netplay_connect_room(const char *path,
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
       netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename);
+      tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
 
 #else
    return -1;
@@ -4263,6 +4263,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].frontend,
                      host->frontend,
                      sizeof(netplay_room_list[i].frontend));
+               strlcpy(netplay_room_list[i].subsystem_name,
+                     host->subsystem_name,
+                     sizeof(netplay_room_list[i].subsystem_name));
 
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;

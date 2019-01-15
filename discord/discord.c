@@ -187,8 +187,7 @@ static void handle_discord_join_cb(void *task_data, void *user_data, const char 
 
       RARCH_LOG("[Discord] joining lobby at: %s\n", tmp_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
-         room->gamename, tmp_hostname, room->corename);
-
+         room->gamename, tmp_hostname, room->corename, room->subsystem_name);
    }
 
 finish:
