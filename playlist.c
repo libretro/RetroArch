@@ -832,6 +832,10 @@ static bool playlist_read_file(
       char buf[16] = {0};
       int64_t bytes_read = filestream_read(file, buf, 15);
 
+      /* Empty playlist file */
+      if (bytes_read == 0)
+         return true;
+
       filestream_seek(file, 0, SEEK_SET);
 
       if (bytes_read == 15)
