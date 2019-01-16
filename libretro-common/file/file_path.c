@@ -141,8 +141,8 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 static int path_stat(const char *path, int32_t *size)
 {
    if (path_stat_cb != NULL)
-      return path_stat_cb(path, NULL);
-   return retro_vfs_stat_impl(path, NULL);
+      return path_stat_cb(path, size);
+   return retro_vfs_stat_impl(path, size);
 }
 
 static int path_mkdir_norecurse(const char *dir)
