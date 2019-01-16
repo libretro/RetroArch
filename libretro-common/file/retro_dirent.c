@@ -63,7 +63,8 @@ struct RDIR *retro_opendir_include_hidden(const char *name, bool include_hidden)
 {
    if (dirent_opendir_cb != NULL)
       return (struct RDIR *)dirent_opendir_cb(name, include_hidden);
-   return (struct RDIR *)retro_vfs_opendir_impl(name, include_hidden);
+   else
+      return (struct RDIR *)retro_vfs_opendir_impl(name, include_hidden);
 }
 
 struct RDIR *retro_opendir(const char *name)
@@ -81,14 +82,16 @@ int retro_readdir(struct RDIR *rdir)
 {
    if (dirent_readdir_cb != NULL)
       return dirent_readdir_cb((struct retro_vfs_dir_handle *)rdir);
-   return retro_vfs_readdir_impl((struct retro_vfs_dir_handle *)rdir);
+   else
+      return retro_vfs_readdir_impl((struct retro_vfs_dir_handle *)rdir);
 }
 
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
    if (dirent_dirent_get_name_cb != NULL)
       return dirent_dirent_get_name_cb((struct retro_vfs_dir_handle *)rdir);
-   return retro_vfs_dirent_get_name_impl((struct retro_vfs_dir_handle *)rdir);
+   else
+      return retro_vfs_dirent_get_name_impl((struct retro_vfs_dir_handle *)rdir);
 }
 
 /**
@@ -106,7 +109,8 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
 {
    if (dirent_dirent_is_dir_cb != NULL)
       return dirent_dirent_is_dir_cb((struct retro_vfs_dir_handle *)rdir);
-   return retro_vfs_dirent_is_dir_impl((struct retro_vfs_dir_handle *)rdir);
+   else
+      return retro_vfs_dirent_is_dir_impl((struct retro_vfs_dir_handle *)rdir);
 }
 
 void retro_closedir(struct RDIR *rdir)
