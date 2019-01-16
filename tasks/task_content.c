@@ -562,6 +562,7 @@ static bool content_file_load(
    size_t msg_size = 1024 * sizeof(char);
    char *msg       = (char*)malloc(msg_size);
    rarch_system_info_t *system = runloop_get_system_info();
+   bool used_vfs_fallback_copy = false;
 
    msg[0]          = '\0';
 
@@ -626,12 +627,71 @@ static bool content_file_load(
          /* TODO: When support for the 'actual' VFS is added, there will need to be some more logic here */
          if (!system->supports_vfs && !uwp_is_path_accessible_using_standard_io(path))
          {
-            strlcpy(msg,
-               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS),
-               msg_size
-            );
-            *error_string = strdup(msg);
-            goto error;
+            /* Fallback to a file copy into an accessible directory */
+
+            union string_list_elem_attr attributes;
+            size_t new_basedir_size = PATH_MAX_LENGTH * sizeof(char);
+            size_t new_path_size = PATH_MAX_LENGTH * sizeof(char);
+            char *new_basedir = (char*)malloc(new_basedir_size);
+            char *new_path = (char*)malloc(new_path_size);
+            char* buf;
+            int64_t len;
+
+            new_path[0] = '\0';
+            new_basedir[0] = '\0';
+            attributes.i = 0;
+
+            RARCH_LOG("Core does not support VFS - copying to cache directory\n");
+
+            if (!string_is_empty(content_ctx->directory_cache))
+               strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
+            if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !uwp_is_path_accessible_using_standard_io(new_basedir))
+            {
+               RARCH_WARN("Tried copying to cache directory, but "
+                  "cache directory was not set or found. "
+                  "Setting cache directory to root of "
+                  "writable app directory...\n");
+               strlcpy(new_basedir, uwp_dir_data, new_basedir_size);
+            }
+
+            fill_pathname_join(new_path, new_basedir,
+               path_basename(path), new_path_size);
+
+            /* TODO: This may fail on very large files... but copying large files is not a good idea anyway */
+            if (!filestream_read_file(path, &buf, &len))
+            {
+               snprintf(msg,
+                  msg_size,
+                  "%s \"%s\". (during copy read)\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
+               *error_string = strdup(msg);
+               goto error;
+            }
+            if (!filestream_write_file(new_path, buf, len))
+            {
+               free(buf);
+               snprintf(msg,
+                  msg_size,
+                  "%s \"%s\". (during copy write)\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
+               *error_string = strdup(msg);
+               goto error;
+            }
+            free(buf);
+
+            string_list_append(additional_path_allocs, new_path, attributes);
+            info[i].path =
+               additional_path_allocs->elems[additional_path_allocs->size - 1].data;
+
+            string_list_append(content_ctx->temporary_content,
+               new_path, attributes);
+
+            free(new_basedir);
+            free(new_path);
+
+            used_vfs_fallback_copy = true;
          }
 #endif
 
@@ -649,9 +709,19 @@ static bool content_file_load(
 
    if (!core_load_game(&load_info))
    {
-      snprintf(msg,
+      if (used_vfs_fallback_copy)
+      {
+         /* This is probably going to fail on multifile ROMs etc. so give a visible explanation of what is likely wrong */
+         snprintf(msg,
+            msg_size,
+            "%s.", msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
+      }
+      else
+      {
+         snprintf(msg,
             msg_size,
             "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      }
       *error_string = strdup(msg);
       goto error;
    }

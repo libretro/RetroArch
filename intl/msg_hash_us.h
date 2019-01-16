@@ -4153,7 +4153,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
-    "Loading content from here requires VFS, but core does not support it"
+    "Core does not support VFS, and loading from a local copy failed"
 )
 MSG_HASH(
     MSG_ERROR_PARSING_ARGUMENTS,
