@@ -928,7 +928,7 @@ static bool playlist_read_file(
    }
    else
    {
-      char buf[PLAYLIST_ENTRIES][1024] = {0};
+      char buf[PLAYLIST_ENTRIES][1024] = {{0}};
 
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
          buf[i][0] = '\0';
