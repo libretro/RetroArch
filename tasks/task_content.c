@@ -1421,6 +1421,8 @@ bool task_push_load_content_with_new_core_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+
+      global->name.label[0]                   = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))
