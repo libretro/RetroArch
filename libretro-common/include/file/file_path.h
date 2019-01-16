@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2019 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
@@ -28,16 +28,11 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#include <libretro.h>
 #include <retro_common_api.h>
 
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
-
-#define PATH_REQUIRED_VFS_VERSION 3
-
-void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 /* Order in this enum is equivalent to negative sort order in filelist
  *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
