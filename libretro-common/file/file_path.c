@@ -142,16 +142,14 @@ static int path_stat(const char *path, int32_t *size)
 {
    if (path_stat_cb != NULL)
       return path_stat_cb(path, NULL);
-   else
-      return retro_vfs_stat_impl(path, NULL);
+   return retro_vfs_stat_impl(path, NULL);
 }
 
 static int path_mkdir_norecurse(const char *dir)
 {
    if (path_mkdir_cb != NULL)
       return path_mkdir_cb(dir);
-   else
-      return retro_vfs_mkdir_impl(dir);
+   return retro_vfs_mkdir_impl(dir);
 }
 
 /**
