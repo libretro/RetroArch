@@ -171,10 +171,12 @@ static int dir_list_read(const char *dir,
       bool include_dirs, bool include_hidden,
       bool include_compressed, bool recursive)
 {
-   struct RDIR *entry = retro_opendir_include_hidden(dir, include_hidden);
+   struct RDIR *entry = retro_opendir(dir);
 
    if (!entry || retro_dirent_error(entry))
       goto error;
+
+   retro_dirent_include_hidden(entry, include_hidden);
 
    while (retro_readdir(entry))
    {
@@ -187,7 +189,7 @@ static int dir_list_read(const char *dir,
       file_path[0] = '\0';
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
-      is_dir = retro_dirent_is_dir(entry, NULL);
+      is_dir = retro_dirent_is_dir(entry, file_path);
 
       if(!is_dir)
          file_ext = path_get_extension(name);
