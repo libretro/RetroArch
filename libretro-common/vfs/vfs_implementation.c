@@ -1070,7 +1070,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
    if (rdir->directory && !dirent_check_error(rdir))
       return rdir;
 
-   free(rdir);
+   retro_vfs_closedir_impl(rdir);
    return NULL;
 }
 
