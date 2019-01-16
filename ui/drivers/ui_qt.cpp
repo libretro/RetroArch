@@ -38,7 +38,6 @@ extern "C" {
 #endif
 
 #include "ui_qt.h"
-#include "qt/filedropwidget.h"
 #include "qt/viewoptionsdialog.h"
 
 #include <QApplication>
@@ -225,6 +224,7 @@ static void* ui_companion_qt_init(void)
    MainWindow *mainwindow = NULL;
    QHBoxLayout *browserButtonsHBoxLayout = NULL;
    QVBoxLayout *layout = NULL;
+   QVBoxLayout *playlistViewsLayout = NULL;
    QVBoxLayout *launchWithWidgetLayout = NULL;
    QHBoxLayout *coreComboBoxLayout = NULL;
    QMenuBar *menu = NULL;
@@ -245,9 +245,10 @@ static void* ui_companion_qt_init(void)
    QDockWidget *browserAndPlaylistTabDock = NULL;
    QDockWidget *coreSelectionDock = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
-   QWidget *widget = NULL;
-   QWidget *browserWidget = NULL;
-   QWidget *playlistWidget = NULL;
+   QStackedWidget *centralWidget = NULL;
+   QStackedWidget *widget = NULL;
+   QFrame *browserWidget = NULL;
+   QFrame *playlistWidget = NULL;
    QWidget *coreSelectionWidget = NULL;
    QWidget *launchWithWidget = NULL;
    ThumbnailWidget *thumbnailWidget = NULL;
@@ -294,8 +295,7 @@ static void* ui_companion_qt_init(void)
 
    listWidget = mainwindow->playlistListWidget();
 
-   widget = new FileDropWidget(mainwindow);
-   widget->setObjectName("tableWidget");
+   widget = mainwindow->playlistViews();
    widget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
@@ -303,13 +303,12 @@ static void* ui_companion_qt_init(void)
    QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
    QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
-   layout = new QVBoxLayout();
-   layout->addWidget(mainwindow->contentTableView());
-   layout->addWidget(mainwindow->contentGridWidget());
+   centralWidget = mainwindow->centralWidget();
 
-   widget->setLayout(layout);
+   centralWidget->addWidget(mainwindow->playlistViewsAndFooter());
+   centralWidget->addWidget(mainwindow->fileTableView());
 
-   mainwindow->setCentralWidget(widget);
+   mainwindow->setCentralWidget(centralWidget);
 
    menu = mainwindow->menuBar();
 
@@ -355,15 +354,17 @@ static void* ui_companion_qt_init(void)
    helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
    helpMenu->addAction("About Qt...", qApp, SLOT(aboutQt()));
 
-   playlistWidget = new QWidget();
+   playlistWidget = new QFrame();
    playlistWidget->setLayout(new QVBoxLayout());
    playlistWidget->setObjectName("playlistWidget");
+   playlistWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    playlistWidget->layout()->addWidget(mainwindow->playlistListWidget());
 
-   browserWidget = new QWidget();
+   browserWidget = new QFrame();
    browserWidget->setLayout(new QVBoxLayout());
    browserWidget->setObjectName("browserWidget");
+   browserWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    browserDownloadsButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
    browserUpButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP));
@@ -502,6 +503,7 @@ static void* ui_companion_qt_init(void)
    coreSelectionDock->setProperty("default_area", Qt::LeftDockWidgetArea);
    coreSelectionDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE));
    coreSelectionDock->setWidget(coreSelectionWidget);
+   coreSelectionDock->setFixedHeight(coreSelectionDock->minimumSizeHint().height());
 
    mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(coreSelectionDock->property("default_area").toInt()), coreSelectionDock);
 
@@ -533,6 +535,14 @@ static void* ui_companion_qt_init(void)
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
 
+   if (qsettings->contains("file_browser_table_headers"))
+      mainwindow->fileTableView()->horizontalHeader()->restoreState(qsettings->value("file_browser_table_headers").toByteArray());
+   else
+      mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
+
+   if (qsettings->contains("icon_view_zoom"))
+      mainwindow->setIconViewZoom(qsettings->value("icon_view_zoom", 50).toInt());
+
    if (qsettings->contains("theme"))
    {
       QString themeStr = qsettings->value("theme").toString();
@@ -560,9 +570,6 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
       else
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-
-      /* we set it to the same thing a second time so that m_lastViewType is also equal to the startup view type */
-      mainwindow->setCurrentViewType(mainwindow->getCurrentViewType());
    }
    else
       mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
@@ -579,12 +586,7 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
-
-      /* we set it to the same thing a second time so that m_lastThumbnailType is also equal to the startup view type */
-      mainwindow->setCurrentThumbnailType(mainwindow->getCurrentThumbnailType());
    }
-   else
-      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
 
    /* We make sure to hook up the tab widget callback only after the tabs themselves have been added,
     * but before changing to a specific one, to avoid the callback firing before the view type is set.
@@ -641,6 +643,8 @@ static void* ui_companion_qt_init(void)
          }
       }
    }
+
+   mainwindow->initContentTableWidget();
 
    return handle;
 }
