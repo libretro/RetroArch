@@ -22,7 +22,7 @@ OBJ :=
 # For threading we need to overwrite some vars with global defines because devkitPro's includes 
 # make it hard for us. This works for the pthread wrapper
 DEFINES_THREAD := -Dpthread_t=Thread -Dpthread_mutex_t=Mutex -Dpthread_mutexattr_t='void*' -Dpthread_attr_t=int -Dpthread_cond_t=CondVar -Dpthread_condattr_t='int' -D_SYS__PTHREADTYPES_H_
-DEFINES := -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD)
+DEFINES := -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD) -DHAVE_STB_VORBIS
 
 HAVE_CC_RESAMPLER = 1
 HAVE_MENU_COMMON = 1
@@ -42,6 +42,7 @@ HAVE_NETPLAYDISCOVERY = 1
 HAVE_STB_FONT = 1
 HAVE_CHEEVOS = 1
 HAVE_CHD = 1
+HAVE_STB_VORBIS = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
