@@ -41,6 +41,11 @@ typedef struct nbio_buf
    char *path;
 } nbio_buf_t;
 
+struct audio_mixer_userdata
+{
+   enum audio_mixer_stream_type stream_type;
+};
+
 struct audio_mixer_handle
 {
    nbio_buf_t *buffer;
@@ -53,15 +58,15 @@ struct audio_mixer_handle
 static void task_audio_mixer_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio        = (nbio_handle_t*)task->state;
-   struct audio_mixer_handle *image = (struct audio_mixer_handle*)nbio->data;
+   struct audio_mixer_handle *mixer = (struct audio_mixer_handle*)nbio->data;
 
-   if (image)
+   if (mixer)
    {
-      if (image->buffer)
+      if (mixer->buffer)
       {
-         if (image->buffer->path)
-            free(image->buffer->path);
-         free(image->buffer);
+         if (mixer->buffer->path)
+            free(mixer->buffer->path);
+         free(mixer->buffer);
       }
    }
 
@@ -76,17 +81,17 @@ static void task_audio_mixer_load_free(retro_task_t *task)
 static int cb_nbio_audio_mixer_load(void *data, size_t len)
 {
    nbio_handle_t *nbio             = (nbio_handle_t*)data;
-   struct audio_mixer_handle *image= (struct audio_mixer_handle*)nbio->data;
+   struct audio_mixer_handle *mixer= (struct audio_mixer_handle*)nbio->data;
    void *ptr                       = nbio_get_ptr(nbio->handle, &len);
-   nbio_buf_t *buffer              = (nbio_buf_t*)calloc(1, sizeof(*image->buffer));
+   nbio_buf_t *buffer              = (nbio_buf_t*)calloc(1, sizeof(*mixer->buffer));
 
    if (!buffer)
       return -1;
 
-   image->buffer                   = buffer;
-   image->buffer->buf              = ptr;
-   image->buffer->bufsize          = (unsigned)len;
-   image->copy_data_over           = true;
+   mixer->buffer                   = buffer;
+   mixer->buffer->buf              = ptr;
+   mixer->buffer->bufsize          = (unsigned)len;
+   mixer->copy_data_over           = true;
    nbio->is_finished               = true;
 
    return 0;
@@ -97,11 +102,12 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
-
-   if (!img)
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
    params.buf                  = img->buf;
@@ -122,11 +128,13 @@ static void task_audio_mixer_handle_upload_ogg_and_play(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -147,11 +155,13 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_FLAC;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
    params.buf                  = img->buf;
@@ -172,11 +182,13 @@ static void task_audio_mixer_handle_upload_flac_and_play(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_FLAC;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -197,11 +209,13 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
    params.buf                  = img->buf;
@@ -222,11 +236,13 @@ static void task_audio_mixer_handle_upload_mp3_and_play(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -247,11 +263,13 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MOD;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
    params.buf                  = img->buf;
@@ -272,11 +290,13 @@ static void task_audio_mixer_handle_upload_mod_and_play(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MOD;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -297,11 +317,13 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
    params.buf                  = img->buf;
@@ -322,11 +344,13 @@ static void task_audio_mixer_handle_upload_wav_and_play(void *task_data,
 {
    audio_mixer_stream_params_t params;
    nbio_buf_t *img = (nbio_buf_t*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
 
-   if (!img)
+   if (!img || !user)
       return;
 
    params.volume               = 1.0f;
+   params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -345,27 +369,27 @@ static void task_audio_mixer_handle_upload_wav_and_play(void *task_data,
 bool task_audio_mixer_load_handler(retro_task_t *task)
 {
    nbio_handle_t             *nbio  = (nbio_handle_t*)task->state;
-   struct audio_mixer_handle *image = (struct audio_mixer_handle*)nbio->data;
+   struct audio_mixer_handle *mixer = (struct audio_mixer_handle*)nbio->data;
 
    if (
          nbio->is_finished
-         && (image && !image->is_finished)
-         && (image->copy_data_over)
+         && (mixer && !mixer->is_finished)
+         && (mixer->copy_data_over)
          && (!task_get_cancelled(task)))
    {
       nbio_buf_t *img = (nbio_buf_t*)calloc(1, sizeof(*img));
 
       if (img)
       {
-         img->buf     = image->buffer->buf;
-         img->bufsize = image->buffer->bufsize;
+         img->buf     = mixer->buffer->buf;
+         img->bufsize = mixer->buffer->bufsize;
          img->path    = strdup(nbio->path);
       }
 
       task_set_data(task, img);
 
-      image->copy_data_over = false;
-      image->is_finished    = true;
+      mixer->copy_data_over = false;
+      mixer->is_finished    = true;
 
       return false;
    }
@@ -373,13 +397,15 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callback_t cb, void *user_data)
+bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system)
 {
    nbio_handle_t             *nbio    = NULL;
-   struct audio_mixer_handle   *image = NULL;
+   struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
+   struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
 
-   if (!t)
+   if (!t || !user)
       goto error;
 
    nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
@@ -389,38 +415,38 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callba
 
    nbio->path         = strdup(fullpath);
 
-   image              = (struct audio_mixer_handle*)calloc(1, sizeof(*image));
-   if (!image)
+   mixer              = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer));
+   if (!mixer)
       goto error;
 
-   image->is_finished = false;
+   mixer->is_finished = false;
 
-   strlcpy(image->path, fullpath, sizeof(image->path));
+   strlcpy(mixer->path, fullpath, sizeof(mixer->path));
 
    nbio->type         = NBIO_TYPE_NONE;
-   image->type        = AUDIO_MIXER_TYPE_NONE;
+   mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_WAV;
+      mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav_and_play;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_OGG;
+      mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg_and_play;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_MP3;
+      mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3_and_play;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_FLAC;
+      mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac_and_play;
    }
@@ -428,12 +454,17 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callba
 		strstr(fullpath, file_path_str(FILE_PATH_S3M_EXTENSION)) ||
 		strstr(fullpath, file_path_str(FILE_PATH_XM_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_MOD;
+      mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;
       t->callback     = task_audio_mixer_handle_upload_mod_and_play;
    }
 
-   nbio->data         = (struct audio_mixer_handle*)image;
+   if (system)
+      user->stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+   else
+      user->stream_type = AUDIO_STREAM_TYPE_USER;
+
+   nbio->data         = (struct audio_mixer_handle*)mixer;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_audio_mixer_load;
    nbio->status       = NBIO_STATUS_INIT;
@@ -441,7 +472,7 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callba
    t->state           = nbio;
    t->handler         = task_file_load_handler;
    t->cleanup         = task_audio_mixer_load_free;
-   t->user_data       = user_data;
+   t->user_data       = user;
 
    task_queue_push(t);
 
@@ -457,6 +488,8 @@ error:
       nbio_free(nbio->handle);
       free(nbio);
    }
+   if (user)
+      free(user);
    if (t)
       free(t);
 
@@ -466,13 +499,15 @@ error:
    return false;
 }
 
-bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
+bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system)
 {
    nbio_handle_t             *nbio    = NULL;
-   struct audio_mixer_handle   *image = NULL;
+   struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
+   struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
 
-   if (!t)
+   if (!t || !user)
       goto error;
 
    nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
@@ -482,38 +517,38 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
 
    nbio->path         = strdup(fullpath);
 
-   image              = (struct audio_mixer_handle*)calloc(1, sizeof(*image));
-   if (!image)
+   mixer              = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer));
+   if (!mixer)
       goto error;
 
-   image->is_finished = false;
+   mixer->is_finished = false;
 
-   strlcpy(image->path, fullpath, sizeof(image->path));
+   strlcpy(mixer->path, fullpath, sizeof(mixer->path));
 
    nbio->type         = NBIO_TYPE_NONE;
-   image->type        = AUDIO_MIXER_TYPE_NONE;
+   mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_WAV;
+      mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_OGG;
+      mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_MP3;
+      mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_FLAC;
+      mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac;
    }
@@ -521,20 +556,25 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
 		strstr(fullpath, file_path_str(FILE_PATH_S3M_EXTENSION)) ||
 		strstr(fullpath, file_path_str(FILE_PATH_XM_EXTENSION)))
    {
-      image->type     = AUDIO_MIXER_TYPE_MOD;
+      mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;
       t->callback     = task_audio_mixer_handle_upload_mod;
    }
 
-   nbio->data         = (struct audio_mixer_handle*)image;
+   nbio->data         = (struct audio_mixer_handle*)mixer;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_audio_mixer_load;
    nbio->status       = NBIO_STATUS_INIT;
 
+   if (system)
+      user->stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+   else
+      user->stream_type = AUDIO_STREAM_TYPE_USER;
+
    t->state           = nbio;
    t->handler         = task_file_load_handler;
    t->cleanup         = task_audio_mixer_load_free;
-   t->user_data       = user_data;
+   t->user_data       = user;
 
    task_queue_push(t);
 
@@ -550,6 +590,8 @@ error:
       nbio_free(nbio->handle);
       free(nbio);
    }
+   if (user)
+      free(user);
    if (t)
       free(t);
 

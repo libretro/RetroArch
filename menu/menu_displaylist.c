@@ -6803,7 +6803,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             unsigned i;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if 1
+            /* TODO - for developers -
+             * turn this into #if 0 if you want to be able to see
+             * the system streams as well. */
             for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+#else
+            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+#endif
             {
                char msg[128];
                char msg_lbl[128];
