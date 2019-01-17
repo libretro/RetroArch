@@ -277,7 +277,7 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
+if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_MOC" = 'yes' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -286,13 +286,7 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
    check_pkgconf OPENSSL openssl 1.0.0
 
-   check_val '' QT5CORE -lQt5Core QT5CORE
-   check_val '' QT5GUI -lQt5Gui QT5GUI
-   check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
-   check_val '' QT5CONCURRENT -lQt5Concurrent QT5CONCURRENT
-   check_val '' QT5NETWORK -lQt5Network QT5NETWORK
-   #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
-   check_val '' OPENSSL -lssl OPENSSL
+   # pkg-config is needed to reliably find Qt5 libraries.
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'

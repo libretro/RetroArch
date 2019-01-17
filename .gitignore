@@ -11,6 +11,8 @@
 .tmp
 .tmp.c
 .tmp.cxx
+.moc.h
+.moc.cpp
 config.log
 /.project
 /.externalToolBuilders/
