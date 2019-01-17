@@ -44,20 +44,17 @@ matrix:
     - os: osx
       osx_image: xcode8
       script:
-          - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+        - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx
       osx_image: xcode9.3
       script:
-        - cd ~/
         - brew update
         - brew install --force-bottle qt5
-        - git clone --depth=50 https://github.com/libretro/libretro-super
-        - cd libretro-super/travis
-        - ./build-retroarch-metal.sh
+        - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
         skip_cleanup: true
         provider: script
-        script: cd ../retroarch; bash travis_metal_deploy.sh
+        script: bash travis_metal_deploy.sh
         on:
           branch: master
 
