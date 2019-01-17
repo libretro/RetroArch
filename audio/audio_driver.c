@@ -1172,8 +1172,18 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
       return false;
    
-   if (!audio_driver_mixer_get_free_stream_slot(&free_slot, params->stream_type))
-      return false;
+   switch (params->slot_selection_type)
+   {
+      case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
+         free_slot = params->slot_selection_idx;
+         break;
+      case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
+      default:
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+            return false;
+         break;
+   }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;

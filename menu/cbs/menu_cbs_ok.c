@@ -2029,7 +2029,10 @@ static int action_ok_audio_add_to_mixer(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
-            NULL, NULL, false);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0
+            );
 
    return 0;
 }
@@ -2048,7 +2051,9 @@ static int action_ok_audio_add_to_mixer_and_play(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load_and_play(entry_path,
-            NULL, NULL, false);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -2076,7 +2081,9 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
-            NULL, NULL, false);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -2104,7 +2111,9 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
-            NULL, NULL, false);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }

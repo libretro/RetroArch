@@ -50,6 +50,12 @@ enum audio_action
    AUDIO_ACTION_MIXER
 };
 
+enum audio_mixer_slot_selection_type
+{
+   AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC = 0,
+   AUDIO_MIXER_SLOT_SELECTION_MANUAL
+};
+
 enum audio_mixer_stream_type
 {
    AUDIO_STREAM_TYPE_NONE = 0,
@@ -174,6 +180,8 @@ typedef struct audio_driver
 typedef struct audio_mixer_stream_params
 {
    float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
    enum audio_mixer_stream_type  stream_type;
    enum audio_mixer_type  type;
    enum audio_mixer_state state;

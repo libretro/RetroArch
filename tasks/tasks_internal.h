@@ -29,6 +29,8 @@
 #include "../config.h"
 #endif
 
+#include "../audio/audio_driver.h"
+
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
@@ -262,11 +264,15 @@ enum frontend_powerstate get_last_powerstate(int *percent);
 
 bool task_push_audio_mixer_load_and_play(
       const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system);
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
 
 bool task_push_audio_mixer_load(
       const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system);
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
 
 void set_save_state_in_background(bool state);
 

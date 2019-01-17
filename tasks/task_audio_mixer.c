@@ -44,6 +44,8 @@ typedef struct nbio_buf
 struct audio_mixer_userdata
 {
    enum audio_mixer_stream_type stream_type;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
 };
 
 struct audio_mixer_handle
@@ -107,6 +109,8 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
@@ -134,6 +138,8 @@ static void task_audio_mixer_handle_upload_ogg_and_play(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
@@ -161,6 +167,8 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_FLAC;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
@@ -188,6 +196,8 @@ static void task_audio_mixer_handle_upload_flac_and_play(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_FLAC;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
@@ -215,6 +225,8 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
@@ -242,6 +254,8 @@ static void task_audio_mixer_handle_upload_mp3_and_play(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
@@ -269,6 +283,8 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MOD;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
@@ -296,6 +312,8 @@ static void task_audio_mixer_handle_upload_mod_and_play(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_MOD;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
@@ -323,6 +341,8 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
    params.state                = AUDIO_STREAM_STATE_STOPPED;
@@ -350,6 +370,8 @@ static void task_audio_mixer_handle_upload_wav_and_play(void *task_data,
       return;
 
    params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
@@ -397,8 +419,11 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system)
+bool task_push_audio_mixer_load_and_play(
+      const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx)
 {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
@@ -460,14 +485,17 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath, retro_task_callba
    }
 
    if (system)
-      user->stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+      user->stream_type      = AUDIO_STREAM_TYPE_SYSTEM;
    else
-      user->stream_type = AUDIO_STREAM_TYPE_USER;
+      user->stream_type      = AUDIO_STREAM_TYPE_USER;
 
-   nbio->data         = (struct audio_mixer_handle*)mixer;
-   nbio->is_finished  = false;
-   nbio->cb           = &cb_nbio_audio_mixer_load;
-   nbio->status       = NBIO_STATUS_INIT;
+   user->slot_selection_type = slot_selection_type;
+   user->slot_selection_idx  = slot_selection_idx;
+
+   nbio->data                = (struct audio_mixer_handle*)mixer;
+   nbio->is_finished         = false;
+   nbio->cb                  = &cb_nbio_audio_mixer_load;
+   nbio->status              = NBIO_STATUS_INIT;
 
    t->state           = nbio;
    t->handler         = task_file_load_handler;
@@ -499,8 +527,11 @@ error:
    return false;
 }
 
-bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system)
+bool task_push_audio_mixer_load(
+      const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx)
 {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
@@ -567,14 +598,17 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    nbio->status       = NBIO_STATUS_INIT;
 
    if (system)
-      user->stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+      user->stream_type      = AUDIO_STREAM_TYPE_SYSTEM;
    else
-      user->stream_type = AUDIO_STREAM_TYPE_USER;
+      user->stream_type      = AUDIO_STREAM_TYPE_USER;
 
-   t->state           = nbio;
-   t->handler         = task_file_load_handler;
-   t->cleanup         = task_audio_mixer_load_free;
-   t->user_data       = user;
+   user->slot_selection_type = slot_selection_type;
+   user->slot_selection_idx  = slot_selection_idx;
+
+   t->state                  = nbio;
+   t->handler                = task_file_load_handler;
+   t->cleanup                = task_audio_mixer_load_free;
+   t->user_data              = user;
 
    task_queue_push(t);
 
