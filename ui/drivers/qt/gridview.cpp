@@ -228,7 +228,7 @@ QModelIndex GridView::indexAt(const QPoint &point_) const
    return QModelIndex();
 }
 
-void GridView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+void GridView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
    m_hashIsDirty = true;
    QAbstractItemView::dataChanged(topLeft, bottomRight);
