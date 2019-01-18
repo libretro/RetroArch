@@ -24,22 +24,18 @@ matrix:
         - make
       env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: gcc
-      addons:
-        # Install a more recent gcc than the default
-        apt:
-          packages:
-            - g++-7
-          sources:
-            - ubuntu-toolchain-r-test
+      # Install a more recent gcc than the default
+      before_install:
+        - sudo apt-get install -y g++-7
     - compiler: clang
+      # Install a more recent clang than the default
+      before_install:
+        - sudo apt-get install -y clang-3.8
       addons:
-        # Install a more recent clang than the default
         apt:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.8
-          packages:
-            - clang-3.8
       env: COMPILER_NAME=clang-3.8 CXX=clang++-3.8 CC=clang-3.8
     - os: osx
       osx_image: xcode8
@@ -65,23 +61,20 @@ script:
 env:
   global:
    - MAKEFLAGS="-j2"
+   - QT_SELECT=qt5
    - secure: "qc91ReC3OlzSh2gFaSH6TYzC2qIQvgA2AZff6J13eaH8xijAhuMzttZ0rMQJ0DWCIhPeUb0kIzVyaGoe4MwPALzpw1C1AznIWiZJ53HN+hWCOcS/af7YVPk6HPySnwqrS+Wv3AIIvIKFV2mxv21F/JbT/N+pArlRrp904Xj+KPo="
 addons:
   apt:
     packages:
-      - curl
-      - pkg-config
-      - libglu1-mesa-dev
-      - freeglut3-dev
-      - mesa-common-dev
       - libsdl1.2-dev
       - libsdl-image1.2-dev
       - libsdl-mixer1.2-dev
       - libsdl-ttf2.0-dev
       - libusb-1.0-0-dev
-      - qt5-default
-      - qt5-qmake
-      - qtbase5-dev-tools
+      - qtbase5-dev
+      - qtdeclarative5-dev
+    sources:
+      - ubuntu-toolchain-r-test
   coverity_scan:
     project:
       name: "RetroArch"
