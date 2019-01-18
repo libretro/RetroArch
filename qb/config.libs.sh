@@ -284,7 +284,6 @@ if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_CXX" != "no" ]; then
    check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
    check_pkgconf QT5NETWORK Qt5Network 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
-   check_pkgconf OPENSSL openssl 1.0.0
 
    # pkg-config is needed to reliably find Qt5 libraries.
 
@@ -294,6 +293,8 @@ if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_CXX" != "no" ]; then
    else
       HAVE_QT=yes
    fi
+
+   check_pkgconf OPENSSL openssl 1.0.0
 
    #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
    #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
