@@ -651,4 +651,3 @@ a lot of data that needs to be copied, this should be set high. */
 #endif
 
 #endif /* __LWIP_OPT_H__ */
-

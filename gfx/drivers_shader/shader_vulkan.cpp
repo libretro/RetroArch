@@ -3164,4 +3164,3 @@ void vulkan_filter_chain_end_frame(
 {
    chain->end_frame(cmd);
 }
-

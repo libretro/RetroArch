@@ -2529,4 +2529,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0006_v0_0_s_ifspec;
 #endif
 
 #endif
-

@@ -181,4 +181,3 @@ DECLARE_INTERFACE_(IDxDiagContainer,IUnknown)
 #pragma endregion
 
 #endif /* _DXDIAG_H_ */
-

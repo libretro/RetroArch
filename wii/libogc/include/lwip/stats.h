@@ -151,4 +151,3 @@ void stats_display(void);
 #endif
 
 #endif /* __LWIP_STATS_H__ */
-

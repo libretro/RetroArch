@@ -831,4 +831,3 @@ float calc_yaw(struct ir_t* ir) {
 
 	return RAD_TO_DEGREE( atanf(x) );
 }
-

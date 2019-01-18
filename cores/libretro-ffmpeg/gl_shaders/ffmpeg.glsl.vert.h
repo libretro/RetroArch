@@ -9,4 +9,3 @@ static const char *vertex_source = GLSL(
          gl_Position = vec4(aVertex, 0.0, 1.0); vTex = aTexCoord;
       }
 );
-

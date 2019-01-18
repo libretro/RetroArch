@@ -147,5 +147,3 @@ if __name__ == '__main__':
       f.write('    { NULL, NULL },\n')
       f.write('};\n')
       dump(f, declarations)
-
-

@@ -57,4 +57,3 @@ char *strldup(const char *s, size_t n);
 RETRO_END_DECLS
 
 #endif
-

@@ -59,4 +59,3 @@ int __libogc_lock_release(int *lock)
 	plock = (mutex_t)*lock;
 	return LWP_MutexUnlock(plock);
 }
-

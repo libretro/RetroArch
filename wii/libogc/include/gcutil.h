@@ -9,4 +9,3 @@
 #endif
 
 #endif /* _GCUTIL_H */
-

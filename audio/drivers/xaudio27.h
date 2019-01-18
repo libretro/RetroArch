@@ -360,4 +360,3 @@ static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_
 #pragma pack(pop)
 
 #endif
-

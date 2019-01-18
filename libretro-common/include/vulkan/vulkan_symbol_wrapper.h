@@ -352,4 +352,3 @@ VkBool32 vulkan_symbol_wrapper_load_device_symbol(VkDevice device, const char *n
 }
 #endif
 #endif
-

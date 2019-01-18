@@ -43,4 +43,3 @@
 #endif
 
 #endif /* __LWIP_DEF_H__ */
-

@@ -640,4 +640,3 @@ void CON_EnableGecko(int channel,int safe)
 		}
 	}
 }
-

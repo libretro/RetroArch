@@ -223,4 +223,3 @@ void libretro_dummy_retro_cheat_set(unsigned idx,
    (void)enabled;
    (void)code;
 }
-

@@ -73,4 +73,3 @@ void main(void)
 
    FragColor = vec4(col(p));
 }
-

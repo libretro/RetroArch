@@ -1813,4 +1813,3 @@ D3DX_CPU_OPTIMIZATION WINAPI
 #endif
 
 #endif // __D3DX9MATH_H__
-

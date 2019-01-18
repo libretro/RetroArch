@@ -542,4 +542,3 @@ HRESULT WINAPI D3D10GetShaderDebugInfo(_In_reads_bytes_(BytecodeLength) CONST vo
 /*#pragma endregion*/
     
 #endif //__D3D10SHADER_H__
-

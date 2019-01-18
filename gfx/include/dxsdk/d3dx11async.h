@@ -159,4 +159,3 @@ HRESULT WINAPI D3DX11CreateAsyncShaderResourceViewProcessor(ID3D11Device *pDevic
 #endif //__cplusplus
 
 #endif //__D3DX11ASYNC_H__
-

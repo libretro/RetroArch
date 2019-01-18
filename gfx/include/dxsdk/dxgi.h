@@ -2785,4 +2785,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0014_v0_0_s_ifspec;
 #endif
 
 #endif
-

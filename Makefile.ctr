@@ -280,4 +280,3 @@ clean:
 	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
-

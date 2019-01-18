@@ -392,4 +392,3 @@ HRESULT WINAPI D3DX11CreateFFT3DComplex(
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
-

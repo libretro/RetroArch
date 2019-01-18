@@ -146,4 +146,3 @@ HRESULT WINAPI D3D10CreateBlob(SIZE_T NumBytes, _Out_ LPD3D10BLOB *ppBuffer);
 #endif //__cplusplus
 
 #endif //__D3D10EFFECT_H__
-

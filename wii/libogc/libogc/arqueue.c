@@ -253,4 +253,3 @@ u32 ARQ_RemoveOwnerRequest(u32 owner)
 
 	return cnt;
 }
-

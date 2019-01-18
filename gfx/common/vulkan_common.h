@@ -587,4 +587,3 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 RETRO_END_DECLS
 
 #endif
-

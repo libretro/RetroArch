@@ -2929,4 +2929,3 @@ XMFINLINE XMVECTOR XMVectorInsert(FXMVECTOR VD, FXMVECTOR VS, UINT VSLeftRotateE
 #pragma warning(pop)
 
 #endif // __XNAMATH_H__
-

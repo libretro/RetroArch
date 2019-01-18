@@ -266,4 +266,3 @@ memp_free(memp_t type, void *mem)
     LWP_SemPost(mutex);
 #endif /* SYS_LIGHTWEIGHT_PROT */
 }
-

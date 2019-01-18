@@ -120,4 +120,3 @@ HRESULT WINAPI D3DX11UnsetAllDeviceObjects(ID3D11DeviceContext *pContext);
 #define D3DERR_WASSTILLDRAWING                  MAKE_D3DHRESULT(540)
 
 #endif //__D3DX11CORE_H__
-

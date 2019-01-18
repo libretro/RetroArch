@@ -40,4 +40,3 @@ cd ${ROOT_WWW_PATH}/assets/cores
 ```
 
 That should be it, you can add more cores to the list by editing index.html
-

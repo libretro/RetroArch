@@ -192,4 +192,3 @@ fi
 for core in $cores; do
   buildCore $core
 done
-

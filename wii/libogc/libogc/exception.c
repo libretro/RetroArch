@@ -262,4 +262,3 @@ void c_default_exceptionhandler(frame_context *pCtx)
 
 	waitForReload();
 }
-

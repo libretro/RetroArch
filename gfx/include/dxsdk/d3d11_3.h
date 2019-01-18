@@ -6681,4 +6681,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0011_v0_0_s_ifspec;
 #endif
 
 #endif
-

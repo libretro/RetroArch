@@ -169,4 +169,3 @@ index 5dde6f9..37cd066 100644
 +    
     return NSApplicationMain(argc, (const char **) argv);
  }
- 

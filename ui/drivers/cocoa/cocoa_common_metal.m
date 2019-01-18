@@ -702,4 +702,3 @@ location_driver_t location_corelocation = {
 	"corelocation",
 };
 #endif
-

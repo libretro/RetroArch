@@ -300,4 +300,3 @@ extern "C" {
 #endif //__cplusplus
     
 #endif //__D3D10_1SHADER_H__
-

@@ -679,4 +679,3 @@ void                      __RPC_USER  BSTR_UserFree64(     __RPC__in unsigned lo
 #endif
 
 #endif
-

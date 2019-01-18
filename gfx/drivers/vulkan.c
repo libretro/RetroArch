@@ -2745,4 +2745,3 @@ video_driver_t video_vulkan = {
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
 };
-

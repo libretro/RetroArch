@@ -680,4 +680,3 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
       return false;
    }
 }
-

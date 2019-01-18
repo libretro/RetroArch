@@ -2012,4 +2012,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_3_0000_0008_v0_0_s_ifspec;
 #endif
 
 #endif
-

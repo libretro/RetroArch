@@ -64,4 +64,3 @@ enum _D3DX10_ERR {
 };
 
 #endif //__D3DX10_H__
-
