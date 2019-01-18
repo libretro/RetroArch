@@ -2,8 +2,6 @@
 
 TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
-TEMP_MOC=.moc.h
-TEMP_CPP=.moc.cpp
 TEMP_EXE=.tmp
 
 # Checking for working C compiler
@@ -105,58 +103,3 @@ echo "Checking for pkg-config ... $PKG_CONF_PATH"
 if [ "$PKG_CONF_PATH" = "none" ]; then
 	die : 'Warning: pkg-config not found, package checks will fail.'
 fi
-
-# Checking for working moc
-cat << EOF > "$TEMP_MOC"
-#include <QTimeZone>
-class Test : public QObject
-{
-public:
-   Q_OBJECT
-   QTimeZone tz;
-};
-EOF
-
-HAVE_MOC=no
-if [ "$HAVE_QT" != "no" ] && [ "$HAVE_CXX" != "no" ] && [ "$PKG_CONF_PATH" != "none" ]; then
-	moc_works=0
-	if "$PKGCONF" --exists Qt5Core; then
-		if [ "$MOC" ]; then
-			"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
-			"$CXX" -o "$TEMP_EXE" $("$PKGCONF" --cflags --libs Qt5Core) -fPIC \
-				-c "$TEMP_CPP" >/dev/null 2>&1 &&
-			moc_works=1
-		else
-			for moc in moc-qt5 moc; do
-				MOC="$(exists "$moc")" || MOC=""
-				if [ "$MOC" ]; then
-					"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
-						continue
-					"$CXX" -o "$TEMP_EXE" $("$PKGCONF" --cflags --libs Qt5Core) \
-						-fPIC -c "$TEMP_CPP" >/dev/null 2>&1 && {
-						moc_works=1
-						break
-					}
-				fi
-			done
-		fi
-	else
-		MOC=""
-	fi
-
-	moc_status='does not work'
-	if [ "$moc_works" = '1' ]; then
-		moc_status='works'
-		HAVE_MOC='yes'
-	elif [ -z "$MOC" ]; then
-		moc_status='not found'
-	fi
-
-	echo "Checking for moc ... $MOC $moc_status"
-
-	if [ "$HAVE_MOC" != 'yes' ]; then
-		die : 'Warning: moc not found, Qt companion support will be disabled.'
-	fi
-fi
-
-rm -f -- "$TEMP_CPP" "$TEMP_EXE" "$TEMP_MOC"

@@ -277,7 +277,7 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_MOC" = 'yes' ]; then
+if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_CXX" != "no" ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -595,16 +595,3 @@ fi
 if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
 fi
-
-# Creates config.mk and config.h.
-add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-set -- $(set | grep ^HAVE_)
-while [ $# -gt 0 ]; do
-   tmpvar="${1%=*}"
-   shift 1
-   var="${tmpvar#HAVE_}"
-   vars="${vars} $var"
-done
-VARS="$(printf %s "$vars" | tr ' ' '\n' | $SORT)"
-create_config_make config.mk $(printf %s "$VARS")
-create_config_header config.h $(printf %s "$VARS")
