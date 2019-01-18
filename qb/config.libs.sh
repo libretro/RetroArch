@@ -184,6 +184,12 @@ else
    check_lib '' DYLIB "$DYLIB" dlopen
 fi
 
+if [ "$HAVE_CXX" != 'yes' ]; then
+   HAVE_DISCORD='no'
+   HAVE_QT='no'
+   HAVE_VULKAN='no'
+fi
+
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
 if [ "$HAVE_NETWORKING" = 'yes' ]; then
@@ -277,7 +283,7 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$HAVE_CXX" != "no" ]; then
+if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
