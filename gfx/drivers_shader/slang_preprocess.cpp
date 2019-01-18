@@ -95,4 +95,3 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       return false;
    return slang_preprocess_parse_parameters(meta, shader);
 }
-

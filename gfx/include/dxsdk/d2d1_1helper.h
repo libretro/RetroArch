@@ -919,4 +919,3 @@ namespace D2D1
 #endif // #ifndef D2D_USE_C_DEFINITIONS
 
 #endif // #ifndef _D2D1_HELPER_H_
-

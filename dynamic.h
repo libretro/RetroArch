@@ -158,4 +158,3 @@ extern unsigned subsystem_current_count;
 RETRO_END_DECLS
 
 #endif
-

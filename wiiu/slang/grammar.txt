@@ -52,4 +52,3 @@ End <- EndOfLine / EndOfFile
 ~_  <-  [ \t\r\n]*
 Indent  <-  [ \t]
 ~Space  <-  [ \t]
-

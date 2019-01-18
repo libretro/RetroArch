@@ -1029,4 +1029,3 @@ operator==(const D2D1_RECT_U &rect1, const D2D1_RECT_U &rect2)
 #endif // #ifndef D2D_USE_C_DEFINITIONS
 
 #endif // #ifndef _D2D1_HELPER_H_
-

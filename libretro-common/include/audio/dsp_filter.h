@@ -50,4 +50,3 @@ void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
 RETRO_END_DECLS
 
 #endif
-

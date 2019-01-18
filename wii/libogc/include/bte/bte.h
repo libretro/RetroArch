@@ -150,4 +150,3 @@ s32 bte_sendmessageasync(struct bte_pcb *pcb,void *message,u16 len,s32 (*sent)(v
 #endif /* __cplusplus */
 
 #endif
-

@@ -1186,4 +1186,3 @@ tcp_parseopt(struct tcp_pcb *pcb)
   }
 }
 #endif /* LWIP_TCP */
-

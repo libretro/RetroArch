@@ -313,4 +313,3 @@ inline float4 D2DGetScenePosition()
 #define D2DSampleInputAtOffset(index, offset)         InputTexture##index.Sample(InputSampler##index, __d2dstatic_uv##index.xy + offset * __d2dstatic_uv##index.zw)
 
 #define D2DSampleInputAtPosition(index, pos)          InputTexture##index.Sample(InputSampler##index, __d2dstatic_uv##index.xy + __d2dstatic_uv##index.zw * (pos - __d2dstatic_scenePos.xy))
-

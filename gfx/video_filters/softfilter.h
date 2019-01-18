@@ -186,4 +186,3 @@ struct softfilter_implementation
 #endif
 
 #endif
-

@@ -146,4 +146,3 @@ void ip_debug_print(struct pbuf *p);
 #endif /* IP_DEBUG */
 
 #endif /* __LWIP_IP_H__ */
-

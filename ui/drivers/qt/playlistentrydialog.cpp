@@ -295,4 +295,3 @@ void PlaylistEntryDialog::hideDialog()
 {
    reject();
 }
-

@@ -709,4 +709,3 @@ tcp_keepalive(struct tcp_pcb *pcb)
 }
 
 #endif /* LWIP_TCP */
-

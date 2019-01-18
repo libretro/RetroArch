@@ -80,4 +80,3 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
 
    buffer->first = (buffer->first + size) % buffer->size;
 }
-

@@ -104,4 +104,3 @@ extern const struct trans_stream_backend pipe_backend;
 RETRO_END_DECLS
 
 #endif
-

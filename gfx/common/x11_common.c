@@ -805,4 +805,3 @@ char *x11_get_wm_name(Display *dpy)
 
    return title;
 }
-

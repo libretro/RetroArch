@@ -523,4 +523,3 @@ extern struct tcp_pcb *tcp_tmp_pcb;      /* Only used for temporary storage. */
                             } while(0)
 #endif /* LWIP_DEBUG */
 #endif /* __LWIP_TCP_H__ */
-

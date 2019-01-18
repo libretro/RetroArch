@@ -219,4 +219,3 @@ void remove_input_state_hook(void)
       retro_unserialize_callback_original = NULL;
    }
 }
-

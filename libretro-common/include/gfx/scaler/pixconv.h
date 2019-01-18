@@ -100,4 +100,3 @@ void conv_copy(void *output, const void *input,
 RETRO_END_DECLS
 
 #endif
-

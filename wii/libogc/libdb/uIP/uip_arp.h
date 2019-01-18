@@ -144,4 +144,3 @@ s8_t uip_arp_arpquery(struct uip_netif *netif,struct uip_ip_addr *ipaddr,struct 
 s8_t uip_arp_arprequest(struct uip_netif *netif,struct uip_ip_addr *ipaddr);
 
 #endif /* __UIP_ARP_H__ */
-

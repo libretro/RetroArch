@@ -207,4 +207,3 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    NULL,
    NULL
 };
-

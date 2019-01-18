@@ -1356,4 +1356,3 @@ err_t bte_hci_initsub_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u
 	if(err!=ERR_OK) __bte_cmdfinish(state,err);
 	return err;
 }
-

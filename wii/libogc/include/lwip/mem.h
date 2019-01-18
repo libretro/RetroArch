@@ -57,4 +57,3 @@ void *mem_reallocm(void *mem, mem_size_t size);
 #endif
 
 #endif /* __LWIP_MEM_H__ */
-

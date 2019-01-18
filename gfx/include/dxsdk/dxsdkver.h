@@ -15,4 +15,3 @@
 #define _DXSDK_BUILD_MINOR    0        
 
 #endif // _DXSDKVER_H_
-

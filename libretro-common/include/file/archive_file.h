@@ -214,4 +214,3 @@ extern const struct file_archive_file_backend sevenzip_backend;
 RETRO_END_DECLS
 
 #endif
-

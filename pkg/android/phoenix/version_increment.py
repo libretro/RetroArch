@@ -17,4 +17,3 @@ dom1.documentElement.setAttribute("android:versionName", versionName)
 with open("AndroidManifest.xml", 'wb') as f:
     for line in dom1.toxml("utf-8"):
         f.write(line)
-

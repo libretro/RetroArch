@@ -1297,4 +1297,3 @@ const shader_backend_t gl_cg_backend = {
    RARCH_SHADER_CG,
    "gl_cg"
 };
-

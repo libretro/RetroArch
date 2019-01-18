@@ -736,4 +736,3 @@ HRESULT WINAPI
 #endif //__cplusplus
 
 #endif //__D3DX10TEX_H__
-

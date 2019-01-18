@@ -296,4 +296,3 @@ struct string_list *dir_list_new(const char *dir,
 
    return list;
 }
-

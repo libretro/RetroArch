@@ -441,4 +441,3 @@ void secondary_core_set_variable_update(void) { }
 void clear_controller_port_map(void) { }
 
 #endif
-

@@ -1455,4 +1455,3 @@ HRESULT WINAPI D3D10DisassembleEffect(_In_ ID3D10Effect *pEffect, BOOL EnableCol
 /*#pragma endregion*/
 
 #endif //__D3D10EFFECT_H__
-
