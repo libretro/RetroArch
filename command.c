@@ -42,7 +42,7 @@
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #ifdef HAVE_NEW_CHEEVOS
-#include "cheevos/fixup.h"
+#include "cheevos-new/fixup.h"
 #else
 #include "cheevos/var.h"
 #endif
