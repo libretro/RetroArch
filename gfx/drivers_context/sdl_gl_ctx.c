@@ -89,7 +89,12 @@ static void *sdl_ctx_init(video_frame_info_t *video_info, void *video_driver)
          goto error;
    }
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+   {
+      RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
+              SDL_GetError());
+
       goto error;
+   }
 
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
            SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
@@ -97,9 +102,6 @@ static void *sdl_ctx_init(video_frame_info_t *video_info, void *video_driver)
    return sdl;
 
 error:
-   RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
-              SDL_GetError());
-
    sdl_ctx_destroy_resources(sdl);
 
    if (sdl)

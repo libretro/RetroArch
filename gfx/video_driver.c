@@ -390,6 +390,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
    &gfx_ctx_x_egl,
 #endif
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
+   &gfx_ctx_sdl_gl,
+#endif
 #if defined(HAVE_KMS)
    &gfx_ctx_drm,
 #endif
@@ -404,9 +407,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
    &gfx_ctx_cgl,
-#endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
-   &gfx_ctx_sdl_gl,
 #endif
 #ifdef HAVE_OSMESA
    &gfx_ctx_osmesa,
