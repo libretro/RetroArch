@@ -121,6 +121,8 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -150,6 +152,8 @@ static void task_audio_mixer_handle_upload_ogg_and_play(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -179,6 +183,8 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -208,6 +214,8 @@ static void task_audio_mixer_handle_upload_flac_and_play(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -237,6 +245,8 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -266,6 +276,8 @@ static void task_audio_mixer_handle_upload_mp3_and_play(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -295,6 +307,8 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -324,6 +338,8 @@ static void task_audio_mixer_handle_upload_mod_and_play(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -353,6 +369,8 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
@@ -382,6 +400,8 @@ static void task_audio_mixer_handle_upload_wav_and_play(void *task_data,
 
    audio_driver_mixer_add_stream(&params);
 
+   if (img->path)
+      free(img->path);
    if (params.basename != NULL)
       free(params.basename);
    free(img);
