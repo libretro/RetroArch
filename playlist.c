@@ -834,7 +834,10 @@ static bool playlist_read_file(
 
       /* Empty playlist file */
       if (bytes_read == 0)
+      {
+         filestream_close(file);
          return true;
+      }
 
       filestream_seek(file, 0, SEEK_SET);
 
