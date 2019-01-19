@@ -554,6 +554,14 @@ static bool audio_mixer_play_ogg(
       goto error;
    }
 
+   /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
+   if (voice->types.ogg.buffer)
+      memalign_free(voice->types.ogg.buffer);
+   if (voice->types.ogg.stream)
+      stb_vorbis_close(voice->types.ogg.stream);
+   if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
+      voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
+
    voice->types.ogg.resampler      = resamp;
    voice->types.ogg.resampler_data = resampler_data;
    voice->types.ogg.buffer         = (float*)ogg_buffer;
