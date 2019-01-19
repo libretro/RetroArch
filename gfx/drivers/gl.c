@@ -1727,6 +1727,7 @@ static void *gl_init(const video_info_t *video,
    char *error_string                   = NULL;
    gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
    const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
+
    if (!gl || !ctx_driver)
       goto error;
 
@@ -1781,6 +1782,9 @@ static void *gl_init(const video_info_t *video,
 
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
+
+   if (string_is_equal(ctx_driver->ident, "null"))
+      goto error;
 
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
