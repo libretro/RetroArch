@@ -177,11 +177,12 @@ struct audio_mixer_voice
 #ifdef HAVE_IBXM
       struct
       {
-         unsigned    		position;
-         unsigned    		samples;
-         unsigned    		buf_samples;
-         int*               buffer;
-         struct replay*		stream;
+         unsigned          position;
+         unsigned          samples;
+         unsigned          buf_samples;
+         int*              buffer;
+         struct replay*    stream;
+         struct module*    module;
       } mod;
 #endif
    } types;
@@ -604,7 +605,12 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   replay = new_replay( module, s_rate, 1);
+   if (voice->types.mod.module)
+      dispose_module(voice->types.mod.module);
+
+   voice->types.mod.module = module;
+
+   replay = new_replay(module, s_rate, 1);
 
    if (!replay)
    {
@@ -629,11 +635,16 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
+   if (voice->types.mod.buffer)
+      memalign_free(voice->types.mod.buffer);
+   if (voice->types.mod.stream)
+      dispose_replay(voice->types.mod.stream);
+
    voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
-   voice->types.mod.samples       = 0; /* samples; */
+   voice->types.mod.samples        = 0; /* samples; */
 
    return true;
 
