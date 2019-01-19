@@ -648,9 +648,8 @@ static void load_thumbnail(const char *path)
    /* Do nothing if current thumbnail path hasn't changed */
    if (!string_is_empty(thumbnail.path) && !string_is_empty(thumbnail.path))
    {
-      if (string_is_equal(thumbnail.path, path)) {
+      if (string_is_equal(thumbnail.path, path))
          return;
-      }
    }
    
    /* 'Reset' current thumbnail */
@@ -670,25 +669,33 @@ static void load_thumbnail(const char *path)
          if (rpng_load_image_argb(path, &png_data, &width, &height))
          {
             /* Have to crop image if larger than max allowed size... */
-            if (width > THUMB_MAX_WIDTH) {
+            if (width > THUMB_MAX_WIDTH)
+            {
                x_offset = (width - THUMB_MAX_WIDTH) >> 1;
                thumbnail.width = THUMB_MAX_WIDTH;
-            } else {
+            }
+            else
+            {
                x_offset = 0;
                thumbnail.width = width;
             }
-            if (height > THUMB_MAX_HEIGHT) {
+            if (height > THUMB_MAX_HEIGHT)
+            {
                y_offset = (height - THUMB_MAX_HEIGHT) >> 1;
                thumbnail.height = THUMB_MAX_HEIGHT;
-            } else {
+            }
+            else
+            {
                y_offset = 0;
                thumbnail.height = height;
             }
 
             /* Copy (cropped) image to thumbnail buffer, performing
              * pixel format conversion */
-            for (x = 0; x < thumbnail.width; x++) {
-               for (y = 0; y < thumbnail.height; y++) {
+            for (x = 0; x < thumbnail.width; x++)
+            {
+               for (y = 0; y < thumbnail.height; y++)
+               {
                   thumbnail.data[x + (y * thumbnail.width)] =
                      argb32_to_pixel_platform_format(png_data[(x + x_offset) + ((y + y_offset) * width)]);
                }
@@ -721,28 +728,36 @@ static void rgui_render_thumbnail(void)
        *   cannot assume fb_width and fb_height are constant and
        *   >= thumbnail.width and thumbnail.height (even though
        *   they are...) */
-      if (thumbnail.width <= fb_width) {
+      if (thumbnail.width <= fb_width)
+      {
          thumb_x_offset = 0;
          fb_x_offset = (fb_width - thumbnail.width) >> 1;
          width = thumbnail.width;
-      } else {
+      }
+      else
+      {
          thumb_x_offset = (thumbnail.width - fb_width) >> 1;
          fb_x_offset = 0;
          width = fb_width;
       }
-      if (thumbnail.height <= fb_height) {
+      if (thumbnail.height <= fb_height)
+      {
          thumb_y_offset = 0;
          fb_y_offset = (fb_height - thumbnail.height) >> 1;
          height = thumbnail.height;
-      } else {
+      }
+      else
+      {
          thumb_y_offset = (thumbnail.height - fb_height) >> 1;
          fb_y_offset = 0;
          height = fb_height;
       }
       
       /* Copy thumbnail to framebuffer */
-      for (y = 0; y < height; y++) {
-         for (x = 0; x < width; x++) {
+      for (y = 0; y < height; y++)
+      {
+         for (x = 0; x < width; x++)
+         {
             rgui_framebuf_data[(y + fb_y_offset) * (fb_pitch >> 1) + (x + fb_x_offset)] =
                thumbnail.data[(x + thumb_x_offset) + ((y + thumb_y_offset) * thumbnail.width)];
          }
@@ -829,6 +844,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 {
    rgui_theme_t theme_colors;
    rgui->color_theme = settings->uints.menu_rgui_color_theme;
+
    if (rgui->color_theme == RGUI_THEME_CUSTOM)
    {
       theme_colors.hover_color = settings->uints.menu_entry_hover_color;
@@ -1691,16 +1707,12 @@ static void rgui_update_thumbnail_path(void *userdata)
             tmp_new[0] = '\0';
             
             while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
-            {
                *scrub_char_pointer = '_';
-            }
             
             fill_pathname_join(tmp_new, new_path, tmp, PATH_MAX_LENGTH * sizeof(char));
             
             if (!string_is_empty(tmp_new))
-            {
                strlcpy(new_path, tmp_new, sizeof(new_path));
-            }
             
             free(tmp_new);
             tmp_new = NULL;
@@ -1713,9 +1725,7 @@ static void rgui_update_thumbnail_path(void *userdata)
                strlcat(new_path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(new_path));
                
                if (!string_is_empty(new_path))
-               {
                   rgui->thumbnail_path = strdup(new_path);
-               }
             }
          }
       }

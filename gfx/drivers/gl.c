@@ -2563,9 +2563,10 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
 
 static void gl_unload_texture(void *video_data, uintptr_t data, bool threaded)
 {
+   GLuint glid;
    if (!data)
       return;
-   GLuint glid = (GLuint)data;
+   glid = (GLuint)data;
 
 #ifdef HAVE_THREADS
    if (threaded)
