@@ -235,7 +235,6 @@ static void menu_list_flush_stack(menu_list_t *list,
    }
 }
 
-
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt)
@@ -337,7 +336,6 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       current        = first;
       current_is_dir = is_dir;
    }
-
 
    scroll_value = list->size - 1;
    menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);

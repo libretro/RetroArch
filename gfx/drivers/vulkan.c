@@ -1001,12 +1001,14 @@ static void vulkan_set_image(void *handle,
 
    if (num_semaphores > 0)
    {
-      vk->hw.wait_dst_stages = (VkPipelineStageFlags*)
+      VkPipelineStageFlags *stage_flags = (VkPipelineStageFlags*)
          realloc(vk->hw.wait_dst_stages,
             sizeof(VkPipelineStageFlags) * vk->hw.num_semaphores);
 
       /* If this fails, we're screwed anyways. */
-      retro_assert(vk->hw.wait_dst_stages);
+      retro_assert(stage_flags);
+
+      vk->hw.wait_dst_stages = stage_flags;
 
       for (i = 0; i < vk->hw.num_semaphores; i++)
          vk->hw.wait_dst_stages[i] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -1030,11 +1032,14 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
    unsigned required_capacity = num_cmd + 1;
    if (required_capacity > vk->hw.capacity_cmd)
    {
-      vk->hw.cmd = (VkCommandBuffer*)realloc(vk->hw.cmd,
+      VkCommandBuffer *hw_cmd = (VkCommandBuffer*)
+         realloc(vk->hw.cmd,
             sizeof(VkCommandBuffer) * required_capacity);
 
       /* If this fails, we're just screwed. */
-      retro_assert(vk->hw.cmd);
+      retro_assert(hw_cmd);
+
+      vk->hw.cmd          = hw_cmd;
       vk->hw.capacity_cmd = required_capacity;
    }
 
@@ -2740,4 +2745,3 @@ video_driver_t video_vulkan = {
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
 };
-

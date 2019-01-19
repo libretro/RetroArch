@@ -122,5 +122,3 @@ PyMODINIT_FUNC initpkgcrypt(void)
 {
    (void) Py_InitModule("pkgcrypt", cryptMethods);
 }
-
-

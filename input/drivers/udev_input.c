@@ -134,7 +134,6 @@ struct udev_input
    struct udev *udev;
    struct udev_monitor *monitor;
 
-
    const input_device_driver_t *joypad;
 
    int fd;
@@ -225,7 +224,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS)
+   if (port >= MAX_USERS || !video_driver_cb_has_focus())
       return NULL;
 
    for (i = 0; i < udev->num_devices; ++i)

@@ -96,7 +96,7 @@ static INLINE void retro_sleep(unsigned msec)
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
 #elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-	/* TODO/FIXME */
+   SleepEx(msec, FALSE);
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)

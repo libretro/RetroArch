@@ -14,7 +14,6 @@
 #ifndef __D3DX11_H__
 #define __D3DX11_H__
 
-
 // Defines
 #include <limits.h>
 #include <float.h>
@@ -43,15 +42,12 @@
 #endif
 #endif
 
-
-
 // Includes
 #include "d3d11.h"
 #include "d3dx11.h"
 #include "d3dx11core.h"
 #include "d3dx11tex.h"
 #include "d3dx11async.h"
-
 
 // Errors
 #define _FACDD  0x876
@@ -69,6 +65,4 @@ enum _D3DX11_ERR {
     D3DX11_ERR_CANNOT_REMOVE_LAST_ITEM		    = MAKE_DDHRESULT(2908),
 };
 
-
 #endif //__D3DX11_H__
-

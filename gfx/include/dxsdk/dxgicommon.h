@@ -5,7 +5,6 @@
 #ifndef __dxgicommon_h__
 #define __dxgicommon_h__
 
-
 typedef struct DXGI_RATIONAL
 {
     UINT Numerator;
@@ -53,4 +52,3 @@ typedef enum DXGI_COLOR_SPACE_TYPE
 } DXGI_COLOR_SPACE_TYPE;
 
 #endif // __dxgicommon_h__
-

@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -300,6 +300,7 @@ typedef struct settings
       bool video_window_save_positions;
 
       bool sustained_performance_mode;
+      bool playlist_use_old_format;
    } bools;
 
    struct
@@ -410,6 +411,7 @@ typedef struct settings
       unsigned menu_bg_light_color;
       unsigned menu_border_dark_color;
       unsigned menu_border_light_color;
+      unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;

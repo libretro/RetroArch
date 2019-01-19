@@ -87,26 +87,6 @@ if [ "$OS" = "Win32" ]; then
 	echo "$echobuf ... $WINDRES"
 fi
 
-if [ "$HAVE_QT" != "no" ]; then
-	echobuf="Checking for moc"
-	if [ -z "$MOC" ]; then
-		MOC_PATH="none"
-		for moc in moc-qt5 moc; do
-			MOC="$(exists "$moc")" || MOC=""
-			[ "${MOC}" ] && {
-				MOC_PATH="$MOC"
-				break
-			}
-		done
-	fi
-
-	echo "$echobuf ... $MOC_PATH"
-
-	if [ "$MOC_PATH" = "none" ]; then
-		die : 'Warning: moc not found, Qt companion support will be disabled.'
-	fi
-fi
-
 if [ -z "$PKG_CONF_PATH" ]; then
 	PKG_CONF_PATH="none"
 	for pkgconf in pkgconf pkg-config; do

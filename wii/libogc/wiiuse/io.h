@@ -23,4 +23,3 @@ int wiiuse_io_write(struct wiimote_t* wm, ubyte* buf, int len);
 #endif
 
 #endif
-

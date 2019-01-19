@@ -359,7 +359,6 @@ namespace D2D1
             return skewY;
         }
 
-
         static
         COM_DECLSPEC_NOTHROW
         inline
@@ -467,7 +466,6 @@ namespace D2D1
             return result;
         }
     };
-
 
     class Matrix5x4F : public D2D1_MATRIX_5X4_F
     {
@@ -921,4 +919,3 @@ namespace D2D1
 #endif // #ifndef D2D_USE_C_DEFINITIONS
 
 #endif // #ifndef _D2D1_HELPER_H_
-

@@ -30,16 +30,12 @@
 #include <audioclient.h>
 
 #ifdef _MSC_VER
-/* IID_IAudioClient                 1CB9AD4C-DBFA-4c32-B178-C2F568A703B2 */
-static const GUID IID_IAudioClient = { 0x1CB9AD4C, 0xDBFA, 0xB178, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2 };
-/* IID_IAudioRenderClient           F294ACFC-3146-4483-A7BF-ADDCA7C260E2 */
-static const GUID IID_IAudioRenderClient = { 0xF294ACFC, 0x3146, 0x4483, 0xA7BF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2 };
-/* IID_IMMDeviceEnumerator          A95664D2-9614-4F35-A746-DE8DB63617E6 */
-static const GUID IID_IMMDeviceEnumerator = { 0xA95664D2, 0x9614, 0x4F35, 0xA746, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6 };
-/* CLSID_MMDeviceEnumerator         BCDE0395-E52F-467C-8E3D-C4579291692E */
-static const GUID CLSID_MMDeviceEnumerator = { 0xBCDE0395, 0xE52F, 0x467C, 0x8E3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E };
-/* KSDATAFORMAT_SUBTYPE_IEEE_FLOAT  00000003-0000-0010-8000-00aa00389b71 */
-static const GUID KSDATAFORMAT_SUBTYPE_IEEE_FLOAT = { 0x00000003, 0x0000, 0x0010, 0x8000, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71 };
+DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4C, 0xDBFA, 0x4C32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
+DEFINE_GUID(IID_IAudioRenderClient, 0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2);
+DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
+DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
+#undef KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
+DEFINE_GUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 0x00000003, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 #endif
 
 #include <lists/string_list.h>
@@ -593,7 +589,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned u1, unsigned *u2)
 {
    HRESULT hr;
-   bool com_initialized      = false;
    UINT32 frame_count        = 0;
    REFERENCE_TIME dev_period = 0;
    BYTE *dest                = NULL;
@@ -604,11 +599,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
-
-   hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-   WASAPI_HR_CHECK(hr, "CoInitializeEx", goto error);
-
-   com_initialized = true;
 
    w->device = wasapi_init_device(dev_id);
    if (!w->device && dev_id)
@@ -689,8 +679,6 @@ error:
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
-   if (com_initialized)
-      CoUninitialize();
 
    return NULL;
 }
@@ -902,7 +890,6 @@ static void wasapi_free(void *wh)
       _IAudioClient_Stop(w->client);
    WASAPI_RELEASE(w->client);
    WASAPI_RELEASE(w->device);
-   CoUninitialize();
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);

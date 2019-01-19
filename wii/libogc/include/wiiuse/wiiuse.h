@@ -191,7 +191,6 @@ typedef short sword;
 typedef unsigned int uint;
 typedef char sint;
 
-
 struct wiimote_t;
 struct vec3b_t;
 struct orient_t;
@@ -258,7 +257,6 @@ struct cmd_blk_t
 	struct cmd_blk_t *next;
 };
 
-
 /**
  *	@struct vec2b_t
  *	@brief Unsigned x,y byte vector.
@@ -266,7 +264,6 @@ struct cmd_blk_t
 typedef struct vec2b_t {
 	ubyte x, y;
 } vec2b_t;
-
 
 /**
 *	@struct vec3b_t
@@ -284,7 +281,6 @@ typedef struct vec3w_t {
 	uword x, y, z;
 } vec3w_t;
 
-
 /**
  *	@struct vec3f_t
  *	@brief Signed x,y,z float struct.
@@ -292,7 +288,6 @@ typedef struct vec3w_t {
 typedef struct vec3f_t {
 	float x, y, z;
 } vec3f_t;
-
 
 /**
  *	@struct orient_t
@@ -309,7 +304,6 @@ typedef struct orient_t {
 	float a_pitch;					/**< absolute pitch, unsmoothed				*/
 } orient_t;
 
-
 /**
  *	@struct gforce_t
  *	@brief Gravity force struct.
@@ -317,7 +311,6 @@ typedef struct orient_t {
 typedef struct gforce_t {
 	float x, y, z;
 } gforce_t;
-
 
 /**
  *	@struct accel_t
@@ -332,7 +325,6 @@ typedef struct accel_t {
 	float st_alpha;					/**< alpha value for smoothing [0-1]	*/
 } accel_t;
 
-
 /**
  *	@struct ir_dot_t
  *	@brief A single IR source.
@@ -345,7 +337,6 @@ typedef struct ir_dot_t {
 
 	ubyte size;						/**< size of the IR dot (0-15)			*/
 } ir_dot_t;
-
 
 typedef struct fdot_t {
 	float x,y;
@@ -368,7 +359,6 @@ typedef enum aspect_t {
 	WIIUSE_ASPECT_4_3,
 	WIIUSE_ASPECT_16_9
 } aspect_t;
-
 
 /**
  *	@struct ir_t
@@ -404,7 +394,6 @@ typedef struct ir_t {
 
 } ir_t;
 
-
 /**
  *	@struct joystick_t
  *	@brief Joystick calibration structure.
@@ -430,7 +419,6 @@ typedef struct joystick_t {
 	float mag;						/**< magnitude of the joystick (range 0-1)	*/
 } joystick_t;
 
-
 /**
  *	@struct nunchuk_t
  *	@brief Nunchuk expansion device.
@@ -450,7 +438,6 @@ typedef struct nunchuk_t {
 	struct orient_t orient;			/**< current orientation on each axis		*/
 	struct gforce_t gforce;			/**< current gravity forces on each axis	*/
 } nunchuk_t;
-
 
 /**
  *	@struct classic_ctrl_t
@@ -472,7 +459,6 @@ typedef struct classic_ctrl_t {
 	struct joystick_t rjs;			/**< right joystick calibration				*/
    ubyte type;                  /**< original, pro, wiiu pro               */
 } classic_ctrl_t;
-
 
 /**
  *	@struct guitar_hero_3_t
@@ -537,7 +523,6 @@ typedef struct expansion_t {
 	};
 } expansion_t;
 
-
 /**
  *	@enum win32_bt_stack_t
  *	@brief	Available bluetooth stacks for Windows.
@@ -547,7 +532,6 @@ typedef enum win_bt_stack_t {
 	WIIUSE_STACK_MS,
 	WIIUSE_STACK_BLUESOLEIL
 } win_bt_stack_t;
-
 
 /**
  *	@struct wiimote_state_t
@@ -560,7 +544,6 @@ typedef struct wiimote_state_t {
 	struct vec3w_t accel;
 	struct expansion_t exp;
 } wiimote_state_t;
-
 
 /**
  *	@enum WIIUSE_EVENT_TYPE

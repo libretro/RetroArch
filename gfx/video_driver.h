@@ -509,7 +509,6 @@ typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
 typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
 
-
 typedef struct gfx_ctx_driver
 {
    /* The opaque pointer is the underlying video driver data (e.g. gl_t for
@@ -749,7 +748,6 @@ typedef struct video_poke_interface
          const struct retro_hw_render_interface **iface);
 } video_poke_interface_t;
 
-
 /* msg is for showing a message on the screen
  * along with the video frame. */
 typedef bool (*video_driver_frame_t)(void *data,
@@ -831,7 +829,6 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
-
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
@@ -1301,7 +1298,6 @@ extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t switch_ctx;
 extern const gfx_ctx_driver_t orbis_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;

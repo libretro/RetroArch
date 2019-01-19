@@ -14,9 +14,7 @@
 
 #include <dwrite_1.h>
 
-
 interface IDWriteFontFallback;
-
 
 /// <summary>
 /// How to align glyphs to the margin.
@@ -36,7 +34,6 @@ enum DWRITE_OPTICAL_ALIGNMENT
     /// </summary>
     DWRITE_OPTICAL_ALIGNMENT_NO_SIDE_BEARINGS,
 };
-
 
 /// <summary>
 /// Whether to enable grid-fitting of glyph outlines (a.k.a. hinting).
@@ -59,7 +56,6 @@ enum DWRITE_GRID_FIT_MODE
     DWRITE_GRID_FIT_MODE_ENABLED
 };
 
-
 /// <summary>
 /// Overall metrics associated with text after layout.
 /// All coordinates are in device independent pixels (DIPs).
@@ -73,7 +69,6 @@ struct DWRITE_TEXT_METRICS1 : DWRITE_TEXT_METRICS
     /// </summary>
     FLOAT heightIncludingTrailingWhitespace;
 };
-
 
 /// <summary>
 /// The text renderer interface represents a set of application-defined
@@ -243,7 +238,6 @@ interface DWRITE_DECLARE_INTERFACE("D3E0E934-22A0-427E-AAE4-7D9574B59DB1") IDWri
     using IDWriteTextRenderer::DrawInlineObject;
 };
 
-
 /// <summary>
 /// The format of text used for text layout.
 /// </summary>
@@ -324,7 +318,6 @@ interface DWRITE_DECLARE_INTERFACE("5F174B49-0D8B-4CFB-8BCA-F1CCE9D06C67") IDWri
         __out IDWriteFontFallback** fontFallback
         ) PURE;
 };
-
 
 /// <summary>
 /// The text layout interface represents a block of text after it has
@@ -426,7 +419,6 @@ interface DWRITE_DECLARE_INTERFACE("1093C18F-8D5E-43F0-B064-0917311B525E") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// The text analyzer interface represents a set of application-defined
 /// callbacks that perform rendering of text, inline objects, and decorations
@@ -517,7 +509,6 @@ interface DWRITE_DECLARE_INTERFACE("553A9FF3-5693-4DF7-B52B-74806F7F2EB9") IDWri
     using IDWriteTextAnalyzer1::GetGlyphOrientationTransform;
 };
 
-
 /// <summary>
 /// A font fallback definition used for mapping characters to fonts capable of
 /// supporting them.
@@ -563,7 +554,6 @@ interface DWRITE_DECLARE_INTERFACE("EFA008F9-F7A1-48BF-B05C-F224713CC0FF") IDWri
         _Out_ FLOAT* scale
         ) PURE;
 };
-
 
 /// <summary>
 /// Builder used to create a font fallback definition by appending a series of
@@ -970,6 +960,5 @@ interface DWRITE_DECLARE_INTERFACE("0439fc60-ca44-4994-8dee-3a9af7b732ec") IDWri
 
     using IDWriteFactory::CreateGlyphRunAnalysis;
 };
-
 
 #endif /* DWRITE_2_H_INCLUDED */

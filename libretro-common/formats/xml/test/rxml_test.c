@@ -64,4 +64,3 @@ int main(int argc, char *argv[])
 
    rxml_log_document(argv[1]);
 }
-

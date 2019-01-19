@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,20 +41,17 @@ typedef interface IDXGIInfoQueue IDXGIInfoQueue;
 
 #endif 	/* __IDXGIInfoQueue_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIDebug_FWD_DEFINED__
 #define __IDXGIDebug_FWD_DEFINED__
 typedef interface IDXGIDebug IDXGIDebug;
 
 #endif 	/* __IDXGIDebug_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIDebug1_FWD_DEFINED__
 #define __IDXGIDebug1_FWD_DEFINED__
 typedef interface IDXGIDebug1 IDXGIDebug1;
 
 #endif 	/* __IDXGIDebug1_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -67,7 +60,6 @@ typedef interface IDXGIDebug1 IDXGIDebug1;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_dxgidebug_0000_0000 */
 /* [local] */ 
@@ -154,7 +146,6 @@ typedef struct DXGI_INFO_QUEUE_FILTER
 #define DXGI_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT 1024
 HRESULT WINAPI DXGIGetDebugInterface(REFIID riid, void **ppDebug);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0000_v0_0_s_ifspec;
 
@@ -163,7 +154,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0000_v0_0_s_ifspec;
 
 /* interface IDXGIInfoQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_IDXGIInfoQueue;
 
@@ -647,7 +637,6 @@ EXTERN_C const IID IID_IDXGIInfoQueue;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIInfoQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -656,7 +645,6 @@ EXTERN_C const IID IID_IDXGIInfoQueue;
 
 #define IDXGIInfoQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIInfoQueue_SetMessageCountLimit(This,Producer,MessageCountLimit)	\
     ( (This)->lpVtbl -> SetMessageCountLimit(This,Producer,MessageCountLimit) ) 
@@ -771,21 +759,15 @@ EXTERN_C const IID IID_IDXGIInfoQueue;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIInfoQueue_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIDebug_INTERFACE_DEFINED__
 #define __IDXGIDebug_INTERFACE_DEFINED__
 
 /* interface IDXGIDebug */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_IDXGIDebug;
 
@@ -837,7 +819,6 @@ EXTERN_C const IID IID_IDXGIDebug;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIDebug_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -847,27 +828,20 @@ EXTERN_C const IID IID_IDXGIDebug;
 #define IDXGIDebug_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define IDXGIDebug_ReportLiveObjects(This,apiid,flags)	\
     ( (This)->lpVtbl -> ReportLiveObjects(This,apiid,flags) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIDebug_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIDebug1_INTERFACE_DEFINED__
 #define __IDXGIDebug1_INTERFACE_DEFINED__
 
 /* interface IDXGIDebug1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_IDXGIDebug1;
 
@@ -930,7 +904,6 @@ EXTERN_C const IID IID_IDXGIDebug1;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIDebug1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -940,10 +913,8 @@ EXTERN_C const IID IID_IDXGIDebug1;
 #define IDXGIDebug1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define IDXGIDebug1_ReportLiveObjects(This,apiid,flags)	\
     ( (This)->lpVtbl -> ReportLiveObjects(This,apiid,flags) ) 
-
 
 #define IDXGIDebug1_EnableLeakTrackingForThread(This)	\
     ( (This)->lpVtbl -> EnableLeakTrackingForThread(This) ) 
@@ -956,14 +927,9 @@ EXTERN_C const IID IID_IDXGIDebug1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIDebug1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgidebug_0000_0003 */
 /* [local] */ 
@@ -978,7 +944,6 @@ DEFINE_GUID(IID_IDXGIInfoQueue,0xD67441C7,0x672A,0x476f,0x9E,0x82,0xCD,0x55,0xB4
 DEFINE_GUID(IID_IDXGIDebug,0x119E7452,0xDE9E,0x40fe,0x88,0x06,0x88,0xF9,0x0C,0x12,0xB4,0x41);
 DEFINE_GUID(IID_IDXGIDebug1,0xc5a05f0c,0x16f2,0x4adf,0x9f,0x4d,0xa8,0xc4,0xd5,0x8a,0xc5,0x50);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0003_v0_0_s_ifspec;
 
@@ -991,5 +956,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgidebug_0000_0003_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

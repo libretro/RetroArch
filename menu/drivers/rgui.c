@@ -55,6 +55,348 @@
 
 typedef struct
 {
+   uint32_t hover_color;
+   uint32_t normal_color;
+   uint32_t title_color;
+   uint32_t bg_dark_color;
+   uint32_t bg_light_color;
+   uint32_t border_dark_color;
+   uint32_t border_light_color;
+} rgui_theme_t;
+
+static const rgui_theme_t rgui_theme_classic_red = {
+   0xFFFF362B, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFFF362B, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC08C0000, /* border_dark_color */
+   0xC0CC0E03  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_orange = {
+   0xFFF87217, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFF87217, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC0962800, /* border_dark_color */
+   0xC0E46C03  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_yellow = {
+   0xFFFFD801, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFFFD801, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC0AC7800, /* border_dark_color */
+   0xC0F3C60D  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_green = {
+   0xFF64FF64, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFF64FF64, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC0204020, /* border_dark_color */
+   0xC0408040  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_blue = {
+   0xFF48BEFF, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFF48BEFF, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC0005BA6, /* border_dark_color */
+   0xC02E94E2  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_violet = {
+   0xFFD86EFF, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFD86EFF, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC04C0A60, /* border_dark_color */
+   0xC0842DCE  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_classic_grey = {
+   0xFFB6C1C7, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFB6C1C7, /* title_color */
+   0xC0202020, /* bg_dark_color */
+   0xC0404040, /* bg_light_color */
+   0xC0505050, /* border_dark_color */
+   0xC0798A99  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_legacy_red = {
+   0xFFFFBDBD, /* hover_color */
+   0xFFFAF6D5, /* normal_color */
+   0xFFFF948A, /* title_color */
+   0xC09E4137, /* bg_dark_color */
+   0xC0B34B41, /* bg_light_color */
+   0xC0BF5E58, /* border_dark_color */
+   0xC0F27A6F  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_dark_purple = {
+   0xFFF2B5D6, /* hover_color */
+   0xFFE8D0CC, /* normal_color */
+   0xFFC79FC2, /* title_color */
+   0xC0562D56, /* bg_dark_color */
+   0xC0663A66, /* bg_light_color */
+   0xC0885783, /* border_dark_color */
+   0xC0A675A1  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_midnight_blue = {
+   0xFFB2D3ED, /* hover_color */
+   0xFFD3DCDE, /* normal_color */
+   0xFF86A1BA, /* title_color */
+   0xC024374A, /* bg_dark_color */
+   0xC03C4D5E, /* bg_light_color */
+   0xC046586A, /* border_dark_color */
+   0xC06D7F91  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_golden = {
+   0xFFFFE666, /* hover_color */
+   0xFFFFFFDC, /* normal_color */
+   0xFFFFCC00, /* title_color */
+   0xC0B88D0B, /* bg_dark_color */
+   0xC0BF962B, /* bg_light_color */
+   0xC0e1ad21, /* border_dark_color */
+   0xC0FCC717  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_electric_blue = {
+   0xFF7DF9FF, /* hover_color */
+   0xFFDBE9F4, /* normal_color */
+   0xFF86CDE0, /* title_color */
+   0xC02E69C6, /* bg_dark_color */
+   0xC0007FFF, /* bg_light_color */
+   0xC034A5D8, /* border_dark_color */
+   0xC070C9FF  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_apple_green = {
+   0xFFB0FC64, /* hover_color */
+   0xFFD8F2CB, /* normal_color */
+   0xFFA6D652, /* title_color */
+   0xC04F7942, /* bg_dark_color */
+   0xC0688539, /* bg_light_color */
+   0xC0608E3A, /* border_dark_color */
+   0xC09AB973  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_volcanic_red = {
+   0xFFFFCC99, /* hover_color */
+   0xFFD3D3D3, /* normal_color */
+   0xFFDDADAF, /* title_color */
+   0xC0922724, /* bg_dark_color */
+   0xC0BD0F1E, /* bg_light_color */
+   0xC0CE2029, /* border_dark_color */
+   0xC0FF0000  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_lagoon = {
+   0xFFBCE1EB, /* hover_color */
+   0xFFCFCFC4, /* normal_color */
+   0xFF86C7C7, /* title_color */
+   0xC0495C6B, /* bg_dark_color */
+   0xC0526778, /* bg_light_color */
+   0xC058848F, /* border_dark_color */
+   0xC060909C  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_brogrammer = {
+   0xFF3498DB, /* hover_color */
+   0xFFECF0F1, /* normal_color */
+   0xFF2ECC71, /* title_color */
+   0xC0242424, /* bg_dark_color */
+   0xC0242424, /* bg_light_color */
+   0xC0E74C3C, /* border_dark_color */
+   0xC0E74C3C  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_dracula = {
+   0xFFBD93F9, /* hover_color */
+   0xFFF8F8F2, /* normal_color */
+   0xFFFF79C6, /* title_color */
+   0xC02F3240, /* bg_dark_color */
+   0xC02F3240, /* bg_light_color */
+   0xC06272A4, /* border_dark_color */
+   0xC06272A4  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_fairyfloss = {
+   0xFFFFF352, /* hover_color */
+   0xFFF8F8F2, /* normal_color */
+   0xFFFFB8D1, /* title_color */
+   0xC0675F87, /* bg_dark_color */
+   0xC0675F87, /* bg_light_color */
+   0xC08077A8, /* border_dark_color */
+   0xC08077A8  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_flatui = {
+   0xFF0A74B9, /* hover_color */
+   0xFF2C3E50, /* normal_color */
+   0xFF8E44AD, /* title_color */
+   0xE0ECF0F1, /* bg_dark_color */
+   0xE0ECF0F1, /* bg_light_color */
+   0xE095A5A6, /* border_dark_color */
+   0xE095A5A6  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_gruvbox_dark = {
+   0xFFFE8019, /* hover_color */
+   0xFFEBDBB2, /* normal_color */
+   0xFF83A598, /* title_color */
+   0xC03D3D3D, /* bg_dark_color */
+   0xC03D3D3D, /* bg_light_color */
+   0xC099897A, /* border_dark_color */
+   0xC099897A  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_gruvbox_light = {
+   0xFFAF3A03, /* hover_color */
+   0xFF3C3836, /* normal_color */
+   0xFF076678, /* title_color */
+   0xE0FBEBC7, /* bg_dark_color */
+   0xE0FBEBC7, /* bg_light_color */
+   0xE0928374, /* border_dark_color */
+   0xE0928374  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_hacking_the_kernel = {
+   0xFF83FF83, /* hover_color */
+   0xFF00E000, /* normal_color */
+   0xFF00FF00, /* title_color */
+   0xC0000000, /* bg_dark_color */
+   0xC0000000, /* bg_light_color */
+   0xC0036303, /* border_dark_color */
+   0xC0036303  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_nord = {
+   0xFF8FBCBB, /* hover_color */
+   0xFFD8DEE9, /* normal_color */
+   0xFF81A1C1, /* title_color */
+   0xC0363C4F, /* bg_dark_color */
+   0xC0363C4F, /* bg_light_color */
+   0xC04E596E, /* border_dark_color */
+   0xC04E596E  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_nova = {
+   0XFF7FC1CA, /* hover_color */
+   0XFFC5D4DD, /* normal_color */
+   0XFF9A93E1, /* title_color */
+   0xC0485B66, /* bg_dark_color */
+   0xC0485B66, /* bg_light_color */
+   0xC0627985, /* border_dark_color */
+   0xC0627985  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_one_dark = {
+   0XFF98C379, /* hover_color */
+   0XFFBBBBBB, /* normal_color */
+   0XFFD19A66, /* title_color */
+   0xC02D323B, /* bg_dark_color */
+   0xC02D323B, /* bg_light_color */
+   0xC0495162, /* border_dark_color */
+   0xC0495162  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_palenight = {
+   0xFFC792EA, /* hover_color */
+   0xFFBFC7D5, /* normal_color */
+   0xFF82AAFF, /* title_color */
+   0xC02F3347, /* bg_dark_color */
+   0xC02F3347, /* bg_light_color */
+   0xC0697098, /* border_dark_color */
+   0xC0697098  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_solarized_dark = {
+   0xFFB58900, /* hover_color */
+   0xFF839496, /* normal_color */
+   0xFF268BD2, /* title_color */
+   0xC0003542, /* bg_dark_color */
+   0xC0003542, /* bg_light_color */
+   0xC093A1A1, /* border_dark_color */
+   0xC093A1A1  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_solarized_light = {
+   0xFFB58900, /* hover_color */
+   0xFF657B83, /* normal_color */
+   0xFF268BD2, /* title_color */
+   0xE0FDEDDF, /* bg_dark_color */
+   0xE0FDEDDF, /* bg_light_color */
+   0xE093A1A1, /* border_dark_color */
+   0xE093A1A1  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_tango_dark = {
+   0xFF8AE234, /* hover_color */
+   0xFFEEEEEC, /* normal_color */
+   0xFF729FCF, /* title_color */
+   0xC0384042, /* bg_dark_color */
+   0xC0384042, /* bg_light_color */
+   0xC06A767A, /* border_dark_color */
+   0xC06A767A  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_tango_light = {
+   0xFF4E9A06, /* hover_color */
+   0xFF2E3436, /* normal_color */
+   0xFF204A87, /* title_color */
+   0xE0EEEEEC, /* bg_dark_color */
+   0xE0EEEEEC, /* bg_light_color */
+   0xE0C7C7C7, /* border_dark_color */
+   0xE0C7C7C7  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_zenburn = {
+   0xFFF0DFAF, /* hover_color */
+   0xFFDCDCCC, /* normal_color */
+   0xFF8FB28F, /* title_color */
+   0xC04F4F4F, /* bg_dark_color */
+   0xC04F4F4F, /* bg_light_color */
+   0xC0636363, /* border_dark_color */
+   0xC0636363  /* border_light_color */
+};
+
+static const rgui_theme_t rgui_theme_anti_zenburn = {
+   0xFF336C6C, /* hover_color */
+   0xFF232333, /* normal_color */
+   0xFF205070, /* title_color */
+   0xE0C0C0C0, /* bg_dark_color */
+   0xE0C0C0C0, /* bg_light_color */
+   0xE0A0A0A0, /* border_dark_color */
+   0xE0A0A0A0  /* border_light_color */
+};
+
+typedef struct
+{
+   uint16_t hover_color;
+   uint16_t normal_color;
+   uint16_t title_color;
+   uint16_t bg_dark_color;
+   uint16_t bg_light_color;
+   uint16_t border_dark_color;
+   uint16_t border_light_color;
+} rgui_colors_t;
+
+typedef struct
+{
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
@@ -65,75 +407,104 @@ typedef struct
    bool border_thickness;
    float scroll_y;
    char *msgbox;
+   unsigned color_theme;
+   rgui_colors_t colors;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
 
-/* Note: if we knew what colour format each of these
- * special cases required, we could do away with all
- * this nonsense and handle it inside a single colour
- * conversion function...
- * In the meantime, we'll use the existing obfuscated
- * values for all the non-standard platforms, and leave
- * it messy... */
-#if defined(GEKKO) || defined(PSP)
+#if defined(PS2)
 
-/* Is this supposed to be 4444 ABGR?
- * Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define HOVER_COLOR(settings)        ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
-#define NORMAL_COLOR(settings)       0x7FFF
-#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
-#define BG_DARK_COLOR(settings)      ((6 << 12) | (1 << 8) | (1 << 4) | (1 << 0))
-#define BG_LIGHT_COLOR(settings)     ((6 << 12) | (2 << 8) | (2 << 4) | (2 << 0))
-#define BORDER_DARK_COLOR(settings)  ((6 << 12) | (1 << 8) | (1 << 5) | (1 << 0))
-#define BORDER_LIGHT_COLOR(settings) ((6 << 12) | (2 << 8) | (2 << 5) | (2 << 0))
+static uint16_t argb32_to_abgr1555(uint32_t col)
+{
+   /* Extract colour components */
+   unsigned a = (col >> 24) & 0xff;
+   unsigned r = (col >> 16) & 0xff;
+   unsigned g = (col >> 8)  & 0xff;
+   unsigned b = col & 0xff;
+   /* Background and border colours are normally semi-transparent
+    * (so we can see suspended content when opening the quick menu).
+    * When no content is loaded, the 'image' behind the RGUI background
+    * and border is black - which has the effect of darkening the
+    * perceived background/border colours. All the preset theme (and
+    * default 'custom') colour values have been adjusted to account for
+    * this, but abgr1555 only has a 1 bit alpha channel. This means all
+    * colours become fully opaque, and consequently backgrounds/borders
+    * become abnormally bright.
+    * We therefore have to darken each RGB value according to the alpha
+    * component of the input colour... */
+   float a_factor = (float)a * (1.0 / 255.0);
+   r = (unsigned)(((float)r * a_factor) + 0.5) & 0xff;
+   g = (unsigned)(((float)g * a_factor) + 0.5) & 0xff;
+   b = (unsigned)(((float)b * a_factor) + 0.5) & 0xff;
+   /* Convert from 8 bit to 5 bit */
+   r = r >> 3;
+   g = g >> 3;
+   b = b >> 3;
+   /* Return final value - alpha always set to 1 */
+   return (1 << 15) | (b << 10) | (g << 5) | r;
+}
 
-#elif defined(PS2)
+#define argb32_to_pixel_platform_format(color) argb32_to_abgr1555(color)
 
-/* Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define HOVER_COLOR(settings)        0x03E0
-#define NORMAL_COLOR(settings)       0x7FFF
-#define TITLE_COLOR(settings)        HOVER_COLOR(settings)
-#define BG_DARK_COLOR(settings)      ((0 << 15) | (1 << 12) | (1 << 7) | (1 << 2))
-#define BG_LIGHT_COLOR(settings)     ((0 << 15) | (2 << 12) | (2 << 7) | (2 << 2))
-#define BORDER_DARK_COLOR(settings)  ((0 << 15) | (1 << 12) | (1 << 8) | (1 << 2))
-#define BORDER_LIGHT_COLOR(settings) ((0 << 15) | (2 << 12) | (2 << 8) | (2 << 2))
+#elif defined(GEKKO)
 
-#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
+static uint16_t argb32_to_rgb5a3(uint32_t col)
+{
+   /* Extract colour components */
+   unsigned a = (col >> 24) & 0xff;
+   unsigned r = (col >> 16) & 0xff;
+   unsigned g = (col >> 8)  & 0xff;
+   unsigned b = col & 0xff;
+   /* Gekko platforms only have a 3 bit alpha channel, which
+    * is one bit less than all 'standard' target platforms.
+    * As a result, Gekko colours are effectively ~6-7% less
+    * transparent than expected, which causes backgrounds and
+    * borders to appear too bright. We therefore have to darken
+    * each RGB component according to the difference between Gekko
+    * alpha and normal 4 bit alpha values... */
+   unsigned a4 = a >> 4;
+   unsigned a3 = a >> 5;
+   float a_factor = 1.0;
+   if (a3 > 0)
+   {
+      /* Avoid divide by zero errors... */
+      a_factor = ((float)a4 * (1.0 / 15.0)) / ((float)a3 * (1.0 / 7.0));
+   }
+   r = (unsigned)(((float)r * a_factor) + 0.5);
+   g = (unsigned)(((float)g * a_factor) + 0.5);
+   b = (unsigned)(((float)b * a_factor) + 0.5);
+   /* a_factor can actually be greater than 1. This will never happen
+    * with the current preset theme colour values, but users can set
+    * any custom values they like, so we have to play it safe... */
+   r = (r <= 0xff) ? r : 0xff;
+   g = (g <= 0xff) ? g : 0xff;
+   b = (b <= 0xff) ? b : 0xff;
+   /* Convert RGB from 8 bit to 4 bit */
+   r = r >> 4;
+   g = g >> 4;
+   b = b >> 4;
+   /* Return final value */
+   return (a3 << 12) | (r << 8) | (g << 4) | b;
+}
 
-#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
-#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
-#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_title_color))
-/* Is this supposed to be RGB565?
- * Have no idea what's going on here, so have to use
- * fixed colour values... */
-#define BG_DARK_COLOR(settings)      ((((31 * (54)) / 255) << 11) | (((63 * (54)) / 255) << 5) | ((31 * (54)) / 255))
-#define BG_LIGHT_COLOR(settings)     BG_DARK_COLOR(settings)
-#define BORDER_DARK_COLOR(settings)  ((((31 * (54)) / 255) << 11) | (((63 * (109)) / 255) << 5) | ((31 * (54)) / 255))
-#define BORDER_LIGHT_COLOR(settings) BORDER_DARK_COLOR(settings)
+#define argb32_to_pixel_platform_format(color) argb32_to_rgb5a3(color)
 
-static uint16_t argb32_to_rgba4444(uint32_t col)
+#elif defined(PSP)
+
+static uint16_t argb32_to_abgr4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
    unsigned g = ((col >> 8)  & 0xff) >> 4;
    unsigned b = ((col & 0xff)      ) >> 4;
-   return (r << 12) | (g << 8) | (b << 4) | a;
+   return (a << 12) | (b << 8) | (g << 4) | r;
 }
+
+#define argb32_to_pixel_platform_format(color) argb32_to_abgr4444(color)
 
 #else
 
-/* This is the only sane case... */
-#define HOVER_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
-#define NORMAL_COLOR(settings)       (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
-#define TITLE_COLOR(settings)        (argb32_to_rgba4444(settings->uints.menu_title_color))
-#define BG_DARK_COLOR(settings)      (argb32_to_rgba4444(settings->uints.menu_bg_dark_color))
-#define BG_LIGHT_COLOR(settings)     (argb32_to_rgba4444(settings->uints.menu_bg_light_color))
-#define BORDER_DARK_COLOR(settings)  (argb32_to_rgba4444(settings->uints.menu_border_dark_color))
-#define BORDER_LIGHT_COLOR(settings) (argb32_to_rgba4444(settings->uints.menu_border_light_color))
-
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
@@ -143,20 +514,131 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
+#define argb32_to_pixel_platform_format(color) argb32_to_rgba4444(color)
+
 #endif
 
-static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
+static const rgui_theme_t *get_theme(rgui_t *rgui)
+{
+   switch (rgui->color_theme)
+   {
+      case RGUI_THEME_CLASSIC_RED:
+         return &rgui_theme_classic_red;
+      case RGUI_THEME_CLASSIC_ORANGE:
+         return &rgui_theme_classic_orange;
+      case RGUI_THEME_CLASSIC_YELLOW:
+         return &rgui_theme_classic_yellow;
+      case RGUI_THEME_CLASSIC_GREEN:
+         return &rgui_theme_classic_green;
+      case RGUI_THEME_CLASSIC_BLUE:
+         return &rgui_theme_classic_blue;
+      case RGUI_THEME_CLASSIC_VIOLET:
+         return &rgui_theme_classic_violet;
+      case RGUI_THEME_CLASSIC_GREY:
+         return &rgui_theme_classic_grey;
+      case RGUI_THEME_LEGACY_RED:
+         return &rgui_theme_legacy_red;
+      case RGUI_THEME_DARK_PURPLE:
+         return &rgui_theme_dark_purple;
+      case RGUI_THEME_MIDNIGHT_BLUE:
+         return &rgui_theme_midnight_blue;
+      case RGUI_THEME_GOLDEN:
+         return &rgui_theme_golden;
+      case RGUI_THEME_ELECTRIC_BLUE:
+         return &rgui_theme_electric_blue;
+      case RGUI_THEME_APPLE_GREEN:
+         return &rgui_theme_apple_green;
+      case RGUI_THEME_VOLCANIC_RED:
+         return &rgui_theme_volcanic_red;
+      case RGUI_THEME_LAGOON:
+         return &rgui_theme_lagoon;
+      case RGUI_THEME_BROGRAMMER:
+         return &rgui_theme_brogrammer;
+      case RGUI_THEME_DRACULA:
+         return &rgui_theme_dracula;
+      case RGUI_THEME_FAIRYFLOSS:
+         return &rgui_theme_fairyfloss;
+      case RGUI_THEME_FLATUI:
+         return &rgui_theme_flatui;
+      case RGUI_THEME_GRUVBOX_DARK:
+         return &rgui_theme_gruvbox_dark;
+      case RGUI_THEME_GRUVBOX_LIGHT:
+         return &rgui_theme_gruvbox_light;
+      case RGUI_THEME_HACKING_THE_KERNEL:
+         return &rgui_theme_hacking_the_kernel;
+      case RGUI_THEME_NORD:
+         return &rgui_theme_nord;
+      case RGUI_THEME_NOVA:
+         return &rgui_theme_nova;
+      case RGUI_THEME_ONE_DARK:
+         return &rgui_theme_one_dark;
+      case RGUI_THEME_PALENIGHT:
+         return &rgui_theme_palenight;
+      case RGUI_THEME_SOLARIZED_DARK:
+         return &rgui_theme_solarized_dark;
+      case RGUI_THEME_SOLARIZED_LIGHT:
+         return &rgui_theme_solarized_light;
+      case RGUI_THEME_TANGO_DARK:
+         return &rgui_theme_tango_dark;
+      case RGUI_THEME_TANGO_LIGHT:
+         return &rgui_theme_tango_light;
+      case RGUI_THEME_ZENBURN:
+         return &rgui_theme_zenburn;
+      case RGUI_THEME_ANTI_ZENBURN:
+         return &rgui_theme_anti_zenburn;
+      default:
+         break;
+   }
+   
+   return &rgui_theme_classic_green;
+}
+
+static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
+{
+   rgui_theme_t theme_colors;
+   rgui->color_theme = settings->uints.menu_rgui_color_theme;
+   if (rgui->color_theme == RGUI_THEME_CUSTOM)
+   {
+      theme_colors.hover_color = settings->uints.menu_entry_hover_color;
+      theme_colors.normal_color = settings->uints.menu_entry_normal_color;
+      theme_colors.title_color = settings->uints.menu_title_color;
+      theme_colors.bg_dark_color = settings->uints.menu_bg_dark_color;
+      theme_colors.bg_light_color = settings->uints.menu_bg_light_color;
+      theme_colors.border_dark_color = settings->uints.menu_border_dark_color;
+      theme_colors.border_light_color = settings->uints.menu_border_light_color;
+   }
+   else
+   {
+      const rgui_theme_t *current_theme = get_theme(rgui);
+      theme_colors.hover_color = current_theme->hover_color;
+      theme_colors.normal_color = current_theme->normal_color;
+      theme_colors.title_color = current_theme->title_color;
+      theme_colors.bg_dark_color = current_theme->bg_dark_color;
+      theme_colors.bg_light_color = current_theme->bg_light_color;
+      theme_colors.border_dark_color = current_theme->border_dark_color;
+      theme_colors.border_light_color = current_theme->border_light_color;
+   }
+   rgui->colors.hover_color = argb32_to_pixel_platform_format(theme_colors.hover_color);
+   rgui->colors.normal_color = argb32_to_pixel_platform_format(theme_colors.normal_color);
+   rgui->colors.title_color = argb32_to_pixel_platform_format(theme_colors.title_color);
+   rgui->colors.bg_dark_color = argb32_to_pixel_platform_format(theme_colors.bg_dark_color);
+   rgui->colors.bg_light_color = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
+   rgui->colors.border_dark_color = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
+   rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
+}
+
+static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
 {
    unsigned shift  = (rgui->bg_thickness ? 1 : 0);
    unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? dark_color : light_color;
+   return (select == 0) ? rgui->colors.bg_dark_color : rgui->colors.bg_light_color;
 }
 
-static uint16_t rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color)
+static uint16_t rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y)
 {
    unsigned shift  = (rgui->border_thickness ? 1 : 0);
    unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? dark_color : light_color;
+   return (select == 0) ? rgui->colors.border_dark_color : rgui->colors.border_light_color;
 }
 
 static void rgui_fill_rect(
@@ -165,14 +647,13 @@ static void rgui_fill_rect(
       size_t pitch,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      uint16_t dark_color, uint16_t light_color,
-      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y, uint16_t dark_color, uint16_t light_color))
+      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y))
 {
    unsigned i, j;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         data[j * (pitch >> 1) + i] = col(rgui, i, j, dark_color, light_color);
+         data[j * (pitch >> 1) + i] = col(rgui, i, j);
 }
 
 static void rgui_color_rect(
@@ -300,7 +781,6 @@ static void rgui_render_background(rgui_t *rgui)
    unsigned fb_width, fb_height;
    uint16_t             *src  = NULL;
    uint16_t             *dst  = NULL;
-   uint16_t dark_color, light_color;
    
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -322,18 +802,10 @@ static void rgui_render_background(rgui_t *rgui)
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
-         dark_color = BORDER_DARK_COLOR(settings);
-         light_color = BORDER_LIGHT_COLOR(settings);
-         
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5,
-                        dark_color, light_color, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5,
-                        dark_color, light_color, rgui_border_filler);
-
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10,
-                        dark_color, light_color, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
-                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10, rgui_border_filler);
       }
    }
 }
@@ -354,8 +826,6 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 {
    int x, y;
-   uint16_t normal_color;
-   uint16_t dark_color, light_color;
    size_t i, fb_pitch;
    unsigned fb_width, fb_height;
    unsigned width, glyphs_width, height;
@@ -405,30 +875,16 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
    if (rgui_framebuf_data)
    {
-      dark_color = BG_DARK_COLOR(settings);
-      light_color = BG_LIGHT_COLOR(settings);
-      
-      rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + 5, width - 10, height - 10,
-                     dark_color, light_color, rgui_bg_filler);
+      rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + 5, width - 10, height - 10, rgui_bg_filler);
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
-         
-         dark_color = BORDER_DARK_COLOR(settings);
-         light_color = BORDER_LIGHT_COLOR(settings);
-         
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y, width - 5, 5,
-                        dark_color, light_color, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + width - 5, y, 5, height - 5,
-                        dark_color, light_color, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + height - 5, width - 5, 5,
-                        dark_color, light_color, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y + 5, 5, height - 5,
-                        dark_color, light_color, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y, width - 5, 5, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + width - 5, y, 5, height - 5, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x + 5, y + height - 5, width - 5, 5, rgui_border_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, x, y + 5, 5, height - 5, rgui_border_filler);
       }
    }
-
-   normal_color = NORMAL_COLOR(settings);
 
    for (i = 0; i < list->size; i++)
    {
@@ -437,7 +893,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       if (rgui_framebuf_data)
-         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, normal_color);
+         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, rgui->colors.normal_color);
    }
 
 end:
@@ -474,6 +930,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    rgui->bg_thickness             = settings->bools.menu_rgui_background_filler_thickness_enable;
    rgui->border_thickness         = settings->bools.menu_rgui_border_filler_thickness_enable;
 
+   if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
+   {
+      prepare_rgui_colors(rgui, settings);
+      rgui->bg_modified = true;
+   }
+
    rgui->frame_count++;
 }
 
@@ -481,8 +943,6 @@ static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
-   uint16_t hover_color, normal_color;
-   uint16_t dark_color, light_color;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
@@ -518,11 +978,7 @@ static void rgui_render(void *data, bool is_idle)
    {
       if (rgui_framebuf_data)
       {
-         dark_color = BG_DARK_COLOR(settings);
-         light_color = BG_LIGHT_COLOR(settings);
-         
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 0, fb_height, fb_width, 4,
-                        dark_color, light_color, rgui_bg_filler);
+         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch, 0, fb_height, fb_width, 4, rgui_bg_filler);
       }
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
@@ -606,9 +1062,6 @@ static void rgui_render(void *data, bool is_idle)
 
    menu_animation_ticker(&ticker);
 
-   hover_color  = HOVER_COLOR(settings);
-   normal_color = NORMAL_COLOR(settings);
-
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       char back_buf[32];
@@ -623,7 +1076,7 @@ static void rgui_render(void *data, bool is_idle)
                RGUI_TERM_START_X(fb_width),
                RGUI_TERM_START_X(fb_width),
                back_msg,
-               TITLE_COLOR(settings));
+               rgui->colors.title_color);
    }
 
    string_to_upper(title_buf);
@@ -633,7 +1086,7 @@ static void rgui_render(void *data, bool is_idle)
             (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
                   - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
             RGUI_TERM_START_X(fb_width),
-            title_buf, TITLE_COLOR(settings));
+            title_buf, rgui->colors.title_color);
 
    if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
@@ -642,7 +1095,7 @@ static void rgui_render(void *data, bool is_idle)
          blit_line(
                RGUI_TERM_START_X(fb_width),
                (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
+               RGUI_TERM_START_Y(fb_height) + 2, title_msg, rgui->colors.hover_color);
    }
 
    if (settings->bools.menu_timedate_enable)
@@ -662,7 +1115,7 @@ static void rgui_render(void *data, bool is_idle)
          blit_line(
                RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
                (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, timedate, hover_color);
+               RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
    }
 
    x = RGUI_TERM_START_X(fb_width);
@@ -727,7 +1180,7 @@ static void rgui_render(void *data, bool is_idle)
 
       if (rgui_framebuf_data)
          blit_line(x, y, message,
-               entry_selected ? hover_color : normal_color);
+               entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color);
 
       menu_entry_free(&entry);
       if (!string_is_empty(entry_path))
@@ -753,7 +1206,6 @@ static void rgui_render(void *data, bool is_idle)
 
    if (rgui->mouse_show)
    {
-      settings_t *settings = config_get_ptr();
       bool cursor_visible  = settings->bools.video_fullscreen ||
          !video_driver_has_windowed();
 
@@ -788,6 +1240,9 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata              = rgui;
+
+   /* Prepare RGUI colors, to improve performance */
+   prepare_rgui_colors(rgui, settings);
 
    /* 4 extra lines to cache  the checked background */
    rgui_framebuf_data = (uint16_t*)
@@ -829,7 +1284,6 @@ error:
       free(menu);
    return NULL;
 }
-
 
 static void rgui_free(void *data)
 {

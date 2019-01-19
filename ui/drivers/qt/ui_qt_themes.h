@@ -16,6 +16,12 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
       background-color:#d4d4d4;
       border:3px solid %1;
    }
+   QFrame#playlistWidget, QFrame#browserWidget, QFrame#logWidget {
+      padding: 8px;
+   }
+   ListWidget {
+      icon-size: 32px;
+   }
 )");
 
 static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
@@ -24,12 +30,16 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:rgb(53,53,53);
       selection-background-color:%1;
    }
-   QWidget#playlistWidget, QWidget#browserWidget, QWidget#tableWidget, QWidget#logWidget {
+   QFrame#playlistWidget, QFrame#browserWidget, QStackedWidget#centralWidget, QFrame#logWidget {
+      padding: 8px;
       background-color:rgb(66,66,66);
       border-top:1px solid rgba(175,175,175,50%);
       border-left:1px solid rgba(125,125,125,50%);
       border-right:1px solid rgba(125,125,125,50%);
       border-bottom:1px solid rgba(25,25,25,75%);
+   }
+   ListWidget {
+      icon-size: 32px;
    }
    QTextEdit, LogTextEdit {
       background-color:rgb(25,25,25);
@@ -313,7 +323,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       padding-left:5px;
       padding-right:5px;
    }
-   QTableWidget {
+   QTableView {
       background-color:rgb(25,25,25);
       alternate-background-color:rgb(40,40,40);
    }
@@ -422,14 +432,21 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QSizeGrip {
       background-color:solid;
    }
-   ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
+   GridView::item {
       background-color:rgb(40,40,40);
    }
-   ThumbnailWidget#thumbnailWidgetSelected {
-      background-color:rgb(40,40,40);
+   GridView::item:selected {
       border:3px solid %1;
    }
-   QWidget#gridLayoutWidget {
+   GridView {
       background-color:rgb(25,25,25);
+      selection-color: white;
+      qproperty-layout: "fixed";
+   }
+   GridItem {
+      qproperty-thumbnailvalign: "center";
+   }
+   QLabel#itemsCountLabel {
+      padding-left: 5px;
    }
 )");

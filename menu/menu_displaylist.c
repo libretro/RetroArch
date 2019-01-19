@@ -2,7 +2,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2017 - Andrés Suárez
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -200,7 +200,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
-
 
    if (core_info->display_name)
    {
@@ -1771,7 +1770,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error;
       }
 
-
       if (db_info_entry->developer)
       {
          for (k = 0; k < db_info_entry->developer->size; k++)
@@ -2061,7 +2059,6 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    return 0;
 }
 #endif
-
 
 static unsigned deferred_push_video_shader_parameters_common(
       menu_displaylist_info_t *info,
@@ -2448,7 +2445,6 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
          goto loop;
 #endif
 
-
       menu_entries_append_enum(info->list, short_description,
             name, enum_idx, menu_setting_set_flags(setting), 0, 0);
       count++;
@@ -2516,7 +2512,6 @@ static void menu_displaylist_set_new_playlist(
             path,
             sizeof(menu->db_playlist_file));
 }
-
 
 static int menu_displaylist_parse_horizontal_list(
       menu_handle_t *menu,
@@ -2619,7 +2614,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
-
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
          && !cheevos_hardcore_active
@@ -2661,7 +2655,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
-
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
@@ -2798,7 +2791,6 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
       }
-
 
 #ifdef HAVE_CHEEVOS
       if(settings->bools.cheevos_enable)
@@ -4326,6 +4318,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
    menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
+   static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
 
@@ -4755,7 +4748,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             path_playlist[0] = '\0';
 
-
             fill_pathname_join(
                   path_playlist,
                   settings->paths.directory_playlist,
@@ -5062,6 +5054,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_sort    = true;
          info->need_refresh = true;
          info->need_push    = true;
+         core_selected      = true;
 
          {
             unsigned cores_names_len        = 0;
@@ -5251,6 +5244,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
+               PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
                PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_playlist_associations(info);
@@ -5456,7 +5452,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if ( setting )
             setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
 
-
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_IDX,
                PARSE_ONLY_UINT, false);
@@ -5569,7 +5564,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_START_OR_RESTART,
                PARSE_ONLY_UINT, false);
@@ -5647,8 +5641,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
                PARSE_ONLY_UINT, false);
-
-
 
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH);
          if (setting)
@@ -5993,6 +5985,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
                   PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
@@ -6807,7 +6803,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             unsigned i;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if 1
+            /* TODO - for developers -
+             * turn this into #if 0 if you want to be able to see
+             * the system streams as well. */
             for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+#else
+            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+#endif
             {
                char msg[128];
                char msg_lbl[128];
@@ -7112,6 +7115,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_horizontal_content_actions(menu, info);
          info->need_refresh = true;
          info->need_push    = true;
+
+         if (core_selected)
+         {
+            info->need_clear = true;
+            core_selected = false;
+         }
+
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -7874,7 +7884,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
-
             if (video_shader_is_supported(RARCH_SHADER_CG) &&
                   video_shader_get_type_from_ext("cg", &is_preset)
                   != RARCH_SHADER_NONE)
@@ -8131,19 +8140,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                if (tmp_str_list && tmp_str_list->size > 0)
                {
                   core_option_manager_t *coreopts = NULL;
+                  const char *val                 = NULL;
 
                   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                   if (coreopts)
                   {
+                     settings_t *settings            = config_get_ptr();
                      unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
-                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
 
-                     i--;
+                     if (settings->bools.game_specific_options)
+                     {
+                        val = core_option_manager_get_val(coreopts, i-1);
+                        i--;
+                     }
+                     else
+                        val = core_option_manager_get_val(coreopts, i);
 
                      option                          = (struct core_option*)&coreopts->opts[i];
 
@@ -8439,7 +8455,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             unsigned i, size                  = 0;
-            struct video_display_config *list = video_display_server_get_resolution_list(&size);
+            struct video_display_config *list = (struct video_display_config*)
+               video_display_server_get_resolution_list(&size);
 
             if (list)
             {

@@ -187,5 +187,4 @@ static __inline__ void write_unlock(rwlock_t *rw)
         rw->lock = 0;
 }
 
-
 #endif

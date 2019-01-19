@@ -100,7 +100,6 @@ distribution.
 #define IOCTL_ES_GETSHAREDCONTENTCNT	0x36
 #define IOCTL_ES_GETSHAREDCONTENTS		0x37
 
-
 #define ES_HEAP_SIZE 0x800
 
 #define ISALIGNED(x) ((((u32)x)&0x1F)==0)
@@ -129,7 +128,6 @@ s32 __ES_Init(void)
 			return ret;
 		__es_fd = ret;
 	}
-
 
 	__ES_InitFS();
 
@@ -926,7 +924,6 @@ static int _ES_read_r (struct _reent *r, void *fd, char *ptr, size_t len) {
 	es_fd *file = (es_fd *) fd;
 	int read = 0;
 	int res;
-
 
 	LWP_MutexLock(file->mutex);
 	if(file->cfd < 0) {

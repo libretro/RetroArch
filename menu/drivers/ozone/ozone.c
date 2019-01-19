@@ -23,6 +23,10 @@
 #include "ozone_texture.h"
 #include "ozone_sidebar.h"
 
+#if 0
+#include "discord/discord.h"
+#endif
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
@@ -118,7 +122,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
-      return false;
+      return NULL;
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
@@ -348,14 +352,36 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-         strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
+#if 0
+         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
+            strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
+         else
+#endif
+            strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
+
          strlcat(filename, ".png", sizeof(filename));
 
-         if (!menu_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+#if 0
+         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
          {
-            ozone->has_all_assets = false;
-            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
+            char buf[PATH_MAX_LENGTH];
+            fill_pathname_application_special(buf,
+               sizeof(buf),
+               APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+            if (!menu_display_reset_textures_list(filename, buf, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
          }
+         else
+         {
+#endif
+            if (!menu_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+            {
+               ozone->has_all_assets = false;
+               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
+            }
+#if 0
+         }
+#endif
       }
 
       /* Sidebar textures */
@@ -930,7 +956,12 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Icon */
    menu_display_blend_begin(video_info);
-   ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_RETROARCH], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+#if 0
+   if (discord_avatar_is_ready())
+      ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_DISCORD_OWN_AVATAR], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+   else
+#endif
+      ozone_draw_icon(video_info, 60, 60, ozone->textures[OZONE_TEXTURE_RETROARCH], 47, 14, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
    menu_display_blend_end(video_info);
 
    /* Battery */
@@ -1116,6 +1147,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    menu_animation_ctx_tag messagebox_tag  = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
+
+#if 0
+   static bool reset                      = false;
+
+   if (discord_avatar_is_ready() && !reset)
+   {
+      ozone_context_reset(data, false);
+      reset = true;
+   }
+#endif
 
    menu_animation_ctx_entry_t entry;
 

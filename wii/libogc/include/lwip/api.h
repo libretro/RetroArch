@@ -97,5 +97,3 @@ struct netconn {
 };
 
 #endif /* __LWIP_API_H__ */
-
-

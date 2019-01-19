@@ -464,7 +464,6 @@ enum DWRITE_INFORMATIONAL_STRING_ID
     DWRITE_INFORMATIONAL_STRING_WWS_FAMILY_NAME = DWRITE_INFORMATIONAL_STRING_WEIGHT_STRETCH_STYLE_FAMILY_NAME,
 };
 
-
 /// <summary>
 /// The DWRITE_FONT_METRICS structure specifies the metrics of a font face that
 /// are applicable to all glyphs within the font face.
@@ -1295,7 +1294,6 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
         ) PURE;
 };
 
-
 interface IDWriteFactory;
 interface IDWriteFontFileEnumerator;
 
@@ -2036,7 +2034,6 @@ struct DWRITE_TRIMMING
     UINT32 delimiterCount;
 };
 
-
 interface IDWriteTypography;
 interface IDWriteInlineObject;
 
@@ -2287,7 +2284,6 @@ interface DWRITE_DECLARE_INTERFACE("9c906818-31d7-4fd3-a151-7c5e225db55a") IDWri
         UINT32 nameSize
         ) PURE;
 };
-
 
 /// <summary>
 /// Font typography setting.
@@ -3257,7 +3253,6 @@ struct DWRITE_LINE_METRICS
     BOOL isTrimmed;
 };
 
-
 /// <summary>
 /// The DWRITE_CLUSTER_METRICS structure contains information about a glyph cluster.
 /// </summary>
@@ -3300,7 +3295,6 @@ struct DWRITE_CLUSTER_METRICS
 
     UINT16 padding : 11;
 };
-
 
 /// <summary>
 /// Overall metrics associated with text after layout.
@@ -3365,7 +3359,6 @@ struct DWRITE_TEXT_METRICS
     UINT32 lineCount;
 };
 
-
 /// <summary>
 /// Properties describing the geometric measurement of an
 /// application-defined inline object.
@@ -3394,7 +3387,6 @@ struct DWRITE_INLINE_OBJECT_METRICS
     /// </summary>
     BOOL  supportsSideways;
 };
-
 
 /// <summary>
 /// The DWRITE_OVERHANG_METRICS structure holds how much any visible pixels
@@ -3429,7 +3421,6 @@ struct DWRITE_OVERHANG_METRICS
     /// </summary>
     FLOAT bottom;
 };
-
 
 /// <summary>
 /// Geometry enclosing of text positions.
@@ -3482,9 +3473,7 @@ struct DWRITE_HIT_TEST_METRICS
     BOOL isTrimmed;
 };
 
-
 interface IDWriteTextRenderer;
-
 
 /// <summary>
 /// The IDWriteInlineObject interface wraps an application defined inline graphic,
@@ -4400,7 +4389,6 @@ interface DWRITE_DECLARE_INTERFACE("53737037-6d14-410b-9bfe-0b182bb70961") IDWri
     using IDWriteTextFormat::GetLocaleName;
 };
 
-
 /// <summary>
 /// Encapsulates a 32-bit device independent bitmap and device context, which can be used for rendering glyphs.
 /// </summary>
@@ -5083,7 +5071,6 @@ interface DWRITE_DECLARE_INTERFACE("b859ee5a-d838-4b5b-a2e8-1adc7d93db48") IDWri
 
 }; // interface IDWriteFactory
 
-
 /// <summary>
 /// Creates a DirectWrite factory object that is used for subsequent creation of individual DirectWrite objects.
 /// </summary>
@@ -5116,6 +5103,5 @@ EXTERN_C HRESULT DWRITE_EXPORT DWriteCreateFactory(
 #define MAKE_DWRITE_HR_ERR(code) MAKE_DWRITE_HR(SEVERITY_ERROR, code)
 
 // DWrite errors have moved to winerror.h
-
 
 #endif /* DWRITE_H_INCLUDED */

@@ -131,7 +131,6 @@ struct gl_cached_state
       GLenum func;
    } depthfunc;
 
-
    struct
    {
       bool used;
@@ -334,7 +333,6 @@ void rglTexSubImage2D(
    glTexSubImage2D(target, level, xoffset, yoffset,
          width, height, format, type, pixels);
 }
-
 
 void rglGetBufferSubData(	GLenum target,
  	GLintptr offset,
@@ -898,7 +896,6 @@ void rglCompressedTexImage2D(GLenum target, GLint level,
          width, height, border, imageSize, data);
 }
 
-
 void rglDeleteFramebuffers(GLsizei n, const GLuint *framebuffers)
 {
 #ifdef GLSM_DEBUG
@@ -1035,7 +1032,6 @@ void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
 #endif
 }
 
-
 /*
  * Category: Shaders
  *
@@ -1139,7 +1135,6 @@ void rglEndQuery(	GLenum target)
    glEndQuery(target);
 #endif
 }
-
 
 /*
  * Category: UBO
@@ -1504,7 +1499,6 @@ GLboolean rglIsProgram(GLuint program)
 #endif
    return glIsProgram(program);
 }
-
 
 void rglTexCoord2f(GLfloat s, GLfloat t)
 {
@@ -1973,7 +1967,6 @@ void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
    glUniform4fv(location, count, value);
 }
 
-
 /*
  *
  * Core in:
@@ -2207,7 +2200,6 @@ void rglTexImage2DMultisample( 	GLenum target,
    glTexImage2DMultisample(target, samples, internalformat, width, height, fixedsamplelocations);
 #endif
 }
-
 
 void rglTexImage3D(	GLenum target,
  	GLint level,

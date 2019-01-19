@@ -108,9 +108,17 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
+#ifdef HAVE_EASTEREGG
+#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
+#endif
+
 static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
 static bool *load_no_content_hook   = NULL;
+
+struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+unsigned subsystem_current_count;
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
@@ -173,7 +181,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
    rarch_system_info_t *system  = runloop_get_system_info();
@@ -235,7 +242,6 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                }
                subsystem_data[i].roms = subsystem_data_roms[i];
             }
-
 
             subsystem_current_count = size <= SUBSYSTEM_MAX_SUBSYSTEMS ? size : SUBSYSTEM_MAX_SUBSYSTEMS;
 #if 0
@@ -777,6 +783,43 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
          SYMBOL_VIDEOPROCESSOR(retro_get_region);
          SYMBOL_VIDEOPROCESSOR(retro_get_memory_data);
          SYMBOL_VIDEOPROCESSOR(retro_get_memory_size);
+#endif
+         break;
+      case CORE_TYPE_GONG:
+#ifdef HAVE_EASTEREGG
+         SYMBOL_GONG(retro_init);
+         SYMBOL_GONG(retro_deinit);
+
+         SYMBOL_GONG(retro_api_version);
+         SYMBOL_GONG(retro_get_system_info);
+         SYMBOL_GONG(retro_get_system_av_info);
+
+         SYMBOL_GONG(retro_set_environment);
+         SYMBOL_GONG(retro_set_video_refresh);
+         SYMBOL_GONG(retro_set_audio_sample);
+         SYMBOL_GONG(retro_set_audio_sample_batch);
+         SYMBOL_GONG(retro_set_input_poll);
+         SYMBOL_GONG(retro_set_input_state);
+
+         SYMBOL_GONG(retro_set_controller_port_device);
+
+         SYMBOL_GONG(retro_reset);
+         SYMBOL_GONG(retro_run);
+
+         SYMBOL_GONG(retro_serialize_size);
+         SYMBOL_GONG(retro_serialize);
+         SYMBOL_GONG(retro_unserialize);
+
+         SYMBOL_GONG(retro_cheat_reset);
+         SYMBOL_GONG(retro_cheat_set);
+
+         SYMBOL_GONG(retro_load_game);
+         SYMBOL_GONG(retro_load_game_special);
+
+         SYMBOL_GONG(retro_unload_game);
+         SYMBOL_GONG(retro_get_region);
+         SYMBOL_GONG(retro_get_memory_data);
+         SYMBOL_GONG(retro_get_memory_size);
 #endif
          break;
    }
@@ -1884,9 +1927,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
  
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 1;
+         const uint32_t supported_vfs_version = 3;
          static struct retro_vfs_interface vfs_iface =
          {
+            /* VFS API v1 */
             retro_vfs_file_get_path_impl,
             retro_vfs_file_open_impl,
             retro_vfs_file_close_impl,
@@ -1896,14 +1940,31 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             retro_vfs_file_read_impl,
             retro_vfs_file_write_impl,
             retro_vfs_file_flush_impl,
-            retro_vfs_file_remove_impl
+            retro_vfs_file_remove_impl,
+            retro_vfs_file_rename_impl,
+            /* VFS API v2 */
+            retro_vfs_file_truncate_impl,
+            /* VFS API v3 */
+            retro_vfs_stat_impl,
+            retro_vfs_mkdir_impl,
+            retro_vfs_opendir_impl,
+            retro_vfs_readdir_impl,
+            retro_vfs_dirent_get_name_impl,
+            retro_vfs_dirent_is_dir_impl,
+            retro_vfs_closedir_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
          if (vfs_iface_info->required_interface_version <= supported_vfs_version)
          {
+            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
+         }
+         else
+         {
+            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            return false;
          }
 
          break;

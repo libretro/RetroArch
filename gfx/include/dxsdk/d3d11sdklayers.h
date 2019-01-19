@@ -4,14 +4,10 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -50,13 +46,11 @@ typedef interface ID3D11Debug ID3D11Debug;
 
 #endif 	/* __ID3D11Debug_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11SwitchToRef_FWD_DEFINED__
 #define __ID3D11SwitchToRef_FWD_DEFINED__
 typedef interface ID3D11SwitchToRef ID3D11SwitchToRef;
 
 #endif 	/* __ID3D11SwitchToRef_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11TracingDevice_FWD_DEFINED__
 #define __ID3D11TracingDevice_FWD_DEFINED__
@@ -64,13 +58,11 @@ typedef interface ID3D11TracingDevice ID3D11TracingDevice;
 
 #endif 	/* __ID3D11TracingDevice_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11RefTrackingOptions_FWD_DEFINED__
 #define __ID3D11RefTrackingOptions_FWD_DEFINED__
 typedef interface ID3D11RefTrackingOptions ID3D11RefTrackingOptions;
 
 #endif 	/* __ID3D11RefTrackingOptions_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11RefDefaultTrackingOptions_FWD_DEFINED__
 #define __ID3D11RefDefaultTrackingOptions_FWD_DEFINED__
@@ -78,13 +70,11 @@ typedef interface ID3D11RefDefaultTrackingOptions ID3D11RefDefaultTrackingOption
 
 #endif 	/* __ID3D11RefDefaultTrackingOptions_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11InfoQueue_FWD_DEFINED__
 #define __ID3D11InfoQueue_FWD_DEFINED__
 typedef interface ID3D11InfoQueue ID3D11InfoQueue;
 
 #endif 	/* __ID3D11InfoQueue_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -94,7 +84,6 @@ typedef interface ID3D11InfoQueue ID3D11InfoQueue;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d11sdklayers_0000_0000 */
 /* [local] */ 
@@ -129,7 +118,6 @@ enum D3D11_RLDO_FLAGS
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D11_RLDO_FLAGS)
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0000_v0_0_s_ifspec;
 
@@ -138,7 +126,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D11Debug */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Debug;
 
@@ -248,7 +235,6 @@ EXTERN_C const IID IID_ID3D11Debug;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Debug_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -257,7 +243,6 @@ EXTERN_C const IID IID_ID3D11Debug;
 
 #define ID3D11Debug_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Debug_SetFeatureMask(This,Mask)	\
     ( (This)->lpVtbl -> SetFeatureMask(This,Mask) ) 
@@ -288,14 +273,9 @@ EXTERN_C const IID IID_ID3D11Debug;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Debug_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11sdklayers_0000_0001 */
 /* [local] */ 
@@ -306,7 +286,6 @@ EXTERN_C const IID IID_ID3D11Debug;
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0001_v0_0_s_ifspec;
 
@@ -315,7 +294,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0001_v0_0_s_ifspec;
 
 /* interface ID3D11SwitchToRef */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11SwitchToRef;
 
@@ -370,7 +348,6 @@ EXTERN_C const IID IID_ID3D11SwitchToRef;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11SwitchToRef_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -380,7 +357,6 @@ EXTERN_C const IID IID_ID3D11SwitchToRef;
 #define ID3D11SwitchToRef_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D11SwitchToRef_SetUseRef(This,UseRef)	\
     ( (This)->lpVtbl -> SetUseRef(This,UseRef) ) 
 
@@ -389,14 +365,9 @@ EXTERN_C const IID IID_ID3D11SwitchToRef;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11SwitchToRef_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11sdklayers_0000_0002 */
 /* [local] */ 
@@ -439,8 +410,6 @@ enum D3D11_SHADER_TRACKING_OPTION
         D3D11_SHADER_TRACKING_OPTION_ALL_OPTIONS	= ( D3D11_SHADER_TRACKING_OPTION_ALL_HAZARDS_ALLOWING_SAME | D3D11_SHADER_TRACKING_OPTION_TRACK_UNINITIALIZED ) 
     } 	D3D11_SHADER_TRACKING_OPTIONS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0002_v0_0_s_ifspec;
 
@@ -449,7 +418,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0002_v0_0_s_ifspec;
 
 /* interface ID3D11TracingDevice */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11TracingDevice;
 
@@ -518,7 +486,6 @@ EXTERN_C const IID IID_ID3D11TracingDevice;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11TracingDevice_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -528,7 +495,6 @@ EXTERN_C const IID IID_ID3D11TracingDevice;
 #define ID3D11TracingDevice_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D11TracingDevice_SetShaderTrackingOptionsByType(This,ResourceTypeFlags,Options)	\
     ( (This)->lpVtbl -> SetShaderTrackingOptionsByType(This,ResourceTypeFlags,Options) ) 
 
@@ -537,21 +503,15 @@ EXTERN_C const IID IID_ID3D11TracingDevice;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11TracingDevice_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11RefTrackingOptions_INTERFACE_DEFINED__
 #define __ID3D11RefTrackingOptions_INTERFACE_DEFINED__
 
 /* interface ID3D11RefTrackingOptions */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11RefTrackingOptions;
 
@@ -601,7 +561,6 @@ EXTERN_C const IID IID_ID3D11RefTrackingOptions;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11RefTrackingOptions_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -611,27 +570,20 @@ EXTERN_C const IID IID_ID3D11RefTrackingOptions;
 #define ID3D11RefTrackingOptions_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D11RefTrackingOptions_SetTrackingOptions(This,uOptions)	\
     ( (This)->lpVtbl -> SetTrackingOptions(This,uOptions) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11RefTrackingOptions_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11RefDefaultTrackingOptions_INTERFACE_DEFINED__
 #define __ID3D11RefDefaultTrackingOptions_INTERFACE_DEFINED__
 
 /* interface ID3D11RefDefaultTrackingOptions */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11RefDefaultTrackingOptions;
 
@@ -683,7 +635,6 @@ EXTERN_C const IID IID_ID3D11RefDefaultTrackingOptions;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11RefDefaultTrackingOptions_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -693,20 +644,14 @@ EXTERN_C const IID IID_ID3D11RefDefaultTrackingOptions;
 #define ID3D11RefDefaultTrackingOptions_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D11RefDefaultTrackingOptions_SetTrackingOptions(This,ResourceTypeFlags,Options)	\
     ( (This)->lpVtbl -> SetTrackingOptions(This,ResourceTypeFlags,Options) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11RefDefaultTrackingOptions_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11sdklayers_0000_0005 */
 /* [local] */ 
@@ -2102,7 +2047,6 @@ typedef struct D3D11_INFO_QUEUE_FILTER
 
 #define D3D11_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT 1024
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0005_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0005_v0_0_s_ifspec;
 
@@ -2111,7 +2055,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0005_v0_0_s_ifspec;
 
 /* interface ID3D11InfoQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11InfoQueue;
 
@@ -2441,7 +2384,6 @@ EXTERN_C const IID IID_ID3D11InfoQueue;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11InfoQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2450,7 +2392,6 @@ EXTERN_C const IID IID_ID3D11InfoQueue;
 
 #define ID3D11InfoQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11InfoQueue_SetMessageCountLimit(This,MessageCountLimit)	\
     ( (This)->lpVtbl -> SetMessageCountLimit(This,MessageCountLimit) ) 
@@ -2559,14 +2500,9 @@ EXTERN_C const IID IID_ID3D11InfoQueue;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11InfoQueue_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11sdklayers_0000_0006 */
 /* [local] */ 
@@ -2581,7 +2517,6 @@ DEFINE_GUID(IID_ID3D11RefTrackingOptions,0x193dacdf,0x0db2,0x4c05,0xa5,0x5c,0xef
 DEFINE_GUID(IID_ID3D11RefDefaultTrackingOptions,0x03916615,0xc644,0x418c,0x9b,0xf4,0x75,0xdb,0x5b,0xe6,0x3c,0xa0);
 DEFINE_GUID(IID_ID3D11InfoQueue,0x6543dbb6,0x1b48,0x42f5,0xab,0x82,0xe9,0x7e,0xc7,0x43,0x26,0xf6);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0006_v0_0_s_ifspec;
 
@@ -2594,5 +2529,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11sdklayers_0000_0006_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

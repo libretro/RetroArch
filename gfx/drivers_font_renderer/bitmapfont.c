@@ -154,4 +154,3 @@ font_renderer_driver_t bitmap_font_renderer = {
    "bitmap",
    font_renderer_bmp_get_line_height,
 };
-

@@ -14,7 +14,6 @@
 
 // Current name of the DLL shipped in the same SDK as this header.
 
-
 #define D3DX10_DLL_W L"d3dx10_43.dll"
 #define D3DX10_DLL_A "d3dx10_43.dll"
 
@@ -38,9 +37,7 @@ extern "C" {
 // D3DX10CreateVersion will return FALSE. (The number itself has no meaning.)
 ///////////////////////////////////////////////////////////////////////////
 
-
 #define D3DX10_SDK_VERSION 43
-
 
 ///////////////////////////////////////////////////////////////////////////
 // D3DX10CreateDevice
@@ -64,7 +61,6 @@ HRESULT WINAPI D3DX10CreateDeviceAndSwapChain(IDXGIAdapter *pAdapter,
 typedef interface ID3D10Device1 ID3D10Device1;
 HRESULT WINAPI D3DX10GetFeatureLevel1(ID3D10Device *pDevice, ID3D10Device1 **ppDevice1);
 
-
 #ifdef D3D_DIAG_DLL
 BOOL WINAPI D3DX10DebugMute(BOOL Mute);  
 #endif
@@ -73,7 +69,6 @@ HRESULT WINAPI D3DX10CheckVersion(UINT D3DSdkVersion, UINT D3DX10SdkVersion);
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-
 
 //////////////////////////////////////////////////////////////////////////////
 // D3DX10_SPRITE flags:
@@ -116,7 +111,6 @@ typedef struct _D3DX10_SPRITE
     UINT        TextureIndex;
 } D3DX10_SPRITE;
 
-
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX10Sprite:
 // ------------
@@ -139,11 +133,9 @@ typedef struct _D3DX10_SPRITE
 typedef interface ID3DX10Sprite ID3DX10Sprite;
 typedef interface ID3DX10Sprite *LPD3DX10SPRITE;
 
-
 // {BA0B762D-8D28-43ec-B9DC-2F84443B0614}
 DEFINE_GUID(IID_ID3DX10Sprite, 
 0xba0b762d, 0x8d28, 0x43ec, 0xb9, 0xdc, 0x2f, 0x84, 0x44, 0x3b, 0x6, 0x14);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DX10Sprite
@@ -172,7 +164,6 @@ DECLARE_INTERFACE_(ID3DX10Sprite, IUnknown)
     STDMETHOD(GetDevice)(THIS_ ID3D10Device** ppDevice) PURE;
 };
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
@@ -186,7 +177,6 @@ HRESULT WINAPI
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX10ThreadPump:
@@ -239,7 +229,6 @@ DECLARE_INTERFACE_(ID3DX10ThreadPump, IUnknown)
 };
 
 HRESULT WINAPI D3DX10CreateThreadPump(UINT cIoThreads, UINT cProcThreads, ID3DX10ThreadPump **ppThreadPump);
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX10Font:
@@ -299,15 +288,12 @@ typedef D3DX10_FONT_DESCA D3DX10_FONT_DESC;
 typedef LPD3DX10_FONT_DESCA LPD3DX10_FONT_DESC;
 #endif
 
-
 typedef interface ID3DX10Font ID3DX10Font;
 typedef interface ID3DX10Font *LPD3DX10FONT;
-
 
 // {D79DBB70-5F21-4d36-BBC2-FF525C213CDC}
 DEFINE_GUID(IID_ID3DX10Font, 
 0xd79dbb70, 0x5f21, 0x4d36, 0xbb, 0xc2, 0xff, 0x52, 0x5c, 0x21, 0x3c, 0xdc);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DX10Font
@@ -364,11 +350,9 @@ DECLARE_INTERFACE_(ID3DX10Font, IUnknown)
 #endif
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
 
 HRESULT WINAPI 
     D3DX10CreateFontA(
@@ -406,7 +390,6 @@ HRESULT WINAPI
 #define D3DX10CreateFont D3DX10CreateFontA
 #endif
 
-
 HRESULT WINAPI 
     D3DX10CreateFontIndirectA( 
         ID3D10Device*             pDevice,  
@@ -441,4 +424,3 @@ HRESULT WINAPI D3DX10UnsetAllDeviceObjects(ID3D10Device *pDevice);
 #define D3DERR_WASSTILLDRAWING                  MAKE_D3DHRESULT(540)
 
 #endif //__D3DX10CORE_H__
-

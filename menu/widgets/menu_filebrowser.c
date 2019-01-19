@@ -110,7 +110,6 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                true, settings->bools.show_hidden_files, true, false);
    }
 
-
    switch (filebrowser_types)
    {
       case FILEBROWSER_SCAN_DIR:

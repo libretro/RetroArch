@@ -119,8 +119,11 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
-#if defined(PSP) || defined(VITA)
+#if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
+#endif
+#if defined(PS2)
+  &audio_ps2,
 #endif
 #ifdef _3DS
    &audio_ctr_csnd,
@@ -134,7 +137,7 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_STREAMS] = {{0}};
+static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS] = {{0}};
 
 static size_t audio_driver_chunk_size                    = 0;
 static size_t audio_driver_chunk_nonblock_size           = 0;
@@ -200,14 +203,14 @@ enum resampler_quality audio_driver_get_resampler_quality(void)
 
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i)
 {
-   if (i > (AUDIO_MIXER_MAX_STREAMS-1))
+   if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
       return NULL;
    return &audio_mixer_streams[i];
 }
 
 const char *audio_driver_mixer_get_stream_name(unsigned i)
 {
-   if (i > (AUDIO_MIXER_MAX_STREAMS-1))
+   if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
       return "N/A";
    if (!string_is_empty(audio_mixer_streams[i].name))
       return audio_mixer_streams[i].name;
@@ -389,11 +392,10 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
-static void audio_driver_mixer_init(unsigned out_rate)
+static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
-   audio_mixer_init(out_rate);
+   audio_mixer_init(audio_out_rate);
 }
-
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
@@ -632,7 +634,6 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.data_in                  = audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
-
 
    if (audio_driver_dsp)
    {
@@ -1052,7 +1053,7 @@ static int audio_mixer_find_index(audio_mixer_sound_t *sound)
 {
    unsigned i;
 
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
       audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
       if (handle == sound)
@@ -1111,6 +1112,11 @@ static void audio_mixer_play_stop_sequential_cb(
             if (!string_is_empty(audio_mixer_streams[i].name))
                free(audio_mixer_streams[i].name);
 
+            if (i < AUDIO_MIXER_MAX_STREAMS)
+               audio_mixer_streams[i].type    = AUDIO_STREAM_TYPE_USER;
+            else
+               audio_mixer_streams[i].type    = AUDIO_STREAM_TYPE_SYSTEM;
+
             audio_mixer_streams[i].name    = NULL;
             audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
             audio_mixer_streams[i].volume  = 0.0f;
@@ -1121,7 +1127,7 @@ static void audio_mixer_play_stop_sequential_cb(
 
             i++;
 
-            for (; i < AUDIO_MIXER_MAX_STREAMS; i++)
+            for (; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
             {
                if (audio_mixer_streams[i].state == AUDIO_STREAM_STATE_STOPPED)
                {
@@ -1138,10 +1144,11 @@ static void audio_mixer_play_stop_sequential_cb(
    }
 }
 
-bool audio_driver_mixer_get_free_stream_slot(unsigned *id)
+static bool audio_driver_mixer_get_free_stream_slot(unsigned *id, enum audio_mixer_stream_type type)
 {
-   unsigned i;
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   unsigned i     = (type == AUDIO_STREAM_TYPE_USER) ? 0                       : AUDIO_MIXER_MAX_STREAMS;
+   unsigned count = (type == AUDIO_STREAM_TYPE_USER) ? AUDIO_MIXER_MAX_STREAMS : AUDIO_MIXER_MAX_SYSTEM_STREAMS;
+   for (; i < count; i++)
    {
       if (audio_mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
       {
@@ -1161,9 +1168,22 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
    bool looped                   = false;
    void *buf                     = NULL;
-   
-   if (!audio_driver_mixer_get_free_stream_slot(&free_slot))
+
+   if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
       return false;
+   
+   switch (params->slot_selection_type)
+   {
+      case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
+         free_slot = params->slot_selection_idx;
+         break;
+      case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
+      default:
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+            return false;
+         break;
+   }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;
@@ -1229,6 +1249,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_streams[free_slot].buf     = buf;
    audio_mixer_streams[free_slot].handle  = handle;
    audio_mixer_streams[free_slot].voice   = voice;
+   audio_mixer_streams[free_slot].type    = params->stream_type;
    audio_mixer_streams[free_slot].state   = params->state;
    audio_mixer_streams[free_slot].volume  = params->volume;
    audio_mixer_streams[free_slot].stop_cb = stop_cb;
@@ -1238,7 +1259,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
 {
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return AUDIO_STREAM_STATE_NONE;
 
    return audio_mixer_streams[i].state;
@@ -1248,7 +1269,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
 {
    bool set_state              = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1290,7 +1311,7 @@ void audio_driver_mixer_play_stream_sequential(unsigned i)
 
 float audio_driver_mixer_get_stream_volume(unsigned i)
 {
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return 0.0f;
 
    return audio_mixer_streams[i].volume;
@@ -1300,7 +1321,7 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
 {
    audio_mixer_voice_t *voice     = NULL;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    audio_mixer_streams[i].volume  = vol;
@@ -1315,7 +1336,7 @@ void audio_driver_mixer_stop_stream(unsigned i)
 {
    bool set_state              = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1345,7 +1366,7 @@ void audio_driver_mixer_remove_stream(unsigned i)
 {
    bool destroy                = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1387,7 +1408,7 @@ static void audio_driver_mixer_deinit(void)
 
    audio_mixer_active = false;
 
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
       audio_driver_mixer_stop_stream(i);
       audio_driver_mixer_remove_stream(i);
@@ -1501,7 +1522,6 @@ error:
    return false;
 }
 
-
 bool audio_driver_stop(void)
 {
    if (!current_audio || !current_audio->stop
@@ -1590,7 +1610,6 @@ void audio_set_bool(enum audio_action action, bool val)
          break;
    }
 }
-
 
 void audio_set_float(enum audio_action action, float val)
 {

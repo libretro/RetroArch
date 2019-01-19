@@ -37,4 +37,3 @@ void mylist_pop_front(MyList *list);
 RETRO_END_DECLS
 
 #endif
-

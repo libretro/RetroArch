@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __GX_STRUCT_H__
 #define __GX_STRUCT_H__
 
@@ -41,7 +40,6 @@ distribution.
 #ifdef __cplusplus
    extern "C" {
 #endif /* __cplusplus */
-
 
 /*!
 \typedef struct _gx_rmodeobj GXRModeObj

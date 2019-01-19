@@ -15,13 +15,19 @@
 #include "playlistentrydialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../file_path_special.h"
 #include "../../../configuration.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 FileDropWidget::FileDropWidget(QWidget *parent) :
-   QWidget(parent)
+   QStackedWidget(parent)
 {
    setAcceptDrops(true);
 }
@@ -41,7 +47,12 @@ void FileDropWidget::paintEvent(QPaintEvent *event)
 
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Delete)
+   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   {
+      event->accept();
+      emit enterPressed();
+   }
+   else if (event->key() == Qt::Key_Delete)
    {
       event->accept();
       emit deletePressed();
@@ -94,9 +105,6 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    bool specialPlaylist = currentPlaylistIsSpecial();
    bool allPlaylist = currentPlaylistIsAll();
    bool actionsAdded = false;
-
-   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
-      return;
 
    menu.reset(new QMenu(this));
 

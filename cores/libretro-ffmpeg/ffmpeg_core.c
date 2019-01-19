@@ -693,7 +693,6 @@ void CORE_PREFIX(retro_run)(void)
          glActiveTexture(GL_TEXTURE0);
          glBindTexture(GL_TEXTURE_2D, frames[0].tex);
 
-
          glBindBuffer(GL_ARRAY_BUFFER, vbo);
          glVertexAttribPointer(vertex_loc, 2, GL_FLOAT, GL_FALSE,
                4 * sizeof(GLfloat), (const GLvoid*)(0 * sizeof(GLfloat)));
@@ -1663,7 +1662,6 @@ error:
    CORE_PREFIX(retro_unload_game)();
    return false;
 }
-
 
 unsigned CORE_PREFIX(retro_get_region)(void)
 {

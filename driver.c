@@ -35,6 +35,7 @@
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
+#include "command.h"
 #include "configuration.h"
 #include "core_info.h"
 #include "driver.h"
@@ -385,6 +386,10 @@ void drivers_init(int flags)
       if (flags & DRIVER_MENU_MASK)
          menu_driver_init(video_is_threaded);
    }
+#else
+   /* Qt uses core info, even if the menu is disabled */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
@@ -402,7 +407,6 @@ void drivers_init(int flags)
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_init();
 }
-
 
 /**
  * uninit_drivers:

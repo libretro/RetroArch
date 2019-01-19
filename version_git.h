@@ -28,4 +28,3 @@ extern const char retroarch_git_version[];
 RETRO_END_DECLS
 
 #endif
-

@@ -379,7 +379,6 @@ static void do_memchunkhax2(void)
    APT_SetAppCpuTimeLimit(mch2.old_cpu_time_limit);
 }
 
-
 static void gspwn(u32 dst, u32 src, u32 size, u8* flush_buffer)
 {
    extern Handle gspEvents[GSPGPU_EVENT_MAX];

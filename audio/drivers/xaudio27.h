@@ -169,7 +169,6 @@ typedef OPAQUE IXAudio2EngineCallback IXAudio2EngineCallback;
 typedef OPAQUE IXAudio2SubmixVoice IXAudio2SubmixVoice;
 #endif
 
-
 typedef struct XAUDIO2_BUFFER
 {
    UINT32 Flags;
@@ -361,4 +360,3 @@ static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_
 #pragma pack(pop)
 
 #endif
-

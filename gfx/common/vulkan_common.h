@@ -264,7 +264,6 @@ void vulkan_buffer_chain_free(
       VkDevice device,
       struct vk_buffer_chain *chain);
 
-
 struct vk_descriptor_pool
 {
    VkDescriptorPool pool;
@@ -444,7 +443,6 @@ uint32_t vulkan_find_memory_type_fallback(
       uint32_t device_reqs, uint32_t host_reqs_first,
       uint32_t host_reqs_second);
 
-
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
@@ -589,4 +587,3 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 RETRO_END_DECLS
 
 #endif
-

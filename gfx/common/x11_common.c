@@ -55,7 +55,6 @@
 #define MOVERESIZE_X_SHIFT                   8
 #define MOVERESIZE_Y_SHIFT                   9
 
-
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 bool g_x11_entered                          = false;
@@ -806,4 +805,3 @@ char *x11_get_wm_name(Display *dpy)
 
    return title;
 }
-

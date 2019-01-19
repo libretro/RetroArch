@@ -267,7 +267,6 @@ static void autosave_free(autosave_t *handle)
    handle->buffer = NULL;
 }
 
-
 bool autosave_init(void)
 {
    unsigned i;
@@ -763,6 +762,10 @@ static void task_load_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+
+   if (!task_data)
+      return;
+
    memcpy(task_data, state, sizeof(*task_data));
 
    task_set_data(task, task_data);
@@ -1193,7 +1196,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
             path);
 
       data = get_serialized_data(path, info.size) ;
-
 
       if (!data)
       {

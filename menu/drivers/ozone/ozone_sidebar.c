@@ -370,7 +370,6 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    }
 }
 
-
 void ozone_change_tab(ozone_handle_t *ozone, 
       enum msg_hash_enums tab, 
       enum menu_settings_type type)
@@ -424,16 +423,7 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
-      {
-         size_t i;
-         for (i = 0; i < ozone->horizontal_list->size; i++)
-         {
-            ozone_node_t *node = ozone_alloc_node();
-            file_list_set_userdata(ozone->horizontal_list, i, node);
-         }
-
          menu_displaylist_process(&info);
-      }
    }
 
    menu_displaylist_info_free(&info);

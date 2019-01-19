@@ -42,9 +42,6 @@
 
 #ifdef HAVE_DINPUT
 #include "dinput_joypad.h"
-#else
-int g_xinput_pad_indexes[MAX_USERS];
-bool g_xinput_block_pads;
 #endif
 
 #if defined(__WINRT__)
@@ -104,6 +101,7 @@ typedef struct
 #define ERROR_DEVICE_NOT_CONNECTED 1167
 #endif
 
+#ifdef HAVE_DINPUT
 /* Due to 360 pads showing up under both XInput and DirectInput,
  * and since we are going to have to pass through unhandled
  * joypad numbers to DirectInput, a slightly ugly
@@ -114,6 +112,7 @@ typedef struct
  */
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern bool g_xinput_block_pads;
+#endif
 
 #ifdef HAVE_DYNAMIC
 /* For xinput1_n.dll */
@@ -142,7 +141,11 @@ static xinput_joypad_state g_xinput_states[4];
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
+#ifdef HAVE_DINPUT
    return g_xinput_pad_indexes[pad];
+#else
+   return pad < MAX_PADS && g_xinput_states[pad].connected ? pad : -1;
+#endif
 }
 
 /* Generic "XInput" instead of "Xbox 360", because there are
@@ -177,6 +180,9 @@ const char *xinput_joypad_name(unsigned pad)
    if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
       return XBOX_ONE_CONTROLLER_NAMES[xuser];
 #endif
+
+   if (xuser < 0)
+      return NULL;
 
    return XBOX_CONTROLLER_NAMES[xuser];
 }
@@ -296,9 +302,10 @@ static bool xinput_joypad_init(void *data)
 
    RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected +
          g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
-   g_xinput_block_pads = true;
 
 #ifdef HAVE_DINPUT
+   g_xinput_block_pads = true;
+
    /* We're going to have to be buddies with dinput if we want to be able
     * to use XInput and non-XInput controllers together. */
    if (!dinput_joypad.init(data))
@@ -372,9 +379,9 @@ static void xinput_joypad_destroy(void)
 
 #ifdef HAVE_DINPUT
    dinput_joypad.destroy();
-#endif
 
    g_xinput_block_pads = false;
+#endif
 }
 
 /* Buttons are provided by XInput as bits of a uint16.

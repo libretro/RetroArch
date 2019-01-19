@@ -421,7 +421,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
    if (!video->fullscreen)
       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
 
-
    if (video->fullscreen)
       flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
    else
@@ -785,4 +784,3 @@ video_driver_t video_sdl2 = {
 #endif
     sdl2_gfx_poke_interface
 };
-

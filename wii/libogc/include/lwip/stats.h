@@ -99,7 +99,6 @@ struct stats_ {
 
 extern struct stats_ lwip_stats;
 
-
 void stats_init(void);
 
 #define STATS_INC(x) ++lwip_stats.x
@@ -152,7 +151,3 @@ void stats_display(void);
 #endif
 
 #endif /* __LWIP_STATS_H__ */
-
-
-
-

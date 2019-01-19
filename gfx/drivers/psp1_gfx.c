@@ -943,7 +943,6 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return true;
    }
 
-
    return false;
 }
 

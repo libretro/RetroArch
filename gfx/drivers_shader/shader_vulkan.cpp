@@ -29,6 +29,7 @@
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 
 #include "../video_driver.h"
 #include "../../verbosity.h"
@@ -3163,4 +3164,3 @@ void vulkan_filter_chain_end_frame(
 {
    chain->end_frame(cmd);
 }
-

@@ -59,7 +59,6 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
-
 typedef struct touch_pos
 {
    bool active;
@@ -68,9 +67,21 @@ typedef struct touch_pos
    unsigned y;
 } touch_pos_t;
 
+typedef struct output_info
+{
+   struct wl_output *output;
+   uint32_t global_id;
+   unsigned width;
+   unsigned height;
+   unsigned physical_width;
+   unsigned physical_height;
+   int refresh_rate;
+   unsigned scale;
+   struct wl_list link; // wl->all_outputs
+} output_info_t;
+
 static int num_active_touches;
 static touch_pos_t active_touch_positions[MAX_TOUCHES];
-
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -87,9 +98,6 @@ typedef struct gfx_ctx_wayland_data
    int prev_height;
    unsigned width;
    unsigned height;
-   unsigned physical_width;
-   unsigned physical_height;
-   int refresh_rate;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -110,9 +118,12 @@ typedef struct gfx_ctx_wayland_data
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
+   struct wl_list all_outputs;
+   output_info_t *current_output;
    int swap_interval;
    bool core_hw_context_enable;
 
+   unsigned last_buffer_scale;
    unsigned buffer_scale;
 
    struct
@@ -130,7 +141,6 @@ typedef struct gfx_ctx_wayland_data
    gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_wayland_data_t;
-
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
@@ -327,14 +337,15 @@ static void pointer_handle_button(void *data,
       {
          wl->input.mouse.left = true;
 
-         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->xdg_toplevel) {
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
+         {
 			 if (wl->xdg_toplevel)
 			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
 			 else if (wl->zxdg_toplevel)
 			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
 			 else if (wl->shell)
 			   wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
-			 }
+         }
       }
       else if (button == BTN_RIGHT)
          wl->input.mouse.right = true;
@@ -505,7 +516,6 @@ static const struct wl_touch_listener touch_listener = {
    touch_handle_cancel,
 };
 
-
 static void seat_handle_capabilities(void *data,
       struct wl_seat *seat, unsigned caps)
 {
@@ -558,7 +568,7 @@ static const struct wl_seat_listener seat_listener = {
 
 /* Touch handle functions */
 
-bool wayland_context_gettouchpos(void *data, unsigned id, 
+bool wayland_context_gettouchpos(void *data, unsigned id,
       unsigned* touch_x, unsigned* touch_y)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -570,7 +580,32 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
    return active_touch_positions[id].active;
 }
 
+/* Surface callbacks. */
+static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height);
+static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
+                             struct wl_output *output)
+{
+    // TODO: track all outputs the surface is on, pick highest scale
+    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+    output_info_t *oi;
 
+    wl_list_for_each(oi, &wl->all_outputs, link) {
+       if (oi->output == output) {
+          RARCH_LOG("[Wayland]: Entering output #%d, scale %d\n", oi->global_id, oi->scale);
+          wl->current_output = oi;
+          wl->last_buffer_scale = wl->buffer_scale;
+          wl->buffer_scale = oi->scale;
+          break;
+       }
+    };
+}
+
+static void nop() { }
+
+static const struct wl_surface_listener wl_surface_listener = {
+    wl_surface_enter,
+    nop,
+};
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -584,7 +619,7 @@ static const struct xdg_wm_base_listener xdg_shell_listener = {
 
 static void handle_surface_config(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
-{	
+{
     xdg_surface_ack_configure(surface, serial);
 }
 
@@ -596,7 +631,7 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
                                    int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-    
+
     wl->fullscreen = false;
     wl->maximized = false;
     const uint32_t *state;
@@ -622,7 +657,9 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 		wl->width = width;
 		wl->height = height;
 	}
-				
+	
+	wl_egl_window_resize(wl->win, width, height, 0, 0);
+
 	wl->configured = false;
 }
 
@@ -648,7 +685,7 @@ static const struct zxdg_shell_v6_listener zxdg_shell_v6_listener = {
 
 static void handle_zxdg_surface_config(void *data, struct zxdg_surface_v6 *surface,
                                   uint32_t serial)
-{	
+{
     zxdg_surface_v6_ack_configure(surface, serial);
 }
 
@@ -660,7 +697,7 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
                                    int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-    
+
     wl->fullscreen = false;
     wl->maximized = false;
     const uint32_t *state;
@@ -686,7 +723,9 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 		wl->width = width;
 		wl->height = height;
 	}
-				
+	
+	wl_egl_window_resize(wl->win, width, height, 0, 0);
+
 	wl->configured = false;
 }
 
@@ -718,8 +757,8 @@ static void shell_surface_handle_configure(void *data,
    (void)shell_surface;
    (void)edges;
 
-   wl->width  = wl->buffer_scale * width;
-   wl->height = wl->buffer_scale * height;
+   wl->width  = width;
+   wl->height = height;
 
    RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
          wl->width, wl->height);
@@ -756,9 +795,9 @@ static void display_handle_geometry(void *data,
    (void)model;
    (void)transform;
 
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->physical_width         = physical_width;
-   wl->physical_height        = physical_height;
+   output_info_t *oi = (output_info_t*)data;
+   oi->physical_width         = physical_width;
+   oi->physical_height        = physical_height;
 
    RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
          physical_width, physical_height);
@@ -774,10 +813,10 @@ static void display_handle_mode(void *data,
    (void)output;
    (void)flags;
 
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->width                  = width;
-   wl->height                 = height;
-   wl->refresh_rate           = refresh;
+   output_info_t *oi = (output_info_t*)data;
+   oi->width                  = width;
+   oi->height                 = height;
+   oi->refresh_rate           = refresh;
 
    /* Certain older Wayland implementations report in Hz,
     * but it should be mHz. */
@@ -796,10 +835,10 @@ static void display_handle_scale(void *data,
       struct wl_output *output,
       int32_t factor)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi = (output_info_t*)data;
 
-   RARCH_LOG("[Wayland]: Setting buffer scale factor to %d.\n", factor);
-   wl->buffer_scale = factor;
+   RARCH_LOG("[Wayland]: Display scale factor %d.\n", factor);
+   oi->scale = factor;
 }
 
 static const struct wl_output_listener output_listener = {
@@ -813,7 +852,6 @@ static const struct wl_output_listener output_listener = {
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
-   struct wl_output *output   = NULL;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    (void)version;
@@ -823,9 +861,12 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
             id, &wl_compositor_interface, 3);
    else if (string_is_equal(interface, "wl_output"))
    {
-      output = (struct wl_output*)wl_registry_bind(reg,
+      output_info_t *oi = calloc(1, sizeof(output_info_t));
+      oi->global_id = id;
+      oi->output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
-      wl_output_add_listener(output, &output_listener, wl);
+      wl_output_add_listener(oi->output, &output_listener, oi);
+      wl_list_insert(&wl->all_outputs, &oi->link);
       wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, "xdg_wm_base"))
@@ -855,9 +896,16 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 static void registry_handle_global_remove(void *data,
       struct wl_registry *registry, uint32_t id)
 {
-   (void)data;
-   (void)registry;
-   (void)id;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi, *tmp;
+
+   wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link) {
+      if (oi->global_id == id) {
+         wl_list_remove(&oi->link);
+         free(oi);
+         break;
+      }
+   }
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -1009,13 +1057,14 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height,
       bool is_shutdown)
 {
+   // this function works with SCALED sizes, it's used from the renderer
    unsigned new_width, new_height;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    flush_wayland_fd(&wl->input);
 
-   new_width  = *width;
-   new_height = *height;
+   new_width  = *width  * wl->last_buffer_scale;
+   new_height = *height * wl->last_buffer_scale;
 
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
@@ -1033,11 +1082,12 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
          break;
    }
 
-   if (new_width != *width || new_height != *height)
+   if (new_width != *width * wl->last_buffer_scale || new_height != *height * wl->last_buffer_scale)
    {
       *resize = true;
       *width  = new_width;
       *height = new_height;
+      wl->last_buffer_scale = wl->buffer_scale;
    }
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
@@ -1058,9 +1108,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl->width  = width  / wl->buffer_scale;
-         wl->height = height / wl->buffer_scale;
-
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
             wl->vk.context.invalid_swapchain = true;
@@ -1081,6 +1128,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
    }
 
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    return true;
 }
 
@@ -1103,7 +1151,7 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 	   else if (wl->zxdg_toplevel) {
 		   if (wl->deco) {
 			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		  } 
+		  }
 		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
 	  }
 	   else if (wl->shell_surf)
@@ -1111,27 +1159,26 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 	}
 }
 
-
 static bool gfx_ctx_wl_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl || wl->physical_width == 0 || wl->physical_height == 0)
+   if (!wl || !wl->current_output || wl->current_output->physical_width == 0 || wl->current_output->physical_height == 0)
       return false;
 
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)wl->physical_width;
+         *value = (float)wl->current_output->physical_width;
          break;
 
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)wl->physical_height;
+         *value = (float)wl->current_output->physical_height;
          break;
 
       case DISPLAY_METRIC_DPI:
-         *value = (float)wl->width * 25.4f / (float)wl->physical_width;
+         *value = (float)wl->current_output->width * 25.4f / (float)wl->current_output->physical_width;
          break;
 
       default:
@@ -1206,6 +1253,8 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    (void)video_driver;
 
+   wl_list_init(&wl->all_outputs);
+
 #ifdef HAVE_EGL
    switch (wl_api)
    {
@@ -1242,6 +1291,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    frontend_driver_destroy_signal_handler_state();
 
    wl->input.dpy = wl_display_connect(NULL);
+   wl->last_buffer_scale = 1;
    wl->buffer_scale = 1;
 
    if (!wl->input.dpy)
@@ -1272,23 +1322,23 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    {
       RARCH_LOG("[Wayland]: Using zxdg_shell_v6 interface.\n");
    }
-   
+
    if (!wl->xdg_shell && !wl->zxdg_shell)
    {
 	   RARCH_WARN("[Wayland]: Fallback to deprecated wl_shell interface!.\n");
    }
-   
+
    if (!wl->xdg_shell && !wl->zxdg_shell && !wl->shell)
    {
 	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
 	   goto error;
    }
-   
+
    if (!wl->idle_inhibit_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
    }
-   
+
    if (!wl->deco_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
@@ -1326,7 +1376,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       default:
          break;
    }
-
 
    wl->input.keyboard_focus = true;
    wl->input.mouse.focus = true;
@@ -1502,6 +1551,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->surface                = wl_compositor_create_surface(wl->compositor);
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
    switch (wl_api)
    {
@@ -1509,33 +1559,33 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         wl->win        = wl_egl_window_create(wl->surface, wl->width, wl->height);
+         wl->win        = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
 #endif
          break;
       case GFX_CTX_NONE:
       default:
          break;
    }
-   
+
    if (wl->xdg_shell) {
 	   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
 	   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
-	   
+
 	   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
 	   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
-	   
-	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "RetroArch");
+
+	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-	   
+
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
 	   }
-	   
+
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
-	   
+
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
@@ -1544,22 +1594,22 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    } else if (wl->zxdg_shell) {
 	   wl->zxdg_surface = zxdg_shell_v6_get_xdg_surface(wl->zxdg_shell, wl->surface);
 	   zxdg_surface_v6_add_listener(wl->zxdg_surface, &zxdg_surface_v6_listener, wl);
-	   
+
 	   wl->zxdg_toplevel = zxdg_surface_v6_get_toplevel(wl->zxdg_surface);
 	   zxdg_toplevel_v6_add_listener(wl->zxdg_toplevel, &zxdg_toplevel_v6_listener, wl);
-	   
-	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "RetroArch");
+
+	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "retroarch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-	   
+
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
 	   }
-	   
+
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
-	   
+
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
@@ -1572,7 +1622,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
 	   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
    }
-	   
+
 
    switch (wl_api)
    {
@@ -1672,7 +1722,7 @@ static bool gfx_ctx_wl_has_focus(void *data)
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
 	(void)data;
-	
+
 	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
     if (!wl->idle_inhibit_manager)
@@ -1872,7 +1922,10 @@ static float gfx_ctx_wl_get_refresh_rate(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   return (float) wl->refresh_rate / 1000.0f;
+   if (!wl || !wl->current_output)
+      return false;
+
+   return (float) wl->current_output->refresh_rate / 1000.0f;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {

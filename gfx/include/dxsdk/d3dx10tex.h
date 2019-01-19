@@ -12,7 +12,6 @@
 #ifndef __D3DX10TEX_H__
 #define __D3DX10TEX_H__
 
-
 //----------------------------------------------------------------------------
 // D3DX10_FILTER flags:
 // ------------------
@@ -144,8 +143,6 @@ typedef enum D3DX10_CHANNEL_FLAG
     D3DX10_CHANNEL_LUMINANCE     =    (1 << 4),
 } D3DX10_CHANNEL_FLAG;
 
-
-
 //----------------------------------------------------------------------------
 // D3DX10_IMAGE_FILE_FORMAT:
 // ---------------------
@@ -166,7 +163,6 @@ typedef enum D3DX10_IMAGE_FILE_FORMAT
 
 } D3DX10_IMAGE_FILE_FORMAT;
 
-
 //----------------------------------------------------------------------------
 // D3DX10_SAVE_TEXTURE_FLAG:
 // ---------------------
@@ -178,8 +174,6 @@ typedef enum D3DX10_SAVE_TEXTURE_FLAG
 {
     D3DX10_STF_USEINPUTBLOB      = 0x0001,
 } D3DX10_SAVE_TEXTURE_FLAG;
-
-
 
 //----------------------------------------------------------------------------
 // D3DX10_IMAGE_INFO:
@@ -221,15 +215,9 @@ typedef struct D3DX10_IMAGE_INFO
     D3DX10_IMAGE_FILE_FORMAT    ImageFileFormat;
 } D3DX10_IMAGE_INFO;
 
-
-
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Image File APIs ///////////////////////////////////////////////////////////
@@ -271,7 +259,6 @@ extern "C" {
 //      (optional) pointer to a D3DX10_IMAGE_INFO structure that will get 
 //      populated with source image information
 //----------------------------------------------------------------------------
-
 
 typedef struct D3DX10_IMAGE_LOAD_INFO
 {
@@ -359,7 +346,6 @@ HRESULT WINAPI
 #define D3DX10GetImageInfoFromFile D3DX10GetImageInfoFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DX10GetImageInfoFromResourceA(
         HMODULE                   hSrcModule,
@@ -382,7 +368,6 @@ HRESULT WINAPI
 #define D3DX10GetImageInfoFromResource D3DX10GetImageInfoFromResourceA
 #endif
 
-
 HRESULT WINAPI
     D3DX10GetImageInfoFromMemory(
         LPCVOID                   pSrcData,
@@ -390,7 +375,6 @@ HRESULT WINAPI
         ID3DX10ThreadPump*        pPump,
         D3DX10_IMAGE_INFO*        pSrcInfo,
         HRESULT*                  pHResult);
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Create/Save Texture APIs //////////////////////////////////////////////////
@@ -432,7 +416,6 @@ HRESULT WINAPI
 //      the asynchronous execution completes.
 //
 //----------------------------------------------------------------------------
-
 
 // FromFile
 
@@ -483,7 +466,6 @@ HRESULT WINAPI
 #else
 #define D3DX10CreateTextureFromFile D3DX10CreateTextureFromFileA
 #endif
-
 
 // FromResource (resources in dll/exes)
 
@@ -539,7 +521,6 @@ HRESULT WINAPI
 #define D3DX10CreateTextureFromResource D3DX10CreateTextureFromResourceA
 #endif
 
-
 // FromFileInMemory
 
 HRESULT WINAPI
@@ -561,7 +542,6 @@ HRESULT WINAPI
         ID3DX10ThreadPump*        pPump,    
         ID3D10Resource**          ppTexture,
         HRESULT*                  pHResult);
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Misc Texture APIs /////////////////////////////////////////////////////////
@@ -604,7 +584,6 @@ typedef struct _D3DX10_TEXTURE_LOAD_INFO
 
 } D3DX10_TEXTURE_LOAD_INFO;
 
-
 //----------------------------------------------------------------------------
 // D3DX10LoadTextureFromTexture:
 // ----------------------------
@@ -614,13 +593,11 @@ typedef struct _D3DX10_TEXTURE_LOAD_INFO
 //
 //----------------------------------------------------------------------------
 
-
 HRESULT WINAPI
     D3DX10LoadTextureFromTexture(
         ID3D10Resource            *pSrcTexture,
         D3DX10_TEXTURE_LOAD_INFO  *pLoadInfo,
         ID3D10Resource            *pDstTexture);
-
 
 //----------------------------------------------------------------------------
 // D3DX10FilterTexture:
@@ -643,7 +620,6 @@ HRESULT WINAPI
         ID3D10Resource            *pTexture,
         UINT                      SrcLevel,
         UINT                      MipFilter);
-
 
 //----------------------------------------------------------------------------
 // D3DX10SaveTextureToFile:
@@ -678,7 +654,6 @@ HRESULT WINAPI
 #define D3DX10SaveTextureToFile D3DX10SaveTextureToFileA
 #endif
 
-
 //----------------------------------------------------------------------------
 // D3DX10SaveTextureToMemory:
 // ----------------------
@@ -701,7 +676,6 @@ HRESULT WINAPI
         D3DX10_IMAGE_FILE_FORMAT   DestFormat,
         LPD3D10BLOB*               ppDestBuf,
         UINT                       Flags);
-
 
 //----------------------------------------------------------------------------
 // D3DX10ComputeNormalMap:
@@ -729,7 +703,6 @@ HRESULT WINAPI
         UINT                      Channel,
         FLOAT                     Amplitude,
         ID3D10Texture2D		     *pDestTexture);
-
 
 //----------------------------------------------------------------------------
 // D3DX10SHProjectCubeMap:
@@ -763,4 +736,3 @@ HRESULT WINAPI
 #endif //__cplusplus
 
 #endif //__D3DX10TEX_H__
-

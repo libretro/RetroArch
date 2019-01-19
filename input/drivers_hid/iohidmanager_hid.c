@@ -545,9 +545,6 @@ static void iohidmanager_hid_device_get_product_string(
       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
 }
 
-
-
-
 static void iohidmanager_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
@@ -877,7 +874,6 @@ static void iohidmanager_hid_device_add_device(
       tmpButtons              = next;
    }
 
-
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
 
@@ -966,7 +962,6 @@ static int iohidmanager_hid_manager_init(iohidmanager_hid_t *hid)
          kCFRunLoopDefaultMode);
    return 0;
 }
-
 
 static int iohidmanager_hid_manager_free(iohidmanager_hid_t *hid)
 {
@@ -1058,7 +1053,6 @@ static int iohidmanager_hid_manager_set_device_matching(
 		devList = ptr;
 	}
 	free(device_array);
-
 
 #if !(defined(__ppc__) || defined(__ppc64__))
 	/* register call back to dynamically add device plugged when retroarch is

@@ -98,20 +98,12 @@ void dinput_destroy_context(void)
 
    IDirectInput8_Release(g_dinput_ctx);
    g_dinput_ctx = NULL;
-
-   CoUninitialize();
 }
 
 bool dinput_init_context(void)
 {
    if (g_dinput_ctx)
       return true;
-
-   if (FAILED(CoInitialize(NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to initialize the COM interface\n");
-      return false;
-   }
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
@@ -131,11 +123,8 @@ bool dinput_init_context(void)
 
 error:
    RARCH_ERR("[DINPUT]: Failed to initialize DirectInput.\n");
-   CoUninitialize();
    return false;
 }
-
-
 
 static void *dinput_init(const char *joypad_driver)
 {
@@ -245,7 +234,6 @@ static void dinput_poll(void *data)
 
       di->mouse_rel_x = mouse_state.lX;
       di->mouse_rel_y = mouse_state.lY;
-
 
       if (!mouse_state.rgbButtons[0])
          unset_doubleclick_on_titlebar();
@@ -764,9 +752,9 @@ static void dinput_clear_pointers(struct dinput_input *di)
    }
 }
 
-bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
+bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lParam)
 {
-   struct dinput_input *di = (struct dinput_input *)dinput;
+   struct dinput_input *di = (struct dinput_input *)data;
    /* WM_POINTERDOWN   : Arrives for each new touch event
     *                    with a new ID - add to list.
     * WM_POINTERUP     : Arrives once the pointer is no

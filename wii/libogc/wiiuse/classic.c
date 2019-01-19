@@ -133,7 +133,6 @@ int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, ubyt
 	return 1;
 }
 
-
 /**
  *	@brief The classic controller disconnected.
  *
@@ -143,8 +142,6 @@ void classic_ctrl_disconnected(struct classic_ctrl_t* cc)
 {
 	memset(cc, 0, sizeof(struct classic_ctrl_t));
 }
-
-
 
 /**
  *	@brief Handle classic controller event.
@@ -199,7 +196,6 @@ void classic_ctrl_event(struct classic_ctrl_t* cc, ubyte* msg) {
 	calc_joystick_state(&cc->rjs, cc->rjs.pos.x, cc->rjs.pos.y);
 #endif
 }
-
 
 /**
  *	@brief Find what buttons are pressed.

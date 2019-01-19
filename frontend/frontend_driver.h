@@ -124,10 +124,12 @@ extern frontend_ctx_driver_t frontend_ctx_ps2;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_switch;
 extern frontend_ctx_driver_t frontend_ctx_win32;
+extern frontend_ctx_driver_t frontend_ctx_uwp;
 extern frontend_ctx_driver_t frontend_ctx_xenon;
 extern frontend_ctx_driver_t frontend_ctx_emscripten;
 extern frontend_ctx_driver_t frontend_ctx_dos;
 extern frontend_ctx_driver_t frontend_ctx_switch;
+extern frontend_ctx_driver_t frontend_ctx_orbis;
 extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**

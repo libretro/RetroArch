@@ -201,7 +201,6 @@ void nk_common_device_draw(struct nk_device *dev,
 
    menu_display_blend_begin();
 
-
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glActiveTexture(GL_TEXTURE0);
 #endif
@@ -307,4 +306,3 @@ void nk_common_mem_free(nk_handle unused, void *ptr)
    (void)unused;
    free(ptr);
 }
-

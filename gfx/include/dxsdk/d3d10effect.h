@@ -230,7 +230,6 @@ HRESULT WINAPI D3D10CreateStateBlock(_In_ ID3D10Device *pDevice, _In_ D3D10_STAT
 #define D3D10_EFFECT_COMPILE_ALLOW_SLOW_OPS            (1 << 1)
 #define D3D10_EFFECT_SINGLE_THREADED                   (1 << 3)
 
-
 //----------------------------------------------------------------------------
 // D3D10_EFFECT_VARIABLE flags:
 // ----------------------------
@@ -661,7 +660,6 @@ typedef interface ID3D10EffectShaderResourceVariable *LPD3D10EFFECTSHADERRESOURC
 DEFINE_GUID(IID_ID3D10EffectShaderResourceVariable, 
 0xc0a7157b, 0xd872, 0x4b1d, 0x80, 0x73, 0xef, 0xc2, 0xac, 0xd4, 0xb1, 0xfc);
 
-
 #undef INTERFACE
 #define INTERFACE ID3D10EffectShaderResourceVariable
 
@@ -898,7 +896,6 @@ typedef struct _D3D10_EFFECT_SHADER_DESC
     UINT NumInputSignatureEntries;  // Number of entries in the input signature
     UINT NumOutputSignatureEntries; // Number of entries in the output signature
 } D3D10_EFFECT_SHADER_DESC;
-
 
 typedef interface ID3D10EffectShaderVariable ID3D10EffectShaderVariable;
 typedef interface ID3D10EffectShaderVariable *LPD3D10EFFECTSHADERVARIABLE;
@@ -1434,7 +1431,6 @@ HRESULT WINAPI D3D10CreateEffectFromMemory(_In_reads_bytes_(DataLength) void *pD
 HRESULT WINAPI D3D10CreateEffectPoolFromMemory(_In_reads_bytes_(DataLength) void *pData, SIZE_T DataLength, UINT FXFlags, _In_ ID3D10Device *pDevice,
     _Out_ ID3D10EffectPool **ppEffectPool);
 
-
 //----------------------------------------------------------------------------
 // D3D10DisassembleEffect:
 // -----------------------
@@ -1459,5 +1455,3 @@ HRESULT WINAPI D3D10DisassembleEffect(_In_ ID3D10Effect *pEffect, BOOL EnableCol
 /*#pragma endregion*/
 
 #endif //__D3D10EFFECT_H__
-
-

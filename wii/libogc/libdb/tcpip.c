@@ -176,7 +176,6 @@ static s8_t tcpip_recved(void *arg,struct uip_tcp_pcb *pcb,struct uip_pbuf *p,s8
 	return UIP_ERR_OK;
 }
 
-
 static s8_t tcpip_accept_func(void *arg,struct uip_tcp_pcb *newpcb,s8_t err)
 {
 	s32_t s;
@@ -463,4 +462,3 @@ void tcpip_starttimer(s32_t s)
 
 	if(tcpip_time==0 && sock->pcb && (uip_tcp_active_pcbs || uip_tcp_tw_pcbs)) tcpip_time = gettime();
 }
-

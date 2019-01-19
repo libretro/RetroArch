@@ -28,7 +28,6 @@
 extern "C" {
 #endif	/* __cplusplus */
 
-
 /* Opaque data type SRC_STATE. */
 typedef struct SRC_STATE_tag SRC_STATE ;
 
@@ -179,7 +178,6 @@ enum
 void src_short_to_float_array (const short *in, float *out, int len) ;
 void src_float_to_short_array (const float *in, short *out, int len) ;
 
-
 #ifdef __cplusplus
 }		/* extern "C" */
 #endif	/* __cplusplus */
@@ -193,4 +191,3 @@ void src_float_to_short_array (const float *in, short *out, int len) ;
 **
 ** arch-tag: 5421ef3e-c898-4ec3-8671-ea03d943ee00
 */
-

@@ -118,7 +118,6 @@ static int udev_find_vacant_pad(void)
    return -1;
 }
 
-
 static int udev_open_joystick(const char *path)
 {
    unsigned long evbit[NBITS(EV_MAX)]   = {0};
@@ -544,8 +543,8 @@ static void udev_joypad_poll(void)
 /* Used for sorting devnodes to appear in the correct order */
 static int sort_devnodes(const void *a, const void *b)
 {
-   const struct joypad_udev_entry *aa = a;
-   const struct joypad_udev_entry *bb = b;
+   const struct joypad_udev_entry *aa = (const struct joypad_udev_entry*)a;
+   const struct joypad_udev_entry *bb = (const struct joypad_udev_entry*)b;
    return strcmp(aa->devnode, bb->devnode);
 }
 

@@ -208,7 +208,9 @@ bool menu_shader_manager_set_preset(void *data,
    }
    config_file_free(conf);
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
 
    return true;
 }
@@ -341,7 +343,7 @@ bool menu_shader_manager_save_preset(
       if (!string_is_empty(basename))
          strlcpy(preset_path, buffer, sizeof(preset_path));
 
-      if (config_file_write(conf, preset_path))
+      if (config_file_write(conf, preset_path, true))
       {
          RARCH_LOG("Saved shader preset to %s.\n", preset_path);
          if (apply)
@@ -361,7 +363,7 @@ bool menu_shader_manager_save_preset(
          fill_pathname_join(preset_path, dirs[d],
                buffer, sizeof(preset_path));
 
-         if (config_file_write(conf, preset_path))
+         if (config_file_write(conf, preset_path, true))
          {
             RARCH_LOG("Saved shader preset to %s.\n", preset_path);
             if (apply)
@@ -394,7 +396,10 @@ int menu_shader_manager_clear_num_passes(void)
    if (shader->passes)
       shader->passes = 0;
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
+
    video_shader_resolve_parameters(NULL, shader);
 
    return 0;

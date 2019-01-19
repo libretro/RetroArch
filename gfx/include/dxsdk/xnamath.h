@@ -56,7 +56,6 @@ Abstract:
 #error xnamath.h only supports x86, x64, or XBox 360 targets
 #endif
 
-
 #if defined(_XM_SSE_INTRINSICS_)
 #ifndef _XM_NO_INTRINSICS_
 #include <xmmintrin.h>
@@ -110,7 +109,6 @@ Abstract:
 #else
 #define _DECLSPEC_ALIGN_16_
 #endif
-
 
 #if defined(_MSC_VER) && (_MSC_VER<1500) && (_MSC_VER>=1400)
 #define _XM_ISVS2005_
@@ -168,7 +166,6 @@ XMFINLINE FLOAT XMConvertToDegrees(FLOAT fRadians) { return fRadians * (180.0f /
 #define XMComparisonMixed(CR)              (((CR) & XM_CRMASK_CR6) == 0)
 #define XMComparisonAllInBounds(CR)        (((CR) & XM_CRMASK_CR6BOUNDS) == XM_CRMASK_CR6BOUNDS)
 #define XMComparisonAnyOutOfBounds(CR)     (((CR) & XM_CRMASK_CR6BOUNDS) != XM_CRMASK_CR6BOUNDS)
-
 
 #define XMMin(a, b) (((a) < (b)) ? (a) : (b))
 #define XMMax(a, b) (((a) > (b)) ? (a) : (b))
@@ -1882,7 +1879,6 @@ typedef __declspec(align(16)) XMFLOAT4X4 XMFLOAT4X4A;
 
 #pragma warning(pop)
 
-
 /****************************************************************************
  *
  * Data conversion operations
@@ -2246,7 +2242,6 @@ XMVECTOR        XMVectorBaryCentricV(FXMVECTOR Position0, FXMVECTOR Position1, F
  *
  ****************************************************************************/
 
-
 BOOL            XMVector2Equal(FXMVECTOR V1, FXMVECTOR V2);
 UINT            XMVector2EqualR(FXMVECTOR V1, FXMVECTOR V2);
 BOOL            XMVector2EqualInt(FXMVECTOR V1, FXMVECTOR V2);
@@ -2311,7 +2306,6 @@ XMFLOAT2*       XMVector2TransformNormalStream(_Out_bytecap_x_(sizeof(XMFLOAT2)+
  * 3D vector operations
  *
  ****************************************************************************/
-
 
 BOOL            XMVector3Equal(FXMVECTOR V1, FXMVECTOR V2);
 UINT            XMVector3EqualR(FXMVECTOR V1, FXMVECTOR V2);
@@ -2935,4 +2929,3 @@ XMFINLINE XMVECTOR XMVectorInsert(FXMVECTOR VD, FXMVECTOR VS, UINT VSLeftRotateE
 #pragma warning(pop)
 
 #endif // __XNAMATH_H__
-

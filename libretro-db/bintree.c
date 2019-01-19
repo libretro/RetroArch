@@ -86,7 +86,6 @@ static int bintree_insert_internal(bintree_t *t, struct bintree_node *root, void
    return -EINVAL;
 }
 
-
 static int bintree_iterate_internal(struct bintree_node *n,
       bintree_iter_cb cb, void *ctx)
 {

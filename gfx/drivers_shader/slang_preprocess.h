@@ -39,4 +39,3 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 #endif
 
 #endif
-

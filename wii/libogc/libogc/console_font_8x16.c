@@ -4609,5 +4609,3 @@ unsigned char console_font_8x16[] = {
 	0x00, /* 00000000 */
 
 };
-
-

@@ -42,7 +42,6 @@ typedef enum D2D1_INK_NIB_SHAPE
 
 } D2D1_INK_NIB_SHAPE;
 
-
 /// <summary>
 /// Specifies the orientation of an image.
 /// </summary>
@@ -60,7 +59,6 @@ typedef enum D2D1_ORIENTATION
 
 } D2D1_ORIENTATION;
 
-
 /// <summary>
 /// Option flags controlling how images sources are loaded during
 /// CreateImageSourceFromWic.
@@ -76,7 +74,6 @@ typedef enum D2D1_IMAGE_SOURCE_LOADING_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_IMAGE_SOURCE_LOADING_OPTIONS);
 
-
 /// <summary>
 /// Option flags controlling primary conversion performed by
 /// CreateImageSourceFromDxgi, if any.
@@ -90,7 +87,6 @@ typedef enum D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS
 } D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS);
-
 
 /// <summary>
 /// Option flags for transformed image sources.
@@ -109,7 +105,6 @@ typedef enum D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS
 } D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS);
-
 
 /// <summary>
 /// Properties of a transformed image source.
@@ -145,7 +140,6 @@ typedef struct D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES
 
 } D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES;
 
-
 /// <summary>
 /// Represents a point, radius pair that makes up part of a D2D1_INK_BEZIER_SEGMENT.
 /// </summary>
@@ -156,7 +150,6 @@ typedef struct D2D1_INK_POINT
     FLOAT radius;
 
 } D2D1_INK_POINT;
-
 
 /// <summary>
 /// Represents a Bezier segment to be used in the creation of an ID2D1Ink object.
@@ -170,7 +163,6 @@ typedef struct D2D1_INK_BEZIER_SEGMENT
     D2D1_INK_POINT point3;
 
 } D2D1_INK_BEZIER_SEGMENT;
-
 
 /// <summary>
 /// Defines the general pen tip shape and the transform used in an ID2D1InkStyle
@@ -190,7 +182,6 @@ typedef struct D2D1_INK_STYLE_PROPERTIES
     D2D1_MATRIX_3X2_F nibTransform;
 
 } D2D1_INK_STYLE_PROPERTIES;
-
 
 /// <summary>
 /// Specifies how to render gradient mesh edges.
@@ -215,7 +206,6 @@ typedef enum D2D1_PATCH_EDGE_MODE
     D2D1_PATCH_EDGE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_PATCH_EDGE_MODE;
-
 
 /// <summary>
 /// Represents a tensor patch with 16 control points, 4 corner colors, and boundary
@@ -366,7 +356,6 @@ typedef enum D2D1_SPRITE_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_SPRITE_OPTIONS);
 
-
 /// <summary>
 /// Specifies the pixel snapping policy when rendering color bitmap glyphs.
 /// </summary>
@@ -386,7 +375,6 @@ typedef enum D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION
     D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION_FORCE_DWORD = 0xffffffff
 
 } D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION;
-
 
 /// <summary>
 /// This determines what gamma is used for interpolation/blending.
@@ -411,7 +399,6 @@ typedef enum D2D1_GAMMA1
     D2D1_GAMMA1_FORCE_DWORD = 0xffffffff
 
 } D2D1_GAMMA1;
-
 
 /// <summary>
 /// Simple description of a color space.
@@ -447,7 +434,6 @@ typedef struct D2D1_SIMPLE_COLOR_PROFILE
 
 } D2D1_SIMPLE_COLOR_PROFILE;
 
-
 /// <summary>
 /// Specifies which way a color profile is defined.
 /// </summary>
@@ -459,7 +445,6 @@ typedef enum D2D1_COLOR_CONTEXT_TYPE
     D2D1_COLOR_CONTEXT_TYPE_FORCE_DWORD = 0xffffffff
 
 } D2D1_COLOR_CONTEXT_TYPE;
-
 
 EXTERN_C CONST IID IID_ID2D1InkStyle;
 EXTERN_C CONST IID IID_ID2D1Ink;
@@ -493,9 +478,7 @@ EXTERN_C CONST IID IID_ID2D1DeviceContext6;
 EXTERN_C CONST IID IID_ID2D1Device6;
 EXTERN_C CONST IID IID_ID2D1Factory7;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// Represents a collection of style properties to be used by methods like
@@ -529,7 +512,6 @@ interface DX_DECLARE_INTERFACE("bae8b344-23fc-4071-8cb5-d05d6f073848") ID2D1InkS
         SetNibTransform(&transform);
     }
 }; // interface ID2D1InkStyle
-
 
 /// <summary>
 /// Represents a single continuous stroke of variable-width ink, as defined by a
@@ -681,7 +663,6 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
     }
 }; // interface ID2D1Ink
 
-
 /// <summary>
 /// Represents a device-dependent representation of a gradient mesh composed of
 /// patches. Use the ID2D1DeviceContext2::CreateGradientMesh method to create an
@@ -706,7 +687,6 @@ interface DX_DECLARE_INTERFACE("f292e401-c050-4cde-83d7-04962d3b23c2") ID2D1Grad
         ) CONST PURE;
 }; // interface ID2D1GradientMesh
 
-
 /// <summary>
 /// Represents a producer of pixels that can fill an arbitrary 2D plane.
 /// </summary>
@@ -720,7 +700,6 @@ interface DX_DECLARE_INTERFACE("c9b664e5-74a1-4378-9ac2-eefc37a3f4d8") ID2D1Imag
         _Out_ BOOL *resourcesDiscarded 
         ) PURE;
 }; // interface ID2D1ImageSource
-
 
 /// <summary>
 /// Produces 2D pixel data that has been sourced from WIC.
@@ -759,7 +738,6 @@ interface DX_DECLARE_INTERFACE("77395441-1c8f-4555-8683-f50dab0fe792") ID2D1Imag
     }
 }; // interface ID2D1ImageSourceFromWic
 
-
 /// <summary>
 /// Represents an image source which shares resources with an original image source.
 /// </summary>
@@ -775,7 +753,6 @@ interface DX_DECLARE_INTERFACE("7f1f79e5-2796-416c-8f55-700f911445e5") ID2D1Tran
         ) CONST PURE;
 }; // interface ID2D1TransformedImageSource
 
-
 /// <summary>
 /// A container for 3D lookup table data that can be passed to the LookupTable3D
 /// effect.
@@ -783,7 +760,6 @@ interface DX_DECLARE_INTERFACE("7f1f79e5-2796-416c-8f55-700f911445e5") ID2D1Tran
 interface DX_DECLARE_INTERFACE("53dd9855-a3b0-4d5b-82e1-26e25c5e5797") ID2D1LookupTable3D  : public ID2D1Resource
 {
 }; // interface ID2D1LookupTable3D
-
 
 /// <summary>
 /// This interface performs all the same functions as the ID2D1DeviceContext1
@@ -952,7 +928,6 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
     }
 }; // interface ID2D1DeviceContext2
 
-
 /// <summary>
 /// Represents a resource domain whose objects and device contexts can be used
 /// together. This interface performs all the same functions as the existing
@@ -989,7 +964,6 @@ interface DX_DECLARE_INTERFACE("a44472e1-8dfb-4e60-8492-6e2861c9ca8b") ID2D1Devi
         ) PURE;
 }; // interface ID2D1Device2
 
-
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
 /// ID2D1Device2 objects.
@@ -1009,7 +983,6 @@ interface DX_DECLARE_INTERFACE("0869759f-4f00-413f-b03e-2bda45404d0f") ID2D1Fact
     
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory3
-
 
 /// <summary>
 /// This interface performs all the same functions as the existing ID2D1CommandSink1
@@ -1037,7 +1010,6 @@ interface DX_DECLARE_INTERFACE("3bab440e-417e-47df-a2e2-bc0be6a00916") ID2D1Comm
     using ID2D1CommandSink::DrawGdiMetafile;
 }; // interface ID2D1CommandSink2
 
-
 /// <summary>
 /// Interface encapsulating a GDI/GDI+ metafile.
 /// </summary>
@@ -1061,7 +1033,6 @@ interface DX_DECLARE_INTERFACE("2e69f9e8-dd3f-4bf9-95ba-c04f49d788df") ID2D1GdiM
         ) PURE;
 }; // interface ID2D1GdiMetafile1
 
-
 /// <summary>
 /// User-implementable interface for introspecting on a metafile.
 /// </summary>
@@ -1080,7 +1051,6 @@ interface DX_DECLARE_INTERFACE("fd0ecb6b-91e6-411e-8655-395e760f91b4") ID2D1GdiM
     
     using ID2D1GdiMetafileSink::ProcessRecord;
 }; // interface ID2D1GdiMetafileSink1
-
 
 #if NTDDI_VERSION >= NTDDI_WIN10_TH2
 
@@ -1144,7 +1114,6 @@ interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1Spri
         ) PURE;
 }; // interface ID2D1SpriteBatch
 
-
 interface DX_DECLARE_INTERFACE("235a7496-8351-414c-bcd4-6672ab2d8e00") ID2D1DeviceContext3  : public ID2D1DeviceContext2
 {
     
@@ -1183,7 +1152,6 @@ interface DX_DECLARE_INTERFACE("235a7496-8351-414c-bcd4-6672ab2d8e00") ID2D1Devi
     }
 }; // interface ID2D1DeviceContext3
 
-
 interface DX_DECLARE_INTERFACE("852f2087-802c-4037-ab60-ff2e7ee6fc01") ID2D1Device3  : public ID2D1Device2
 {
     
@@ -1201,7 +1169,6 @@ interface DX_DECLARE_INTERFACE("852f2087-802c-4037-ab60-ff2e7ee6fc01") ID2D1Devi
     
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device3
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1225,7 +1192,6 @@ interface DX_DECLARE_INTERFACE("bd4ec2d2-0662-4bee-ba8e-6f29f032e096") ID2D1Fact
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory4
 
-
 interface DX_DECLARE_INTERFACE("18079135-4cf3-4868-bc8e-06067e6d242d") ID2D1CommandSink3  : public ID2D1CommandSink2
 {
     
@@ -1238,7 +1204,6 @@ interface DX_DECLARE_INTERFACE("18079135-4cf3-4868-bc8e-06067e6d242d") ID2D1Comm
         D2D1_SPRITE_OPTIONS spriteOptions 
         ) PURE;
 }; // interface ID2D1CommandSink3
-
 
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_TH2
 #if NTDDI_VERSION >= NTDDI_WIN10_RS1
@@ -1308,7 +1273,6 @@ interface DX_DECLARE_INTERFACE("af671749-d241-4db8-8e41-dcc2e5c1a438") ID2D1SvgG
         _Out_opt_ FLOAT *dashOffset = NULL 
         ) PURE;
 }; // interface ID2D1SvgGlyphStyle
-
 
 interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1DeviceContext4  : public ID2D1DeviceContext3
 {
@@ -1475,7 +1439,6 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
     }
 }; // interface ID2D1DeviceContext4
 
-
 interface DX_DECLARE_INTERFACE("d7bdb159-5683-4a46-bc9c-72dc720b858b") ID2D1Device4  : public ID2D1Device3
 {
     
@@ -1513,7 +1476,6 @@ interface DX_DECLARE_INTERFACE("d7bdb159-5683-4a46-bc9c-72dc720b858b") ID2D1Devi
         ) CONST PURE;
 }; // interface ID2D1Device4
 
-
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
 /// ID2D1Device4 objects.
@@ -1538,7 +1500,6 @@ interface DX_DECLARE_INTERFACE("c4349994-838e-4b0f-8cab-44997d9eeacc") ID2D1Fact
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory5
 
-
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2
 
@@ -1561,7 +1522,6 @@ interface DX_DECLARE_INTERFACE("c78a6519-40d6-4218-b2de-beeeb744bb3e") ID2D1Comm
         D2D1_PRIMITIVE_BLEND primitiveBlend 
         ) PURE;
 }; // interface ID2D1CommandSink4
-
 
 /// <summary>
 /// Represents a color context to be used with the Color Management Effect.
@@ -1589,7 +1549,6 @@ interface DX_DECLARE_INTERFACE("1ab42875-c57f-4be9-bd85-9cd78d6f55ee") ID2D1Colo
         _Out_ D2D1_SIMPLE_COLOR_PROFILE *simpleProfile 
         ) CONST PURE;
 }; // interface ID2D1ColorContext1
-
 
 interface DX_DECLARE_INTERFACE("7836d248-68cc-4df6-b9e8-de991bf62eb7") ID2D1DeviceContext5  : public ID2D1DeviceContext4
 {
@@ -1647,7 +1606,6 @@ interface DX_DECLARE_INTERFACE("7836d248-68cc-4df6-b9e8-de991bf62eb7") ID2D1Devi
     }
 }; // interface ID2D1DeviceContext5
 
-
 interface DX_DECLARE_INTERFACE("d55ba0a4-6405-4694-aef5-08ee1a4358b4") ID2D1Device5  : public ID2D1Device4
 {
     
@@ -1669,7 +1627,6 @@ interface DX_DECLARE_INTERFACE("d55ba0a4-6405-4694-aef5-08ee1a4358b4") ID2D1Devi
     
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device5
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1697,7 +1654,6 @@ interface DX_DECLARE_INTERFACE("f9976f46-f642-44c1-97ca-da32ea2a2635") ID2D1Fact
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory6
 
-
 #endif
 #if NTDDI_VERSION >= NTDDI_WIN10_RS3
 
@@ -1713,7 +1669,6 @@ interface DX_DECLARE_INTERFACE("7047dd26-b1e7-44a7-959a-8349e2144fa8") ID2D1Comm
         ) PURE;
 }; // interface ID2D1CommandSink5
 
-
 interface DX_DECLARE_INTERFACE("985f7e37-4ed0-4a19-98a3-15b0edfde306") ID2D1DeviceContext6  : public ID2D1DeviceContext5
 {
     
@@ -1728,7 +1683,6 @@ interface DX_DECLARE_INTERFACE("985f7e37-4ed0-4a19-98a3-15b0edfde306") ID2D1Devi
         D2D1_INTERPOLATION_MODE interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR 
         ) PURE;
 }; // interface ID2D1DeviceContext6
-
 
 interface DX_DECLARE_INTERFACE("7bfef914-2d75-4bad-be87-e18ddb077b6d") ID2D1Device6  : public ID2D1Device5
 {
@@ -1753,7 +1707,6 @@ interface DX_DECLARE_INTERFACE("7bfef914-2d75-4bad-be87-e18ddb077b6d") ID2D1Devi
     
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device6
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1783,14 +1736,11 @@ interface DX_DECLARE_INTERFACE("bdc2bdd3-b96c-4de6-bdf7-99d4745454de") ID2D1Fact
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory7
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1InkStyle ID2D1InkStyle;
 
@@ -1852,7 +1802,6 @@ extern "C"
 }
 #endif
         
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

@@ -147,11 +147,9 @@
     #endif
 #endif
 
-
 #ifdef  __cplusplus
 extern "C" {
 #endif  // #ifdef __cplusplus
-
 
 #ifndef _SAL1_2_Source_
 #define _SAL1_2_Source_(Name, args, annotes) _SA_annotes3(SAL_name, #Name, "", "1.2") _Group_(annotes _SAL_nop_impl_)
@@ -168,7 +166,6 @@ extern "C" {
 #define __RPC__in_xcount_full(size)                  _SAL1_2_Source_(__RPC__in_xcount_full, (size), __RPC__in_ecount(size))
 #define __RPC__in_xcount_full_string(size)           _SAL1_2_Source_(__RPC__in_xcount_full_string, (size), __RPC__in_ecount_full(size) _Pre_ _Null_terminated_)
 #define __RPC__in_xcount_part(size, length)          _SAL1_2_Source_(__RPC__in_xcount_part, (size,length), __RPC__in_ecount(length) _Pre_writable_size_(size))
-
 
 #define __RPC__deref_in                              _SAL1_2_Source_(__RPC__deref_in, (), __RPC__in _At_(*_Curr_, _Pre_ _Notnull_))
 #define __RPC__deref_in_string                       _SAL1_2_Source_(__RPC__deref_in_string, (), __RPC__deref_in _At_(*_Curr_, _Pre_ _Null_terminated_))
@@ -280,7 +277,6 @@ extern "C" {
 #define __RPC__deref_inout_xcount_full_string(size)  _SAL1_2_Source_(__RPC__deref_inout_xcount_full_string, (size), __RPC__deref_inout _At_(*_Curr_, _Post_ _Null_terminated_))
 #define __RPC__deref_inout_xcount_full_opt_string(size)  _SAL1_2_Source_(__RPC__deref_inout_xcount_full_opt_string, (size), __RPC__deref_inout_opt _At_(*_Curr_, _Pre_ _Null_terminated_ _Post_ _Null_terminated_))
 
-
 // #define __RPC_out_opt    out_opt is not allowed in rpc
 
 // [in,out,unique] 
@@ -293,7 +289,6 @@ extern "C" {
 #define __RPC__deref_opt_inout_xcount_part(size, length)  _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_part, (size,length), __RPC__deref_opt_inout)
 #define __RPC__deref_opt_inout_xcount_full(size)         _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_full, (size), __RPC__deref_opt_inout)
 #define __RPC__deref_opt_inout_xcount_full_string(size)  _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_full_string, (size), __RPC__deref_opt_inout_string)
-
 
 #define __RPC__deref_out_ecount_opt(size)                _SAL1_2_Source_(__RPC__deref_out_ecount_opt, (size), _Outptr_result_buffer_maybenull_(size) _At_(*_Curr_, _Pre_maybenull_))
 #define __RPC__deref_out_ecount_part_opt(size, length)   _SAL1_2_Source_(__RPC__deref_out_ecount_part_opt, (size,length), _Outptr_result_buffer_to_maybenull_(size, length) _At_(*_Curr_, _Pre_maybenull_))
@@ -323,8 +318,6 @@ extern "C" {
 #define __RPC__range(min,max)                            _SAL1_2_Source_(__RPC__range, (min,max), __range(min,max))
 #define __RPC__in_range(min,max)                         _SAL1_2_Source_(__RPC__in_range, (min,max), _In_range_(min,max))
 
-
 #ifdef  __cplusplus
 }
 #endif
-

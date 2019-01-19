@@ -60,8 +60,6 @@ extern "C" {
 #define DSETUP_PROMPTFORDRIVERS 0x10000000      /* OBSOLETE. prompt when replacing display/audio drivers */
 #define DSETUP_RESTOREDRIVERS   0x20000000      /* OBSOLETE. restore display/audio drivers */
 
-
-
 //******************************************************************
 // DirectX Setup Callback mechanism
 //******************************************************************
@@ -73,11 +71,6 @@ extern "C" {
 #define DSETUP_CB_MSG_BEGIN_INSTALL_RUNTIME         14
 #define DSETUP_CB_MSG_PROGRESS                      18
 #define DSETUP_CB_MSG_WARNING_DISABLED_COMPONENT    19
-
-
-
-
-
 
 typedef struct _DSETUP_CB_PROGRESS
 {
@@ -96,7 +89,6 @@ enum _DSETUP_CB_PROGRESS_PHASE
     DSETUP_COPYING,
     DSETUP_FINALIZING
 };
-
 
 #ifdef _WIN32
 //
@@ -168,7 +160,6 @@ typedef DIRECTXREGISTERAPP2A DIRECTXREGISTERAPP2;
 typedef PDIRECTXREGISTERAPP2A PDIRECTXREGISTERAPP2;
 typedef LPDIRECTXREGISTERAPP2A LPDIRECTXREGISTERAPP2;
 #endif // UNICODE
-
 
 //
 // API
@@ -274,7 +265,6 @@ typedef UINT (WINAPI * LPDIRECTXSETUPGETEULA)(LPSTR, UINT, WORD);
 #endif // !UNICODE
 
 #endif // WIN32
-
 
 #ifdef __cplusplus
 };

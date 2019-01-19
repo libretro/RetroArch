@@ -229,7 +229,6 @@ error:
    return false;
 }
 
-
 static void gfx_ctx_gdi_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
@@ -377,4 +376,3 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    NULL,
    NULL
 };
-

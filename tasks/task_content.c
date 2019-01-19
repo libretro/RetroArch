@@ -61,8 +61,9 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#include "../menu/menu_shader.h"
 #endif
+
+#include "../menu/menu_shader.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
@@ -137,6 +138,7 @@ struct content_information_ctx
 };
 
 static struct string_list *temporary_content                  = NULL;
+static bool _launched_from_cli                                = true;
 static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_rom_crc                               = 0;
@@ -151,7 +153,6 @@ static char pending_subsystem_ident[255];
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 #endif
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-
 
 static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
@@ -290,11 +291,8 @@ static bool content_load(content_ctx_info_t *info)
       content_clear_subsystem();
    }
 
-
-#ifdef HAVE_MENU
-   /* TODO/FIXME - can we get rid of this? */
    menu_shader_manager_init();
-#endif
+
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
@@ -832,8 +830,6 @@ static bool content_file_init(
    return ret;
 }
 
-
-#ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -867,7 +863,6 @@ static void menu_content_environment_get(int *argc, char *argv[],
          path_get(RARCH_PATH_CORE);
 
 }
-#endif
 
 /**
  * task_load_content:
@@ -1115,10 +1110,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
@@ -1308,10 +1301,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
@@ -1430,6 +1421,8 @@ bool task_push_load_content_with_new_core_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+
+      global->name.label[0]                   = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))
@@ -1560,10 +1553,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-#ifdef HAVE_MENU
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    if (firmware_update_status(&content_ctx))
       goto end;
@@ -1602,10 +1593,13 @@ end:
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
 {
+   global_t *global = global_get_ptr();
+
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -1614,6 +1608,16 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
+
+   _launched_from_cli = false;
+
+   if (global)
+   {
+      if (label)
+         strlcpy(global->name.label, label, sizeof(global->name.label));
+      else
+         global->name.label[0] = '\0';
+   }
 
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
@@ -1770,6 +1774,12 @@ void content_clear_subsystem(void)
    }
 }
 
+/* Checks if launched from the commandline */
+bool content_launched_from_cli()
+{
+   return _launched_from_cli;
+}
+
 /* Get the current subsystem */
 int content_get_subsystem()
 {
@@ -1801,6 +1811,32 @@ void content_set_subsystem(unsigned idx)
 
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
+}
+
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name)
+{
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+   unsigned i = 0;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data;
+
+   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   {
+      if (string_is_equal(subsystem_name, subsystem->ident))
+      {
+         content_set_subsystem(i);
+         return true;
+      }
+   }
+
+   return false;
 }
 
 /* Add a rom to the subsystem rom buffer */

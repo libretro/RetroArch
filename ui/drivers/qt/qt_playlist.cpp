@@ -9,12 +9,16 @@
 #include <QLayout>
 #include <QScreen>
 #include <QRegularExpression>
+#include <QImageReader>
+#include <QtConcurrent>
 
 #include "../ui_qt.h"
-#include "flowlayout.h"
 #include "playlistentrydialog.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
@@ -26,6 +30,216 @@ extern "C" {
 #include "../../../configuration.h"
 #include "../../../core_info.h"
 #include "../../../verbosity.h"
+
+#ifndef CXX_BUILD
+}
+#endif
+
+PlaylistModel::PlaylistModel(QObject *parent)
+   : QAbstractListModel(parent)
+{
+   m_imageFormats = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
+   m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
+   setThumbnailCacheLimit(500);
+   connect(this, &PlaylistModel::imageLoaded, this, &PlaylistModel::onImageLoaded);
+}
+
+int PlaylistModel::rowCount(const QModelIndex & /* parent */) const
+{
+   return m_contents.count();
+}
+
+int PlaylistModel::columnCount(const QModelIndex & /* parent */) const
+{
+   return 1;
+}
+
+QVariant PlaylistModel::data(const QModelIndex &index, int role) const
+{
+   if (index.column() == 0)
+   {
+      if (!index.isValid())
+         return QVariant();
+
+      if (index.row() >= m_contents.size() || index.row() < 0)
+         return QVariant();
+
+      switch (role)
+      {
+         case Qt::DisplayRole:
+         case Qt::EditRole:
+         case Qt::ToolTipRole:
+            return m_contents.at(index.row())["label_noext"];
+         case HASH:
+            return QVariant::fromValue(m_contents.at(index.row()));
+         case THUMBNAIL:
+         {
+            QPixmap *cachedPreview = m_cache.object(getCurrentTypeThumbnailPath(index));
+            if (cachedPreview)
+               return *cachedPreview;
+            return QVariant();
+         }
+      }
+   }
+   return QVariant();
+}
+
+Qt::ItemFlags PlaylistModel::flags(const QModelIndex &index) const
+{
+   if (!index.isValid())
+      return Qt::ItemIsEnabled;
+
+   return QAbstractListModel::flags(index) | Qt::ItemIsEditable;
+}
+
+bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+   if (index.isValid() && role == Qt::EditRole) {
+      QHash<QString, QString> hash = m_contents.at(index.row());
+
+      hash["label"] = value.toString();
+      hash["label_noext"] = QFileInfo(value.toString()).completeBaseName();
+
+      m_contents.replace(index.row(), hash);
+      emit dataChanged(index, index, { role });
+      return true;
+   }
+   return false;
+}
+
+QVariant PlaylistModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+   if (role != Qt::DisplayRole)
+      return QVariant();
+
+   if (orientation == Qt::Horizontal)
+      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
+   else
+      return section + 1;
+}
+
+void PlaylistModel::setThumbnailType(const ThumbnailType type)
+{
+   m_thumbnailType = type;
+}
+
+void PlaylistModel::setThumbnailCacheLimit(int limit)
+{
+   m_cache.setMaxCost(limit * 1024);
+}
+
+QString PlaylistModel::getThumbnailPath(const QModelIndex &index, QString type) const
+{
+   QByteArray extension;
+   QString extensionStr;
+
+   QString thumbnailFileNameNoExt;
+   int lastIndex = -1;
+
+   const QHash<QString, QString> &hash = m_contents.at(index.row());
+   lastIndex = hash["path"].lastIndexOf('.');
+
+   if (lastIndex >= 0)
+   {
+      extensionStr = hash["path"].mid(lastIndex + 1);
+
+      if (!extensionStr.isEmpty())
+      {
+         extension = extensionStr.toLower().toUtf8();
+      }
+   }
+
+   if (!extension.isEmpty() && m_imageFormats.contains(extension))
+   {
+      /* use thumbnail widgets to show regular image files */
+      return hash["path"];
+   }
+   else
+   {
+      thumbnailFileNameNoExt = hash["label_noext"];
+      thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
+      return QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + hash.value("db_name") + "/" + type + "/" + thumbnailFileNameNoExt + ".png";
+   }
+}
+
+QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
+{
+   switch (m_thumbnailType)
+   {
+   case THUMBNAIL_TYPE_BOXART:
+      return getThumbnailPath(index, THUMBNAIL_BOXART);
+   case THUMBNAIL_TYPE_SCREENSHOT:
+      return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+   case THUMBNAIL_TYPE_TITLE_SCREEN:
+      return getThumbnailPath(index, THUMBNAIL_TITLE);
+   default:
+      return QString();
+   }
+}
+
+void PlaylistModel::reloadThumbnail(const QModelIndex &index)
+{
+   if (index.isValid()) {
+      reloadThumbnailPath(getCurrentTypeThumbnailPath(index));
+      loadThumbnail(index);
+   }
+}
+
+void PlaylistModel::reloadSystemThumbnails(const QString system)
+{
+   int i = 0;
+   QString key;
+   QString path = QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + system;
+   QList<QString> keys = m_cache.keys();
+   QList<QString> pending = m_pendingImages.values();
+
+   for (i = 0; i < keys.size(); i++)
+   {
+      key = keys.at(i);
+      if (key.startsWith(path))
+         m_cache.remove(key);
+   }
+
+   for (i = 0; i < pending.size(); i++)
+   {
+      key = pending.at(i);
+      if (key.startsWith(path))
+         m_pendingImages.remove(key);
+   }
+}
+
+void PlaylistModel::reloadThumbnailPath(const QString path)
+{
+   m_cache.remove(path);
+   m_pendingImages.remove(path);
+}
+
+void PlaylistModel::loadThumbnail(const QModelIndex &index)
+{
+   QString path = getCurrentTypeThumbnailPath(index);
+
+   if (!m_pendingImages.contains(path) && !m_cache.contains(path))
+   {
+      m_pendingImages.insert(path);
+      QtConcurrent::run(this, &PlaylistModel::loadImage, index, path);
+   }
+}
+
+void PlaylistModel::loadImage(const QModelIndex &index, const QString &path)
+{
+   const QImage image = QImage(path);
+   if (!image.isNull())
+      emit imageLoaded(image, index, path);
+}
+
+void PlaylistModel::onImageLoaded(const QImage image, const QModelIndex &index, const QString &path)
+{
+   QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
+   const int cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
+   m_cache.insert(path, pixmap, cost);
+   if (index.isValid())
+      emit dataChanged(index, index, { THUMBNAIL });
+   m_pendingImages.remove(path);
 }
 
 inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
@@ -38,7 +252,6 @@ inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs,
    return lhs.value("label").toLower() < rhs.value("label").toLower();
 }
 
-/* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
 bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions)
 {
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
@@ -834,9 +1047,6 @@ void MainWindow::reloadPlaylists()
 
    getPlaylistFiles();
 
-   /* block this signal because setData() would trigger an infinite loop */
-   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
-
    m_listWidget->clear();
    m_listWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -968,13 +1178,11 @@ void MainWindow::reloadPlaylists()
       }
    }
 
-   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
 QString MainWindow::getCurrentPlaylistPath()
 {
    QListWidgetItem *playlistItem = m_listWidget->currentItem();
-   QHash<QString, QString> contentHash;
    QString playlistPath;
 
    if (!playlistItem)
@@ -1116,151 +1324,15 @@ void MainWindow::getPlaylistFiles()
    m_playlistFiles = playlistDir.entryList(QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
 }
 
-void MainWindow::addPlaylistItemsToGrid(const QStringList &paths, bool add)
-{
-   QVector<QHash<QString, QString> > items;
-   int i;
-
-   if (paths.isEmpty())
-      return;
-
-   for (i = 0; i < paths.size(); i++)
-   {
-      int j;
-      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
-      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
-      for (j = 0; j < vec.size(); j++)
-      {
-         if (add && m_allPlaylistsGridMaxCount > 0 && items.size() >= m_allPlaylistsGridMaxCount)
-            goto finish;
-
-         items.append(vec.at(j));
-      }
-   }
-finish:
-   std::sort(items.begin(), items.end(), comp_hash_label_key_lower);
-
-   addPlaylistHashToGrid(items);
-}
-
-void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items)
-{
-   QScreen *screen = qApp->primaryScreen();
-   QSize screenSize = screen->size();
-   QListWidgetItem *currentItem = m_listWidget->currentItem();
-   settings_t *settings = config_get_ptr();
-   int i = 0;
-   int zoomValue = m_zoomSlider->value();
-
-   m_gridProgressBar->setMinimum(0);
-   m_gridProgressBar->setMaximum(qMax(0, items.count() - 1));
-   m_gridProgressBar->setValue(0);
-
-   for (i = 0; i < items.count(); i++)
-   {
-      const QHash<QString, QString> &hash = items.at(i);
-      QPointer<GridItem> item;
-      QPointer<ThumbnailLabel> label;
-      QString thumbnailFileNameNoExt;
-      QLabel *newLabel = NULL;
-      QSize thumbnailWidgetSizeHint(screenSize.width() / 8, screenSize.height() / 8);
-      QByteArray extension;
-      QString extensionStr;
-      QString imagePath;
-      int lastIndex = -1;
-
-      if (m_listWidget->currentItem() != currentItem)
-      {
-         /* user changed the current playlist before we finished loading... abort */
-         m_gridProgressWidget->hide();
-         break;
-      }
-
-      item = new GridItem();
-
-      lastIndex = hash["path"].lastIndexOf('.');
-
-      if (lastIndex >= 0)
-      {
-         extensionStr = hash["path"].mid(lastIndex + 1);
-
-         if (!extensionStr.isEmpty())
-         {
-            extension = extensionStr.toLower().toUtf8();
-         }
-      }
-
-      if (!extension.isEmpty() && m_imageFormats.contains(extension))
-      {
-         /* use thumbnail widgets to show regular image files */
-         imagePath = hash["path"];
-      }
-      else
-      {
-         thumbnailFileNameNoExt = hash["label_noext"];
-         thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
-         imagePath = QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png";
-      }
-
-      item->hash = hash;
-      item->widget = new ThumbnailWidget();
-      item->widget->setSizeHint(thumbnailWidgetSizeHint);
-      item->widget->setFixedSize(item->widget->sizeHint());
-      item->widget->setLayout(new QVBoxLayout());
-      item->widget->setObjectName("thumbnailWidget");
-      item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
-      item->widget->setProperty("image_path", imagePath);
-
-      connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
-      connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
-
-      label = new ThumbnailLabel(item->widget);
-      label->setObjectName("thumbnailGridLabel");
-
-      item->label = label;
-      item->labelText = hash.value("label");
-
-      newLabel = new QLabel(item->labelText, item->widget);
-      newLabel->setObjectName("thumbnailQLabel");
-      newLabel->setAlignment(Qt::AlignCenter);
-      newLabel->setToolTip(item->labelText);
-
-      calcGridItemSize(item, zoomValue);
-
-      item->widget->layout()->addWidget(label);
-
-      item->widget->layout()->addWidget(newLabel);
-      qobject_cast<QVBoxLayout*>(item->widget->layout())->setStretchFactor(label, 1);
-
-      m_gridLayout->addWidgetDeferred(item->widget);
-      m_gridItems.append(item);
-
-      loadImageDeferred(item, imagePath);
-
-      if (i % 25 == 0)
-      {
-         /* Needed to update progress dialog while doing a lot of stuff on the main thread. */
-         qApp->processEvents();
-      }
-
-      m_gridProgressBar->setValue(i);
-   }
-
-   /* If there's only one entry, a min/max/value of all zero would make an indeterminate progress bar that never ends... so just hide it when we are done. */
-   if (m_gridProgressBar->value() == m_gridProgressBar->maximum())
-      m_gridProgressWidget->hide();
-}
-
-QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
+void PlaylistModel::getPlaylistItems(QString path)
 {
    QByteArray pathArray;
-   QVector<QHash<QString, QString> > items;
    const char *pathData = NULL;
    playlist_t *playlist = NULL;
    unsigned playlistSize = 0;
    unsigned i = 0;
 
-   pathArray.append(pathString);
+   pathArray.append(path);
    pathData = pathArray.constData();
 
    playlist = playlist_init(pathData, COLLECTION_SIZE);
@@ -1313,58 +1385,67 @@ QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathStrin
          hash["db_name"].remove(file_path_str(FILE_PATH_LPL_EXTENSION));
       }
 
-      items.append(hash);
+      m_contents.append(hash);
    }
 
    playlist_free(playlist);
    playlist = NULL;
-
-   return items;
 }
 
-void MainWindow::addPlaylistItemsToTable(const QStringList &paths, bool add)
+void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
 {
-   QVector<QHash<QString, QString> > items;
    int i;
 
    if (paths.isEmpty())
       return;
 
+   beginResetModel();
+
+   m_contents.clear();
+
    for (i = 0; i < paths.size(); i++)
    {
-      int j;
-      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
-      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
-      for (j = 0; j < vec.size(); j++)
-      {
-         if (add && m_allPlaylistsListMaxCount > 0 && items.size() >= m_allPlaylistsListMaxCount)
-            goto finish;
-
-         items.append(vec.at(j));
-      }
+      getPlaylistItems(paths.at(i));
    }
-finish:
-   addPlaylistHashToTable(items);
+
+   endResetModel();
 }
 
-void MainWindow::addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items)
+void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
 {
+   QDir dir = path;
+   QStringList dirList;
    int i = 0;
-   int oldRowCount = m_tableWidget->rowCount();
 
-   m_tableWidget->setRowCount(oldRowCount + items.count());
+   dirList = dir.entryList(QDir::NoDotAndDotDot |
+      QDir::Readable |
+      QDir::Files |
+      showHidden,
+      QDir::Name);
 
-   for (i = 0; i < items.count(); i++)
+   if (dirList.count() == 0)
+      return;
+
+   beginResetModel();
+
+   m_contents.clear();
+
+   for (i = 0; i < dirList.count(); i++)
    {
-      QTableWidgetItem *labelItem = NULL;
-      const QHash<QString, QString> &hash = items.at(i);
+      QString fileName = dirList.at(i);
+      QHash<QString, QString> hash;
+      QString filePath(QDir::toNativeSeparators(dir.absoluteFilePath(fileName)));
+      QFileInfo fileInfo(filePath);
 
-      labelItem = new QTableWidgetItem(hash.value("label"));
-      labelItem->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
-      labelItem->setFlags(labelItem->flags() | Qt::ItemIsEditable);
+      hash["path"] = filePath;
+      hash["label"] = hash["path"];
+      hash["label_noext"] = fileInfo.completeBaseName();
+      hash["db_name"] = fileInfo.dir().dirName();
 
-      m_tableWidget->setItem(oldRowCount + i, 0, labelItem);
+      m_contents.append(hash);
    }
+
+   endResetModel();
 }
 
 void MainWindow::setAllPlaylistsListMaxCount(int count)
@@ -1382,4 +1463,3 @@ void MainWindow::setAllPlaylistsGridMaxCount(int count)
 
    m_allPlaylistsGridMaxCount = count;
 }
-

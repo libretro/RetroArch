@@ -19,7 +19,10 @@
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -28,10 +31,11 @@ extern "C" {
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
-#ifdef HAVE_MENU
 #include "../../../menu/menu_shader.h"
-#endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 enum
 {
@@ -169,7 +173,7 @@ void ShaderParamsDialog::clearLayout()
 void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct video_shader **video_shader)
 {
    video_shader_ctx_t shader_info = {0};
-#ifdef HAVE_MENU
+
    struct video_shader *shader = menu_shader_get();
 
    if (menu_shader)
@@ -195,7 +199,6 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
          *video_shader = NULL;
       }
    }
-#endif
 
    if (video_shader)
    {
@@ -491,7 +494,6 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
 void ShaderParamsDialog::onShaderLoadPresetClicked()
 {
-#ifdef HAVE_MENU
    QString path;
    QString filter;
    QByteArray pathArray;
@@ -541,7 +543,6 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    type = video_shader_parse_type(pathData, RARCH_SHADER_NONE);
 
    menu_shader_manager_set_preset(menu_shader, type, pathData);
-#endif
 }
 
 void ShaderParamsDialog::onShaderResetPass(int pass)
@@ -634,7 +635,6 @@ void ShaderParamsDialog::onShaderResetAllPasses()
 
 void ShaderParamsDialog::onShaderAddPassClicked()
 {
-#ifdef HAVE_MENU
    QString path;
    QString filter;
    QByteArray pathArray;
@@ -696,12 +696,10 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    video_shader_resolve_parameters(NULL, menu_shader);
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-#endif
 }
 
 void ShaderParamsDialog::onShaderSavePresetAsClicked()
 {
-#ifdef HAVE_MENU
    settings_t *settings = config_get_ptr();
    QString path;
    QByteArray pathArray;
@@ -716,7 +714,6 @@ void ShaderParamsDialog::onShaderSavePresetAsClicked()
    pathData = pathArray.constData();
 
    saveShaderPreset(pathData, SHADER_PRESET_SAVE_NORMAL);
-#endif
 }
 
 void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type)
@@ -797,7 +794,6 @@ void ShaderParamsDialog::onShaderSaveGamePresetClicked()
 
 void ShaderParamsDialog::onShaderClearAllPassesClicked()
 {
-#ifdef HAVE_MENU
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
 
@@ -810,12 +806,10 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
       menu_shader_manager_decrement_amount_passes();
 
    onShaderApplyClicked();
-#endif
 }
 
 void ShaderParamsDialog::onShaderRemovePassClicked()
 {
-#ifdef HAVE_MENU
    int i;
    QVariant passVariant;
    QAction                   *action = qobject_cast<QAction*>(sender());
@@ -851,7 +845,6 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
    menu_shader_manager_decrement_amount_passes();
 
    onShaderApplyClicked();
-#endif
 }
 
 void ShaderParamsDialog::onShaderApplyClicked()

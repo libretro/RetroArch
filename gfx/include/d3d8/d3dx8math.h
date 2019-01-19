@@ -26,8 +26,6 @@
 #define D3DXToRadian( degree ) ((degree) * (D3DX_PI / 180.0f))
 #define D3DXToDegree( radian ) ((radian) * (180.0f / D3DX_PI))
 
-
-
 /*
  *
  * Vectors
@@ -70,12 +68,10 @@ public:
     BOOL operator == ( CONST D3DXVECTOR2& ) const;
     BOOL operator != ( CONST D3DXVECTOR2& ) const;
 
-
 public:
 #endif /* __cplusplus */
     FLOAT x, y;
 } D3DXVECTOR2, *LPD3DXVECTOR2;
-
 
 /*
  * 3D Vector
@@ -120,7 +116,6 @@ public:
 typedef struct _D3DVECTOR D3DXVECTOR3, *LPD3DXVECTOR3;
 #endif /* !__cplusplus */
 
-
 /*
  * 4D Vector
  */
@@ -162,7 +157,6 @@ public:
     FLOAT x, y, z, w;
 } D3DXVECTOR4, *LPD3DXVECTOR4;
 
-
 /*
  *
  * Matrices
@@ -179,7 +173,6 @@ public:
                 FLOAT _21, FLOAT _22, FLOAT _23, FLOAT _24,
                 FLOAT _31, FLOAT _32, FLOAT _33, FLOAT _34,
                 FLOAT _41, FLOAT _42, FLOAT _43, FLOAT _44 );
-
 
     /* access grants */
     FLOAT& operator () ( UINT Row, UINT Col );
@@ -362,7 +355,6 @@ public:
     FLOAT x, y, z, w;
 } D3DXQUATERNION, *LPD3DXQUATERNION;
 
-
 /*
  *
  * Planes
@@ -391,7 +383,6 @@ public:
 #endif /* __cplusplus */
     FLOAT a, b, c, d;
 } D3DXPLANE, *LPD3DXPLANE;
-
 
 /*
  *
@@ -445,8 +436,6 @@ public:
 #endif /* __cplusplus */
     FLOAT r, g, b, a;
 } D3DXCOLOR, *LPD3DXCOLOR;
-
-
 
 /*
  *
@@ -707,7 +696,6 @@ D3DXVECTOR4* WINAPI D3DXVec4Transform
 }
 #endif
 
-
 /*
  * 4D Matrix
  */
@@ -719,7 +707,6 @@ D3DXMATRIX* D3DXMatrixIdentity
 
 BOOL D3DXMatrixIsIdentity
     ( CONST D3DXMATRIX *pM );
-
 
 /* non-inline */
 #ifdef __cplusplus
@@ -779,7 +766,6 @@ D3DXMATRIX* WINAPI D3DXMatrixRotationQuaternion
  * and a roll around the Z axis. */
 D3DXMATRIX* WINAPI D3DXMatrixRotationYawPitchRoll
     ( D3DXMATRIX *pOut, FLOAT Yaw, FLOAT Pitch, FLOAT Roll );
-
 
 /* Build transformation matrix.  NULL arguments are treated as identity.
  * Mout = Msc-1 * Msr-1 * Ms * Msr * Msc * Mrc-1 * Mr * Mrc * Mt */
@@ -863,7 +849,6 @@ D3DXMATRIX* WINAPI D3DXMatrixReflect
 }
 #endif
 
-
 /*
  * Quaternion
  */
@@ -890,7 +875,6 @@ BOOL D3DXQuaternionIsIdentity
 /* (-x, -y, -z, w) */
 D3DXQUATERNION* D3DXQuaternionConjugate
     ( D3DXQUATERNION *pOut, CONST D3DXQUATERNION *pQ );
-
 
 /* non-inline */
 #ifdef __cplusplus
@@ -969,7 +953,6 @@ D3DXQUATERNION* WINAPI D3DXQuaternionBaryCentric
 }
 #endif
 
-
 /*
  * Plane
  */
@@ -1020,7 +1003,6 @@ D3DXPLANE* WINAPI D3DXPlaneTransform
 #ifdef __cplusplus
 }
 #endif
-
 
 /*
  * Color
@@ -1096,7 +1078,6 @@ typedef interface ID3DXMatrixStack *LPD3DXMATRIXSTACK;
 /* {E3357330-CC5E-11d2-A434-00A0C90629A8} */
 DEFINE_GUID( IID_ID3DXMatrixStack,
 0xe3357330, 0xcc5e, 0x11d2, 0xa4, 0x34, 0x0, 0xa0, 0xc9, 0x6, 0x29, 0xa8);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXMatrixStack

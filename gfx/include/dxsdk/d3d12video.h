@@ -4,13 +4,9 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
-
  /* File created by MIDL compiler version 8.00.0613 */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -49,13 +45,11 @@ typedef interface ID3D12VideoDecoderHeap ID3D12VideoDecoderHeap;
 
 #endif 	/* __ID3D12VideoDecoderHeap_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12VideoDevice_FWD_DEFINED__
 #define __ID3D12VideoDevice_FWD_DEFINED__
 typedef interface ID3D12VideoDevice ID3D12VideoDevice;
 
 #endif 	/* __ID3D12VideoDevice_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12VideoDecoder_FWD_DEFINED__
 #define __ID3D12VideoDecoder_FWD_DEFINED__
@@ -63,13 +57,11 @@ typedef interface ID3D12VideoDecoder ID3D12VideoDecoder;
 
 #endif 	/* __ID3D12VideoDecoder_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12VideoProcessor_FWD_DEFINED__
 #define __ID3D12VideoProcessor_FWD_DEFINED__
 typedef interface ID3D12VideoProcessor ID3D12VideoProcessor;
 
 #endif 	/* __ID3D12VideoProcessor_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12VideoDecodeCommandList_FWD_DEFINED__
 #define __ID3D12VideoDecodeCommandList_FWD_DEFINED__
@@ -77,13 +69,11 @@ typedef interface ID3D12VideoDecodeCommandList ID3D12VideoDecodeCommandList;
 
 #endif 	/* __ID3D12VideoDecodeCommandList_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12VideoProcessCommandList_FWD_DEFINED__
 #define __ID3D12VideoProcessCommandList_FWD_DEFINED__
 typedef interface ID3D12VideoProcessCommandList ID3D12VideoProcessCommandList;
 
 #endif 	/* __ID3D12VideoProcessCommandList_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -94,7 +84,6 @@ typedef interface ID3D12VideoProcessCommandList ID3D12VideoProcessCommandList;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d12video_0000_0000 */
 /* [local] */ 
@@ -287,8 +276,6 @@ typedef struct D3D12_VIDEO_PROCESS_OUTPUT_STREAM_DESC
     BOOL EnableStereo;
     } 	D3D12_VIDEO_PROCESS_OUTPUT_STREAM_DESC;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0000_v0_0_s_ifspec;
 
@@ -297,7 +284,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D12VideoDecoderHeap */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoDecoderHeap;
 
@@ -370,7 +356,6 @@ EXTERN_C const IID IID_ID3D12VideoDecoderHeap;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoDecoderHeap_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -379,7 +364,6 @@ EXTERN_C const IID IID_ID3D12VideoDecoderHeap;
 
 #define ID3D12VideoDecoderHeap_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoDecoderHeap_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -393,36 +377,23 @@ EXTERN_C const IID IID_ID3D12VideoDecoderHeap;
 #define ID3D12VideoDecoderHeap_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12VideoDecoderHeap_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12VideoDecoderHeap_GetDesc(This)	\
     ( (This)->lpVtbl -> GetDesc(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12VideoDecoderHeap_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12VideoDevice_INTERFACE_DEFINED__
 #define __ID3D12VideoDevice_INTERFACE_DEFINED__
 
 /* interface ID3D12VideoDevice */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoDevice;
 
@@ -514,7 +485,6 @@ EXTERN_C const IID IID_ID3D12VideoDevice;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoDevice_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -523,7 +493,6 @@ EXTERN_C const IID IID_ID3D12VideoDevice;
 
 #define ID3D12VideoDevice_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoDevice_CheckFeatureSupport(This,FeatureVideo,pFeatureSupportData,FeatureSupportDataSize)	\
     ( (This)->lpVtbl -> CheckFeatureSupport(This,FeatureVideo,pFeatureSupportData,FeatureSupportDataSize) ) 
@@ -539,21 +508,15 @@ EXTERN_C const IID IID_ID3D12VideoDevice;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12VideoDevice_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12VideoDecoder_INTERFACE_DEFINED__
 #define __ID3D12VideoDecoder_INTERFACE_DEFINED__
 
 /* interface ID3D12VideoDecoder */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoDecoder;
 
@@ -626,7 +589,6 @@ EXTERN_C const IID IID_ID3D12VideoDecoder;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoDecoder_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -635,7 +597,6 @@ EXTERN_C const IID IID_ID3D12VideoDecoder;
 
 #define ID3D12VideoDecoder_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoDecoder_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -649,29 +610,17 @@ EXTERN_C const IID IID_ID3D12VideoDecoder;
 #define ID3D12VideoDecoder_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12VideoDecoder_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12VideoDecoder_GetDesc(This)	\
     ( (This)->lpVtbl -> GetDesc(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12VideoDecoder_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12video_0000_0003 */
 /* [local] */ 
@@ -882,8 +831,6 @@ typedef struct D3D12_VIDEO_DECODE_OUTPUT_STREAM_ARGUMENTS
     D3D12_VIDEO_DECODE_CONVERSION_ARGUMENTS ConversionArguments;
     } 	D3D12_VIDEO_DECODE_OUTPUT_STREAM_ARGUMENTS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0003_v0_0_s_ifspec;
 
@@ -892,7 +839,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0003_v0_0_s_ifspec;
 
 /* interface ID3D12VideoProcessor */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoProcessor;
 
@@ -984,7 +930,6 @@ EXTERN_C const IID IID_ID3D12VideoProcessor;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoProcessor_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -993,7 +938,6 @@ EXTERN_C const IID IID_ID3D12VideoProcessor;
 
 #define ID3D12VideoProcessor_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoProcessor_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1007,11 +951,8 @@ EXTERN_C const IID IID_ID3D12VideoProcessor;
 #define ID3D12VideoProcessor_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12VideoProcessor_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12VideoProcessor_GetNodeMask(This)	\
     ( (This)->lpVtbl -> GetNodeMask(This) ) 
@@ -1027,18 +968,9 @@ EXTERN_C const IID IID_ID3D12VideoProcessor;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12VideoProcessor_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12video_0000_0004 */
 /* [local] */ 
@@ -1201,8 +1133,6 @@ typedef struct D3D12_VIDEO_PROCESS_OUTPUT_STREAM_ARGUMENTS
     D3D12_RECT TargetRectangle;
     } 	D3D12_VIDEO_PROCESS_OUTPUT_STREAM_ARGUMENTS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0004_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0004_v0_0_s_ifspec;
 
@@ -1211,7 +1141,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0004_v0_0_s_ifspec;
 
 /* interface ID3D12VideoDecodeCommandList */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoDecodeCommandList;
 
@@ -1416,7 +1345,6 @@ EXTERN_C const IID IID_ID3D12VideoDecodeCommandList;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoDecodeCommandList_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1425,7 +1353,6 @@ EXTERN_C const IID IID_ID3D12VideoDecodeCommandList;
 
 #define ID3D12VideoDecodeCommandList_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoDecodeCommandList_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1439,14 +1366,11 @@ EXTERN_C const IID IID_ID3D12VideoDecodeCommandList;
 #define ID3D12VideoDecodeCommandList_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12VideoDecodeCommandList_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #define ID3D12VideoDecodeCommandList_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
-
 
 #define ID3D12VideoDecodeCommandList_Close(This)	\
     ( (This)->lpVtbl -> Close(This) ) 
@@ -1492,21 +1416,15 @@ EXTERN_C const IID IID_ID3D12VideoDecodeCommandList;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12VideoDecodeCommandList_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12VideoProcessCommandList_INTERFACE_DEFINED__
 #define __ID3D12VideoProcessCommandList_INTERFACE_DEFINED__
 
 /* interface ID3D12VideoProcessCommandList */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VideoProcessCommandList;
 
@@ -1713,7 +1631,6 @@ EXTERN_C const IID IID_ID3D12VideoProcessCommandList;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VideoProcessCommandList_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1722,7 +1639,6 @@ EXTERN_C const IID IID_ID3D12VideoProcessCommandList;
 
 #define ID3D12VideoProcessCommandList_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12VideoProcessCommandList_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1736,14 +1652,11 @@ EXTERN_C const IID IID_ID3D12VideoProcessCommandList;
 #define ID3D12VideoProcessCommandList_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12VideoProcessCommandList_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #define ID3D12VideoProcessCommandList_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
-
 
 #define ID3D12VideoProcessCommandList_Close(This)	\
     ( (This)->lpVtbl -> Close(This) ) 
@@ -1789,14 +1702,9 @@ EXTERN_C const IID IID_ID3D12VideoProcessCommandList;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12VideoProcessCommandList_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12video_0000_0006 */
 /* [local] */ 
@@ -1825,7 +1733,6 @@ DEFINE_GUID(IID_ID3D12VideoProcessor,0x304FDB32,0xBEDE,0x410A,0x85,0x45,0x94,0x3
 DEFINE_GUID(IID_ID3D12VideoDecodeCommandList,0x3B60536E,0xAD29,0x4E64,0xA2,0x69,0xF8,0x53,0x83,0x7E,0x5E,0x53);
 DEFINE_GUID(IID_ID3D12VideoProcessCommandList,0xAEB2543A,0x167F,0x4682,0xAC,0xC8,0xD1,0x59,0xED,0x4A,0x62,0x09);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0006_v0_0_s_ifspec;
 
@@ -1838,5 +1745,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12video_0000_0006_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

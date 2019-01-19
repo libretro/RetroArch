@@ -36,7 +36,6 @@ DEFINE_GUID(IID_ID3DX10SPMesh,
 DEFINE_GUID(IID_ID3DX10PatchMesh, 
 0x3ce6cc22, 0xdbf2, 0x44f4, 0x89, 0x4d, 0xf9, 0xc3, 0x4a, 0x33, 0x71, 0x39);
 
-
 // Mesh options - lower 3 bytes only, upper byte used by _D3DX10MESHOPT option flags
 enum _D3DX10_MESH {
     D3DX10_MESH_32_BIT                  = 0x001, // If set, then use 32 bit indices, if not set use 16 bit indices.
@@ -166,7 +165,6 @@ DECLARE_INTERFACE_(ID3DX10Mesh, IUnknown)
     STDMETHOD(GetDeviceIndexBuffer)(THIS_ ID3D10Buffer **ppIndexBuffer) PURE;
 };
 
-
 // Flat API
 #ifdef __cplusplus
 extern "C" {
@@ -187,7 +185,6 @@ HRESULT WINAPI
 }
 #endif //__cplusplus
 
-
 // ID3DX10Mesh::Optimize options - upper byte only, lower 3 bytes used from _D3DX10MESH option flags
 enum _D3DX10_MESHOPT {
     D3DX10_MESHOPT_COMPACT       = 0x01000000,
@@ -201,7 +198,6 @@ enum _D3DX10_MESHOPT {
     // D3DX10_MESHOPT_SHAREVB has been removed, please use D3DX10MESH_VB_SHARE instead
 
 };
-
 
 //////////////////////////////////////////////////////////////////////////
 // ID3DXSkinInfo
@@ -282,5 +278,3 @@ typedef struct _D3DX10_ATTRIBUTE_WEIGHTS
 } D3DX10_ATTRIBUTE_WEIGHTS, *LPD3DX10_ATTRIBUTE_WEIGHTS;
 
 #endif //__D3DX10MESH_H__
-
-

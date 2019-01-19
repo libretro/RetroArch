@@ -258,9 +258,6 @@ static void frontend_switch_deinit(void *data)
    if (psmInitialized)
        psmExit();
 
-#ifndef HAVE_OPENGL
-   gfxExit();
-#endif
    appletUnlockExit();
 #endif
 }
@@ -402,18 +399,24 @@ void frontend_switch_showsplash(void)
 {
    printf("[Splash] Showing splashScreen\n");
 
+   NWindow *win = nwindowGetDefault();
+   Framebuffer fb;
+   framebufferCreate(&fb, win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
+   framebufferMakeLinear(&fb);
+
    if (splashData)
    {
       uint32_t width       = 0;
       uint32_t height      = 0;
-      uint32_t *frambuffer = (uint32_t *)gfxGetFramebuffer(&width, &height);
+      uint32_t stride;
+      uint32_t *frambuffer = (uint32_t *)framebufferBegin(&fb, &stride);
 
-      gfx_slow_swizzling_blit(frambuffer, splashData, width, height, 0, 0, false);
+      gfx_cpy_dsp_buf(frambuffer, splashData, width, height, stride, false);
 
-      gfxFlushBuffers();
-      gfxSwapBuffers();
-      gfxWaitForVsync();
+      framebufferEnd(&fb);
    }
+
+   framebufferClose(&fb);
 }
 
 /* From rpng_test.c */
@@ -656,7 +659,6 @@ static void frontend_switch_shutdown(bool unused)
 /* runloop_get_system_info isnt initialized that early.. */
 extern void retro_get_system_info(struct retro_system_info *info);
 
-
 static void frontend_switch_init(void *data)
 {
 
@@ -669,16 +671,6 @@ static void frontend_switch_init(void *data)
    appletLockExit();
    appletHook(&applet_hook_cookie, on_applet_hook, NULL);
    appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
-
-#ifndef HAVE_OPENGL
-   /* Init Resolution before initDefault */
-   gfxInitResolution(1280, 720);
-
-   gfxInitDefault();
-   gfxSetMode(GfxMode_TiledDouble);
-
-   gfxConfigureTransform(0);
-#endif /* HAVE_OPENGL */
 
    bool recording_supported = false;
    appletIsGamePlayRecordingSupported(&recording_supported);

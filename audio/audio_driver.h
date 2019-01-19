@@ -37,6 +37,8 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MIXER_MAX_STREAMS        16
 
+#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS+4)
+
 enum audio_action
 {
    AUDIO_ACTION_NONE = 0,
@@ -46,6 +48,19 @@ enum audio_action
    AUDIO_ACTION_VOLUME_GAIN,
    AUDIO_ACTION_MIXER_VOLUME_GAIN,
    AUDIO_ACTION_MIXER
+};
+
+enum audio_mixer_slot_selection_type
+{
+   AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC = 0,
+   AUDIO_MIXER_SLOT_SELECTION_MANUAL
+};
+
+enum audio_mixer_stream_type
+{
+   AUDIO_STREAM_TYPE_NONE = 0,
+   AUDIO_STREAM_TYPE_USER,
+   AUDIO_STREAM_TYPE_SYSTEM
 };
 
 enum audio_mixer_state
@@ -62,6 +77,8 @@ typedef struct audio_mixer_stream
    audio_mixer_sound_t *handle;
    audio_mixer_voice_t *voice;
    audio_mixer_stop_cb_t stop_cb;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type type;
    enum audio_mixer_state state;
    float volume;
    void *buf;
@@ -163,6 +180,9 @@ typedef struct audio_driver
 typedef struct audio_mixer_stream_params
 {
    float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
+   enum audio_mixer_stream_type  stream_type;
    enum audio_mixer_type  type;
    enum audio_mixer_state state;
    void *buf;

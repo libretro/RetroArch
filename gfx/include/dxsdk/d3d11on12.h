@@ -4,13 +4,9 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
-
  /* File created by MIDL compiler version 8.00.0613 */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -49,7 +45,6 @@ typedef interface ID3D11On12Device ID3D11On12Device;
 
 #endif 	/* __ID3D11On12Device_FWD_DEFINED__ */
 
-
 /* header files for imported files */
 #include "oaidl.h"
 #include "ocidl.h"
@@ -59,7 +54,6 @@ typedef interface ID3D11On12Device ID3D11On12Device;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d11on12_0000_0000 */
 /* [local] */ 
@@ -141,8 +135,6 @@ typedef struct D3D11_RESOURCE_FLAGS
     UINT StructureByteStride;
     } 	D3D11_RESOURCE_FLAGS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0000_v0_0_s_ifspec;
 
@@ -151,7 +143,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D11On12Device */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11On12Device;
 
@@ -228,7 +219,6 @@ EXTERN_C const IID IID_ID3D11On12Device;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11On12Device_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -237,7 +227,6 @@ EXTERN_C const IID IID_ID3D11On12Device;
 
 #define ID3D11On12Device_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11On12Device_CreateWrappedResource(This,pResource12,pFlags11,InState,OutState,riid,ppResource11)	\
     ( (This)->lpVtbl -> CreateWrappedResource(This,pResource12,pFlags11,InState,OutState,riid,ppResource11) ) 
@@ -250,14 +239,9 @@ EXTERN_C const IID IID_ID3D11On12Device;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11On12Device_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11on12_0000_0001 */
 /* [local] */ 
@@ -265,7 +249,6 @@ EXTERN_C const IID IID_ID3D11On12Device;
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 DEFINE_GUID(IID_ID3D11On12Device,0x85611e73,0x70a9,0x490e,0x96,0x14,0xa9,0xe3,0x02,0x77,0x79,0x04);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0001_v0_0_s_ifspec;
@@ -279,5 +262,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0001_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

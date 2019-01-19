@@ -75,22 +75,20 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 #endif
 
       if (!gdi->texDC)
-         gdi->texDC = CreateCompatibleDC(gdi->winDC);
+         gdi->texDC        = CreateCompatibleDC(gdi->winDC);
 
       if (texture->bmp)
-      {
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
-      }
+         texture->bmp_old  = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
       else
       {
          /* scale texture data into a bitmap we can easily blit later */
-         texture->bmp = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
+         texture->bmp     = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
+         texture->bmp_old = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
 
          StretchDIBits(gdi->texDC, 0, 0, draw->width, draw->height, 0, 0, texture->width, texture->height, texture->data, &info, DIB_RGB_COLORS, SRCCOPY);
       }
 
-      gdi->bmp_old = SelectObject(gdi->memDC, gdi->bmp);
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #if _WIN32_WINNT >= 0x0410 /* Win98 */
       blend.BlendOp = AC_SRC_OVER;
@@ -137,12 +135,12 @@ static void menu_display_gdi_clear_color(
 
 static bool menu_display_gdi_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float gdi_font_size,
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, gdi_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_GDI)))
       return false;

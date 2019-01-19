@@ -1,22 +1,28 @@
 # 1.7.6 (future)
 - ANDROID: Fix Xperia Play input binding
 - CHEEVOS: Reset when hardcore mode is toggled
+- COMMON: Add new JSON playlist format
 - CORE UPDATER: Allow sideloading cores from the menu
 - CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
 - DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
 - DISCORD: Register the application name properly.
 - DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster.
+- INPUT: Add new menu toggle (hold start button for 2 seconds)
 - INPUT/SDL: Flush the joypad events. Decreases cpu usage over time with the SDL joypad driver.
 - LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Simplified Chinese translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
+- NETPLAY: Allow quick joining subsystem lobbies
+- PS2: Initial PlayStation2 port.
+- PS4: Initial PlayStation4 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
 - SCANNER: Fix GDI disc scanning.
 - SHADERS: Fix auto shader preset loading on D3D10, D3D11, D3D12
@@ -33,7 +39,10 @@
 - WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
 - WINDOWS: Remember window size and position if so desired
 - WINDOWS: SSL/TLS connections now work properly.
-
+- UWP: Initial UWP port.
+- XBONE: Initial Xbox One port.
+- XMB/OZONE: Add more icons
+- ???: Easter Egg
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

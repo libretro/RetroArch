@@ -85,26 +85,26 @@ float osk_dark[16] =  {
 
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_OZONE)
-   &menu_ctx_ozone,
-#endif
-#if defined(HAVE_XUI)
-   &menu_ctx_xui,
-#endif
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
 #if defined(HAVE_NUKLEAR)
    &menu_ctx_nuklear,
 #endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
 #endif
 #if defined(HAVE_STRIPES)
    &menu_ctx_stripes,
 #endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
+#if defined(HAVE_XUI)
+   &menu_ctx_xui,
 #endif
 #if defined(HAVE_ZARCH)
    &menu_ctx_zarch,
@@ -451,7 +451,7 @@ void menu_display_font_free(font_data_t *font)
  * to the menu driver */
 font_data_t *menu_display_font(
       enum application_special_type type,
-      float font_size,
+      float menu_font_size,
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
@@ -464,10 +464,10 @@ font_data_t *menu_display_font(
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   return menu_display_font_file(fontpath, font_size, is_threaded);
+   return menu_display_font_file(fontpath, menu_font_size, is_threaded);
 }
 
-font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+font_data_t *menu_display_font_file(char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
    if (!menu_disp)
@@ -475,7 +475,7 @@ font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_thr
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            fontpath, font_size, is_threaded))
+            fontpath, menu_font_size, is_threaded))
       return NULL;
 
    return font_data;
@@ -2072,8 +2072,9 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    if (menu_driver_data)
       return true;
 
-   menu_driver_data               = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+   if (menu_driver_ctx->init)
+      menu_driver_data               = (menu_handle_t*)
+         menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;

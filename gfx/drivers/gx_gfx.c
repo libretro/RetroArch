@@ -1540,7 +1540,6 @@ static bool gx_frame(void *data, const void *frame,
    g_draw_done = false;
    g_current_framebuf ^= 1;
 
-
    if (frame)
    {
       if (gx->rgb32)

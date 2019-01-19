@@ -70,7 +70,7 @@ static void menu_action_setting_audio_mixer_stream_name(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+   if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    strlcpy(s, audio_driver_mixer_get_stream_name(offset), len);
@@ -90,7 +90,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+   if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
@@ -500,7 +500,6 @@ static void menu_action_setting_disp_set_label_input_desc(
    }
    else
       strlcpy(s, "---", len);
-
 
    *w = 19;
    strlcpy(s2, path, len2);

@@ -28,7 +28,8 @@ enum rarch_content_type
    RARCH_CONTENT_NONE = 0,
    RARCH_CONTENT_MOVIE,
    RARCH_CONTENT_MUSIC,
-   RARCH_CONTENT_IMAGE
+   RARCH_CONTENT_IMAGE,
+   RARCH_CONTENT_GONG
 };
 
 enum rarch_path_type

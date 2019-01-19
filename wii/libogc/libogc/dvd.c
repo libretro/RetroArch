@@ -31,7 +31,6 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
 #include <stdlib.h>
 #include <unistd.h>
@@ -1345,7 +1344,6 @@ static void __dvd_patchdrivecb(s32 result)
 	__dvd_drivestate |= DVD_INTEROPER;
 	DVD_LowFuncCall(0x0040d000,__dvd_finalpatchcb);
 }
-
 
 static void __dvd_unlockdrivecb(s32 result)
 {

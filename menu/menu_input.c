@@ -651,7 +651,6 @@ static int menu_input_mouse_frame(
    return ret;
 }
 
-
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 {
    menu_input_t *menu_input = &menu_input_state;
@@ -893,4 +892,3 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_free(&entry);
 }
-

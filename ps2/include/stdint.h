@@ -27,7 +27,7 @@ typedef unsigned short    uint16_t;
 typedef unsigned int      uint32_t;
 typedef unsigned long     uint64_t;
 
-#define	 STDIN_FILENO	0	/* standard input file descriptor */
+#define	STDIN_FILENO	0	/* standard input file descriptor */
 #define	STDOUT_FILENO	1	/* standard output file descriptor */
 #define	STDERR_FILENO	2	/* standard error file descriptor */
 
@@ -41,4 +41,4 @@ typedef unsigned long     uint64_t;
 #define UINT32_C(val) val##ui
 #define UINT64_C(val) val##ul
 
-#endif //STDINT_H
+#endif /* STDINT_H */

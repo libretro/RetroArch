@@ -99,7 +99,6 @@ typedef HRESULT (__stdcall
         LPD3DXFONT*             ppFont);
 #endif
 
-
 #ifdef HAVE_D3DX
 static D3D9XCreateFontIndirect_t    D3D9CreateFontIndirect;
 static D3D9CreateTextureFromFile_t  D3D9CreateTextureFromFile;
@@ -602,7 +601,7 @@ void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
 #if defined(HAVE_D3DX)
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
    D3DXHANDLE        handle     = (D3DXHANDLE)data;
-   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)matrix;
+   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)_matrix;
    if (consttbl && dev && handle)
       consttbl->lpVtbl->SetMatrix(consttbl, dev, handle, matrix);
 #endif

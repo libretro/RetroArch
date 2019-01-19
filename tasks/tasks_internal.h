@@ -29,6 +29,8 @@
 #include "../config.h"
 #endif
 
+#include "../audio/audio_driver.h"
+
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
@@ -113,7 +115,7 @@ bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename);
+      const char *hostname, const char *corename, const char* subsystem);
 
 bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 
@@ -184,6 +186,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
@@ -260,15 +263,20 @@ void task_push_get_powerstate(void);
 enum frontend_powerstate get_last_powerstate(int *percent);
 
 bool task_push_audio_mixer_load_and_play(
-      const char *fullpath, retro_task_callback_t cb, void *user_data);
+      const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
 
 bool task_push_audio_mixer_load(
-      const char *fullpath, retro_task_callback_t cb, void *user_data);
+      const char *fullpath, retro_task_callback_t cb, void *user_data,
+      bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
 
 void set_save_state_in_background(bool state);
 
 extern const char* const input_builtin_autoconfs[];
-
 
 RETRO_END_DECLS
 

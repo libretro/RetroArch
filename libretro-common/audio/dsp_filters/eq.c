@@ -271,7 +271,6 @@ static void *eq_init(const struct dspfilter_info *info,
    if (!eq)
       return NULL;
 
-
    config->get_float(userdata, "window_beta", &beta, 4.0f);
 
    config->get_int(userdata, "block_size_log2", &size_log2, 8);
@@ -349,4 +348,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-

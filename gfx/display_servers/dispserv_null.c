@@ -54,4 +54,3 @@ const video_display_server_t dispserv_null = {
    NULL, /* get_output_options */
    "null"
 };
-

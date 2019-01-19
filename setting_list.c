@@ -53,11 +53,15 @@ bool settings_list_append(rarch_setting_t **list,
 
    if (list_info->index == list_info->size)
    {
+      rarch_setting_t *list_settings = NULL;
+
       list_info->size *= 2;
-      *list = (rarch_setting_t*)
+      list_settings = (rarch_setting_t*)
          realloc(*list, sizeof(rarch_setting_t) * list_info->size);
-      if (!*list)
+
+      if (!list_settings)
          return false;
+      *list = list_settings;
    }
 
    return true;
@@ -347,7 +351,6 @@ int setting_uint_action_left_with_refresh(rarch_setting_t *setting, bool wraparo
    return retval ;
 
 }
-
 
 static int setting_size_action_left_default(rarch_setting_t *setting, bool wraparound)
 {
@@ -717,7 +720,6 @@ static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
             setting->boolean.off_label, len);
 }
 
-
 /**
  * setting_get_string_representation_st_float:
  * @setting            : pointer to setting
@@ -789,7 +791,6 @@ static int setting_action_action_ok(rarch_setting_t *setting, bool wraparound)
 
    return 0;
 }
-
 
 /**
  * setting_action_setting:

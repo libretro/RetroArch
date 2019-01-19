@@ -52,6 +52,7 @@
 #include "../input/input_driver.h"
 #include "../configuration.h"
 
+cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_buf_size(void)
 {
@@ -227,7 +228,7 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    }
 
-   ret = config_file_write(conf, cheats_file);
+   ret = config_file_write(conf, cheats_file, true);
    config_file_free(conf);
 
    return ret;
@@ -271,7 +272,6 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
 static void cheat_manager_new(unsigned size)
 {
    unsigned i;
-
 
    cheat_manager_free();
 
@@ -413,7 +413,6 @@ bool cheat_manager_load(const char *path, bool append)
    config_file_free(conf);
    conf = NULL;
 
-
    cheat_manager_alloc_if_empty();
 
    if (append)
@@ -432,7 +431,6 @@ bool cheat_manager_load(const char *path, bool append)
       orig_size = 0;
       cheat_manager_new(cheats);
    }
-
 
    for (i = orig_size; i < cheats; i++)
    {
@@ -461,12 +459,10 @@ error:
    return false;
 }
 
-
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 {
    unsigned i;
-   unsigned orig_size;
-
+   unsigned orig_size = 0;
 
    if (!cheat_manager_state.cheats)
    {
@@ -476,6 +472,7 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    }
    else
    {
+      struct item_cheat *val = NULL;
       orig_size = cheat_manager_state.size;
 
       /* if size is decreasing, free the items that will be lost */
@@ -487,8 +484,12 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
             free(cheat_manager_state.cheats[i].desc);
       }
 
-      cheat_manager_state.cheats = (struct item_cheat*)
-         realloc(cheat_manager_state.cheats, new_size * sizeof(struct item_cheat));
+      val = (struct item_cheat*)
+         realloc(cheat_manager_state.cheats,
+               new_size * sizeof(struct item_cheat));
+
+      if (val)
+         cheat_manager_state.cheats = val;
    }
 
    if (!cheat_manager_state.cheats)
@@ -756,7 +757,15 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             if (!cheat_manager_state.memory_size_list)
                cheat_manager_state.memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
             else
-               cheat_manager_state.memory_size_list = (unsigned*)realloc(cheat_manager_state.memory_size_list, sizeof(unsigned) * cheat_manager_state.num_memory_buffers);
+            {
+               unsigned *val = (unsigned*)realloc(
+                     cheat_manager_state.memory_size_list,
+                     sizeof(unsigned) * 
+                     cheat_manager_state.num_memory_buffers);
+
+               if (val)
+                  cheat_manager_state.memory_size_list = val;
+            }
 
             cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers-1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
             cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers-1] = system->mmaps.descriptors[i].core.len;
@@ -844,7 +853,6 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
    }
 
    cheat_manager_state.memory_initialized = true;
-
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true);
 
@@ -972,7 +980,6 @@ int cheat_manager_search(enum cheat_search_type search_type)
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true);
       return 0;
    }
-
 
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
 

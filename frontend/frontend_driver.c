@@ -29,6 +29,12 @@
 
 #include "frontend_driver.h"
 
+#ifndef __WINRT__
+#if defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define __WINRT__
+#endif
+#endif
+
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
    &frontend_ctx_emscripten,
@@ -65,8 +71,11 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(SWITCH) && defined(HAVE_LIBNX)
    &frontend_ctx_switch,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &frontend_ctx_win32,
+#endif
+#if defined(__WINRT__)
+   &frontend_ctx_uwp,
 #endif
 #ifdef XENON
    &frontend_ctx_xenon,
@@ -76,6 +85,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef SWITCH
    &frontend_ctx_switch,
+#endif
+#if defined(ORBIS)
+   &frontend_ctx_orbis,
 #endif
    &frontend_ctx_null,
    NULL

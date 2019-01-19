@@ -235,7 +235,6 @@
 #define da_free(a) \
 	dg_dynarr_free(a)
 
-
 /* add an element to the array (appended at the end) */
 #define da_push(a, v) \
 	dg_dynarr_push(a, v)
@@ -263,7 +262,6 @@
  */
 #define da_addn_uninit(a, n) \
 	dg_dynarr_addn_uninit(a, n)
-
 
 /* insert a single value v at index idx */
 #define da_insert(a, idx, v) \
@@ -343,7 +341,6 @@
 #define da_shrink_to_fit(a) \
 	dg_dynarr_shrink_to_fit(a)
 
-
 /* removes and returns the last element of the array */
 #define da_pop(a) \
 	dg_dynarr_pop(a)
@@ -384,7 +381,6 @@
  */
 #define da_end(a) \
 	dg_dynarr_end(a)
-
 
 /* returns (logical) number of elements currently in the array */
 #define da_count(a) \
@@ -440,7 +436,6 @@
  */
 #define dg_dynarr_free(a) \
 	dg__dynarr_free((void**)&(a).p, &(a).md)
-
 
 /* add an element to the array (appended at the end) */
 #define dg_dynarr_push(a, v) \

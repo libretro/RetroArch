@@ -62,12 +62,10 @@ asflags := $(extra_flags)
 LDFLAGS := 
 flags   += -std=c99 -DMD5_BUILD_UTILITY -DSHA1_BUILD_UTILITY
 
-
 ifeq (1,$(use_neon))
 ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
-
 
 OBJS += $(CORE_DIR)/djb2.o \
 		  $(CORE_DIR)/md5.o \

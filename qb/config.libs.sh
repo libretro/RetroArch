@@ -184,6 +184,12 @@ else
    check_lib '' DYLIB "$DYLIB" dlopen
 fi
 
+if [ "$HAVE_CXX" != 'yes' ]; then
+   HAVE_DISCORD='no'
+   HAVE_QT='no'
+   HAVE_VULKAN='no'
+fi
+
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
 if [ "$HAVE_NETWORKING" = 'yes' ]; then
@@ -277,22 +283,15 @@ check_val '' SDL2 -lSDL2 SDL2
 
 check_enabled QT 'Qt companion'
 
-if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
+if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
    check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
    check_pkgconf QT5NETWORK Qt5Network 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
-   check_pkgconf OPENSSL openssl 1.0.0
 
-   check_val '' QT5CORE -lQt5Core QT5CORE
-   check_val '' QT5GUI -lQt5Gui QT5GUI
-   check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
-   check_val '' QT5CONCURRENT -lQt5Concurrent QT5CONCURRENT
-   check_val '' QT5NETWORK -lQt5Network QT5NETWORK
-   #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
-   check_val '' OPENSSL -lssl OPENSSL
+   # pkg-config is needed to reliably find Qt5 libraries.
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'
@@ -300,6 +299,8 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    else
       HAVE_QT=yes
    fi
+
+   check_pkgconf OPENSSL openssl 1.0.0
 
    #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
    #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
@@ -562,29 +563,24 @@ fi
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ] || [ "$HAVE_OZONE" != 'no' ]; then
-   if [ "$HAVE_RGUI" = 'no' ]; then
-      HAVE_MATERIALUI=no
-      HAVE_XMB=no
-      HAVE_STRIPES=no
-      HAVE_ZARCH=no
-      HAVE_OZONE=no
-      die : 'Notice: RGUI not available, MaterialUI, XMB, Ozone and ZARCH will also be disabled.'
-   elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+if [ "$HAVE_MENU" != 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
-         die : 'Notice: Hardware rendering context not available.'
-      elif [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
-         die : 'Notice: Hardware rendering context not available.'
       else
+         if [ "$HAVE_CACA" != 'yes' ] && [ "$HAVE_SIXEL" != 'yes' ] &&
+            [ "$HAVE_SDL" != 'yes' ] && [ "$HAVE_SDL2" != 'yes' ]; then
+            HAVE_RGUI=no
+         fi
          HAVE_MATERIALUI=no
+         HAVE_OZONE=no
          HAVE_XMB=no
+         HAVE_NUKLEAR=no
          HAVE_STRIPES=no
          HAVE_ZARCH=no
-         HAVE_OZONE=no
-         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI, Ozone and ZARCH will also be disabled.'
       fi
+      die : 'Notice: Hardware rendering context not available.'
    fi
 fi
 
@@ -605,16 +601,3 @@ fi
 if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
 fi
-
-# Creates config.mk and config.h.
-add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-set -- $(set | grep ^HAVE_)
-while [ $# -gt 0 ]; do
-   tmpvar="${1%=*}"
-   shift 1
-   var="${tmpvar#HAVE_}"
-   vars="${vars} $var"
-done
-VARS="$(printf %s "$vars" | tr ' ' '\n' | $SORT)"
-create_config_make config.mk $(printf %s "$VARS")
-create_config_header config.h $(printf %s "$VARS")

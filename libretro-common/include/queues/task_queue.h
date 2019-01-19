@@ -42,7 +42,6 @@ enum task_type
    TASK_TYPE_BLOCKING
 };
 
-
 typedef struct retro_task retro_task_t;
 typedef void (*retro_task_callback_t)(void *task_data,
       void *user_data, const char *error);
@@ -209,7 +208,6 @@ void task_queue_push(retro_task_t *task);
  * and cond(data) returns false.
  * This must only be called from the main thread. */
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
-
 
 /* Sends a signal to terminate all the tasks.
  *

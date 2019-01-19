@@ -30,14 +30,12 @@
  *
  */
 
-
 /* inet.c
  *
  * Functions common to all TCP/IP modules, such as the Internet checksum and the
  * byte order functions.
  *
  */
-
 
 #include "lwip/opt.h"
 
@@ -327,4 +325,3 @@ inet_chksum_pbuf(struct pbuf *p)
   }
   return (u16_t)~(acc & 0xffffUL);
 }
-
