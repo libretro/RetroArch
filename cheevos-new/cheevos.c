@@ -1415,7 +1415,7 @@ found:
          CORO_RET();
       }
 
-      coro->offset = 512;
+      coro->offset = snes_header_len;
       coro->count  = 0;
 
       CORO_GOSUB(EVAL_MD5);
