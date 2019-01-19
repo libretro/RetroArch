@@ -685,6 +685,13 @@ static bool audio_mixer_play_flac(
       goto error;
    }
 
+   if (voice->types.flac.buffer)
+      memalign_free(voice->types.flac.buffer);
+   if (voice->types.flac.stream)
+      drflac_close(voice->types.flac.stream);
+   if (voice->types.flac.resampler && voice->types.flac.resampler_data)
+      voice->types.flac.resampler->free(voice->types.flac.resampler_data);
+
    voice->types.flac.resampler      = resamp;
    voice->types.flac.resampler_data = resampler_data;
    voice->types.flac.buffer         = (float*)flac_buffer;
