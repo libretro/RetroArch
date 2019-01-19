@@ -65,9 +65,9 @@ namespace
 	template<typename T>
 	T RunAsync(std::function<concurrency::task<T>()> func)
 	{
-		bool finished = false;
-		Platform::Exception^ exception = nullptr;
-		T result;
+		volatile bool finished = false;
+		volatile Platform::Exception^ exception = nullptr;
+		volatile T result;
 		func().then([&](concurrency::task<T> t) {
 			try
 			{
