@@ -35,7 +35,6 @@
 #include <QDropEvent>
 #include <QtConcurrentRun>
 #include <QtNetwork>
-#include <cmath>
 
 #include "../ui_qt.h"
 #include "invader_png.h"
@@ -74,7 +73,6 @@ extern "C" {
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
-#include <math.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>

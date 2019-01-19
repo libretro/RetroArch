@@ -15,7 +15,7 @@
 
 #include <file/file_path.h>
 #include <string/stdstring.h>
-#include <retro_timers.h.>
+#include <retro_timers.h>
 
 #include "discord.h"
 #include "discord_register.h"
