@@ -26,6 +26,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum nbio_status_enum
+{
+   NBIO_STATUS_INIT = 0,
+   NBIO_STATUS_TRANSFER,
+   NBIO_STATUS_TRANSFER_PARSE,
+   NBIO_STATUS_TRANSFER_FINISHED
+};
+
 enum nbio_type
 {
    NBIO_TYPE_NONE = 0,

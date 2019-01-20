@@ -43,14 +43,6 @@ enum content_mode_load
    CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU
 };
 
-enum nbio_status_enum
-{
-   NBIO_STATUS_INIT = 0,
-   NBIO_STATUS_TRANSFER,
-   NBIO_STATUS_TRANSFER_PARSE,
-   NBIO_STATUS_TRANSFER_FINISHED
-};
-
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -182,7 +174,8 @@ void task_file_load_handler(retro_task_t *task);
 
 bool task_audio_mixer_load_handler(retro_task_t *task);
 
-bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer, bool fullpath, bool use_thread);
+bool take_screenshot(const char *path, bool silence,
+      bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
 bool event_load_save_files(void);
 
