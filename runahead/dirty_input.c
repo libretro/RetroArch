@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <dynamic/dylib.h>
 
 #include "../core.h"
 #include "../dynamic.h"
@@ -98,9 +99,7 @@ static void input_state_set_last(unsigned port, unsigned device,
          )
       {
          if (id >= element->state_size)
-         {
             InputListElementExpand(element, id);
-         }
          element->state[id] = value;
          return;
       }

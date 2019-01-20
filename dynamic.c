@@ -496,8 +496,9 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
+   dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
