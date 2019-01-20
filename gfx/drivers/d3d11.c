@@ -1640,7 +1640,7 @@ static uintptr_t d3d11_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d11_gfx_unload_texture(void* data, uintptr_t handle, bool threaded)
+static void d3d11_gfx_unload_texture(void* data, uintptr_t handle)
 {
    d3d11_texture_t* texture = (d3d11_texture_t*)handle;
 

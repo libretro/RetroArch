@@ -147,7 +147,6 @@ static bool                video_driver_crt_switching_active = false;
 
 static struct retro_system_av_info video_driver_av_info;
 
-
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
 static const void *frame_cache_data                      = NULL;
@@ -1051,9 +1050,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
-   /* Set the driver to threaded based on the settings configuration */
-   video_driver_threaded = settings->bools.video_threaded;
-   /* Check video_driver_threaded and video_driver_hw-context to determine if the video driver is threaded */
    video.is_threaded   = video_driver_is_threaded_internal();
    *video_is_threaded  = video.is_threaded;
 
@@ -2729,7 +2725,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
 
-   video_driver_poke->unload_texture(video_driver_data, *id, video_driver_is_threaded_internal());
+   video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
    return true;
 }
