@@ -1698,7 +1698,6 @@ bool task_push_load_content_with_current_core_from_companion_ui(
    return true;
 }
 
-#ifdef HAVE_MENU
 bool task_push_load_content_with_core_from_menu(
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -1716,9 +1715,11 @@ bool task_push_load_content_with_core_from_menu(
       return false;
    }
 
+#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 
    return true;
 }
@@ -1740,14 +1741,16 @@ bool task_push_load_subsystem_with_core_from_menu(
       return false;
    }
 
+#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 
    return true;
 }
 
-#endif
+
 
 void content_get_status(
       bool *contentless,

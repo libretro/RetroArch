@@ -86,7 +86,6 @@ static void netplay_crc_scan_callback(void *task_data,
       return;
    }
 
-#ifdef HAVE_MENU
    /* regular core with content file */
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && !state->contentless && !state->current)
@@ -103,12 +102,17 @@ static void netplay_crc_scan_callback(void *task_data,
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
       else
-         task_push_load_content_with_new_core_from_menu(
-               state->core_path, state->content_path,
+      {
+         task_push_load_new_core(state->core_path, NULL,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         task_push_load_content_with_core_from_menu(
+               state->content_path, &content_info,
+               CORE_TYPE_PLAIN, NULL, NULL);
+      }
+
    }
    else
-#endif
+
    /* contentless core */
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && state->contentless)
