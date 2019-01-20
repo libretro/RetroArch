@@ -112,6 +112,7 @@
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "performance_counters.h"
 

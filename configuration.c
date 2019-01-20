@@ -50,6 +50,7 @@
 #include "verbosity.h"
 #include "lakka.h"
 
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 
 #include "../list_special.h"

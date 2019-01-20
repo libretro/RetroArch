@@ -30,18 +30,7 @@
 
 #include "../audio/audio_driver.h"
 
-#include "../content.h"
-#include "../core_type.h"
-
 RETRO_BEGIN_DECLS
-
-enum content_mode_load
-{
-   CONTENT_MODE_LOAD_NONE = 0,
-   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU
-};
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -99,77 +88,6 @@ bool task_push_decompress(
       retro_task_callback_t cb,
       void *user_data);
 
-bool task_push_load_content_with_current_core_from_companion_ui(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_from_cli(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_new_core(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_start_builtin_core(content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_start_current_core(content_ctx_info_t *content_info);
-
-bool task_push_start_dummy_core(content_ctx_info_t *content_info);
-
-bool task_push_load_content_with_new_core_from_companion_ui(
-      const char *core_path,
-      const char *fullpath,
-      const char *label,
-      content_ctx_info_t *content_info,
-      retro_task_callback_t cb,
-      void *user_data);
-
-#ifdef HAVE_MENU
-bool task_push_load_content_with_new_core_from_menu(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_from_playlist_from_menu(
-      const char *core_path,
-      const char *fullpath,
-      const char *label,
-      content_ctx_info_t *content_info,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_with_core_from_menu(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-bool task_push_load_subsystem_with_core_from_menu(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-#endif
-
 void task_file_load_handler(retro_task_t *task);
 
 bool task_audio_mixer_load_handler(retro_task_t *task);
@@ -206,10 +124,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 bool input_autoconfigure_get_swap_override(void);
 
 void input_autoconfigure_joypad_reindex_devices(void);
-
-void task_push_get_powerstate(void);
-
-enum frontend_powerstate get_last_powerstate(int *percent);
 
 bool task_push_audio_mixer_load_and_play(
       const char *fullpath, retro_task_callback_t cb, void *user_data,

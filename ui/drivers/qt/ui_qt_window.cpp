@@ -67,6 +67,7 @@ extern "C" {
 #include "../../../menu/menu_driver.h"
 #endif
 #include "../../../config.def.h"
+#include "../../../tasks/task_content.h"
 #include "../../../tasks/tasks_internal.h"
 #include <string/stdstring.h>
 #include <encodings/utf.h>

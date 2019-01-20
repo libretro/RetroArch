@@ -27,6 +27,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 
+#include "task_content.h"
 #include "tasks_internal.h"
 #include "../file_path_special.h"
 #include "../verbosity.h"

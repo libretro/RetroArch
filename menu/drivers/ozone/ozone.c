@@ -48,6 +48,7 @@
 #include "../../../core_info.h"
 #include "../../../core.h"
 #include "../../../verbosity.h"
+#include "../../../tasks/task_powerstate.h"
 #include "../../../tasks/tasks_internal.h"
 #include "../../../dynamic.h"
 

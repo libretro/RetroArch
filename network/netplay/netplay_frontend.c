@@ -36,7 +36,9 @@
 #include "netplay_private.h"
 
 #include "../../configuration.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
+#include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"

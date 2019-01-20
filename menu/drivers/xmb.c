@@ -60,6 +60,7 @@
 #include "../../playlist.h"
 #include "../../retroarch.h"
 
+#include "../../tasks/task_powerstate.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"

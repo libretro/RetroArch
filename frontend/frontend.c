@@ -29,9 +29,10 @@
 #endif
 
 #include "frontend.h"
+#include "frontend_driver.h"
 #include "../configuration.h"
 #include "../ui/ui_companion_driver.h"
-#include "../tasks/tasks_internal.h"
+#include "../tasks/task_content.h"
 
 #include "../driver.h"
 #include "../paths.h"

@@ -69,6 +69,7 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#include "task_content.h"
 #include "tasks_internal.h"
 
 #include "../command.h"
