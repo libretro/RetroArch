@@ -43,14 +43,13 @@ EOF
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
 
-	echo ""
-	echo "Custom options:"
+	printf %s\\n '' 'Custom options:'
 
 	while read -r VAR COMMENT; do
 		TMPVAR="${VAR%=*}"
 		COMMENT="${COMMENT#*#}"
 		VAL="${VAR#*=}"
-		VAR="$(echo "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
+		VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 		case "$VAR" in
 			'c89_'*) continue;;
 			*)
@@ -70,7 +69,7 @@ EOF
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+{	opt="$(printf %s "$1" | tr '[:lower:]' '[:upper:]')"
 	err="$2"
 	eval "set -- $OPTS"
 	for OPT do [ "$opt" = "$OPT" ] && return; done

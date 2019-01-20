@@ -47,4 +47,4 @@ if [ -e /etc/lsb-release ]; then
 	DISTRO="(${DISTRIB_DESCRIPTION} ${DISTRIB_RELEASE})"
 fi
 
-echo "Checking operating system ... $OS ${DISTRO}"
+printf %s\\n "Checking operating system ... $OS ${DISTRO}"
