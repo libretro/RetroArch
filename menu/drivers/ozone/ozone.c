@@ -526,7 +526,6 @@ static int ozone_list_push(void *data, void *userdata,
 {
    menu_displaylist_ctx_parse_entry_t entry;
    int ret                = -1;
-   unsigned i             = 0;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
    const struct retro_subsystem_info* subsystem;
