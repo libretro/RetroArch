@@ -100,6 +100,7 @@ typedef struct gfx_ctx_wayland_data
    unsigned height;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
+   struct wl_callback *frame_callback;
    struct wl_surface *surface;
    struct wl_shell_surface *shell_surf;
    struct wl_shell *shell;
@@ -384,8 +385,6 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
-/* TODO: implement check for resize */
-
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
       uint32_t serial,
@@ -605,6 +604,24 @@ static void nop() { }
 static const struct wl_surface_listener wl_surface_listener = {
     wl_surface_enter,
     nop,
+};
+
+static const struct wl_callback_listener frame_listener;
+
+static void frame_callback(void *data, struct wl_callback *callback, uint32_t time)
+{
+	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+	
+	if (callback)
+	  wl_callback_destroy(callback);
+	  
+	wl->frame_callback = wl_surface_frame(wl->surface);
+	wl_callback_add_listener(wl->frame_callback, &frame_listener, wl);
+	wl_surface_commit(wl->surface);
+}
+
+static const struct wl_callback_listener frame_listener = {
+	frame_callback,
 };
 
 /* Shell surface callbacks. */
@@ -1591,6 +1608,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    }
        wl_display_roundtrip(wl->input.dpy);
        xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
+       
+       wl->frame_callback = wl_surface_frame(wl->surface);
+	   wl_callback_add_listener(wl->frame_callback, &frame_listener, wl);
    } else if (wl->zxdg_shell) {
 	   wl->zxdg_surface = zxdg_shell_v6_get_xdg_surface(wl->zxdg_shell, wl->surface);
 	   zxdg_surface_v6_add_listener(wl->zxdg_surface, &zxdg_surface_v6_listener, wl);
@@ -1615,12 +1635,18 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    }
        wl_display_roundtrip(wl->input.dpy);
        zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
+       
+       wl->frame_callback = wl_surface_frame(wl->surface);
+	   wl_callback_add_listener(wl->frame_callback, &frame_listener, wl);
    } else if (wl->shell) {
 	   wl->shell_surf = wl_shell_get_shell_surface(wl->shell, wl->surface);
 	   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, wl);
 	   wl_shell_surface_set_toplevel(wl->shell_surf);
 	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
 	   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
+	   
+	   wl->frame_callback = wl_surface_frame(wl->surface);
+	   wl_callback_add_listener(wl->frame_callback, &frame_listener, wl);
    }
 
 
