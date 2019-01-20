@@ -94,8 +94,8 @@ typedef struct gfx_ctx_wayland_data
    bool resize;
    bool configured;
    bool activated;
-   int prev_width;
-   int prev_height;
+   unsigned prev_width;
+   unsigned prev_height;
    unsigned width;
    unsigned height;
    struct wl_registry *registry;
