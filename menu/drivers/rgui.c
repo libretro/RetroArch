@@ -644,7 +644,7 @@ static void load_thumbnail(const char *path)
 {
    unsigned width, height;
    uint32_t *png_data = NULL;
-   unsigned x, y, index;
+   unsigned x, y;
    unsigned x_offset, y_offset;
    
    /* Do nothing if current thumbnail path hasn't changed */
