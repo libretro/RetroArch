@@ -39,6 +39,7 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../msg_hash.h"
+#include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
 
 void print_buf_lines(file_list_t *list, char *buf,

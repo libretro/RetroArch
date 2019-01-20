@@ -22,7 +22,6 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
 #ifdef HAVE_CONFIG_H
@@ -33,11 +32,8 @@
 
 #include "../content.h"
 #include "../core_type.h"
-#include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
-
-typedef int (*transfer_cb_t)(void *data, size_t len);
 
 enum content_mode_load
 {
@@ -54,46 +50,6 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE,
    NBIO_STATUS_TRANSFER_FINISHED
 };
-
-enum nbio_status_flags
-{
-   NBIO_FLAG_NONE = 0,
-   NBIO_FLAG_IMAGE_SUPPORTS_RGBA
-};
-
-enum nbio_type
-{
-   NBIO_TYPE_NONE = 0,
-   NBIO_TYPE_JPEG,
-   NBIO_TYPE_PNG,
-   NBIO_TYPE_TGA,
-   NBIO_TYPE_BMP,
-   NBIO_TYPE_OGG,
-   NBIO_TYPE_FLAC,
-   NBIO_TYPE_MP3,
-   NBIO_TYPE_MOD,
-   NBIO_TYPE_WAV
-};
-
-typedef struct nbio_handle
-{
-   enum nbio_type type;
-   bool is_finished;
-   unsigned status;
-   unsigned pos_increment;
-   uint32_t status_flags;
-   void *data;
-   char *path;
-   struct nbio_t *handle;
-   msg_queue_t *msg_queue;
-   transfer_cb_t  cb;
-} nbio_handle_t;
-
-typedef struct
-{
-   enum msg_hash_enums enum_idx;
-   char path[PATH_MAX_LENGTH];
-} file_transfer_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct

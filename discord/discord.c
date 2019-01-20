@@ -31,6 +31,7 @@
 #include "../verbosity.h"
 
 #include "../msg_hash.h"
+#include "../tasks/task_file_transfer.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
