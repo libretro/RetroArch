@@ -89,4 +89,3 @@ void gfd_free(GFDFile* gfd);
 #ifdef __cplusplus
 }
 #endif
-

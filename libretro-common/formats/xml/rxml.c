@@ -485,4 +485,3 @@ char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
 
    return NULL;
 }
-

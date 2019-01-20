@@ -177,17 +177,18 @@ struct audio_mixer_voice
 #ifdef HAVE_IBXM
       struct
       {
-         unsigned    		position;
-         unsigned    		samples;
-         unsigned    		buf_samples;
-         int*               buffer;
-         struct replay*		stream;
+         unsigned          position;
+         unsigned          samples;
+         unsigned          buf_samples;
+         int*              buffer;
+         struct replay*    stream;
+         struct module*    module;
       } mod;
 #endif
    } types;
 };
 
-static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
 static unsigned s_rate = 0;
 
 #ifdef HAVE_THREADS
@@ -554,6 +555,14 @@ static bool audio_mixer_play_ogg(
       goto error;
    }
 
+   /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
+   if (voice->types.ogg.buffer)
+      memalign_free(voice->types.ogg.buffer);
+   if (voice->types.ogg.stream)
+      stb_vorbis_close(voice->types.ogg.stream);
+   if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
+      voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
+
    voice->types.ogg.resampler      = resamp;
    voice->types.ogg.resampler_data = resampler_data;
    voice->types.ogg.buffer         = (float*)ogg_buffer;
@@ -596,7 +605,12 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   replay = new_replay( module, s_rate, 1);
+   if (voice->types.mod.module)
+      dispose_module(voice->types.mod.module);
+
+   voice->types.mod.module = module;
+
+   replay = new_replay(module, s_rate, 1);
 
    if (!replay)
    {
@@ -621,11 +635,16 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
+   if (voice->types.mod.buffer)
+      memalign_free(voice->types.mod.buffer);
+   if (voice->types.mod.stream)
+      dispose_replay(voice->types.mod.stream);
+
    voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
-    voice->types.mod.samples       = 0; /* samples; */
+   voice->types.mod.samples        = 0; /* samples; */
 
    return true;
 
@@ -677,6 +696,13 @@ static bool audio_mixer_play_flac(
       goto error;
    }
 
+   if (voice->types.flac.buffer)
+      memalign_free(voice->types.flac.buffer);
+   if (voice->types.flac.stream)
+      drflac_close(voice->types.flac.stream);
+   if (voice->types.flac.resampler && voice->types.flac.resampler_data)
+      voice->types.flac.resampler->free(voice->types.flac.resampler_data);
+
    voice->types.flac.resampler      = resamp;
    voice->types.flac.resampler_data = resampler_data;
    voice->types.flac.buffer         = (float*)flac_buffer;
@@ -706,9 +732,19 @@ static bool audio_mixer_play_mp3(
    void *mp3_buffer                = NULL;
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
-   bool res =drmp3_init_memory(&voice->types.mp3.stream,(const unsigned char*)sound->types.mp3.data,sound->types.mp3.size,NULL);
+   bool res;
+
+   if (voice->types.mp3.stream.pData)
+   {
+      drmp3_uninit(&voice->types.mp3.stream);
+      memset(&voice->types.mp3.stream, 0, sizeof(voice->types.mp3.stream));
+   }
+
+   res = drmp3_init_memory(&voice->types.mp3.stream, (const unsigned char*)sound->types.mp3.data, sound->types.mp3.size, NULL);
+
    if (!res)
       return false;
+
    if (voice->types.mp3.stream.sampleRate != s_rate)
    {
       ratio = (double)s_rate / (double)(voice->types.mp3.stream.sampleRate);
@@ -728,6 +764,12 @@ static bool audio_mixer_play_mp3(
       resamp->free(resampler_data);
       goto error;
    }
+
+   /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
+   if (voice->types.mp3.buffer)
+      memalign_free(voice->types.mp3.buffer);
+   if (voice->types.mp3.resampler && voice->types.mp3.resampler_data)
+      voice->types.mp3.resampler->free(voice->types.mp3.resampler_data);
 
    voice->types.mp3.resampler      = resamp;
    voice->types.mp3.resampler_data = resampler_data;

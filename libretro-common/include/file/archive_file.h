@@ -64,6 +64,7 @@ typedef struct file_archive_transfer
 {
    enum file_archive_transfer_type type;
    int32_t archive_size;
+   ptrdiff_t start_delta;
    file_archive_file_data_t *handle;
    void *stream;
    const uint8_t *footer;
@@ -213,4 +214,3 @@ extern const struct file_archive_file_backend sevenzip_backend;
 RETRO_END_DECLS
 
 #endif
-

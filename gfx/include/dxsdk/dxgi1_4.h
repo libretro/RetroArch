@@ -1423,4 +1423,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0004_v0_0_s_ifspec;
 #endif
 
 #endif
-

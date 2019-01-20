@@ -35,6 +35,7 @@
 #include "../../paths.h"
 #include "../../core.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include ".././verbosity.h"
 

@@ -6854,6 +6854,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_LOG,
     "Log"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+    "%1 items"
+    )
 #ifdef HAVE_QT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
@@ -8067,4 +8071,8 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Hold Start (2 seconds)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Save playlists using old format"
     )

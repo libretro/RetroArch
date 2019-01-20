@@ -157,4 +157,3 @@ menu_display_ctx_driver_t menu_display_ctx_metal = {
    .scissor_begin          = menu_display_metal_scissor_begin,
    .scissor_end            = menu_display_metal_scissor_end
 };
-

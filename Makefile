@@ -171,7 +171,7 @@ all: $(TARGET) config.mk
 $(MOC_SRC):
 	@$(if $(Q), $(shell echo echo MOC $<),)
 	$(eval MOC_TMP := $(patsubst %.h,%_moc.cpp,$@))
-	$(Q)$(MOC) -o $(MOC_TMP) $<
+	$(Q)QT_SELECT=$(QT_VERSION) $(MOC) -o $(MOC_TMP) $<
 
 $(foreach x,$(join $(addsuffix :,$(MOC_SRC)),$(MOC_HEADERS)),$(eval $x))
 

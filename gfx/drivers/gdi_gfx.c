@@ -585,7 +585,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    if (!image || image->width > 2048 || image->height > 2048)
       return 0;
 
-   texture                     = calloc(1, sizeof(*texture));
+   texture                     = (gdi_texture_t*)calloc(1, sizeof(*texture));
 
    if (!texture)
       return 0;
@@ -610,7 +610,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gdi_unload_texture(void *data, uintptr_t handle)
+static void gdi_unload_texture(void *data, uintptr_t handle, bool threaded)
 {
    struct gdi_texture *texture = (struct gdi_texture*)handle;
 

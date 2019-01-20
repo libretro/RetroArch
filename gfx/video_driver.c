@@ -147,6 +147,7 @@ static bool                video_driver_crt_switching_active = false;
 
 static struct retro_system_av_info video_driver_av_info;
 
+
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
 static const void *frame_cache_data                      = NULL;
@@ -1050,6 +1051,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
+   /* Set the driver to threaded based on the settings configuration */
+   video_driver_threaded = settings->bools.video_threaded;
+   /* Check video_driver_threaded and video_driver_hw-context to determine if the video driver is threaded */
    video.is_threaded   = video_driver_is_threaded_internal();
    *video_is_threaded  = video.is_threaded;
 
@@ -2054,8 +2058,13 @@ void video_driver_load_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
+#else
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.gamma_correction, "gamma_correction");
+#endif
 
    if (config_get_bool(conf, "flicker_filter_enable",
          &tmp_bool))
@@ -2082,8 +2091,13 @@ void video_driver_save_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    config_set_bool(conf, "gamma_correction",
          global->console.screen.gamma_correction);
+#else
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+#endif
    config_set_bool(conf, "flicker_filter_enable",
          global->console.flickerfilter_enable);
    config_set_bool(conf, "soft_filter_enable",
@@ -2715,7 +2729,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
 
-   video_driver_poke->unload_texture(video_driver_data, *id);
+   video_driver_poke->unload_texture(video_driver_data, *id, video_driver_is_threaded_internal());
    *id = 0;
    return true;
 }

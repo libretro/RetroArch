@@ -2461,4 +2461,3 @@ XMFINLINE FLOAT XMScalarACosEst
 }
 
 #endif // __XNAMATHMISC_INL__
-

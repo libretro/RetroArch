@@ -21,6 +21,7 @@
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>
+#include "../../libretro-common/include/libretro_gskit_ps2.h"
 
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
 #define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
@@ -34,11 +35,14 @@ typedef struct ps2_video
    GSTEXTURE *menuTexture;
    GSTEXTURE *coreTexture;
    bool clearVRAM;
+   struct retro_hw_render_interface_gskit_ps2 iface; /* Palette in the cores */
    
    bool menuVisible;
    bool fullscreen;
 
-   bool rgb32;
+   bool vsync;
+
+   int PSM;
    bool force_aspect;
    int menu_filter;
    int core_filter;
@@ -85,6 +89,11 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->gsGlobal = init_GSGlobal();
    ps2->menuTexture = prepare_new_texture();
    ps2->coreTexture = prepare_new_texture();
+
+   /* Used for cores that supports palette */
+   ps2->iface.interface_type = RETRO_HW_RENDER_INTERFACE_GSKIT_PS2;
+   ps2->iface.interface_version = RETRO_HW_RENDER_INTERFACE_GSKIT_PS2_VERSION;
+   ps2->iface.coreTexture = ps2->coreTexture;
 }
 
 static void deinitTexture(GSTEXTURE *texture)
@@ -95,55 +104,18 @@ static void deinitTexture(GSTEXTURE *texture)
    texture->Clut = NULL;
 }
 
-static void color_correction32(uint32_t *buffer, uint32_t dimensions)
+static bool texture_need_prepare(GSTEXTURE *texture, int width, int height, int PSM)
 {
-   uint32_t i;
-   uint32_t x32;
-   for (i = 0; i < dimensions; i++) {
-      x32 = buffer[i];
-      buffer[i] = ((x32 >> 16) & 0xFF) | ((x32 << 16) & 0xFF0000) | (x32 & 0xFF00FF00);
-   }
-}
-
-static void color_correction16(uint16_t *buffer, uint32_t dimensions)
-{
-   uint32_t i;
-   uint16_t x16;
-   for (i = 0; i < dimensions; i++) {
-      x16 = buffer[i];
-      buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | ((x16 >> 1) & 0x3E0) | ((x16 >> 11) & 0x1F);
-   }
-}
-
-static bool texture_need_prepare(GSTEXTURE *texture, int width, int height, int PSM, int filter)
-{
-   return !texture->Mem || texture->Width != width || texture->Height != height || texture->PSM != PSM;
+   return texture->Width != width || texture->Height != height || texture->PSM != PSM;
 }
 
 static void transfer_texture(GSTEXTURE *texture, const void *frame, 
-      int width, int height, bool rgb32, int filter, bool color_correction)
+      int width, int height, int PSM, int filter, bool color_correction)
 {
-   
-   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool changed = texture_need_prepare(texture, width, height, rgb32, PSM);
-
-   if (color_correction) {
-      int pixels = width * height;
-      if (rgb32) {
-         uint32_t *buffer = (uint32_t *)frame;
-         color_correction32(buffer, pixels);
-      } else {
-         uint16_t *buffer = (uint16_t *)frame;
-         color_correction16(buffer, pixels);
-      }
-   }
-
-   if (changed) {
-      texture->Width = width;
-      texture->Height = height;
-      texture->PSM = PSM;
-      texture->Filter = filter;
-   }
+   texture->Width = width;
+   texture->Height = height;
+   texture->PSM = PSM;
+   texture->Filter = filter;
    texture->Mem = (void *)frame;
 }
 
@@ -153,6 +125,12 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture)
    texture->Vram = gsKit_vram_alloc(gsGlobal, size, GSKIT_ALLOC_USERBUFFER);
    if(texture->Vram == GSKIT_ALLOC_ERROR) {
       printf("VRAM Allocation Failed. Will not upload texture.\n");
+   }
+
+   if (texture->Clut) {
+      /* Right now just supporting 16 x 16 = 256 colours */
+      size = gsKit_texture_size(16, 16, texture->ClutPSM);
+      texture->VramClut = gsKit_vram_alloc(gsGlobal, size , GSKIT_ALLOC_USERBUFFER);
    }
 }
 
@@ -191,11 +169,16 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               GS_TEXT);
 }
 
-static void clearVRAMIfNeeded(ps2_video_t *ps2, int width, int height)
+static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int height)
 {
-   int PSM = ps2->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool coreVRAMClear = texture_need_prepare(ps2->coreTexture, width, height, PSM, ps2->core_filter);
-   ps2->clearVRAM = ps2->clearVRAM || coreVRAMClear;
+   if (!ps2->clearVRAM) {
+      if(frame && frame != RETRO_HW_FRAME_BUFFER_VALID) {
+         bool coreVRAMClear = false;
+         coreVRAMClear = texture_need_prepare(ps2->coreTexture, width, height, ps2->PSM);
+         ps2->clearVRAM = ps2->clearVRAM || coreVRAMClear;
+      }
+   }
+
    if (ps2->clearVRAM) {
       gsKit_clear(ps2->gsGlobal, GS_BLACK);
       gsKit_vram_clear(ps2->gsGlobal);
@@ -204,7 +187,9 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2, int width, int height)
 
 static void refreshScreen(ps2_video_t *ps2)
 {
-   gsKit_sync_flip(ps2->gsGlobal);
+   if (ps2->vsync) {
+      gsKit_sync_flip(ps2->gsGlobal);
+   }
    gsKit_queue_exec(ps2->gsGlobal);
 
    ps2->clearVRAM = false;
@@ -225,10 +210,12 @@ static void *ps2_gfx_init(const video_info_t *video,
    if (video->font_enable) {
       font_driver_init_osd(ps2, false, video->is_threaded, FONT_DRIVER_RENDER_PS2);
    }
-   ps2->rgb32 = video->rgb32;
+   ps2->PSM = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->fullscreen = video->fullscreen;
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
    ps2->force_aspect = video->force_aspect;
+   ps2->vsync = video->vsync;
+   ps2->clearVRAM = true;
 
    if (input && input_data) {
       settings_t *settings = config_get_ptr();
@@ -249,14 +236,18 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    if (!width || !height)
       return false;
 
-   if (frame_count%120==0) {
+#if defined(DEBUG)
+   if (frame_count%60==0) {
       printf("ps2_gfx_frame %lu\n", frame_count);
    }
+#endif
 
-   clearVRAMIfNeeded(ps2, width, height);
+   clearVRAMIfNeeded(ps2, frame, width, height);
 
    if (frame) {
-      transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, ps2->core_filter, 1);
+      if (frame != RETRO_HW_FRAME_BUFFER_VALID){ /* Checking if the transfer is done in the core */
+         transfer_texture(ps2->coreTexture, frame, width, height, ps2->PSM, ps2->core_filter, 1);
+      }
       if(ps2->clearVRAM) {
          vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       }
@@ -294,8 +285,10 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
 static void ps2_gfx_set_nonblock_state(void *data, bool toggle)
 {
-   (void)data;
-   (void)toggle;
+   ps2_video_t *ps2 = (ps2_video_t*)data;
+
+   if (ps2)
+      ps2->vsync = !toggle;
 }
 
 static bool ps2_gfx_alive(void *data)
@@ -395,16 +388,20 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
    ps2_video_t *ps2 = (ps2_video_t*)data;
    
    bool color_correction = false;
-   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, rgb32, PSM);
+   int PSM = (rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
+   bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, PSM);
    
-   transfer_texture(ps2->menuTexture, frame, width, height, rgb32, ps2->menu_filter, color_correction);
-   ps2->clearVRAM = texture_changed;
+   transfer_texture(ps2->menuTexture, frame, width, height, PSM, ps2->menu_filter, color_correction);
+   ps2->clearVRAM = ps2->clearVRAM || texture_changed;
 }
 
 static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
+   if (ps2->menuVisible != enable) {
+      /* If Menu change status, CLEAR VRAM */
+      ps2->clearVRAM = true;
+   }
    ps2->menuVisible = enable;
    ps2->fullscreen = fullscreen;
 }
@@ -415,6 +412,15 @@ static void ps2_set_osd_msg(void *data,
       const void *params, void *font)
 {
    font_driver_render_msg(video_info, font, msg, params);
+}
+
+static bool ps2_get_hw_render_interface(void* data, 
+      const struct retro_hw_render_interface** iface)
+{
+   ps2_video_t* ps2 = (ps2_video_t*)data;
+   ps2->iface.clearTexture = ps2->clearVRAM;
+   *iface = (const struct retro_hw_render_interface*)&ps2->iface;
+   return true;
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
@@ -440,7 +446,7 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL,                        /* grab_mouse_toggle */
    NULL,                        /* get_current_shader */
    NULL,                        /* get_current_software_framebuffer */
-   NULL                         /* get_hw_render_interface */
+   ps2_get_hw_render_interface  /* get_hw_render_interface */
 };
 
 static void ps2_gfx_get_poke_interface(void *data,

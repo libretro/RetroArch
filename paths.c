@@ -173,7 +173,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(path_main_basename) ? path_main_basename :
-                  system ? system->library_name : NULL,
+                  system && !string_is_empty(system->library_name) ? system->library_name : "",
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -185,7 +185,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(path_main_basename) ? path_main_basename :
-                  system ? system->library_name : NULL,
+                  system && !string_is_empty(system->library_name) ? system->library_name : "",
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
@@ -195,7 +195,9 @@ void path_set_redirect(void)
 
       if (path_is_directory(global->name.cheatfile))
       {
-         fill_pathname_dir(global->name.cheatfile, path_main_basename,
+         /* FIXME: Should this optionally use system->library_name like the others? */
+         fill_pathname_dir(global->name.cheatfile,
+               !string_is_empty(path_main_basename) ? path_main_basename : "",
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.cheatfile));
          RARCH_LOG("%s \"%s\".\n",

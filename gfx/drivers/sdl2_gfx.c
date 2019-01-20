@@ -784,4 +784,3 @@ video_driver_t video_sdl2 = {
 #endif
     sdl2_gfx_poke_interface
 };
-

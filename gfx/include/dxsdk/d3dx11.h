@@ -66,4 +66,3 @@ enum _D3DX11_ERR {
 };
 
 #endif //__D3DX11_H__
-

@@ -260,4 +260,3 @@ int lwip_ioctl(int s, long cmd, void *argp);
 #endif /* LWIP_COMPAT_SOCKETS */
 
 #endif /* __LWIP_SOCKETS_H__ */
-

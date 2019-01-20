@@ -57,6 +57,8 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#include "../../tasks/task_content.h"
+#include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
@@ -2029,7 +2031,10 @@ static int action_ok_audio_add_to_mixer(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0
+            );
 
    return 0;
 }
@@ -2048,7 +2053,9 @@ static int action_ok_audio_add_to_mixer_and_play(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load_and_play(entry_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -2076,7 +2083,9 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -2104,7 +2113,9 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -4016,7 +4027,7 @@ static int action_ok_netplay_connect_room(const char *path,
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
       netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename);
+      tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
 
 #else
    return -1;
@@ -4263,6 +4274,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].frontend,
                      host->frontend,
                      sizeof(netplay_room_list[i].frontend));
+               strlcpy(netplay_room_list[i].subsystem_name,
+                     host->subsystem_name,
+                     sizeof(netplay_room_list[i].subsystem_name));
 
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;

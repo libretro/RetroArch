@@ -820,4 +820,3 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_set_protocol,
    wiiu_hid_read,
 };
-

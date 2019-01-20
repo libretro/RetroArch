@@ -139,4 +139,3 @@ typedef struct DXGI_JPEG_QUANTIZATION_TABLE
 } DXGI_JPEG_QUANTIZATION_TABLE;
 
 #endif // __dxgitype_h__
-

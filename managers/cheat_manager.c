@@ -52,6 +52,8 @@
 #include "../input/input_driver.h"
 #include "../configuration.h"
 
+cheat_manager_t cheat_manager_state;
+
 unsigned cheat_manager_get_buf_size(void)
 {
    return cheat_manager_state.buf_size;

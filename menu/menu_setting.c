@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -5850,7 +5850,7 @@ static bool setting_append_list(
 #if defined(HAVE_THREADS)
             CONFIG_BOOL(
                   list, list_info,
-                  video_driver_get_threaded(),
+                  &settings->bools.video_threaded,
                   MENU_ENUM_LABEL_VIDEO_THREADED,
                   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
                   video_threaded,
@@ -8722,7 +8722,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone") || string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -8739,7 +8739,10 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+         }
 
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_left_thumbnails,
@@ -9461,6 +9464,22 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_use_old_format,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+               playlist_use_old_format,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
 
          END_SUB_GROUP(list, list_info, parent_group);
 

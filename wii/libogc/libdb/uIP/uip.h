@@ -171,4 +171,3 @@ u16_t htons(u16_t val);
 #endif /* __UIP_H__ */
 
 /** @} */
-

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -688,6 +688,9 @@ static const bool stdin_cmd_enable = false;
 static const uint16_t network_remote_base_port = 55400;
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
+
+/* File format to use when writing playlists to disk */
+static const bool playlist_use_old_format = false;
 
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;

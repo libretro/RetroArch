@@ -1459,4 +1459,3 @@ s32 USB_ClearHalt(s32 fd, u8 endpoint)
 }
 
 #endif /* defined(HW_RVL) */
-

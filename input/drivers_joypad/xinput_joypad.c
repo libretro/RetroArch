@@ -181,6 +181,9 @@ const char *xinput_joypad_name(unsigned pad)
       return XBOX_ONE_CONTROLLER_NAMES[xuser];
 #endif
 
+   if (xuser < 0)
+      return NULL;
+
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 

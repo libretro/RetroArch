@@ -14,9 +14,15 @@
 #include "viewoptionsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../msg_hash.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(mainwindow)

@@ -468,4 +468,3 @@ LCStoreBlocks:
 	ori			r6,r6,0x0002
 	mtspr		DMAL,r6
 	blr
-	

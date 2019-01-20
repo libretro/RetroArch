@@ -451,4 +451,3 @@ extern "C" {
 #endif //__cplusplus
     
 #endif //__D3D12SHADER_H__
-

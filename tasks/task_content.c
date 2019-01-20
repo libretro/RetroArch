@@ -69,6 +69,7 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#include "task_content.h"
 #include "tasks_internal.h"
 
 #include "../command.h"
@@ -1421,6 +1422,8 @@ bool task_push_load_content_with_new_core_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+
+      global->name.label[0]                   = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))
@@ -1809,6 +1812,32 @@ void content_set_subsystem(unsigned idx)
 
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
+}
+
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name)
+{
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+   unsigned i = 0;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data;
+
+   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   {
+      if (string_is_equal(subsystem_name, subsystem->ident))
+      {
+         content_set_subsystem(i);
+         return true;
+      }
+   }
+
+   return false;
 }
 
 /* Add a rom to the subsystem rom buffer */

@@ -422,4 +422,3 @@ input_driver_t input_wayland = {
    input_wl_keyboard_mapping_is_blocked,
    input_wl_keyboard_mapping_set_block,
 };
-

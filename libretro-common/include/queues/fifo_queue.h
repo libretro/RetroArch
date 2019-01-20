@@ -76,4 +76,3 @@ static INLINE size_t fifo_write_avail(fifo_buffer_t *buffer)
 RETRO_END_DECLS
 
 #endif
-

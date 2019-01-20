@@ -873,4 +873,3 @@ void conv_copy(void *output_, const void *input_,
          h++, output += out_stride, input += in_stride)
       memcpy(output, input, copy_len);
 }
-

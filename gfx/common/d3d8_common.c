@@ -363,4 +363,3 @@ void d3d8x_font_get_text_metrics(void *data, void *metrics)
       font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
 #endif
 }
-

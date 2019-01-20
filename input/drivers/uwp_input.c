@@ -184,7 +184,6 @@ static int16_t uwp_input_state(void *data,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   int16_t ret;
    uwp_input_t *uwp           = (uwp_input_t*)data;
 
    switch (device)

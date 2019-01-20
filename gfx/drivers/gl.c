@@ -1727,6 +1727,7 @@ static void *gl_init(const video_info_t *video,
    char *error_string                   = NULL;
    gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
    const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
+
    if (!gl || !ctx_driver)
       goto error;
 
@@ -1781,6 +1782,9 @@ static void *gl_init(const video_info_t *video,
 
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
+
+   if (string_is_equal(ctx_driver->ident, "null"))
+      goto error;
 
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
@@ -2492,6 +2496,12 @@ static void video_texture_load_gl(
          );
 }
 
+static void video_texture_unload_gl(
+      uintptr_t *id)
+{
+   glDeleteTextures(1, (GLuint*)id);
+}
+
 #ifdef HAVE_THREADS
 static int video_texture_load_wrap_gl_mipmap(void *data)
 {
@@ -2514,13 +2524,20 @@ static int video_texture_load_wrap_gl(void *data)
          TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
+
+static int video_texture_unload_wrap_gl(void *data)
+{
+   if (!data)
+      return 0;
+   video_texture_unload_gl((uintptr_t*)data);
+   return 0;
+}
 #endif
 
 static uintptr_t gl_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
-
 #ifdef HAVE_THREADS
    if (threaded)
    {
@@ -2535,7 +2552,8 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_load(data, func);
+      id=video_thread_texture_load(data, func);
+      return id;
    }
 #endif
 
@@ -2543,14 +2561,21 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl_unload_texture(void *data, uintptr_t id)
+static void gl_unload_texture(void *video_data, uintptr_t data, bool threaded)
 {
-   GLuint glid;
-   if (!id)
+   if (!data)
       return;
 
-   glid = (GLuint)id;
-   glDeleteTextures(1, &glid);
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      custom_command_method_t func = video_texture_unload_wrap_gl;
+      video_thread_texture_load((void *)&data, func);
+      return;
+   }
+#endif
+
+   video_texture_unload_gl(&data);
 }
 
 static void gl_set_coords(void *handle_data, void *shader_data,

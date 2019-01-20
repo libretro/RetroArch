@@ -75,22 +75,20 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 #endif
 
       if (!gdi->texDC)
-         gdi->texDC = CreateCompatibleDC(gdi->winDC);
+         gdi->texDC        = CreateCompatibleDC(gdi->winDC);
 
       if (texture->bmp)
-      {
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
-      }
+         texture->bmp_old  = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
       else
       {
          /* scale texture data into a bitmap we can easily blit later */
-         texture->bmp = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
+         texture->bmp     = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
+         texture->bmp_old = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
 
          StretchDIBits(gdi->texDC, 0, 0, draw->width, draw->height, 0, 0, texture->width, texture->height, texture->data, &info, DIB_RGB_COLORS, SRCCOPY);
       }
 
-      gdi->bmp_old = SelectObject(gdi->memDC, gdi->bmp);
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #if _WIN32_WINNT >= 0x0410 /* Win98 */
       blend.BlendOp = AC_SRC_OVER;

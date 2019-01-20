@@ -424,4 +424,3 @@ HRESULT WINAPI D3DX10UnsetAllDeviceObjects(ID3D10Device *pDevice);
 #define D3DERR_WASSTILLDRAWING                  MAKE_D3DHRESULT(540)
 
 #endif //__D3DX10CORE_H__
-

@@ -3,7 +3,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2017 - Andrés Suárez
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -50,6 +50,7 @@
 #include "verbosity.h"
 #include "lakka.h"
 
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 
 #include "../list_special.h"
@@ -1377,7 +1378,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, scale_integer, false);
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, video_smooth, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, force_aspect, false);
-   SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, video_threaded, false);
+   SETTING_BOOL("video_threaded",                &settings->bools.video_threaded, true, video_threaded, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, video_shared_context, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, auto_screenshot_filename, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
@@ -1561,6 +1562,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef _3DS
    SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
 #endif
+
+   SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, playlist_use_old_format, false);
 
    *size = count;
 

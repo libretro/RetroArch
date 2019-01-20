@@ -14,9 +14,13 @@
  */
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
+#include <retro_timers.h>
 
 #include "discord.h"
 #include "discord_register.h"
+
+#include "../deps/discord-rpc/include/discord_rpc.h"
 
 #include "../retroarch.h"
 #include "../configuration.h"
@@ -24,8 +28,10 @@
 #include "../core_info.h"
 #include "../paths.h"
 #include "../playlist.h"
+#include "../verbosity.h"
 
 #include "../msg_hash.h"
+#include "../tasks/task_file_transfer.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -187,8 +193,7 @@ static void handle_discord_join_cb(void *task_data, void *user_data, const char 
 
       RARCH_LOG("[Discord] joining lobby at: %s\n", tmp_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
-         room->gamename, tmp_hostname, room->corename);
-
+         room->gamename, tmp_hostname, room->corename, room->subsystem_name);
    }
 
 finish:
@@ -306,11 +311,13 @@ void discord_update(enum discord_presence presence)
          discord_presence.instance = 0;
          break;
       case DISCORD_PRESENCE_GAME_PAUSED:
-         discord_presence.smallImageKey = "paused";
-         discord_presence.smallImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED);
-         discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED);
-         pause_time = time(0);
-         ellapsed_time = difftime(time(0), start_time);
+         discord_presence.smallImageKey  = "paused";
+         discord_presence.smallImageText = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED);
+         discord_presence.details        = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED);
+         pause_time                      = time(0);
+         ellapsed_time                   = difftime(time(0), start_time);
          discord_presence.startTimestamp = pause_time;
          break;
       case DISCORD_PRESENCE_GAME:
@@ -340,13 +347,15 @@ void discord_update(enum discord_presence presence)
             if (pause_time != 0)
                start_time = time(0) - ellapsed_time;
 
-            pause_time = 0;
+            pause_time    = 0;
             ellapsed_time = 0;
 
             discord_presence.smallImageKey  = "playing";
-            discord_presence.smallImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING);
+            discord_presence.smallImageText = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING);
             discord_presence.startTimestamp = start_time;
-            discord_presence.details        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
+            discord_presence.details        = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
 
             discord_presence.state          = label;
             discord_presence.instance       = 0;
@@ -367,9 +376,9 @@ void discord_update(enum discord_presence presence)
             snprintf(join_secret, sizeof(join_secret), "%d|%s", room->id, room->nickname);
             discord_presence.joinSecret = strdup(join_secret);
             /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
-            discord_presence.partyId = strdup(party_name);
-            discord_presence.partyMax = 0;
-            discord_presence.partySize = 0;
+            discord_presence.partyId    = strdup(party_name);
+            discord_presence.partyMax   = 0;
+            discord_presence.partySize  = 0;
 
             RARCH_LOG("[Discord] join secret: %s\n", join_secret);
             RARCH_LOG("[Discord] party id: %s\n", party_name);

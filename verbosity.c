@@ -322,4 +322,3 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 #endif
-

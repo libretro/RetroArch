@@ -88,4 +88,3 @@ s32 KEYBOARD_FlushEvents(void);
 #endif /* __cplusplus */
 
 #endif /* __KEYBOARD_H__ */
-

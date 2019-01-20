@@ -2,7 +2,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2017 - Andrés Suárez
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -5245,6 +5245,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+               PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_playlist_associations(info);
          info->need_push    = true;
@@ -6800,7 +6803,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             unsigned i;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if 1
+            /* TODO - for developers -
+             * turn this into #if 0 if you want to be able to see
+             * the system streams as well. */
             for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+#else
+            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+#endif
             {
                char msg[128];
                char msg_lbl[128];

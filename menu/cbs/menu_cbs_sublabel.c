@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
@@ -580,6 +581,31 @@ static int action_bind_sublabel_subsystem_add(
    return 0;
 }
 
+static int action_bind_sublabel_subsystem_load(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned j = 0;
+   char buf[4096];
+
+   buf[0] = '\0';
+
+   for (j = 0; j < content_get_subsystem_rom_id(); j++)
+   {
+      strlcat(buf, "   ", sizeof(buf));
+      strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
+      if (j != content_get_subsystem_rom_id() - 1)
+         strlcat(buf, "\n", sizeof(buf));
+   }
+
+   if (!string_is_empty(buf))
+      strlcpy(s, buf, len);
+
+   return 0;
+}
+
 static int action_bind_sublabel_remap_kbd_sublabel(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -692,6 +718,7 @@ static int action_bind_sublabel_netplay_room(
    const char *core_ver   = NULL;
    const char *frontend   = NULL;
    const char *na         = NULL;
+   const char *subsystem  = NULL;
 
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
@@ -705,15 +732,54 @@ static int action_bind_sublabel_netplay_room(
    core_ver   = netplay_room_list[offset].coreversion;
    gamecrc    = netplay_room_list[offset].gamecrc;
    frontend   = netplay_room_list[offset].frontend;
+   subsystem  = netplay_room_list[offset].subsystem_name;
    na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-   snprintf(s, len,
-	   "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
-      string_is_empty(ra_version)    ? na : ra_version,
-      string_is_empty(frontend)      ? na : frontend,
-      corename, core_ver,
-      !string_is_equal(gamename, na) ? gamename : na,
-      gamecrc);
+   if (string_is_empty(subsystem) || string_is_equal(subsystem, "N/A"))
+   {
+      snprintf(s, len,
+         "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
+         string_is_empty(ra_version)    ? na : ra_version,
+         string_is_empty(frontend)      ? na : frontend,
+         corename, core_ver,
+         !string_is_equal(gamename, na) ? gamename : na,
+         gamecrc);
+   }
+   else
+   {
+      if (strstr(gamename, "|"))
+      {
+         char buf[4096];
+         unsigned i               = 0;
+         struct string_list *list = string_split(gamename, "|");
+
+         buf[0] = '\0';
+         for (i = 0; i < list->size; i++)
+         {
+            strlcat(buf, "   ", sizeof(buf));
+            strlcat(buf, list->elems[i].data, sizeof(buf));
+            strlcat(buf, "\n", sizeof(buf));
+         }
+         snprintf(s, len,
+            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGames:\n%s",
+            string_is_empty(ra_version)    ? na : ra_version,
+            string_is_empty(frontend)      ? na : frontend,
+            corename, core_ver, subsystem,
+            !string_is_equal(gamename, na) ? buf : na
+            );
+         string_list_free(list);
+      }
+      else
+      {
+         snprintf(s, len,
+            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            string_is_empty(ra_version)    ? na : ra_version,
+            string_is_empty(frontend)      ? na : frontend,
+            corename, core_ver, subsystem,
+            !string_is_equal(gamename, na) ? gamename : na,
+            gamecrc);
+      }
+   }
 #if 0
    strlcpy(s, corename, len);
 #endif
@@ -1174,6 +1240,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_add);
+            break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_load);
             break;
          case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_cycle_tray_status);

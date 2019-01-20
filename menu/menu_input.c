@@ -892,4 +892,3 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_free(&entry);
 }
-

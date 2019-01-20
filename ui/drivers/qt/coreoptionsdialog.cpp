@@ -20,7 +20,10 @@
 #include "coreoptionsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -30,7 +33,10 @@ extern "C" {
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
 #include "../../../managers/core_option_manager.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    QDialog(parent)

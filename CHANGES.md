@@ -1,6 +1,7 @@
 # 1.7.6 (future)
 - ANDROID: Fix Xperia Play input binding
 - CHEEVOS: Reset when hardcore mode is toggled
+- COMMON: Add new JSON playlist format
 - CORE UPDATER: Allow sideloading cores from the menu
 - CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
@@ -19,6 +20,7 @@
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
+- NETPLAY: Allow quick joining subsystem lobbies
 - PS2: Initial PlayStation2 port.
 - PS4: Initial PlayStation4 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
@@ -40,6 +42,7 @@
 - UWP: Initial UWP port.
 - XBONE: Initial Xbox One port.
 - XMB/OZONE: Add more icons
+- ???: Easter Egg
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

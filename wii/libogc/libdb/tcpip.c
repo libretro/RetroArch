@@ -462,4 +462,3 @@ void tcpip_starttimer(s32_t s)
 
 	if(tcpip_time==0 && sock->pcb && (uip_tcp_active_pcbs || uip_tcp_tw_pcbs)) tcpip_time = gettime();
 }
-

@@ -51,7 +51,6 @@ void clear_controller_port_map(void);
 
 static char *get_temp_directory_alloc(void)
 {
-   settings_t *settings   = config_get_ptr();
    char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
@@ -441,4 +440,3 @@ void secondary_core_set_variable_update(void) { }
 void clear_controller_port_map(void) { }
 
 #endif
-

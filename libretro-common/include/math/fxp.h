@@ -59,4 +59,3 @@ static INLINE int64_t fx32_shiftup(const int32_t a)
 }
 
 #endif
-

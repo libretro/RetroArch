@@ -160,4 +160,3 @@ inet_chksum_pbuf(struct pbuf *p)
   }
   return ~(acc & 0xffff);
 }
-

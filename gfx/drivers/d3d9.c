@@ -1174,11 +1174,13 @@ static void d3d9_set_osd_msg(void *data,
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
+   const struct font_params *d3d_font_params = (const
+         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, params);
+   d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
    font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
+         msg, d3d_font_params);
    d3d9_end_scene(dev);
 }
 
@@ -1733,14 +1735,14 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             d3d9_get_xrgb8888_format(),
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   if (d3d9_surface_lock_rect(dest, &rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1760,7 +1762,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect((void*)dest);
+      d3d9_surface_unlock_rect(dest);
    }
    else
       ret = false;
@@ -1987,7 +1989,7 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void d3d9_unload_texture(void *data, uintptr_t id)
+static void d3d9_unload_texture(void *data, uintptr_t id, bool threaded)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)

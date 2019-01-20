@@ -195,4 +195,3 @@ typedef struct _DSPROPERTY_DIRECTSOUNDDEVICE_ENUMERATE_W_DATA
 /*#pragma endregion*/
 
 #endif  // __DSCONF_INCLUDED__
-

@@ -116,6 +116,10 @@ static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
 static bool *load_no_content_hook   = NULL;
 
+struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+unsigned subsystem_current_count;
+
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
       const char *ident)
@@ -187,9 +191,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i = 0;
-         unsigned j = 0;
-         unsigned size = i;
+         unsigned i, j, size;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          subsystem_current_count = 0;
@@ -492,8 +494,9 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
+   dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
@@ -1923,9 +1926,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
  
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 1;
+         const uint32_t supported_vfs_version = 3;
          static struct retro_vfs_interface vfs_iface =
          {
+            /* VFS API v1 */
             retro_vfs_file_get_path_impl,
             retro_vfs_file_open_impl,
             retro_vfs_file_close_impl,
@@ -1935,14 +1939,31 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             retro_vfs_file_read_impl,
             retro_vfs_file_write_impl,
             retro_vfs_file_flush_impl,
-            retro_vfs_file_remove_impl
+            retro_vfs_file_remove_impl,
+            retro_vfs_file_rename_impl,
+            /* VFS API v2 */
+            retro_vfs_file_truncate_impl,
+            /* VFS API v3 */
+            retro_vfs_stat_impl,
+            retro_vfs_mkdir_impl,
+            retro_vfs_opendir_impl,
+            retro_vfs_readdir_impl,
+            retro_vfs_dirent_get_name_impl,
+            retro_vfs_dirent_is_dir_impl,
+            retro_vfs_closedir_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
          if (vfs_iface_info->required_interface_version <= supported_vfs_version)
          {
+            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
+         }
+         else
+         {
+            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            return false;
          }
 
          break;
