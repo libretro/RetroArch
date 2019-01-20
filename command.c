@@ -1766,56 +1766,6 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name)
-{
-   if (!playlist)
-      return;
-
-   if (playlist_push(
-         playlist,
-         path,
-         label,
-         core_path,
-         core_name,
-         NULL,
-         NULL
-         ))
-      playlist_write_file(playlist);
-}
-
-void command_playlist_update_write(
-      playlist_t *plist,
-      size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name)
-{
-   playlist_t *playlist = plist ? plist : playlist_get_cached();
-
-   if (!playlist)
-      return;
-
-   playlist_update(
-         playlist,
-         idx,
-         path,
-         label,
-         core_path,
-         core_display_name,
-         crc32,
-         db_name);
-
-   playlist_write_file(playlist);
-}
-
 /**
  * command_event:
  * @cmd                  : Event command index.

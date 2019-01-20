@@ -23,6 +23,7 @@
 #include <limits.h>
 
 #include <string/stdstring.h>
+#include <lists/file_list.h>
 #include <lists/string_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -36,6 +37,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../playlist.h"
 #include "../../frontend/frontend_driver.h"
 
 #include "menu_generic.h"
