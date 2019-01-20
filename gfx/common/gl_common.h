@@ -29,13 +29,13 @@
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
+#include <glsym/glsym.h>
 #include <formats/image.h>
 
 #include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_driver.h"
-#include <glsym/glsym.h>
 
 RETRO_BEGIN_DECLS
 
