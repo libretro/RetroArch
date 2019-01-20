@@ -97,6 +97,7 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
+#endif
 
 bool task_push_load_content_with_core_from_menu(
       const char *fullpath,
@@ -110,7 +111,6 @@ bool task_push_load_subsystem_with_core_from_menu(
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
-#endif
 
 RETRO_END_DECLS
 
