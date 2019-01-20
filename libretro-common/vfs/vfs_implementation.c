@@ -1161,6 +1161,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
       return false;
 #else
    struct stat buf;
+   char path[PATH_MAX_LENGTH];
 #if defined(DT_DIR)
    const struct dirent *entry = (const struct dirent*)rdir->entry;
    if (entry->d_type == DT_DIR)
@@ -1170,7 +1171,6 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
       return false;
 #endif
    /* dirent struct doesn't have d_type, do it the slow way ... */
-   char path[PATH_MAX_LENGTH];
    path[0] = '\0';
    fill_pathname_join(path, rdir->orig_path, retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
    if (stat(path, &buf) < 0)
