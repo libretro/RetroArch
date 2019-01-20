@@ -194,10 +194,12 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    return (uintptr_t)(__bridge_retained void *)(t);
 }
 
-static void metal_unload_texture(void *data, uintptr_t handle, bool threaded)
+static void metal_unload_texture(void *data, uintptr_t handle)
 {
    if (!handle)
+   {
       return;
+   }
    Texture *t = (__bridge_transfer Texture *)(void *)handle;
    t = nil;
 }
