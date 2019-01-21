@@ -1290,6 +1290,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    unsigned i;
    size_t selection = menu_navigation_get_selection();
    size_t list_size = playlist_size(playlist);
+   settings_t *settings = config_get_ptr();
 
    if (list_size == 0)
       goto error;
@@ -1330,7 +1331,11 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (core_name)
          strlcpy(fill_buf, core_name, path_size);
 
-      if (!is_history && i == selection && !string_is_empty(label))
+      /* Note: this function is never called when using RGUI,
+       * but if it ever were then we must ensure that thumbnail
+       * updates are omitted (since this functionality is
+       * handled elsewhere) */
+      if (!is_history && i == selection && !string_is_empty(label) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
          char *content_basename = strdup(label);
 
@@ -1659,16 +1664,24 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
-      if (!string_is_empty(db_info_entry->name))
-         strlcpy(thumbnail_content, db_info_entry->name,
-               sizeof(thumbnail_content));
+      /* It is unclear why parsing a database should trigger a
+       * thumbnail update, but I guess this is here for a reason...
+       * Regardless, thumbnail updates must be disabled when using
+       * RGUI, since this functionality is handled elsewhere
+       * (and doing it here creates harmful conflicts) */
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      {
+         if (!string_is_empty(db_info_entry->name))
+            strlcpy(thumbnail_content, db_info_entry->name,
+                  sizeof(thumbnail_content));
 
-      if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content,
-               sizeof(thumbnail_content));
+         if (!string_is_empty(thumbnail_content))
+            menu_driver_set_thumbnail_content(thumbnail_content,
+                  sizeof(thumbnail_content));
 
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      }
 
       if (playlist)
       {
