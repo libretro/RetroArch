@@ -423,6 +423,7 @@ typedef struct
    char *thumbnail_system;
    char *thumbnail_content;
    char *thumbnail_path;
+   char *thumbnail_playlist;
 } rgui_t;
 
 #define THUMB_MAX_WIDTH 320
@@ -1591,6 +1592,8 @@ static void rgui_free(void *data)
          free(rgui->thumbnail_content);
       if (!string_is_empty(rgui->thumbnail_path))
          free(rgui->thumbnail_path);
+      if (!string_is_empty(rgui->thumbnail_playlist))
+         free(rgui->thumbnail_playlist);
    }
 
    fb_font_inited = menu_display_get_font_data_init();
@@ -1737,11 +1740,23 @@ static void rgui_update_thumbnail_path(void *userdata)
 static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
 {
    rgui_t *rgui = (rgui_t*)userdata;
+   char tmp_path[PATH_MAX_LENGTH] = {0};
    if (!rgui)
       return;
    if (!string_is_empty(rgui->thumbnail_system))
       free(rgui->thumbnail_system);
+   if (!string_is_empty(rgui->thumbnail_playlist))
+      free(rgui->thumbnail_playlist);
    rgui->thumbnail_system = strdup(s);
+   /* Get associated playlist file name
+    * (i.e. <rgui->thumbnail_system>.lpl) */
+   if (!string_is_empty(rgui->thumbnail_system))
+   {
+      strlcpy(tmp_path, rgui->thumbnail_system, sizeof(tmp_path));
+      strlcat(tmp_path, file_path_str(FILE_PATH_LPL_EXTENSION), sizeof(tmp_path));
+      if (!string_is_empty(tmp_path))
+         rgui->thumbnail_playlist = strdup(tmp_path);
+   }
 }
 
 static void rgui_update_thumbnail_content(void *userdata)
@@ -1759,10 +1774,9 @@ static void rgui_update_thumbnail_content(void *userdata)
    rgui->is_playlist_entry = false;
    title[0] = '\0';
    menu_entries_get_title(title, sizeof(title));
-   if (!string_is_empty(rgui->thumbnail_system))
+   if (!string_is_empty(rgui->thumbnail_playlist))
    {
-      /* An ugly but effective test... */
-      if (strstr(path_basename(title), rgui->thumbnail_system) != NULL)
+      if (string_is_equal(path_basename(title), rgui->thumbnail_playlist))
       {
          /* Get label of currently selected playlist entry
           * > This is pretty nasty, but I can't see any other way of doing
@@ -1800,7 +1814,7 @@ static void rgui_update_thumbnail_image(void *userdata)
       return;
    
    rgui->show_thumbnail = !rgui->show_thumbnail;
-   
+
    if (rgui->show_thumbnail)
    {
       rgui_update_thumbnail_content(rgui);
