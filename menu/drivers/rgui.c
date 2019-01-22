@@ -589,11 +589,64 @@ static void request_thumbnail(rgui_t *rgui, const char *path)
    }
 }
 
-static void process_thumbnail(rgui_t *rgui, struct texture_image *image)
+static bool downscale_thumbnail(struct texture_image *image_src, struct texture_image *image_dst)
 {
-   unsigned width, height;
+   uint32_t x_ratio, y_ratio;
+   unsigned x_src, y_src;
+   unsigned x_dst, y_dst;
+   static const float display_aspect_ratio = (float)THUMB_MAX_WIDTH / (float)THUMB_MAX_HEIGHT;
+   
+   /* Determine output dimensions */
+   float aspect_ratio = (float)image_src->width / (float)image_src->height;
+   if (aspect_ratio > display_aspect_ratio)
+   {
+      image_dst->width = THUMB_MAX_WIDTH;
+      image_dst->height = image_src->height * THUMB_MAX_WIDTH / image_src->width;
+      /* Account for any possible rounding errors... */
+      image_dst->height = (image_dst->height < 1) ? 1 : image_dst->height;
+      image_dst->height = (image_dst->height > THUMB_MAX_HEIGHT) ? THUMB_MAX_HEIGHT : image_dst->height;
+   }
+   else
+   {
+      image_dst->height = THUMB_MAX_HEIGHT;
+      image_dst->width = image_src->width * THUMB_MAX_HEIGHT / image_src->height;
+      /* Account for any possible rounding errors... */
+      image_dst->width = (image_dst->width < 1) ? 1 : image_dst->width;
+      image_dst->width = (image_dst->width > THUMB_MAX_WIDTH) ? THUMB_MAX_WIDTH : image_dst->width;
+   }
+   
+   /* Allocate pixel buffer */
+   image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
+   if (!image_dst->pixels)
+      return false;
+   
+   /* Perform nearest neighbour resampling */
+   x_ratio = ((image_src->width  << 16) / image_dst->width);
+   y_ratio = ((image_src->height << 16) / image_dst->height);
+   
+   for (y_dst = 0; y_dst < image_dst->height; y_dst++)
+   {
+      y_src = (y_dst * y_ratio) >> 16;
+      for (x_dst = 0; x_dst < image_dst->width; x_dst++)
+      {
+         x_src = (x_dst * x_ratio) >> 16;
+         image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+      }
+   }
+   
+   return true;
+}
+
+static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
+{
    unsigned x, y;
-   unsigned x_offset, y_offset;
+   struct texture_image *image = NULL;
+   struct texture_image image_resampled = {
+      0,
+      0,
+      NULL,
+      false
+   };
    
    /* Ensure that we only process the most recently loaded
     * thumbnail image (i.e. don't waste CPU cycles processing
@@ -608,42 +661,32 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image)
    if (rgui->thumbnail_queue_size > 0)
       return;
    
-   if (!image->pixels)
+   /* Sanity check */
+   if (!image_src->pixels || (image_src->width < 1) || (image_src->height < 1))
       return;
    
-   width = image->width;
-   height = image->height;
-   
-   /* Have to crop image if larger than max allowed size... */
-   if (width > THUMB_MAX_WIDTH)
+   /* Downscale thumbnail if it exceeds maximum size limits */
+   if ((image_src->width > THUMB_MAX_WIDTH) || (image_src->height > THUMB_MAX_HEIGHT))
    {
-      x_offset = (width - THUMB_MAX_WIDTH) >> 1;
-      thumbnail.width = THUMB_MAX_WIDTH;
+      if (!downscale_thumbnail(image_src, &image_resampled))
+         return;
+      image = &image_resampled;
    }
    else
    {
-      x_offset = 0;
-      thumbnail.width = width;
-   }
-   if (height > THUMB_MAX_HEIGHT)
-   {
-      y_offset = (height - THUMB_MAX_HEIGHT) >> 1;
-      thumbnail.height = THUMB_MAX_HEIGHT;
-   }
-   else
-   {
-      y_offset = 0;
-      thumbnail.height = height;
+      image = image_src;
    }
    
-   /* Copy (cropped) image to thumbnail buffer, performing
-    * pixel format conversion */
+   thumbnail.width = image->width;
+   thumbnail.height = image->height;
+   
+   /* Copy image to thumbnail buffer, performing pixel format conversion */
    for (x = 0; x < thumbnail.width; x++)
    {
       for (y = 0; y < thumbnail.height; y++)
       {
          thumbnail.data[x + (y * thumbnail.width)] =
-            argb32_to_pixel_platform_format(image->pixels[(x + x_offset) + ((y + y_offset) * width)]);
+            argb32_to_pixel_platform_format(image->pixels[x + (y * thumbnail.width)]);
       }
    }
    
@@ -651,6 +694,12 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image)
    
    /* Tell menu that a display update is required */
    rgui->force_redraw = true;
+   
+   /* Clean up */
+   image = NULL;
+   if (image_resampled.pixels)
+      free(image_resampled.pixels);
+   image_resampled.pixels = NULL;
 }
 
 static bool rgui_load_image(void *userdata, void *data, enum menu_image_type type)
