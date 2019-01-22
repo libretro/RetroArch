@@ -52,10 +52,7 @@
 
 /* Thumbnail additions */
 #include <streams/file_stream.h>
-#if defined(HAVE_RPNG)
-#include <file/nbio.h>
-#include <formats/rpng.h>
-#endif
+#include "../../tasks/tasks_internal.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)
 #define RGUI_TERM_START_Y(height)       (height / 9)
@@ -424,6 +421,7 @@ typedef struct
    char *thumbnail_content;
    char *thumbnail_path;
    char *thumbnail_playlist;
+   uint32_t thumbnail_queue_size;
 } rgui_t;
 
 #define THUMB_MAX_WIDTH 320
@@ -559,97 +557,10 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 
 #endif
 
-/* From rpng_test.c */
-static bool rpng_load_image_argb(const char *path, uint32_t **data,
-      unsigned *width, unsigned *height)
+static void request_thumbnail(rgui_t *rgui, const char *path)
 {
-   /* Check for RPNG support...
-    * > This seems to be the cleanest place to do it - saves having
-    *   to litter the code with '#if defined(HAVE_RPNG)' all over the
-    *   place... */
-#if defined(HAVE_RPNG)
-   int retval;
-   size_t file_len;
-   bool              ret = true;
-   rpng_t          *rpng = NULL;
-   void             *ptr = NULL;
-   struct nbio_t* handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
-
-   if (!handle)
-      goto end;
-
-   nbio_begin_read(handle);
-
-   while (!nbio_iterate(handle));
-
-   ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!ptr)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng = rpng_alloc();
-
-   if (!rpng)
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_start(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (rpng_iterate_image(rpng));
-
-   if (!rpng_is_valid(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   do
-   {
-      retval = rpng_process_image(rpng,
-            (void**)data, file_len, width, height);
-   }while(retval == IMAGE_PROCESS_NEXT);
-
-   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
-      ret = false;
-
-end:
-   if (handle)
-      nbio_free(handle);
-   if (rpng)
-      rpng_free(rpng);
-   rpng = NULL;
-   if (!ret)
-      free(*data);
-   return ret;
-#else
-   return false;
-#endif
-}
-
-static void load_thumbnail(const char *path)
-{
-   unsigned width, height;
-   uint32_t *png_data = NULL;
-   unsigned x, y;
-   unsigned x_offset, y_offset;
-   
    /* Do nothing if current thumbnail path hasn't changed */
-   if (!string_is_empty(thumbnail.path) && !string_is_empty(thumbnail.path))
+   if (!string_is_empty(path) && !string_is_empty(thumbnail.path))
    {
       if (string_is_equal(thumbnail.path, path))
          return;
@@ -668,49 +579,103 @@ static void load_thumbnail(const char *path)
       thumbnail.path = strdup(path);
       if (filestream_exists(path))
       {
-         /* Load image */
-         if (rpng_load_image_argb(path, &png_data, &width, &height))
+         /* Would like to cancel any existing image load tasks
+          * here, but can't see how to do it... */
+         if(task_push_image_load(thumbnail.path, menu_display_handle_thumbnail_upload, NULL))
          {
-            /* Have to crop image if larger than max allowed size... */
-            if (width > THUMB_MAX_WIDTH)
-            {
-               x_offset = (width - THUMB_MAX_WIDTH) >> 1;
-               thumbnail.width = THUMB_MAX_WIDTH;
-            }
-            else
-            {
-               x_offset = 0;
-               thumbnail.width = width;
-            }
-            if (height > THUMB_MAX_HEIGHT)
-            {
-               y_offset = (height - THUMB_MAX_HEIGHT) >> 1;
-               thumbnail.height = THUMB_MAX_HEIGHT;
-            }
-            else
-            {
-               y_offset = 0;
-               thumbnail.height = height;
-            }
-
-            /* Copy (cropped) image to thumbnail buffer, performing
-             * pixel format conversion */
-            for (x = 0; x < thumbnail.width; x++)
-            {
-               for (y = 0; y < thumbnail.height; y++)
-               {
-                  thumbnail.data[x + (y * thumbnail.width)] =
-                     argb32_to_pixel_platform_format(png_data[(x + x_offset) + ((y + y_offset) * width)]);
-               }
-            }
-            
-            thumbnail.is_valid = true;
-            
-            free(png_data);
-            png_data = NULL;
+            rgui->thumbnail_queue_size++;
          }
       }
    }
+}
+
+static void process_thumbnail(rgui_t *rgui, struct texture_image *image)
+{
+   unsigned width, height;
+   unsigned x, y;
+   unsigned x_offset, y_offset;
+   
+   /* Ensure that we only process the most recently loaded
+    * thumbnail image (i.e. don't waste CPU cycles processing
+    * old images if we have a backlog)
+    * > NB: After some testing, cannot seem to ever trigger a
+    *   situation where rgui->thumbnail_queue_size is greater
+    *   than 1, so perhaps image loading is synchronous after all.
+    *   This probably makes the check redundant, but we'll leave
+    *   it here for now... */
+   if (rgui->thumbnail_queue_size > 0)
+      rgui->thumbnail_queue_size--;
+   if (rgui->thumbnail_queue_size > 0)
+      return;
+   
+   if (!image->pixels)
+      return;
+   
+   width = image->width;
+   height = image->height;
+   
+   /* Have to crop image if larger than max allowed size... */
+   if (width > THUMB_MAX_WIDTH)
+   {
+      x_offset = (width - THUMB_MAX_WIDTH) >> 1;
+      thumbnail.width = THUMB_MAX_WIDTH;
+   }
+   else
+   {
+      x_offset = 0;
+      thumbnail.width = width;
+   }
+   if (height > THUMB_MAX_HEIGHT)
+   {
+      y_offset = (height - THUMB_MAX_HEIGHT) >> 1;
+      thumbnail.height = THUMB_MAX_HEIGHT;
+   }
+   else
+   {
+      y_offset = 0;
+      thumbnail.height = height;
+   }
+   
+   /* Copy (cropped) image to thumbnail buffer, performing
+    * pixel format conversion */
+   for (x = 0; x < thumbnail.width; x++)
+   {
+      for (y = 0; y < thumbnail.height; y++)
+      {
+         thumbnail.data[x + (y * thumbnail.width)] =
+            argb32_to_pixel_platform_format(image->pixels[(x + x_offset) + ((y + y_offset) * width)]);
+      }
+   }
+   
+   thumbnail.is_valid = true;
+   
+   /* Tell menu that a display update is required */
+   rgui->force_redraw = true;
+}
+
+static bool rgui_load_image(void *userdata, void *data, enum menu_image_type type)
+{
+   rgui_t *rgui = (rgui_t*)userdata;
+
+   if (!rgui || !data)
+      return false;
+
+   switch (type)
+   {
+      case MENU_IMAGE_WALLPAPER:
+         /* Add this later... :) */
+         break;
+      case MENU_IMAGE_THUMBNAIL:
+         {
+            struct texture_image *image = (struct texture_image*)data;
+            process_thumbnail(rgui, image);
+         }
+         break;
+      default:
+         break;
+   }
+
+   return true;
 }
 
 static void rgui_render_thumbnail(void)
@@ -1048,7 +1013,7 @@ static void rgui_render_background(rgui_t *rgui)
    }
 
    /* Skip drawing border if we are currently showing a thumbnail */
-   if (!rgui->show_thumbnail || !rgui->is_playlist_entry || !thumbnail.is_valid)
+   if (!(rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0))))
    {
       if (rgui_framebuf_data)
       {
@@ -1307,7 +1272,14 @@ static void rgui_render(void *data, bool is_idle)
 
    rgui_render_background(rgui);
 
-   if (rgui->show_thumbnail && rgui->is_playlist_entry && thumbnail.is_valid)
+   /* If thumbnails are enabled and we are viewing a playlist,
+    * switch to thumbnail view mode if either current thumbnail
+    * is valid or we are waiting for current thumbnail to load
+    * (if load is pending we'll get a blank screen + title, but
+    * this is better than switching back to the text playlist
+    * view, which causes ugly flickering when scrolling quickly
+    * through a list...) */
+   if (rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
       menu_animation_ctx_ticker_t ticker;
       char thumbnail_title_buf[255];
@@ -1566,6 +1538,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->last_width  = fb_width;
    rgui->last_height = fb_height;
 
+   rgui->thumbnail_queue_size = 0;
    /* Ensure that we start with thumbnails disabled */
    rgui->show_thumbnail = false;
 
@@ -1821,7 +1794,7 @@ static void rgui_update_thumbnail_image(void *userdata)
       if (rgui->is_playlist_entry)
       {
          rgui_update_thumbnail_path(rgui);
-         load_thumbnail(rgui->thumbnail_path);
+         request_thumbnail(rgui, rgui->thumbnail_path);
       }
    }
 }
@@ -1844,7 +1817,7 @@ static void rgui_navigation_set(void *data, bool scroll)
       if (rgui->is_playlist_entry)
       {
          rgui_update_thumbnail_path(rgui);
-         load_thumbnail(rgui->thumbnail_path);
+         request_thumbnail(rgui, rgui->thumbnail_path);
       }
    }
 
@@ -1981,7 +1954,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
-   NULL,
+   rgui_load_image,
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
