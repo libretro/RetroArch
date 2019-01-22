@@ -69,6 +69,11 @@ void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
       event->acceptProposedAction();
 }
 
+void FileDropWidget::dragMoveEvent(QDragMoveEvent *event)
+{
+   event->acceptProposedAction();
+}
+
 void FileDropWidget::dropEvent(QDropEvent *event)
 {
    const QMimeData *data = event->mimeData();
