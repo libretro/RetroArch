@@ -6,6 +6,7 @@ HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_CACA=no               # Libcaca support
 HAVE_SIXEL=no              # Libsixel support
+HAVE_DEBUG=no              # Enable a debug build
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_MENU=yes              # Enable menu drivers
 HAVE_RGUI=auto             # RGUI menu

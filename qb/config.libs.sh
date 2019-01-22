@@ -588,6 +588,18 @@ check_macro NEON __ARM_NEON__
 
 add_define MAKEFILE OS "$OS"
 
+if [ "$HAVE_DEBUG" = 'yes' ]; then
+   add_define MAKEFILE DEBUG 1
+   if [ "$HAVE_OPENGL" = 'yes' ] ||
+      [ "$HAVE_OPENGLES" = 'yes' ] ||
+      [ "$HAVE_OPENGLES3" = 'yes' ]; then
+      add_define MAKEFILE GL_DEBUG 1
+   fi
+   if [ "$HAVE_VULKAN" = 'yes' ]; then
+      add_define MAKEFILE VULKAN_DEBUG 1
+   fi
+fi
+
 if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
    HAVE_RPNG=no
    die : 'Notice: zlib is not available, RPNG will also be disabled.'
