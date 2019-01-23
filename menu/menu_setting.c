@@ -786,6 +786,36 @@ static void setting_get_string_representation_uint_rgui_menu_color_theme(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_THUMB_SCALE_POINT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT),
+               len);
+         break;
+      case RGUI_THUMB_SCALE_BILINEAR:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR),
+               len);
+         break;
+      case RGUI_THUMB_SCALE_SINC:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC),
+               len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -8739,6 +8769,25 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+         }
+
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_rgui_thumbnail_downscaler,
+                  MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  rgui_thumbnail_downscaler,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_rgui_thumbnail_scaler;
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_THUMB_SCALE_LAST-1, 1, true, true);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))

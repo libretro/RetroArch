@@ -383,6 +383,14 @@ enum menu_toggle_reason
   MENU_TOGGLE_REASON_MESSAGE
 };
 
+enum rgui_thumbnail_scaler
+{
+   RGUI_THUMB_SCALE_POINT = 0,
+   RGUI_THUMB_SCALE_BILINEAR,
+   RGUI_THUMB_SCALE_SINC,
+   RGUI_THUMB_SCALE_LAST
+};
+
 typedef uintptr_t menu_texture_item;
 
 typedef struct menu_display_ctx_clearcolor

@@ -2935,6 +2935,22 @@ MSG_HASH(
     "Thumbnails Vertical Disposition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Thumbnail Downscaling Method"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+    "Nearest Neighbour (Fast)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+    "Bilinear"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+    "Sinc/Lanczos3 (Slow)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Thumbnails"
     )

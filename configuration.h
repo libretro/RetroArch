@@ -403,6 +403,7 @@ typedef struct settings
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_dpi_override_value;
       unsigned menu_entry_normal_color;
       unsigned menu_entry_hover_color;
