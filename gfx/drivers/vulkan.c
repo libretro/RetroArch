@@ -1867,6 +1867,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
       if (vk->menu.enable)
       {
+         settings_t *settings = config_get_ptr();
+
          menu_driver_frame(video_info);
 
          if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
@@ -1882,8 +1884,16 @@ static bool vulkan_frame(void *data, const void *frame,
             if (optimal->memory != VK_NULL_HANDLE)
                quad.texture = optimal;
 
-            quad.sampler = optimal->mipmap ?
-               vk->samplers.mipmap_linear : vk->samplers.linear;
+            if (settings->bools.menu_linear_filter)
+            {
+               quad.sampler = optimal->mipmap ?
+                  vk->samplers.mipmap_linear : vk->samplers.linear;
+            }
+            else
+            {
+               quad.sampler = optimal->mipmap ?
+                  vk->samplers.mipmap_nearest : vk->samplers.nearest;
+            }
 
             quad.mvp     = &vk->mvp_no_rot;
             quad.color.r = 1.0f;
@@ -2371,6 +2381,7 @@ static uint32_t vulkan_get_flags(void *data)
 
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 
    return flags;
 }
