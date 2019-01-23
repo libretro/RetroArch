@@ -69,6 +69,7 @@ void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
       event->acceptProposedAction();
 }
 
+/* Workaround for QTBUG-72844. Without it, you can't drop on this if you first drag over another widget that doesn't accept drops. */
 void FileDropWidget::dragMoveEvent(QDragMoveEvent *event)
 {
    event->acceptProposedAction();
