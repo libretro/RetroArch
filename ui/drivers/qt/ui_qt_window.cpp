@@ -1266,6 +1266,109 @@ void MainWindow::changeThumbnailType(ThumbnailType type)
    m_gridView->viewport()->update();
 }
 
+QString MainWindow::changeThumbnail(const QImage &image, QString type)
+{
+   QHash<QString, QString> hash = getCurrentContentHash();
+   QString label = hash["label_noext"];
+   QString dirString = QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + hash["db_name"] + "/" + type;
+   QString thumbPath = dirString + "/" + label.replace(m_fileSanitizerRegex, "_") + ".png";
+   QByteArray dirArray = QDir::toNativeSeparators(dirString).toUtf8();
+   const char *dirData = dirArray.constData();
+   QByteArray thumbArray = QDir::toNativeSeparators(thumbPath).toUtf8();
+   const char *thumbData = thumbArray.constData();
+   QDir dir(dirString);
+   int quality = -1;
+   QImage scaledImage(image);
+
+   if (!dir.exists())
+   {
+      if (dir.mkpath("."))
+         RARCH_LOG("[Qt]: Created directory: %s\n", dirData);
+      else
+      {
+         RARCH_ERR("[Qt]: Could not create directory: %s\n", dirData);
+         return QString();
+      }
+   }
+
+   if (m_settings->contains("thumbnail_max_size"))
+   {
+      int size = m_settings->value("thumbnail_max_size", 512).toInt();
+
+      if (size != 0)
+         scaledImage = image.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+   }
+
+   if (m_settings->contains("thumbnail_quality"))
+      quality = m_settings->value("thumbnail_quality", -1).toInt();
+
+   if (scaledImage.save(thumbPath, "png", quality))
+   {
+      RARCH_LOG("[Qt]: Saved image: %s\n", thumbData);
+      m_playlistModel->reloadThumbnailPath(thumbPath);
+      updateVisibleItems();
+
+      return thumbPath;
+   }
+
+   RARCH_ERR("[Qt]: Could not save image: %s\n", thumbData);
+   return QString();
+}
+
+void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnailType)
+{
+   switch (thumbnailType)
+   {
+      case THUMBNAIL_TYPE_BOXART:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_BOXART);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap)
+            delete m_thumbnailPixmap;
+
+         m_thumbnailPixmap = new QPixmap(path);
+
+         onResizeThumbnailOne();
+         break;
+      }
+
+      case THUMBNAIL_TYPE_TITLE_SCREEN:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_TITLE);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap2)
+            delete m_thumbnailPixmap2;
+
+         m_thumbnailPixmap2 = new QPixmap(path);
+
+         onResizeThumbnailTwo();
+         break;
+      }
+
+      case THUMBNAIL_TYPE_SCREENSHOT:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_SCREENSHOT);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap3)
+            delete m_thumbnailPixmap3;
+
+         m_thumbnailPixmap3 = new QPixmap(path);
+
+         onResizeThumbnailThree();
+         break;
+      }
+   }
+}
+
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
    QVector<QHash<QString, QString> > infoList;
@@ -2108,6 +2211,22 @@ void MainWindow::setCoreActions()
    }
 }
 
+void MainWindow::setThumbnailsAcceptDrops(bool accept)
+{
+   ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>("thumbnail1Widget");
+   ThumbnailWidget *thumbnail2 = findChild<ThumbnailWidget*>("thumbnail2Widget");
+   ThumbnailWidget *thumbnail3 = findChild<ThumbnailWidget*>("thumbnail3Widget");
+
+   if (thumbnail)
+      thumbnail->setAcceptDrops(accept);
+
+   if (thumbnail2)
+      thumbnail2->setAcceptDrops(accept);
+
+   if (thumbnail3)
+      thumbnail3->setAcceptDrops(accept);
+}
+
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
    if (m_browserAndPlaylistTabWidget->tabText(index) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
@@ -2432,12 +2551,22 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap = new QPixmap(hash["path"]);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
+
+      setThumbnailsAcceptDrops(false);
    }
    else
    {
       m_thumbnailPixmap = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_BOXART + "/" + label + ".png");
       m_thumbnailPixmap2 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_TITLE + "/" + label + ".png");
       m_thumbnailPixmap3 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_SCREENSHOT + "/" + label + ".png");
+
+      if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
+      {
+         if (currentPlaylistIsSpecial())
+            setThumbnailsAcceptDrops(false);
+         else
+            setThumbnailsAcceptDrops(true);
+      }
    }
 
    resizeThumbnails(true, true, true);

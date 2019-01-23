@@ -63,9 +63,10 @@ typedef struct ui_companion_qt
    ui_window_qt_t *window;
 } ui_companion_qt_t;
 
-ThumbnailWidget::ThumbnailWidget(QWidget *parent) :
+ThumbnailWidget::ThumbnailWidget(ThumbnailType type, QWidget *parent) :
    QFrame(parent)
    ,m_sizeHint(QSize(256, 256))
+   ,m_thumbnailType(type)
 {
 }
 
@@ -109,6 +110,40 @@ QSize ThumbnailWidget::sizeHint() const
 void ThumbnailWidget::setSizeHint(QSize size)
 {
    m_sizeHint = size;
+}
+
+void ThumbnailWidget::dragEnterEvent(QDragEnterEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+      event->acceptProposedAction();
+}
+
+/* Workaround for QTBUG-72844. Without it, you can't drop on this if you first drag over another widget that doesn't accept drops. */
+void ThumbnailWidget::dragMoveEvent(QDragMoveEvent *event)
+{
+   event->acceptProposedAction();
+}
+
+void ThumbnailWidget::dropEvent(QDropEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+   {
+      const QString imageString = data->urls().at(0).toLocalFile();
+      const QImage image(imageString);
+
+      if (!image.isNull())
+         emit(filesDropped(image, m_thumbnailType));
+      else
+      {
+         QByteArray stringArray = QDir::toNativeSeparators(imageString).toUtf8();
+         const char *stringData = stringArray.constData();
+         RARCH_ERR("[Qt]: Could not read image: %s\n", stringData);
+      }
+   }
 }
 
 ThumbnailLabel::ThumbnailLabel(QWidget *parent) :
@@ -403,9 +438,14 @@ static void* ui_companion_qt_init(void)
 
    browserButtonsHBoxLayout->addItem(new QSpacerItem(browserAndPlaylistTabWidget->tabBar()->width(), 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
-   thumbnailWidget = new ThumbnailWidget();
-   thumbnail2Widget = new ThumbnailWidget();
-   thumbnail3Widget = new ThumbnailWidget();
+   thumbnailWidget = new ThumbnailWidget(THUMBNAIL_TYPE_BOXART);
+   thumbnailWidget->setObjectName("thumbnail1Widget");
+
+   thumbnail2Widget = new ThumbnailWidget(THUMBNAIL_TYPE_TITLE_SCREEN);
+   thumbnail2Widget->setObjectName("thumbnail2Widget");
+
+   thumbnail3Widget = new ThumbnailWidget(THUMBNAIL_TYPE_SCREENSHOT);
+   thumbnail3Widget->setObjectName("thumbnail3Widget");
 
    thumbnailWidget->setLayout(new QVBoxLayout());
    thumbnail2Widget->setLayout(new QVBoxLayout());
@@ -414,6 +454,10 @@ static void* ui_companion_qt_init(void)
    thumbnailWidget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
    thumbnail2Widget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
    thumbnail3Widget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
+
+   QObject::connect(thumbnailWidget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
+   QObject::connect(thumbnail2Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
+   QObject::connect(thumbnail3Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
    thumbnail = new ThumbnailLabel();
    thumbnail->setObjectName("thumbnail");
