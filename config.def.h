@@ -752,6 +752,8 @@ static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
 
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
+
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;
 #else

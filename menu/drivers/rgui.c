@@ -53,6 +53,7 @@
 /* Thumbnail additions */
 #include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
+#include <gfx/scaler/scaler.h>
 
 #define RGUI_TERM_START_X(width)        (width / 21)
 #define RGUI_TERM_START_Y(height)       (height / 9)
@@ -422,6 +423,7 @@ typedef struct
    char *thumbnail_path;
    char *thumbnail_playlist;
    uint32_t thumbnail_queue_size;
+   struct scaler_ctx image_scaler;
 } rgui_t;
 
 #define THUMB_MAX_WIDTH 320
@@ -589,14 +591,12 @@ static void request_thumbnail(rgui_t *rgui, const char *path)
    }
 }
 
-static bool downscale_thumbnail(struct texture_image *image_src, struct texture_image *image_dst)
+static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, struct texture_image *image_dst)
 {
-   uint32_t x_ratio, y_ratio;
-   unsigned x_src, y_src;
-   unsigned x_dst, y_dst;
-   static const float display_aspect_ratio = (float)THUMB_MAX_WIDTH / (float)THUMB_MAX_HEIGHT;
+   settings_t *settings = config_get_ptr();
    
    /* Determine output dimensions */
+   static const float display_aspect_ratio = (float)THUMB_MAX_WIDTH / (float)THUMB_MAX_HEIGHT;
    float aspect_ratio = (float)image_src->width / (float)image_src->height;
    if (aspect_ratio > display_aspect_ratio)
    {
@@ -620,18 +620,64 @@ static bool downscale_thumbnail(struct texture_image *image_src, struct texture_
    if (!image_dst->pixels)
       return false;
    
-   /* Perform nearest neighbour resampling */
-   x_ratio = ((image_src->width  << 16) / image_dst->width);
-   y_ratio = ((image_src->height << 16) / image_dst->height);
-   
-   for (y_dst = 0; y_dst < image_dst->height; y_dst++)
+   /* Determine scaling method */
+   if (settings->uints.menu_rgui_thumbnail_downscaler == RGUI_THUMB_SCALE_POINT)
    {
-      y_src = (y_dst * y_ratio) >> 16;
-      for (x_dst = 0; x_dst < image_dst->width; x_dst++)
+      uint32_t x_ratio, y_ratio;
+      unsigned x_src, y_src;
+      unsigned x_dst, y_dst;
+      
+      /* Perform nearest neighbour resampling
+       * > Fastest method, minimal performance impact */
+      x_ratio = ((image_src->width  << 16) / image_dst->width);
+      y_ratio = ((image_src->height << 16) / image_dst->height);
+      
+      for (y_dst = 0; y_dst < image_dst->height; y_dst++)
       {
-         x_src = (x_dst * x_ratio) >> 16;
-         image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+         y_src = (y_dst * y_ratio) >> 16;
+         for (x_dst = 0; x_dst < image_dst->width; x_dst++)
+         {
+            x_src = (x_dst * x_ratio) >> 16;
+            image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+         }
       }
+   }
+   else
+   {
+      /* Perform either bilinear or sinc (Lanczos3) resampling
+       * using libretro-common scaler
+       * > Better quality, but substantially higher performance
+       *   impact - although not an issue on desktop-class
+       *   hardware */
+      rgui->image_scaler.in_width    = image_src->width;
+      rgui->image_scaler.in_height   = image_src->height;
+      rgui->image_scaler.in_stride   = image_src->width * sizeof(uint32_t);
+      rgui->image_scaler.in_fmt      = SCALER_FMT_ARGB8888;
+      
+      rgui->image_scaler.out_width   = image_dst->width;
+      rgui->image_scaler.out_height  = image_dst->height;
+      rgui->image_scaler.out_stride  = image_dst->width * sizeof(uint32_t);
+      rgui->image_scaler.out_fmt     = SCALER_FMT_ARGB8888;
+      
+      rgui->image_scaler.scaler_type = (settings->uints.menu_rgui_thumbnail_downscaler == RGUI_THUMB_SCALE_SINC) ?
+         SCALER_TYPE_SINC : SCALER_TYPE_BILINEAR;
+      
+      /* This reset is redundant, since scaler_ctx_gen_filter()
+       * calls it - but do it anyway in case the
+       * scaler_ctx_gen_filter() internals ever change... */
+      scaler_ctx_gen_reset(&rgui->image_scaler);
+      if(!scaler_ctx_gen_filter(&rgui->image_scaler))
+      {
+         /* Could be leftovers if scaler_ctx_gen_filter()
+          * fails, so reset just in case... */
+         scaler_ctx_gen_reset(&rgui->image_scaler);
+         return false;
+      }
+      
+      scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, image_src->pixels);
+      /* Reset again - don't want to leave anything hanging around
+       * if the user switches back to nearest neighbour scaling */
+      scaler_ctx_gen_reset(&rgui->image_scaler);
    }
    
    return true;
@@ -668,7 +714,7 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
    /* Downscale thumbnail if it exceeds maximum size limits */
    if ((image_src->width > THUMB_MAX_WIDTH) || (image_src->height > THUMB_MAX_HEIGHT))
    {
-      if (!downscale_thumbnail(image_src, &image_resampled))
+      if (!downscale_thumbnail(rgui, image_src, &image_resampled))
          return;
       image = &image_resampled;
    }
