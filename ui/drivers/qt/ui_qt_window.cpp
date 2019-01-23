@@ -303,7 +303,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailPixmap(NULL)
    ,m_thumbnailPixmap2(NULL)
    ,m_thumbnailPixmap3(NULL)
-   ,m_fileSanitizerRegex("[&*/:`<>?\\|]")
    ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -1269,9 +1268,8 @@ void MainWindow::changeThumbnailType(ThumbnailType type)
 QString MainWindow::changeThumbnail(const QImage &image, QString type)
 {
    QHash<QString, QString> hash = getCurrentContentHash();
-   QString label = hash["label_noext"];
-   QString dirString = QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + hash["db_name"] + "/" + type;
-   QString thumbPath = dirString + "/" + label.replace(m_fileSanitizerRegex, "_") + ".png";
+   QString dirString = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]) + "/" + type;
+   QString thumbPath = dirString + "/" + m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
    QByteArray dirArray = QDir::toNativeSeparators(dirString).toUtf8();
    const char *dirData = dirArray.constData();
    QByteArray thumbArray = QDir::toNativeSeparators(thumbPath).toUtf8();
@@ -2514,29 +2512,7 @@ void MainWindow::onCurrentFileChanged(const QModelIndex &index)
 
 void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
 {
-   settings_t *settings = config_get_ptr();
-   QString label;
-   QString playlist_name;
-   QByteArray extension;
-   QString extensionStr;
-   int lastIndex = -1;
-
-   label = hash["label_noext"];
-   label.replace(m_fileSanitizerRegex, "_");
-
-   lastIndex = hash["path"].lastIndexOf('.');
-
-   if (lastIndex >= 0)
-   {
-      extensionStr = hash["path"].mid(lastIndex + 1);
-
-      if (!extensionStr.isEmpty())
-      {
-         extension = extensionStr.toLower().toUtf8();
-      }
-   }
-
-   playlist_name = hash["db_name"];
+   QString path = hash["path"];
 
    if (m_thumbnailPixmap)
       delete m_thumbnailPixmap;
@@ -2545,10 +2521,10 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
 
-   if (!extension.isEmpty() && m_imageFormats.contains(extension))
+   if (m_playlistModel->isSupportedImage(path))
    {
       /* use thumbnail widgets to show regular image files */
-      m_thumbnailPixmap = new QPixmap(hash["path"]);
+      m_thumbnailPixmap = new QPixmap(path);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
 
@@ -2556,9 +2532,12 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    }
    else
    {
-      m_thumbnailPixmap = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_BOXART + "/" + label + ".png");
-      m_thumbnailPixmap2 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_TITLE + "/" + label + ".png");
-      m_thumbnailPixmap3 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_SCREENSHOT + "/" + label + ".png");
+      QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]);
+      QString thumbnailName = m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+
+      m_thumbnailPixmap = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_BOXART + "/" + thumbnailName);
+      m_thumbnailPixmap2 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
+      m_thumbnailPixmap3 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
 
       if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
       {

@@ -142,6 +142,9 @@ public:
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
    void setThumbnailCacheLimit(int limit);
+   bool isSupportedImage(const QString path) const;
+   QString getPlaylistThumbnailsDir(const QString playlistName) const;
+   QString getSanitizedThumbnailName(QString label) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
@@ -157,6 +160,7 @@ private:
    QRegularExpression m_fileSanitizerRegex;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
+   QString getThumbnailPath(const QHash<QString, QString> &hash, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
    void getPlaylistItems(QString path);
    void loadImage(const QModelIndex &index, const QString &path);
@@ -579,7 +583,6 @@ private:
    QPixmap *m_thumbnailPixmap;
    QPixmap *m_thumbnailPixmap2;
    QPixmap *m_thumbnailPixmap3;
-   QRegularExpression m_fileSanitizerRegex;
    QSettings *m_settings;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
