@@ -333,6 +333,29 @@ void menu_animation_free(void)
    da_free(anim.pending);
 }
 
+static void menu_delayed_animation_cb(void *userdata)
+{
+   menu_delayed_animation_t *delayed_animation = (menu_delayed_animation_t*) userdata;
+
+   menu_animation_push(&delayed_animation->entry);
+
+   free(delayed_animation);
+}
+
+void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry)
+{
+   menu_timer_ctx_entry_t timer_entry;
+   menu_delayed_animation_t *delayed_animation  = (menu_delayed_animation_t*) malloc(sizeof(menu_delayed_animation_t));
+
+   memcpy(&delayed_animation->entry, entry, sizeof(menu_animation_ctx_entry_t));
+
+   timer_entry.cb       = menu_delayed_animation_cb;
+   timer_entry.duration = delay;
+   timer_entry.userdata = delayed_animation;
+
+   menu_timer_start(&delayed_animation->timer, &timer_entry);
+}
+
 bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 {
    struct tween t;
