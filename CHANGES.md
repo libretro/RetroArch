@@ -23,6 +23,7 @@
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Simplified Chinese translation.
 - LOCALIZATION: Update Spanish translation.
+- MENU: New "ozone" menu driver.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - MENU/QT/WIMP: Allow building with MSVC2017
