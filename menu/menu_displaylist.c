@@ -8140,6 +8140,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_DEFAULT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         load_content    = false;
          use_filebrowser = true;
          break;
       case DISPLAYLIST_CORES_DETECTED:
