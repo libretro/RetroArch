@@ -130,18 +130,25 @@ void PlaylistModel::setThumbnailCacheLimit(int limit)
 
 QString PlaylistModel::getThumbnailPath(const QModelIndex &index, QString type) const
 {
+   return getThumbnailPath(m_contents.at(index.row()), type);
+}
+
+QString PlaylistModel::getPlaylistThumbnailsDir(const QString playlistName) const
+{
+   return QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + playlistName;
+}
+
+bool PlaylistModel::isSupportedImage(const QString path) const
+{
+   int lastIndex = -1;
    QByteArray extension;
    QString extensionStr;
 
-   QString thumbnailFileNameNoExt;
-   int lastIndex = -1;
-
-   const QHash<QString, QString> &hash = m_contents.at(index.row());
-   lastIndex = hash["path"].lastIndexOf('.');
+   lastIndex = path.lastIndexOf('.');
 
    if (lastIndex >= 0)
    {
-      extensionStr = hash["path"].mid(lastIndex + 1);
+      extensionStr = path.mid(lastIndex + 1);
 
       if (!extensionStr.isEmpty())
       {
@@ -150,15 +157,26 @@ QString PlaylistModel::getThumbnailPath(const QModelIndex &index, QString type) 
    }
 
    if (!extension.isEmpty() && m_imageFormats.contains(extension))
+      return true;
+
+   return false;
+}
+
+QString PlaylistModel::getSanitizedThumbnailName(QString label) const
+{
+   return label.replace(m_fileSanitizerRegex, "_") + ".png";
+}
+
+QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QString type) const
+{   
+   if (isSupportedImage(hash["path"]))
    {
       /* use thumbnail widgets to show regular image files */
       return hash["path"];
    }
    else
    {
-      thumbnailFileNameNoExt = hash["label_noext"];
-      thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
-      return QDir::cleanPath(QString(config_get_ptr()->paths.directory_thumbnails)) + "/" + hash.value("db_name") + "/" + type + "/" + thumbnailFileNameNoExt + ".png";
+      return getPlaylistThumbnailsDir(hash.value("db_name")) + "/" + type + "/" + getSanitizedThumbnailName(hash["label_noext"]);
    }
 }
 

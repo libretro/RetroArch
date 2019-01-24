@@ -42,7 +42,6 @@
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
-#include <QStackedWidget>
 
 #include "qt/filedropwidget.h"
 
@@ -143,6 +142,9 @@ public:
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
    void setThumbnailCacheLimit(int limit);
+   bool isSupportedImage(const QString path) const;
+   QString getPlaylistThumbnailsDir(const QString playlistName) const;
+   QString getSanitizedThumbnailName(QString label) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
@@ -158,6 +160,7 @@ private:
    QRegularExpression m_fileSanitizerRegex;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
+   QString getThumbnailPath(const QHash<QString, QString> &hash, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
    void getPlaylistItems(QString path);
    void loadImage(const QModelIndex &index, const QString &path);
@@ -168,6 +171,7 @@ class ThumbnailWidget : public QFrame
    Q_OBJECT
 public:
    ThumbnailWidget(QWidget *parent = 0);
+   ThumbnailWidget(ThumbnailType type, QWidget *parent = 0);
    ThumbnailWidget(const ThumbnailWidget& other) { retro_assert(false && "DONT EVER USE THIS"); }
 
    QSize sizeHint() const;
@@ -175,13 +179,18 @@ public:
 signals:
    void mouseDoubleClicked();
    void mousePressed();
+   void filesDropped(const QImage& image, ThumbnailType type);
 private:
    QSize m_sizeHint;
+   ThumbnailType m_thumbnailType;
 protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
    void mouseDoubleClickEvent(QMouseEvent *event);
    void mousePressEvent(QMouseEvent *event);
+   void dragEnterEvent(QDragEnterEvent *event);
+   void dragMoveEvent(QDragMoveEvent *event);
+   void dropEvent(QDropEvent *event);
 };
 
 class ThumbnailLabel : public QWidget
@@ -457,6 +466,7 @@ public slots:
    void downloadPlaylistThumbnails(QString playlistPath);
    void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
    void changeThumbnailType(ThumbnailType type);
+   void onThumbnailDropped(const QImage &image, ThumbnailType type);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -540,6 +550,8 @@ private:
    bool currentPlaylistIsAll();
    void applySearch();
    void updateItemsCount();
+   void setThumbnailsAcceptDrops(bool accept);
+   QString changeThumbnail(const QImage &image, QString type);
 
    PlaylistModel *m_playlistModel;
    QSortFilterProxyModel *m_proxyModel;
@@ -571,7 +583,6 @@ private:
    QPixmap *m_thumbnailPixmap;
    QPixmap *m_thumbnailPixmap2;
    QPixmap *m_thumbnailPixmap3;
-   QRegularExpression m_fileSanitizerRegex;
    QSettings *m_settings;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
