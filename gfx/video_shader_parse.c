@@ -1062,7 +1062,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
          for (i = 0; i < shader->luts; i++)
          {
-            char key[64];
+            char key[128];
 
             key[0] = '\0';
 
