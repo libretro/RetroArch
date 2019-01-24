@@ -39,8 +39,13 @@
 #endif
 
 #elif defined(__APPLE__)
+#if defined(__x86_64__)
 #include <OpenGL/gl3.h>
 #include <OpenGL/gl3ext.h>
+#else
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#endif
 #elif defined(HAVE_PSGL)
 #include <PSGL/psgl.h>
 #include <GLES/glext.h>
