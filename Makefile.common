@@ -1160,7 +1160,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    OBJ += gfx/drivers_shader/shader_glsl.o
-   DEFINES += -DHAVE_GLSL
 endif
 
 ifeq ($(HAVE_EGL), 1)
