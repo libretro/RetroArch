@@ -8,7 +8,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NATIVE,
-      "Native"
+      "Macierzysty"
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
