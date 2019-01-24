@@ -8,7 +8,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NATIVE,
-      "Native"
+      "Natywny"
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -3557,7 +3557,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Tylko dla wyświetlaczy CRT.
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT Przełącz rozdzielczość")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-      "Switch among native and ultrawide super resolutions."
+      "Przełącz między natywnymi i superszybkimi superrozdzielczościami."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super rozdzielczość")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
