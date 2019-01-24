@@ -39,8 +39,8 @@
 #endif
 
 #elif defined(__APPLE__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
+#include <OpenGL/gl3.h>
+#include <OpenGL/gl3ext.h>
 #elif defined(HAVE_PSGL)
 #include <PSGL/psgl.h>
 #include <GLES/glext.h>
@@ -82,6 +82,14 @@
 
 #ifndef GL_RED_INTEGER
 #define GL_RED_INTEGER 0x8D94
+#endif
+
+#ifndef GL_BGRA_EXT
+#define GL_BGRA_EXT GL_BGRA
+#endif
+
+#ifndef GL_LUMINANCE_ALPHA
+#define GL_LUMINANCE_ALPHA 0x190A
 #endif
 
 #endif

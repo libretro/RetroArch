@@ -91,7 +91,7 @@ RETRO_BEGIN_DECLS
 #define glGenerateMipmap glGenerateMipmapOES
 #endif
 
-#if defined(__APPLE__) || defined(HAVE_PSGL)
+#if defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
 #endif
 
