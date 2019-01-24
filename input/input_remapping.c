@@ -56,7 +56,7 @@ bool input_remapping_load_file(void *data, const char *path)
       char s1[64], s2[64], s3[64];
       char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
       char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][128]                             = {{0}};
+      char stk_ident[8][192]                             = {{0}};
 
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
          "b", "y", "select", "start",
