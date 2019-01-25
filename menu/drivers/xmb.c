@@ -480,8 +480,10 @@ const char* xmb_theme_ident(void)
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME_INVERTED:
-         return "monochrome-inverted";
+         return "monochrome";
       case XMB_ICON_THEME_AUTOMATIC:
+         return "automatic";
+      case XMB_ICON_THEME_AUTOMATIC_INVERTED:
          return "automatic";
       case XMB_ICON_THEME_MONOCHROME:
       default:
@@ -3754,7 +3756,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Clock image */
-   menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
+   menu_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
 
    if (video_info->battery_level_enable)
    {
@@ -3794,7 +3796,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   0,
                   1,
-                  &coord_white[0],
+                  &item_color[0],
                   xmb->shadow_offset);
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
@@ -3834,7 +3836,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                0,
                1,
-               &coord_white[0],
+               &item_color[0],
                xmb->shadow_offset);
       }
 
@@ -3856,7 +3858,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(coord_white,
+   menu_display_set_alpha(item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
@@ -3875,7 +3877,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->textures_arrow_alpha,
             0,
             1,
-            &coord_white[0],
+            &item_color[0],
             xmb->shadow_offset);
 
    menu_display_blend_begin(video_info);
@@ -4977,6 +4979,16 @@ static void xmb_context_reset_textures(
    xmb->netplay_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->netplay_tab_node.zoom   = xmb->categories_active_zoom;
 #endif
+
+   /* Recolor */
+   if (
+         (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED) ||
+         (settings->uints.menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED)
+      )
+      memcpy(item_color, coord_black, sizeof(item_color));
+   else
+      memcpy(item_color, coord_white, sizeof(item_color));
+
 
 return;
 
