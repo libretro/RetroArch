@@ -4987,7 +4987,26 @@ static void xmb_context_reset_textures(
       )
       memcpy(item_color, coord_black, sizeof(item_color));
    else
-      memcpy(item_color, coord_white, sizeof(item_color));
+   {
+      if (
+            (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME) ||
+            (settings->uints.menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC)
+         )
+      {
+         for (i=0;i<16;i++)
+            {
+               if ((i==3) || (i==7) || (i==11) || (i==15))
+                  {
+                     item_color[i] = 1;
+                     continue;
+                  }
+               item_color[i] = 0.95;
+            }
+      }
+      else
+         memcpy(item_color, coord_white, sizeof(item_color));
+   }
+
 
 
 return;
