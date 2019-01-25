@@ -1,6 +1,5 @@
 #!/bin/sh
 WAYSCAN=/usr/bin/wayland-scanner
-WAYSCAN_VER=$($WAYSCAN --version 2>&1 | awk '{print $2}')
 WAYLAND_PROTOS=/usr/share/wayland-protocols
 OUTPUT=gfx/common/wayland
 
@@ -11,13 +10,6 @@ fi
 
 if [ ! -d $OUTPUT ]; then
     mkdir $OUTPUT
-fi
-
-#Since Wayland 1.15 option "code" is deprecated. Recommended to use "private-code" option instead.
-if [ "$WAYSCAN_VER -ge 1.15" ]; then
-    CODEGEN=private-code
-else
-    CODEGEN=code
 fi
 
 #Generate xdg-shell_v6 header and .c files

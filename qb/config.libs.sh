@@ -463,10 +463,10 @@ check_val '' XEXT -lXext '' xext '' ''
 check_val '' XF86VM -lXxf86vm '' xxf86vm '' ''
 
 if [ "$HAVE_WAYLAND_PROTOS" = yes ] && [ "$HAVE_WAYLAND" = yes ]; then
-    check_pkgconf WAYLAND_SCANNER wayland-scanner 1.12
+    check_pkgconf WAYLAND_SCANNER wayland-scanner 1.15
     ./gfx/common/wayland/generate_wayland_protos.sh
 else
-    die : 'Notice: wayland (>=1.12) or wayland-protocols (>=1.15) not found. Disabling Wayland support.'
+    die : 'Notice: wayland-egl or wayland-protocols not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
 
