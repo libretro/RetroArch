@@ -56,7 +56,7 @@ check_enabled()
 # $3 = lib
 # $4 = function in lib
 # $5 = extralibs
-# $6 = headers
+# $6 = headers [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]
 check_lib()
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
