@@ -457,16 +457,18 @@ check_val '' XCB -lxcb '' xcb '' ''
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 1.15 ''
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.15 ''
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
+check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 ''
 check_pkgconf DBUS dbus-1
 check_val '' XEXT -lXext '' xext '' ''
 check_val '' XF86VM -lXxf86vm '' xxf86vm '' ''
 
-if [ "$HAVE_WAYLAND_PROTOS" = yes ] && [ "$HAVE_WAYLAND" = yes ]; then
-    check_pkgconf WAYLAND_SCANNER wayland-scanner 1.15
-    ./gfx/common/wayland/generate_wayland_protos.sh
+if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
+   [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+   [ "$HAVE_WAYLAND" = yes ]; then
+    ./gfx/common/wayland/generate_wayland_protos.sh "$WAYLAND_SCANNER_VERSION"
 else
-    die : 'Notice: wayland-egl or wayland-protocols not found, disabling wayland support.'
+    die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
 

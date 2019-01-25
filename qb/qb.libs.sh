@@ -4,7 +4,10 @@ CONFIG_DEFINES=''
 PREFIX="${PREFIX:-/usr/local}"
 SHARE_DIR="${SHARE_DIR:-${PREFIX}/share}"
 
-add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
+# add_define:
+# $1 = MAKEFILE or CONFIG
+# $2 = define $3 = value
+add_define()
 { eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
 # add_dirs:
@@ -111,31 +114,41 @@ check_pkgconf()
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking presence of package $2"
-	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
+	[ "$3" ] && ECHOBUF="$ECHOBUF >= ${3##* }"
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
 		eval "HAVE_$1=no"
+		eval "${1#HAVE_}_VERSION=0.0"
 		printf %s\\n "$ECHOBUF ... no"
 		return 0
 	}
 
+	val="$1"
+	pkg="$2"
+	err="$4"
 	answer='no'
 	version='no'
-	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
-		answer='yes'
-		version="$("$PKG_CONF_PATH" --modversion "$2")"
-		eval "$1_CFLAGS=\"$("$PKG_CONF_PATH" "$2" --cflags)\""
-		eval "$1_LIBS=\"$("$PKG_CONF_PATH" "$2" --libs)\""
-	}
+
+	eval "set -- ${3:-0.0}"
+	for ver do
+		if $PKG_CONF_PATH --atleast-version="$ver" "$pkg"; then
+			answer='yes'
+			version="$("$PKG_CONF_PATH" --modversion "$pkg")"
+			eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" "$pkg" --cflags)\""
+			eval "${val}_LIBS=\"$("$PKG_CONF_PATH" "$pkg" --libs)\""
+			eval "${val#HAVE_}_VERSION=\"$ver\""
+			break
+		fi
+	done
 	
-	eval "HAVE_$1=\"$answer\""
+	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
-		[ "$4" ] && die 1 "$4"
-		[ "$tmpval" = 'yes' ] && \
-			die 1 "Forced to build with package $2, but cannot locate. Exiting ..."
+		[ "$err" ] && die 1 "$err"
+		[ "$tmpval" = 'yes' ] &&
+			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
 	else
-		PKG_CONF_USED="$PKG_CONF_USED $1"
+		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
 }
 
@@ -228,6 +241,7 @@ check_switch()
 # $7 = critical error message [checked only if non-empty]
 check_val()
 {	check_pkgconf "$2" "$5" "$6" "${7:-}"
+	[ "$PKG_CONF_PATH" = "none" ] || return 0
 	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
