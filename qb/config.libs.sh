@@ -75,30 +75,12 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon -marm"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
-fi
-
 if [ "$HAVE_7ZIP" = "yes" ]; then
    add_dirs INCLUDE ./deps/7zip
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
-fi
-
-if [ "$HAVE_FLOATHARD" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
-   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
-fi
-
-if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
