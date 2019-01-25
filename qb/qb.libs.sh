@@ -6,7 +6,8 @@ SHARE_DIR="${SHARE_DIR:-${PREFIX}/share}"
 
 # add_define:
 # $1 = MAKEFILE or CONFIG
-# $2 = define $3 = value
+# $2 = define
+# $3 = value
 add_define()
 { eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
