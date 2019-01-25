@@ -75,31 +75,12 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon -marm"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
-fi
-
 if [ "$HAVE_7ZIP" = "yes" ]; then
    add_dirs INCLUDE ./deps/7zip
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
-   add_define MAKEFILE HAVE_PRESERVE_DYLIB "1"
-fi
-
-if [ "$HAVE_FLOATHARD" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
-   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
-fi
-
-if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
@@ -126,9 +107,7 @@ if [ "$HAVE_SSE" = "yes" ]; then
 fi
 
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
-   check_pkgconf EGL "$VC_PREFIX"egl
-   # some systems have EGL libs, but no pkgconfig
-   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' ''
    if [ "$HAVE_EGL" = "yes" ]; then
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
@@ -149,12 +128,12 @@ fi
 if [ "$LIBRETRO" ]; then
    die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
    HAVE_DYNAMIC='no'
-else LIBRETRO="-lretro"
+else
+   LIBRETRO="-lretro"
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   #check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
-   check_lib '' RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
@@ -182,12 +161,6 @@ else
    fi
 
    check_lib '' DYLIB "$DYLIB" dlopen
-fi
-
-if [ "$HAVE_CXX" != 'yes' ]; then
-   HAVE_DISCORD='no'
-   HAVE_QT='no'
-   HAVE_VULKAN='no'
 fi
 
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
@@ -237,8 +210,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
    die 1 'Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro="-lretro".'
 fi
 
-check_pkgconf ALSA alsa
-check_val '' ALSA -lasound alsa
+check_val '' ALSA -lasound alsa alsa '' ''
 check_lib '' CACA -lcaca
 check_lib '' SIXEL -lsixel
 
@@ -271,15 +243,22 @@ fi
 
 check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar
-check_pkgconf JACK jack 0.120.1
-check_pkgconf PULSE libpulse
-check_pkgconf SDL sdl 1.2.10
-check_pkgconf SDL2 sdl2 2.0.0
+check_val '' JACK -ljack '' jack 0.120.1 ''
+check_val '' PULSE -lpulse '' libpulse '' ''
+check_val '' SDL -lSDL SDL sdl 1.2.10 ''
+check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 ''
 
-check_val '' JACK -ljack
-check_val '' PULSE -lpulse
-check_val '' SDL -lSDL SDL
-check_val '' SDL2 -lSDL2 SDL2
+if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
+   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
+   HAVE_SDL=no
+fi
+
+check_enabled DISCORD discord
+
+if [ "$HAVE_DISCORD" != 'no' ]; then
+   # Enable discord by default if it hasn't been disabled by check_enabled.
+   HAVE_DISCORD=yes
+fi
 
 check_enabled QT 'Qt companion'
 
@@ -307,17 +286,11 @@ if [ "$HAVE_QT" != 'no' ]; then
    #fi
 fi
 
-if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
-   HAVE_SDL=no
-fi
-
 if [ "$HAVE_FLAC" = 'no' ]; then
    HAVE_BUILTINFLAC=no
 fi
 
-check_pkgconf FLAC flac
-check_val '' FLAC '-lFLAC'
+check_val '' FLAC '-lFLAC' '' flac '' ''
 
 if [ "$HAVE_SSL" = 'no' ]; then
    HAVE_BUILTINMBEDTLS=no
@@ -350,8 +323,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
    fi
 fi
 
-check_pkgconf LIBUSB libusb-1.0 1.0.13
-check_val '' LIBUSB -lusb-1.0 libusb-1.0
+check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 ''
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
@@ -406,12 +378,10 @@ if [ "$HAVE_ZLIB" = 'no' ]; then
 elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
    HAVE_ZLIB=yes
 else
-   check_pkgconf ZLIB zlib
-   check_val '' ZLIB '-lz'
+   check_val '' ZLIB '-lz' '' zlib '' ''
 fi
 
-check_pkgconf MPV mpv
-check_val '' MPV -lmpv
+check_val '' MPV -lmpv '' mpv '' ''
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
    HAVE_FFMPEG='no'
@@ -422,21 +392,13 @@ check_header DRMINGW exchndl.h
 check_lib '' DRMINGW -lexchndl
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
-   check_pkgconf AVCODEC libavcodec 54
-   check_pkgconf AVFORMAT libavformat 54
-   check_pkgconf AVDEVICE libavdevice
-   check_pkgconf SWRESAMPLE libswresample
-   check_pkgconf AVRESAMPLE libavresample
-   check_pkgconf AVUTIL libavutil 51
-   check_pkgconf SWSCALE libswscale 2.1
-
-   check_val '' AVCODEC -lavcodec
-   check_val '' AVFORMAT -lavformat
-   check_val '' AVDEVICE -lavdevice
-   check_val '' SWRESAMPLE -lswresample
-   check_val '' AVRESAMPLE -lavresample
-   check_val '' AVUTIL -lavutil
-   check_val '' SWSCALE -lswscale
+   check_val '' AVCODEC -lavcodec '' libavcodec 54 ''
+   check_val '' AVFORMAT -lavformat '' libavformat 54 ''
+   check_val '' AVDEVICE -lavdevice '' libavdevice '' ''
+   check_val '' SWRESAMPLE -lswresample '' libswresample '' ''
+   check_val '' AVRESAMPLE -lavresample '' libavresample '' ''
+   check_val '' AVUTIL -lavutil '' libavutil 51 ''
+   check_val '' SWSCALE -lswscale '' libswscale 2.1 ''
 
    check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
@@ -454,10 +416,8 @@ if [ "$OS" != 'Win32' ]; then
 fi
 
 if [ "$HAVE_KMS" != "no" ]; then
-   check_pkgconf GBM gbm 9.0
-   check_pkgconf DRM libdrm
-   check_val '' GBM -lgbm
-   check_val '' DRM -ldrm libdrm
+   check_val '' GBM -lgbm '' gbm 9.0 ''
+   check_val '' DRM -ldrm libdrm libdrm '' ''
 
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
@@ -468,8 +428,7 @@ if [ "$HAVE_KMS" != "no" ]; then
    fi
 fi
 
-check_pkgconf LIBXML2 libxml-2.0
-check_val '' LIBXML2 -lxml2 libxml2
+check_val '' LIBXML2 -lxml2 libxml2 libxml-2.0 '' ''
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
@@ -485,34 +444,23 @@ if [ "$HAVE_EGL" = "yes" ]; then
          fi
       fi
    fi
-   check_pkgconf VG "$VC_PREFIX"vg
-   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
+   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' ''
 else
    HAVE_VG=no
    HAVE_OPENGLES=no
 fi
 
-check_pkgconf V4L2 libv4l2
-check_pkgconf FREETYPE freetype2
-check_pkgconf X11 x11
-check_pkgconf XCB xcb
-check_pkgconf WAYLAND wayland-egl 1.15
-check_pkgconf WAYLAND_CURSOR wayland-cursor 1.15
+check_val '' V4L2 -lv4l2 '' libv4l2 '' ''
+check_val '' FREETYPE -lfreetype freetype2 freetype2 '' ''
+check_val '' X11 -lX11 '' x11 '' ''
+check_val '' XCB -lxcb '' xcb '' ''
+check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 1.15 ''
+check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.15 ''
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
-check_pkgconf XKBCOMMON xkbcommon 0.3.2
+check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 ''
 check_pkgconf DBUS dbus-1
-check_pkgconf XEXT xext
-check_pkgconf XF86VM xxf86vm
-
-check_val '' V4L2 -lv4l2
-check_val '' FREETYPE -lfreetype freetype2
-check_val '' X11 -lX11
-check_val '' XCB -lxcb
-check_val '' WAYLAND '-lwayland-egl -lwayland-client'
-check_val '' WAYLAND_CURSOR -lwayland-cursor
-check_val '' XKBCOMMON -lxkbcommon
-check_val '' XEXT -lXext
-check_val '' XF86VM -lXxf86vm
+check_val '' XEXT -lXext '' xext '' ''
+check_val '' XF86VM -lXxf86vm '' xxf86vm '' ''
 
 if [ "$HAVE_WAYLAND_PROTOS" = yes ] && [ "$HAVE_WAYLAND" = yes ]; then
     check_pkgconf WAYLAND_SCANNER wayland-scanner 1.15
@@ -527,20 +475,17 @@ if [ "$HAVE_X11" = 'no' ]; then
 fi
 
 check_lib '' XRANDR -lXrandr
-check_pkgconf XINERAMA xinerama
-check_val '' XINERAMA -lXinerama
+check_val '' XINERAMA -lXinerama '' xinerama '' ''
 
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
-   check_pkgconf XVIDEO xv
-   check_val '' XVIDEO -lXv
+   check_val '' XVIDEO -lXv '' xv '' ''
 else
    die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
 
-check_pkgconf UDEV libudev
-check_val '' UDEV "-ludev"
+check_val '' UDEV "-ludev" '' libudev '' ''
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h

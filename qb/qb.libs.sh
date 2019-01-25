@@ -7,7 +7,10 @@ SHARE_DIR="${SHARE_DIR:-${PREFIX}/share}"
 add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
 { eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
-add_dirs() # $1 = INCLUDE or LIBRARY  $@ = include or library paths
+# add_dirs:
+# $1 = INCLUDE or LIBRARY
+# $@ = include or library paths
+add_dirs()
 {	ADD="$1"; LINK="${1%"${1#?}"}"; shift
 	while [ "$1" ]; do
 		eval "${ADD}_DIRS=\"\${${ADD}_DIRS} -${LINK}${1}\""
@@ -16,7 +19,10 @@ add_dirs() # $1 = INCLUDE or LIBRARY  $@ = include or library paths
 	eval "${ADD}_DIRS=\"\${${ADD}_DIRS# }\""
 }
 
-check_compiler() # $1 = language  $2 = function in lib
+# check_compiler:
+# $1 = language
+# $2 = function in lib
+check_compiler()
 {	if [ "$1" = cxx ]; then
 		COMPILER="$CXX"
 		TEMP_CODE="$TEMP_CXX"
@@ -28,7 +34,10 @@ check_compiler() # $1 = language  $2 = function in lib
 	fi
 }
 
-check_enabled() # $1 = HAVE_$1  $2 = lib
+# check_enabled:
+# $1 = HAVE_$1
+# $2 = lib
+check_enabled()
 {	[ "$HAVE_CXX" != 'no' ] && return 0
 	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 
@@ -40,7 +49,16 @@ check_enabled() # $1 = HAVE_$1  $2 = lib
 	die 1 "Forced to build with $2 support and the C++ compiler is disabled. Exiting ..."
 }
 
-check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
+# check_lib:
+# Compiles a simple test program to check if a library is available.
+# $1 = language
+# $2 = HAVE_$2
+# $3 = lib
+# $4 = function in lib
+# $5 = extralibs
+# $6 = headers [checked only if non-empty]
+# $7 = critical error message [checked only if non-empty]
+check_lib()
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
@@ -81,7 +99,13 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	return 0
 }
 
-check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
+# check_pkgconf:
+# If available uses $PKG_CONF_PATH to find a library.
+# $1 = HAVE_$1
+# $2 = package
+# $3 = version [checked only if non-empty]
+# $4 = critical error message [checked only if non-empty]
+check_pkgconf()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
@@ -115,7 +139,10 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	fi
 }
 
-check_header() #$1 = HAVE_$1  $2, $3, ... = header files
+# check_header:
+# $1 = HAVE_$1
+# $@ = header files
+check_header()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	rm -f -- "$TEMP_C"
@@ -137,7 +164,11 @@ check_header() #$1 = HAVE_$1  $2, $3, ... = header files
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 }
 
-check_macro() #$1 = HAVE_$1  $2 = macro name  $3 = header name [included only if non-empty]
+# check_macro:
+# $1 = HAVE_$1
+# $2 = macro name
+# $3 = header name [included only if non-empty]
+check_macro()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	if [ "${3}" ]; then
@@ -166,7 +197,12 @@ EOF
 		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
 }
 
-check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error message [checked only if non-empty]
+# check_switch:
+# $1 = language
+# $2 = HAVE_$2
+# $3 = switch
+# $4 = critical error message [checked only if non-empty]
+check_switch()
 {	check_compiler "$1" ''
 
 	ECHOBUF="Checking for availability of switch $3 in $COMPILER"
@@ -181,8 +217,18 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 	}
 }
 
-check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [checked only if non-empty]
-{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+# check_val:
+# Uses check_pkgconf to find a library and falls back to check_lib if false.
+# $1 = language
+# $2 = HAVE_$2
+# $3 = lib
+# $4 = include directory [checked only if non-empty]
+# $5 = package
+# $6 = version [checked only if non-empty]
+# $7 = critical error message [checked only if non-empty]
+check_val()
+{	check_pkgconf "$2" "$5" "$6" "${7:-}"
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
