@@ -511,6 +511,11 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
+         "cdfs:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);      
+   menu_entries_append_enum(list,
          "hdd0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
