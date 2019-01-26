@@ -22,7 +22,7 @@
 #include <boolean.h>
 
 #include <AvailabilityMacros.h>
-#import "../include/GameController/GameController.h"
+#import <GameController/GameController.h>
 
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
@@ -32,6 +32,8 @@ static uint32_t mfi_buttons[MAX_USERS];
 static int16_t  mfi_axes[MAX_USERS][4];
 
 static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
+
+static NSMutableArray *mfiControllers;
 
 enum
 {
@@ -162,6 +164,28 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
            }
         }
 
+        [mfiControllers addObject:controller];
+        // move any non-game controllers (like the siri remote) to the end
+        if ( mfiControllers.count > 1 ) {
+            NSInteger connectedNonGameControllerIndex = NSNotFound;
+            NSUInteger index = 0;
+            for (GCController *connectedController in mfiControllers) {
+                if ( connectedController.gamepad == nil && connectedController.extendedGamepad == nil ) {
+                    connectedNonGameControllerIndex = index;
+                }
+                index++;
+            }
+            if ( connectedNonGameControllerIndex != NSNotFound ) {
+                GCController *nonGameController = [mfiControllers objectAtIndex:connectedNonGameControllerIndex];
+                [mfiControllers removeObjectAtIndex:connectedNonGameControllerIndex];
+                [mfiControllers addObject:nonGameController];
+            }
+            int newPlayerIndex = 0;
+            for (GCController *gc in mfiControllers) {
+                gc.playerIndex = newPlayerIndex++;
+            }
+        }
+        
        apple_gamecontroller_joypad_register(controller.gamepad);
     }
 }
@@ -174,6 +198,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
       return;
 
    mfi_controllers[pad] = 0;
+    [mfiControllers removeObject:controller];
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
@@ -183,7 +208,7 @@ bool apple_gamecontroller_joypad_init(void *data)
       return true;
    if (!apple_gamecontroller_available())
       return false;
-
+    mfiControllers = [[NSMutableArray alloc] initWithCapacity:MAX_MFI_CONTROLLERS];
 #ifdef __IPHONE_7_0
    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
                                                      object:nil

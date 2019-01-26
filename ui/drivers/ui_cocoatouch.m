@@ -338,7 +338,12 @@ enum
 
 -(NSString*)documentsDirectory {
     if ( _documentsDirectory == nil ) {
+#if TARGET_OS_IOS       
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+#elif TARGET_OS_TV
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+#endif        
+        
         _documentsDirectory = paths.firstObject;
     }
     return _documentsDirectory;
@@ -362,9 +367,11 @@ enum
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
+#if TARGET_OS_IOS
    self.mainmenu = [RAMainMenu new];
    self.mainmenu.last_menu = self.mainmenu;
    [self pushViewController:self.mainmenu animated:NO];
+#endif
 
    [self refreshSystemConfig];
    [self showGameView];
@@ -441,7 +448,9 @@ enum
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
+#if TARGET_OS_IOS
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
+#endif
    [self refreshSystemConfig];
 }
 
@@ -451,10 +460,15 @@ enum
     /* implicitly initializes your audio session */
    [self supportOtherAudioSessions];
 #endif
-   [self popToRootViewControllerAnimated:NO];
+   
+    [self popToRootViewControllerAnimated:NO];
+
+#if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
-   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+#endif
+   
+    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
    ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_START);
@@ -468,7 +482,10 @@ enum
 #endif
    rarch_enable_ui();
 
+#if TARGET_OS_IOS
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
+#endif
+    
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];
 }
@@ -491,6 +508,7 @@ enum
 
 - (void)refreshSystemConfig
 {
+#if TARGET_OS_IOS
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
@@ -499,15 +517,19 @@ enum
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
+#endif
 }
 
 - (void)mainMenuRefresh
 {
+#if TARGET_OS_IOS
   [self.mainmenu reloadData];
+#endif
 }
 
 - (void)mainMenuPushPop: (bool)pushp
 {
+#if TARGET_OS_IOS
   if ( pushp )
   {
      self.menu_count++;
@@ -528,6 +550,7 @@ enum
         self.mainmenu = self.mainmenu.last_menu;
      }
   }
+#endif
 }
 
 - (void)supportOtherAudioSessions
@@ -542,7 +565,9 @@ enum
 
 - (void)mainMenuRenderMessageBox:(NSString *)msg
 {
+#if TARGET_OS_IOS
   [self.mainmenu renderMessageBox:msg];
+#endif
 }
 
 @end
@@ -693,7 +718,9 @@ static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
 
    if (ap && msg)
    {
+#if TARGET_OS_IOS
       [ap.mainmenu msgQueuePush: [NSString stringWithUTF8String:msg]];
+#endif
    }
 }
 

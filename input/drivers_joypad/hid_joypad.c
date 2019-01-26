@@ -19,8 +19,19 @@
 
 static const hid_driver_t *generic_hid = NULL;
 
+static void hid_joypad_autodetect_add(unsigned autoconf_pad)
+{
+#ifdef TARGET_OS_TV
+    // AppleTV: mfi controllers are HID joypad - add an autodetect here
+    if ( !input_autoconfigure_connect("Mfi Controller", NULL, hid_joypad.ident, autoconf_pad, 0, 0)) {
+        input_config_set_device_name(autoconf_pad, "Mfi Controller");
+    }
+#endif
+}
+
 static bool hid_joypad_init(void *data)
 {
+   hid_joypad_autodetect_add(0);
    generic_hid = input_hid_init_first();
    if (!generic_hid)
        return false;
