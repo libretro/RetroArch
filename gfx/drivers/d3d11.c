@@ -81,6 +81,18 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
 }
 
+static void d3d11_clear_scissor(d3d11_video_t *d3d11)
+{
+   D3D11_RECT scissor_rect = {0};
+
+   scissor_rect.left = d3d11->vp.x;
+   scissor_rect.top = d3d11->vp.y;
+   scissor_rect.right = d3d11->vp.width;
+   scissor_rect.bottom = d3d11->vp.height;
+
+   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
+}
+
 static void d3d11_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
@@ -272,6 +284,8 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.output_size.w = 1.0f / d3d11->vp.height;
 
    d3d11->resize_viewport = false;
+
+   d3d11_clear_scissor(d3d11);
 }
 
 static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
@@ -993,6 +1007,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;
+      desc.ScissorEnable = TRUE;
 
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
