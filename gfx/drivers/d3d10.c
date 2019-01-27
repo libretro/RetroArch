@@ -68,6 +68,18 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
+static void d3d10_clear_scissor(d3d10_video_t *d3d10)
+{
+   D3D10_RECT scissor_rect = {0};
+
+   scissor_rect.left = d3d10->vp.x;
+   scissor_rect.top = d3d10->vp.y;
+   scissor_rect.right = d3d10->vp.width;
+   scissor_rect.bottom = d3d10->vp.height;
+
+   D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
+}
+
 static void d3d10_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
    d3d10_sprite_t* sprites = NULL;
@@ -257,6 +269,8 @@ static void d3d10_update_viewport(void* data, bool force_full)
    d3d10->frame.output_size.w = 1.0f / d3d10->vp.height;
 
    d3d10->resize_viewport = false;
+
+   d3d10_clear_scissor(d3d10);
 }
 
 static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
@@ -921,6 +935,7 @@ d3d10_gfx_init(const video_info_t* video,
 
       desc.FillMode = D3D10_FILL_SOLID;
       desc.CullMode = D3D10_CULL_NONE;
+      desc.ScissorEnable = TRUE;
 
       D3D10CreateRasterizerState(d3d10->device, &desc, &d3d10->state);
    }
@@ -1317,6 +1332,8 @@ static bool d3d10_gfx_frame(
 
    D3D10ClearRenderTargetView(context, d3d10->renderTargetView, d3d10->clearcolor);
    D3D10SetViewports(context, 1, &d3d10->frame.viewport);
+
+   d3d10_clear_scissor(d3d10);
 
    D3D10Draw(context, 4, 0);
 
