@@ -627,4 +627,9 @@ extern "C" {
 
 		return 0;
 	}
+
+	void uwp_open_broadfilesystemaccess_settings(void)
+	{
+		Windows::System::Launcher::LaunchUriAsync(ref new Uri("ms-settings:privacy-broadfilesystemaccess"));
+	}
 }

@@ -334,6 +334,8 @@ default_sublabel_macro(action_bind_sublabel_goto_images,                        
 default_sublabel_macro(action_bind_sublabel_goto_music,                            MENU_ENUM_SUBLABEL_GOTO_MUSIC)
 default_sublabel_macro(action_bind_sublabel_goto_video,                            MENU_ENUM_SUBLABEL_GOTO_VIDEO)
 default_sublabel_macro(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_menu_filebrowser_open_uwp_permissions, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS)
+default_sublabel_macro(action_bind_sublabel_menu_filebrowser_open_picker,          MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER)
 default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_game_specific_options,                 MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS)
@@ -1378,6 +1380,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_settings);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_open_uwp_permissions);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_open_picker);
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_favorites);

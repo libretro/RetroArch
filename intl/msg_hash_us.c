@@ -390,6 +390,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Go back to the parent directory.");
             break;
+        case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
+            snprintf(s, len,
+                     "Open Windows permission settings to enable \n"
+                     "the broadFileSystemAccess capability.");
+            break;
+        case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
+           snprintf(s, len,
+                     "Open the system file picker to access \n"
+                     "additional directories.");
+           break;
         case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
             snprintf(s, len,
                      "Shader preset file.");

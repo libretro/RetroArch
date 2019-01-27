@@ -1959,6 +1959,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
+            system->supports_vfs = true;
          }
          else
          {
