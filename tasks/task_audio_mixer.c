@@ -56,6 +56,7 @@ struct audio_mixer_handle
    bool is_finished;
    enum audio_mixer_type type;
    char path[4095];
+   retro_task_callback_t cb;
 };
 
 static void task_audio_mixer_load_free(retro_task_t *task)
@@ -71,6 +72,9 @@ static void task_audio_mixer_load_free(retro_task_t *task)
             free(mixer->buffer->path);
          free(mixer->buffer);
       }
+
+      if (mixer->cb)
+         mixer->cb(NULL, NULL, NULL);
    }
 
    if (!string_is_empty(nbio->path))
@@ -574,6 +578,7 @@ bool task_push_audio_mixer_load(
       goto error;
 
    mixer->is_finished = false;
+   mixer->cb          = cb;
 
    strlcpy(mixer->path, fullpath, sizeof(mixer->path));
 

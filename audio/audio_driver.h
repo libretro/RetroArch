@@ -37,7 +37,16 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MIXER_MAX_STREAMS        16
 
-#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS+4)
+#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 4)
+
+/* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
+enum audio_mixer_system_slot
+{
+   AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,
+   AUDIO_MIXER_SYSTEM_SLOT_CANCEL,
+   AUDIO_MIXER_SYSTEM_SLOT_NOTICE,
+   AUDIO_MIXER_SYSTEM_SLOT_BGM
+};
 
 enum audio_action
 {
@@ -315,6 +324,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 void audio_driver_mixer_play_stream(unsigned i);
 
+void audio_driver_mixer_play_menu_sound(unsigned i);
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i);
+
 void audio_driver_mixer_play_stream_sequential(unsigned i);
 
 void audio_driver_mixer_play_stream_looped(unsigned i);
@@ -334,6 +347,8 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 bool compute_audio_buffer_statistics(audio_statistics_t *stats);
+
+void audio_driver_load_menu_sounds(void);
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;

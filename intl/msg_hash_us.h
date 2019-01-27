@@ -8112,3 +8112,23 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
     "Save playlists using old format"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+    "Menu Sounds"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+    "Enable OK sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+    "Enable cancel sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+    "Enable notice sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+    "Enable BGM sound"
+    )

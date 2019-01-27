@@ -51,6 +51,10 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
+#ifdef HAVE_MENU
+#include <menu/menu_driver.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -237,6 +241,70 @@ void fill_pathname_application_special(char *s,
                      len);
                free(s1);
             }
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS:
+         {
+#ifdef HAVE_MENU
+            settings_t *settings = config_get_ptr();
+            const char *menu_ident = settings->arrays.menu_driver;
+            char *s1 = (char*)calloc(1, PATH_MAX_LENGTH * sizeof(char));
+
+            if (string_is_equal(menu_ident, "xmb"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+            else if (string_is_equal(menu_ident, "glui"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+            else if (string_is_equal(menu_ident, "ozone"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+
+            if (string_is_empty(s1))
+            {
+               fill_pathname_join(
+                     s1,
+                     settings->paths.directory_assets,
+                     "sounds",
+                     PATH_MAX_LENGTH * sizeof(char)
+               );
+            }
+
+            strlcpy(s, s1, len);
+            free(s1);
+#endif
+         }
+
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE:
+#ifdef HAVE_OZONE
+         {
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            settings_t *settings     = config_get_ptr();
+
+            s1[0] = '\0';
+
+            fill_pathname_join(
+                  s1,
+                  settings->paths.directory_assets,
+                  "ozone",
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
+            strlcpy(s, s1, len);
+            free(s1);
          }
 #endif
          break;

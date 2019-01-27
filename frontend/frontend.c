@@ -38,6 +38,7 @@
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
+#include "../record/record_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include <objbase.h>
@@ -91,6 +92,7 @@ void main_exit(void *args)
    driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
    ui_companion_driver_free();
    frontend_driver_free();
+   recording_driver_lock_free();
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();

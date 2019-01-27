@@ -508,6 +508,13 @@ static const bool video_3ds_lcd_bottom = true;
 /* Will enable audio or not. */
 static const bool audio_enable = true;
 
+/* Enable menu audio sounds. */
+static const bool audio_enable_menu = false;
+static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu_cancel = false;
+static const bool audio_enable_menu_notice = false;
+static const bool audio_enable_menu_bgm = false;
+
 /* Output samplerate. */
 #ifdef GEKKO
 static const unsigned out_rate = 32000;

@@ -26,6 +26,7 @@
 - MENU: New "ozone" menu driver.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
+- MENU: Add option to enable in-menu sound effects
 - MENU/QT/WIMP: Allow building with MSVC2017
 - MENU/QT/WIMP: Add detailed file browser table
 - MENU/QT/WIMP: New grid view implementation that is faster and loads thumbnails on-demand
