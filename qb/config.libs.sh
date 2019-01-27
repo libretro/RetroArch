@@ -466,7 +466,8 @@ check_val '' XF86VM -lXxf86vm '' xxf86vm '' ''
 if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
    [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-    ./gfx/common/wayland/generate_wayland_protos.sh "$WAYLAND_SCANNER_VERSION"
+    ./gfx/common/wayland/generate_wayland_protos.sh -c "$WAYLAND_SCANNER_VERSION" -s "$SHARE_DIR" ||
+       die 1 'Error: Failed generating wayland protocols.'
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'

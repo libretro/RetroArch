@@ -1,14 +1,3 @@
-die() # $1 = exit code, use : to not exit when printing warnings $@ = exit or warning messages
-{
-	ret="$1"
-	shift 1
-	printf %s\\n "$@" >&2
-	case "$ret" in
-		: ) return 0 ;;
-		* ) exit "$ret" ;;
-	esac
-}
-
 print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
