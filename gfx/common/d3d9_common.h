@@ -457,6 +457,12 @@ static INLINE void d3d9_set_viewports(LPDIRECT3DDEVICE9 dev,
       IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)vp);
 }
 
+static INLINE void d3d9_set_scissor_rect(
+      LPDIRECT3DDEVICE9 dev, RECT *rect)
+{
+   IDirect3DDevice9_SetScissorRect(dev, rect);
+}
+
 static INLINE void d3d9_set_render_state(
       LPDIRECT3DDEVICE9 dev, D3DRENDERSTATETYPE state, DWORD value)
 {

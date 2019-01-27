@@ -1033,6 +1033,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
    d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
