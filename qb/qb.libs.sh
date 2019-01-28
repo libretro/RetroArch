@@ -240,9 +240,10 @@ check_switch()
 # $5 = package
 # $6 = version [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]
+# $8 = force check_lib when true [checked only if non-empty]
 check_val()
-{	check_pkgconf "$2" "$5" "$6" "${7:-}"
-	[ "$PKG_CONF_PATH" = "none" ] || return 0
+{	check_pkgconf "$2" "$5" "${6:-}" "${7:-}"
+	[ "$PKG_CONF_PATH" = "none" ] || [ "${8:-}" = true ] || return 0
 	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
