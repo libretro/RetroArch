@@ -16,7 +16,7 @@ MSG_HASH(
     "Increase or decrease the Switch screen brightness"
     )
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"
@@ -8131,4 +8131,8 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
     "Enable BGM sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+    "Down + Select"
     )
