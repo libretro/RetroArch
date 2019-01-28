@@ -1647,8 +1647,10 @@ bool audio_driver_deinit(void)
 {
    audio_driver_mixer_deinit();
    audio_driver_free_devices_list();
+#ifdef HAVE_THREADS
    slock_free(s_audio_driver_lock);
    s_audio_driver_lock = NULL;
+#endif
 
    if (!audio_driver_deinit_internal())
       return false;
