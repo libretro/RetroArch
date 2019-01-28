@@ -17,6 +17,7 @@
 
 #include <boolean.h>
 
+#include "d3d_common.h"
 #include "d3d12_common.h"
 #include "dxgi_common.h"
 #include "d3dcompiler_common.h"
@@ -219,6 +220,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       int width, int height, void* corewindow)
 {
    unsigned i;
+   HRESULT hr;
 #ifdef __WINRT__
    DXGI_SWAP_CHAIN_DESC1 desc;
    memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
@@ -256,10 +258,15 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
 
 #ifdef __WINRT__
-   DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
+   hr = DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
 #else
-   DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
+   hr = DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
 #endif
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[D3D12]: Failed to create the swap chain (0x%08X)\n", hr);
+      return false;
+   }
 
 #ifdef HAVE_WINDOW
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
