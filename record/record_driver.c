@@ -65,19 +65,27 @@ static slock_t *s_recording_driver_lock        = NULL;
 
 bool recording_driver_lock_inited(void)
 {
+#ifdef HAVE_THREADS
    return s_recording_driver_lock != NULL;
+#else
+   return false;
+#endif
 }
 
 void recording_driver_lock_init(void)
 {
+#ifdef HAVE_THREADS
    s_recording_driver_lock = slock_new();
+#endif
 }
 
 void recording_driver_lock_free(void)
 {
+#ifdef HAVE_THREADS
    if (s_recording_driver_lock)
       slock_free(s_recording_driver_lock);
    s_recording_driver_lock = NULL;
+#endif
 }
 
 void recording_driver_lock(void)
