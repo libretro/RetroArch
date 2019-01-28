@@ -1847,6 +1847,9 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
 
@@ -1872,6 +1875,9 @@ static void menu_driver_toggle(bool on)
 
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
+
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
