@@ -52,7 +52,7 @@
 #include <encodings/utf.h>
 
 #ifdef HAVE_MENU
-#include <menu/menu_driver.h>
+#include "menu/menu_driver.h"
 #endif
 
 #ifdef HAVE_CONFIG_H
