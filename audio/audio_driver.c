@@ -208,21 +208,21 @@ static void audio_mixer_play_stop_cb(
 static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 
-static void audio_driver_lock(void)
-{
 #ifdef HAVE_THREADS
-   if (s_audio_driver_lock)
-      slock_lock(s_audio_driver_lock);
+#define audio_driver_lock() \
+   if (s_audio_driver_lock) \
+      slock_lock(s_audio_driver_lock)
+#else
+#define audio_driver_lock()
 #endif
-}
 
-static void audio_driver_unlock(void)
-{
 #ifdef HAVE_THREADS
-   if (s_audio_driver_lock)
-      slock_unlock(s_audio_driver_lock);
+#define audio_driver_unlock() \
+   if (s_audio_driver_lock) \
+      slock_unlock(s_audio_driver_lock)
+#else
+#define audio_driver_unlock()
 #endif
-}
 
 enum resampler_quality audio_driver_get_resampler_quality(void)
 {
