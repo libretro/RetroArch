@@ -48,7 +48,7 @@ all: $(SLANG_SHADERS)
 parser: $(SLANG_PARSER)
 
 $(SLANG_PARSER): slang-parse.cpp
-	$(CXX) $< -o $@ -g -O0 -Wall -I.
+	$(CXX) $< -o $@ -g -O0 -Wall -I../../deps/peglib
 
 shaders: $(SLANG_SHADERS)
 
