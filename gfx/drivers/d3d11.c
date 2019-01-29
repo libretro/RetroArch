@@ -1207,7 +1207,9 @@ static bool d3d11_gfx_frame(
    D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 #endif
 
+#if 0
    PERF_START();
+#endif
 
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
@@ -1471,7 +1473,9 @@ static bool d3d11_gfx_frame(
    }
    d3d11->sprites.enabled = false;
 
+#if 0
    PERF_STOP();
+#endif
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
 
    return true;
