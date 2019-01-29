@@ -107,7 +107,9 @@ if [ "$HAVE_SSE" = "yes" ]; then
 fi
 
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
-   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' ''
+   # some systems have EGL libs, but no pkgconfig
+   # https://github.com/linux-sunxi/sunxi-mali/pull/8
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
    if [ "$HAVE_EGL" = "yes" ]; then
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
@@ -210,7 +212,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
    die 1 'Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro="-lretro".'
 fi
 
-check_val '' ALSA -lasound alsa alsa '' ''
+check_val '' ALSA -lasound alsa alsa '' '' false
 check_lib '' CACA -lcaca
 check_lib '' SIXEL -lsixel
 
@@ -243,10 +245,10 @@ fi
 
 check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar
-check_val '' JACK -ljack '' jack 0.120.1 ''
-check_val '' PULSE -lpulse '' libpulse '' ''
-check_val '' SDL -lSDL SDL sdl 1.2.10 ''
-check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 ''
+check_val '' JACK -ljack '' jack 0.120.1 '' false
+check_val '' PULSE -lpulse '' libpulse '' '' false
+check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
+check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' false
 
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
@@ -290,7 +292,7 @@ if [ "$HAVE_FLAC" = 'no' ]; then
    HAVE_BUILTINFLAC=no
 fi
 
-check_val '' FLAC '-lFLAC' '' flac '' ''
+check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 if [ "$HAVE_SSL" = 'no' ]; then
    HAVE_BUILTINMBEDTLS=no
@@ -323,7 +325,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
    fi
 fi
 
-check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 ''
+check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
@@ -378,10 +380,10 @@ if [ "$HAVE_ZLIB" = 'no' ]; then
 elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
    HAVE_ZLIB=yes
 else
-   check_val '' ZLIB '-lz' '' zlib '' ''
+   check_val '' ZLIB '-lz' '' zlib '' '' false
 fi
 
-check_val '' MPV -lmpv '' mpv '' ''
+check_val '' MPV -lmpv '' mpv '' '' false
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
    HAVE_FFMPEG='no'
@@ -392,13 +394,13 @@ check_header DRMINGW exchndl.h
 check_lib '' DRMINGW -lexchndl
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
-   check_val '' AVCODEC -lavcodec '' libavcodec 54 ''
-   check_val '' AVFORMAT -lavformat '' libavformat 54 ''
-   check_val '' AVDEVICE -lavdevice '' libavdevice '' ''
-   check_val '' SWRESAMPLE -lswresample '' libswresample '' ''
-   check_val '' AVRESAMPLE -lavresample '' libavresample '' ''
-   check_val '' AVUTIL -lavutil '' libavutil 51 ''
-   check_val '' SWSCALE -lswscale '' libswscale 2.1 ''
+   check_val '' AVCODEC -lavcodec '' libavcodec 54 '' false
+   check_val '' AVFORMAT -lavformat '' libavformat 54 '' false
+   check_val '' AVDEVICE -lavdevice '' libavdevice '' '' false
+   check_val '' SWRESAMPLE -lswresample '' libswresample '' '' false
+   check_val '' AVRESAMPLE -lavresample '' libavresample '' '' false
+   check_val '' AVUTIL -lavutil '' libavutil 51 '' false
+   check_val '' SWSCALE -lswscale '' libswscale 2.1 '' false
 
    check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
@@ -416,8 +418,8 @@ if [ "$OS" != 'Win32' ]; then
 fi
 
 if [ "$HAVE_KMS" != "no" ]; then
-   check_val '' GBM -lgbm '' gbm 9.0 ''
-   check_val '' DRM -ldrm libdrm libdrm '' ''
+   check_val '' GBM -lgbm '' gbm 9.0 '' false
+   check_val '' DRM -ldrm libdrm libdrm '' '' false
 
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
@@ -428,7 +430,7 @@ if [ "$HAVE_KMS" != "no" ]; then
    fi
 fi
 
-check_val '' LIBXML2 -lxml2 libxml2 libxml-2.0 '' ''
+check_val '' LIBXML2 -lxml2 libxml2 libxml-2.0 '' '' false
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
@@ -444,24 +446,24 @@ if [ "$HAVE_EGL" = "yes" ]; then
          fi
       fi
    fi
-   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' ''
+   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
 else
    HAVE_VG=no
    HAVE_OPENGLES=no
 fi
 
-check_val '' V4L2 -lv4l2 '' libv4l2 '' ''
-check_val '' FREETYPE -lfreetype freetype2 freetype2 '' ''
-check_val '' X11 -lX11 '' x11 '' ''
-check_val '' XCB -lxcb '' xcb '' ''
-check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 ''
-check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 ''
+check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
+check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
+check_val '' X11 -lX11 '' x11 '' '' false
+check_val '' XCB -lxcb '' xcb '' '' false
+check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
+check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
-check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 ''
+check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_pkgconf DBUS dbus-1
-check_val '' XEXT -lXext '' xext '' ''
-check_val '' XF86VM -lXxf86vm '' xxf86vm '' ''
+check_val '' XEXT -lXext '' xext '' '' false
+check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
 if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
    [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
@@ -478,17 +480,17 @@ if [ "$HAVE_X11" = 'no' ]; then
 fi
 
 check_lib '' XRANDR -lXrandr
-check_val '' XINERAMA -lXinerama '' xinerama '' ''
+check_val '' XINERAMA -lXinerama '' xinerama '' '' false
 
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
-   check_val '' XVIDEO -lXv '' xv '' ''
+   check_val '' XVIDEO -lXv '' xv '' '' false
 else
    die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
 
-check_val '' UDEV "-ludev" '' libudev '' ''
+check_val '' UDEV "-ludev" '' libudev '' '' false
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
