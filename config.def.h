@@ -373,14 +373,7 @@ static unsigned menu_shader_pipeline = 2;
 #endif
 
 static bool show_advanced_settings            = false;
-static const uint32_t menu_entry_normal_color = 0xffffffff;
-static const uint32_t menu_entry_hover_color  = 0xff64ff64;
-static const uint32_t menu_title_color        = 0xff64ff64;
-static const uint32_t menu_bg_dark_color      = 0xc0202020;
-static const uint32_t menu_bg_light_color     = 0xc0404040;
-static const uint32_t menu_border_dark_color  = 0xc0204020;
-static const uint32_t menu_border_light_color = 0xc0408040;
-static unsigned rgui_color_theme = RGUI_THEME_CUSTOM;
+static unsigned rgui_color_theme = RGUI_THEME_CLASSIC_GREEN;
 
 #else
 static bool default_block_config_read = false;

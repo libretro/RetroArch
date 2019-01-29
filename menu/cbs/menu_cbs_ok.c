@@ -105,7 +105,8 @@ enum
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY,
    ACTION_OK_SHOW_WIMP,
-   ACTION_OK_LOAD_CHEAT_FILE_APPEND
+   ACTION_OK_LOAD_CHEAT_FILE_APPEND,
+   ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET
 };
 
 enum
@@ -595,6 +596,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.path_cheat_database;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
+      case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_assets;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -1499,6 +1508,16 @@ static int generic_action_ok(const char *path,
          if (!cheat_manager_load(action_path,true))
             goto error;
          break;
+      case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
+         {
+            settings_t *settings = config_get_ptr();
+            flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
+
+            if (settings)
+               strlcpy(settings->paths.path_rgui_theme_preset, action_path,
+                     sizeof(settings->paths.path_rgui_theme_preset));
+         }
+         break;
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_type = MENU_SETTINGS;
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
@@ -1594,6 +1613,7 @@ default_action_ok_set(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STRE
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
+default_action_ok_set(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
 
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3995,6 +4015,7 @@ default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUN
 default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
+default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 
 static int action_ok_open_uwp_permission_settings(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5290,6 +5311,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile);
             break;
+         case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_list);
@@ -5664,6 +5688,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile);
             break;
+         case MENU_LABEL_RGUI_MENU_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
@@ -5881,6 +5908,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile_load);
+            break;
+         case FILE_TYPE_RGUI_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset_load);
             break;
          case FILE_TYPE_REMAP:
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);

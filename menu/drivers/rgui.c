@@ -50,6 +50,8 @@
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
+#include <file/config_file.h>
+
 /* Thumbnail additions */
 #include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
@@ -423,6 +425,8 @@ typedef struct
    char *thumbnail_path;
    char *thumbnail_playlist;
    uint32_t thumbnail_queue_size;
+   bool show_wallpaper;
+   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -441,6 +445,24 @@ typedef struct
 static thumbnail_t thumbnail = {
    0,
    0,
+   false,
+   NULL,
+   {0}
+};
+
+/* Identical to thumbnail max width/height, but cannot
+ * assume this will always be the case... */
+#define WALLPAPER_WIDTH 320
+#define WALLPAPER_HEIGHT 240
+
+typedef struct
+{
+   bool is_valid;
+   char *path;
+   uint16_t data[WALLPAPER_WIDTH * WALLPAPER_HEIGHT];
+} wallpaper_t;
+
+static wallpaper_t wallpaper = {
    false,
    NULL,
    {0}
@@ -558,6 +580,61 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 #define argb32_to_pixel_platform_format(color) argb32_to_rgba4444(color)
 
 #endif
+
+static bool request_wallpaper(const char *path)
+{
+   /* Do nothing if current wallpaper path hasn't changed */
+   if (!string_is_empty(path) && !string_is_empty(wallpaper.path))
+   {
+      if (string_is_equal(wallpaper.path, path))
+         return true;
+   }
+   
+   /* 'Reset' current wallpaper */
+   wallpaper.is_valid = false;
+   free(wallpaper.path);
+   wallpaper.path = NULL;
+   
+   /* Ensure that new path is valid... */
+   if (!string_is_empty(path))
+   {
+      wallpaper.path = strdup(path);
+      if (filestream_exists(path))
+      {
+         /* Unlike thumbnails, we don't worry about queued images
+          * here - in general, wallpaper is loaded once per session
+          * and then forgotten, so performance issues are not a concern */
+         task_push_image_load(wallpaper.path, menu_display_handle_wallpaper_upload, NULL);
+         return true;
+      }
+   }
+   
+   return false;
+}
+
+static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
+{
+   unsigned x, y;
+   
+   /* Sanity check */
+   if (!image->pixels || (image->width != WALLPAPER_WIDTH) || (image->height != WALLPAPER_HEIGHT))
+      return;
+   
+   /* Copy image to wallpaper buffer, performing pixel format conversion */
+   for (x = 0; x < WALLPAPER_WIDTH; x++)
+   {
+      for (y = 0; y < WALLPAPER_HEIGHT; y++)
+      {
+         wallpaper.data[x + (y * WALLPAPER_WIDTH)] =
+            argb32_to_pixel_platform_format(image->pixels[x + (y * WALLPAPER_WIDTH)]);
+      }
+   }
+   
+   wallpaper.is_valid = true;
+   
+   /* Tell menu that a display update is required */
+   rgui->force_redraw = true;
+}
 
 static void request_thumbnail(rgui_t *rgui, const char *path)
 {
@@ -758,7 +835,10 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
    switch (type)
    {
       case MENU_IMAGE_WALLPAPER:
-         /* Add this later... :) */
+         {
+            struct texture_image *image = (struct texture_image*)data;
+            process_wallpaper(rgui, image);
+         }
          break;
       case MENU_IMAGE_THUMBNAIL:
          {
@@ -771,6 +851,28 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
    }
 
    return true;
+}
+
+static bool rgui_render_wallpaper(void)
+{
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   
+   if (wallpaper.is_valid && rgui_framebuf_data)
+   {
+      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      
+      /* Sanity check */
+      if ((fb_width != WALLPAPER_WIDTH) || (fb_height != WALLPAPER_HEIGHT) || (fb_pitch != WALLPAPER_WIDTH << 1))
+         return false;
+      
+      /* Copy wallpaper to framebuffer */
+      memcpy(rgui_framebuf_data, wallpaper.data, WALLPAPER_WIDTH * WALLPAPER_HEIGHT * sizeof(uint16_t));
+      
+      return true;
+   }
+   
+   return false;
 }
 
 static void rgui_render_thumbnail(void)
@@ -903,20 +1005,103 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
    return &rgui_theme_classic_green;
 }
 
+static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
+{
+   config_file_t *conf = NULL;
+   unsigned normal_color, hover_color, title_color,
+      bg_dark_color, bg_light_color,
+      border_dark_color, border_light_color;
+   char wallpaper_file[PATH_MAX_LENGTH];
+   bool success = false;
+   
+   wallpaper_file[0] = '\0';
+   
+   /* Sanity check */
+   if (string_is_empty(theme_path))
+      goto end;
+   if (!filestream_exists(theme_path))
+      goto end;
+   
+   /* Open config file */
+   conf = config_file_new(theme_path);
+   if (!conf)
+      goto end;
+   
+   /* Parse config file */
+   if(!config_get_hex(conf, "rgui_entry_normal_color", &normal_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_entry_hover_color", &hover_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_title_color", &title_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_bg_dark_color", &bg_dark_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_bg_light_color", &bg_light_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_border_dark_color", &border_dark_color))
+      goto end;
+   
+   if(!config_get_hex(conf, "rgui_border_light_color", &border_light_color))
+      goto end;
+   
+   config_get_array(conf, "rgui_wallpaper", wallpaper_file, sizeof(wallpaper_file));
+   
+   success = true;
+   
+end:
+   
+   if (success)
+   {
+      theme_colors->normal_color = (uint32_t)normal_color;
+      theme_colors->hover_color = (uint32_t)hover_color;
+      theme_colors->title_color = (uint32_t)title_color;
+      theme_colors->bg_dark_color = (uint32_t)bg_dark_color;
+      theme_colors->bg_light_color = (uint32_t)bg_light_color;
+      theme_colors->border_dark_color = (uint32_t)border_dark_color;
+      theme_colors->border_light_color = (uint32_t)border_light_color;
+      
+      /* Load wallpaper, if required */
+      if (!string_is_empty(wallpaper_file))
+      {
+         char wallpaper_path[PATH_MAX_LENGTH];
+         wallpaper_path[0] = '\0';
+         
+         fill_pathname_resolve_relative(wallpaper_path, theme_path, wallpaper_file, sizeof(wallpaper_path));
+         rgui->show_wallpaper = request_wallpaper(wallpaper_path);
+      }
+   }
+   else
+   {
+      /* Use 'Classic Green' fallback */
+      theme_colors->normal_color = rgui_theme_classic_green.normal_color;
+      theme_colors->hover_color = rgui_theme_classic_green.hover_color;
+      theme_colors->title_color = rgui_theme_classic_green.title_color;
+      theme_colors->bg_dark_color = rgui_theme_classic_green.bg_dark_color;
+      theme_colors->bg_light_color = rgui_theme_classic_green.bg_light_color;
+      theme_colors->border_dark_color = rgui_theme_classic_green.border_dark_color;
+      theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
+   }
+   
+   if (conf)
+      config_file_free(conf);
+   conf = NULL;
+}
+
 static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 {
    rgui_theme_t theme_colors;
    rgui->color_theme = settings->uints.menu_rgui_color_theme;
+   rgui->show_wallpaper = false;
 
    if (rgui->color_theme == RGUI_THEME_CUSTOM)
    {
-      theme_colors.hover_color = settings->uints.menu_entry_hover_color;
-      theme_colors.normal_color = settings->uints.menu_entry_normal_color;
-      theme_colors.title_color = settings->uints.menu_title_color;
-      theme_colors.bg_dark_color = settings->uints.menu_bg_dark_color;
-      theme_colors.bg_light_color = settings->uints.menu_bg_light_color;
-      theme_colors.border_dark_color = settings->uints.menu_border_dark_color;
-      theme_colors.border_light_color = settings->uints.menu_border_light_color;
+      memcpy(rgui->theme_preset_path, settings->paths.path_rgui_theme_preset, sizeof(rgui->theme_preset_path));
+      load_custom_theme(rgui, &theme_colors, settings->paths.path_rgui_theme_preset);
    }
    else
    {
@@ -936,6 +1121,8 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.bg_light_color = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
    rgui->colors.border_dark_color = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
    rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
+   
+   rgui->bg_modified = true;
 }
 
 static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
@@ -1248,7 +1435,13 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
    {
       prepare_rgui_colors(rgui, settings);
-      rgui->bg_modified = true;
+   }
+   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
+   {
+      if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
+      {
+         prepare_rgui_colors(rgui, settings);
+      }
    }
 
    rgui->frame_count++;
@@ -1261,17 +1454,11 @@ static void rgui_render(void *data, bool is_idle)
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
-   char title[255];
-   char title_buf[255];
-   char title_msg[64];
-   char msg[255];
    size_t entries_end             = 0;
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
    uint64_t frame_count           = rgui->frame_count;
-
-   msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
    if (!rgui->force_redraw)
    {
@@ -1365,7 +1552,18 @@ static void rgui_render(void *data, bool is_idle)
    end         = ((old_start + RGUI_TERM_HEIGHT(fb_width, fb_height)) <= (entries_end)) ?
       old_start + RGUI_TERM_HEIGHT(fb_width, fb_height) : entries_end;
 
-   rgui_render_background(rgui);
+   /* Render wallpaper or 'normal' background */
+   if (rgui->show_wallpaper && wallpaper.is_valid)
+   {
+      /* If rgui_render_wallpaper() fails (can't actually happen...)
+       * then use 'normal' background fallback */
+      if (!rgui_render_wallpaper())
+         rgui_render_background(rgui);
+   }
+   else
+   {
+      rgui_render_background(rgui);
+   }
 
    /* If thumbnails are enabled and we are viewing a playlist,
     * switch to thumbnail view mode if either current thumbnail
@@ -1408,6 +1606,14 @@ static void rgui_render(void *data, bool is_idle)
    else
    {
       /* No thumbnail - render usual text */
+      char title[255];
+      char title_buf[255];
+      char core_title[64];
+      char core_title_buf[64];
+      title[0] = title_buf[0] = core_title[0] = core_title_buf[0] = '\0';
+      /* Need this in two places, so cache here */
+      unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
+
       menu_entries_get_title(title, sizeof(title));
 
       ticker.s        = title_buf;
@@ -1417,23 +1623,6 @@ static void rgui_render(void *data, bool is_idle)
       ticker.selected = true;
 
       menu_animation_ticker(&ticker);
-
-      if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
-      {
-         char back_buf[32];
-         char back_msg[32];
-
-         back_buf[0] = back_msg[0] = '\0';
-
-         strlcpy(back_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), sizeof(back_buf));
-         string_to_upper(back_buf);
-         if (rgui_framebuf_data)
-            blit_line(
-                  RGUI_TERM_START_X(fb_width),
-                  RGUI_TERM_START_X(fb_width),
-                  back_msg,
-                  rgui->colors.title_color);
-      }
 
       string_to_upper(title_buf);
 
@@ -1445,13 +1634,21 @@ static void rgui_render(void *data, bool is_idle)
                title_buf, rgui->colors.title_color);
 
       if (settings->bools.menu_core_enable &&
-            menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+            menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
       {
+         ticker.s        = core_title_buf;
+         ticker.len      = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
+         ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
+         ticker.str      = core_title;
+         ticker.selected = true;
+         
+         menu_animation_ticker(&ticker);
+         
          if (rgui_framebuf_data)
             blit_line(
-                  RGUI_TERM_START_X(fb_width),
+                  RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                   (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, title_msg, rgui->colors.hover_color);
+                  RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
       }
 
       if (settings->bools.menu_timedate_enable)
@@ -1469,7 +1666,7 @@ static void rgui_render(void *data, bool is_idle)
 
          if (rgui_framebuf_data)
             blit_line(
-                  RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
+                  timedate_x,
                   (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
       }
@@ -1546,8 +1743,10 @@ static void rgui_render(void *data, bool is_idle)
 
    if (menu_input_dialog_get_display_kb())
    {
+      char msg[255];
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
+      msg[0] = '\0';
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       rgui_render_messagebox(rgui, msg);
@@ -1599,6 +1798,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    *userdata              = rgui;
 
    /* Prepare RGUI colors, to improve performance */
+   rgui->theme_preset_path[0] = '\0';
    prepare_rgui_colors(rgui, settings);
 
    /* 4 extra lines to cache  the checked background */
@@ -1636,7 +1836,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->thumbnail_queue_size = 0;
    /* Ensure that we start with thumbnails disabled */
    rgui->show_thumbnail = false;
-
+   
    return menu;
 
 error:
@@ -1677,6 +1877,9 @@ static void rgui_free(void *data)
 
    if (!string_is_empty(thumbnail.path))
       free(thumbnail.path);
+   
+   if (!string_is_empty(wallpaper.path))
+      free(wallpaper.path);
 }
 
 static void rgui_set_texture(void)

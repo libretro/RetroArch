@@ -6004,32 +6004,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_TITLE_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
+                  MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
+                  PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
@@ -8112,6 +8088,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RECORD_CONFIG;
+         load_content       = false;
+         use_filebrowser    = true;
+         if (!string_is_empty(info->exts))
+            free(info->exts);
+         info->exts         = strdup("cfg");
+         break;
+      case DISPLAYLIST_RGUI_THEME_PRESETS:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         filebrowser_clear_type();
+         info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
          load_content       = false;
          use_filebrowser    = true;
          if (!string_is_empty(info->exts))

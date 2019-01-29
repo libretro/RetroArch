@@ -846,14 +846,6 @@ MSG_HASH(
     "Enable Achievements"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Custom menu entry hover color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Custom menu entry normal color"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
     "False"
     )
@@ -3031,28 +3023,12 @@ MSG_HASH(
      "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Custom menu title color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
-    "Custom menu background dark color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
-    "Custom menu background light color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
-    "Custom menu border dark color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
-    "Custom menu border light color"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
     "Menu Color Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+    "Custom Menu Theme Preset"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
