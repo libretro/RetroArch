@@ -488,8 +488,7 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
          realloc(cheat_manager_state.cheats,
                new_size * sizeof(struct item_cheat));
 
-      if (val)
-         cheat_manager_state.cheats = val;
+      cheat_manager_state.cheats = val ? val : NULL;
    }
 
    if (!cheat_manager_state.cheats)
