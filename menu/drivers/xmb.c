@@ -2962,7 +2962,10 @@ static int xmb_draw_item(
 
    if (!string_is_empty(entry->value))
    {
-      ticker.str   = entry->value;
+      char entry_value[255];
+      menu_entry_get_value(entry, entry_value, sizeof(entry_value));
+      ticker.str   = entry_value;
+
       menu_animation_ticker(&ticker);
    }
 
