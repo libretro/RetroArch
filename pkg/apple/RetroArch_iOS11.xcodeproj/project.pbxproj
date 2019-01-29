@@ -33,7 +33,7 @@
 		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77EE21FD263800103EDE /* AudioToolbox.framework */; };
 		926C77F121FD26E800103EDE /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77F021FD26E800103EDE /* GameController.framework */; };
-		9297844F2200227700989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
+		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
 		92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
 		92CC05A421FE3C1700FF79F0 /* GCDWebServerRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058521FE3C1700FF79F0 /* GCDWebServerRequest.m */; };
@@ -443,6 +443,7 @@
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9204BE251D319EF300BD49DB /* iOS/Resources/PauseIndicatorView.xib in Resources */,
+				929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */,
 				9204BE261D319EF300BD49DB /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -451,7 +452,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9297844F2200227700989A60 /* iOS/Resources/Media.xcassets in Resources */,
 				92CC05CE21FF798F00FF79F0 /* modules in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */,
@@ -637,7 +637,7 @@
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11T;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -728,7 +728,7 @@
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11T;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
