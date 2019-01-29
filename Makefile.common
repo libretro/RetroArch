@@ -1169,36 +1169,27 @@ ifeq ($(HAVE_EGL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   HAVE_SDL=0
-endif
-
-ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/drivers/sdl_gfx.o \
-          input/drivers/sdl_input.o \
-          input/drivers_joypad/sdl_joypad.o \
-          audio/drivers/sdl_audio.o
-
-   ifeq ($(HAVE_GL_CONTEXT), 1)
-     OBJ += gfx/drivers_context/sdl_gl_ctx.o
-   endif
-
-   DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
+   HAVE_SDL_COMMON = 1
+   OBJ += gfx/drivers/sdl2_gfx.o
+   DEFINES += $(SDL2_CFLAGS)
+   LIBS += $(SDL2_LIBS)
+else ifeq ($(HAVE_SDL), 1)
+   HAVE_SDL_COMMON = 1
+   OBJ += gfx/drivers/sdl_gfx.o
+   DEFINES += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
 endif
 
-ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/drivers/sdl2_gfx.o \
-          input/drivers/sdl_input.o \
+ifeq ($(HAVE_SDL_COMMON), 1)
+   OBJ += input/drivers/sdl_input.o \
           input/drivers_joypad/sdl_joypad.o \
           audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_GL_CONTEXT), 1)
-     OBJ += gfx/drivers_context/sdl_gl_ctx.o
+      OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
-   DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
-   LIBS += $(SDL2_LIBS)
-   HAVE_SDL = 0
+   DEFINES += $(BSD_LOCAL_INC)
 endif
 
 ifeq ($(HAVE_XSHM), 1)
