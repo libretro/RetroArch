@@ -19,6 +19,10 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>  // run pkg-config --static --libs xrandr 
+#include <X11/extensions/randr.h>
+#include <X11/extensions/Xrender.h>
 
 #include "../../config.h"
 
