@@ -49,11 +49,15 @@ check_enabled()
 	tmpval="$(eval "printf %s \"\$USER_$2\"")"
 
 	if [ "$tmpval" != 'yes' ]; then
-		eval "HAVE_$2=no"
+		setval="$(eval "printf %s \"\$HAVE_$2\"")"
+		if [ "$setval" != 'no' ]; then
+			eval "HAVE_$2=no"
+			die : "Notice: $4 disabled, $3 support will also be disabled."
+		fi
 		return 0
 	fi
 
-	die 1 "Forced to build with $3 support and $4 disabled. Exiting ..."
+	die 1 "Error: $4 disabled and forced to build with $3 support."
 }
 
 # check_lib:
