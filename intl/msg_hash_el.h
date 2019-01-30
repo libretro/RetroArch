@@ -799,14 +799,6 @@ MSG_HASH(
     "Ενεργοποίηση Επιτευγμάτων"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Χρώμα καταχώρησης μενού όταν το ποντίκι βρίσκεται από πάνω"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Χρώμα καταχώρησης μενού"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
     "Ψευδές"
     )
@@ -2921,10 +2913,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
    "ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Χρώμα τίτλου μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,

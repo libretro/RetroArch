@@ -437,10 +437,6 @@ MSG_HASH(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
       "menu_dynamic_wallpaper_enable")
 MSG_HASH(MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
       "dynamic_wallpapers_directory")
-MSG_HASH(MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-      "menu_entry_hover_color")
-MSG_HASH(MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-      "menu_entry_normal_color")
 MSG_HASH(MENU_ENUM_LABEL_FASTFORWARD_RATIO,
       "fastforward_ratio")
 MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_CORE,
@@ -655,6 +651,8 @@ MSG_HASH(MENU_ENUM_LABEL_MANAGEMENT,
       "database_settings")
 MSG_HASH(MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,
       "rgui_menu_color_theme")
+MSG_HASH(MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
+      "rgui_menu_theme_preset")
 MSG_HASH(MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
       "ozone_menu_color_theme")
 MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
@@ -1129,16 +1127,6 @@ MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_ENABLE,
       "menu_timedate_enable")
 MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_STYLE,
    "menu_timedate_style")
-MSG_HASH(MENU_ENUM_LABEL_TITLE_COLOR,
-      "menu_title_color")
-MSG_HASH(MENU_ENUM_LABEL_BG_DARK_COLOR,
-      "menu_bg_dark_color")
-MSG_HASH(MENU_ENUM_LABEL_BG_LIGHT_COLOR,
-      "menu_bg_light_color")
-MSG_HASH(MENU_ENUM_LABEL_BORDER_DARK_COLOR,
-      "menu_border_dark_color")
-MSG_HASH(MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
-      "menu_border_light_color")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
       "ui_companion_enable")
 MSG_HASH(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
