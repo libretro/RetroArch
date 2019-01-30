@@ -255,14 +255,8 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
-check_enabled DISCORD discord
-
-if [ "$HAVE_DISCORD" != 'no' ]; then
-   # Enable discord by default if it hasn't been disabled by check_enabled.
-   HAVE_DISCORD=yes
-fi
-
-check_enabled QT 'Qt companion'
+check_enabled CXX DISCORD discord 'the C++ compiler is'
+check_enabled CXX QT 'Qt companion' 'the C++ compiler is'
 
 if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
@@ -325,6 +319,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
    fi
 fi
 
+check_enabled THREADS LIBUSB libusb 'threads are'
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
@@ -503,7 +498,8 @@ fi
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
-check_enabled VULKAN vulkan
+check_enabled CXX VULKAN vulkan 'the C++ compiler is'
+check_enabled THREADS VULKAN vulkan 'threads are'
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes
@@ -550,15 +546,7 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
-   HAVE_RPNG=no
-   die : 'Notice: zlib is not available, RPNG will also be disabled.'
-fi
-
-if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_LIBUSB" != 'no' ]; then
-   HAVE_LIBUSB=no
-   die : 'Notice: Threads are not available, libusb will also be disabled.'
-fi
+check_enabled ZLIB RPNG RPNG 'zlib is'
 
 if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
