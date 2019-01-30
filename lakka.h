@@ -24,4 +24,6 @@
 #define LAKKA_UPDATE_DIR     "/storage/.update/"
 #define LAKKA_CONNMAN_DIR    "/storage/.cache/connman/"
 
+#include "switch_performance_profiles.h"
+
 #endif

@@ -290,6 +290,12 @@ static const bool _freetype_supp = true;
 static const bool _freetype_supp = false;
 #endif
 
+#ifdef HAVE_STB_FONT
+static const bool _stbfont_supp = true;
+#else
+static const bool _stbfont_supp = false;
+#endif
+
 #ifdef HAVE_NETWORKING
 static const bool _netplay_supp = true;
 #else
@@ -302,7 +308,7 @@ static const bool _python_supp = true;
 static const bool _python_supp = false;
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 static const bool _cocoa_supp = true;
 #else
 static const bool _cocoa_supp = false;

@@ -25,7 +25,7 @@
 #include "d3dcompiler_common.h"
 #include "../../verbosity.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
 static dylib_t     d3dcompiler_dll;

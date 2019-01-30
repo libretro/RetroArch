@@ -31,15 +31,30 @@ enum ffemu_pix_format
    FFEMU_PIX_ARGB8888
 };
 
+enum streaming_mode
+{
+   STREAMING_MODE_TWITCH = 0,
+   STREAMING_MODE_YOUTUBE,
+   STREAMING_MODE_LOCAL,
+   STREAMING_MODE_CUSTOM
+};
+
 enum record_config_type
 {
    RECORD_CONFIG_TYPE_RECORDING_CUSTOM = 0,
    RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
    RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
    RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
-   RECORD_CONFIG_TYPE_STREAM_YOUTUBE,
-   RECORD_CONFIG_TYPE_STREAM_TWITCH,
-   RECORD_CONFIG_TYPE_STREAM_DISCORD
+   RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_GIF,
+   RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_NETPLAY
+
 };
 
 /* Parameters passed to ffemu_new() */
@@ -66,7 +81,7 @@ struct record_params
    /* Audio channels. */
    unsigned channels;
 
-   enum record_config_type config_type;
+   enum record_config_type preset;
 
    /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;
@@ -187,8 +202,6 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
-bool *recording_driver_get_use_output_dir_ptr(void);
-
 unsigned *recording_driver_get_width(void);
 
 unsigned *recording_driver_get_height(void);
@@ -198,6 +211,18 @@ void recording_driver_free_state(void);
 bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
+
+void recording_driver_update_streaming_url(void);
+
+bool recording_driver_lock_inited(void);
+
+void recording_driver_lock_init(void);
+
+void recording_driver_lock(void);
+
+void recording_driver_unlock(void);
+
+void recording_driver_lock_free(void);
 
 extern void *recording_data;
 

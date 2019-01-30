@@ -37,6 +37,11 @@
 #include <android/log.h>
 #endif
 
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
@@ -62,6 +67,11 @@ static FILE *log_file_fp         = NULL;
 static void* log_file_buf        = NULL;
 static bool main_verbosity       = false;
 static bool log_file_initialized = false;
+
+#ifdef NXLINK
+static Mutex nxlink_mtx;
+bool nxlink_connected = false;
+#endif
 
 void verbosity_enable(void)
 {
@@ -101,6 +111,11 @@ void retro_main_log_file_init(const char *path)
    if (log_file_initialized)
       return;
 
+#ifdef NXLINK
+   if (path == NULL && nxlink_connected)
+       mutexInit(&nxlink_mtx);
+#endif
+
    log_file_fp          = stderr;
    if (path == NULL)
       return;
@@ -108,17 +123,22 @@ void retro_main_log_file_init(const char *path)
    log_file_fp          = (FILE*)fopen_utf8(path, "wb");
    log_file_initialized = true;
 
+#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
    log_file_buf = calloc(1, 0x4000);
    setvbuf(log_file_fp, (char*)log_file_buf, _IOFBF, 0x4000);
+#endif
 }
 
 void retro_main_log_file_deinit(void)
 {
    if (log_file_fp && log_file_fp != stderr)
+   {
       fclose(log_file_fp);
-   if (log_file_buf) free(log_file_buf);
-   log_file_fp = NULL;
+      log_file_fp = NULL;
+   }
+   if (log_file_buf)
+      free(log_file_buf);
    log_file_buf = NULL;
 }
 
@@ -178,7 +198,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
 
    {
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       char buffer[1024];
 #endif
 #ifdef HAVE_FILE_LOGGER
@@ -187,7 +207,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE *fp = stderr;
 #endif
 
-#ifdef HAVE_QT
+#if defined(HAVE_QT) || defined(__WINRT__)
       buffer[0] = '\0';
       vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
@@ -197,8 +217,18 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(fp);
       }
 
+#if defined(HAVE_QT)
       ui_companion_driver_log_msg(buffer);
+#endif
+
+#if defined(__WINRT__)
+      OutputDebugStringA(buffer);
+#endif
 #else
+#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
+          if (nxlink_connected)
+             mutexLock(&nxlink_mtx);
+#endif
       if (fp)
       {
          fprintf(fp, "%s ",
@@ -206,6 +236,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          vfprintf(fp, fmt, ap);
          fflush(fp);
       }
+#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
+      if (nxlink_connected)
+         mutexUnlock(&nxlink_mtx);
+#endif
+
 #endif
    }
 #endif
@@ -287,4 +322,3 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 #endif
-

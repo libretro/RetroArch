@@ -18,6 +18,7 @@
 #include <string/stdstring.h>
 #include "../paths.h"
 
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 
 #ifdef HAVE_CONFIG_H

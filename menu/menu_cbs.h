@@ -44,6 +44,8 @@ enum
 {
    ACTION_OK_DL_DEFAULT = 0,
    ACTION_OK_DL_DROPDOWN_BOX_LIST,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_MUSIC,
@@ -85,10 +87,13 @@ enum
    ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
    ACTION_OK_DL_ACCOUNTS_LIST,
    ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST,
+   ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST,
+   ACTION_OK_DL_ACCOUNTS_TWITCH_LIST,
    ACTION_OK_DL_USER_BINDS_LIST,
    ACTION_OK_DL_CONTENT_LIST,
    ACTION_OK_DL_REMAP_FILE,
    ACTION_OK_DL_RECORD_CONFIGFILE,
+   ACTION_OK_DL_STREAM_CONFIGFILE,
    ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
    ACTION_OK_DL_SUBSYSTEM_ADD_LIST,
    ACTION_OK_DL_SUBSYSTEM_LOAD,
@@ -97,6 +102,7 @@ enum
    ACTION_OK_DL_CHEAT_FILE,
    ACTION_OK_DL_CHEAT_FILE_APPEND,
    ACTION_OK_DL_CORE_LIST,
+   ACTION_OK_DL_SIDELOAD_CORE_LIST,
    ACTION_OK_DL_LAKKA_LIST,
    ACTION_OK_DL_CONFIGURATIONS_LIST,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
@@ -123,6 +129,7 @@ enum
    ACTION_OK_DL_MENU_SETTINGS_LIST,
    ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST,
    ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST,
+   ACTION_OK_DL_MENU_SOUNDS_LIST,
    ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST,
    ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    ACTION_OK_DL_UPDATER_SETTINGS_LIST,
@@ -135,7 +142,8 @@ enum
    ACTION_OK_DL_PRIVACY_SETTINGS_LIST,
    ACTION_OK_DL_MIDI_SETTINGS_LIST,
    ACTION_OK_DL_BROWSE_URL_START,
-   ACTION_OK_DL_CONTENT_SETTINGS
+   ACTION_OK_DL_CONTENT_SETTINGS,
+   ACTION_OK_DL_RGUI_MENU_THEME_PRESET
 };
 
 /* Function callbacks */
@@ -177,38 +185,6 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
-
-int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound);
-
-int setting_action_ok_video_refresh_rate_polled(void *data, bool wraparound);
-
-int setting_action_ok_bind_all(void *data, bool wraparound);
-
-int setting_action_ok_bind_all_save_autoconfig(void *data,
-      bool wraparound);
-
-int setting_action_ok_bind_defaults(void *data, bool wraparound);
-
-int setting_action_left_analog_dpad_mode(void *data, bool wraparound);
-
-int setting_action_left_libretro_device_type(
-      void *data, bool wraparound);
-
-int setting_action_left_bind_device(void *data, bool wraparound);
-
-int setting_action_left_mouse_index(void *data, bool wraparound);
-
-int setting_uint_action_left_custom_viewport_width(
-      void *data, bool wraparound);
-
-int setting_uint_action_left_custom_viewport_height(
-      void *data, bool wraparound);
-
-int setting_string_action_left_driver(void *data,
-      bool wraparound);
-
-int setting_string_action_left_audio_device(
-      void *data, bool wraparound);
 
 /* End of function callbacks */
 
@@ -311,6 +287,9 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx);
 
 int menu_cbs_exit(void);
+
+void cb_generic_download(void *task_data,
+      void *user_data, const char *err);
 
 RETRO_END_DECLS
 

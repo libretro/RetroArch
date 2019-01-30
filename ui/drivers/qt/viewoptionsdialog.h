@@ -24,6 +24,7 @@ public slots:
    void onRejected();
 private slots:
    void onThemeComboBoxIndexChanged(int index);
+   void onThumbnailComboBoxIndexChanged(int index);
    void onHighlightColorChoose();
 private:
    void loadViewOptions();
@@ -37,6 +38,8 @@ private:
    QCheckBox *m_saveLastTabCheckBox;
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
+   QComboBox *m_thumbnailComboBox;
+   QSpinBox *m_thumbnailCacheSpinBox;
    QComboBox *m_startupPlaylistComboBox;
    QPushButton *m_highlightColorPushButton;
    QColor m_highlightColor;

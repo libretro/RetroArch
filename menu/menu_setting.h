@@ -23,6 +23,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <lists/file_list.h>
+
 #include "../setting_list.h"
 
 RETRO_BEGIN_DECLS
@@ -98,7 +100,7 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
  *
  * Get a setting value's string representation.
  **/
-void menu_setting_get_string_representation(void *data, char *s, size_t len);
+void menu_setting_get_string_representation(rarch_setting_t *setting, char *s, size_t len);
 
 /**
  * menu_setting_get_label:

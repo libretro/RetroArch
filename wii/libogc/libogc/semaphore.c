@@ -25,9 +25,7 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #include <stdlib.h>
 #include <errno.h>
@@ -44,7 +42,6 @@ distribution.
 	if(((hndl)==LWP_SEM_NULL) || (LWP_OBJTYPE(hndl)!=LWP_OBJTYPE_SEM))	\
 		return NULL;				\
 }
-
 
 typedef struct _sema_st
 {

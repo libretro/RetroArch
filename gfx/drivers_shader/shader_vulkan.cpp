@@ -22,13 +22,13 @@
 #include <utility>
 #include <algorithm>
 #include <string.h>
-#include <math.h>
 
 #include <compat/strl.h>
 #include <formats/image.h>
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 
 #include "../video_driver.h"
 #include "../../verbosity.h"
@@ -210,9 +210,10 @@ class Framebuffer
       Framebuffer(Framebuffer&&) = delete;
       void operator=(Framebuffer&&) = delete;
 
-      void set_size(DeferredDisposer &disposer, const Size2D &size);
+      void set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
 
       const Size2D &get_size() const { return size; }
+      VkFormat get_format() const { return format; }
       VkImage get_image() const { return image; }
       VkImageView get_view() const { return view; }
       VkFramebuffer get_framebuffer() const { return framebuffer; }
@@ -471,12 +472,12 @@ class Pass
       struct PushConstant
       {
          VkShaderStageFlags stages = 0;
-         vector<uint32_t> buffer; // uint32_t to have correct alignment.
+         vector<uint32_t> buffer; /* uint32_t to have correct alignment. */
       };
       PushConstant push;
 };
 
-// struct here since we're implementing the opaque typedef from C.
+/* struct here since we're implementing the opaque typedef from C. */
 struct vulkan_filter_chain
 {
    public:
@@ -748,7 +749,8 @@ bool vulkan_filter_chain::init_history()
       return true;
    }
 
-   // We don't need to store array element #0, since it's aliased with the actual original.
+   /* We don't need to store array element #0, 
+    * since it's aliased with the actual original. */
    required_images--;
    original_history.reserve(required_images);
    common.original_history.resize(required_images);
@@ -761,8 +763,10 @@ bool vulkan_filter_chain::init_history()
 
    RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", required_images);
 
-   // On first frame, we need to clear the textures to a known state, but we need
-   // a command buffer for that, so just defer to first frame.
+   /* On first frame, we need to clear the textures to 
+    * a known state, but we need
+    * a command buffer for that, so just defer to first frame.
+    */
    require_clear = true;
    return true;
 }
@@ -773,7 +777,7 @@ bool vulkan_filter_chain::init_feedback()
 
    bool use_feedbacks = false;
 
-   // Final pass cannot have feedback.
+   /* Final pass cannot have feedback. */
    for (unsigned i = 0; i < passes.size() - 1; i++)
    {
       bool use_feedback = false;
@@ -877,7 +881,7 @@ bool vulkan_filter_chain::init_ubo()
    vkGetPhysicalDeviceProperties(gpu, &props);
    common.ubo_alignment = props.limits.minUniformBufferOffsetAlignment;
 
-   // Who knows. :)
+   /* Who knows. :) */
    if (common.ubo_alignment == 0)
       common.ubo_alignment = 1;
 
@@ -946,7 +950,7 @@ void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
 void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       const VkViewport &vp)
 {
-   // First frame, make sure our history and feedback textures are in a clean state.
+   /* First frame, make sure our history and feedback textures are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback(cmd);
@@ -989,7 +993,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
 {
    VkImageLayout src_layout = input_texture.layout;
 
-   // Transition input texture to something appropriate.
+   /* Transition input texture to something appropriate. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
       vulkan_image_layout_transition_levels(cmd,
@@ -1009,14 +1013,15 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
    swap(back, tmp);
 
    if (input_texture.width != tmp->get_size().width ||
-         input_texture.height != tmp->get_size().height)
+         input_texture.height != tmp->get_size().height ||
+         (input_texture.format != VK_FORMAT_UNDEFINED && input_texture.format != tmp->get_format()))
    {
-      tmp->set_size(disposer, { input_texture.width, input_texture.height });
+      tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
    }
 
    tmp->copy(cmd, input_texture.image, src_layout);
 
-   // Transition input texture back.
+   /* Transition input texture back. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
       vulkan_image_layout_transition_levels(cmd,
@@ -1029,16 +1034,17 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
    }
 
-   // Should ring buffer, but we don't have *that* many passes.
+   /* Should ring buffer, but we don't have *that* many passes. */
    move_backward(begin(original_history), end(original_history) - 1, end(original_history));
    swap(original_history.front(), tmp);
 }
 
 void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
 {
-   // If we need to keep old frames, copy it after fragment is complete.
-   // TODO: We can improve pipelining by figuring out which pass is the last that reads from
-   // the history and dispatch the copy earlier.
+   /* If we need to keep old frames, copy it after fragment is complete.
+    * TODO: We can improve pipelining by figuring out which 
+    * pass is the last that reads from
+    * the history and dispatch the copy earlier. */
    if (!original_history.empty())
    {
       DeferredDisposer disposer(deferred_calls[current_sync_index]);
@@ -1049,7 +1055,7 @@ void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
 void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
-   // First frame, make sure our history and feedback textures are in a clean state.
+   /* First frame, make sure our history and feedback textures are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback(cmd);
@@ -1089,7 +1095,7 @@ void vulkan_filter_chain::build_viewport_pass(
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
 
-   // For feedback FBOs, swap current and previous.
+   /* For feedback FBOs, swap current and previous. */
    for (auto &pass : passes)
       pass->end_frame();
 }
@@ -1104,12 +1110,12 @@ StaticTexture::StaticTexture(string id,
       bool linear,
       bool mipmap,
       vulkan_filter_chain_address address)
-   : id(move(id)),
-     device(device),
+   : device(device),
      image(image),
      view(view),
      memory(memory),
-     buffer(move(buffer))
+     buffer(move(buffer)),
+     id(move(id))
 {
    texture.filter = linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
    texture.mip_filter =
@@ -1305,7 +1311,7 @@ bool Pass::init_pipeline_layout()
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
 
-   // Main UBO.
+   /* Main UBO. */
    VkShaderStageFlags ubo_mask = 0;
    if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
       ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
@@ -1320,7 +1326,7 @@ bool Pass::init_pipeline_layout()
       desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
    }
 
-   // Semantic textures.
+   /* Semantic textures. */
    for (auto &semantic : reflection.semantic_textures)
    {
       for (auto &texture : semantic)
@@ -1355,7 +1361,7 @@ bool Pass::init_pipeline_layout()
    layout_info.setLayoutCount             = 1;
    layout_info.pSetLayouts                = &set_layout;
 
-   // Push constants
+   /* Push constants */
    VkPushConstantRange push_range = {};
    if (reflection.push_constant_stage_mask && reflection.push_constant_size)
    {
@@ -1405,12 +1411,12 @@ bool Pass::init_pipeline()
    if (!init_pipeline_layout())
       return false;
 
-   // Input assembly
+   /* Input assembly */
    VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-   // VAO state
+   /* VAO state */
    VkVertexInputAttributeDescription attributes[2] = {{0}};
    VkVertexInputBindingDescription binding = {0};
 
@@ -1434,7 +1440,7 @@ bool Pass::init_pipeline()
    vertex_input.vertexAttributeDescriptionCount = 2;
    vertex_input.pVertexAttributeDescriptions    = attributes;
 
-   // Raster state
+   /* Raster state */
    VkPipelineRasterizationStateCreateInfo raster = { 
       VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
    raster.polygonMode = VK_POLYGON_MODE_FILL;
@@ -1445,7 +1451,7 @@ bool Pass::init_pipeline()
    raster.depthBiasEnable = false;
    raster.lineWidth = 1.0f;
 
-   // Blend state
+   /* Blend state */
    VkPipelineColorBlendAttachmentState blend_attachment = {0};
    VkPipelineColorBlendStateCreateInfo blend = { 
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
@@ -1454,13 +1460,13 @@ bool Pass::init_pipeline()
    blend.attachmentCount           = 1;
    blend.pAttachments              = &blend_attachment;
 
-   // Viewport state
+   /* Viewport state */
    VkPipelineViewportStateCreateInfo viewport = { 
       VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
    viewport.viewportCount = 1;
    viewport.scissorCount  = 1;
 
-   // Depth-stencil state
+   /* Depth-stencil state */
    VkPipelineDepthStencilStateCreateInfo depth_stencil = { 
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
    depth_stencil.depthTestEnable       = false;
@@ -1470,12 +1476,12 @@ bool Pass::init_pipeline()
    depth_stencil.minDepthBounds        = 0.0f;
    depth_stencil.maxDepthBounds        = 1.0f;
 
-   // Multisample state
+   /* Multisample state */
    VkPipelineMultisampleStateCreateInfo multisample = { 
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-   // Dynamic state
+   /* Dynamic state */
    VkPipelineDynamicStateCreateInfo dynamic = { 
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
    static const VkDynamicState dynamics[] = { 
@@ -1483,7 +1489,7 @@ bool Pass::init_pipeline()
    dynamic.pDynamicStates    = dynamics;
    dynamic.dynamicStateCount = sizeof(dynamics) / sizeof(dynamics[0]);
 
-   // Shaders
+   /* Shaders */
    VkPipelineShaderStageCreateInfo shader_stages[2] = {
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
@@ -1536,16 +1542,18 @@ CommonResources::CommonResources(VkDevice device,
       const VkPhysicalDeviceMemoryProperties &memory_properties)
    : device(device)
 {
-   // The final pass uses an MVP designed for [0, 1] range VBO.
-   // For in-between passes, we just go with identity matrices, so keep it simple.
+   /* The final pass uses an MVP designed for [0, 1] range VBO.
+    * For in-between passes, we just go with identity matrices, 
+    * so keep it simple.
+    */
    const float vbo_data[] = {
-      // Offscreen
+      /* Offscreen */
       -1.0f, -1.0f, 0.0f, 0.0f,
       -1.0f, +1.0f, 0.0f, 1.0f,
        1.0f, -1.0f, 1.0f, 0.0f,
        1.0f, +1.0f, 1.0f, 1.0f,
 
-       // Final
+       /* Final */
       0.0f,  0.0f, 0.0f, 0.0f,
       0.0f, +1.0f, 0.0f, 1.0f,
       1.0f,  0.0f, 1.0f, 0.0f,
@@ -1654,12 +1662,12 @@ void Pass::allocate_buffers()
 {
    if (reflection.ubo_stage_mask)
    {
-      // Align
+      /* Align */
       common->ubo_offset = (common->ubo_offset + common->ubo_alignment - 1) &
          ~(common->ubo_alignment - 1);
       ubo_offset = common->ubo_offset;
 
-      // Allocate
+      /* Allocate */
       common->ubo_offset += reflection.ubo_size;
    }
 }
@@ -1716,7 +1724,7 @@ bool Pass::build()
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
-   // Filter out parameters which we will never use anyways.
+   /* Filter out parameters which we will never use anyways. */
    filtered_parameters.clear();
 
    for (i = 0; i < reflection.semantic_float_parameters.size(); i++)
@@ -1834,7 +1842,7 @@ void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
 {
    auto &refl = reflection.semantic_float_parameters[index];
 
-   // We will have filtered out stale parameters.
+   /* We will have filtered out stale parameters. */
    if (data && refl.uniform)
       *reinterpret_cast<float*>(data + refl.ubo_offset) = value;
 
@@ -1873,7 +1881,7 @@ void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
-   // MVP
+   /* MVP */
    if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
@@ -1892,7 +1900,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          build_identity_matrix(reinterpret_cast<float *>(push.buffer.data() + (offset >> 2)));
    }
 
-   // Output information
+   /* Output information */
    build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
@@ -1901,21 +1909,21 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
          frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
 
-   // Standard inputs
+   /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
-   // ORIGINAL_HISTORY[0] is an alias of ORIGINAL.
+   /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
    build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
-   // Parameters.
+   /* Parameters. */
    for (auto &param : filtered_parameters)
    {
       float value = common->shader_preset->parameters[param.index].current;
       build_semantic_parameter(buffer, param.semantic_index, value);
    }
 
-   // Previous inputs.
+   /* Previous inputs. */
    unsigned i = 0;
    for (auto &texture : common->original_history)
    {
@@ -1925,7 +1933,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       i++;
    }
 
-   // Previous passes.
+   /* Previous passes. */
    i = 0;
    for (auto &texture : common->pass_outputs)
    {
@@ -1935,7 +1943,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       i++;
    }
 
-   // Feedback FBOs.
+   /* Feedback FBOs. */
    i = 0;
    for (auto &texture : common->framebuffer_feedback)
    {
@@ -1945,7 +1953,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       i++;
    }
 
-   // LUTs.
+   /* LUTs. */
    i = 0;
    for (auto &lut : common->luts)
    {
@@ -1994,10 +2002,10 @@ void Pass::build_commands(
             reflection.ubo_size);
    }
 
-   // The final pass is always executed inside 
-   // another render pass since the frontend will 
-   // want to overlay various things on top for 
-   // the passes that end up on-screen.
+   /* The final pass is always executed inside 
+    * another render pass since the frontend will 
+    * want to overlay various things on top for 
+    * the passes that end up on-screen. */
    if (!final_pass)
    {
       /* Render. */
@@ -2083,7 +2091,7 @@ void Pass::build_commands(
          framebuffer->generate_mips(cmd);
       else
       {
-         // Barrier to sync with next pass.
+         /* Barrier to sync with next pass. */
          vulkan_image_layout_transition_levels(
                cmd,
                framebuffer->get_image(),VK_REMAINING_MIP_LEVELS,
@@ -2102,8 +2110,8 @@ Framebuffer::Framebuffer(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       const Size2D &max_size, VkFormat format,
       unsigned max_levels) :
-   device(device),
    memory_properties(mem_props),
+   device(device),
    size(max_size),
    format(format),
    max_levels(max(max_levels, 1u))
@@ -2145,19 +2153,20 @@ void Framebuffer::clear(VkCommandBuffer cmd)
 void Framebuffer::generate_mips(VkCommandBuffer cmd)
 {
    unsigned i;
-   // This is run every frame, so make sure
-   // we aren't opting into the "lazy" way of doing this. :)
+   /* This is run every frame, so make sure
+    * we aren't opting into the "lazy" way of doing this. :) */
    VkImageMemoryBarrier barriers[2] = {
       { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
       { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
    };
 
-   // First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
-   // This should allow the surface to stay compressed.
-   // All subsequent mip-layers are now transferred into DST_OPTIMAL from
-   // UNDEFINED at this point.
+   /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
+    * This should allow the surface to stay compressed.
+    * All subsequent mip-layers are now transferred into DST_OPTIMAL from
+    * UNDEFINED at this point.
+    */
 
-   // Input
+   /* Input */
    barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
    barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
    barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -2170,7 +2179,7 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
    barriers[0].subresourceRange.levelCount   = 1;
    barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
 
-   // The rest of the mip chain
+   /* The rest of the mip chain */
    barriers[1].srcAccessMask                 = 0;
    barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
    barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -2193,8 +2202,9 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
 
    for (i = 1; i < levels; i++)
    {
-      // For subsequent passes, we have to transition from DST_OPTIMAL to SRC_OPTIMAL,
-      // but only do so one mip-level at a time.
+      /* For subsequent passes, we have to transition 
+       * from DST_OPTIMAL to SRC_OPTIMAL,
+       * but only do so one mip-level at a time. */
       if (i > 1)
       {
          barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -2238,10 +2248,15 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
             1, &blit_region, VK_FILTER_LINEAR);
    }
 
-   // We are now done, and we have all mip-levels except the last in TRANSFER_SRC_OPTIMAL,
-   // and the last one still on TRANSFER_DST_OPTIMAL, so do a final barrier which
-   // moves everything to SHADER_READ_ONLY_OPTIMAL in one go along with the execution barrier to next pass.
-   // Read-to-read memory barrier, so only need execution barrier for first transition.
+   /* We are now done, and we have all mip-levels except 
+    * the last in TRANSFER_SRC_OPTIMAL,
+    * and the last one still on TRANSFER_DST_OPTIMAL, 
+    * so do a final barrier which
+    * moves everything to SHADER_READ_ONLY_OPTIMAL in 
+    * one go along with the execution barrier to next pass.
+    * Read-to-read memory barrier, so only need execution 
+    * barrier for first transition.
+    */
    barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
    barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
    barriers[0].subresourceRange.baseMipLevel = 0;
@@ -2249,7 +2264,7 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
    barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    barriers[0].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-   // This is read-after-write barrier.
+   /* This is read-after-write barrier. */
    barriers[1].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
    barriers[1].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
    barriers[1].subresourceRange.baseMipLevel = levels - 1;
@@ -2265,8 +2280,10 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
          0, nullptr,
          2, barriers);
 
-   // Next pass will wait for ALL_GRAPHICS_BIT, and since we have dstStage as FRAGMENT_SHADER,
-   // the dependency chain will ensure we don't start next pass until the mipchain is complete.
+   /* Next pass will wait for ALL_GRAPHICS_BIT, and since 
+    * we have dstStage as FRAGMENT_SHADER,
+    * the dependency chain will ensure we don't start 
+    * next pass until the mipchain is complete. */
 }
 
 void Framebuffer::copy(VkCommandBuffer cmd,
@@ -2333,11 +2350,12 @@ void Framebuffer::init(DeferredDisposer *disposer)
          memory_properties, mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-   // Can reuse already allocated memory.
+   /* Can reuse already allocated memory. */
    if (memory.size < mem_reqs.size || memory.type != alloc.memoryTypeIndex)
    {
-      // Memory might still be in use since we don't want to totally stall
-      // the world for framebuffer recreation.
+      /* Memory might still be in use since we don't want 
+       * to totally stall
+       * the world for framebuffer recreation. */
       if (memory.memory != VK_NULL_HANDLE && disposer)
       {
          auto d = device;
@@ -2382,8 +2400,8 @@ void Framebuffer::init_render_pass()
    VkAttachmentReference color_ref = { 0, 
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-   // We will always write to the entire framebuffer,
-   // so we don't really need to clear.
+   /* We will always write to the entire framebuffer,
+    * so we don't really need to clear. */
    VkAttachmentDescription attachment = {0};
    attachment.format            = format;
    attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
@@ -2422,21 +2440,23 @@ void Framebuffer::init_framebuffer()
    vkCreateFramebuffer(device, &info, nullptr, &framebuffer);
 }
 
-void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
+void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
 {
    this->size = size;
+   if (format != VK_FORMAT_UNDEFINED)
+	  this->format = format;
 
-   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %u x %u.\n",
-         size.width, size.height);
+   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %u x %u (format: %u).\n",
+         size.width, size.height, (unsigned)this->format);
 
    {
-      // The current framebuffers, etc, might still be in use
-      // so defer deletion.
-      // We'll most likely be able to reuse the memory,
-      // so don't free it here.
-      //
-      // Fake lambda init captures for C++11.
-      //
+      /* The current framebuffers, etc, might still be in use
+       * so defer deletion.
+       * We'll most likely be able to reuse the memory,
+       * so don't free it here.
+       *
+       * Fake lambda init captures for C++11.
+       */
       auto d   = device;
       auto i   = image;
       auto v   = view;
@@ -2474,7 +2494,7 @@ Framebuffer::~Framebuffer()
       vkFreeMemory(device, memory.memory, nullptr);
 }
 
-// C glue
+/* C glue */
 vulkan_filter_chain_t *vulkan_filter_chain_new(
       const vulkan_filter_chain_create_info *info)
 {
@@ -2866,7 +2886,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          if (itr != shader->parameters + shader->num_parameters)
          {
-            // Allow duplicate #pragma parameter, but only if they are exactly the same.
+            /* Allow duplicate #pragma parameter, but 
+             * only if they are exactly the same. */
             if (meta_param.desc != itr->desc ||
                 meta_param.initial != itr->initial ||
                 meta_param.minimum != itr->minimum ||
@@ -2909,7 +2930,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (!output.meta.name.empty())
          chain->set_pass_name(i, output.meta.name.c_str());
 
-      // Preset overrides.
+      /* Preset overrides. */
       if (*pass->alias)
          chain->set_pass_name(i, pass->alias);
 
@@ -2924,9 +2945,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       pass_info.address    = wrap_to_address(pass->wrap);
       pass_info.max_levels = 1;
 
-      // TODO: Expose max_levels in slangp.
-      // CGP format is a bit awkward in that it uses mipmap_input,
-      // so we much check if next pass needs the mipmapping.
+      /* TODO: Expose max_levels in slangp.
+       * CGP format is a bit awkward in that it uses mipmap_input,
+       * so we much check if next pass needs the mipmapping.
+       */
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
@@ -2935,7 +2957,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
-      // Set a reasonable default.
+      /* Set a reasonable default. */
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
          output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
 
@@ -2967,13 +2989,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       }
       else
       {
-         // Preset overrides shader.
-         // Kinda ugly ...
+         /* Preset overrides shader.
+          * Kinda ugly ... */
          if (pass->fbo.srgb_fbo)
             output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
          else if (pass->fbo.fp_fbo)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
-         ///
 
          pass_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
          RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
@@ -3159,4 +3180,3 @@ void vulkan_filter_chain_end_frame(
 {
    chain->end_frame(cmd);
 }
-

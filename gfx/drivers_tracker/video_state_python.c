@@ -104,7 +104,6 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
    return PyLong_FromLong(data[addr]);
 }
 
-
 static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
    unsigned user, key, i;

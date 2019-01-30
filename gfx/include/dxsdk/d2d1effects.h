@@ -12,7 +12,6 @@
 #ifndef _D2D1_EFFECTS_
 #define _D2D1_EFFECTS_
 
-
            
 /*#include <winapifamily.h>*/
 
@@ -62,7 +61,6 @@ DEFINE_GUID(CLSID_D2D1Tile,                     0xB0784138, 0x3B76, 0x4bc5, 0xB1
 DEFINE_GUID(CLSID_D2D1Turbulence,               0xCF2BB6AE, 0x889A, 0x4ad7, 0xBA, 0x29, 0xA2, 0xFD, 0x73, 0x2C, 0x9F, 0xC9);
 DEFINE_GUID(CLSID_D2D1UnPremultiply,            0xfb9ac489, 0xad8d, 0x41ed, 0x99, 0x99, 0xbb, 0x63, 0x47, 0xd1, 0x10, 0xf7);
 
-
 /// <summary>
 /// Specifies how the Crop effect handles the crop rectangle falling on fractional
 /// pixel coordinates.
@@ -74,7 +72,6 @@ typedef enum D2D1_BORDER_MODE
     D2D1_BORDER_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_BORDER_MODE;
-
 
 /// <summary>
 /// Specifies the color channel the Displacement map effect extracts the intensity
@@ -89,7 +86,6 @@ typedef enum D2D1_CHANNEL_SELECTOR
     D2D1_CHANNEL_SELECTOR_FORCE_DWORD = 0xffffffff
 
 } D2D1_CHANNEL_SELECTOR;
-
 
 /// <summary>
 /// Speficies whether a flip and/or rotation operation should be performed by the
@@ -108,7 +104,6 @@ typedef enum D2D1_BITMAPSOURCE_ORIENTATION
     D2D1_BITMAPSOURCE_ORIENTATION_FORCE_DWORD = 0xffffffff
 
 } D2D1_BITMAPSOURCE_ORIENTATION;
-
 
 /// <summary>
 /// The enumeration of the Gaussian Blur effect's top level properties.
@@ -145,7 +140,6 @@ typedef enum D2D1_GAUSSIANBLUR_OPTIMIZATION
     D2D1_GAUSSIANBLUR_OPTIMIZATION_FORCE_DWORD = 0xffffffff
 
 } D2D1_GAUSSIANBLUR_OPTIMIZATION;
-
 
 /// <summary>
 /// The enumeration of the Directional Blur effect's top level properties.
@@ -189,7 +183,6 @@ typedef enum D2D1_DIRECTIONALBLUR_OPTIMIZATION
 
 } D2D1_DIRECTIONALBLUR_OPTIMIZATION;
 
-
 /// <summary>
 /// The enumeration of the Shadow effect's top level properties.
 /// </summary>
@@ -225,7 +218,6 @@ typedef enum D2D1_SHADOW_OPTIMIZATION
     D2D1_SHADOW_OPTIMIZATION_FORCE_DWORD = 0xffffffff
 
 } D2D1_SHADOW_OPTIMIZATION;
-
 
 /// <summary>
 /// The enumeration of the Blend effect's top level properties.
@@ -274,7 +266,6 @@ typedef enum D2D1_BLEND_MODE
 
 } D2D1_BLEND_MODE;
 
-
 /// <summary>
 /// The enumeration of the Saturation effect's top level properties.
 /// </summary>
@@ -290,7 +281,6 @@ typedef enum D2D1_SATURATION_PROP
 
 } D2D1_SATURATION_PROP;
 
-
 /// <summary>
 /// The enumeration of the Hue Rotation effect's top level properties.
 /// </summary>
@@ -305,7 +295,6 @@ typedef enum D2D1_HUEROTATION_PROP
     D2D1_HUEROTATION_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_HUEROTATION_PROP;
-
 
 /// <summary>
 /// The enumeration of the Color Matrix effect's top level properties.
@@ -341,7 +330,6 @@ typedef enum D2D1_COLORMATRIX_ALPHA_MODE
     D2D1_COLORMATRIX_ALPHA_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_COLORMATRIX_ALPHA_MODE;
-
 
 /// <summary>
 /// The enumeration of the Bitmap Source effect's top level properties.
@@ -407,7 +395,6 @@ typedef enum D2D1_BITMAPSOURCE_ALPHA_MODE
 
 } D2D1_BITMAPSOURCE_ALPHA_MODE;
 
-
 /// <summary>
 /// The enumeration of the Composite effect's top level properties.
 /// </summary>
@@ -422,7 +409,6 @@ typedef enum D2D1_COMPOSITE_PROP
     D2D1_COMPOSITE_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_COMPOSITE_PROP;
-
 
 /// <summary>
 /// The enumeration of the 3D Transform effect's top level properties.
@@ -461,7 +447,6 @@ typedef enum D2D1_3DTRANSFORM_INTERPOLATION_MODE
     D2D1_3DTRANSFORM_INTERPOLATION_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_3DTRANSFORM_INTERPOLATION_MODE;
-
 
 /// <summary>
 /// The enumeration of the 3D Perspective Transform effect's top level properties.
@@ -531,7 +516,6 @@ typedef enum D2D1_3DPERSPECTIVETRANSFORM_INTERPOLATION_MODE
 
 } D2D1_3DPERSPECTIVETRANSFORM_INTERPOLATION_MODE;
 
-
 /// <summary>
 /// The enumeration of the 2D Affine Transform effect's top level properties.
 /// </summary>
@@ -577,7 +561,6 @@ typedef enum D2D1_2DAFFINETRANSFORM_INTERPOLATION_MODE
 
 } D2D1_2DAFFINETRANSFORM_INTERPOLATION_MODE;
 
-
 /// <summary>
 /// The enumeration of the DPI Compensation effect's top level properties.
 /// </summary>
@@ -616,7 +599,6 @@ typedef enum D2D1_DPICOMPENSATION_INTERPOLATION_MODE
     D2D1_DPICOMPENSATION_INTERPOLATION_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_DPICOMPENSATION_INTERPOLATION_MODE;
-
 
 /// <summary>
 /// The enumeration of the Scale effect's top level properties.
@@ -668,7 +650,6 @@ typedef enum D2D1_SCALE_INTERPOLATION_MODE
     D2D1_SCALE_INTERPOLATION_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_SCALE_INTERPOLATION_MODE;
-
 
 /// <summary>
 /// The enumeration of the Turbulence effect's top level properties.
@@ -729,7 +710,6 @@ typedef enum D2D1_TURBULENCE_NOISE
 
 } D2D1_TURBULENCE_NOISE;
 
-
 /// <summary>
 /// The enumeration of the Displacement Map effect's top level properties.
 /// </summary>
@@ -756,7 +736,6 @@ typedef enum D2D1_DISPLACEMENTMAP_PROP
     D2D1_DISPLACEMENTMAP_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_DISPLACEMENTMAP_PROP;
-
 
 /// <summary>
 /// The enumeration of the Color Management effect's top level properties.
@@ -820,7 +799,6 @@ typedef enum D2D1_COLORMANAGEMENT_QUALITY
 
 } D2D1_COLORMANAGEMENT_QUALITY;
 
-
 /// <summary>
 /// Specifies which ICC rendering intent the Color management effect should use.
 /// </summary>
@@ -833,7 +811,6 @@ typedef enum D2D1_COLORMANAGEMENT_RENDERING_INTENT
     D2D1_COLORMANAGEMENT_RENDERING_INTENT_FORCE_DWORD = 0xffffffff
 
 } D2D1_COLORMANAGEMENT_RENDERING_INTENT;
-
 
 /// <summary>
 /// The enumeration of the Histogram effect's top level properties.
@@ -861,7 +838,6 @@ typedef enum D2D1_HISTOGRAM_PROP
     D2D1_HISTOGRAM_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_HISTOGRAM_PROP;
-
 
 /// <summary>
 /// The enumeration of the Point-Specular effect's top level properties.
@@ -925,7 +901,6 @@ typedef enum D2D1_POINTSPECULAR_SCALE_MODE
     D2D1_POINTSPECULAR_SCALE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_POINTSPECULAR_SCALE_MODE;
-
 
 /// <summary>
 /// The enumeration of the Spot-Specular effect's top level properties.
@@ -1008,7 +983,6 @@ typedef enum D2D1_SPOTSPECULAR_SCALE_MODE
 
 } D2D1_SPOTSPECULAR_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Distant-Specular effect's top level properties.
 /// </summary>
@@ -1078,7 +1052,6 @@ typedef enum D2D1_DISTANTSPECULAR_SCALE_MODE
 
 } D2D1_DISTANTSPECULAR_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Point-Diffuse effect's top level properties.
 /// </summary>
@@ -1135,7 +1108,6 @@ typedef enum D2D1_POINTDIFFUSE_SCALE_MODE
     D2D1_POINTDIFFUSE_SCALE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_POINTDIFFUSE_SCALE_MODE;
-
 
 /// <summary>
 /// The enumeration of the Spot-Diffuse effect's top level properties.
@@ -1212,7 +1184,6 @@ typedef enum D2D1_SPOTDIFFUSE_SCALE_MODE
 
 } D2D1_SPOTDIFFUSE_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Distant-Diffuse effect's top level properties.
 /// </summary>
@@ -1276,7 +1247,6 @@ typedef enum D2D1_DISTANTDIFFUSE_SCALE_MODE
 
 } D2D1_DISTANTDIFFUSE_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Flood effect's top level properties.
 /// </summary>
@@ -1291,7 +1261,6 @@ typedef enum D2D1_FLOOD_PROP
     D2D1_FLOOD_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_FLOOD_PROP;
-
 
 /// <summary>
 /// The enumeration of the Linear Transfer effect's top level properties.
@@ -1379,7 +1348,6 @@ typedef enum D2D1_LINEARTRANSFER_PROP
     D2D1_LINEARTRANSFER_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_LINEARTRANSFER_PROP;
-
 
 /// <summary>
 /// The enumeration of the Gamma Transfer effect's top level properties.
@@ -1492,7 +1460,6 @@ typedef enum D2D1_GAMMATRANSFER_PROP
 
 } D2D1_GAMMATRANSFER_PROP;
 
-
 /// <summary>
 /// The enumeration of the Table Transfer effect's top level properties.
 /// </summary>
@@ -1556,7 +1523,6 @@ typedef enum D2D1_TABLETRANSFER_PROP
 
 } D2D1_TABLETRANSFER_PROP;
 
-
 /// <summary>
 /// The enumeration of the Discrete Transfer effect's top level properties.
 /// </summary>
@@ -1619,7 +1585,6 @@ typedef enum D2D1_DISCRETETRANSFER_PROP
     D2D1_DISCRETETRANSFER_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_DISCRETETRANSFER_PROP;
-
 
 /// <summary>
 /// The enumeration of the Convolve Matrix effect's top level properties.
@@ -1708,7 +1673,6 @@ typedef enum D2D1_CONVOLVEMATRIX_SCALE_MODE
 
 } D2D1_CONVOLVEMATRIX_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Brightness effect's top level properties.
 /// </summary>
@@ -1729,7 +1693,6 @@ typedef enum D2D1_BRIGHTNESS_PROP
     D2D1_BRIGHTNESS_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_BRIGHTNESS_PROP;
-
 
 /// <summary>
 /// The enumeration of the Arithmetic Composite effect's top level properties.
@@ -1752,7 +1715,6 @@ typedef enum D2D1_ARITHMETICCOMPOSITE_PROP
 
 } D2D1_ARITHMETICCOMPOSITE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Crop effect's top level properties.
 /// </summary>
@@ -1773,7 +1735,6 @@ typedef enum D2D1_CROP_PROP
     D2D1_CROP_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_CROP_PROP;
-
 
 /// <summary>
 /// The enumeration of the Border effect's top level properties.
@@ -1796,7 +1757,6 @@ typedef enum D2D1_BORDER_PROP
 
 } D2D1_BORDER_PROP;
 
-
 /// <summary>
 /// The edge mode for the Border effect.
 /// </summary>
@@ -1808,7 +1768,6 @@ typedef enum D2D1_BORDER_EDGE_MODE
     D2D1_BORDER_EDGE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_BORDER_EDGE_MODE;
-
 
 /// <summary>
 /// The enumeration of the Morphology effect's top level properties.
@@ -1845,7 +1804,6 @@ typedef enum D2D1_MORPHOLOGY_MODE
 
 } D2D1_MORPHOLOGY_MODE;
 
-
 /// <summary>
 /// The enumeration of the Tile effect's top level properties.
 /// </summary>
@@ -1860,7 +1818,6 @@ typedef enum D2D1_TILE_PROP
     D2D1_TILE_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_TILE_PROP;
-
 
 /// <summary>
 /// The enumeration of the Atlas effect's top level properties.
@@ -1883,7 +1840,6 @@ typedef enum D2D1_ATLAS_PROP
 
 } D2D1_ATLAS_PROP;
 
-
 /// <summary>
 /// The enumeration of the Opacity Metadata effect's top level properties.
 /// </summary>
@@ -1898,7 +1854,6 @@ typedef enum D2D1_OPACITYMETADATA_PROP
     D2D1_OPACITYMETADATA_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_OPACITYMETADATA_PROP;
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

@@ -17,7 +17,6 @@
 #include "../../command.h"
 #include "string.h"
 
-
 #ifdef HAVE_LIBNX
 
 #ifndef MAX_PADS
@@ -154,21 +153,25 @@ static void switch_joypad_destroy(void)
 
 #ifdef HAVE_LIBNX
 int lastMode = 0; // 0 = handheld, 1 = whatever
-
 static void switch_joypad_poll(void)
 {
    settings_t *settings = config_get_ptr();
 
    hidScanInput();
 
-   // TODO: Options via menu
-   /*if (settings->bools.split_joycon && !hidGetHandheldMode())
+   if (!hidGetHandheldMode())
    {
       if (lastMode != 1)
       {
-         RARCH_LOG("[HID] Enable Split Joycon!\n");
-         hidSetNpadJoyAssignmentModeSingleByDefault(CONTROLLER_PLAYER_1);
-         hidSetNpadJoyAssignmentModeSingleByDefault(CONTROLLER_PLAYER_2);
+         int i = 0;
+         for(i = 0; i < MAX_USERS; i += 2){
+            if(settings->uints.input_split_joycon[i]) // CONTROLLER_PLAYER_X, X == i++
+            {
+               hidSetNpadJoyAssignmentModeSingleByDefault(i);
+               hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+            }
+         }
          lastMode = 1;
       }
    }
@@ -176,12 +179,18 @@ static void switch_joypad_poll(void)
    {
       if (lastMode != 0)
       {
-         RARCH_LOG("[HID] Disable Split Joycon!\n");
-         hidSetNpadJoyAssignmentModeDual(CONTROLLER_PLAYER_1);
-         hidSetNpadJoyAssignmentModeDual(CONTROLLER_PLAYER_2);
+         int i = 0;
+         for(i = 0; i < MAX_USERS; i += 2){
+            if(settings->uints.input_split_joycon[i]) // CONTROLLER_PLAYER_X, X == i++
+            {
+               hidSetNpadJoyAssignmentModeDual(i);
+               hidSetNpadJoyAssignmentModeDual(i + 1);
+               hidMergeSingleJoyAsDualJoy(i, i + 1);
+            }
+         }
          lastMode = 0;
       }
-   }*/
+   }
 
    for (int i = 0; i < MAX_PADS; i++)
    {

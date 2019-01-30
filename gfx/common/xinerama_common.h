@@ -30,4 +30,3 @@ unsigned xinerama_get_monitor(Display *dpy,
       int x, int y, int w, int h);
 
 #endif
-

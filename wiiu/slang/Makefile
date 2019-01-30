@@ -11,23 +11,15 @@ SLANG_DIR = slang-shaders
 
 BLACKLIST :=
 BLACKLIST += $(SLANG_DIR)/dithering/shaders/bayer-matrix-dithering.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/old/scalefx-pass3.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/old/scalefx-pass7.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/scalefx-pass1.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/scalefx-pass2.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/scalefx-pass4.slang
-BLACKLIST += $(SLANG_DIR)/scalefx/shaders/scalefx-pass4-hybrid.slang
 BLACKLIST += $(SLANG_DIR)/test/decode-format.slang
 BLACKLIST += $(SLANG_DIR)/test/format.slang
-BLACKLIST += $(wildcard $(SLANG_DIR)/crt/shaders/crt-royale/src/*.slang)
-BLACKLIST += $(SLANG_DIR)/slang-shaders/blurs/blur12x12shared.slang
 BLACKLIST += $(SLANG_DIR)/blurs/blur5x5-gamma-encode-every-fbo.slang
 BLACKLIST += $(SLANG_DIR)/blurs/blur12x12shared.slang
 BLACKLIST += $(SLANG_DIR)/ntsc/shaders/ntsc-xot.slang
-BLACKLIST += $(SLANG_DIR)/nedi/shaders/nedi-pass0.slang
-BLACKLIST += $(SLANG_DIR)/nedi/shaders/nedi-pass1.slang
-BLACKLIST += $(SLANG_DIR)/nedi/shaders/nedi-pass2.slang
+BLACKLIST += $(SLANG_DIR)/retro/shaders/bandlimit-pixel.slang
+BLACKLIST += $(wildcard $(SLANG_DIR)/vhs/shaders/gristleVHS/*.slang)
 BLACKLIST += $(wildcard $(SLANG_DIR)/anti-aliasing/shaders/smaa/*.slang)
+BLACKLIST += $(wildcard $(SLANG_DIR)/procedural/*.slang)
 
 EXE_EXT :=
 
@@ -44,14 +36,11 @@ SLANG_SHADERS := $(call rwildcard,$(SLANG_DIR)/,*.slang)
 SLANG_SHADERS := $(filter-out $(BLACKLIST),$(SLANG_SHADERS))
 SLANG_SHADERS := $(SLANG_SHADERS:.slang=.gsh)
 
-
-
-
 all: $(SLANG_SHADERS)
 parser: $(SLANG_PARSER)
 
 $(SLANG_PARSER): slang-parse.cpp
-	$(CXX) $< -o $@ -g -O0 -Wall -I.
+	$(CXX) $< -o $@ -g -O0 -Wall -I../../deps/peglib
 
 shaders: $(SLANG_SHADERS)
 

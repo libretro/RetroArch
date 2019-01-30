@@ -36,11 +36,14 @@
 #include "netplay_private.h"
 
 #include "../../configuration.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
+#include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../command.h"
+#include "../../dynamic.h"
 #include "../../retroarch.h"
 
 /* Only used before init_netplay */
@@ -271,7 +274,6 @@ bool init_netplay_deferred(const char* server, unsigned port)
       netplay_client_deferred = false;
    return netplay_client_deferred;
 }
-
 
 /**
  * netplay_poll:
@@ -640,15 +642,6 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 {
    RARCH_LOG("[netplay] announcing netplay game... \n");
 
-#ifdef HAVE_DISCORD
-   if (discord_is_inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
-#endif
-
    if (task_data)
    {
       unsigned i, ip_len, port_len;
@@ -731,7 +724,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
             if (string_is_equal(key, "game_name"))
                strlcpy(host_room->gamename, val, sizeof(host_room->gamename));
             if (string_is_equal(key, "game_crc"))
-               sscanf(val, "%08X", &host_room->gamecrc);
+               sscanf(val, "%08d", &host_room->gamecrc);
             if (string_is_equal(key, "host_method"))
                sscanf(val, "%i", &host_room->host_method);
             if (string_is_equal(key, "has_password"))
@@ -794,6 +787,15 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
          free(host_string);
       }
 
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+      {
+         discord_userdata_t userdata;
+         userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
+         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      }
+#endif
+
       string_list_free(lines);
       free(buf);
       free(task_data);
@@ -851,40 +853,64 @@ void netplay_get_architecture(char *frontend_architecture, size_t size)
 
 static void netplay_announce(void)
 {
-   char buf [2048];
-   char url [2048]               = "http://lobby.libretro.com/add/";
-   char *username                = NULL;
-   char *corename                = NULL;
-   char *gamename                = NULL;
-   char *coreversion             = NULL;
-   char *frontend_ident          = NULL;
-   settings_t *settings          = config_get_ptr();
-   rarch_system_info_t *system   = runloop_get_system_info();
-   uint32_t content_crc          = content_get_crc();
+   char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
+   char url[2048]                   = "http://lobby.libretro.com/add/";
+   char *username                   = NULL;
+   char *corename                   = NULL;
+   char *gamename                   = NULL;
+   char *subsystemname              = NULL;
+   char *coreversion                = NULL;
+   char *frontend_ident             = NULL;
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   uint32_t content_crc             = content_get_crc();
+   struct string_list *subsystem    = path_get_subsystem_list();
+
+   buf[0] = '\0';
+
+   if (subsystem)
+   {
+      unsigned i;
+
+      for (i = 0; i < subsystem->size; i++)
+      {
+         strlcat(buf, path_basename(subsystem->elems[i].data), sizeof(buf));
+         if (i < subsystem->size - 1)
+            strlcat(buf, "|", sizeof(buf));
+      }
+      net_http_urlencode(&gamename, buf);
+      net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
+      content_crc = 0;
+   }
+   else
+   {
+      net_http_urlencode(&gamename,
+         !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
+         path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+      net_http_urlencode(&subsystemname, "N/A");
+   }
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
    net_http_urlencode(&username, settings->paths.username);
-   net_http_urlencode(&corename, system->info.library_name);
-   net_http_urlencode(&gamename,
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
-      path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
-   net_http_urlencode(&coreversion, system->info.library_version);
+   net_http_urlencode(&corename, system->library_name);
+   net_http_urlencode(&coreversion, system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d&mitm_server=%s"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s&frontend=%s",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
+      "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       settings->arrays.netplay_mitm_server,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION, frontend_architecture);
+      PACKAGE_VERSION, frontend_architecture, subsystemname);
 #if 0
    RARCH_LOG("[netplay] announcement URL: %s\n", buf);
 #endif
@@ -1114,7 +1140,6 @@ static void netplay_force_future(netplay_t *netplay)
    /* Wherever we're inputting, that's where we consider our state to be loaded */
    netplay->run_ptr = netplay->self_ptr;
    netplay->run_frame_count = netplay->self_frame_count;
-
 
    /* We need to ignore any intervening data from the other side,
     * and never rewind past this */
@@ -1484,8 +1509,6 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          0, 180, false);
    return false;
 }
-
-
 
 /**
  * netplay_driver_ctl

@@ -33,7 +33,6 @@
 // default number of input and output buffers supported, applies to XAPO_LOCKFORPROCESS_BUFFER_PARAMETERS
 #define XAPOBASE_DEFAULT_BUFFER_COUNT 1
 
-
 //--------------<M-A-C-R-O-S>-----------------------------------------------//
 // assertion
 #if !defined(XAPOASSERT)
@@ -51,14 +50,11 @@
     #endif
 #endif
 
-
 //--------------<D-A-T-A---T-Y-P-E-S>---------------------------------------//
 #pragma pack(push, 8) // set packing alignment to ensure consistency across arbitrary build environments, and ensure synchronization variables used by Interlocked functionality are correctly aligned
 
-
 // primitive types
 typedef float FLOAT32; // 32-bit IEEE float
-
 
   ////
   // DESCRIPTION:
@@ -74,7 +70,6 @@ private:
     UINT32   m_nSrcFormatType;          // input format type, used for thru processing
     BOOL     m_fIsScalarMatrix;         // TRUE if m_pfl32MatrixCoefficients is diagonal matrix with all main diagonal entries equal, i.e. m_pfnMatrixMixFunction only used for type conversion (no channel conversion), used for thru processing
     BOOL     m_fIsLocked;               // TRUE if XAPO locked via CXAPOBase.LockForProcess
-
 
 protected:
     LONG m_lReferenceCount; // COM reference count, must be aligned for atomic operations
@@ -157,7 +152,6 @@ protected:
     // accessors
     const XAPO_REGISTRATION_PROPERTIES* GetRegistrationPropertiesInternal () { return m_pRegistrationProperties; }
     BOOL IsLocked  () { return m_fIsLocked; }
-
 
 public:
     CXAPOBase (const XAPO_REGISTRATION_PROPERTIES* pRegistrationProperties);
@@ -248,10 +242,6 @@ public:
     STDMETHOD_(UINT32, CalcOutputFrames) (UINT32 InputFrameCount) { return InputFrameCount; }
 };
 
-
-
-
-
 //--------------------------------------------------------------------------//
   ////
   // DESCRIPTION:
@@ -273,7 +263,6 @@ private:
     UINT32 m_uParameterBlockByteSize;    // size of a single parameter block in bytes, must be > 0
     BOOL   m_fNewerResultsReady;         // TRUE if there exists new processing results not yet picked up by GetParameters(), must be aligned for atomic operations
     BOOL   m_fProducer;                  // TRUE if IXAPO::Process produces data to be returned by GetParameters(), SetParameters() and ParametersChanged() disallowed
-
 
 public:
       ////
@@ -346,7 +335,6 @@ public:
     // implementation to access latest process parameters in threadsafe manner.
     void EndProcess ();
 };
-
 
 #pragma pack(pop) // revert packing alignment
 //---------------------------------<-EOF->----------------------------------//

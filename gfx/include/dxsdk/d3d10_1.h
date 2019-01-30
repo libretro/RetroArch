@@ -4,14 +4,10 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -50,20 +46,17 @@ typedef interface ID3D10BlendState1 ID3D10BlendState1;
 
 #endif 	/* __ID3D10BlendState1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D10ShaderResourceView1_FWD_DEFINED__
 #define __ID3D10ShaderResourceView1_FWD_DEFINED__
 typedef interface ID3D10ShaderResourceView1 ID3D10ShaderResourceView1;
 
 #endif 	/* __ID3D10ShaderResourceView1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D10Device1_FWD_DEFINED__
 #define __ID3D10Device1_FWD_DEFINED__
 typedef interface ID3D10Device1 ID3D10Device1;
 
 #endif 	/* __ID3D10Device1_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -72,7 +65,6 @@ typedef interface ID3D10Device1 ID3D10Device1;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d10_1_0000_0000 */
 /* [local] */ 
@@ -158,8 +150,6 @@ typedef struct D3D10_BLEND_DESC1
     D3D10_RENDER_TARGET_BLEND_DESC1 RenderTarget[ 8 ];
     } 	D3D10_BLEND_DESC1;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0000_v0_0_s_ifspec;
 
@@ -168,7 +158,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D10BlendState1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10BlendState1;
 
@@ -255,7 +244,6 @@ EXTERN_C const IID IID_ID3D10BlendState1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10BlendState1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -264,7 +252,6 @@ EXTERN_C const IID IID_ID3D10BlendState1;
 
 #define ID3D10BlendState1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D10BlendState1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -278,24 +265,17 @@ EXTERN_C const IID IID_ID3D10BlendState1;
 #define ID3D10BlendState1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D10BlendState1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D10BlendState1_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10BlendState1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d10_1_0000_0001 */
 /* [local] */ 
@@ -329,8 +309,6 @@ typedef struct D3D10_SHADER_RESOURCE_VIEW_DESC1
         } 	;
     } 	D3D10_SHADER_RESOURCE_VIEW_DESC1;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0001_v0_0_s_ifspec;
 
@@ -339,7 +317,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0001_v0_0_s_ifspec;
 
 /* interface ID3D10ShaderResourceView1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10ShaderResourceView1;
 
@@ -431,7 +408,6 @@ EXTERN_C const IID IID_ID3D10ShaderResourceView1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10ShaderResourceView1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -440,7 +416,6 @@ EXTERN_C const IID IID_ID3D10ShaderResourceView1;
 
 #define ID3D10ShaderResourceView1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D10ShaderResourceView1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -454,28 +429,20 @@ EXTERN_C const IID IID_ID3D10ShaderResourceView1;
 #define ID3D10ShaderResourceView1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D10ShaderResourceView1_GetResource(This,ppResource)	\
     ( (This)->lpVtbl -> GetResource(This,ppResource) ) 
 
-
 #define ID3D10ShaderResourceView1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D10ShaderResourceView1_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10ShaderResourceView1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d10_1_0000_0002 */
 /* [local] */ 
@@ -487,8 +454,6 @@ enum D3D10_STANDARD_MULTISAMPLE_QUALITY_LEVELS
         D3D10_CENTER_MULTISAMPLE_PATTERN	= 0xfffffffe
     } 	D3D10_STANDARD_MULTISAMPLE_QUALITY_LEVELS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0002_v0_0_s_ifspec;
 
@@ -497,7 +462,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0002_v0_0_s_ifspec;
 
 /* interface ID3D10Device1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10Device1;
 
@@ -1347,7 +1311,6 @@ EXTERN_C const IID IID_ID3D10Device1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10Device1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1356,7 +1319,6 @@ EXTERN_C const IID IID_ID3D10Device1;
 
 #define ID3D10Device1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D10Device1_VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers)	\
     ( (This)->lpVtbl -> VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers) ) 
@@ -1643,7 +1605,6 @@ EXTERN_C const IID IID_ID3D10Device1;
 #define ID3D10Device1_GetTextFilterSize(This,pWidth,pHeight)	\
     ( (This)->lpVtbl -> GetTextFilterSize(This,pWidth,pHeight) ) 
 
-
 #define ID3D10Device1_CreateShaderResourceView1(This,pResource,pDesc,ppSRView)	\
     ( (This)->lpVtbl -> CreateShaderResourceView1(This,pResource,pDesc,ppSRView) ) 
 
@@ -1655,14 +1616,9 @@ EXTERN_C const IID IID_ID3D10Device1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10Device1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d10_1_0000_0003 */
 /* [local] */ 
@@ -1776,7 +1732,6 @@ DEFINE_GUID(IID_ID3D10BlendState1,0xEDAD8D99,0x8A35,0x4d6d,0x85,0x66,0x2E,0xA2,0
 DEFINE_GUID(IID_ID3D10ShaderResourceView1,0x9B7E4C87,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUID(IID_ID3D10Device1,0x9B7E4C8F,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0003_v0_0_s_ifspec;
 
@@ -1789,5 +1744,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10_1_0000_0003_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

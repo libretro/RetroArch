@@ -452,7 +452,6 @@ static void x_input_poll_mouse(x11_input_t *x11)
    }
 }
 
-
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;

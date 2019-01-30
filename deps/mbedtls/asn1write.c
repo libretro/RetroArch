@@ -345,7 +345,7 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
             return( NULL );
 
         cur->oid.len = oid_len;
-        cur->oid.p = mbedtls_calloc( 1, oid_len );
+        cur->oid.p   = (unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)mbedtls_calloc( 1, oid_len );
         if( cur->oid.p == NULL )
         {
             mbedtls_free( cur );
@@ -355,7 +355,7 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
         memcpy( cur->oid.p, oid, oid_len );
 
         cur->val.len = val_len;
-        cur->val.p = mbedtls_calloc( 1, val_len );
+        cur->val.p   = (unsigned char*)mbedtls_calloc( 1, val_len );
         if( cur->val.p == NULL )
         {
             mbedtls_free( cur->oid.p );
@@ -378,7 +378,7 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
             return( NULL );
 
         mbedtls_free( cur->val.p );
-        cur->val.p = p;
+        cur->val.p   = (unsigned char*)p;
         cur->val.len = val_len;
     }
 

@@ -1,3 +1,5 @@
+include version.all
+
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
@@ -20,7 +22,7 @@ OBJ :=
 # For threading we need to overwrite some vars with global defines because devkitPro's includes 
 # make it hard for us. This works for the pthread wrapper
 DEFINES_THREAD := -Dpthread_t=Thread -Dpthread_mutex_t=Mutex -Dpthread_mutexattr_t='void*' -Dpthread_attr_t=int -Dpthread_cond_t=CondVar -Dpthread_condattr_t='int' -D_SYS__PTHREADTYPES_H_
-DEFINES := -U__linux__ -U__linux -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD)
+DEFINES := -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD) -DHAVE_STB_VORBIS
 
 HAVE_CC_RESAMPLER = 1
 HAVE_MENU_COMMON = 1
@@ -28,30 +30,52 @@ HAVE_RTGA = 1
 HAVE_RPNG = 1
 HAVE_RJPEG = 1
 HAVE_RBMP = 1
-HAVE_RGUI = 1
 HAVE_ZLIB = 1
 HAVE_BUILTINZLIB = 1
 HAVE_LIBRETRODB = 1
-HAVE_ZARCH = 0
-HAVE_MATERIALUI = 0
-HAVE_XMB = 0
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_MENU = 1
 HAVE_RUNAHEAD = 1
+HAVE_NETWORKING = 1
+HAVE_NETPLAYDISCOVERY = 1
+HAVE_STB_FONT = 1
+HAVE_CHEEVOS = 1
+HAVE_CHD = 1
+HAVE_STB_VORBIS = 1
 
 # RetroArch libnx useful flags
-HAVE_OVERLAY = 0
 HAVE_THREADS = 1
 HAVE_PTHREADS = 1
 HAVE_FREETYPE = 0
 HAVE_SWITCH = 1
 HAVE_LIBNX = 1
+HAVE_OPENGL = 1
+HAVE_LANGEXTRA = 1
+
+ifeq ($(HAVE_OPENGL), 1)
+  HAVE_EGL = 1
+  HAVE_SHADERPIPELINE = 1
+
+  HAVE_RGUI = 1
+  HAVE_MATERIALUI = 1
+
+  HAVE_XMB = 1
+  HAVE_OZONE = 1
+
+  HAVE_OVERLAY = 1
+else
+  HAVE_RGUI = 1
+
+  HAVE_ZARCH = 0
+  HAVE_MATERIALUI = 0
+  HAVE_XMB = 0
+  HAVE_OZONE = 0
+  HAVE_STRIPES = 0
+endif
 
 include Makefile.common
 BLACKLIST :=
-#BLACKLIST += input/input_overlay.o
-#BLACKLIST += tasks/task_overlay.o
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
@@ -84,26 +108,38 @@ EXEFS_SRC := exefs_src
 #ROMFS := switch/romfs
 
 APP_TITLE := RetroArch
-APP_VERSION := 1.0.0
+APP_VERSION := $(RARCH_VERSION)
 APP_AUTHOR := libretro Team
-NO_ICON := 1
+APP_ICON := pkg/libnx/retroarch.jpg
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
-CFLAGS	:=	-g -Wall -O3 -ffast-math -ffunction-sections \
-			$(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
+CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
+          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
-CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1
+CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_STB_FONT #-DHAVE_FREETYPE
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
+  CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
+endif
+
+# The following line works around an issue in newlib that produces a compilation
+# error in glm. It will be removed as soon as this issue is resolved.
+CFLAGS	+= -D_GLIBCXX_USE_C99_MATH_TR1 -D_LDBL_EQ_DBL
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx -lm -lstdc++ -lbz2 -lpng -lz
+LIBS	:= -lstdc++ -lbz2 -lpng -lz -lnx -lm
+
+ifeq ($(HAVE_OPENGL), 1)
+  LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
+endif
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -145,7 +181,12 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES 	:=	$(OBJ) libretro_switch.a
+export OFILES 	:=	$(OBJ)
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),)
+  OFILES += libretro_libnx.a
+endif
+
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -185,7 +226,8 @@ ifneq ($(ROMFS),)
 	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
-DEPENDS	:=	$(OFILES:.o=.d)
+DEPENDS_TMP  := $(OFILES:.o=.d)
+DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 
 .PHONY: clean all
 
@@ -207,7 +249,7 @@ endif
 $(OUTPUT).elf	:	$(OBJ)
 
 clean:
-	rm -f $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

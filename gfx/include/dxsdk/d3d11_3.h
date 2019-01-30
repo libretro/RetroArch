@@ -4,14 +4,10 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -50,13 +46,11 @@ typedef interface ID3D11Texture2D1 ID3D11Texture2D1;
 
 #endif 	/* __ID3D11Texture2D1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11Texture3D1_FWD_DEFINED__
 #define __ID3D11Texture3D1_FWD_DEFINED__
 typedef interface ID3D11Texture3D1 ID3D11Texture3D1;
 
 #endif 	/* __ID3D11Texture3D1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11RasterizerState2_FWD_DEFINED__
 #define __ID3D11RasterizerState2_FWD_DEFINED__
@@ -64,13 +58,11 @@ typedef interface ID3D11RasterizerState2 ID3D11RasterizerState2;
 
 #endif 	/* __ID3D11RasterizerState2_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11ShaderResourceView1_FWD_DEFINED__
 #define __ID3D11ShaderResourceView1_FWD_DEFINED__
 typedef interface ID3D11ShaderResourceView1 ID3D11ShaderResourceView1;
 
 #endif 	/* __ID3D11ShaderResourceView1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11RenderTargetView1_FWD_DEFINED__
 #define __ID3D11RenderTargetView1_FWD_DEFINED__
@@ -78,13 +70,11 @@ typedef interface ID3D11RenderTargetView1 ID3D11RenderTargetView1;
 
 #endif 	/* __ID3D11RenderTargetView1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11UnorderedAccessView1_FWD_DEFINED__
 #define __ID3D11UnorderedAccessView1_FWD_DEFINED__
 typedef interface ID3D11UnorderedAccessView1 ID3D11UnorderedAccessView1;
 
 #endif 	/* __ID3D11UnorderedAccessView1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11Query1_FWD_DEFINED__
 #define __ID3D11Query1_FWD_DEFINED__
@@ -92,13 +82,11 @@ typedef interface ID3D11Query1 ID3D11Query1;
 
 #endif 	/* __ID3D11Query1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11DeviceContext3_FWD_DEFINED__
 #define __ID3D11DeviceContext3_FWD_DEFINED__
 typedef interface ID3D11DeviceContext3 ID3D11DeviceContext3;
 
 #endif 	/* __ID3D11DeviceContext3_FWD_DEFINED__ */
-
 
 #ifndef __ID3D11Fence_FWD_DEFINED__
 #define __ID3D11Fence_FWD_DEFINED__
@@ -106,20 +94,17 @@ typedef interface ID3D11Fence ID3D11Fence;
 
 #endif 	/* __ID3D11Fence_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11DeviceContext4_FWD_DEFINED__
 #define __ID3D11DeviceContext4_FWD_DEFINED__
 typedef interface ID3D11DeviceContext4 ID3D11DeviceContext4;
 
 #endif 	/* __ID3D11DeviceContext4_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11Device3_FWD_DEFINED__
 #define __ID3D11Device3_FWD_DEFINED__
 typedef interface ID3D11Device3 ID3D11Device3;
 
 #endif 	/* __ID3D11Device3_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -131,7 +116,6 @@ typedef interface ID3D11Device3 ID3D11Device3;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0000 */
 /* [local] */ 
@@ -235,7 +219,6 @@ struct CD3D11_TEXTURE2D_DESC1 : public D3D11_TEXTURE2D_DESC1
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0000_v0_0_s_ifspec;
 
@@ -244,7 +227,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D11Texture2D1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Texture2D1;
 
@@ -344,7 +326,6 @@ EXTERN_C const IID IID_ID3D11Texture2D1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Texture2D1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -353,7 +334,6 @@ EXTERN_C const IID IID_ID3D11Texture2D1;
 
 #define ID3D11Texture2D1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Texture2D1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -367,7 +347,6 @@ EXTERN_C const IID IID_ID3D11Texture2D1;
 #define ID3D11Texture2D1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11Texture2D1_GetType(This,pResourceDimension)	\
     ( (This)->lpVtbl -> GetType(This,pResourceDimension) ) 
 
@@ -377,24 +356,17 @@ EXTERN_C const IID IID_ID3D11Texture2D1;
 #define ID3D11Texture2D1_GetEvictionPriority(This)	\
     ( (This)->lpVtbl -> GetEvictionPriority(This) ) 
 
-
 #define ID3D11Texture2D1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11Texture2D1_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Texture2D1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0001 */
 /* [local] */ 
@@ -466,7 +438,6 @@ struct CD3D11_TEXTURE3D_DESC1 : public D3D11_TEXTURE3D_DESC1
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0001_v0_0_s_ifspec;
 
@@ -475,7 +446,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0001_v0_0_s_ifspec;
 
 /* interface ID3D11Texture3D1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Texture3D1;
 
@@ -575,7 +545,6 @@ EXTERN_C const IID IID_ID3D11Texture3D1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Texture3D1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -584,7 +553,6 @@ EXTERN_C const IID IID_ID3D11Texture3D1;
 
 #define ID3D11Texture3D1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Texture3D1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -598,7 +566,6 @@ EXTERN_C const IID IID_ID3D11Texture3D1;
 #define ID3D11Texture3D1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11Texture3D1_GetType(This,pResourceDimension)	\
     ( (This)->lpVtbl -> GetType(This,pResourceDimension) ) 
 
@@ -608,24 +575,17 @@ EXTERN_C const IID IID_ID3D11Texture3D1;
 #define ID3D11Texture3D1_GetEvictionPriority(This)	\
     ( (This)->lpVtbl -> GetEvictionPriority(This) ) 
 
-
 #define ID3D11Texture3D1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11Texture3D1_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Texture3D1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0002 */
 /* [local] */ 
@@ -710,7 +670,6 @@ struct CD3D11_RASTERIZER_DESC2 : public D3D11_RASTERIZER_DESC2
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0002_v0_0_s_ifspec;
 
@@ -719,7 +678,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0002_v0_0_s_ifspec;
 
 /* interface ID3D11RasterizerState2 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11RasterizerState2;
 
@@ -811,7 +769,6 @@ EXTERN_C const IID IID_ID3D11RasterizerState2;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11RasterizerState2_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -820,7 +777,6 @@ EXTERN_C const IID IID_ID3D11RasterizerState2;
 
 #define ID3D11RasterizerState2_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11RasterizerState2_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -834,28 +790,20 @@ EXTERN_C const IID IID_ID3D11RasterizerState2;
 #define ID3D11RasterizerState2_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11RasterizerState2_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
 
-
 #define ID3D11RasterizerState2_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
-
 
 #define ID3D11RasterizerState2_GetDesc2(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc2(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11RasterizerState2_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0003 */
 /* [local] */ 
@@ -1109,7 +1057,6 @@ struct CD3D11_SHADER_RESOURCE_VIEW_DESC1 : public D3D11_SHADER_RESOURCE_VIEW_DES
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0003_v0_0_s_ifspec;
 
@@ -1118,7 +1065,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0003_v0_0_s_ifspec;
 
 /* interface ID3D11ShaderResourceView1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11ShaderResourceView1;
 
@@ -1210,7 +1156,6 @@ EXTERN_C const IID IID_ID3D11ShaderResourceView1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11ShaderResourceView1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1219,7 +1164,6 @@ EXTERN_C const IID IID_ID3D11ShaderResourceView1;
 
 #define ID3D11ShaderResourceView1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11ShaderResourceView1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -1233,28 +1177,20 @@ EXTERN_C const IID IID_ID3D11ShaderResourceView1;
 #define ID3D11ShaderResourceView1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11ShaderResourceView1_GetResource(This,ppResource)	\
     ( (This)->lpVtbl -> GetResource(This,ppResource) ) 
 
-
 #define ID3D11ShaderResourceView1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11ShaderResourceView1_GetDesc1(This,pDesc1)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc1) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11ShaderResourceView1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0004 */
 /* [local] */ 
@@ -1457,7 +1393,6 @@ struct CD3D11_RENDER_TARGET_VIEW_DESC1 : public D3D11_RENDER_TARGET_VIEW_DESC1
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0004_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0004_v0_0_s_ifspec;
 
@@ -1466,7 +1401,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0004_v0_0_s_ifspec;
 
 /* interface ID3D11RenderTargetView1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11RenderTargetView1;
 
@@ -1558,7 +1492,6 @@ EXTERN_C const IID IID_ID3D11RenderTargetView1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11RenderTargetView1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1567,7 +1500,6 @@ EXTERN_C const IID IID_ID3D11RenderTargetView1;
 
 #define ID3D11RenderTargetView1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11RenderTargetView1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -1581,28 +1513,20 @@ EXTERN_C const IID IID_ID3D11RenderTargetView1;
 #define ID3D11RenderTargetView1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11RenderTargetView1_GetResource(This,ppResource)	\
     ( (This)->lpVtbl -> GetResource(This,ppResource) ) 
 
-
 #define ID3D11RenderTargetView1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11RenderTargetView1_GetDesc1(This,pDesc1)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc1) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11RenderTargetView1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0005 */
 /* [local] */ 
@@ -1793,7 +1717,6 @@ struct CD3D11_UNORDERED_ACCESS_VIEW_DESC1 : public D3D11_UNORDERED_ACCESS_VIEW_D
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0005_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0005_v0_0_s_ifspec;
 
@@ -1802,7 +1725,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0005_v0_0_s_ifspec;
 
 /* interface ID3D11UnorderedAccessView1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11UnorderedAccessView1;
 
@@ -1894,7 +1816,6 @@ EXTERN_C const IID IID_ID3D11UnorderedAccessView1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11UnorderedAccessView1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1903,7 +1824,6 @@ EXTERN_C const IID IID_ID3D11UnorderedAccessView1;
 
 #define ID3D11UnorderedAccessView1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11UnorderedAccessView1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -1917,28 +1837,20 @@ EXTERN_C const IID IID_ID3D11UnorderedAccessView1;
 #define ID3D11UnorderedAccessView1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11UnorderedAccessView1_GetResource(This,ppResource)	\
     ( (This)->lpVtbl -> GetResource(This,ppResource) ) 
 
-
 #define ID3D11UnorderedAccessView1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11UnorderedAccessView1_GetDesc1(This,pDesc1)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc1) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11UnorderedAccessView1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0006 */
 /* [local] */ 
@@ -1974,7 +1886,6 @@ struct CD3D11_QUERY_DESC1 : public D3D11_QUERY_DESC1
 extern "C"{
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0006_v0_0_s_ifspec;
 
@@ -1983,7 +1894,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0006_v0_0_s_ifspec;
 
 /* interface ID3D11Query1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Query1;
 
@@ -2073,7 +1983,6 @@ EXTERN_C const IID IID_ID3D11Query1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Query1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2082,7 +1991,6 @@ EXTERN_C const IID IID_ID3D11Query1;
 
 #define ID3D11Query1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Query1_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -2096,28 +2004,20 @@ EXTERN_C const IID IID_ID3D11Query1;
 #define ID3D11Query1_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11Query1_GetDataSize(This)	\
     ( (This)->lpVtbl -> GetDataSize(This) ) 
 
-
 #define ID3D11Query1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
-
 
 #define ID3D11Query1_GetDesc1(This,pDesc1)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc1) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Query1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0007 */
 /* [local] */ 
@@ -2132,7 +2032,6 @@ enum D3D11_FENCE_FLAG
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D11_FENCE_FLAG);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0007_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0007_v0_0_s_ifspec;
 
@@ -2141,7 +2040,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0007_v0_0_s_ifspec;
 
 /* interface ID3D11DeviceContext3 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11DeviceContext3;
 
@@ -3479,7 +3377,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11DeviceContext3_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3488,7 +3385,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 
 #define ID3D11DeviceContext3_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11DeviceContext3_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -3501,7 +3397,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 
 #define ID3D11DeviceContext3_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
-
 
 #define ID3D11DeviceContext3_VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers)	\
     ( (This)->lpVtbl -> VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers) ) 
@@ -3827,7 +3722,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 #define ID3D11DeviceContext3_FinishCommandList(This,RestoreDeferredContextState,ppCommandList)	\
     ( (This)->lpVtbl -> FinishCommandList(This,RestoreDeferredContextState,ppCommandList) ) 
 
-
 #define ID3D11DeviceContext3_CopySubresourceRegion1(This,pDstResource,DstSubresource,DstX,DstY,DstZ,pSrcResource,SrcSubresource,pSrcBox,CopyFlags)	\
     ( (This)->lpVtbl -> CopySubresourceRegion1(This,pDstResource,DstSubresource,DstX,DstY,DstZ,pSrcResource,SrcSubresource,pSrcBox,CopyFlags) ) 
 
@@ -3885,7 +3779,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 #define ID3D11DeviceContext3_DiscardView1(This,pResourceView,pRects,NumRects)	\
     ( (This)->lpVtbl -> DiscardView1(This,pResourceView,pRects,NumRects) ) 
 
-
 #define ID3D11DeviceContext3_UpdateTileMappings(This,pTiledResource,NumTiledResourceRegions,pTiledResourceRegionStartCoordinates,pTiledResourceRegionSizes,pTilePool,NumRanges,pRangeFlags,pTilePoolStartOffsets,pRangeTileCounts,Flags)	\
     ( (This)->lpVtbl -> UpdateTileMappings(This,pTiledResource,NumTiledResourceRegions,pTiledResourceRegionStartCoordinates,pTiledResourceRegionSizes,pTilePool,NumRanges,pRangeFlags,pTilePoolStartOffsets,pRangeTileCounts,Flags) ) 
 
@@ -3916,7 +3809,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 #define ID3D11DeviceContext3_EndEvent(This)	\
     ( (This)->lpVtbl -> EndEvent(This) ) 
 
-
 #define ID3D11DeviceContext3_Flush1(This,ContextType,hEvent)	\
     ( (This)->lpVtbl -> Flush1(This,ContextType,hEvent) ) 
 
@@ -3928,21 +3820,15 @@ EXTERN_C const IID IID_ID3D11DeviceContext3;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11DeviceContext3_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11Fence_INTERFACE_DEFINED__
 #define __ID3D11Fence_INTERFACE_DEFINED__
 
 /* interface ID3D11Fence */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Fence;
 
@@ -4054,7 +3940,6 @@ EXTERN_C const IID IID_ID3D11Fence;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Fence_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4063,7 +3948,6 @@ EXTERN_C const IID IID_ID3D11Fence;
 
 #define ID3D11Fence_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Fence_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -4077,7 +3961,6 @@ EXTERN_C const IID IID_ID3D11Fence;
 #define ID3D11Fence_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
 
-
 #define ID3D11Fence_CreateSharedHandle(This,pAttributes,dwAccess,lpName,pHandle)	\
     ( (This)->lpVtbl -> CreateSharedHandle(This,pAttributes,dwAccess,lpName,pHandle) ) 
 
@@ -4089,21 +3972,15 @@ EXTERN_C const IID IID_ID3D11Fence;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Fence_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11DeviceContext4_INTERFACE_DEFINED__
 #define __ID3D11DeviceContext4_INTERFACE_DEFINED__
 
 /* interface ID3D11DeviceContext4 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11DeviceContext4;
 
@@ -5454,7 +5331,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11DeviceContext4_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -5463,7 +5339,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 
 #define ID3D11DeviceContext4_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11DeviceContext4_GetDevice(This,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,ppDevice) ) 
@@ -5476,7 +5351,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 
 #define ID3D11DeviceContext4_SetPrivateDataInterface(This,guid,pData)	\
     ( (This)->lpVtbl -> SetPrivateDataInterface(This,guid,pData) ) 
-
 
 #define ID3D11DeviceContext4_VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers)	\
     ( (This)->lpVtbl -> VSSetConstantBuffers(This,StartSlot,NumBuffers,ppConstantBuffers) ) 
@@ -5802,7 +5676,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 #define ID3D11DeviceContext4_FinishCommandList(This,RestoreDeferredContextState,ppCommandList)	\
     ( (This)->lpVtbl -> FinishCommandList(This,RestoreDeferredContextState,ppCommandList) ) 
 
-
 #define ID3D11DeviceContext4_CopySubresourceRegion1(This,pDstResource,DstSubresource,DstX,DstY,DstZ,pSrcResource,SrcSubresource,pSrcBox,CopyFlags)	\
     ( (This)->lpVtbl -> CopySubresourceRegion1(This,pDstResource,DstSubresource,DstX,DstY,DstZ,pSrcResource,SrcSubresource,pSrcBox,CopyFlags) ) 
 
@@ -5860,7 +5733,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 #define ID3D11DeviceContext4_DiscardView1(This,pResourceView,pRects,NumRects)	\
     ( (This)->lpVtbl -> DiscardView1(This,pResourceView,pRects,NumRects) ) 
 
-
 #define ID3D11DeviceContext4_UpdateTileMappings(This,pTiledResource,NumTiledResourceRegions,pTiledResourceRegionStartCoordinates,pTiledResourceRegionSizes,pTilePool,NumRanges,pRangeFlags,pTilePoolStartOffsets,pRangeTileCounts,Flags)	\
     ( (This)->lpVtbl -> UpdateTileMappings(This,pTiledResource,NumTiledResourceRegions,pTiledResourceRegionStartCoordinates,pTiledResourceRegionSizes,pTilePool,NumRanges,pRangeFlags,pTilePoolStartOffsets,pRangeTileCounts,Flags) ) 
 
@@ -5891,7 +5763,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 #define ID3D11DeviceContext4_EndEvent(This)	\
     ( (This)->lpVtbl -> EndEvent(This) ) 
 
-
 #define ID3D11DeviceContext4_Flush1(This,ContextType,hEvent)	\
     ( (This)->lpVtbl -> Flush1(This,ContextType,hEvent) ) 
 
@@ -5901,7 +5772,6 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 #define ID3D11DeviceContext4_GetHardwareProtectionState(This,pHwProtectionEnable)	\
     ( (This)->lpVtbl -> GetHardwareProtectionState(This,pHwProtectionEnable) ) 
 
-
 #define ID3D11DeviceContext4_Signal(This,pFence,Value)	\
     ( (This)->lpVtbl -> Signal(This,pFence,Value) ) 
 
@@ -5910,21 +5780,15 @@ EXTERN_C const IID IID_ID3D11DeviceContext4;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11DeviceContext4_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11Device3_INTERFACE_DEFINED__
 #define __ID3D11Device3_INTERFACE_DEFINED__
 
 /* interface ID3D11Device3 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D11Device3;
 
@@ -6589,7 +6453,6 @@ EXTERN_C const IID IID_ID3D11Device3;
 
 #ifdef COBJMACROS
 
-
 #define ID3D11Device3_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -6598,7 +6461,6 @@ EXTERN_C const IID IID_ID3D11Device3;
 
 #define ID3D11Device3_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D11Device3_CreateBuffer(This,pDesc,pInitialData,ppBuffer)	\
     ( (This)->lpVtbl -> CreateBuffer(This,pDesc,pInitialData,ppBuffer) ) 
@@ -6720,7 +6582,6 @@ EXTERN_C const IID IID_ID3D11Device3;
 #define ID3D11Device3_GetExceptionMode(This)	\
     ( (This)->lpVtbl -> GetExceptionMode(This) ) 
 
-
 #define ID3D11Device3_GetImmediateContext1(This,ppImmediateContext)	\
     ( (This)->lpVtbl -> GetImmediateContext1(This,ppImmediateContext) ) 
 
@@ -6742,7 +6603,6 @@ EXTERN_C const IID IID_ID3D11Device3;
 #define ID3D11Device3_OpenSharedResourceByName(This,lpName,dwDesiredAccess,returnedInterface,ppResource)	\
     ( (This)->lpVtbl -> OpenSharedResourceByName(This,lpName,dwDesiredAccess,returnedInterface,ppResource) ) 
 
-
 #define ID3D11Device3_GetImmediateContext2(This,ppImmediateContext)	\
     ( (This)->lpVtbl -> GetImmediateContext2(This,ppImmediateContext) ) 
 
@@ -6754,7 +6614,6 @@ EXTERN_C const IID IID_ID3D11Device3;
 
 #define ID3D11Device3_CheckMultisampleQualityLevels1(This,Format,SampleCount,Flags,pNumQualityLevels)	\
     ( (This)->lpVtbl -> CheckMultisampleQualityLevels1(This,Format,SampleCount,Flags,pNumQualityLevels) ) 
-
 
 #define ID3D11Device3_CreateTexture2D1(This,pDesc1,pInitialData,ppTexture2D)	\
     ( (This)->lpVtbl -> CreateTexture2D1(This,pDesc1,pInitialData,ppTexture2D) ) 
@@ -6791,14 +6650,9 @@ EXTERN_C const IID IID_ID3D11Device3;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11Device3_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d11_3_0000_0011 */
 /* [local] */ 
@@ -6815,7 +6669,6 @@ DEFINE_GUID(IID_ID3D11Fence,0xaffde9d1,0x1df7,0x4bb7,0x8a,0x34,0x0f,0x46,0x25,0x
 DEFINE_GUID(IID_ID3D11DeviceContext4,0x917600da,0xf58c,0x4c33,0x98,0xd8,0x3e,0x15,0xb3,0x90,0xfa,0x24);
 DEFINE_GUID(IID_ID3D11Device3,0xA05C8C37,0xD2C6,0x4732,0xB3,0xA0,0x9C,0xE0,0xB0,0xDC,0x9A,0xE6);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0011_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0011_v0_0_s_ifspec;
 
@@ -6828,5 +6681,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11_3_0000_0011_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

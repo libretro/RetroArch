@@ -202,4 +202,3 @@ void fft_process_inverse(fft_t *fft,
 
    resolve_float(out, fft->interleave_buffer, samples, 1.0f / samples, step);
 }
-

@@ -1,7 +1,7 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
-    android:versionCode="73"
+    android:versionCode="74"
     android:versionName="1.7.5"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
@@ -39,5 +39,6 @@
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
+        <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
     </application>
 </manifest>

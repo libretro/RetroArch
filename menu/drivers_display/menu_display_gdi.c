@@ -16,17 +16,20 @@
 
 #include <time.h>
 
+#include <clamping.h>
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_driver.h"
+#include "../../verbosity.h"
 
 #include "../menu_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../../gfx/common/win32_common.h"
+#include "../../gfx/common/gdi_common.h"
 #endif
 
 static void *menu_display_gdi_get_default_mvp(video_frame_info_t *video_info)
@@ -45,6 +48,66 @@ static void menu_display_gdi_blend_end(video_frame_info_t *video_info)
 static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   struct gdi_texture *texture = NULL;
+   gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+   BITMAPINFO info = {0};
+
+   if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
+      return;
+
+   texture = (struct gdi_texture*)draw->texture;
+
+   if (!texture || texture->width <= 1 || texture->height <= 1)
+      return;
+
+   info.bmiHeader.biBitCount  = 32;
+   info.bmiHeader.biWidth     = texture->width;
+   info.bmiHeader.biHeight    = -texture->height;
+   info.bmiHeader.biPlanes    = 1;
+   info.bmiHeader.biSize      = sizeof(BITMAPINFOHEADER);
+   info.bmiHeader.biSizeImage = 0;
+   info.bmiHeader.biCompression = BI_RGB;
+
+   if (gdi->memDC)
+   {
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
+      BLENDFUNCTION blend = {0};
+#endif
+
+      if (!gdi->texDC)
+         gdi->texDC        = CreateCompatibleDC(gdi->winDC);
+
+      if (texture->bmp)
+         texture->bmp_old  = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
+      else
+      {
+         /* scale texture data into a bitmap we can easily blit later */
+         texture->bmp     = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
+         texture->bmp_old = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
+
+         StretchDIBits(gdi->texDC, 0, 0, draw->width, draw->height, 0, 0, texture->width, texture->height, texture->data, &info, DIB_RGB_COLORS, SRCCOPY);
+      }
+
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
+      blend.BlendOp = AC_SRC_OVER;
+      blend.BlendFlags = 0;
+      blend.SourceConstantAlpha = 255;/*clamp_8bit(draw->coords->color[3] * 255.0f);*/
+      blend.AlphaFormat = AC_SRC_ALPHA;
+
+      /* AlphaBlend() is only available since Win98 */
+      AlphaBlend(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, blend);
+      /*TransparentBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, 0);*/
+#else
+      /* Just draw without the blending */
+      StretchBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);
+
+#endif
+
+      SelectObject(gdi->memDC, gdi->bmp_old);
+      SelectObject(gdi->texDC, texture->bmp_old);
+   }
 }
 
 static void menu_display_gdi_draw_pipeline(menu_display_ctx_draw_t *draw,
@@ -72,15 +135,15 @@ static void menu_display_gdi_clear_color(
 
 static bool menu_display_gdi_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float gdi_font_size,
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, gdi_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_GDI)))
-		 return false;
+      return false;
    return true;
 }
 
@@ -109,7 +172,7 @@ menu_display_ctx_driver_t menu_display_ctx_gdi = {
    menu_display_gdi_get_default_tex_coords,
    menu_display_gdi_font_init_first,
    MENU_VIDEO_DRIVER_GDI,
-   "menu_display_gdi",
+   "gdi",
    false,
    NULL,
    NULL

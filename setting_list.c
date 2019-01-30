@@ -53,11 +53,15 @@ bool settings_list_append(rarch_setting_t **list,
 
    if (list_info->index == list_info->size)
    {
+      rarch_setting_t *list_settings = NULL;
+
       list_info->size *= 2;
-      *list = (rarch_setting_t*)
+      list_settings = (rarch_setting_t*)
          realloc(*list, sizeof(rarch_setting_t) * list_info->size);
-      if (!*list)
+
+      if (!list_settings)
          return false;
+      *list = list_settings;
    }
 
    return true;
@@ -70,21 +74,20 @@ unsigned setting_get_bind_type(rarch_setting_t *setting)
    return setting->bind_type;
 }
 
-static int setting_bind_action_ok(void *data, bool wraparound)
+static int setting_bind_action_ok(rarch_setting_t *setting, bool wraparound)
 {
    (void)wraparound; /* TODO/FIXME - handle this */
 
 #ifdef HAVE_MENU
    /* TODO - get rid of menu dependency */
-   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, data))
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, setting))
       return -1;
 #endif
    return 0;
 }
 
-static int setting_int_action_right_default(void *data, bool wraparound)
+static int setting_int_action_right_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
 
    if (!setting)
@@ -117,11 +120,10 @@ static int setting_int_action_right_default(void *data, bool wraparound)
 }
 
 #ifdef HAVE_MENU
-static int setting_bind_action_start(void *data)
+static int setting_bind_action_start(rarch_setting_t *setting)
 {
    unsigned bind_type;
    struct retro_keybind *keybind   = NULL;
-   rarch_setting_t *setting        = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
 
    if (!setting)
@@ -146,55 +148,49 @@ static int setting_bind_action_start(void *data)
 }
 #endif
 
-static void setting_get_string_representation_hex(void *data,
+static void setting_get_string_representation_hex(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%08x",
             *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_hex_and_uint(void *data,
+void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%u (%08X)",
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_uint(void *data,
+void setting_get_string_representation_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_size(void *data,
+void setting_get_string_representation_size(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%" PRI_SIZET,
             *setting->value.target.sizet);
 }
 
-void setting_get_string_representation_size_in_mb(void *data,
+void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%" PRI_SIZET,
             (*setting->value.target.sizet)/(1024*1024));
 }
 
-void setting_get_string_representation_uint_as_enum(void *data,
+void setting_get_string_representation_uint_as_enum(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%s",
             msg_hash_to_str((enum msg_hash_enums)(
@@ -252,12 +248,11 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
    return step < setting->step ? setting->step : step ;
 }
 
-int setting_uint_action_left_default(void *data, bool wraparound)
+int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = 0.0f;
+   double               min        = 0.0f;
    bool                 overflowed = false;
-   float                step = 0.0f ;
+   float                step       = 0.0f ;
 
    if (!setting)
       return -1;
@@ -293,10 +288,9 @@ int setting_uint_action_left_default(void *data, bool wraparound)
    return 0;
 }
 
-int setting_uint_action_right_default(void *data, bool wraparound)
+int setting_uint_action_right_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               max = 0.0f;
+   double               max  = 0.0f;
    float                step = 0.0f ;
 
    if (!setting)
@@ -331,9 +325,9 @@ int setting_uint_action_right_default(void *data, bool wraparound)
    return 0;
 }
 
-int setting_uint_action_right_with_refresh(void *data, bool wraparound)
+int setting_uint_action_right_with_refresh(rarch_setting_t *setting, bool wraparound)
 {
-   int retval = setting_uint_action_right_default(data, wraparound) ;
+   int retval = setting_uint_action_right_default(setting, wraparound) ;
    bool refresh      = false;
 
 #ifdef HAVE_MENU
@@ -344,9 +338,9 @@ int setting_uint_action_right_with_refresh(void *data, bool wraparound)
    return retval ;
 }
 
-int setting_uint_action_left_with_refresh(void *data, bool wraparound)
+int setting_uint_action_left_with_refresh(rarch_setting_t *setting, bool wraparound)
 {
-   int retval = setting_uint_action_left_default(data, wraparound) ;
+   int retval = setting_uint_action_left_default(setting, wraparound) ;
    bool refresh      = false;
 
 #ifdef HAVE_MENU
@@ -358,13 +352,11 @@ int setting_uint_action_left_with_refresh(void *data, bool wraparound)
 
 }
 
-
-static int setting_size_action_left_default(void *data, bool wraparound)
+static int setting_size_action_left_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = 0.0f;
+   double               min        = 0.0f;
    bool                 overflowed = false;
-   float                step = 0.0f ;
+   float                step       = 0.0f ;
 
    if (!setting)
       return -1;
@@ -400,10 +392,9 @@ static int setting_size_action_left_default(void *data, bool wraparound)
    return 0;
 }
 
-static int setting_size_action_right_default(void *data, bool wraparound)
+static int setting_size_action_right_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               max = 0.0f;
+   double               max  = 0.0f;
    float                step = 0.0f ;
 
    if (!setting)
@@ -438,10 +429,8 @@ static int setting_size_action_right_default(void *data, bool wraparound)
    return 0;
 }
 
-int setting_generic_action_ok_default(void *data, bool wraparound)
+int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -453,11 +442,9 @@ int setting_generic_action_ok_default(void *data, bool wraparound)
    return 0;
 }
 
-static void setting_get_string_representation_int(void *data,
+static void setting_get_string_representation_int(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       snprintf(s, len, "%d", *setting->value.target.integer);
 }
@@ -581,9 +568,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
 }
 
 static int setting_fraction_action_left_default(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
 
    if (!setting)
@@ -616,9 +602,8 @@ static int setting_fraction_action_left_default(
 }
 
 static int setting_fraction_action_right_default(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
 
    if (!setting)
@@ -702,10 +687,8 @@ static void setting_reset_setting(rarch_setting_t* setting)
       setting->change_handler(setting);
 }
 
-int setting_generic_action_start_default(void *data)
+int setting_generic_action_start_default(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -714,10 +697,9 @@ int setting_generic_action_start_default(void *data)
    return 0;
 }
 
-static void setting_get_string_representation_default(void *data,
+static void setting_get_string_representation_default(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   (void)data;
    strlcpy(s, "...", len);
 }
 
@@ -730,16 +712,13 @@ static void setting_get_string_representation_default(void *data,
  *
  * Set a settings' label value. The setting is of type ST_BOOL.
  **/
-static void setting_get_string_representation_st_bool(void *data,
+static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       strlcpy(s, *setting->value.target.boolean ? setting->boolean.on_label :
             setting->boolean.off_label, len);
 }
-
 
 /**
  * setting_get_string_representation_st_float:
@@ -750,21 +729,17 @@ static void setting_get_string_representation_st_bool(void *data,
  *
  * Set a settings' label value. The setting is of type ST_FLOAT.
  **/
-static void setting_get_string_representation_st_float(void *data,
+static void setting_get_string_representation_st_float(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       snprintf(s, len, setting->rounding_fraction,
             *setting->value.target.fraction);
 }
 
-static void setting_get_string_representation_st_dir(void *data,
+static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       strlcpy(s,
             *setting->value.target.string ?
@@ -772,29 +747,24 @@ static void setting_get_string_representation_st_dir(void *data,
             len);
 }
 
-static void setting_get_string_representation_st_path(void *data,
+static void setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       fill_short_pathname_representation(s, setting->value.target.string, len);
 }
 
-static void setting_get_string_representation_st_string(void *data,
+static void setting_get_string_representation_st_string(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
       strlcpy(s, setting->value.target.string, len);
 }
 
-static void setting_get_string_representation_st_bind(void *data,
+static void setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   unsigned index_offset;
-   rarch_setting_t *setting              = (rarch_setting_t*)data;
+   unsigned index_offset                 = 0;
    const struct retro_keybind* keybind   = NULL;
    const struct retro_keybind* auto_bind = NULL;
 
@@ -809,10 +779,8 @@ static void setting_get_string_representation_st_bind(void *data,
    input_config_get_bind_string(s, keybind, auto_bind, len);
 }
 
-static int setting_action_action_ok(void *data, bool wraparound)
+static int setting_action_action_ok(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -823,7 +791,6 @@ static int setting_action_action_ok(void *data, bool wraparound)
 
    return 0;
 }
-
 
 /**
  * setting_action_setting:
@@ -1348,9 +1315,8 @@ static rarch_setting_t setting_bind_setting(const char* name,
    return result;
 }
 
-static int setting_int_action_left_default(void *data, bool wraparound)
+static int setting_int_action_left_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
 
    if (!setting)
@@ -1382,10 +1348,8 @@ static int setting_int_action_left_default(void *data, bool wraparound)
    return 0;
 }
 
-static int setting_bool_action_ok_default(void *data, bool wraparound)
+static int setting_bool_action_ok_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -1397,10 +1361,8 @@ static int setting_bool_action_ok_default(void *data, bool wraparound)
    return 0;
 }
 
-static int setting_bool_action_toggle_default(void *data, bool wraparound)
+static int setting_bool_action_toggle_default(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -1412,10 +1374,8 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    return 0;
 }
 
-int setting_string_action_start_generic(void *data)
+int setting_string_action_start_generic(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -2355,11 +2315,10 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
-static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
+static int setting_generic_action_ok_linefeed(rarch_setting_t *setting, bool wraparound)
 {
    menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
-   rarch_setting_t      *setting     = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;

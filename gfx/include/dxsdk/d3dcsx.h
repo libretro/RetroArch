@@ -20,7 +20,6 @@
 
 // Current name of the DLL shipped in the same SDK as this header.
 
-
 #define D3DCSX_DLL_W L"d3dcsx_47.dll"
 #define D3DCSX_DLL_A "d3dcsx_47.dll"
 
@@ -30,15 +29,9 @@
     #define D3DCSX_DLL D3DCSX_DLL_A
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -65,7 +58,6 @@ typedef enum D3DX11_SCAN_DIRECTION
     D3DX11_SCAN_DIRECTION_FORWARD = 1,
     D3DX11_SCAN_DIRECTION_BACKWARD,
 } D3DX11_SCAN_DIRECTION;
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX11Scan:
@@ -127,7 +119,6 @@ DECLARE_INTERFACE_(ID3DX11Scan, IUnknown)
     ) PURE;
 };
 
-
 //=============================================================================
 // Creates a scan context
 //  pDevice             the device context
@@ -140,8 +131,6 @@ HRESULT WINAPI D3DX11CreateScan(
     UINT MaxElementScanSize,
     UINT MaxScanCount,
     _Out_ ID3DX11Scan** ppScan );
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX11SegmentedScan:
@@ -185,7 +174,6 @@ DECLARE_INTERFACE_(ID3DX11SegmentedScan, IUnknown)
     ) PURE;
 };
 
-
 //=============================================================================
 // Creates a segmented scan context
 //  pDevice             the device context
@@ -197,15 +185,11 @@ HRESULT WINAPI D3DX11CreateSegmentedScan(
     UINT MaxElementScanSize,
     _Out_ ID3DX11SegmentedScan** ppScan );
 
-
-
 //////////////////////////////////////////////////////////////////////////////
 
 #define D3DX11_FFT_MAX_PRECOMPUTE_BUFFERS 4
 #define D3DX11_FFT_MAX_TEMP_BUFFERS 4
 #define D3DX11_FFT_MAX_DIMENSIONS 32
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX11FFT:
@@ -272,7 +256,6 @@ DECLARE_INTERFACE_(ID3DX11FFT, IUnknown)
         _Inout_ ID3D11UnorderedAccessView** ppOutputBuffer ) PURE;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX11FFT Creation Routines
 //////////////////////////////////////////////////////////////////////////////
@@ -299,7 +282,6 @@ typedef struct D3DX11_FFT_DESC
     D3DX11_FFT_DATA_TYPE Type;                      // type of the elements in spatial domain
 } D3DX11_FFT_DESC;
 
-
 //------------------------------------------------------------------------------
 // NumTempBufferSizes           Number of temporary buffers needed
 // pTempBufferSizes             Minimum sizes (in FLOATs) of temporary buffers
@@ -315,12 +297,10 @@ typedef struct D3DX11_FFT_BUFFER_INFO
     UINT PrecomputeBufferFloatSizes[D3DX11_FFT_MAX_PRECOMPUTE_BUFFERS];    
 } D3DX11_FFT_BUFFER_INFO;
 
-
 typedef enum D3DX11_FFT_CREATE_FLAG
 {
     D3DX11_FFT_CREATE_FLAG_NO_PRECOMPUTE_BUFFERS = 0x01L,   // do not precompute values and store into buffers
 } D3DX11_FFT_CREATE_FLAG;
-
 
 //------------------------------------------------------------------------------
 // Creates an ID3DX11FFT COM interface object and returns a pointer to it at *ppFFT. 
@@ -404,7 +384,6 @@ HRESULT WINAPI D3DX11CreateFFT3DComplex(
    _Out_ ID3DX11FFT** ppFFT
  );
 
-
 #ifdef __cplusplus
 }
 #endif //__cplusplus
@@ -413,4 +392,3 @@ HRESULT WINAPI D3DX11CreateFFT3DComplex(
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
-

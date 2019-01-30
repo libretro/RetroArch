@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -27,6 +26,8 @@
 #include "../file_path_special.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
+
+#define CALLBACK_ERROR_SIZE 4200
 
 static int file_decompressed_target_file(const char *name,
       const char *valid_exts,
@@ -80,9 +81,9 @@ next_file:
    return 1;
 
 error:
-   userdata->dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
+   userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    snprintf(userdata->dec->callback_error,
-         PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
+         CALLBACK_ERROR_SIZE, "Failed to deflate %s.\n", path);
 
    return 0;
 }
@@ -122,8 +123,8 @@ next_file:
    return 1;
 
 error:
-   dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
-   snprintf(dec->callback_error, PATH_MAX_LENGTH,
+   dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
+   snprintf(dec->callback_error, CALLBACK_ERROR_SIZE,
          "Failed to deflate %s.\n", path);
 
    return 0;

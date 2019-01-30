@@ -238,6 +238,3 @@ systemcallhandler_start:
 	rfi
 systemcallhandler_end:
 	nop
-
-
-

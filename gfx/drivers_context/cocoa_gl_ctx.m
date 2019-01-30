@@ -300,9 +300,10 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
    return true;
 }
 
-static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
+static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
 {
    (void)data;
+   unsigned interval = (unsigned)i;
 #if defined(HAVE_COCOATOUCH) // < No way to disable Vsync on iOS?
            //   Just skip presents so fast forward still works.
    g_is_syncing = interval ? true : false;

@@ -323,7 +323,7 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
     if( ret == MBEDTLS_ERR_BASE64_INVALID_CHARACTER )
         return( MBEDTLS_ERR_PEM_INVALID_DATA + ret );
 
-    if( ( buf = mbedtls_calloc( 1, len ) ) == NULL )
+    if( ( buf = (unsigned char*)mbedtls_calloc( 1, len ) ) == NULL )
         return( MBEDTLS_ERR_PEM_ALLOC_FAILED );
 
     if( ( ret = mbedtls_base64_decode( buf, len, &len, s1, s2 - s1 ) ) != 0 )
@@ -409,7 +409,7 @@ int mbedtls_pem_write_buffer( const char *header, const char *footer,
         return( MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL );
     }
 
-    if( ( encode_buf = mbedtls_calloc( 1, use_len ) ) == NULL )
+    if( ( encode_buf = (unsigned char*)mbedtls_calloc( 1, use_len ) ) == NULL )
         return( MBEDTLS_ERR_PEM_ALLOC_FAILED );
 
     if( ( ret = mbedtls_base64_encode( encode_buf, use_len, &use_len, der_data,

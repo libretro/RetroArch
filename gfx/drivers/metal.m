@@ -1,9 +1,17 @@
-//
-//  metal.m
-//  RetroArch_Metal
-//
-//  Created by Stuart Carnie on 5/14/18.
-//
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018      - Stuart Carnie
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -28,9 +36,7 @@
 #endif
 
 #ifdef HAVE_MENU
-
 #import "../../menu/menu_driver.h"
-
 #endif
 
 #import "../font_driver.h"
@@ -145,14 +151,22 @@ static void metal_free(void *data)
 static void metal_set_viewport(void *data, unsigned viewport_width,
                                unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-//   RARCH_LOG("[Metal]: set_viewport size: %dx%d full: %s rotate: %s\n",
-//             viewport_width, viewport_height,
-//             force_full ? "YES" : "NO",
-//             allow_rotate ? "YES" : "NO");
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md == nil) {
+      return;
+   }
+   
+   [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)
 {
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md == nil) {
+      return;
+   }
+   
+   [md setRotation:rotation];
 }
 
 static void metal_viewport_info(void *data, struct video_viewport *vp)
@@ -180,12 +194,10 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    return (uintptr_t)(__bridge_retained void *)(t);
 }
 
-static void metal_unload_texture(void *data, uintptr_t handle)
+static void metal_unload_texture(void *data, uintptr_t handle, bool threaded)
 {
    if (!handle)
-   {
       return;
-   }
    Texture *t = (__bridge_transfer Texture *)(void *)handle;
    t = nil;
 }
@@ -270,7 +282,9 @@ static void metal_set_texture_enable(void *data, bool state, bool full_screen)
       return;
    
    md.menu.enabled = state;
-   //md.menu.fullScreen = full_screen;
+#if 0
+   md.menu.fullScreen = full_screen;
+#endif
 }
 
 static void metal_set_osd_msg(void *data,
@@ -398,7 +412,7 @@ static const video_overlay_interface_t metal_overlay_interface = {
 };
 
 static void metal_get_overlay_interface(void *data,
-                                        const video_overlay_interface_t **iface)
+      const video_overlay_interface_t **iface)
 {
    (void)data;
    *iface = &metal_overlay_interface;

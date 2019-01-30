@@ -55,6 +55,15 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
       return false;
    }
 
+   /* Remove Windows \r chars if we encounter them.
+    * filestream_read_file() allocates one extra for 0 terminator. */
+   auto itr = remove_if(buf, buf + len + 1, [](char c) {
+      return c == '\r';
+   });
+
+   if (itr < buf + len)
+      *itr = '\0';
+
    /* Cannot use string_split since it removes blank lines (strtok). */
    ptr = buf;
 
@@ -284,6 +293,8 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 
    for (auto &line : lines)
    {
+      const char *line_c = line.c_str();
+
       if (line.find("#pragma name ") == 0)
       {
          const char *str = NULL;
@@ -294,7 +305,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line.c_str() + strlen("#pragma name ");
+         str = line_c + strlen("#pragma name ");
 
          while (*str == ' ')
             str++;
@@ -303,7 +314,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
       else if (line.find("#pragma parameter ") == 0)
       {
          float initial, minimum, maximum, step;
-         int ret = sscanf(line.c_str(), "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+         int ret = sscanf(line_c, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                id, desc, &initial, &minimum, &maximum, &step);
 
          if (ret == 5)
@@ -338,7 +349,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
          }
          else
          {
-            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line.c_str());
+            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line_c);
             return false;
          }
       }
@@ -352,7 +363,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line.c_str() + strlen("#pragma format ");
+         str = line_c + strlen("#pragma format ");
 
          while (*str == ' ')
             str++;
@@ -367,7 +378,6 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
    }
    return true;
 }
-
 
 #if defined(HAVE_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)

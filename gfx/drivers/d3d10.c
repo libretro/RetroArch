@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -23,14 +23,21 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
+
 #include "../video_driver.h"
 #include "../font_driver.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 #include "../common/d3d10_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#endif
+
+#ifdef __WINRT__
+#error "UWP does not support D3D10"
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -59,6 +66,18 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    sprites[index].pos.w    = w;
    sprites[index].pos.h    = h;
    D3D10UnmapBuffer(d3d10->overlays.vbo);
+}
+
+static void d3d10_clear_scissor(d3d10_video_t *d3d10, video_frame_info_t *video_info)
+{
+   D3D10_RECT scissor_rect = {0};
+
+   scissor_rect.left = 0;
+   scissor_rect.top = 0;
+   scissor_rect.right = video_info->width;
+   scissor_rect.bottom = video_info->height;
+
+   D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
 }
 
 static void d3d10_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
@@ -209,7 +228,6 @@ static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
          d3d10->samplers[RARCH_FILTER_UNSPEC][i] = d3d10->samplers[RARCH_FILTER_NEAREST][i];
    }
 }
-
 
 static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 {
@@ -554,8 +572,12 @@ static void d3d10_gfx_free(void* data)
       Release(d3d10->device);
    }
 
+#ifdef HAVE_MONITOR
    win32_monitor_from_window();
+#endif
+#ifdef HAVE_WINDOW
    win32_destroy_window();
+#endif
    free(d3d10);
 }
 
@@ -564,31 +586,41 @@ d3d10_gfx_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
    unsigned i;
+#ifdef HAVE_MONITOR
    MONITORINFOEX   current_mon;
    HMONITOR        hm_to_use;
    WNDCLASSEX      wndclass = { 0 };
+#endif
    settings_t*     settings = config_get_ptr();
    d3d10_video_t*  d3d10    = (d3d10_video_t*)calloc(1, sizeof(*d3d10));
 
    if (!d3d10)
       return NULL;
 
+#ifdef HAVE_WINDOW
    win32_window_reset();
+#endif
+#ifdef HAVE_MONITOR
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
+#endif
 
    win32_monitor_info(&current_mon, &hm_to_use, &d3d10->cur_mon_id);
+#endif
 
    d3d10->vp.full_width  = video->width;
    d3d10->vp.full_height = video->height;
 
+#ifdef HAVE_MONITOR
    if (!d3d10->vp.full_width)
       d3d10->vp.full_width = 
          current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d10->vp.full_height)
       d3d10->vp.full_height = 
          current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+#endif
 
    if (!win32_set_video_mode(d3d10,
             d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
@@ -596,7 +628,7 @@ d3d10_gfx_init(const video_info_t* video,
       RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
       goto error;
    }
-   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    {
       UINT                 flags = 0;
@@ -609,7 +641,9 @@ d3d10_gfx_init(const video_info_t* video,
       desc.BufferDesc.RefreshRate.Numerator   = 60;
       desc.BufferDesc.RefreshRate.Denominator = 1;
       desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#ifdef HAVE_WINDOW
       desc.OutputWindow          = main_window.hwnd;
+#endif
       desc.SampleDesc.Count      = 1;
       desc.SampleDesc.Quality    = 0;
       desc.Windowed              = TRUE;
@@ -899,6 +933,7 @@ d3d10_gfx_init(const video_info_t* video,
 
       desc.FillMode = D3D10_FILL_SOLID;
       desc.CullMode = D3D10_CULL_NONE;
+      desc.ScissorEnable = TRUE;
 
       D3D10CreateRasterizerState(d3d10->device, &desc, &d3d10->state);
    }
@@ -909,10 +944,10 @@ d3d10_gfx_init(const video_info_t* video,
 
    if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(settings->paths.path_shader);
+      const char* ext = path_get_extension(retroarch_get_shader_preset());
 
       if (ext && !strncmp(ext, "slang", 5))
-         d3d10_gfx_set_shader(d3d10, RARCH_SHADER_SLANG, settings->paths.path_shader);
+         d3d10_gfx_set_shader(d3d10, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
    }
 
 #if 0
@@ -1180,8 +1215,6 @@ static bool d3d10_gfx_frame(
 
    if (d3d10->shader_preset)
    {
-      unsigned i;
-
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
          if (d3d10->shader_preset->pass[i].feedback)
@@ -1211,14 +1244,17 @@ static bool d3d10_gfx_frame(
 
             if (buffer_sem->stage_mask && buffer_sem->uniforms)
             {
-               void* data;
+               void*               uniform_data = NULL;
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
-               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD, 0, (void**)&data);
+               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD,
+                     0, (void**)&uniform_data);
+
                while (uniform->size)
                {
                   if (uniform->data)
-                     memcpy((uint8_t*)data + uniform->offset, uniform->data, uniform->size);
+                     memcpy((uint8_t*)uniform_data + uniform->offset,
+                           uniform->data, uniform->size);
                   uniform++;
                }
                D3D10UnmapBuffer(buffer);
@@ -1294,6 +1330,8 @@ static bool d3d10_gfx_frame(
 
    D3D10ClearRenderTargetView(context, d3d10->renderTargetView, d3d10->clearcolor);
    D3D10SetViewports(context, 1, &d3d10->frame.viewport);
+
+   d3d10_clear_scissor(d3d10, video_info);
 
    D3D10Draw(context, 4, 0);
 
@@ -1596,7 +1634,12 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_gfx_load_texture,
    d3d10_gfx_unload_texture,
    NULL, /* set_video_mode */
+#ifndef __WINRT__
    win32_get_refresh_rate,
+#else
+   /* UWP does not expose this information easily */
+   NULL,
+#endif
    d3d10_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

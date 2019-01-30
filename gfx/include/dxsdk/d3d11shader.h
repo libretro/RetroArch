@@ -12,7 +12,6 @@
 
 #include "d3dcommon.h"
 
-
 typedef enum D3D11_SHADER_VERSION_TYPE
 {
     D3D11_SHVER_PIXEL_SHADER    = 0,
@@ -40,7 +39,6 @@ typedef enum D3D11_SHADER_VERSION_TYPE
 typedef D3D_RESOURCE_RETURN_TYPE D3D11_RESOURCE_RETURN_TYPE;
 
 typedef D3D_CBUFFER_TYPE D3D11_CBUFFER_TYPE;
-
 
 typedef struct _D3D11_SIGNATURE_PARAMETER_DESC
 {
@@ -167,7 +165,6 @@ typedef struct _D3D11_SHADER_INPUT_BIND_DESC
 #define D3D_SHADER_REQUIRES_LEVEL_9_COMPARISON_FILTERING    0x00000080
 #define D3D_SHADER_REQUIRES_TILED_RESOURCES                 0x00000100
 
-
 typedef struct _D3D11_LIBRARY_DESC
 {
     LPCSTR    Creator;           // The name of the originator of the library.
@@ -231,7 +228,6 @@ typedef struct _D3D11_PARAMETER_DESC
     UINT                        FirstOutRegister;   // The first output register for this parameter.
     UINT                        FirstOutComponent;  // The first output register component for this parameter.
 } D3D11_PARAMETER_DESC;
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Interfaces ////////////////////////////////////////////////////////////////
@@ -454,7 +450,6 @@ DECLARE_INTERFACE_(ID3D11Module, IUnknown)
                                     _COM_Outptr_ interface ID3D11ModuleInstance ** ppModuleInstance) PURE;
 };
 
-
 // {469E07F7-045A-48D5-AA12-68A478CDF75D}
 interface DECLSPEC_UUID("469E07F7-045A-48D5-AA12-68A478CDF75D") ID3D11ModuleInstance;
 DEFINE_GUID(IID_ID3D11ModuleInstance, 
@@ -488,7 +483,6 @@ DECLARE_INTERFACE_(ID3D11ModuleInstance, IUnknown)
     STDMETHOD(BindResourceAsUnorderedAccessViewByName)(THIS_ _In_ LPCSTR pSrvName, _In_ UINT uDstUavSlot, _In_ UINT uCount) PURE;
 };
 
-
 // {59A6CD0E-E10D-4C1F-88C0-63ABA1DAF30E}
 interface DECLSPEC_UUID("59A6CD0E-E10D-4C1F-88C0-63ABA1DAF30E") ID3D11Linker;
 DEFINE_GUID(IID_ID3D11Linker, 
@@ -518,7 +512,6 @@ DECLARE_INTERFACE_(ID3D11Linker, IUnknown)
     STDMETHOD(AddClipPlaneFromCBuffer)(THIS_ _In_ UINT uCBufferSlot, _In_ UINT uCBufferEntry) PURE;
 };
 
-
 // {D80DD70C-8D2F-4751-94A1-03C79B3556DB}
 interface DECLSPEC_UUID("D80DD70C-8D2F-4751-94A1-03C79B3556DB") ID3D11LinkingNode;
 DEFINE_GUID(IID_ID3D11LinkingNode, 
@@ -533,7 +526,6 @@ DECLARE_INTERFACE_(ID3D11LinkingNode, IUnknown)
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 };
-
 
 // {54133220-1CE8-43D3-8236-9855C5CEECFF}
 interface DECLSPEC_UUID("54133220-1CE8-43D3-8236-9855C5CEECFF") ID3D11FunctionLinkingGraph;
@@ -584,7 +576,6 @@ DECLARE_INTERFACE_(ID3D11FunctionLinkingGraph, IUnknown)
                                   _COM_Outptr_ ID3DBlob ** ppBuffer) PURE;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////
 // APIs //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -598,4 +589,3 @@ extern "C" {
 #endif //__cplusplus
     
 #endif //__D3D11SHADER_H__
-

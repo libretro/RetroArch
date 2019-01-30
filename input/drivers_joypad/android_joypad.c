@@ -94,7 +94,6 @@ static bool android_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-
 static void android_joypad_destroy(void)
 {
    unsigned i, j;

@@ -16,7 +16,6 @@
 #include <d2d1_1.h>
 #endif // #ifndef _D2D1_1_H_
 
-
 /// <summary>
 /// Function pointer that sets a property on an effect.
 /// </summary>
@@ -47,7 +46,6 @@ typedef interface ID2D1EffectContext ID2D1EffectContext;
 typedef interface ID2D1TransformNode ID2D1TransformNode;
 
 #endif
-
 
 /// <summary>
 /// Indicates what has changed since the last time the effect was asked to prepare
@@ -81,7 +79,6 @@ typedef enum D2D1_CHANGE_TYPE
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_CHANGE_TYPE);
 
-
 /// <summary>
 /// Indicates options for drawing using a pixel shader.
 /// </summary>
@@ -104,7 +101,6 @@ typedef enum D2D1_PIXEL_OPTIONS
 } D2D1_PIXEL_OPTIONS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_PIXEL_OPTIONS);
-
 
 /// <summary>
 /// Indicates options for drawing custom vertices set by transforms.
@@ -140,7 +136,6 @@ typedef enum D2D1_VERTEX_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_VERTEX_OPTIONS);
 
-
 /// <summary>
 /// Describes how a vertex buffer is to be managed.
 /// </summary>
@@ -160,7 +155,6 @@ typedef enum D2D1_VERTEX_USAGE
 
 } D2D1_VERTEX_USAGE;
 
-
 /// <summary>
 /// Describes a particular blend in the D2D1_BLEND_DESCRIPTION structure.
 /// </summary>
@@ -174,7 +168,6 @@ typedef enum D2D1_BLEND_OPERATION
     D2D1_BLEND_OPERATION_FORCE_DWORD = 0xffffffff
 
 } D2D1_BLEND_OPERATION;
-
 
 /// <summary>
 /// Describes a particular blend in the D2D1_BLEND_DESCRIPTION structure.
@@ -198,7 +191,6 @@ typedef enum D2D1_BLEND
 
 } D2D1_BLEND;
 
-
 /// <summary>
 /// Allows a caller to control the channel depth of a stage in the rendering
 /// pipeline.
@@ -211,7 +203,6 @@ typedef enum D2D1_CHANNEL_DEPTH
     D2D1_CHANNEL_DEPTH_FORCE_DWORD = 0xffffffff
 
 } D2D1_CHANNEL_DEPTH;
-
 
 /// <summary>
 /// Represents filtering modes transforms may select to use on their input textures.
@@ -231,7 +222,6 @@ typedef enum D2D1_FILTER
 
 } D2D1_FILTER;
 
-
 /// <summary>
 /// Defines capabilities of the underlying D3D device which may be queried using
 /// CheckFeatureSupport.
@@ -243,7 +233,6 @@ typedef enum D2D1_FEATURE
     D2D1_FEATURE_FORCE_DWORD = 0xffffffff
 
 } D2D1_FEATURE;
-
 
 /// <summary>
 /// Defines a property binding to a function. The name must match the property
@@ -269,7 +258,6 @@ typedef struct D2D1_PROPERTY_BINDING
 
 } D2D1_PROPERTY_BINDING;
 
-
 /// <summary>
 /// This is used to define a resource texture when that resource texture is created.
 /// </summary>
@@ -284,7 +272,6 @@ typedef struct D2D1_RESOURCE_TEXTURE_PROPERTIES
 
 } D2D1_RESOURCE_TEXTURE_PROPERTIES;
 
-
 /// <summary>
 /// This defines a single element of the vertex layout.
 /// </summary>
@@ -298,13 +285,11 @@ typedef struct D2D1_INPUT_ELEMENT_DESC
 
 } D2D1_INPUT_ELEMENT_DESC;
 
-
 // 
 // Set to alignedByteOffset within D2D1_INPUT_ELEMENT_DESC for elements that 
 // immediately follow preceding elements in memory
 //
 #define D2D1_APPEND_ALIGNED_ELEMENT ( 0xffffffff )
-
 
 /// <summary>
 /// This defines the properties of a vertex buffer which uses the default vertex
@@ -318,7 +303,6 @@ typedef struct D2D1_VERTEX_BUFFER_PROPERTIES
     UINT32 byteWidth;
 
 } D2D1_VERTEX_BUFFER_PROPERTIES;
-
 
 /// <summary>
 /// This defines the input layout of vertices and the vertex shader which processes
@@ -334,7 +318,6 @@ typedef struct D2D1_CUSTOM_VERTEX_BUFFER_PROPERTIES
 
 } D2D1_CUSTOM_VERTEX_BUFFER_PROPERTIES;
 
-
 /// <summary>
 /// This defines the range of vertices from a vertex buffer to draw.
 /// </summary>
@@ -344,7 +327,6 @@ typedef struct D2D1_VERTEX_RANGE
     UINT32 vertexCount;
 
 } D2D1_VERTEX_RANGE;
-
 
 /// <summary>
 /// Blend description which configures a blend transform object.
@@ -361,7 +343,6 @@ typedef struct D2D1_BLEND_DESCRIPTION
 
 } D2D1_BLEND_DESCRIPTION;
 
-
 /// <summary>
 /// Describes options transforms may select to use on their input textures.
 /// </summary>
@@ -371,7 +352,6 @@ typedef struct D2D1_INPUT_DESCRIPTION
     UINT32 levelOfDetailCount;
 
 } D2D1_INPUT_DESCRIPTION;
-
 
 /// <summary>
 /// Indicates whether shader support for doubles is present on the underlying
@@ -383,7 +363,6 @@ typedef struct D2D1_FEATURE_DATA_DOUBLES
 
 } D2D1_FEATURE_DATA_DOUBLES;
 
-
 /// <summary>
 /// Indicates support for features which are optional on D3D10 feature levels.  This
 /// may be populated using CheckFeatureSupport.
@@ -393,7 +372,6 @@ typedef struct D2D1_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS
     BOOL computeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x;
 
 } D2D1_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS;
-
 
 EXTERN_C CONST IID IID_ID2D1VertexBuffer;
 EXTERN_C CONST IID IID_ID2D1ResourceTexture;
@@ -415,9 +393,7 @@ EXTERN_C CONST IID IID_ID2D1BoundsAdjustmentTransform;
 EXTERN_C CONST IID IID_ID2D1EffectImpl;
 EXTERN_C CONST IID IID_ID2D1EffectContext;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// A transform uses this interface to write new vertices to a vertex buffer.
@@ -434,7 +410,6 @@ interface DX_DECLARE_INTERFACE("9b8b1336-00a5-4668-92b7-ced5d8bf9b7b") ID2D1Vert
         ) PURE;
 }; // interface ID2D1VertexBuffer
 
-
 interface DX_DECLARE_INTERFACE("688d15c3-02b0-438d-b13a-d1b44c32c39a") ID2D1ResourceTexture  : public IUnknown
 {
     
@@ -450,7 +425,6 @@ interface DX_DECLARE_INTERFACE("688d15c3-02b0-438d-b13a-d1b44c32c39a") ID2D1Reso
         UINT32 dataCount 
         ) PURE;
 }; // interface ID2D1ResourceTexture
-
 
 /// <summary>
 /// A transform uses this interface to specify how to render a particular pass in
@@ -491,7 +465,6 @@ interface DX_DECLARE_INTERFACE("519ae1bd-d19a-420d-b849-364f594776b7") ID2D1Rend
         UINT32 instructionCount 
         ) PURE;
 }; // interface ID2D1RenderInfo
-
 
 /// <summary>
 /// A transform uses this interface to specify how to render a particular pass using
@@ -545,7 +518,6 @@ interface DX_DECLARE_INTERFACE("693ce632-7f2f-45de-93fe-18d88b37aa21") ID2D1Draw
         ) PURE;
 }; // interface ID2D1DrawInfo
 
-
 /// <summary>
 /// A transform uses this interface to specify how to render a particular pass using
 /// compute shader.
@@ -577,7 +549,6 @@ interface DX_DECLARE_INTERFACE("5598b14b-9fd7-48b7-9bdb-8f0964eb38bc") ID2D1Comp
         ) PURE;
 }; // interface ID2D1ComputeInfo
 
-
 /// <summary>
 /// A base object which can be inserted into a transform graph.
 /// </summary>
@@ -590,7 +561,6 @@ interface DX_DECLARE_INTERFACE("b2efe1e7-729f-4102-949f-505fa21bf666") ID2D1Tran
     STDMETHOD_(UINT32, GetInputCount)(
         ) CONST PURE;
 }; // interface ID2D1TransformNode
-
 
 /// <summary>
 /// The implementation of the actual graph.
@@ -667,7 +637,6 @@ interface DX_DECLARE_INTERFACE("13d29038-c3e6-4034-9081-13b53a417992") ID2D1Tran
         ) PURE;
 }; // interface ID2D1TransformGraph
 
-
 /// <summary>
 /// The interface implemented by a transform author.
 /// </summary>
@@ -695,7 +664,6 @@ interface DX_DECLARE_INTERFACE("ef1a287d-342a-4f76-8fdb-da0d6ea9f92b") ID2D1Tran
         ) CONST PURE;
 }; // interface ID2D1Transform
 
-
 /// <summary>
 /// The interface implemented by a transform author to provide a GPU-based effect.
 /// </summary>
@@ -706,7 +674,6 @@ interface DX_DECLARE_INTERFACE("36bfdcb6-9739-435d-a30d-a653beff6a6f") ID2D1Draw
         _In_ ID2D1DrawInfo *drawInfo 
         ) PURE;
 }; // interface ID2D1DrawTransform
-
 
 /// <summary>
 /// The interface implemented by a transform author to provide a Compute Shader
@@ -727,7 +694,6 @@ interface DX_DECLARE_INTERFACE("0d85573c-01e3-4f7d-bfd9-0d60608bf3c3") ID2D1Comp
         ) PURE;
 }; // interface ID2D1ComputeTransform
 
-
 /// <summary>
 /// The interface implemented by a transform author to indicate that it should
 /// receive an analysis result callback.
@@ -740,7 +706,6 @@ interface DX_DECLARE_INTERFACE("0359dc30-95e6-4568-9055-27720d130e93") ID2D1Anal
         UINT32 analysisDataCount 
         ) PURE;
 }; // interface ID2D1AnalysisTransform
-
 
 /// <summary>
 /// The interface implemented by a transform author to provide a CPU based source
@@ -759,7 +724,6 @@ interface DX_DECLARE_INTERFACE("db1800dd-0c34-4cf9-be90-31cc0a5653e1") ID2D1Sour
         D2D1_POINT_2U targetOrigin 
         ) PURE;
 }; // interface ID2D1SourceTransform
-
 
 /// <summary>
 /// Base interface for built-in transforms on which precision and caching may be
@@ -784,7 +748,6 @@ interface DX_DECLARE_INTERFACE("1a799d8a-69f7-4e4c-9fed-437ccc6684cc") ID2D1Conc
         ) PURE;
 }; // interface ID2D1ConcreteTransform
 
-
 /// <summary>
 /// An effect uses this interface to configure a blending operation.
 /// </summary>
@@ -799,7 +762,6 @@ interface DX_DECLARE_INTERFACE("63ac0b32-ba44-450f-8806-7f4ca1ff2f1b") ID2D1Blen
         _Out_ D2D1_BLEND_DESCRIPTION *description 
         ) CONST PURE;
 }; // interface ID2D1BlendTransform
-
 
 /// <summary>
 /// An effect uses this interface to configure border generation.
@@ -822,7 +784,6 @@ interface DX_DECLARE_INTERFACE("4998735c-3a19-473c-9781-656847e3a347") ID2D1Bord
         ) CONST PURE;
 }; // interface ID2D1BorderTransform
 
-
 /// <summary>
 /// An effect uses this interface to offset an image without inserting a rendering
 /// pass.
@@ -838,7 +799,6 @@ interface DX_DECLARE_INTERFACE("3fe6adea-7643-4f53-bd14-a0ce63f24042") ID2D1Offs
         ) CONST PURE;
 }; // interface ID2D1OffsetTransform
 
-
 /// <summary>
 /// An effect uses this interface to alter the image rectangle of its input.
 /// </summary>
@@ -853,7 +813,6 @@ interface DX_DECLARE_INTERFACE("90f732e2-5092-4606-a819-8651970baccd") ID2D1Boun
         _Out_ D2D1_RECT_L *outputBounds 
         ) CONST PURE;
 }; // interface ID2D1BoundsAdjustmentTransform
-
 
 /// <summary>
 /// This is the interface implemented by an effect author, along with the
@@ -887,7 +846,6 @@ interface DX_DECLARE_INTERFACE("a248fd3f-3e6c-4e63-9f03-7f68ecc91db9") ID2D1Effe
         _In_ ID2D1TransformGraph *transformGraph 
         ) PURE;
 }; // interface ID2D1EffectImpl
-
 
 /// <summary>
 /// The internal context handed to effect authors to create transforms from effects
@@ -1032,13 +990,9 @@ interface DX_DECLARE_INTERFACE("3d9f916b-27dc-4ad7-b4f1-64945340f563") ID2D1Effe
         ) CONST PURE;
 }; // interface ID2D1EffectContext
 
-
-
 #endif
 
-
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1VertexBuffer ID2D1VertexBuffer;
 

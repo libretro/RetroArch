@@ -378,13 +378,14 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_CG",
@@ -411,13 +412,14 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_CG",
@@ -446,13 +448,14 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -475,13 +478,14 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -499,6 +503,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -506,12 +511,13 @@
 					"-DHAVE_LROUND",
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
-                                        "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
+					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_CORETEXT",
@@ -542,6 +548,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
@@ -562,6 +569,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -569,12 +577,13 @@
 					"-DHAVE_LROUND",
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
-                                        "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
+					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_CORETEXT",
@@ -605,6 +614,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",

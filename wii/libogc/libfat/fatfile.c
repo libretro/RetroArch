@@ -30,7 +30,6 @@
  2009-10-23 oggzee: fixes for cluster aligned file size (write, truncate, seek)
 */
 
-
 #include "fatfile.h"
 
 #include <fcntl.h>
@@ -102,7 +101,6 @@ int FAT_setAttr(const char *file, uint8_t attr) {
 	// Lock Partition
 	_FAT_lock(&partition->lock);
 
-
 	// Write Data
 	_FAT_cache_writePartialSector (
 		partition->cache // Cache to write
@@ -123,7 +121,6 @@ int FAT_setAttr(const char *file, uint8_t attr) {
 
 	return 0;
 }
-
 
 int _FAT_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode) {
 	PARTITION* partition = NULL;
@@ -380,7 +377,6 @@ int _FAT_syncToDisc (FILE_STRUCT* file) {
 
 	return 0;
 }
-
 
 int _FAT_close_r (struct _reent *r, void *fd) {
 	FILE_STRUCT* file = (FILE_STRUCT*)  fd;
@@ -807,7 +803,6 @@ ssize_t _FAT_write_r (struct _reent *r, void *fd, const char *ptr, size_t len) {
 		ptr += tempVar;
 		position.byte += tempVar;
 
-
 		// Move onto next sector
 		if (position.byte >= partition->bytesPerSector) {
 			position.byte = 0;
@@ -917,7 +912,6 @@ ssize_t _FAT_write_r (struct _reent *r, void *fd, const char *ptr, size_t len) {
 		remain = 0;
 	}
 
-
 	// Amount written is the originally requested amount minus stuff remaining
 	len = len - remain;
 
@@ -939,7 +933,6 @@ ssize_t _FAT_write_r (struct _reent *r, void *fd, const char *ptr, size_t len) {
 
 	return len;
 }
-
 
 off_t _FAT_seek_r (struct _reent *r, void *fd, off_t pos, int dir) {
 	FILE_STRUCT* file = (FILE_STRUCT*)  fd;
@@ -1040,8 +1033,6 @@ off_t _FAT_seek_r (struct _reent *r, void *fd, off_t pos, int dir) {
 	_FAT_unlock(&partition->lock);
 	return position;
 }
-
-
 
 int _FAT_fstat_r (struct _reent *r, void *fd, struct stat *st) {
 	FILE_STRUCT* file = (FILE_STRUCT*)  fd;

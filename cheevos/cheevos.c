@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2015-2018 - Andre Leiradella
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1666,7 +1666,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
             if (settings && settings->bools.cheevos_auto_screenshot)
             {
-               char shotname[256];
+               char shotname[4200];
 
                snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
                   settings->paths.directory_screenshot,
@@ -2266,14 +2266,10 @@ bool cheevos_toggle_hardcore_mode(void)
       return false;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->bools.cheevos_hardcore_mode_enable
-      && !cheevos_hardcore_paused)
+   if (settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
-
-      /* reset the state loaded flag in case it was set */
-      cheevos_state_loaded_flag = false;
 
       /* send reset core cmd to avoid any user
        * savestate previusly loaded. */
@@ -2575,10 +2571,12 @@ enum
 
 static int cheevos_iterate(coro_t *coro)
 {
-   ssize_t num_read = 0;
-   size_t to_read   = 4096;
-   uint8_t *buffer  = NULL;
-   const char *end  = NULL;
+   const int snes_header_len = 0x200;
+   const int lynx_header_len = 0x40;
+   ssize_t num_read          = 0;
+   size_t to_read            = 4096;
+   uint8_t *buffer           = NULL;
+   const char *end           = NULL;
 
    static const uint32_t genesis_exts[] =
    {
@@ -2616,17 +2614,15 @@ static int cheevos_iterate(coro_t *coro)
 
    static cheevos_finder_t finders[] =
    {
-      {SNES_MD5,    "SNES (8Mb padding)",                snes_exts},
+      {SNES_MD5,    "SNES (discards header)",            snes_exts},
       {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
-      {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
-      {NES_MD5,     "NES (discards VROM)",               NULL},
+      {LYNX_MD5,    "Atari Lynx (discards header)",      lynx_exts},
+      {NES_MD5,     "NES (discards header)",             NULL},
       {GENERIC_MD5, "Generic (plain content)",           NULL},
       {FILENAME_MD5, "Generic (filename)",               NULL}
    };
 
    CORO_ENTER();
-
-
 
       cheevos_locals.addrs_patched = false;
 
@@ -2906,30 +2902,21 @@ found:
 
       MD5_Init(&coro->md5);
 
-      coro->offset = 0;
+      /* Checks for the existence of a headered SNES file.
+         Unheadered files fall back to GENERIC_MD5. */
+
+      if (coro->len < 0x2000 || coro->len % 0x2000 != snes_header_len)
+      {
+          coro->gameid = 0;
+          CORO_RET();
+      }
+
+      coro->offset = 512;
       coro->count  = 0;
 
       CORO_GOSUB(EVAL_MD5);
-
-      if (coro->count == 0)
-      {
-         MD5_Final(coro->hash, &coro->md5);
-         coro->gameid = 0;
-         CORO_RET();
-      }
-
-      if (coro->count < size_in_megabytes(8))
-      {
-         /*
-            * Inputs:  CHEEVOS_VAR_MD5, CHEEVOS_VAR_OFFSET, CHEEVOS_VAR_COUNT
-            * Outputs: CHEEVOS_VAR_MD5
-            */
-         coro->offset      = 0;
-         coro->count       = size_in_megabytes(8) - coro->count;
-         CORO_GOSUB(FILL_MD5);
-      }
-
       MD5_Final(coro->hash, &coro->md5);
+
       CORO_GOTO(GET_GAMEID);
 
       /**************************************************************************
@@ -2969,16 +2956,19 @@ found:
          *************************************************************************/
    CORO_SUB(LYNX_MD5)
 
-      if (coro->len < 0x0240)
+      /* Checks for the existence of a headered Lynx file.
+         Unheadered files fall back to GENERIC_MD5. */
+
+      if (coro->len <= lynx_header_len ||
+        memcmp("LYNX", (void *)coro->data, 5) != 0)
       {
          coro->gameid = 0;
          CORO_RET();
       }
 
       MD5_Init(&coro->md5);
-
-      coro->offset       = 0x0040;
-      coro->count        = 0x0200;
+      coro->offset = lynx_header_len;
+      coro->count  = coro->len - lynx_header_len;
       CORO_GOSUB(EVAL_MD5);
 
       MD5_Final(coro->hash, &coro->md5);
@@ -2991,12 +2981,8 @@ found:
          *************************************************************************/
    CORO_SUB(NES_MD5)
 
-      /* Note about the references to the FCEU emulator below. There is no
-         * core-specific code in this function, it's rather Retro Achievements
-         * specific code that must be followed to the letter so we compute
-         * the correct ROM hash. Retro Achievements does indeed use some
-         * FCEU related method to compute the hash, since its NES emulator
-         * is based on it. */
+      /* Checks for the existence of a headered NES file.
+         Unheadered files fall back to GENERIC_MD5. */
 
       if (coro->len < sizeof(coro->header))
       {
@@ -3006,84 +2992,23 @@ found:
 
       memcpy((void*)&coro->header, coro->data,
             sizeof(coro->header));
-      
-      if (coro->header.id[0] == 'N'
-        && coro->header.id[1] == 'E'
-        && coro->header.id[2] == 'S'
-        && coro->header.id[3] == 0x1a)
+
+      if (     coro->header.id[0] != 'N'
+            || coro->header.id[1] != 'E'
+            || coro->header.id[2] != 'S'
+            || coro->header.id[3] != 0x1a)
       {
-         size_t romsize = 256;
-         /* from FCEU core - compute size using the cart mapper */
-         int mapper     = (coro->header.rom_type >> 4) | (coro->header.rom_type2 & 0xF0);
-
-         if (coro->header.rom_size)
-            romsize     = next_pow2(coro->header.rom_size);
-
-         /* for games not to the power of 2, so we just read enough
-            * PRG rom from it, but we have to keep ROM_size to the power of 2
-            * since PRGCartMapping wants ROM_size to be to the power of 2
-            * so instead if not to power of 2, we just use head.ROM_size when
-            * we use FCEU_read. */
-         coro->round       = mapper != 53 && mapper != 198 && mapper != 228;
-         coro->bytes       = coro->round ? romsize : coro->header.rom_size;
-         
-         coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
-            ? sizeof(coro->header) : 0);
-            
-          /* from FCEU core - check if Trainer included in ROM data */
-          MD5_Init(&coro->md5);
-          coro->count  = 0x4000 * coro->bytes;
-          CORO_GOSUB(EVAL_MD5);
-
-          if (coro->count < 0x4000 * coro->bytes)
-          {
-             coro->offset      = 0xff;
-             coro->count       = 0x4000 * coro->bytes - coro->count;
-             CORO_GOSUB(FILL_MD5);
-          }
-
-          MD5_Final(coro->hash, &coro->md5);
-          CORO_GOTO(GET_GAMEID);
+         coro->gameid = 0;
+         CORO_RET();
       }
-      else
-      {
-         unsigned i;
-          size_t chunks     = coro->len >> 14;
-          size_t chunk_size = 0x4000;
 
-          /* Fall back to headerless hashing
-           * PRG ROM size is unknown, so test by 16KB chunks */
+      MD5_Init(&coro->md5);
+      coro->offset = sizeof(coro->header);
+      coro->count  = coro->len - coro->offset;
+      CORO_GOSUB(EVAL_MD5);
 
-          coro->round       = 0;
-          coro->offset      = 0;
-          
-          for (i = 0; i < chunks; i++)
-          {
-              MD5_Init(&coro->md5);
-              
-              coro->bytes = i + 1;
-              coro->count = coro->bytes * chunk_size;
-              
-              CORO_GOSUB(EVAL_MD5);
-
-              if (coro->count < 0x4000 * coro->bytes)
-              {
-                 coro->offset      = 0xff;
-                 coro->count       = 0x4000 * coro->bytes - coro->count;
-                 CORO_GOSUB(FILL_MD5);
-              }
-
-              MD5_Final(coro->hash, &coro->md5);
-              CORO_GOSUB(GET_GAMEID);
-              
-              if (coro->gameid > 0)
-              {
-                  break;
-              }
-          }
-
-          CORO_RET();
-      }
+      MD5_Final(coro->hash, &coro->md5);
+      CORO_GOTO(GET_GAMEID);
 
       /**************************************************************************
        * Info   Tries to identify a "generic" game
@@ -3268,7 +3193,10 @@ found:
 
       {
          settings_t *settings = config_get_ptr();
-         if (!string_is_equal(settings->arrays.menu_driver, "xmb") ||
+         if (!(
+               string_is_equal(settings->arrays.menu_driver, "xmb") ||
+               string_is_equal(settings->arrays.menu_driver, "ozone")
+            ) ||
                !settings->bools.cheevos_badges_enable)
             CORO_RET();
       }
@@ -3429,7 +3357,7 @@ found:
 
                /* Save token to config and clear pass on success */
                *coro->settings->arrays.cheevos_password = '\0';
-               strlcpy(
+               strncpy(
                      coro->settings->arrays.cheevos_token,
                      cheevos_locals.token, sizeof(coro->settings->arrays.cheevos_token)
                );

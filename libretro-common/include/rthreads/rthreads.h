@@ -53,6 +53,23 @@ typedef unsigned sthread_tls_t;
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
 
 /**
+ * sthread_create_with_priority:
+ * @start_routine           : thread entry callback function
+ * @userdata                : pointer to userdata that will be made
+ *                            available in thread entry callback function
+ * @thread_priority         : thread priority hint value from [1-100]
+ *
+ * Create a new thread. It is possible for the caller to give a hint
+ * for the thread's priority from [1-100]. Any passed in @thread_priority
+ * values that are outside of this range will cause sthread_create() to
+ * create a new thread using the operating system's default thread
+ * priority.
+ *
+ * Returns: pointer to new thread if successful, otherwise NULL.
+ */
+sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority);
+
+/**
  * sthread_detach:
  * @thread                  : pointer to thread object
  *

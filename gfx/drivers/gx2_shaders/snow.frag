@@ -71,5 +71,3 @@ void main(void)
    a = a * min(pos.y * 4.0, 1.0);
    FragColor = vec4(1.0, 1.0, 1.0, a);
 }
-
-

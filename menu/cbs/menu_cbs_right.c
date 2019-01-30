@@ -118,7 +118,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
-      if(remap_id == key_descriptors[key_id].key)
+      if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
@@ -159,17 +159,9 @@ int action_right_input_desc(unsigned type, const char *label,
       also skip all the axes until analog remapping is implemented */
    if (remap_idx != RARCH_UNMAPPED)
    {
-      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
-          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
          action_right_input_desc(type, label, wraparound);
    }
-
-#if 0
-   int i = 0;
-   //RARCH_LOG("[remap-debug] new descriptor for %d: %s\n", remap_idx, system->input_desc_btn[user_idx][remap_idx]);
-   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
-      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
-#endif
 
    return 0;
 }
@@ -220,7 +212,6 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
    return 0;
 }
 
-
 static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;
@@ -233,7 +224,7 @@ static int action_right_goto_tab(void)
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+   menu_driver_list_cache(&list_info);
 
    if (cbs && cbs->action_content_list_switch)
       return cbs->action_content_list_switch(selection_buf, menu_stack,
@@ -247,11 +238,11 @@ static int action_right_mainmenu(unsigned type, const char *label,
 {
    menu_ctx_list_t list_info;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   menu_driver_list_get_selection(&list_info);
 
    list_info.type = MENU_LIST_PLAIN;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
+   menu_driver_list_get_size(&list_info);
 
    if (list_info.size == 1)
    {
@@ -262,8 +253,8 @@ static int action_right_mainmenu(unsigned type, const char *label,
       list_horiz_info.type      = MENU_LIST_HORIZONTAL;
       list_tabs_info.type       = MENU_LIST_TABS;
 
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
+      menu_driver_list_get_size(&list_horiz_info);
+      menu_driver_list_get_size(&list_tabs_info);
 
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->bools.menu_navigation_wraparound_enable)
@@ -355,7 +346,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
    new_size = cheat_manager_get_size() + 1;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    return 0;
 }
@@ -376,44 +367,6 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, shader);
-
-   return 0;
-}
-
-static int action_right_netplay_mitm_server(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned i;
-   bool found = false;
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
-
-   for (i = 0; i < list_len; i++)
-   {
-      /* find the currently selected server in the list */
-      if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
-      {
-         /* move to the next one in the list, wrap around if necessary */
-         if (i + 1 < list_len)
-         {
-            found = true;
-            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i + 1].name, sizeof(settings->arrays.netplay_mitm_server));
-            break;
-         }
-         else if (wraparound)
-         {
-            found = true;
-            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[0].name, sizeof(settings->arrays.netplay_mitm_server));
-            break;
-         }
-      }
-   }
-
-   if (!found)
-   {
-      /* current entry was invalid, go back to the start */
-      strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[0].name, sizeof(settings->arrays.netplay_mitm_server));
-   }
 
    return 0;
 }
@@ -680,6 +633,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
@@ -694,9 +649,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
                BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
-               break;
-            case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-               BIND_ACTION_RIGHT(cbs, action_right_netplay_mitm_server);
                break;
             case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
                BIND_ACTION_RIGHT(cbs, action_right_shader_watch_for_changes);

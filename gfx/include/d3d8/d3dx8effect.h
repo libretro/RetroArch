@@ -11,9 +11,7 @@
 #ifndef __D3DX8EFFECT_H__
 #define __D3DX8EFFECT_H__
 
-
 #define D3DXFX_DONOTSAVESTATE  (1 << 0)
-
 
 typedef enum _D3DXPARAMETERTYPE
 {
@@ -30,14 +28,12 @@ typedef enum _D3DXPARAMETERTYPE
 
 } D3DXPARAMETERTYPE;
 
-
 typedef struct _D3DXEFFECT_DESC
 {
     UINT Parameters;
     UINT Techniques;
 
 } D3DXEFFECT_DESC;
-
 
 typedef struct _D3DXPARAMETER_DESC
 {
@@ -47,7 +43,6 @@ typedef struct _D3DXPARAMETER_DESC
 
 } D3DXPARAMETER_DESC;
 
-
 typedef struct _D3DXTECHNIQUE_DESC
 {
     LPCSTR Name;
@@ -56,15 +51,12 @@ typedef struct _D3DXTECHNIQUE_DESC
 
 } D3DXTECHNIQUE_DESC;
 
-
 typedef struct _D3DXPASS_DESC
 {
     LPCSTR Name;
     LPCSTR Index;
 
 } D3DXPASS_DESC;
-
-
 
 /*
  * ID3DXEffect
@@ -76,7 +68,6 @@ typedef interface ID3DXEffect *LPD3DXEFFECT;
 /* {648B1CEB-8D4E-4d66-B6FA-E44969E82E89} */
 DEFINE_GUID( IID_ID3DXEffect,
 0x648b1ceb, 0x8d4e, 0x4d66, 0xb6, 0xfa, 0xe4, 0x49, 0x69, 0xe8, 0x2e, 0x89);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXEffect
@@ -127,17 +118,13 @@ DECLARE_INTERFACE_(ID3DXEffect, IUnknown)
     STDMETHOD(OnResetDevice)(THIS) PURE;
 };
 
-
-
 /*
  * APIs
  */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
 
 /*
  * D3DXCreateEffect:
@@ -185,7 +172,6 @@ HRESULT WINAPI
 #define D3DXCreateEffectFromFile D3DXCreateEffectFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateEffectFromResourceA(
         LPDIRECT3DDEVICE8 pDevice,
@@ -208,7 +194,6 @@ HRESULT WINAPI
 #define D3DXCreateEffectFromResource D3DXCreateEffectFromResourceA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateEffect(
         LPDIRECT3DDEVICE8 pDevice,
@@ -216,7 +201,6 @@ HRESULT WINAPI
         UINT              SrcDataSize,
         LPD3DXEFFECT*     ppEffect,
         LPD3DXBUFFER*     ppCompilationErrors);
-
 
 #ifdef __cplusplus
 }

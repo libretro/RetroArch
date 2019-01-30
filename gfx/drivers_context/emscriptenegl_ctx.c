@@ -212,7 +212,7 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
    }
 
    if (!egl_init_context(&emscripten->egl, EGL_NONE,
-      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list))
+      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list, NULL))
    {
       egl_report_error();
       goto error;
@@ -279,7 +279,6 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
    return false;
 }
-
 
 static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,

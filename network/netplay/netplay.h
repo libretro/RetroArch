@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_NETPLAY_H
 #define __RARCH_NETPLAY_H
 
@@ -37,6 +36,7 @@ typedef struct mitm_server {
 static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
+   { "montreal", "Montreal, Canada" },
 };
 
 enum rarch_netplay_ctl_state
@@ -66,7 +66,7 @@ enum rarch_netplay_ctl_state
 /* Preferences for sharing digital devices */
 enum rarch_netplay_share_digital_preference
 {
-   RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING,
+   RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING = 0,
    RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE,
    RARCH_NETPLAY_SHARE_DIGITAL_OR,
    RARCH_NETPLAY_SHARE_DIGITAL_XOR,
@@ -77,7 +77,7 @@ enum rarch_netplay_share_digital_preference
 /* Preferences for sharing analog devices */
 enum rarch_netplay_share_analog_preference
 {
-   RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING,
+   RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING = 0,
    RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE,
    RARCH_NETPLAY_SHARE_ANALOG_MAX,
    RARCH_NETPLAY_SHARE_ANALOG_AVERAGE,

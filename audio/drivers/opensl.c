@@ -232,7 +232,6 @@ static bool sl_start(void *data, bool is_shutdown)
    return sl->is_paused ? false : true;
 }
 
-
 static ssize_t sl_write(void *data, const void *buf_, size_t size)
 {
    sl_t           *sl = (sl_t*)data;

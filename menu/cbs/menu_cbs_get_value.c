@@ -70,7 +70,7 @@ static void menu_action_setting_audio_mixer_stream_name(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+   if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    strlcpy(s, audio_driver_mixer_get_stream_name(offset), len);
@@ -90,7 +90,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+   if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
@@ -123,28 +123,6 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
    strlcpy(s2, path, len2);
    strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY), len);
-}
-
-static void menu_action_setting_disp_set_label_crt_switch_resolution_super(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings = config_get_ptr();
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   if (settings)
-   {
-      if (settings->uints.crt_switch_resolution_super == 0)
-         strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
-      else
-         snprintf(s, len, "%d", settings->uints.crt_switch_resolution_super);
-   }
 }
 
 static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
@@ -248,27 +226,6 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
               len);
         break;
   }
-}
-
-static void menu_action_setting_disp_set_label_filter(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings = config_get_ptr();
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
-
-   if (settings && *settings->paths.path_softfilter_plugin)
-      fill_short_pathname_representation(s,
-            settings->paths.path_softfilter_plugin, len);
 }
 
 #ifdef HAVE_NETWORKING
@@ -544,7 +501,6 @@ static void menu_action_setting_disp_set_label_input_desc(
    else
       strlcpy(s, "---", len);
 
-
    *w = 19;
    strlcpy(s2, path, len2);
 }
@@ -609,7 +565,7 @@ static void menu_action_setting_disp_set_label_cheat(
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               (cheat_manager_get_code(cheat_index) != NULL)
+               cheat_manager_get_code(cheat_index)
                ? cheat_manager_get_code(cheat_index) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
                );
@@ -771,27 +727,6 @@ static void menu_action_setting_disp_set_label_entry(
    *s = '\0';
    *w = 8;
    strlcpy(s2, path, len2);
-}
-
-static void menu_action_setting_disp_set_label_state(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   strlcpy(s2, path, len2);
-   *w = 16;
-   snprintf(s, len, "%d", settings->ints.state_slot);
-   if (settings->ints.state_slot == -1)
-      strlcat(s, " (Auto)", len);
 }
 
 static void menu_action_setting_disp_set_label_wifi_is_online(
@@ -1155,11 +1090,6 @@ static void menu_action_setting_disp_set_label_core_option_create(
       const char *path,
       char *s2, size_t len2)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-
-   if (!system)
-      return;
-
    *s = '\0';
    *w = 19;
 
@@ -1202,7 +1132,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
          if (str_list->size != str_list2->size)
             break;
 
-         if (str_list2->elems[i].data == NULL)
+         if (!str_list2->elems[i].data)
             break;
 
          found_matching_core_association = true;
@@ -1290,25 +1220,6 @@ static void menu_action_setting_disp_set_label_no_items(
    strlcpy(s2, path, len2);
 }
 
-static void menu_action_setting_disp_set_label_video_msg_color(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
-
-   if (!setting)
-      return;
-
-   *w = 19;
-
-   snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
-}
-
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1362,7 +1273,7 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   if (setting->value.target.string != NULL)
+   if (setting->value.target.string)
       strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
@@ -1407,10 +1318,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_MENU_DRIVER:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
-         case MENU_ENUM_LABEL_STATE_SLOT:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_state);
-            break;
          case MENU_ENUM_LABEL_CONNECT_WIFI:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_wifi_is_online);
@@ -1446,10 +1353,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_default_filter);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_FILTER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_filter);
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_GET_VALUE(cbs,
@@ -1487,12 +1390,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
-         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
-         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_video_msg_color);
             break;
          default:
             return - 1;
@@ -1671,6 +1568,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             break;
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_NO_ITEM:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
@@ -1712,10 +1610,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_crt_switch_resolution_super);
-            return 0;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_unlocked_entry);

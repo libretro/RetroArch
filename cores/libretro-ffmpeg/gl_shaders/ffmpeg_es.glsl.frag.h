@@ -10,4 +10,3 @@ static const char *fragment_source = GLSL(
          gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).bgr, vec3(2.2)), pow(texture2D(sTex1, vTex).bgr, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0);
       }
 );
-

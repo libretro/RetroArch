@@ -20,8 +20,16 @@
 #include "../../config.h"
 #endif
 
-#ifndef _XBOX
+#if !defined(__WINRT__) && !defined(_XBOX)
+
+#ifndef HAVE_WINDOW
 #define HAVE_WINDOW
+#endif
+
+#ifndef HAVE_MONITOR
+#define HAVE_MONITOR
+#endif
+
 #endif
 
 #include <boolean.h>
@@ -45,7 +53,6 @@ struct d3d_matrix
       float m[4][4];
    };
 };
-
 
 typedef struct d3d_texture
 {
@@ -96,6 +103,9 @@ void *d3d_matrix_multiply(void *_pout,
 void *d3d_matrix_rotation_z(void *_pout, float angle);
 
 int32_t d3d_translate_filter(unsigned type);
+
+void d3d_input_driver(const char* input_name,
+   const char* joypad_name, const input_driver_t** input, void** input_data);
 
 RETRO_END_DECLS
 

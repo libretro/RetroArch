@@ -323,7 +323,6 @@ int filestream_eof(RFILE *stream)
    return stream->eof_flag;
 }
 
-
 int64_t filestream_tell(RFILE *stream)
 {
    int64_t output;

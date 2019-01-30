@@ -411,6 +411,5 @@ unsigned cheevos_var_get_value(cheevos_var_t* var)
 
    if(var->is_bcd)
       return (((value >> 4) & 0xf) * 10) + (value & 0xf);
-   else
-      return value;
+   return value;
 }

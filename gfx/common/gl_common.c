@@ -54,7 +54,7 @@ void gl_load_texture_image(GLenum target,
       GLenum type,
       const GLvoid * data)
 {
-#ifndef HAVE_PSGL
+#if !defined(HAVE_PSGL) && !defined(ORBIS)
 #ifdef HAVE_OPENGLES2
    if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT) && internalFormat != GL_BGRA_EXT)
    {

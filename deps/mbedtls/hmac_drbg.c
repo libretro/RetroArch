@@ -447,7 +447,7 @@ static size_t test_offset;
 static int hmac_drbg_self_test_entropy( void *data,
                                         unsigned char *buf, size_t len )
 {
-    const unsigned char *p = data;
+    const unsigned char *p = (const unsigned char*)data;
     memcpy( buf, p + test_offset, len );
     test_offset += len;
     return( 0 );

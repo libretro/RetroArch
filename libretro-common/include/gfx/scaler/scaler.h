@@ -126,4 +126,3 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
 RETRO_END_DECLS
 
 #endif
-

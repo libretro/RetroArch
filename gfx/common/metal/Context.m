@@ -53,10 +53,16 @@
    
    id<MTLRenderPipelineState> _states[GFX_MAX_SHADERS][2];
    id<MTLRenderPipelineState> _clearState;
-   Uniforms _uniforms;
    
    bool _captureEnabled;
    id<MTLTexture> _backBuffer;
+   
+   unsigned _rotation;
+   matrix_float4x4 _mvp_no_rot;
+   matrix_float4x4 _mvp;
+   
+   Uniforms _uniforms;
+   Uniforms _uniformsNoRotate;
 }
 
 - (instancetype)initWithDevice:(id<MTLDevice>)d
@@ -75,6 +81,11 @@
       _commandQueue = [_device newCommandQueue];
       _clearColor = MTLClearColorMake(0, 0, 0, 1);
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
+
+      _rotation = 0;
+      [self setRotation:0];
+      _mvp_no_rot = matrix_proj_ortho(0, 1, 0, 1);
+      _mvp = matrix_proj_ortho(0, 1, 0, 1);
       
       {
          MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
@@ -128,6 +139,27 @@
 - (Uniforms *)uniforms
 {
    return &_uniforms;
+}
+
+- (void)setRotation:(unsigned)rotation
+{
+   _rotation = 270 * rotation;
+   
+   /* Calculate projection. */
+   _mvp_no_rot = matrix_proj_ortho(0, 1, 0, 1);
+   
+   bool allow_rotate = true;
+   if (!allow_rotate)
+   {
+      _mvp = _mvp_no_rot;
+      return;
+   }
+   
+   matrix_float4x4 rot = matrix_rotate_z((float)(M_PI * _rotation / 180.0f));
+   _mvp = simd_mul(rot, _mvp_no_rot);
+   
+   _uniforms.projectionMatrix = _mvp;
+   _uniformsNoRotate.projectionMatrix = _mvp_no_rot;
 }
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
@@ -563,6 +595,17 @@
       .zfar    = 1,
    };
    [self.rce setViewport:vp];
+}
+
+- (void)resetScissorRect
+{
+   MTLScissorRect sr = {
+      .x       = 0,
+      .y       = 0,
+      .width   = _viewport.full_width,
+      .height  = _viewport.full_height,
+   };
+   [self.rce setScissorRect:sr];
 }
 
 - (void)drawQuadX:(float)x y:(float)y w:(float)w h:(float)h

@@ -21,6 +21,12 @@
 #include "../menu_driver.h"
 #include "../../input/input_driver.h"
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#include "../../switch_performance_profiles.h"
+#include "menu_osk.h"
+#endif
+
 static const char **menu_input_dialog_keyboard_buffer      = {NULL};
 static bool menu_input_dialog_keyboard_display             = false;
 static unsigned menu_input_dialog_keyboard_type            = 0;
@@ -84,8 +90,74 @@ unsigned menu_input_dialog_get_kb_idx(void)
    return menu_input_dialog_keyboard_idx;
 }
 
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+extern u32 __nx_applet_type;
+extern void libnx_apply_overclock();
+#endif
+
 bool menu_input_dialog_get_display_kb(void)
 {
+#ifdef HAVE_LIBNX
+   /* swkbd only works on "real" titles */
+   if (__nx_applet_type != AppletType_Application && __nx_applet_type != AppletType_SystemApplication)
+      return menu_input_dialog_keyboard_display;
+
+   if (!menu_input_dialog_keyboard_display)
+      return false;
+
+   SwkbdConfig kbd;
+
+   pcvSetClockRate(PcvModule_Cpu, SWITCH_CPU_SPEEDS_VALUES[SWITCH_DEFAULT_CPU_PROFILE]);
+
+   Result rc = swkbdCreate(&kbd, 0);
+
+   if (R_SUCCEEDED(rc))
+   {
+      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
+      swkbdConfigMakePresetDefault(&kbd);
+
+      swkbdConfigSetGuideText(&kbd, menu_input_dialog_keyboard_label);
+
+      rc = swkbdShow(&kbd, buf, sizeof(buf));
+
+      swkbdClose(&kbd);
+
+      /* RetroArch uses key-by-key input
+         so we need to simulate it */
+      for (int i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      {
+         /* In case a previous "Enter" press closed the keyboard */
+         if (!menu_input_dialog_keyboard_display)
+            break;
+
+         if (buf[i] == '\n' || buf[i] == '\0')
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+         else
+         {
+            /* input_keyboard_line_append expects a null-terminated
+               string, so just make one (yes, the touch keyboard is
+               a list of "null-terminated characters") */
+            char oldchar = buf[i+1];
+            buf[i+1] = '\0';
+            input_keyboard_line_append(&buf[i]);
+            buf[i+1] = oldchar;
+         }
+      }
+
+      /* fail-safe */
+      if (menu_input_dialog_keyboard_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      libnx_apply_overclock();
+      return false;
+   }
+   else
+   {
+      libnx_apply_overclock();
+      return menu_input_dialog_keyboard_display;
+   }
+#endif
    return menu_input_dialog_keyboard_display;
 }
 

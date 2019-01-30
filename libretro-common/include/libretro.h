@@ -128,7 +128,8 @@ extern "C" {
 
 /* LIGHTGUN device is similar to Guncon-2 for PlayStation 2.
  * It reports X/Y coordinates in screen space (similar to the pointer)
- * in the range [-0x8000, 0x7fff] in both axes, with zero being center.
+ * in the range [-0x8000, 0x7fff] in both axes, with zero being center and
+ * -0x8000 being out of bounds.
  * As well as reporting on/off screen state. It features a trigger,
  * start/select buttons, auxiliary action buttons and a
  * directional pad. A forced off-screen shot can be requested for
@@ -139,7 +140,8 @@ extern "C" {
 /* The ANALOG device is an extension to JOYPAD (RetroPad).
  * Similar to DualShock2 it adds two analog sticks and all buttons can
  * be analog. This is treated as a separate device type as it returns
- * axis values in the full analog range of [-0x8000, 0x7fff].
+ * axis values in the full analog range of [-0x7fff, 0x7fff],
+ * although some devices may return -0x8000.
  * Positive X axis is right. Positive Y axis is down.
  * Buttons are returned in the range [0, 0x7fff].
  * Only use ANALOG type when polling for analog values.
@@ -271,6 +273,7 @@ enum retro_language
    RETRO_LANGUAGE_POLISH              = 14,
    RETRO_LANGUAGE_VIETNAMESE          = 15,
    RETRO_LANGUAGE_ARABIC              = 16,
+   RETRO_LANGUAGE_GREEK               = 17,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -658,6 +661,15 @@ enum retro_mod
                                            /* Environment 20 was an obsolete version of SET_AUDIO_CALLBACK.
                                             * It was not used by any known core at the time,
                                             * and was removed from the API. */
+#define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
+                                           /* const struct retro_frame_time_callback * --
+                                            * Lets the core know how much time has passed since last
+                                            * invocation of retro_run().
+                                            * The frontend can tamper with the timing to fake fast-forward,
+                                            * slow-motion, frame stepping, etc.
+                                            * In this case the delta time will use the reference value
+                                            * in frame_time_callback..
+                                            */
 #define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
                                            /* const struct retro_audio_callback * --
                                             * Sets an interface which is used to notify a libretro core about audio
@@ -683,15 +695,6 @@ enum retro_mod
                                             *
                                             * A libretro core using SET_AUDIO_CALLBACK should also make use of
                                             * SET_FRAME_TIME_CALLBACK.
-                                            */
-#define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
-                                           /* const struct retro_frame_time_callback * --
-                                            * Lets the core know how much time has passed since last
-                                            * invocation of retro_run().
-                                            * The frontend can tamper with the timing to fake fast-forward,
-                                            * slow-motion, frame stepping, etc.
-                                            * In this case the delta time will use the reference value
-                                            * in frame_time_callback..
                                             */
 #define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
                                            /* struct retro_rumble_interface * --
@@ -969,7 +972,37 @@ enum retro_mod
                                             * A frontend must make sure that the pointer obtained from this function is
                                             * writeable (and readable).
                                             */
-
+#define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_hw_render_interface ** --
+                                            * Returns an API specific rendering interface for accessing API specific data.
+                                            * Not all HW rendering APIs support or need this.
+                                            * The contents of the returned pointer is specific to the rendering API
+                                            * being used. See the various headers like libretro_vulkan.h, etc.
+                                            *
+                                            * GET_HW_RENDER_INTERFACE cannot be called before context_reset has been called.
+                                            * Similarly, after context_destroyed callback returns,
+                                            * the contents of the HW_RENDER_INTERFACE are invalidated.
+                                            */
+#define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const bool * --
+                                            * If true, the libretro implementation supports achievements
+                                            * either via memory descriptors set with RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+                                            * or via retro_get_memory_data/retro_get_memory_size.
+                                            *
+                                            * This must be called before the first call to retro_run.
+                                            */
+#define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_hw_render_context_negotiation_interface * --
+                                            * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
+                                            * The semantics of this interface depends on which API is used in SET_HW_RENDER earlier.
+                                            * This interface will be used when the frontend is trying to create a HW rendering context,
+                                            * so it will be used after SET_HW_RENDER, but before the context_reset callback.
+                                            */
+#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
+                                           /* uint64_t * --
+                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
+                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
+                                            */
 #define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* N/A (null) * --
                                             * The frontend will try to use a 'shared' hardware context (mostly applicable
@@ -981,167 +1014,19 @@ enum retro_mod
                                             * This will do nothing on its own until SET_HW_RENDER env callbacks are
                                             * being used.
                                             */
-
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_vfs_interface_info * --
                                             * Gets access to the VFS interface.
                                             * VFS presence needs to be queried prior to load_game or any
                                             * get_system/save/other_directory being called to let front end know
                                             * core supports VFS before it starts handing out paths.
-                                            * It is recomended to do so in retro_set_environment */
-
-/* VFS functionality */
-
-/* File paths:
- * File paths passed as parameters when using this api shall be well formed unix-style,
- * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
- * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
- * Other than the directory separator, cores shall not make assumptions about path format:
- * "C:/path/game.bin", "http://example.com/game.bin", "#game/game.bin", "./game.bin" (without quotes) are all valid paths.
- * Cores may replace the basename or remove path components from the end, and/or add new components;
- * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request to front end.
- * The frontend is encouraged to make such paths work as well as it can, but is allowed to give up if the core alters paths too much.
- * Frontends are encouraged, but not required, to support native file system paths (modulo replacing the directory separator, if applicable).
- * Cores are allowed to try using them, but must remain functional if the front rejects such requests.
- * Cores are encouraged to use the libretro-common filestream functions for file I/O,
- * as they seamlessly integrate with VFS, deal with directory separator replacement as appropriate
- * and provide platform-specific fallbacks in cases where front ends do not support VFS. */
-
-/* Opaque file handle
- * Introduced in VFS API v1 */
-struct retro_vfs_file_handle;
-
-/* File open flags
- * Introduced in VFS API v1 */
-#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0) /* Read only mode */
-#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1) /* Write only mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified */
-#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
-#define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
-
-/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
-   and how they react to unlikely external interference (for example someone else writing to that file,
-   or the file's server going down), behavior will not change. */
-#define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
-/* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
-#define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
-
-/* Seek positions */
-#define RETRO_VFS_SEEK_POSITION_START    0
-#define RETRO_VFS_SEEK_POSITION_CURRENT  1
-#define RETRO_VFS_SEEK_POSITION_END      2
-
-/* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
- * Introduced in VFS API v1 */
-typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
-
-/* Open a file for reading or writing. If path points to a directory, this will
- * fail. Returns the opaque file handle, or NULL for error.
- * Introduced in VFS API v1 */
-typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
-
-/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on succes, -1 on failure.
- * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
- * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
-
-/* Return the size of the file in bytes, or -1 for error.
- * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
-
-/* Truncate file to specified size. Returns 0 on success or -1 on error
- * Introduced in VFS API v2 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
-
-/* Get the current read / write position for the file. Returns - 1 for error.
- * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
-
-/* Set the current read/write position for the file. Returns the new position, -1 for error.
- * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position);
-
-/* Read data from a file. Returns the number of bytes read, or -1 for error.
- * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
-
-/* Write data to a file. Returns the number of bytes written, or -1 for error.
- * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
-
-/* Flush pending writes to file, if using buffered IO. Returns 0 on sucess, or -1 on failure.
- * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_flush_t)(struct retro_vfs_file_handle *stream);
-
-/* Delete the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
-
-/* Rename the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
-
-struct retro_vfs_interface
-{
-   /* VFS API v1 */
-	retro_vfs_get_path_t get_path;
-	retro_vfs_open_t open;
-	retro_vfs_close_t close;
-	retro_vfs_size_t size;
-	retro_vfs_tell_t tell;
-	retro_vfs_seek_t seek;
-	retro_vfs_read_t read;
-	retro_vfs_write_t write;
-	retro_vfs_flush_t flush;
-	retro_vfs_remove_t remove;
-	retro_vfs_rename_t rename;
-   /* VFS API v2 */
-   retro_vfs_truncate_t truncate;
-};
-
-struct retro_vfs_interface_info
-{
-   /* Set by core: should this be higher than the version the front end supports,
-    * front end will return false in the RETRO_ENVIRONMENT_GET_VFS_INTERFACE call
-    * Introduced in VFS API v1 */
-   uint32_t required_interface_version;
-
-   /* Frontend writes interface pointer here. The frontend also sets the actual
-    * version, must be at least required_interface_version.
-    * Introduced in VFS API v1 */
-   struct retro_vfs_interface *iface;
-};
-
-enum retro_hw_render_interface_type
-{
-	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
-	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
-	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
-	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
-	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
-   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
-};
-
-/* Base struct. All retro_hw_render_interface_* types
- * contain at least these fields. */
-struct retro_hw_render_interface
-{
-   enum retro_hw_render_interface_type interface_type;
-   unsigned interface_version;
-};
-
-
+                                            * It is recomended to do so in retro_set_environment
+                                            */
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_led_interface * --
                                             * Gets an interface which is used by a libretro core to set
                                             * state of LEDs.
                                             */
-
-typedef void (RETRO_CALLCONV *retro_set_led_state_t)(int led, int state);
-struct retro_led_interface
-{
-    retro_set_led_state_t set_led_state;
-};
-
 #define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* int * --
                                             * Tells the core if the frontend wants audio or video.
@@ -1183,7 +1068,6 @@ struct retro_led_interface
                                             *   never need an accurate audio state in the future.
                                             * * State will never be saved when using Hard Disable Audio.
                                             */
-
 #define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_midi_interface ** --
                                             * Returns a MIDI interface that can be used for raw data I/O.
@@ -1195,7 +1079,202 @@ struct retro_led_interface
                                             * fastforwarding mode.
                                             */
 
+/* VFS functionality */
 
+/* File paths:
+ * File paths passed as parameters when using this api shall be well formed unix-style,
+ * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
+ * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
+ * Other than the directory separator, cores shall not make assumptions about path format:
+ * "C:/path/game.bin", "http://example.com/game.bin", "#game/game.bin", "./game.bin" (without quotes) are all valid paths.
+ * Cores may replace the basename or remove path components from the end, and/or add new components;
+ * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request to front end.
+ * The frontend is encouraged to make such paths work as well as it can, but is allowed to give up if the core alters paths too much.
+ * Frontends are encouraged, but not required, to support native file system paths (modulo replacing the directory separator, if applicable).
+ * Cores are allowed to try using them, but must remain functional if the front rejects such requests.
+ * Cores are encouraged to use the libretro-common filestream functions for file I/O,
+ * as they seamlessly integrate with VFS, deal with directory separator replacement as appropriate
+ * and provide platform-specific fallbacks in cases where front ends do not support VFS. */
+
+/* Opaque file handle
+ * Introduced in VFS API v1 */
+struct retro_vfs_file_handle;
+
+/* Opaque directory handle
+ * Introduced in VFS API v3 */
+struct retro_vfs_dir_handle;
+
+/* File open flags
+ * Introduced in VFS API v1 */
+#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0) /* Read only mode */
+#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1) /* Write only mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified */
+#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
+#define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
+
+/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
+   and how they react to unlikely external interference (for example someone else writing to that file,
+   or the file's server going down), behavior will not change. */
+#define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
+/* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
+#define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
+
+/* Seek positions */
+#define RETRO_VFS_SEEK_POSITION_START    0
+#define RETRO_VFS_SEEK_POSITION_CURRENT  1
+#define RETRO_VFS_SEEK_POSITION_END      2
+
+/* stat() result flags
+ * Introduced in VFS API v3 */
+#define RETRO_VFS_STAT_IS_VALID               (1 << 0)
+#define RETRO_VFS_STAT_IS_DIRECTORY           (1 << 1)
+#define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
+
+/* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
+ * Introduced in VFS API v1 */
+typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
+
+/* Open a file for reading or writing. If path points to a directory, this will
+ * fail. Returns the opaque file handle, or NULL for error.
+ * Introduced in VFS API v1 */
+typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
+
+/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on success, -1 on failure.
+ * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
+ * Introduced in VFS API v1 */
+typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
+
+/* Return the size of the file in bytes, or -1 for error.
+ * Introduced in VFS API v1 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
+
+/* Truncate file to specified size. Returns 0 on success or -1 on error
+ * Introduced in VFS API v2 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
+
+/* Get the current read / write position for the file. Returns -1 for error.
+ * Introduced in VFS API v1 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
+
+/* Set the current read/write position for the file. Returns the new position, -1 for error.
+ * Introduced in VFS API v1 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position);
+
+/* Read data from a file. Returns the number of bytes read, or -1 for error.
+ * Introduced in VFS API v1 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
+
+/* Write data to a file. Returns the number of bytes written, or -1 for error.
+ * Introduced in VFS API v1 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
+
+/* Flush pending writes to file, if using buffered IO. Returns 0 on sucess, or -1 on failure.
+ * Introduced in VFS API v1 */
+typedef int (RETRO_CALLCONV *retro_vfs_flush_t)(struct retro_vfs_file_handle *stream);
+
+/* Delete the specified file. Returns 0 on success, -1 on failure
+ * Introduced in VFS API v1 */
+typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
+
+/* Rename the specified file. Returns 0 on success, -1 on failure
+ * Introduced in VFS API v1 */
+typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
+
+/* Stat the specified file. Retruns a bitmask of RETRO_VFS_STAT_* flags, none are set if path was not valid.
+ * Additionally stores file size in given variable, unless NULL is given.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
+
+/* Create the specified directory. Returns 0 on success, -1 on unknown failure, -2 if already exists.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_mkdir_t)(const char *dir);
+
+/* Open the specified directory for listing. Returns the opaque dir handle, or NULL for error.
+ * Support for the include_hidden argument may vary depending on the platform.
+ * Introduced in VFS API v3 */
+typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const char *dir, bool include_hidden);
+
+/* Read the directory entry at the current position, and move the read pointer to the next position.
+ * Returns true on success, false if already on the last entry.
+ * Introduced in VFS API v3 */
+typedef bool (RETRO_CALLCONV *retro_vfs_readdir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Get the name of the last entry read. Returns a string on success, or NULL for error.
+ * The returned string pointer is valid until the next call to readdir or closedir.
+ * Introduced in VFS API v3 */
+typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Check if the last entry read was a directory. Returns true if it was, false otherwise (or on error).
+ * Introduced in VFS API v3 */
+typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Close the directory and release its resources. Must be called if opendir returns non-NULL. Returns 0 on success, -1 on failure.
+ * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
+
+struct retro_vfs_interface
+{
+   /* VFS API v1 */
+	retro_vfs_get_path_t get_path;
+	retro_vfs_open_t open;
+	retro_vfs_close_t close;
+	retro_vfs_size_t size;
+	retro_vfs_tell_t tell;
+	retro_vfs_seek_t seek;
+	retro_vfs_read_t read;
+	retro_vfs_write_t write;
+	retro_vfs_flush_t flush;
+	retro_vfs_remove_t remove;
+	retro_vfs_rename_t rename;
+   /* VFS API v2 */
+   retro_vfs_truncate_t truncate;
+   /* VFS API v3 */
+   retro_vfs_stat_t stat;
+   retro_vfs_mkdir_t mkdir;
+   retro_vfs_opendir_t opendir;
+   retro_vfs_readdir_t readdir;
+   retro_vfs_dirent_get_name_t dirent_get_name;
+   retro_vfs_dirent_is_dir_t dirent_is_dir;
+   retro_vfs_closedir_t closedir;
+};
+
+struct retro_vfs_interface_info
+{
+   /* Set by core: should this be higher than the version the front end supports,
+    * front end will return false in the RETRO_ENVIRONMENT_GET_VFS_INTERFACE call
+    * Introduced in VFS API v1 */
+   uint32_t required_interface_version;
+
+   /* Frontend writes interface pointer here. The frontend also sets the actual
+    * version, must be at least required_interface_version.
+    * Introduced in VFS API v1 */
+   struct retro_vfs_interface *iface;
+};
+
+enum retro_hw_render_interface_type
+{
+	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
+	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
+	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
+	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
+	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
+   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
+};
+
+/* Base struct. All retro_hw_render_interface_* types
+ * contain at least these fields. */
+struct retro_hw_render_interface
+{
+   enum retro_hw_render_interface_type interface_type;
+   unsigned interface_version;
+};
+
+typedef void (RETRO_CALLCONV *retro_set_led_state_t)(int led, int state);
+struct retro_led_interface
+{
+    retro_set_led_state_t set_led_state;
+};
 
 /* Retrieves the current state of the MIDI input.
  * Returns true if it's enabled, false otherwise. */
@@ -1227,27 +1306,6 @@ struct retro_midi_interface
    retro_midi_flush_t flush;
 };
 
-#define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_interface ** --
-                                            * Returns an API specific rendering interface for accessing API specific data.
-                                            * Not all HW rendering APIs support or need this.
-                                            * The contents of the returned pointer is specific to the rendering API
-                                            * being used. See the various headers like libretro_vulkan.h, etc.
-                                            *
-                                            * GET_HW_RENDER_INTERFACE cannot be called before context_reset has been called.
-                                            * Similarly, after context_destroyed callback returns,
-                                            * the contents of the HW_RENDER_INTERFACE are invalidated.
-                                            */
-
-#define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const bool * --
-                                            * If true, the libretro implementation supports achievements
-                                            * either via memory descriptors set with RETRO_ENVIRONMENT_SET_MEMORY_MAPS
-                                            * or via retro_get_memory_data/retro_get_memory_size.
-                                            *
-                                            * This must be called before the first call to retro_run.
-                                            */
-
 enum retro_hw_render_context_negotiation_interface_type
 {
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
@@ -1261,13 +1319,6 @@ struct retro_hw_render_context_negotiation_interface
    enum retro_hw_render_context_negotiation_interface_type interface_type;
    unsigned interface_version;
 };
-#define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_context_negotiation_interface * --
-                                            * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
-                                            * The semantics of this interface depends on which API is used in SET_HW_RENDER earlier.
-                                            * This interface will be used when the frontend is trying to create a HW rendering context,
-                                            * so it will be used after SET_HW_RENDER, but before the context_reset callback.
-                                            */
 
 /* Serialized state is incomplete in some way. Set if serialization is
  * usable in typical end-user cases but should not be relied upon to
@@ -1293,20 +1344,17 @@ struct retro_hw_render_context_negotiation_interface
  * dependence */
 #define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
 
-#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
-                                           /* uint64_t * --
-                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
-                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
-                                            */
-
-#define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
-#define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
-#define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
-#define RETRO_MEMDESC_ALIGN_4   (2 << 16)
-#define RETRO_MEMDESC_ALIGN_8   (3 << 16)
-#define RETRO_MEMDESC_MINSIZE_2 (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
-#define RETRO_MEMDESC_MINSIZE_4 (2 << 24)
-#define RETRO_MEMDESC_MINSIZE_8 (3 << 24)
+#define RETRO_MEMDESC_CONST      (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
+#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
+#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)   /* The memory area is system RAM.  This is main RAM of the gaming system. */
+#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)   /* The memory area is save RAM. This RAM is usually found on a game cartridge, backed up by a battery. */
+#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)   /* The memory area is video RAM (VRAM) */
+#define RETRO_MEMDESC_ALIGN_2    (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
+#define RETRO_MEMDESC_ALIGN_4    (2 << 16)
+#define RETRO_MEMDESC_ALIGN_8    (3 << 16)
+#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
+#define RETRO_MEMDESC_MINSIZE_4  (2 << 24)
+#define RETRO_MEMDESC_MINSIZE_8  (3 << 24)
 struct retro_memory_descriptor
 {
    uint64_t flags;
@@ -2222,7 +2270,7 @@ struct retro_system_info
     *    - retro_game_info::data and retro_game_info::size are guaranteed
     *      to be valid
     *
-    * See also: 
+    * See also:
     *    - RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
     *    - RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
     */
@@ -2448,7 +2496,7 @@ RETRO_API bool retro_unserialize(const void *data, size_t size);
 RETRO_API void retro_cheat_reset(void);
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
-/* Loads a game. 
+/* Loads a game.
  * Return true to indicate successful loading and false to indicate load failure.
  */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);

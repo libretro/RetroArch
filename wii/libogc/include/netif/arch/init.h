@@ -40,7 +40,3 @@ void tcpip_init_done(void *);
 int wait_for_tcpip_init(void);
 
 #endif /* __ARCH_INIT_H__ */
-
-
-
-

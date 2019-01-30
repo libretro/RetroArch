@@ -1,3 +1,31 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "GPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Acelera el procesador de video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Brillo de pantalla"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Ajusta el brillo de la pantalla"
+    )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "CPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Acelera el procesador"
+    )
+#endif
 MSG_HASH(
     MSG_COMPILER,
     "Compilador"
@@ -8,7 +36,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NATIVE,
-    "Native")
+    "Nativo")
 MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Dispositivo desconectado del puerto"
@@ -144,6 +172,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
     "Dar a los núcleos renderizados por hardware un contexto privado. Evita tener que asumir cambios en el estado del hardware entre cuadros"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+    "Enable horizontal animation for the menu. This will have a performance hit."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -646,6 +678,18 @@ MSG_HASH(
     "Cargar núcleo"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Instalar or Restaurar un núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+    "Falló la instalación del núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+    "Núcleo instalado exitosamente"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
     "Opciones"
     )
@@ -731,7 +775,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Estado de la bandeja de discos"
+    "Abrir/Cerrar la bandeja de discos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -794,14 +838,6 @@ MSG_HASH(
     "Activar logros"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Color de resaltado del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Color normal del menú"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
     "Desactivado"
     )
@@ -816,6 +852,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FPS_SHOW,
     "Mostrar FPS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Incluir detalles de memoria"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
@@ -1222,6 +1262,10 @@ MSG_HASH(
     "Avanzar frame"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "Mostrar FPS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
     "Pantalla completa"
     )
@@ -1269,10 +1313,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
     "Pausar"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    "Reiniciar RetroArch"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
     "Cerrar RetroArch"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
     "Resetear juego"
@@ -1488,6 +1539,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
     "Árabe"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+    "Griego"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -2017,10 +2072,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
     "MIDI"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+    "Reiniciar RetroArch"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Cerrar RetroArch"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
     "Soporte de analógico"
@@ -2133,10 +2195,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "Reiniciar (RCM)"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reiniciar"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Carpeta de configuración de grabación"
@@ -2152,6 +2221,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
     "Cargar configuración de grabación..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+    "Cargar configuración de Streaming..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2618,6 +2691,10 @@ MSG_HASH(
     "Soporte de FreeType"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+    "Soporte de STB TrueType"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
     "Identificador del frontend"
     )
@@ -2866,8 +2943,44 @@ MSG_HASH(
     "Mostrar fecha y hora"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Color de títulos del menú"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    "Estilo de fecha y hora"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+    "Cambia la forma en que se muestra la fecha y hora"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+     "YYYY-MM-DD HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+     "YYYY-MM-DD HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+     "MM-DD-YYYY HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+     "HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+     "HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+     "DD/MM HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+     "MM/DD HH:MM"
+    )
+ MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+     "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
@@ -3014,6 +3127,10 @@ MSG_HASH(
     "Desactivar composición de escritorio"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "Pantalla inferior 3DS"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Controlador de video"
     )
@@ -3116,6 +3233,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
     "Escala en ventana"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+    "Hilos de grabación (Threads)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
@@ -3427,7 +3548,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Duplica puntos pero desactiva guardado rápido, trucos, rebobinar, y cámara lenta para todos los juegos"
+    "Duplica puntos pero desactiva guardado rápido, trucos, rebobinar, y cámara lenta."
+    "Cambiar esto reiniciará el juego."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -3536,6 +3658,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FPS_SHOW,
     "Muestra la velocidad de cuadros por segundo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+    "Muestra el contador de frames"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+    "Muestra la cantidad de memoria usada/total"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
@@ -4531,7 +4661,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Frecuencia de actualización/tasa de refresco vertical, usada para calcular la velocidad de audio.\nNota: Se ignorará si 'Video por hilos' esta activado"
+    "Frecuencia de actualización/tasa de refresco vertical, usada para calcular la velocidad de audio.\n"
+    "Nota: Se ignorará si 'Video por hilos' esta activado"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -4779,6 +4910,14 @@ MSG_HASH(
     "Seleccionar que núcleo usar"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Instalar un núcleo desde el Actualizador en línea"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Instalr o restaurar un núcleo desde la carpeta de descargas"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
     "Seleccionar que contenido iniciar"
     )
@@ -4790,10 +4929,17 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
     "Mostrar información especifica del dispositivo"
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Reiniciar el programa"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Salir del programa"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
     "Establece el ancho de la ventana. Al dejarlo en 0 hará que intente ser lo mas grande posible"
@@ -4801,6 +4947,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
     "Establece el alto de la ventana. Al dejarlo en 0 hará que intente ser lo mas grande posible"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+    "Tomará precedencia sobre Escala en Ventana"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -4909,6 +5059,19 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
     "Auto-aplicar los trucos después que el juego cargue"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "La cantidad de veces que el truco será aplicado.\n"
+    "Usar junto a las otras dos optionces de iteración para afectar regiones grandes de memoria"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Después de cada 'Número de iteraciones' la dirección de memoria será incrementada este número multiplicado por 'Tamaño de búsqueda de memoria'"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Después de cada 'Número de iteraciones' el Valor será incrementado esta cantidad"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
@@ -5964,14 +6127,25 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
     "Mostrar/ocultar la opción de 'Ayuda'"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Mostrar salir de RetroArch"
+    "Mostrar Reiniciar RetroArch"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Mostrar/ocultar la opción de 'Salir de RetroArch'"
+    "Mostrar/ocultar la opción de 'Reiniciar RetroArch'"
     )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Mostrar Cerrar RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Muestrar/Ocultar la opción de 'Cerrar RetroArch'"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
     "Mostrar reiniciar"
@@ -6027,6 +6201,30 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
     "Mostrar/ocultar la opción de 'Agregar a favoritos'"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+    "Mostrar Comenzar grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+    "Mostrar/ocultar la opción de 'Comenzar grabación'"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+    "Mostrar Comenzar Streamingg"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+    "Mostrar/ocultar la opción de 'Comenzar Streaming'"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Mostrar Restablecer asociación de núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Mostrar/ocultar la opción de 'Restablecer asociación de núcleo'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6358,7 +6556,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
-    "<Por defeco>"
+    "<Por defecto>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
@@ -6818,6 +7016,18 @@ MSG_HASH(
     "Duración (ms) de la vibración secundaria"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+    "Número de iteraciones"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Incrementar Valor cada iteración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Incrementar Dirección cada iteración"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
     "Agregar nuevo truco después de este"
     )
@@ -6912,6 +7122,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
     "Mayor al valor de vibración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+    "Incremeta por el valor de vibración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+    "Disminuye por el valor de vibración"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
@@ -7230,6 +7448,10 @@ MSG_HASH(
     "Borrar Playlist"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+    "Renombrar Playlist"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
     "¿Está seguro que desea borrar la playlist \"%1\"?"
     )
@@ -7455,7 +7677,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla. Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
+    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla.\n"
+    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."                                                                                                       
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -7523,9 +7746,141 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-    "Recording toggle"
+    "Comenzar/Detener Grabación"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-    "Streaming toggle"
+    "Comenzar/Detener Streaming"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "Detectado un guardado rápido, Los logros hardcore se desactivaron para está sesión. Reinicia para habilitarlos"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+    "Calidad de grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+    "Calidad del Stream"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+    "URL del Stream"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+    "Puerto del Stream UDP"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
+    "Twitch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
+    "YouTube"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+    "Twitch Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+    "YouTube Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+    "Modo de Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+    "Título del Stream"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Joy-Con separados"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Restablecer configuraciones"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Cambia la configuración acutal a los valores por defecto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+    "OK"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+    "Tema de color del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+    "Blanco Básico"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+    "Negro Básico"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+    "Seleccione un color diferente"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Usar los colores del sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Preferir los colores del sistema operativo si están disponibles"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWEST,
+    "Muy Baja"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWER,
+    "Baja"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHER,
+    "Alta"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHEST,
+    "Ultra"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "No hay música disponibles"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "No hay videos disponibles"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "No hay imágenes disponibles"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "No hay favoritos disponibles"
+    )
+MSG_HASH(
+    MSG_MISSING_ASSETS,
+    "ADVERTENCIA: Faltan recursos, use el Actualizador si está disponible"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+    "Recordar posición y tamaño de la ventana"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HOLD_START,
+    "Mantener Start (2 segundos)"
     )

@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_NETPLAY_DISCOVERY_H
 #define __RARCH_NETPLAY_DISCOVERY_H
 
@@ -44,6 +43,7 @@ struct netplay_host
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
    int  content_crc;
    int  port;
 };
@@ -83,6 +83,7 @@ struct netplay_room
    bool lan;
    bool fixed;
    char retroarch_version[PATH_MAX_LENGTH];
+   char subsystem_name[PATH_MAX_LENGTH];
    char country[PATH_MAX_LENGTH];
    struct netplay_room *next;
 };

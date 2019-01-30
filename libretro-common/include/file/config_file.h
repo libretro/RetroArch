@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #ifndef __LIBRETRO_SDK_CONFIG_FILE_H
 #define __LIBRETRO_SDK_CONFIG_FILE_H
 
@@ -57,13 +56,21 @@ struct config_file
    char *path;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
+   struct config_entry_list *last;
    unsigned include_depth;
+   bool guaranteed_no_duplicates;
 
    struct config_include_list *includes;
 };
 
-
 typedef struct config_file config_file_t;
+
+struct config_file_cb
+{
+   void (*config_file_new_entry_cb)(char*, char*);
+};
+
+typedef struct config_file_cb config_file_cb_t ;
 
 /* Config file format
  * - # are treated as comments. Rest of the line is ignored.
@@ -78,6 +85,11 @@ typedef struct config_file config_file_t;
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file. */
 config_file_t *config_file_new(const char *path);
+
+/* Loads a config file. Returns NULL if file doesn't exist.
+ * NULL path will create an empty config file.
+ * Includes cb callbacks to run custom code during config file processing.*/
+config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb);
 
 /* Load a config file from a string. */
 config_file_t *config_file_new_from_string(const char *from_string);
@@ -167,15 +179,19 @@ void config_set_bool(config_file_t *conf, const char *entry, bool val);
 void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
 /* Write the current config to a file. */
-bool config_file_write(config_file_t *conf, const char *path);
+bool config_file_write(config_file_t *conf, const char *path, bool val);
 
 /* Dump the current config to an already opened file.
  * Does not close the file. */
-void config_file_dump(config_file_t *conf, FILE *file);
+void config_file_dump(config_file_t *conf, FILE *file, bool val);
+
+#ifdef ORBIS
+void config_file_dump_orbis(config_file_t *conf, int fd);
+#endif
+
 
 bool config_file_exists(const char *path);
 
 RETRO_END_DECLS
 
 #endif
-

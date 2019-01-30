@@ -45,7 +45,7 @@ RETRO_BEGIN_DECLS
 #endif
 
 #ifndef MAX_CHEAT_COUNTERS
-#define MAX_CHEAT_COUNTERS 100
+#define MAX_CHEAT_COUNTERS 6000
 #endif
 
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
@@ -56,6 +56,8 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_PLAYLIST_ASSOCIATION_START 0x20000
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
+
+extern float osk_dark[16];
 
 enum menu_image_type
 {
@@ -87,7 +89,6 @@ enum menu_state_changes
 enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
-   RARCH_MENU_CTL_REFRESH,
    RARCH_MENU_CTL_SET_PENDING_QUICK_MENU,
    RARCH_MENU_CTL_SET_PENDING_QUIT,
    RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
@@ -103,12 +104,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_OWNS_DRIVER,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LIST_FREE,
-   RARCH_MENU_CTL_LIST_SET_SELECTION,
-   RARCH_MENU_CTL_LIST_GET_SELECTION,
-   RARCH_MENU_CTL_LIST_GET_SIZE,
-   RARCH_MENU_CTL_LIST_GET_ENTRY,
-   RARCH_MENU_CTL_LIST_CACHE,
-   RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
    RARCH_MENU_CTL_POINTER_TAP,
@@ -132,7 +127,7 @@ enum rarch_menu_ctl_state
    MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL
 };
 
-#define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_STREAMS-1)
+#define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1)
 
 enum menu_settings_type
 {
@@ -148,10 +143,17 @@ enum menu_settings_type
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
+   MENU_SETTING_DROPDOWN_ITEM_RESOLUTION,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
+   MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_INT_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM,
+   MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL,
+   MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL,
    MENU_SETTING_NO_ITEM,
    MENU_SETTING_DRIVER,
    MENU_SETTING_ACTION,
@@ -177,10 +179,8 @@ enum menu_settings_type
    MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
    MENU_WIFI,
    MENU_ROOM,
-/*
    MENU_ROOM_LAN,
-   MENU_ROOM_MITM,
-*/
+   MENU_ROOM_RELAY,
    MENU_NETPLAY_LAN_SCAN,
    MENU_INFO_MESSAGE,
    MENU_SETTINGS_SHADER_PARAMETER_0,
@@ -229,6 +229,8 @@ enum menu_settings_type
    MENU_SETTINGS_PERF_COUNTERS_END = MENU_SETTINGS_PERF_COUNTERS_BEGIN + (MAX_COUNTERS - 1),
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
+   MENU_SETTINGS_INPUT_BEGIN,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
@@ -239,7 +241,54 @@ enum menu_settings_type
    MENU_SETTINGS_SUBSYSTEM_ADD,
    MENU_SETTINGS_SUBSYSTEM_LAST = MENU_SETTINGS_SUBSYSTEM_ADD + RARCH_MAX_SUBSYSTEMS,
    MENU_SETTINGS_CHEAT_MATCH,
+
+#ifdef HAVE_LAKKA_SWITCH
+   MENU_SET_SWITCH_GPU_PROFILE,
+   MENU_SET_SWITCH_BRIGHTNESS,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+   MENU_SET_SWITCH_CPU_PROFILE,
+#endif
+
    MENU_SETTINGS_LAST
+};
+
+enum rgui_color_theme
+{
+   RGUI_THEME_CUSTOM = 0,
+   RGUI_THEME_CLASSIC_RED,
+   RGUI_THEME_CLASSIC_ORANGE,
+   RGUI_THEME_CLASSIC_YELLOW,
+   RGUI_THEME_CLASSIC_GREEN,
+   RGUI_THEME_CLASSIC_BLUE,
+   RGUI_THEME_CLASSIC_VIOLET,
+   RGUI_THEME_CLASSIC_GREY,
+   RGUI_THEME_LEGACY_RED,
+   RGUI_THEME_DARK_PURPLE,
+   RGUI_THEME_MIDNIGHT_BLUE,
+   RGUI_THEME_GOLDEN,
+   RGUI_THEME_ELECTRIC_BLUE,
+   RGUI_THEME_APPLE_GREEN,
+   RGUI_THEME_VOLCANIC_RED,
+   RGUI_THEME_LAGOON,
+   RGUI_THEME_BROGRAMMER,
+   RGUI_THEME_DRACULA,
+   RGUI_THEME_FAIRYFLOSS,
+   RGUI_THEME_FLATUI,
+   RGUI_THEME_GRUVBOX_DARK,
+   RGUI_THEME_GRUVBOX_LIGHT,
+   RGUI_THEME_HACKING_THE_KERNEL,
+   RGUI_THEME_NORD,
+   RGUI_THEME_NOVA,
+   RGUI_THEME_ONE_DARK,
+   RGUI_THEME_PALENIGHT,
+   RGUI_THEME_SOLARIZED_DARK,
+   RGUI_THEME_SOLARIZED_LIGHT,
+   RGUI_THEME_TANGO_DARK,
+   RGUI_THEME_TANGO_LIGHT,
+   RGUI_THEME_ZENBURN,
+   RGUI_THEME_ANTI_ZENBURN,
+   RGUI_THEME_LAST
 };
 
 enum materialui_color_theme
@@ -334,6 +383,14 @@ enum menu_toggle_reason
   MENU_TOGGLE_REASON_MESSAGE
 };
 
+enum rgui_thumbnail_scaler
+{
+   RGUI_THUMB_SCALE_POINT = 0,
+   RGUI_THUMB_SCALE_BILINEAR,
+   RGUI_THUMB_SCALE_SINC,
+   RGUI_THUMB_SCALE_LAST
+};
+
 typedef uintptr_t menu_texture_item;
 
 typedef struct menu_display_ctx_clearcolor
@@ -385,9 +442,8 @@ typedef struct menu_display_ctx_driver
    bool handles_transform;
    /* Enables and disables scissoring */
    void (*scissor_begin)(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
-   void (*scissor_end)(void);
+   void (*scissor_end)(video_frame_info_t *video_info);
 } menu_display_ctx_driver_t;
-
 
 typedef struct
 {
@@ -471,7 +527,7 @@ typedef struct menu_ctx_driver
    void  (*set_texture)(void);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(void *data, void *userdata, enum menu_action action);
+   int   (*iterate)(menu_handle_t *menu, void *userdata, enum menu_action action);
    void  (*render)(void *data, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
    /* Initializes the menu driver. (setup) */
@@ -655,7 +711,9 @@ bool menu_driver_is_alive(void);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
-bool menu_driver_list_clear(void *data);
+bool menu_driver_list_clear(file_list_t *list);
+
+bool menu_driver_list_cache(menu_ctx_list_t *list);
 
 void menu_driver_navigation_set(bool scroll);
 
@@ -665,14 +723,25 @@ bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
 
+void menu_driver_free(void);
+
 void menu_driver_set_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
 
+bool menu_driver_list_insert(menu_ctx_list_t *list);
+
+bool menu_driver_list_set_selection(file_list_t *list);
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list);
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list);
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list);
+
 size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
-
 
 enum menu_toggle_reason menu_display_toggle_get_reason(void);
 void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
@@ -681,7 +750,7 @@ void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
 
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
-void menu_display_scissor_end();
+void menu_display_scissor_end(video_frame_info_t *video_info);
 
 void menu_display_font_free(font_data_t *font);
 
@@ -723,7 +792,8 @@ void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
       video_frame_info_t *video_info,
-      char *grid[], unsigned id);
+      char *grid[], unsigned id,
+      unsigned text_color);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
@@ -793,7 +863,8 @@ void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
       uint32_t color, enum text_alignment text_align,
-      float scale_factor, bool shadows_enable, float shadow_offset);
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 
@@ -802,7 +873,9 @@ font_data_t *menu_display_font(
       float font_size,
       bool video_is_threaded);
 
-void menu_display_reset_textures_list(
+font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
+
+bool menu_display_reset_textures_list(
       const char *texture_path,
       const char *iconpath,
       uintptr_t *item,
@@ -812,7 +885,13 @@ void menu_display_reset_textures_list(
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
+bool menu_display_driver_exists(const char *s);
+
 void menu_driver_destroy(void);
+
+void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
+
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
 
 extern uintptr_t menu_display_white_texture;
 
@@ -834,6 +913,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
+extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;

@@ -47,9 +47,6 @@
 
 #ifdef _XBOX
 #define D3D8_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
-#else
-#define HAVE_MONITOR
-#define HAVE_WINDOW
 #endif
 
 #ifdef HAVE_MENU
@@ -60,6 +57,10 @@
 
 #include "../../core.h"
 #include "../../verbosity.h"
+
+#ifdef __WINRT__
+#error "UWP does not support D3D8"
+#endif
 
 static LPDIRECT3D8 g_pD3D8;
 
@@ -164,7 +165,6 @@ static void d3d8_renderchain_set_vertices(
       vert[0].x        =  0.0f;
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
-
 
       vert[1].x        =  1.0f;
       vert[1].y        =  1.0f;
@@ -1003,7 +1003,6 @@ static bool d3d8_restore(void *data)
    return true;
 }
 
-
 static void d3d8_set_nonblock_state(void *data, bool state)
 {
    int      interval            = 0;
@@ -1137,37 +1136,6 @@ static void d3d8_set_osd_msg(void *data,
    d3d8_end_scene(d3d->dev);
 }
 
-static void d3d8_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-   const char *name     = settings ? 
-      settings->arrays.input_joypad_driver : NULL;
-#ifdef _XBOX
-   void *xinput         = input_xinput.init(name);
-   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data          = xinput;
-#else
-#if _WIN32_WINNT >= 0x0501
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_winraw.init(name);
-      if (*input_data)
-      {
-         *input = &input_winraw;
-         dinput = NULL;
-         return;
-      }
-   }
-#endif
-
-   dinput               = input_dinput.init(name);
-   *input               = dinput ? &input_dinput : NULL;
-   *input_data          = dinput;
-#endif
-}
-
 static bool d3d8_init_internal(d3d8_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
@@ -1255,7 +1223,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d8_input_driver(input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    RARCH_LOG("[D3D8]: Init complete.\n");
    return true;
@@ -1622,7 +1590,6 @@ static bool d3d8_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
@@ -1763,7 +1730,6 @@ static void d3d8_set_menu_texture_frame(void *data,
          }
       }
 
-
       if (d3d->menu)
          d3d8_unlock_rectangle(d3d->menu->tex);
    }
@@ -1888,9 +1854,10 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_load_texture,
    d3d8_unload_texture,
    d3d8_set_video_mode,
-#ifdef _XBOX
+#if defined(_XBOX) || defined(__WINRT__)
    NULL,
 #else
+   /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
    NULL,

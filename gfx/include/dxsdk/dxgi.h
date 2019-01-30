@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,13 +41,11 @@ typedef interface IDXGIObject IDXGIObject;
 
 #endif 	/* __IDXGIObject_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIDeviceSubObject_FWD_DEFINED__
 #define __IDXGIDeviceSubObject_FWD_DEFINED__
 typedef interface IDXGIDeviceSubObject IDXGIDeviceSubObject;
 
 #endif 	/* __IDXGIDeviceSubObject_FWD_DEFINED__ */
-
 
 #ifndef __IDXGIResource_FWD_DEFINED__
 #define __IDXGIResource_FWD_DEFINED__
@@ -59,13 +53,11 @@ typedef interface IDXGIResource IDXGIResource;
 
 #endif 	/* __IDXGIResource_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIKeyedMutex_FWD_DEFINED__
 #define __IDXGIKeyedMutex_FWD_DEFINED__
 typedef interface IDXGIKeyedMutex IDXGIKeyedMutex;
 
 #endif 	/* __IDXGIKeyedMutex_FWD_DEFINED__ */
-
 
 #ifndef __IDXGISurface_FWD_DEFINED__
 #define __IDXGISurface_FWD_DEFINED__
@@ -73,13 +65,11 @@ typedef interface IDXGISurface IDXGISurface;
 
 #endif 	/* __IDXGISurface_FWD_DEFINED__ */
 
-
 #ifndef __IDXGISurface1_FWD_DEFINED__
 #define __IDXGISurface1_FWD_DEFINED__
 typedef interface IDXGISurface1 IDXGISurface1;
 
 #endif 	/* __IDXGISurface1_FWD_DEFINED__ */
-
 
 #ifndef __IDXGIAdapter_FWD_DEFINED__
 #define __IDXGIAdapter_FWD_DEFINED__
@@ -87,13 +77,11 @@ typedef interface IDXGIAdapter IDXGIAdapter;
 
 #endif 	/* __IDXGIAdapter_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIOutput_FWD_DEFINED__
 #define __IDXGIOutput_FWD_DEFINED__
 typedef interface IDXGIOutput IDXGIOutput;
 
 #endif 	/* __IDXGIOutput_FWD_DEFINED__ */
-
 
 #ifndef __IDXGISwapChain_FWD_DEFINED__
 #define __IDXGISwapChain_FWD_DEFINED__
@@ -101,13 +89,11 @@ typedef interface IDXGISwapChain IDXGISwapChain;
 
 #endif 	/* __IDXGISwapChain_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIFactory_FWD_DEFINED__
 #define __IDXGIFactory_FWD_DEFINED__
 typedef interface IDXGIFactory IDXGIFactory;
 
 #endif 	/* __IDXGIFactory_FWD_DEFINED__ */
-
 
 #ifndef __IDXGIDevice_FWD_DEFINED__
 #define __IDXGIDevice_FWD_DEFINED__
@@ -115,13 +101,11 @@ typedef interface IDXGIDevice IDXGIDevice;
 
 #endif 	/* __IDXGIDevice_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIFactory1_FWD_DEFINED__
 #define __IDXGIFactory1_FWD_DEFINED__
 typedef interface IDXGIFactory1 IDXGIFactory1;
 
 #endif 	/* __IDXGIFactory1_FWD_DEFINED__ */
-
 
 #ifndef __IDXGIAdapter1_FWD_DEFINED__
 #define __IDXGIAdapter1_FWD_DEFINED__
@@ -129,13 +113,11 @@ typedef interface IDXGIAdapter1 IDXGIAdapter1;
 
 #endif 	/* __IDXGIAdapter1_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIDevice1_FWD_DEFINED__
 #define __IDXGIDevice1_FWD_DEFINED__
 typedef interface IDXGIDevice1 IDXGIDevice1;
 
 #endif 	/* __IDXGIDevice1_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -146,7 +128,6 @@ typedef interface IDXGIDevice1 IDXGIDevice1;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_dxgi_0000_0000 */
 /* [local] */ 
@@ -294,8 +275,6 @@ typedef struct DXGI_SWAP_CHAIN_DESC
     UINT Flags;
     } 	DXGI_SWAP_CHAIN_DESC;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0000_v0_0_s_ifspec;
 
@@ -304,7 +283,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0000_v0_0_s_ifspec;
 
 /* interface IDXGIObject */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIObject;
 
@@ -405,7 +383,6 @@ EXTERN_C const IID IID_IDXGIObject;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIObject_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -414,7 +391,6 @@ EXTERN_C const IID IID_IDXGIObject;
 
 #define IDXGIObject_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIObject_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -430,21 +406,15 @@ EXTERN_C const IID IID_IDXGIObject;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIObject_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIDeviceSubObject_INTERFACE_DEFINED__
 #define __IDXGIDeviceSubObject_INTERFACE_DEFINED__
 
 /* interface IDXGIDeviceSubObject */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIDeviceSubObject;
 
@@ -531,7 +501,6 @@ EXTERN_C const IID IID_IDXGIDeviceSubObject;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIDeviceSubObject_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -540,7 +509,6 @@ EXTERN_C const IID IID_IDXGIDeviceSubObject;
 
 #define IDXGIDeviceSubObject_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIDeviceSubObject_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -554,27 +522,20 @@ EXTERN_C const IID IID_IDXGIDeviceSubObject;
 #define IDXGIDeviceSubObject_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIDeviceSubObject_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIDeviceSubObject_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIResource_INTERFACE_DEFINED__
 #define __IDXGIResource_INTERFACE_DEFINED__
 
 /* interface IDXGIResource */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIResource;
 
@@ -687,7 +648,6 @@ EXTERN_C const IID IID_IDXGIResource;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIResource_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -696,7 +656,6 @@ EXTERN_C const IID IID_IDXGIResource;
 
 #define IDXGIResource_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIResource_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -710,10 +669,8 @@ EXTERN_C const IID IID_IDXGIResource;
 #define IDXGIResource_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIResource_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGIResource_GetSharedHandle(This,pSharedHandle)	\
     ( (This)->lpVtbl -> GetSharedHandle(This,pSharedHandle) ) 
@@ -729,21 +686,15 @@ EXTERN_C const IID IID_IDXGIResource;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIResource_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIKeyedMutex_INTERFACE_DEFINED__
 #define __IDXGIKeyedMutex_INTERFACE_DEFINED__
 
 /* interface IDXGIKeyedMutex */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIKeyedMutex;
 
@@ -840,7 +791,6 @@ EXTERN_C const IID IID_IDXGIKeyedMutex;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIKeyedMutex_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -849,7 +799,6 @@ EXTERN_C const IID IID_IDXGIKeyedMutex;
 
 #define IDXGIKeyedMutex_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIKeyedMutex_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -863,10 +812,8 @@ EXTERN_C const IID IID_IDXGIKeyedMutex;
 #define IDXGIKeyedMutex_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIKeyedMutex_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGIKeyedMutex_AcquireSync(This,Key,dwMilliseconds)	\
     ( (This)->lpVtbl -> AcquireSync(This,Key,dwMilliseconds) ) 
@@ -876,14 +823,9 @@ EXTERN_C const IID IID_IDXGIKeyedMutex;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIKeyedMutex_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0004 */
 /* [local] */ 
@@ -894,8 +836,6 @@ EXTERN_C const IID IID_IDXGIKeyedMutex;
 
 #define	DXGI_MAP_DISCARD	( 4UL )
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0004_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0004_v0_0_s_ifspec;
 
@@ -904,7 +844,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0004_v0_0_s_ifspec;
 
 /* interface IDXGISurface */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGISurface;
 
@@ -1010,7 +949,6 @@ EXTERN_C const IID IID_IDXGISurface;
 
 #ifdef COBJMACROS
 
-
 #define IDXGISurface_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1019,7 +957,6 @@ EXTERN_C const IID IID_IDXGISurface;
 
 #define IDXGISurface_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGISurface_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1033,10 +970,8 @@ EXTERN_C const IID IID_IDXGISurface;
 #define IDXGISurface_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGISurface_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGISurface_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
@@ -1049,21 +984,15 @@ EXTERN_C const IID IID_IDXGISurface;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGISurface_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGISurface1_INTERFACE_DEFINED__
 #define __IDXGISurface1_INTERFACE_DEFINED__
 
 /* interface IDXGISurface1 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGISurface1;
 
@@ -1178,7 +1107,6 @@ EXTERN_C const IID IID_IDXGISurface1;
 
 #ifdef COBJMACROS
 
-
 #define IDXGISurface1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1187,7 +1115,6 @@ EXTERN_C const IID IID_IDXGISurface1;
 
 #define IDXGISurface1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGISurface1_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1201,10 +1128,8 @@ EXTERN_C const IID IID_IDXGISurface1;
 #define IDXGISurface1_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGISurface1_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGISurface1_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
@@ -1215,7 +1140,6 @@ EXTERN_C const IID IID_IDXGISurface1;
 #define IDXGISurface1_Unmap(This)	\
     ( (This)->lpVtbl -> Unmap(This) ) 
 
-
 #define IDXGISurface1_GetDC(This,Discard,phdc)	\
     ( (This)->lpVtbl -> GetDC(This,Discard,phdc) ) 
 
@@ -1224,20 +1148,12 @@ EXTERN_C const IID IID_IDXGISurface1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __IDXGISurface1_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_dxgi_0000_0006 */
 /* [local] */ 
-
-
-
 
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0006_v0_0_s_ifspec;
@@ -1247,7 +1163,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0006_v0_0_s_ifspec;
 
 /* interface IDXGIAdapter */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIAdapter;
 
@@ -1354,7 +1269,6 @@ EXTERN_C const IID IID_IDXGIAdapter;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIAdapter_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1363,7 +1277,6 @@ EXTERN_C const IID IID_IDXGIAdapter;
 
 #define IDXGIAdapter_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIAdapter_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1377,7 +1290,6 @@ EXTERN_C const IID IID_IDXGIAdapter;
 #define IDXGIAdapter_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIAdapter_EnumOutputs(This,Output,ppOutput)	\
     ( (This)->lpVtbl -> EnumOutputs(This,Output,ppOutput) ) 
 
@@ -1389,14 +1301,9 @@ EXTERN_C const IID IID_IDXGIAdapter;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIAdapter_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0007 */
 /* [local] */ 
@@ -1404,8 +1311,6 @@ EXTERN_C const IID IID_IDXGIAdapter;
 #define	DXGI_ENUM_MODES_INTERLACED	( 1UL )
 
 #define	DXGI_ENUM_MODES_SCALING	( 2UL )
-
-
 
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0007_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0007_v0_0_s_ifspec;
@@ -1415,7 +1320,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0007_v0_0_s_ifspec;
 
 /* interface IDXGIOutput */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIOutput;
 
@@ -1607,7 +1511,6 @@ EXTERN_C const IID IID_IDXGIOutput;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIOutput_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1616,7 +1519,6 @@ EXTERN_C const IID IID_IDXGIOutput;
 
 #define IDXGIOutput_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIOutput_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1629,7 +1531,6 @@ EXTERN_C const IID IID_IDXGIOutput;
 
 #define IDXGIOutput_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIOutput_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
@@ -1669,14 +1570,9 @@ EXTERN_C const IID IID_IDXGIOutput;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIOutput_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0008 */
 /* [local] */ 
@@ -1692,7 +1588,6 @@ EXTERN_C const IID IID_IDXGIOutput;
 #define DXGI_PRESENT_USE_DURATION              0x00000100UL
 #define DXGI_PRESENT_ALLOW_TEARING             0x00000200UL
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0008_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0008_v0_0_s_ifspec;
 
@@ -1701,7 +1596,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0008_v0_0_s_ifspec;
 
 /* interface IDXGISwapChain */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGISwapChain;
 
@@ -1890,7 +1784,6 @@ EXTERN_C const IID IID_IDXGISwapChain;
 
 #ifdef COBJMACROS
 
-
 #define IDXGISwapChain_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1899,7 +1792,6 @@ EXTERN_C const IID IID_IDXGISwapChain;
 
 #define IDXGISwapChain_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGISwapChain_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1913,10 +1805,8 @@ EXTERN_C const IID IID_IDXGISwapChain;
 #define IDXGISwapChain_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGISwapChain_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGISwapChain_Present(This,SyncInterval,Flags)	\
     ( (This)->lpVtbl -> Present(This,SyncInterval,Flags) ) 
@@ -1950,14 +1840,9 @@ EXTERN_C const IID IID_IDXGISwapChain;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGISwapChain_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0009 */
 /* [local] */ 
@@ -1967,7 +1852,6 @@ EXTERN_C const IID IID_IDXGISwapChain;
 #define DXGI_MWA_NO_PRINT_SCREEN        ( 1 << 2 )
 #define DXGI_MWA_VALID                  ( 0x7 )
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0009_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0009_v0_0_s_ifspec;
 
@@ -1976,7 +1860,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0009_v0_0_s_ifspec;
 
 /* interface IDXGIFactory */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIFactory;
 
@@ -2107,7 +1990,6 @@ EXTERN_C const IID IID_IDXGIFactory;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIFactory_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2116,7 +1998,6 @@ EXTERN_C const IID IID_IDXGIFactory;
 
 #define IDXGIFactory_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIFactory_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -2129,7 +2010,6 @@ EXTERN_C const IID IID_IDXGIFactory;
 
 #define IDXGIFactory_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIFactory_EnumAdapters(This,Adapter,ppAdapter)	\
     ( (This)->lpVtbl -> EnumAdapters(This,Adapter,ppAdapter) ) 
@@ -2148,14 +2028,9 @@ EXTERN_C const IID IID_IDXGIFactory;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIFactory_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0010 */
 /* [local] */ 
@@ -2167,7 +2042,6 @@ HRESULT WINAPI CreateDXGIFactory(REFIID riid, _COM_Outptr_ void **ppFactory);
 /*#pragma endregion*/
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0010_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0010_v0_0_s_ifspec;
 
@@ -2176,7 +2050,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0010_v0_0_s_ifspec;
 
 /* interface IDXGIDevice */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIDevice;
 
@@ -2311,7 +2184,6 @@ EXTERN_C const IID IID_IDXGIDevice;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIDevice_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2320,7 +2192,6 @@ EXTERN_C const IID IID_IDXGIDevice;
 
 #define IDXGIDevice_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIDevice_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -2333,7 +2204,6 @@ EXTERN_C const IID IID_IDXGIDevice;
 
 #define IDXGIDevice_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIDevice_GetAdapter(This,pAdapter)	\
     ( (This)->lpVtbl -> GetAdapter(This,pAdapter) ) 
@@ -2352,14 +2222,9 @@ EXTERN_C const IID IID_IDXGIDevice;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIDevice_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0011 */
 /* [local] */ 
@@ -2393,9 +2258,6 @@ typedef struct DXGI_DISPLAY_COLOR_SPACE
     FLOAT WhitePoints[ 16 ][ 2 ];
     } 	DXGI_DISPLAY_COLOR_SPACE;
 
-
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0011_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0011_v0_0_s_ifspec;
 
@@ -2404,7 +2266,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0011_v0_0_s_ifspec;
 
 /* interface IDXGIFactory1 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIFactory1;
 
@@ -2525,7 +2386,6 @@ EXTERN_C const IID IID_IDXGIFactory1;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIFactory1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2534,7 +2394,6 @@ EXTERN_C const IID IID_IDXGIFactory1;
 
 #define IDXGIFactory1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIFactory1_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -2547,7 +2406,6 @@ EXTERN_C const IID IID_IDXGIFactory1;
 
 #define IDXGIFactory1_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIFactory1_EnumAdapters(This,Adapter,ppAdapter)	\
     ( (This)->lpVtbl -> EnumAdapters(This,Adapter,ppAdapter) ) 
@@ -2564,7 +2422,6 @@ EXTERN_C const IID IID_IDXGIFactory1;
 #define IDXGIFactory1_CreateSoftwareAdapter(This,Module,ppAdapter)	\
     ( (This)->lpVtbl -> CreateSoftwareAdapter(This,Module,ppAdapter) ) 
 
-
 #define IDXGIFactory1_EnumAdapters1(This,Adapter,ppAdapter)	\
     ( (This)->lpVtbl -> EnumAdapters1(This,Adapter,ppAdapter) ) 
 
@@ -2573,21 +2430,15 @@ EXTERN_C const IID IID_IDXGIFactory1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIFactory1_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIAdapter1_INTERFACE_DEFINED__
 #define __IDXGIAdapter1_INTERFACE_DEFINED__
 
 /* interface IDXGIAdapter1 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIAdapter1;
 
@@ -2688,7 +2539,6 @@ EXTERN_C const IID IID_IDXGIAdapter1;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIAdapter1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2697,7 +2547,6 @@ EXTERN_C const IID IID_IDXGIAdapter1;
 
 #define IDXGIAdapter1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIAdapter1_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -2711,7 +2560,6 @@ EXTERN_C const IID IID_IDXGIAdapter1;
 #define IDXGIAdapter1_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIAdapter1_EnumOutputs(This,Output,ppOutput)	\
     ( (This)->lpVtbl -> EnumOutputs(This,Output,ppOutput) ) 
 
@@ -2721,27 +2569,20 @@ EXTERN_C const IID IID_IDXGIAdapter1;
 #define IDXGIAdapter1_CheckInterfaceSupport(This,InterfaceName,pUMDVersion)	\
     ( (This)->lpVtbl -> CheckInterfaceSupport(This,InterfaceName,pUMDVersion) ) 
 
-
 #define IDXGIAdapter1_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIAdapter1_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIDevice1_INTERFACE_DEFINED__
 #define __IDXGIDevice1_INTERFACE_DEFINED__
 
 /* interface IDXGIDevice1 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIDevice1;
 
@@ -2864,7 +2705,6 @@ EXTERN_C const IID IID_IDXGIDevice1;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIDevice1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2873,7 +2713,6 @@ EXTERN_C const IID IID_IDXGIDevice1;
 
 #define IDXGIDevice1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIDevice1_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -2886,7 +2725,6 @@ EXTERN_C const IID IID_IDXGIDevice1;
 
 #define IDXGIDevice1_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIDevice1_GetAdapter(This,pAdapter)	\
     ( (This)->lpVtbl -> GetAdapter(This,pAdapter) ) 
@@ -2903,7 +2741,6 @@ EXTERN_C const IID IID_IDXGIDevice1;
 #define IDXGIDevice1_GetGPUThreadPriority(This,pPriority)	\
     ( (This)->lpVtbl -> GetGPUThreadPriority(This,pPriority) ) 
 
-
 #define IDXGIDevice1_SetMaximumFrameLatency(This,MaxLatency)	\
     ( (This)->lpVtbl -> SetMaximumFrameLatency(This,MaxLatency) ) 
 
@@ -2912,14 +2749,9 @@ EXTERN_C const IID IID_IDXGIDevice1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIDevice1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi_0000_0014 */
 /* [local] */ 
@@ -2941,7 +2773,6 @@ DEFINE_GUID(IID_IDXGIFactory1,0x770aae78,0xf26f,0x4dba,0xa8,0x29,0x25,0x3c,0x83,
 DEFINE_GUID(IID_IDXGIAdapter1,0x29038f61,0x3839,0x4626,0x91,0xfd,0x08,0x68,0x79,0x01,0x1a,0x05);
 DEFINE_GUID(IID_IDXGIDevice1,0x77db970f,0x6276,0x48ba,0xba,0x28,0x07,0x01,0x43,0xb4,0x39,0x2c);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0014_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0014_v0_0_s_ifspec;
 
@@ -2954,5 +2785,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi_0000_0014_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

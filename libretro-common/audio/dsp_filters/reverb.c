@@ -60,7 +60,6 @@ static INLINE float comb_process(struct comb *c, float input)
    return output;
 }
 
-
 static INLINE float allpass_process(struct allpass *a, float input)
 {
    float bufout         = a->buffer[a->bufidx];
@@ -315,5 +314,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-
-

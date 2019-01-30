@@ -1,5 +1,4 @@
 
-
 #define IDR_MENU                                101
 #define IDD_PICKCORE                            103
 #define ID_M_LOAD_CONTENT                       40001

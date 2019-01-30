@@ -48,7 +48,6 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
    cheevos_ctx_desc_t desc_info;
 #endif
    bool do_exit              = false;
-   settings_t *settings      = config_get_ptr();
 
    switch (menu_dialog_current_type)
    {
@@ -204,13 +203,16 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
                s, len);
          break;
       case MENU_DIALOG_HELP_EXTRACT:
-         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
-               s, len);
-
-         if (settings->bools.bundle_finished)
          {
-            settings->bools.bundle_finished = false;
-            do_exit                         = true;
+            settings_t *settings      = config_get_ptr();
+            menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+                  s, len);
+
+            if (settings->bools.bundle_finished)
+            {
+               settings->bools.bundle_finished = false;
+               do_exit                         = true;
+            }
          }
          break;
       case MENU_DIALOG_QUIT_CONFIRM:

@@ -28,21 +28,19 @@
 #endif
 
 #include "vulkan_common.h"
-#include "../../libretro-common/include/retro_timers.h"
+#include <retro_timers.h>
 #include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/retro_assert.h"
+#include <retro_assert.h>
 #include "vksym.h"
-#include "../../libretro-common/include/dynamic/dylib.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
-#include "../../libretro-common/include/retro_math.h"
-#include "../../libretro-common/include/string/stdstring.h"
+#include <libretro_vulkan.h>
+#include <retro_math.h>
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(ANDROID)
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
@@ -201,11 +199,12 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
 static void vulkan_emulated_mailbox_loop(void *userdata)
 {
-   VkResult res;
    VkFence fence;
    VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   struct vulkan_emulated_mailbox *mailbox =
-      (struct vulkan_emulated_mailbox *)userdata;
+   struct vulkan_emulated_mailbox *mailbox = (struct vulkan_emulated_mailbox*)userdata;
+
+   if (!mailbox)
+      return;
 
    vkCreateFence(mailbox->device, &info, NULL, &fence);
 
@@ -619,7 +618,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
-      tex.image = NULL;
+      tex.image          = NULL;
       info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
       buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -978,10 +977,18 @@ static void vulkan_check_dynamic_state(
    {
       VkRect2D sci;
 
-      sci.offset.x      = vk->vp.x;
-      sci.offset.y      = vk->vp.y;
-      sci.extent.width  = vk->vp.width;
-      sci.extent.height = vk->vp.height;
+      if (vk->tracker.use_scissor)
+      {
+         sci = vk->tracker.scissor;
+      }
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor (vk->cmd, 0, 1, &sci);
@@ -1545,10 +1552,10 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       const char **exts, unsigned num_exts,
       const char **optional_exts, unsigned num_optional_exts)
 {
-   bool ret = true;
-   VkExtensionProperties *properties = NULL;
    uint32_t property_count;
    unsigned i;
+   bool ret                          = true;
+   VkExtensionProperties *properties = NULL;
 
    if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL) != VK_SUCCESS)
       return false;

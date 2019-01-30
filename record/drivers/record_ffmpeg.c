@@ -89,8 +89,20 @@ extern "C" {
 #define PIX_FMT_YUV444P AV_PIX_FMT_YUV444P
 #endif
 
+#ifndef PIX_FMT_YUV420P
+#define PIX_FMT_YUV420P AV_PIX_FMT_YUV420P
+#endif
+
 #ifndef PIX_FMT_BGR24
 #define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
+#endif
+
+#ifndef PIX_FMT_RGB24
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
+#ifndef PIX_FMT_RGB8
+#define PIX_FMT_RGB8 AV_PIX_FMT_RGB8
 #endif
 
 #ifndef PIX_FMT_RGB565
@@ -544,29 +556,187 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    return true;
 }
 
-static bool ffmpeg_init_config_common(struct ff_config_param *params)
+static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned preset)
 {
-   params->scale_factor         = 1;
-   params->threads              = 1;
-   params->frame_drop_ratio     = 1;
-   params->audio_enable         = true;
-   params->audio_global_quality = 75;
-   params->out_pix_fmt          = PIX_FMT_YUV444P;
+   settings_t *settings = config_get_ptr();
 
-   strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-   strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
-   strlcpy(params->format, "flv", sizeof(params->format));
+   switch (preset)
+   {
+      case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
 
-   av_dict_set(&params->video_opts, "video_preset", "ultrafast", 0);
-   av_dict_set(&params->video_opts, "video_tune", "ultrafast", 0);
-   av_dict_set(&params->video_opts, "video_crf", "18", 0);
-   av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "30", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "25", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 100;
+         params->out_pix_fmt          = PIX_FMT_YUV444P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "15", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 80;
+         params->out_pix_fmt          = PIX_FMT_BGR24;
+
+         strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
+         strlcpy(params->acodec, "flac", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "medium", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "0", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "80", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 50;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "deadline", "realtime", 0);
+         av_dict_set(&params->video_opts, "crf", "14", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "deadline", "realtime", 0);
+         av_dict_set(&params->video_opts, "crf", "4", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_GIF:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = false;
+         params->audio_global_quality = 0;
+         params->out_pix_fmt          = PIX_FMT_RGB8;
+
+         strlcpy(params->vcodec, "gif", sizeof(params->vcodec));
+         strlcpy(params->acodec, "", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "framerate", "50", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
+         break;
+      case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 50;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "mp3", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
+         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+         av_dict_set(&params->video_opts, "crf", "20", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+         break;
+      default:
+         break;
+   }
+
+   if (preset <= RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "matroska", sizeof(params->format));
+   }
+   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "webm", sizeof(params->format));
+   }
+   else if (preset <= RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "gif", sizeof(params->format));
+   }
+   else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
+            settings->uints.video_stream_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      if (settings->uints.streaming_mode == STREAMING_MODE_YOUTUBE || settings->uints.streaming_mode == STREAMING_MODE_TWITCH)
+         strlcpy(params->format, "flv", sizeof(params->format));
+      else
+         strlcpy(params->format, "mpegts", sizeof(params->format));
+   }
+   else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
+   {
+      params->scale_factor = 1;
+      strlcpy(params->format, "mpegts", sizeof(params->format));
+   }
 
    return true;
 }
 
+/*
 static bool ffmpeg_init_config_recording(struct ff_config_param *params)
 {
+   return true;
    params->threads              = 0;
    params->audio_global_quality = 100;
 
@@ -580,6 +750,7 @@ static bool ffmpeg_init_config_recording(struct ff_config_param *params)
 
    return true;
 }
+*/
 
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
@@ -597,9 +768,10 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       return true;
 
    params->conf             = config_file_new(config);
+   RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
    if (!params->conf)
    {
-      RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
+      RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
       return false;
    }
 
@@ -634,7 +806,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
       if (params->out_pix_fmt == PIX_FMT_NONE)
       {
-         RARCH_ERR("Cannot find pix_fmt \"%s\".\n", pix_fmt);
+         RARCH_ERR("[FFmpeg] Cannot find pix_fmt \"%s\".\n", pix_fmt);
          return false;
       }
    }
@@ -703,7 +875,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    }
 
    av_dict_set(&handle->muxer.ctx->metadata, "title",
-         "RetroArch video dump", 0);
+         "RetroArch Video Dump", 0);
 
    return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
@@ -837,45 +1009,14 @@ static void *ffmpeg_new(const struct record_params *params)
 
    handle->params = *params;
 
-   if (params->config_type == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
+   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM || params->preset == RECORD_CONFIG_TYPE_STREAMING_CUSTOM)
    {
+      RARCH_LOG("config: %s %s\n", &handle->config, params->config);
       if (!ffmpeg_init_config(&handle->config, params->config))
          goto error;
    }
    else
-   {
-
-      switch (params->config_type)
-      {
-         case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
-            ffmpeg_init_config_common(&handle->config);
-            ffmpeg_init_config_recording(&handle->config);
-            break;
-         case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
-            ffmpeg_init_config_common(&handle->config);
-            ffmpeg_init_config_recording(&handle->config);
-            break;
-         case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
-            ffmpeg_init_config_common(&handle->config);
-            ffmpeg_init_config_recording(&handle->config);
-            break;
-         case RECORD_CONFIG_TYPE_STREAM_YOUTUBE:
-            ffmpeg_init_config_common(&handle->config);
-            /* TODO/FIXME - fill this in */
-            break;
-         case RECORD_CONFIG_TYPE_STREAM_DISCORD:
-            ffmpeg_init_config_common(&handle->config);
-            /* TODO/FIXME - fill this in */
-            break;
-         case RECORD_CONFIG_TYPE_STREAM_TWITCH:
-            ffmpeg_init_config_common(&handle->config);
-            /* TODO/FIXME - fill this in */
-            break;
-         default:
-         case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
-            break;
-      }
-   }
+      ffmpeg_init_config_common(&handle->config, params->preset);
 
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;

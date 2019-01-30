@@ -82,6 +82,3 @@ sed -i \
 %{_prefix}/share/icons/hicolor/86x86/apps/retroarch.*
 %{_prefix}/share/doc/retroarch/*
 %changelog
-
-
-

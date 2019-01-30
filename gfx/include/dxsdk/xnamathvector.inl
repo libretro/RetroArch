@@ -13276,4 +13276,3 @@ XMFINLINE _XMU555& _XMU555::operator=
 #endif
 
 #endif // __XNAMATHVECTOR_INL__
-

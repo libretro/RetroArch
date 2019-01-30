@@ -68,6 +68,7 @@ struct ad_packet
    char core_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
    char content_crc[NETPLAY_HOST_STR_LEN];
+   char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
 static bool netplay_lan_ad_client(void);
@@ -134,7 +135,7 @@ void deinit_netplay_discovery(void)
 /* Todo: implement net_ifinfo and ntohs for consoles */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data)
 {
-#ifndef RARCH_CONSOLE
+#ifdef HAVE_NETPLAYDISCOVERY
    char port_str[6];
    int ret;
    unsigned k = 0;
@@ -162,7 +163,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
          if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
                   (const char *)&canBroadcast, sizeof(canBroadcast)) < 0)
-             RARCH_WARN("[discovery] Failed to set netplay discovery port to broadcast\n");
+            RARCH_WARN("[discovery] Failed to set netplay discovery port to broadcast\n");
 #endif
 
          /* Put together the request */
@@ -238,16 +239,17 @@ error:
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
 /* Todo: implement net_ifinfo and ntohs for consoles */
-#ifndef RARCH_CONSOLE
+#ifdef HAVE_NETPLAYDISCOVERY
    fd_set fds;
    int ret;
    struct timeval tmp_tv = {0};
    struct sockaddr their_addr;
    socklen_t addr_size;
-   rarch_system_info_t *info = NULL;
    unsigned k = 0;
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
    struct addrinfo *our_addr, hints = {0};
+   struct string_list *subsystem    = path_get_subsystem_list();
+   char buf[4096];
 
    net_ifinfo_t interfaces;
 
@@ -255,7 +257,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       return false;
 
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
-       return false;
+      return false;
 
    /* Check for any ad queries */
    while (1)
@@ -308,16 +310,41 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                if (strstr(interfaces.entries[k].host, sub) &&
                   !strstr(interfaces.entries[k].host, "127.0.0.1"))
                {
+                  struct retro_system_info *info = runloop_get_libretro_system_info();
+
                   RARCH_LOG ("[discovery] query received on common interface: %s/%s (theirs / ours) \n",
                      reply_addr, interfaces.entries[k].host);
 
-                  info = runloop_get_system_info();
-
                   /* Now build our response */
+                  buf[0] = '\0';
                   content_crc = content_get_crc();
 
                   memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
                   memcpy(&ad_packet_buffer, "RANS", 4);
+
+                  if (subsystem)
+                  {
+                     unsigned i;
+
+                     for (i = 0; i < subsystem->size; i++)
+                     {
+                        strlcat(buf, path_basename(subsystem->elems[i].data), NETPLAY_HOST_LONGSTR_LEN);
+                        if (i < subsystem->size - 1)
+                           strlcat(buf, "|", NETPLAY_HOST_LONGSTR_LEN);
+                     }
+                     strlcpy(ad_packet_buffer.content, buf,
+                        NETPLAY_HOST_LONGSTR_LEN);
+                     strlcpy(ad_packet_buffer.subsystem_name, path_get(RARCH_PATH_SUBSYSTEM),
+                        NETPLAY_HOST_STR_LEN);
+                  }
+                  else
+                  {
+                     strlcpy(ad_packet_buffer.content, !string_is_empty(
+                              path_basename(path_get(RARCH_PATH_BASENAME)))
+                           ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
+                           NETPLAY_HOST_LONGSTR_LEN);
+                     strlcpy(ad_packet_buffer.subsystem_name, "N/A", NETPLAY_HOST_STR_LEN);
+                  }
 
                   strlcpy(ad_packet_buffer.address, interfaces.entries[k].host,
                      NETPLAY_HOST_STR_LEN);
@@ -326,18 +353,14 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                   ad_packet_buffer.port = htonl(netplay->tcp_port);
                   strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
                      NETPLAY_HOST_STR_LEN);
-                  strlcpy(ad_packet_buffer.content, !string_is_empty(
-                           path_basename(path_get(RARCH_PATH_BASENAME)))
-                        ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
-                        NETPLAY_HOST_LONGSTR_LEN);
                   strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
                   strlcpy(ad_packet_buffer.frontend, frontend, NETPLAY_HOST_STR_LEN);
 
                   if (info)
                   {
-                     strlcpy(ad_packet_buffer.core, info->info.library_name,
+                     strlcpy(ad_packet_buffer.core, info->library_name,
                         NETPLAY_HOST_STR_LEN);
-                     strlcpy(ad_packet_buffer.core_version, info->info.library_version,
+                     strlcpy(ad_packet_buffer.core_version, info->library_version,
                         NETPLAY_HOST_STR_LEN);
                   }
 
@@ -394,7 +417,7 @@ static bool netplay_lan_ad_client(void)
    struct timeval tmp_tv = {0};
 
    if (lan_ad_client_fd < 0)
-       return false;
+      return false;
 
    /* Check for any ad queries */
    while (1)
@@ -492,6 +515,8 @@ static bool netplay_lan_ad_client(void)
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
+            NETPLAY_HOST_LONGSTR_LEN);
+         strlcpy(host->subsystem_name, ad_packet_buffer.subsystem_name,
             NETPLAY_HOST_LONGSTR_LEN);
          strlcpy(host->frontend, ad_packet_buffer.frontend,
             NETPLAY_HOST_STR_LEN);

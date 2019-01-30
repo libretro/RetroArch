@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,13 +41,11 @@ typedef interface IDXGISwapChain3 IDXGISwapChain3;
 
 #endif 	/* __IDXGISwapChain3_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIOutput4_FWD_DEFINED__
 #define __IDXGIOutput4_FWD_DEFINED__
 typedef interface IDXGIOutput4 IDXGIOutput4;
 
 #endif 	/* __IDXGIOutput4_FWD_DEFINED__ */
-
 
 #ifndef __IDXGIFactory4_FWD_DEFINED__
 #define __IDXGIFactory4_FWD_DEFINED__
@@ -59,13 +53,11 @@ typedef interface IDXGIFactory4 IDXGIFactory4;
 
 #endif 	/* __IDXGIFactory4_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIAdapter3_FWD_DEFINED__
 #define __IDXGIAdapter3_FWD_DEFINED__
 typedef interface IDXGIAdapter3 IDXGIAdapter3;
 
 #endif 	/* __IDXGIAdapter3_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "dxgi1_3.h"
@@ -73,7 +65,6 @@ typedef interface IDXGIAdapter3 IDXGIAdapter3;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_dxgi1_4_0000_0000 */
 /* [local] */ 
@@ -88,8 +79,6 @@ enum DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG
         DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_OVERLAY_PRESENT	= 0x2
     } 	DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0000_v0_0_s_ifspec;
 
@@ -98,7 +87,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0000_v0_0_s_ifspec;
 
 /* interface IDXGISwapChain3 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGISwapChain3;
 
@@ -388,7 +376,6 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 
 #ifdef COBJMACROS
 
-
 #define IDXGISwapChain3_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -397,7 +384,6 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 
 #define IDXGISwapChain3_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGISwapChain3_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -411,10 +397,8 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 #define IDXGISwapChain3_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGISwapChain3_GetDevice(This,riid,ppDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppDevice) ) 
-
 
 #define IDXGISwapChain3_Present(This,SyncInterval,Flags)	\
     ( (This)->lpVtbl -> Present(This,SyncInterval,Flags) ) 
@@ -445,7 +429,6 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 
 #define IDXGISwapChain3_GetLastPresentCount(This,pLastPresentCount)	\
     ( (This)->lpVtbl -> GetLastPresentCount(This,pLastPresentCount) ) 
-
 
 #define IDXGISwapChain3_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
@@ -480,7 +463,6 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 #define IDXGISwapChain3_GetRotation(This,pRotation)	\
     ( (This)->lpVtbl -> GetRotation(This,pRotation) ) 
 
-
 #define IDXGISwapChain3_SetSourceSize(This,Width,Height)	\
     ( (This)->lpVtbl -> SetSourceSize(This,Width,Height) ) 
 
@@ -502,7 +484,6 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 #define IDXGISwapChain3_GetMatrixTransform(This,pMatrix)	\
     ( (This)->lpVtbl -> GetMatrixTransform(This,pMatrix) ) 
 
-
 #define IDXGISwapChain3_GetCurrentBackBufferIndex(This)	\
     ( (This)->lpVtbl -> GetCurrentBackBufferIndex(This) ) 
 
@@ -517,14 +498,9 @@ EXTERN_C const IID IID_IDXGISwapChain3;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGISwapChain3_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi1_4_0000_0001 */
 /* [local] */ 
@@ -535,8 +511,6 @@ enum DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG
         DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG_PRESENT	= 0x1
     } 	DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0001_v0_0_s_ifspec;
 
@@ -545,7 +519,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0001_v0_0_s_ifspec;
 
 /* interface IDXGIOutput4 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIOutput4;
 
@@ -747,7 +720,6 @@ EXTERN_C const IID IID_IDXGIOutput4;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIOutput4_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -756,7 +728,6 @@ EXTERN_C const IID IID_IDXGIOutput4;
 
 #define IDXGIOutput4_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIOutput4_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -769,7 +740,6 @@ EXTERN_C const IID IID_IDXGIOutput4;
 
 #define IDXGIOutput4_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIOutput4_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
@@ -807,7 +777,6 @@ EXTERN_C const IID IID_IDXGIOutput4;
 #define IDXGIOutput4_GetFrameStatistics(This,pStats)	\
     ( (This)->lpVtbl -> GetFrameStatistics(This,pStats) ) 
 
-
 #define IDXGIOutput4_GetDisplayModeList1(This,EnumFormat,Flags,pNumModes,pDesc)	\
     ( (This)->lpVtbl -> GetDisplayModeList1(This,EnumFormat,Flags,pNumModes,pDesc) ) 
 
@@ -820,35 +789,26 @@ EXTERN_C const IID IID_IDXGIOutput4;
 #define IDXGIOutput4_DuplicateOutput(This,pDevice,ppOutputDuplication)	\
     ( (This)->lpVtbl -> DuplicateOutput(This,pDevice,ppOutputDuplication) ) 
 
-
 #define IDXGIOutput4_SupportsOverlays(This)	\
     ( (This)->lpVtbl -> SupportsOverlays(This) ) 
 
-
 #define IDXGIOutput4_CheckOverlaySupport(This,EnumFormat,pConcernedDevice,pFlags)	\
     ( (This)->lpVtbl -> CheckOverlaySupport(This,EnumFormat,pConcernedDevice,pFlags) ) 
-
 
 #define IDXGIOutput4_CheckOverlayColorSpaceSupport(This,Format,ColorSpace,pConcernedDevice,pFlags)	\
     ( (This)->lpVtbl -> CheckOverlayColorSpaceSupport(This,Format,ColorSpace,pConcernedDevice,pFlags) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIOutput4_INTERFACE_DEFINED__ */
-
 
 #ifndef __IDXGIFactory4_INTERFACE_DEFINED__
 #define __IDXGIFactory4_INTERFACE_DEFINED__
 
 /* interface IDXGIFactory4 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIFactory4;
 
@@ -1086,7 +1046,6 @@ EXTERN_C const IID IID_IDXGIFactory4;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIFactory4_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1095,7 +1054,6 @@ EXTERN_C const IID IID_IDXGIFactory4;
 
 #define IDXGIFactory4_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIFactory4_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1108,7 +1066,6 @@ EXTERN_C const IID IID_IDXGIFactory4;
 
 #define IDXGIFactory4_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIFactory4_EnumAdapters(This,Adapter,ppAdapter)	\
     ( (This)->lpVtbl -> EnumAdapters(This,Adapter,ppAdapter) ) 
@@ -1125,13 +1082,11 @@ EXTERN_C const IID IID_IDXGIFactory4;
 #define IDXGIFactory4_CreateSoftwareAdapter(This,Module,ppAdapter)	\
     ( (This)->lpVtbl -> CreateSoftwareAdapter(This,Module,ppAdapter) ) 
 
-
 #define IDXGIFactory4_EnumAdapters1(This,Adapter,ppAdapter)	\
     ( (This)->lpVtbl -> EnumAdapters1(This,Adapter,ppAdapter) ) 
 
 #define IDXGIFactory4_IsCurrent(This)	\
     ( (This)->lpVtbl -> IsCurrent(This) ) 
-
 
 #define IDXGIFactory4_IsWindowedStereoEnabled(This)	\
     ( (This)->lpVtbl -> IsWindowedStereoEnabled(This) ) 
@@ -1166,10 +1121,8 @@ EXTERN_C const IID IID_IDXGIFactory4;
 #define IDXGIFactory4_CreateSwapChainForComposition(This,pDevice,pDesc,pRestrictToOutput,ppSwapChain)	\
     ( (This)->lpVtbl -> CreateSwapChainForComposition(This,pDevice,pDesc,pRestrictToOutput,ppSwapChain) ) 
 
-
 #define IDXGIFactory4_GetCreationFlags(This)	\
     ( (This)->lpVtbl -> GetCreationFlags(This) ) 
-
 
 #define IDXGIFactory4_EnumAdapterByLuid(This,AdapterLuid,riid,ppvAdapter)	\
     ( (This)->lpVtbl -> EnumAdapterByLuid(This,AdapterLuid,riid,ppvAdapter) ) 
@@ -1179,14 +1132,9 @@ EXTERN_C const IID IID_IDXGIFactory4;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIFactory4_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi1_4_0000_0003 */
 /* [local] */ 
@@ -1206,8 +1154,6 @@ typedef struct DXGI_QUERY_VIDEO_MEMORY_INFO
     UINT64 CurrentReservation;
     } 	DXGI_QUERY_VIDEO_MEMORY_INFO;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0003_v0_0_s_ifspec;
 
@@ -1216,7 +1162,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0003_v0_0_s_ifspec;
 
 /* interface IDXGIAdapter3 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIAdapter3;
 
@@ -1396,7 +1341,6 @@ EXTERN_C const IID IID_IDXGIAdapter3;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIAdapter3_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1405,7 +1349,6 @@ EXTERN_C const IID IID_IDXGIAdapter3;
 
 #define IDXGIAdapter3_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIAdapter3_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -1419,7 +1362,6 @@ EXTERN_C const IID IID_IDXGIAdapter3;
 #define IDXGIAdapter3_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIAdapter3_EnumOutputs(This,Output,ppOutput)	\
     ( (This)->lpVtbl -> EnumOutputs(This,Output,ppOutput) ) 
 
@@ -1429,14 +1371,11 @@ EXTERN_C const IID IID_IDXGIAdapter3;
 #define IDXGIAdapter3_CheckInterfaceSupport(This,InterfaceName,pUMDVersion)	\
     ( (This)->lpVtbl -> CheckInterfaceSupport(This,InterfaceName,pUMDVersion) ) 
 
-
 #define IDXGIAdapter3_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
-
 #define IDXGIAdapter3_GetDesc2(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc2(This,pDesc) ) 
-
 
 #define IDXGIAdapter3_RegisterHardwareContentProtectionTeardownStatusEvent(This,hEvent,pdwCookie)	\
     ( (This)->lpVtbl -> RegisterHardwareContentProtectionTeardownStatusEvent(This,hEvent,pdwCookie) ) 
@@ -1458,14 +1397,9 @@ EXTERN_C const IID IID_IDXGIAdapter3;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIAdapter3_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi1_4_0000_0004 */
 /* [local] */ 
@@ -1476,7 +1410,6 @@ DEFINE_GUID(IID_IDXGISwapChain3,0x94d99bdb,0xf1f8,0x4ab0,0xb2,0x36,0x7d,0xa0,0x1
 DEFINE_GUID(IID_IDXGIOutput4,0xdc7dca35,0x2196,0x414d,0x9F,0x53,0x61,0x78,0x84,0x03,0x2a,0x60);
 DEFINE_GUID(IID_IDXGIFactory4,0x1bc6ea02,0xef36,0x464f,0xbf,0x0c,0x21,0xca,0x39,0xe5,0x16,0x8a);
 DEFINE_GUID(IID_IDXGIAdapter3,0x645967A4,0x1392,0x4310,0xA7,0x98,0x80,0x53,0xCE,0x3E,0x93,0xFD);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0004_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0004_v0_0_s_ifspec;
@@ -1490,5 +1423,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_4_0000_0004_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

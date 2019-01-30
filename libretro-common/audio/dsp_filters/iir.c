@@ -261,7 +261,6 @@ static void iir_filter_init(struct iir_data *iir,
          a1    = a[1];
          a2    = a[2];
 
-
          /* Normalise to 0dB at 1kHz (Thanks to Glenn Davis) */
          y     = 2.0 * M_PI * 1000.0 / sample_rate;
          b_re  = b0 + b1 * cos(-y) + b2 * cos(-2.0 * y);
@@ -369,4 +368,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-

@@ -109,7 +109,7 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
-LDFLAGS += $(LIBV4L2) $(LIBASOUND) $(LIBUDEV)
+LDFLAGS += $(LIBV4L2) $(LIBASOUND) $(LIBUDEV) -lm
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -144,4 +144,3 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 .PHONY: clean
-

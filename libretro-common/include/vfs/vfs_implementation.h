@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
 *
 * ---------------------------------------------------------------------------------------
 * The following license statement only applies to this file (vfs_implementation.h).
@@ -38,6 +38,16 @@ typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
 typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
 #endif
 
+#ifdef VFS_FRONTEND
+typedef struct retro_vfs_dir_handle libretro_vfs_implementation_dir;
+#else
+typedef struct libretro_vfs_implementation_dir libretro_vfs_implementation_dir;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
@@ -63,5 +73,23 @@ int retro_vfs_file_remove_impl(const char *path);
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path);
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream);
+
+int retro_vfs_stat_impl(const char *path, int32_t *size);
+
+int retro_vfs_mkdir_impl(const char *dir);
+
+libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *dir, bool include_hidden);
+
+bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *dirstream);
+
+const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *dirstream);
+
+bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
+
+int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

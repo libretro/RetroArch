@@ -92,7 +92,6 @@ static void *vita2d_gfx_init(const video_info_t *video,
    video_driver_set_size(&temp_width, &temp_height);
    vita2d_gfx_set_viewport(vita, temp_width, temp_height, false, true);
 
-
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();

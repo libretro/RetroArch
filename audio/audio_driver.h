@@ -37,6 +37,17 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MIXER_MAX_STREAMS        16
 
+#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 4)
+
+/* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
+enum audio_mixer_system_slot
+{
+   AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,
+   AUDIO_MIXER_SYSTEM_SLOT_CANCEL,
+   AUDIO_MIXER_SYSTEM_SLOT_NOTICE,
+   AUDIO_MIXER_SYSTEM_SLOT_BGM
+};
+
 enum audio_action
 {
    AUDIO_ACTION_NONE = 0,
@@ -46,6 +57,19 @@ enum audio_action
    AUDIO_ACTION_VOLUME_GAIN,
    AUDIO_ACTION_MIXER_VOLUME_GAIN,
    AUDIO_ACTION_MIXER
+};
+
+enum audio_mixer_slot_selection_type
+{
+   AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC = 0,
+   AUDIO_MIXER_SLOT_SELECTION_MANUAL
+};
+
+enum audio_mixer_stream_type
+{
+   AUDIO_STREAM_TYPE_NONE = 0,
+   AUDIO_STREAM_TYPE_USER,
+   AUDIO_STREAM_TYPE_SYSTEM
 };
 
 enum audio_mixer_state
@@ -62,6 +86,8 @@ typedef struct audio_mixer_stream
    audio_mixer_sound_t *handle;
    audio_mixer_voice_t *voice;
    audio_mixer_stop_cb_t stop_cb;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type type;
    enum audio_mixer_state state;
    float volume;
    void *buf;
@@ -163,6 +189,9 @@ typedef struct audio_driver
 typedef struct audio_mixer_stream_params
 {
    float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
+   enum audio_mixer_stream_type  stream_type;
    enum audio_mixer_type  type;
    enum audio_mixer_state state;
    void *buf;
@@ -295,6 +324,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 void audio_driver_mixer_play_stream(unsigned i);
 
+void audio_driver_mixer_play_menu_sound(unsigned i);
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i);
+
 void audio_driver_mixer_play_stream_sequential(unsigned i);
 
 void audio_driver_mixer_play_stream_looped(unsigned i);
@@ -315,7 +348,10 @@ const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
+void audio_driver_load_menu_sounds(void);
+
 extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
 extern audio_driver_t audio_alsathread;
@@ -335,6 +371,7 @@ extern audio_driver_t audio_ps3;
 extern audio_driver_t audio_gx;
 extern audio_driver_t audio_ax;
 extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
 extern audio_driver_t audio_switch;

@@ -14,8 +14,6 @@
 
 #include <dwrite.h>
 
-
-
 /// <summary>
 /// The overall kind of family.
 /// </summary>
@@ -623,7 +621,6 @@ enum DWRITE_GLYPH_ORIENTATION_ANGLE
     DWRITE_GLYPH_ORIENTATION_ANGLE_270_DEGREES,
 };
 
-
 struct DWRITE_FONT_METRICS1 : public DWRITE_FONT_METRICS
 {
     /// <summary>
@@ -715,7 +712,6 @@ struct DWRITE_FONT_METRICS1 : public DWRITE_FONT_METRICS
     BOOL hasTypographicMetrics;
 };
 
-
 /// <summary>
 /// Metrics for caret placement in a font.
 /// </summary>
@@ -739,7 +735,6 @@ struct DWRITE_CARET_METRICS
     /// </summary>
     INT16 offset;
 };
-
 
 /// <summary>
 /// Typeface classification values, used for font selection and matching.
@@ -812,7 +807,6 @@ union DWRITE_PANOSE
     } symbol;
 };
 
-
 /// <summary>
 /// Range of Unicode codepoints.
 /// </summary>
@@ -828,7 +822,6 @@ struct DWRITE_UNICODE_RANGE
     /// </summary>
     UINT32 last;
 };
-
 
 /// <summary>
 /// Script-specific properties for caret navigation and justification.
@@ -937,7 +930,6 @@ struct DWRITE_SCRIPT_PROPERTIES
     UINT32 reserved                     : 25;
 };
 
-
 /// <summary>
 /// Justification information per glyph.
 /// </summary>
@@ -1006,7 +998,6 @@ struct DWRITE_JUSTIFICATION_OPPORTUNITY
 
     UINT32 reserved                  : 12;
 };
-
 
 interface IDWriteTextAnalysisSource1;
 interface IDWriteTextAnalysisSink1;
@@ -1080,7 +1071,6 @@ interface DWRITE_DECLARE_INTERFACE("30572f99-dac6-41db-a16e-0486307e606a") IDWri
 
     using IDWriteFactory::CreateCustomRenderingParams;
 };
-
 
 /// <summary>
 /// The interface that represents an absolute reference to a font face.
@@ -1340,7 +1330,6 @@ interface DWRITE_DECLARE_INTERFACE("a71efdb4-9fdb-4838-ad90-cfc3be8c3daf") IDWri
     using IDWriteFontFace::GetGdiCompatibleMetrics;
     using IDWriteFontFace::GetRecommendedRenderingMode;
 };
-
 
 /// <summary>
 /// The IDWriteFont interface represents a physical font in a font collection.
@@ -1711,7 +1700,6 @@ interface DWRITE_DECLARE_INTERFACE("80DAD800-E21F-4E83-96CE-BFCCE500DB7C") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// The interface implemented by the client to provide needed information to
 /// the text analyzer, such as the text and associated text properties.
@@ -1752,7 +1740,6 @@ interface DWRITE_DECLARE_INTERFACE("639CFAD8-0FB4-4B21-A58A-067920120009") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// The interface implemented by the client to receive the
 /// output of the text analyzers.
@@ -1791,7 +1778,6 @@ interface DWRITE_DECLARE_INTERFACE("B0D941A0-85E7-4D8B-9FD3-5CED9934482A") IDWri
         BOOL isRightToLeft
         ) PURE;
 };
-
 
 /// <summary>
 /// The IDWriteTextLayout1 interface represents a block of text after it has

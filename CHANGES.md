@@ -1,13 +1,83 @@
-# 1.7.5 (future)
+# 1.7.6 (future)
+- ANDROID: Fix Xperia Play input binding
+- CHEEVOS: Reset when hardcore mode is toggled
+- CHEEVOS: Update the hashing methods to identify NES, SNES and Lynx games (more accurate and accepting headerless ROMs).
+- COMMON: Add new JSON playlist format
+- COMMON: Fix playlist corruption when deleting items
+- COMMON: Fix archive progress display calculation
+- COMMON: Fix playlist entries appearing with previously used names
+- COMMON: Fix screenshot filename with no core or content
+- COMMON: Allow compiling without menu support
+- CORE UPDATER: Allow sideloading cores from the menu
+- CPU FILTERS: Add Normal2x filter.
+- DATE: Add Date / Time style options.
+- DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
+- DISCORD: Register the application name properly.
+- DISK CONTROL: Remember the last used folder / current active folder to make disk-swapping faster.
+- INPUT: Add new menu toggle (hold start button for 2 seconds)
+- INPUT: Fix arrow keys being incorrectly bound as numpad keys
+- INPUT/SDL: Flush the joypad events. Decreases cpu usage over time with the SDL joypad driver.
+- LOCALIZATION: Add Greek translation.
+- LOCALIZATION: Update German translation.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Simplified Chinese translation.
+- LOCALIZATION: Update Spanish translation.
+- MENU: New "ozone" menu driver.
+- MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
+- MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
+- MENU: Add option to enable in-menu sound effects
+- MENU/QT/WIMP: Allow building with MSVC2017
+- MENU/QT/WIMP: Add detailed file browser table
+- MENU/QT/WIMP: New grid view implementation that is faster and loads thumbnails on-demand
+- MIDI: Add a Linux ALSA driver for MIDI.
+- NETPLAY: Force fast-save-states when netlay is enabled
+- NETPLAY: Allow quick joining subsystem lobbies
+- PS2: Initial PlayStation2 port.
+- PS4: Initial PlayStation4 port.
+- RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
+- SCANNER: Fix GDI disc scanning.
+- SHADERS: Fix auto shader preset loading on D3D10, D3D11, D3D12
+- SUBSYSTEM: Allow more than 10 subsystems
+- SUBSYSTEM: Cores that use subsystem for complex scenarios can now load content without starting a regular content first
+- SUBSYSTEM: Remember the last used folder to make loading subsystem type content faster
+- SWITCH/LIBNX: Improve touch scaling calculation.
+- SWITCH: Proper button labels.
+- VULKAN: Fix RGUI crashing at startup.
+- VULKAN: Fix secondary screens in overlays not working.
+- WAYLAND: Implement idle-inhibit support (needed for screensaver suspend).
+- WAYLAND: Fix fullscreen toggle
+- WIIU: Initial netplay peer-to-peer support. Network information working.
+- WINDOWS/WSA: Network Information info is blank until first network operation.
+- WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
+- WINDOWS: Remember window size and position if so desired
+- WINDOWS: SSL/TLS connections now work properly.
+- UWP: Initial UWP port.
+- VFS: Update to version 3
+- XBONE: Initial Xbox One port.
+- XMB/OZONE: Add more icons
+- ???: Easter Egg
+
+# 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
-- CHEEVOS: Support headerless NES hashing.
+- CONFIG: Add 'Reset To Defaults' setting in Configurations. Thi will reset your config file to defaults.
+- CHEATS: Add support for Rumble when increase or decrease by the rumble value.
+- CHEATS: Add cheat variables to allow for updating large portions of memory.
+- CHEEVOS: Prevent loading states before achievements are fully loaded.
 - CRT: New porches and interlaced bug fix.
+- CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
+- EMSCRIPTEN: Add stb_font support.
+- INPUT: Add new menu toggle combos 'L3 + R' and 'L + R' (useful for Switch).
+- IOS: Use safe area to account for notch for iPhone X and adjust main view.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Spanish translation.
+- MENU: Add dropdown lists for many settings.
+- MENU: Fix crash that could happen when changing core's options on Android.
+- MENU/QT/WIMP: Add option to rename playlists.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
 - MENU/QT/WIMP: Fix shader parameter checkboxes not working
@@ -15,9 +85,16 @@
 - NETPLAY: Save lobby details received back from server after first announcement.
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
+- RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
+- SWITCH: Add stb_font support.
+- SWITCH: Add Retro Achievements support.
+- SWITCH: Add networking support.
+- SWITCH: Add touchscreen support.
+- SWITCH: Add OpenGL support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
+- WIIU: Fix menu lag when built with DevKitPro r32.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.

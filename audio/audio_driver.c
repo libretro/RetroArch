@@ -25,6 +25,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -35,6 +36,7 @@
 #include "../gfx/video_driver.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #include "../command.h"
 #include "../driver.h"
@@ -42,8 +44,16 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../list_special.h"
+#include "../file_path_special.h"
+#include "../content.h"
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+
+#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac"
 
 /**
  * db_to_gain:
@@ -64,6 +74,9 @@ static const audio_driver_t *audio_drivers[] = {
 #endif
 #ifdef HAVE_TINYALSA
 	&audio_tinyalsa,
+#endif
+#if defined(HAVE_AUDIOIO)
+   &audio_audioio,
 #endif
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
    &audio_oss,
@@ -116,22 +129,25 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
-#if defined(PSP) || defined(VITA)
+#if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
+#endif
+#if defined(PS2)
+  &audio_ps2,
 #endif
 #ifdef _3DS
    &audio_ctr_csnd,
    &audio_ctr_dsp,
 #endif
 #ifdef SWITCH
-   &audio_switch,
    &audio_switch_thread,
+   &audio_switch,
 #endif
    &audio_null,
    NULL,
 };
 
-static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_STREAMS] = {{0}};
+static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS] = {{0}};
 
 static size_t audio_driver_chunk_size                    = 0;
 static size_t audio_driver_chunk_nonblock_size           = 0;
@@ -179,11 +195,34 @@ static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
 
 static bool audio_suspended                              = false;
+static bool audio_is_threaded                            = false;
+
+#ifdef HAVE_THREADS
+static slock_t* s_audio_driver_lock = NULL;
+#endif
 
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 static void audio_mixer_play_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
+static void audio_mixer_menu_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason);
+
+#ifdef HAVE_THREADS
+#define audio_driver_lock() \
+   if (s_audio_driver_lock) \
+      slock_lock(s_audio_driver_lock)
+#else
+#define audio_driver_lock()
+#endif
+
+#ifdef HAVE_THREADS
+#define audio_driver_unlock() \
+   if (s_audio_driver_lock) \
+      slock_unlock(s_audio_driver_lock)
+#else
+#define audio_driver_unlock()
+#endif
 
 enum resampler_quality audio_driver_get_resampler_quality(void)
 {
@@ -197,14 +236,14 @@ enum resampler_quality audio_driver_get_resampler_quality(void)
 
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i)
 {
-   if (i > (AUDIO_MIXER_MAX_STREAMS-1))
+   if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
       return NULL;
    return &audio_mixer_streams[i];
 }
 
 const char *audio_driver_mixer_get_stream_name(unsigned i)
 {
-   if (i > (AUDIO_MIXER_MAX_STREAMS-1))
+   if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
       return "N/A";
    if (!string_is_empty(audio_mixer_streams[i].name))
       return audio_mixer_streams[i].name;
@@ -386,11 +425,10 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
-static void audio_driver_mixer_init(unsigned out_rate)
+static void audio_driver_mixer_init(unsigned audio_out_rate)
 {
-   audio_mixer_init(out_rate);
+   audio_mixer_init(audio_out_rate);
 }
-
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
@@ -442,6 +480,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
+      audio_is_threaded = true;
       RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
       if (!audio_init_thread(
                &current_audio,
@@ -460,6 +499,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    else
 #endif
    {
+      audio_is_threaded = false;
       audio_driver_context_audio_data =
          current_audio->init(*settings->arrays.audio_device ?
                settings->arrays.audio_device : NULL,
@@ -502,6 +542,15 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_source_ratio_original   = audio_source_ratio_current =
       (double)settings->uints.audio_out_rate / audio_driver_input;
 
+#ifdef HAVE_THREADS
+   if (s_audio_driver_lock)
+      slock_free(s_audio_driver_lock);
+   s_audio_driver_lock = slock_new();
+#endif
+
+   audio_resampler_lock_init();
+   audio_resampler_lock();
+
    if (!retro_resampler_realloc(
             &audio_driver_resampler_data,
             &audio_driver_resampler,
@@ -513,6 +562,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
             settings->arrays.audio_resampler);
       audio_driver_active = false;
    }
+
+   audio_resampler_unlock();
 
    aud_inp_data = (float*)malloc(max_bufsamples * sizeof(float));
    retro_assert(aud_inp_data != NULL);
@@ -584,9 +635,13 @@ void audio_driver_set_nonblocking_state(bool enable)
             audio_driver_context_audio_data,
             settings->bools.audio_sync ? enable : true);
 
+   audio_driver_lock();
+
    audio_driver_chunk_size = enable ?
       audio_driver_chunk_nonblock_size :
       audio_driver_chunk_block_size;
+
+   audio_driver_unlock();
 }
 
 /**
@@ -604,6 +659,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    bool is_paused                    = false;
    bool is_idle                      = false;
    bool is_slowmotion                = false;
+   bool is_active                    = false;
    const void *output_data           = NULL;
    unsigned output_frames            = 0;
    float audio_volume_gain           = !audio_driver_mute_enable ?
@@ -612,8 +668,12 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
+   recording_driver_lock();
+
    if (recording_data)
       recording_push_audio(data, samples);
+
+   recording_driver_unlock();
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
@@ -624,12 +684,15 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
 		   !audio_driver_output_samples_buf)
       return;
 
+   audio_driver_lock();
+
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_volume_gain);
 
+   audio_driver_unlock();
+
    src_data.data_in                  = audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
-
 
    if (audio_driver_dsp)
    {
@@ -691,9 +754,15 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       src_data.ratio       *= settings->floats.slowmotion_ratio;
    }
 
-   audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
+   audio_driver_lock();
 
-   if (audio_mixer_active)
+   audio_resampler_lock();
+   audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
+   audio_resampler_unlock();
+
+   is_active = audio_mixer_active;
+
+   if (is_active)
    {
       bool override     = audio_driver_mixer_mute_enable ? true :
          (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
@@ -702,6 +771,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       audio_mixer_mix(audio_driver_output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
+
+   audio_driver_unlock();
 
    output_data        = audio_driver_output_samples_buf;
    output_frames      = (unsigned)src_data.output_frames;
@@ -717,9 +788,13 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       output_frames  *= sizeof(int16_t);
    }
 
+   audio_driver_lock();
+
    if (current_audio->write(audio_driver_context_audio_data,
             output_data, output_frames * 2) < 0)
       audio_driver_active = false;
+
+   audio_driver_unlock();
 }
 
 /**
@@ -731,14 +806,24 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
  **/
 void audio_driver_sample(int16_t left, int16_t right)
 {
+   audio_driver_lock();
+
    if (audio_suspended)
+   {
+      audio_driver_unlock();
       return;
+   }
 
    audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = left;
    audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = right;
 
    if (audio_driver_data_ptr < audio_driver_chunk_size)
+   {
+      audio_driver_unlock();
       return;
+   }
+
+   audio_driver_unlock();
 
    audio_driver_flush(audio_driver_output_samples_conv_buf,
          audio_driver_data_ptr);
@@ -749,9 +834,8 @@ void audio_driver_sample(int16_t left, int16_t right)
 void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
-   struct retro_system_av_info   
-      *av_info                            = video_viewport_get_system_av_info();
-   const struct retro_system_timing *info = 
+   struct retro_system_av_info *av_info   = video_viewport_get_system_av_info();
+   const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    while (sample_count > 1024)
@@ -796,6 +880,9 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
+   if (audio_driver_rewind_ptr == 0)
+      return;
+
    audio_driver_rewind_buf[--audio_driver_rewind_ptr] = right;
    audio_driver_rewind_buf[--audio_driver_rewind_ptr] = left;
 }
@@ -819,7 +906,10 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
    size_t samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
+   {
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
+   }
 
    return frames;
 }
@@ -905,11 +995,13 @@ void audio_driver_setup_rewind(void)
 
    for (i = 0; i < audio_driver_data_ptr; i += 2)
    {
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
-         audio_driver_output_samples_conv_buf[i + 1];
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+            audio_driver_output_samples_conv_buf[i + 1];
 
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
-         audio_driver_output_samples_conv_buf[i + 0];
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+            audio_driver_output_samples_conv_buf[i + 0];
    }
 
    audio_driver_data_ptr = 0;
@@ -954,10 +1046,13 @@ bool audio_driver_find_driver(void)
 
 void audio_driver_deinit_resampler(void)
 {
+   audio_resampler_lock();
    if (audio_driver_resampler && audio_driver_resampler_data)
       audio_driver_resampler->free(audio_driver_resampler_data);
    audio_driver_resampler      = NULL;
    audio_driver_resampler_data = NULL;
+   audio_resampler_unlock();
+   audio_resampler_lock_free();
 }
 
 bool audio_driver_free_devices_list(void)
@@ -1041,7 +1136,7 @@ static int audio_mixer_find_index(audio_mixer_sound_t *sound)
 {
    unsigned i;
 
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
       audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
       if (handle == sound)
@@ -1083,6 +1178,28 @@ static void audio_mixer_play_stop_cb(
    }
 }
 
+static void audio_mixer_menu_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason)
+{
+   int idx = audio_mixer_find_index(sound);
+
+   switch (reason)
+   {
+      case AUDIO_MIXER_SOUND_FINISHED:
+         if (idx >= 0)
+         {
+            unsigned i = (unsigned)idx;
+            audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
+            audio_mixer_streams[i].volume  = 0.0f;
+         }
+         break;
+      case AUDIO_MIXER_SOUND_STOPPED:
+         break;
+      case AUDIO_MIXER_SOUND_REPEATED:
+         break;
+   }
+}
+
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
@@ -1100,6 +1217,11 @@ static void audio_mixer_play_stop_sequential_cb(
             if (!string_is_empty(audio_mixer_streams[i].name))
                free(audio_mixer_streams[i].name);
 
+            if (i < AUDIO_MIXER_MAX_STREAMS)
+               audio_mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_USER;
+            else
+               audio_mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+
             audio_mixer_streams[i].name    = NULL;
             audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
             audio_mixer_streams[i].volume  = 0.0f;
@@ -1110,7 +1232,7 @@ static void audio_mixer_play_stop_sequential_cb(
 
             i++;
 
-            for (; i < AUDIO_MIXER_MAX_STREAMS; i++)
+            for (; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
             {
                if (audio_mixer_streams[i].state == AUDIO_STREAM_STATE_STOPPED)
                {
@@ -1127,10 +1249,11 @@ static void audio_mixer_play_stop_sequential_cb(
    }
 }
 
-bool audio_driver_mixer_get_free_stream_slot(unsigned *id)
+static bool audio_driver_mixer_get_free_stream_slot(unsigned *id, enum audio_mixer_stream_type type)
 {
-   unsigned i;
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   unsigned i     = (type == AUDIO_STREAM_TYPE_USER) ? 0                       : AUDIO_MIXER_MAX_STREAMS;
+   unsigned count = (type == AUDIO_STREAM_TYPE_USER) ? AUDIO_MIXER_MAX_STREAMS : AUDIO_MIXER_MAX_SYSTEM_STREAMS;
+   for (; i < count; i++)
    {
       if (audio_mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
       {
@@ -1150,9 +1273,22 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
    bool looped                   = false;
    void *buf                     = NULL;
-   
-   if (!audio_driver_mixer_get_free_stream_slot(&free_slot))
+
+   if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
       return false;
+   
+   switch (params->slot_selection_type)
+   {
+      case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
+         free_slot = params->slot_selection_idx;
+         break;
+      case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
+      default:
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+            return false;
+         break;
+   }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;
@@ -1212,22 +1348,28 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
    }
 
+   audio_driver_lock();
+
    audio_mixer_active                     = true;
 
-   audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL; 
+   audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL;
    audio_mixer_streams[free_slot].buf     = buf;
    audio_mixer_streams[free_slot].handle  = handle;
    audio_mixer_streams[free_slot].voice   = voice;
+   audio_mixer_streams[free_slot].stream_type = params->stream_type;
+   audio_mixer_streams[free_slot].type    = params->type;
    audio_mixer_streams[free_slot].state   = params->state;
    audio_mixer_streams[free_slot].volume  = params->volume;
    audio_mixer_streams[free_slot].stop_cb = stop_cb;
+
+   audio_driver_unlock();
 
    return true;
 }
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
 {
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return AUDIO_STREAM_STATE_NONE;
 
    return audio_mixer_streams[i].state;
@@ -1237,7 +1379,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
 {
    bool set_state              = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1259,9 +1401,125 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
       audio_mixer_streams[i].state   = (enum audio_mixer_state)type;
 }
 
+static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data, const char *error)
+{
+   bool contentless = false;
+   bool is_inited = false;
+
+   content_get_status(&contentless, &is_inited);
+
+   if (!is_inited)
+      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+}
+
+void audio_driver_load_menu_sounds(void)
+{
+   settings_t *settings = config_get_ptr();
+   char *sounds_path = NULL;
+   char *sounds_fallback_path = NULL;
+   const char *path_ok = NULL;
+   const char *path_cancel = NULL;
+   const char *path_notice = NULL;
+   const char *path_bgm = NULL;
+   struct string_list *list = NULL;
+   struct string_list *list_fallback = NULL;
+   int i = 0;
+
+   sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   sounds_path[0] = sounds_fallback_path[0] = '\0';
+
+   fill_pathname_join(
+         sounds_fallback_path,
+         settings->paths.directory_assets,
+         "sounds",
+         PATH_MAX_LENGTH * sizeof(char)
+   );
+
+   fill_pathname_application_special(sounds_path, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
+
+   list = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
+   list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
+
+   if (!list)
+   {
+      list = list_fallback;
+      list_fallback = NULL;
+   }
+
+   if (!list || list->size == 0)
+      goto end;
+
+   if (list_fallback && list_fallback->size > 0)
+   {
+      for (i = 0; i < list_fallback->size; i++)
+      {
+         if (list->size == 0 || !string_list_find_elem(list, list_fallback->elems[i].data))
+         {
+            union string_list_elem_attr attr = {0};
+            string_list_append(list, list_fallback->elems[i].data, attr);
+         }
+      }
+   }
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *path = list->elems[i].data;
+      const char *ext = path_get_extension(path);
+      char basename_noext[PATH_MAX_LENGTH];
+
+      basename_noext[0] = '\0';
+
+      fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
+
+      if (audio_driver_mixer_extension_supported(ext))
+      {
+         if (string_is_equal_noncase(basename_noext, "ok"))
+            path_ok = path;
+         if (string_is_equal_noncase(basename_noext, "cancel"))
+            path_cancel = path;
+         if (string_is_equal_noncase(basename_noext, "notice"))
+            path_notice = path;
+         if (string_is_equal_noncase(basename_noext, "bgm"))
+            path_bgm = path;
+      }
+   }
+
+   if (path_ok && settings->bools.audio_enable_menu_ok)
+      task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
+   if (path_cancel && settings->bools.audio_enable_menu_cancel)
+      task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+   if (path_notice && settings->bools.audio_enable_menu_notice)
+      task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+   if (path_bgm && settings->bools.audio_enable_menu_bgm)
+      task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
+end:
+   if (list)
+      string_list_free(list);
+   if (list_fallback)
+      string_list_free(list_fallback);
+   if (sounds_path)
+      free(sounds_path);
+   if (sounds_fallback_path)
+      free(sounds_fallback_path);
+}
+
 void audio_driver_mixer_play_stream(unsigned i)
 {
    audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+}
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i)
+{
+   audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+}
+
+void audio_driver_mixer_play_menu_sound(unsigned i)
+{
+   audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
    audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
 }
 
@@ -1279,7 +1537,7 @@ void audio_driver_mixer_play_stream_sequential(unsigned i)
 
 float audio_driver_mixer_get_stream_volume(unsigned i)
 {
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return 0.0f;
 
    return audio_mixer_streams[i].volume;
@@ -1289,7 +1547,7 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
 {
    audio_mixer_voice_t *voice     = NULL;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    audio_mixer_streams[i].volume  = vol;
@@ -1304,7 +1562,7 @@ void audio_driver_mixer_stop_stream(unsigned i)
 {
    bool set_state              = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1334,7 +1592,7 @@ void audio_driver_mixer_remove_stream(unsigned i)
 {
    bool destroy                = false;
 
-   if (i >= AUDIO_MIXER_MAX_STREAMS)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
    switch (audio_mixer_streams[i].state)
@@ -1376,7 +1634,7 @@ static void audio_driver_mixer_deinit(void)
 
    audio_mixer_active = false;
 
-   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
       audio_driver_mixer_stop_stream(i);
       audio_driver_mixer_remove_stream(i);
@@ -1389,6 +1647,11 @@ bool audio_driver_deinit(void)
 {
    audio_driver_mixer_deinit();
    audio_driver_free_devices_list();
+#ifdef HAVE_THREADS
+   slock_free(s_audio_driver_lock);
+   s_audio_driver_lock = NULL;
+#endif
+
    if (!audio_driver_deinit_internal())
       return false;
    return true;
@@ -1490,7 +1753,6 @@ error:
    return false;
 }
 
-
 bool audio_driver_stop(void)
 {
    if (!current_audio || !current_audio->stop
@@ -1579,7 +1841,6 @@ void audio_set_bool(enum audio_action action, bool val)
          break;
    }
 }
-
 
 void audio_set_float(enum audio_action action, float val)
 {

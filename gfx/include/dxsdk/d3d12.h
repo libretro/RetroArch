@@ -4,13 +4,9 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
-
  /* File created by MIDL compiler version 8.00.0613 */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -49,13 +45,11 @@ typedef interface ID3D12Object ID3D12Object;
 
 #endif 	/* __ID3D12Object_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DeviceChild_FWD_DEFINED__
 #define __ID3D12DeviceChild_FWD_DEFINED__
 typedef interface ID3D12DeviceChild ID3D12DeviceChild;
 
 #endif 	/* __ID3D12DeviceChild_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12RootSignature_FWD_DEFINED__
 #define __ID3D12RootSignature_FWD_DEFINED__
@@ -63,13 +57,11 @@ typedef interface ID3D12RootSignature ID3D12RootSignature;
 
 #endif 	/* __ID3D12RootSignature_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12RootSignatureDeserializer_FWD_DEFINED__
 #define __ID3D12RootSignatureDeserializer_FWD_DEFINED__
 typedef interface ID3D12RootSignatureDeserializer ID3D12RootSignatureDeserializer;
 
 #endif 	/* __ID3D12RootSignatureDeserializer_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12VersionedRootSignatureDeserializer_FWD_DEFINED__
 #define __ID3D12VersionedRootSignatureDeserializer_FWD_DEFINED__
@@ -77,13 +69,11 @@ typedef interface ID3D12VersionedRootSignatureDeserializer ID3D12VersionedRootSi
 
 #endif 	/* __ID3D12VersionedRootSignatureDeserializer_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Pageable_FWD_DEFINED__
 #define __ID3D12Pageable_FWD_DEFINED__
 typedef interface ID3D12Pageable ID3D12Pageable;
 
 #endif 	/* __ID3D12Pageable_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Heap_FWD_DEFINED__
 #define __ID3D12Heap_FWD_DEFINED__
@@ -91,13 +81,11 @@ typedef interface ID3D12Heap ID3D12Heap;
 
 #endif 	/* __ID3D12Heap_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Resource_FWD_DEFINED__
 #define __ID3D12Resource_FWD_DEFINED__
 typedef interface ID3D12Resource ID3D12Resource;
 
 #endif 	/* __ID3D12Resource_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12CommandAllocator_FWD_DEFINED__
 #define __ID3D12CommandAllocator_FWD_DEFINED__
@@ -105,13 +93,11 @@ typedef interface ID3D12CommandAllocator ID3D12CommandAllocator;
 
 #endif 	/* __ID3D12CommandAllocator_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Fence_FWD_DEFINED__
 #define __ID3D12Fence_FWD_DEFINED__
 typedef interface ID3D12Fence ID3D12Fence;
 
 #endif 	/* __ID3D12Fence_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Fence1_FWD_DEFINED__
 #define __ID3D12Fence1_FWD_DEFINED__
@@ -119,13 +105,11 @@ typedef interface ID3D12Fence1 ID3D12Fence1;
 
 #endif 	/* __ID3D12Fence1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12PipelineState_FWD_DEFINED__
 #define __ID3D12PipelineState_FWD_DEFINED__
 typedef interface ID3D12PipelineState ID3D12PipelineState;
 
 #endif 	/* __ID3D12PipelineState_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12DescriptorHeap_FWD_DEFINED__
 #define __ID3D12DescriptorHeap_FWD_DEFINED__
@@ -133,13 +117,11 @@ typedef interface ID3D12DescriptorHeap ID3D12DescriptorHeap;
 
 #endif 	/* __ID3D12DescriptorHeap_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12QueryHeap_FWD_DEFINED__
 #define __ID3D12QueryHeap_FWD_DEFINED__
 typedef interface ID3D12QueryHeap ID3D12QueryHeap;
 
 #endif 	/* __ID3D12QueryHeap_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12CommandSignature_FWD_DEFINED__
 #define __ID3D12CommandSignature_FWD_DEFINED__
@@ -147,13 +129,11 @@ typedef interface ID3D12CommandSignature ID3D12CommandSignature;
 
 #endif 	/* __ID3D12CommandSignature_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12CommandList_FWD_DEFINED__
 #define __ID3D12CommandList_FWD_DEFINED__
 typedef interface ID3D12CommandList ID3D12CommandList;
 
 #endif 	/* __ID3D12CommandList_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12GraphicsCommandList_FWD_DEFINED__
 #define __ID3D12GraphicsCommandList_FWD_DEFINED__
@@ -161,13 +141,11 @@ typedef interface ID3D12GraphicsCommandList ID3D12GraphicsCommandList;
 
 #endif 	/* __ID3D12GraphicsCommandList_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12GraphicsCommandList1_FWD_DEFINED__
 #define __ID3D12GraphicsCommandList1_FWD_DEFINED__
 typedef interface ID3D12GraphicsCommandList1 ID3D12GraphicsCommandList1;
 
 #endif 	/* __ID3D12GraphicsCommandList1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12GraphicsCommandList2_FWD_DEFINED__
 #define __ID3D12GraphicsCommandList2_FWD_DEFINED__
@@ -175,13 +153,11 @@ typedef interface ID3D12GraphicsCommandList2 ID3D12GraphicsCommandList2;
 
 #endif 	/* __ID3D12GraphicsCommandList2_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12CommandQueue_FWD_DEFINED__
 #define __ID3D12CommandQueue_FWD_DEFINED__
 typedef interface ID3D12CommandQueue ID3D12CommandQueue;
 
 #endif 	/* __ID3D12CommandQueue_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Device_FWD_DEFINED__
 #define __ID3D12Device_FWD_DEFINED__
@@ -189,13 +165,11 @@ typedef interface ID3D12Device ID3D12Device;
 
 #endif 	/* __ID3D12Device_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12PipelineLibrary_FWD_DEFINED__
 #define __ID3D12PipelineLibrary_FWD_DEFINED__
 typedef interface ID3D12PipelineLibrary ID3D12PipelineLibrary;
 
 #endif 	/* __ID3D12PipelineLibrary_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12PipelineLibrary1_FWD_DEFINED__
 #define __ID3D12PipelineLibrary1_FWD_DEFINED__
@@ -203,13 +177,11 @@ typedef interface ID3D12PipelineLibrary1 ID3D12PipelineLibrary1;
 
 #endif 	/* __ID3D12PipelineLibrary1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Device1_FWD_DEFINED__
 #define __ID3D12Device1_FWD_DEFINED__
 typedef interface ID3D12Device1 ID3D12Device1;
 
 #endif 	/* __ID3D12Device1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Device2_FWD_DEFINED__
 #define __ID3D12Device2_FWD_DEFINED__
@@ -217,20 +189,17 @@ typedef interface ID3D12Device2 ID3D12Device2;
 
 #endif 	/* __ID3D12Device2_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Device3_FWD_DEFINED__
 #define __ID3D12Device3_FWD_DEFINED__
 typedef interface ID3D12Device3 ID3D12Device3;
 
 #endif 	/* __ID3D12Device3_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Tools_FWD_DEFINED__
 #define __ID3D12Tools_FWD_DEFINED__
 typedef interface ID3D12Tools ID3D12Tools;
 
 #endif 	/* __ID3D12Tools_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -242,7 +211,6 @@ typedef interface ID3D12Tools ID3D12Tools;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d12_0000_0000 */
 /* [local] */ 
@@ -1299,8 +1267,6 @@ typedef struct D3D12_RASTERIZER_DESC
     D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster;
     } 	D3D12_RASTERIZER_DESC;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0000_v0_0_s_ifspec;
 
@@ -1309,7 +1275,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D12Object */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Object;
 
@@ -1389,7 +1354,6 @@ EXTERN_C const IID IID_ID3D12Object;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Object_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1398,7 +1362,6 @@ EXTERN_C const IID IID_ID3D12Object;
 
 #define ID3D12Object_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Object_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1414,21 +1377,15 @@ EXTERN_C const IID IID_ID3D12Object;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Object_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DeviceChild_INTERFACE_DEFINED__
 #define __ID3D12DeviceChild_INTERFACE_DEFINED__
 
 /* interface ID3D12DeviceChild */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DeviceChild;
 
@@ -1500,7 +1457,6 @@ EXTERN_C const IID IID_ID3D12DeviceChild;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DeviceChild_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1509,7 +1465,6 @@ EXTERN_C const IID IID_ID3D12DeviceChild;
 
 #define ID3D12DeviceChild_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DeviceChild_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1523,27 +1478,20 @@ EXTERN_C const IID IID_ID3D12DeviceChild;
 #define ID3D12DeviceChild_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12DeviceChild_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DeviceChild_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12RootSignature_INTERFACE_DEFINED__
 #define __ID3D12RootSignature_INTERFACE_DEFINED__
 
 /* interface ID3D12RootSignature */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12RootSignature;
 
@@ -1611,7 +1559,6 @@ EXTERN_C const IID IID_ID3D12RootSignature;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12RootSignature_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1620,7 +1567,6 @@ EXTERN_C const IID IID_ID3D12RootSignature;
 
 #define ID3D12RootSignature_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12RootSignature_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -1634,21 +1580,14 @@ EXTERN_C const IID IID_ID3D12RootSignature;
 #define ID3D12RootSignature_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12RootSignature_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #endif /* COBJMACROS */
-
 
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12RootSignature_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0001 */
 /* [local] */ 
@@ -2341,7 +2280,6 @@ enum D3D12_RESOURCE_BARRIER_TYPE
         D3D12_RESOURCE_BARRIER_TYPE_ALIASING	= ( D3D12_RESOURCE_BARRIER_TYPE_TRANSITION + 1 ) ,
         D3D12_RESOURCE_BARRIER_TYPE_UAV	= ( D3D12_RESOURCE_BARRIER_TYPE_ALIASING + 1 ) 
     } 	D3D12_RESOURCE_BARRIER_TYPE;
-
 
 typedef struct D3D12_RESOURCE_TRANSITION_BARRIER
     {
@@ -3193,8 +3131,6 @@ typedef struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC
         } 	;
     } 	D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0001_v0_0_s_ifspec;
 
@@ -3203,7 +3139,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0001_v0_0_s_ifspec;
 
 /* interface ID3D12RootSignatureDeserializer */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12RootSignatureDeserializer;
 
@@ -3250,7 +3185,6 @@ EXTERN_C const IID IID_ID3D12RootSignatureDeserializer;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12RootSignatureDeserializer_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3260,27 +3194,20 @@ EXTERN_C const IID IID_ID3D12RootSignatureDeserializer;
 #define ID3D12RootSignatureDeserializer_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12RootSignatureDeserializer_GetRootSignatureDesc(This)	\
     ( (This)->lpVtbl -> GetRootSignatureDesc(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12RootSignatureDeserializer_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12VersionedRootSignatureDeserializer_INTERFACE_DEFINED__
 #define __ID3D12VersionedRootSignatureDeserializer_INTERFACE_DEFINED__
 
 /* interface ID3D12VersionedRootSignatureDeserializer */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12VersionedRootSignatureDeserializer;
 
@@ -3336,7 +3263,6 @@ EXTERN_C const IID IID_ID3D12VersionedRootSignatureDeserializer;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12VersionedRootSignatureDeserializer_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3346,7 +3272,6 @@ EXTERN_C const IID IID_ID3D12VersionedRootSignatureDeserializer;
 #define ID3D12VersionedRootSignatureDeserializer_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12VersionedRootSignatureDeserializer_GetRootSignatureDescAtVersion(This,convertToVersion,ppDesc)	\
     ( (This)->lpVtbl -> GetRootSignatureDescAtVersion(This,convertToVersion,ppDesc) ) 
 
@@ -3355,14 +3280,9 @@ EXTERN_C const IID IID_ID3D12VersionedRootSignatureDeserializer;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12VersionedRootSignatureDeserializer_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0003 */
 /* [local] */ 
@@ -3590,9 +3510,6 @@ typedef struct D3D12_COMMAND_SIGNATURE_DESC
     UINT NodeMask;
     } 	D3D12_COMMAND_SIGNATURE_DESC;
 
-
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0003_v0_0_s_ifspec;
 
@@ -3601,7 +3518,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0003_v0_0_s_ifspec;
 
 /* interface ID3D12Pageable */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Pageable;
 
@@ -3669,7 +3585,6 @@ EXTERN_C const IID IID_ID3D12Pageable;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Pageable_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3678,7 +3593,6 @@ EXTERN_C const IID IID_ID3D12Pageable;
 
 #define ID3D12Pageable_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Pageable_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -3692,28 +3606,20 @@ EXTERN_C const IID IID_ID3D12Pageable;
 #define ID3D12Pageable_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12Pageable_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #endif /* COBJMACROS */
-
 
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Pageable_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Heap_INTERFACE_DEFINED__
 #define __ID3D12Heap_INTERFACE_DEFINED__
 
 /* interface ID3D12Heap */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Heap;
 
@@ -3786,7 +3692,6 @@ EXTERN_C const IID IID_ID3D12Heap;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Heap_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3795,7 +3700,6 @@ EXTERN_C const IID IID_ID3D12Heap;
 
 #define ID3D12Heap_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Heap_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -3809,36 +3713,23 @@ EXTERN_C const IID IID_ID3D12Heap;
 #define ID3D12Heap_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12Heap_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12Heap_GetDesc(This)	\
     ( (This)->lpVtbl -> GetDesc(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12Heap_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Resource_INTERFACE_DEFINED__
 #define __ID3D12Resource_INTERFACE_DEFINED__
 
 /* interface ID3D12Resource */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Resource;
 
@@ -3975,7 +3866,6 @@ EXTERN_C const IID IID_ID3D12Resource;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Resource_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -3984,7 +3874,6 @@ EXTERN_C const IID IID_ID3D12Resource;
 
 #define ID3D12Resource_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Resource_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -3998,11 +3887,8 @@ EXTERN_C const IID IID_ID3D12Resource;
 #define ID3D12Resource_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12Resource_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12Resource_Map(This,Subresource,pReadRange,ppData)	\
     ( (This)->lpVtbl -> Map(This,Subresource,pReadRange,ppData) ) 
@@ -4027,25 +3913,15 @@ EXTERN_C const IID IID_ID3D12Resource;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12Resource_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12CommandAllocator_INTERFACE_DEFINED__
 #define __ID3D12CommandAllocator_INTERFACE_DEFINED__
 
 /* interface ID3D12CommandAllocator */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12CommandAllocator;
 
@@ -4118,7 +3994,6 @@ EXTERN_C const IID IID_ID3D12CommandAllocator;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12CommandAllocator_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4127,7 +4002,6 @@ EXTERN_C const IID IID_ID3D12CommandAllocator;
 
 #define ID3D12CommandAllocator_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12CommandAllocator_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4141,32 +4015,23 @@ EXTERN_C const IID IID_ID3D12CommandAllocator;
 #define ID3D12CommandAllocator_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12CommandAllocator_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12CommandAllocator_Reset(This)	\
     ( (This)->lpVtbl -> Reset(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12CommandAllocator_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Fence_INTERFACE_DEFINED__
 #define __ID3D12Fence_INTERFACE_DEFINED__
 
 /* interface ID3D12Fence */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Fence;
 
@@ -4255,7 +4120,6 @@ EXTERN_C const IID IID_ID3D12Fence;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Fence_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4264,7 +4128,6 @@ EXTERN_C const IID IID_ID3D12Fence;
 
 #define ID3D12Fence_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Fence_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4278,11 +4141,8 @@ EXTERN_C const IID IID_ID3D12Fence;
 #define ID3D12Fence_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12Fence_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12Fence_GetCompletedValue(This)	\
     ( (This)->lpVtbl -> GetCompletedValue(This) ) 
@@ -4295,21 +4155,15 @@ EXTERN_C const IID IID_ID3D12Fence;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Fence_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Fence1_INTERFACE_DEFINED__
 #define __ID3D12Fence1_INTERFACE_DEFINED__
 
 /* interface ID3D12Fence1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Fence1;
 
@@ -4394,7 +4248,6 @@ EXTERN_C const IID IID_ID3D12Fence1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Fence1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4403,7 +4256,6 @@ EXTERN_C const IID IID_ID3D12Fence1;
 
 #define ID3D12Fence1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Fence1_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4417,11 +4269,8 @@ EXTERN_C const IID IID_ID3D12Fence1;
 #define ID3D12Fence1_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12Fence1_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12Fence1_GetCompletedValue(This)	\
     ( (This)->lpVtbl -> GetCompletedValue(This) ) 
@@ -4432,27 +4281,20 @@ EXTERN_C const IID IID_ID3D12Fence1;
 #define ID3D12Fence1_Signal(This,Value)	\
     ( (This)->lpVtbl -> Signal(This,Value) ) 
 
-
 #define ID3D12Fence1_GetCreationFlags(This)	\
     ( (This)->lpVtbl -> GetCreationFlags(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Fence1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12PipelineState_INTERFACE_DEFINED__
 #define __ID3D12PipelineState_INTERFACE_DEFINED__
 
 /* interface ID3D12PipelineState */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12PipelineState;
 
@@ -4527,7 +4369,6 @@ EXTERN_C const IID IID_ID3D12PipelineState;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12PipelineState_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4536,7 +4377,6 @@ EXTERN_C const IID IID_ID3D12PipelineState;
 
 #define ID3D12PipelineState_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12PipelineState_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4550,32 +4390,23 @@ EXTERN_C const IID IID_ID3D12PipelineState;
 #define ID3D12PipelineState_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12PipelineState_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12PipelineState_GetCachedBlob(This,ppBlob)	\
     ( (This)->lpVtbl -> GetCachedBlob(This,ppBlob) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12PipelineState_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DescriptorHeap_INTERFACE_DEFINED__
 #define __ID3D12DescriptorHeap_INTERFACE_DEFINED__
 
 /* interface ID3D12DescriptorHeap */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DescriptorHeap;
 
@@ -4658,7 +4489,6 @@ EXTERN_C const IID IID_ID3D12DescriptorHeap;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DescriptorHeap_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4667,7 +4497,6 @@ EXTERN_C const IID IID_ID3D12DescriptorHeap;
 
 #define ID3D12DescriptorHeap_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DescriptorHeap_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4681,11 +4510,8 @@ EXTERN_C const IID IID_ID3D12DescriptorHeap;
 #define ID3D12DescriptorHeap_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12DescriptorHeap_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12DescriptorHeap_GetDesc(This)	\
     ( (This)->lpVtbl -> GetDesc(This) ) 
@@ -4698,33 +4524,15 @@ EXTERN_C const IID IID_ID3D12DescriptorHeap;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif 	/* __ID3D12DescriptorHeap_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12QueryHeap_INTERFACE_DEFINED__
 #define __ID3D12QueryHeap_INTERFACE_DEFINED__
 
 /* interface ID3D12QueryHeap */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12QueryHeap;
 
@@ -4792,7 +4600,6 @@ EXTERN_C const IID IID_ID3D12QueryHeap;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12QueryHeap_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4801,7 +4608,6 @@ EXTERN_C const IID IID_ID3D12QueryHeap;
 
 #define ID3D12QueryHeap_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12QueryHeap_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4815,29 +4621,20 @@ EXTERN_C const IID IID_ID3D12QueryHeap;
 #define ID3D12QueryHeap_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12QueryHeap_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
-
 #endif /* COBJMACROS */
-
 
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12QueryHeap_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12CommandSignature_INTERFACE_DEFINED__
 #define __ID3D12CommandSignature_INTERFACE_DEFINED__
 
 /* interface ID3D12CommandSignature */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12CommandSignature;
 
@@ -4905,7 +4702,6 @@ EXTERN_C const IID IID_ID3D12CommandSignature;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12CommandSignature_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -4914,7 +4710,6 @@ EXTERN_C const IID IID_ID3D12CommandSignature;
 
 #define ID3D12CommandSignature_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12CommandSignature_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -4928,29 +4723,20 @@ EXTERN_C const IID IID_ID3D12CommandSignature;
 #define ID3D12CommandSignature_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12CommandSignature_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
-
 #endif /* COBJMACROS */
-
 
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12CommandSignature_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12CommandList_INTERFACE_DEFINED__
 #define __ID3D12CommandList_INTERFACE_DEFINED__
 
 /* interface ID3D12CommandList */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12CommandList;
 
@@ -5023,7 +4809,6 @@ EXTERN_C const IID IID_ID3D12CommandList;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12CommandList_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -5032,7 +4817,6 @@ EXTERN_C const IID IID_ID3D12CommandList;
 
 #define ID3D12CommandList_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12CommandList_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -5046,31 +4830,23 @@ EXTERN_C const IID IID_ID3D12CommandList;
 #define ID3D12CommandList_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12CommandList_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
 
 #define ID3D12CommandList_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12CommandList_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12GraphicsCommandList_INTERFACE_DEFINED__
 #define __ID3D12GraphicsCommandList_INTERFACE_DEFINED__
 
 /* interface ID3D12GraphicsCommandList */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12GraphicsCommandList;
 
@@ -5688,7 +5464,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12GraphicsCommandList_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -5697,7 +5472,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList;
 
 #define ID3D12GraphicsCommandList_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12GraphicsCommandList_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -5711,14 +5485,11 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList;
 #define ID3D12GraphicsCommandList_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12GraphicsCommandList_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #define ID3D12GraphicsCommandList_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
-
 
 #define ID3D12GraphicsCommandList_Close(This)	\
     ( (This)->lpVtbl -> Close(This) ) 
@@ -5875,21 +5646,15 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12GraphicsCommandList_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12GraphicsCommandList1_INTERFACE_DEFINED__
 #define __ID3D12GraphicsCommandList1_INTERFACE_DEFINED__
 
 /* interface ID3D12GraphicsCommandList1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 
@@ -6347,7 +6112,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12GraphicsCommandList1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -6356,7 +6120,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 
 #define ID3D12GraphicsCommandList1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12GraphicsCommandList1_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -6370,14 +6133,11 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 #define ID3D12GraphicsCommandList1_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12GraphicsCommandList1_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #define ID3D12GraphicsCommandList1_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
-
 
 #define ID3D12GraphicsCommandList1_Close(This)	\
     ( (This)->lpVtbl -> Close(This) ) 
@@ -6532,7 +6292,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 #define ID3D12GraphicsCommandList1_ExecuteIndirect(This,pCommandSignature,MaxCommandCount,pArgumentBuffer,ArgumentBufferOffset,pCountBuffer,CountBufferOffset)	\
     ( (This)->lpVtbl -> ExecuteIndirect(This,pCommandSignature,MaxCommandCount,pArgumentBuffer,ArgumentBufferOffset,pCountBuffer,CountBufferOffset) ) 
 
-
 #define ID3D12GraphicsCommandList1_AtomicCopyBufferUINT(This,pDstBuffer,DstOffset,pSrcBuffer,SrcOffset,Dependencies,ppDependentResources,pDependentSubresourceRanges)	\
     ( (This)->lpVtbl -> AtomicCopyBufferUINT(This,pDstBuffer,DstOffset,pSrcBuffer,SrcOffset,Dependencies,ppDependentResources,pDependentSubresourceRanges) ) 
 
@@ -6553,14 +6312,9 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12GraphicsCommandList1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0018 */
 /* [local] */ 
@@ -6579,8 +6333,6 @@ enum D3D12_WRITEBUFFERIMMEDIATE_MODE
         D3D12_WRITEBUFFERIMMEDIATE_MODE_MARKER_OUT	= 0x2
     } 	D3D12_WRITEBUFFERIMMEDIATE_MODE;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0018_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0018_v0_0_s_ifspec;
 
@@ -6589,7 +6341,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0018_v0_0_s_ifspec;
 
 /* interface ID3D12GraphicsCommandList2 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 
@@ -7017,7 +6768,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12GraphicsCommandList2_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -7026,7 +6776,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 
 #define ID3D12GraphicsCommandList2_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12GraphicsCommandList2_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -7040,14 +6789,11 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 #define ID3D12GraphicsCommandList2_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12GraphicsCommandList2_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
 
-
 #define ID3D12GraphicsCommandList2_GetType(This)	\
     ( (This)->lpVtbl -> GetType(This) ) 
-
 
 #define ID3D12GraphicsCommandList2_Close(This)	\
     ( (This)->lpVtbl -> Close(This) ) 
@@ -7202,7 +6948,6 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 #define ID3D12GraphicsCommandList2_ExecuteIndirect(This,pCommandSignature,MaxCommandCount,pArgumentBuffer,ArgumentBufferOffset,pCountBuffer,CountBufferOffset)	\
     ( (This)->lpVtbl -> ExecuteIndirect(This,pCommandSignature,MaxCommandCount,pArgumentBuffer,ArgumentBufferOffset,pCountBuffer,CountBufferOffset) ) 
 
-
 #define ID3D12GraphicsCommandList2_AtomicCopyBufferUINT(This,pDstBuffer,DstOffset,pSrcBuffer,SrcOffset,Dependencies,ppDependentResources,pDependentSubresourceRanges)	\
     ( (This)->lpVtbl -> AtomicCopyBufferUINT(This,pDstBuffer,DstOffset,pSrcBuffer,SrcOffset,Dependencies,ppDependentResources,pDependentSubresourceRanges) ) 
 
@@ -7221,27 +6966,20 @@ EXTERN_C const IID IID_ID3D12GraphicsCommandList2;
 #define ID3D12GraphicsCommandList2_SetViewInstanceMask(This,Mask)	\
     ( (This)->lpVtbl -> SetViewInstanceMask(This,Mask) ) 
 
-
 #define ID3D12GraphicsCommandList2_WriteBufferImmediate(This,Count,pParams,pModes)	\
     ( (This)->lpVtbl -> WriteBufferImmediate(This,Count,pParams,pModes) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12GraphicsCommandList2_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12CommandQueue_INTERFACE_DEFINED__
 #define __ID3D12CommandQueue_INTERFACE_DEFINED__
 
 /* interface ID3D12CommandQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12CommandQueue;
 
@@ -7426,7 +7164,6 @@ EXTERN_C const IID IID_ID3D12CommandQueue;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12CommandQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -7435,7 +7172,6 @@ EXTERN_C const IID IID_ID3D12CommandQueue;
 
 #define ID3D12CommandQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12CommandQueue_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -7449,11 +7185,8 @@ EXTERN_C const IID IID_ID3D12CommandQueue;
 #define ID3D12CommandQueue_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12CommandQueue_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
-
 
 #define ID3D12CommandQueue_UpdateTileMappings(This,pResource,NumResourceRegions,pResourceRegionStartCoordinates,pResourceRegionSizes,pHeap,NumRanges,pRangeFlags,pHeapRangeStartOffsets,pRangeTileCounts,Flags)	\
     ( (This)->lpVtbl -> UpdateTileMappings(This,pResource,NumResourceRegions,pResourceRegionStartCoordinates,pResourceRegionSizes,pHeap,NumRanges,pRangeFlags,pHeapRangeStartOffsets,pRangeTileCounts,Flags) ) 
@@ -7490,18 +7223,9 @@ EXTERN_C const IID IID_ID3D12CommandQueue;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
 #endif 	/* __ID3D12CommandQueue_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0020 */
 /* [local] */ 
@@ -7520,7 +7244,6 @@ typedef struct __LUID *PLUID;
 #endif
 #endif
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0020_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0020_v0_0_s_ifspec;
 
@@ -7529,7 +7252,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0020_v0_0_s_ifspec;
 
 /* interface ID3D12Device */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Device;
 
@@ -8033,7 +7755,6 @@ EXTERN_C const IID IID_ID3D12Device;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Device_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -8042,7 +7763,6 @@ EXTERN_C const IID IID_ID3D12Device;
 
 #define ID3D12Device_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Device_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -8055,7 +7775,6 @@ EXTERN_C const IID IID_ID3D12Device;
 
 #define ID3D12Device_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
-
 
 #define ID3D12Device_GetNodeCount(This)	\
     ( (This)->lpVtbl -> GetNodeCount(This) ) 
@@ -8170,33 +7889,15 @@ EXTERN_C const IID IID_ID3D12Device;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif 	/* __ID3D12Device_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12PipelineLibrary_INTERFACE_DEFINED__
 #define __ID3D12PipelineLibrary_INTERFACE_DEFINED__
 
 /* interface ID3D12PipelineLibrary */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12PipelineLibrary;
 
@@ -8313,7 +8014,6 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12PipelineLibrary_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -8322,7 +8022,6 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary;
 
 #define ID3D12PipelineLibrary_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12PipelineLibrary_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -8336,10 +8035,8 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary;
 #define ID3D12PipelineLibrary_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12PipelineLibrary_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
 
 #define ID3D12PipelineLibrary_StorePipeline(This,pName,pPipeline)	\
     ( (This)->lpVtbl -> StorePipeline(This,pName,pPipeline) ) 
@@ -8358,21 +8055,15 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12PipelineLibrary_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12PipelineLibrary1_INTERFACE_DEFINED__
 #define __ID3D12PipelineLibrary1_INTERFACE_DEFINED__
 
 /* interface ID3D12PipelineLibrary1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12PipelineLibrary1;
 
@@ -8480,7 +8171,6 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12PipelineLibrary1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -8489,7 +8179,6 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary1;
 
 #define ID3D12PipelineLibrary1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12PipelineLibrary1_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -8503,10 +8192,8 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary1;
 #define ID3D12PipelineLibrary1_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
 
-
 #define ID3D12PipelineLibrary1_GetDevice(This,riid,ppvDevice)	\
     ( (This)->lpVtbl -> GetDevice(This,riid,ppvDevice) ) 
-
 
 #define ID3D12PipelineLibrary1_StorePipeline(This,pName,pPipeline)	\
     ( (This)->lpVtbl -> StorePipeline(This,pName,pPipeline) ) 
@@ -8523,20 +8210,14 @@ EXTERN_C const IID IID_ID3D12PipelineLibrary1;
 #define ID3D12PipelineLibrary1_Serialize(This,pData,DataSizeInBytes)	\
     ( (This)->lpVtbl -> Serialize(This,pData,DataSizeInBytes) ) 
 
-
 #define ID3D12PipelineLibrary1_LoadPipeline(This,pName,pDesc,riid,ppPipelineState)	\
     ( (This)->lpVtbl -> LoadPipeline(This,pName,pDesc,riid,ppPipelineState) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12PipelineLibrary1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0023 */
 /* [local] */ 
@@ -8560,8 +8241,6 @@ enum D3D12_RESIDENCY_PRIORITY
         D3D12_RESIDENCY_PRIORITY_MAXIMUM	= 0xc8000000
     } 	D3D12_RESIDENCY_PRIORITY;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0023_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0023_v0_0_s_ifspec;
 
@@ -8570,7 +8249,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0023_v0_0_s_ifspec;
 
 /* interface ID3D12Device1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Device1;
 
@@ -8911,7 +8589,6 @@ EXTERN_C const IID IID_ID3D12Device1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Device1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -8920,7 +8597,6 @@ EXTERN_C const IID IID_ID3D12Device1;
 
 #define ID3D12Device1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Device1_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -8933,7 +8609,6 @@ EXTERN_C const IID IID_ID3D12Device1;
 
 #define ID3D12Device1_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
-
 
 #define ID3D12Device1_GetNodeCount(This)	\
     ( (This)->lpVtbl -> GetNodeCount(This) ) 
@@ -9046,7 +8721,6 @@ EXTERN_C const IID IID_ID3D12Device1;
 #define ID3D12Device1_GetAdapterLuid(This)	\
     ( (This)->lpVtbl -> GetAdapterLuid(This) ) 
 
-
 #define ID3D12Device1_CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary)	\
     ( (This)->lpVtbl -> CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary) ) 
 
@@ -9058,21 +8732,15 @@ EXTERN_C const IID IID_ID3D12Device1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Device1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Device2_INTERFACE_DEFINED__
 #define __ID3D12Device2_INTERFACE_DEFINED__
 
 /* interface ID3D12Device2 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Device2;
 
@@ -9406,7 +9074,6 @@ EXTERN_C const IID IID_ID3D12Device2;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Device2_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -9415,7 +9082,6 @@ EXTERN_C const IID IID_ID3D12Device2;
 
 #define ID3D12Device2_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Device2_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -9428,7 +9094,6 @@ EXTERN_C const IID IID_ID3D12Device2;
 
 #define ID3D12Device2_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
-
 
 #define ID3D12Device2_GetNodeCount(This)	\
     ( (This)->lpVtbl -> GetNodeCount(This) ) 
@@ -9541,7 +9206,6 @@ EXTERN_C const IID IID_ID3D12Device2;
 #define ID3D12Device2_GetAdapterLuid(This)	\
     ( (This)->lpVtbl -> GetAdapterLuid(This) ) 
 
-
 #define ID3D12Device2_CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary)	\
     ( (This)->lpVtbl -> CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary) ) 
 
@@ -9551,20 +9215,14 @@ EXTERN_C const IID IID_ID3D12Device2;
 #define ID3D12Device2_SetResidencyPriority(This,NumObjects,ppObjects,pPriorities)	\
     ( (This)->lpVtbl -> SetResidencyPriority(This,NumObjects,ppObjects,pPriorities) ) 
 
-
 #define ID3D12Device2_CreatePipelineState(This,pDesc,riid,ppPipelineState)	\
     ( (This)->lpVtbl -> CreatePipelineState(This,pDesc,riid,ppPipelineState) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Device2_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0025 */
 /* [local] */ 
@@ -9578,7 +9236,6 @@ enum D3D12_RESIDENCY_FLAGS
 
 DEFINE_ENUM_FLAG_OPERATORS( D3D12_RESIDENCY_FLAGS );
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0025_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0025_v0_0_s_ifspec;
 
@@ -9587,7 +9244,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0025_v0_0_s_ifspec;
 
 /* interface ID3D12Device3 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Device3;
 
@@ -9953,7 +9609,6 @@ EXTERN_C const IID IID_ID3D12Device3;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Device3_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -9962,7 +9617,6 @@ EXTERN_C const IID IID_ID3D12Device3;
 
 #define ID3D12Device3_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Device3_GetPrivateData(This,guid,pDataSize,pData)	\
     ( (This)->lpVtbl -> GetPrivateData(This,guid,pDataSize,pData) ) 
@@ -9975,7 +9629,6 @@ EXTERN_C const IID IID_ID3D12Device3;
 
 #define ID3D12Device3_SetName(This,Name)	\
     ( (This)->lpVtbl -> SetName(This,Name) ) 
-
 
 #define ID3D12Device3_GetNodeCount(This)	\
     ( (This)->lpVtbl -> GetNodeCount(This) ) 
@@ -10088,7 +9741,6 @@ EXTERN_C const IID IID_ID3D12Device3;
 #define ID3D12Device3_GetAdapterLuid(This)	\
     ( (This)->lpVtbl -> GetAdapterLuid(This) ) 
 
-
 #define ID3D12Device3_CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary)	\
     ( (This)->lpVtbl -> CreatePipelineLibrary(This,pLibraryBlob,BlobLength,riid,ppPipelineLibrary) ) 
 
@@ -10098,10 +9750,8 @@ EXTERN_C const IID IID_ID3D12Device3;
 #define ID3D12Device3_SetResidencyPriority(This,NumObjects,ppObjects,pPriorities)	\
     ( (This)->lpVtbl -> SetResidencyPriority(This,NumObjects,ppObjects,pPriorities) ) 
 
-
 #define ID3D12Device3_CreatePipelineState(This,pDesc,riid,ppPipelineState)	\
     ( (This)->lpVtbl -> CreatePipelineState(This,pDesc,riid,ppPipelineState) ) 
-
 
 #define ID3D12Device3_OpenExistingHeapFromAddress(This,pAddress,riid,ppvHeap)	\
     ( (This)->lpVtbl -> OpenExistingHeapFromAddress(This,pAddress,riid,ppvHeap) ) 
@@ -10114,21 +9764,15 @@ EXTERN_C const IID IID_ID3D12Device3;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Device3_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Tools_INTERFACE_DEFINED__
 #define __ID3D12Tools_INTERFACE_DEFINED__
 
 /* interface ID3D12Tools */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Tools;
 
@@ -10182,7 +9826,6 @@ EXTERN_C const IID IID_ID3D12Tools;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Tools_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -10192,7 +9835,6 @@ EXTERN_C const IID IID_ID3D12Tools;
 #define ID3D12Tools_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12Tools_EnableShaderInstrumentation(This,bEnable)	\
     ( (This)->lpVtbl -> EnableShaderInstrumentation(This,bEnable) ) 
 
@@ -10201,14 +9843,9 @@ EXTERN_C const IID IID_ID3D12Tools;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Tools_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12_0000_0027 */
 /* [local] */ 
@@ -10261,7 +9898,6 @@ HRESULT WINAPI D3D12CreateDevice(
     D3D_FEATURE_LEVEL MinimumFeatureLevel,
     _In_ REFIID riid, // Expected: ID3D12Device
     _COM_Outptr_opt_ void** ppDevice );
-
 
 typedef HRESULT (WINAPI* PFN_D3D12_GET_DEBUG_INTERFACE)( _In_ REFIID, _COM_Outptr_opt_ void** );
 
@@ -10342,7 +9978,6 @@ DEFINE_GUID(IID_ID3D12Device2,0x30baa41e,0xb15b,0x475c,0xa0,0xbb,0x1a,0xf5,0xc5,
 DEFINE_GUID(IID_ID3D12Device3,0x81dadc15,0x2bad,0x4392,0x93,0xc5,0x10,0x13,0x45,0xc4,0xaa,0x98);
 DEFINE_GUID(IID_ID3D12Tools,0x7071e1f0,0xe84b,0x4b33,0x97,0x4f,0x12,0xfa,0x49,0xde,0x65,0xc5);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0027_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0027_v0_0_s_ifspec;
 
@@ -10355,5 +9990,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12_0000_0027_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

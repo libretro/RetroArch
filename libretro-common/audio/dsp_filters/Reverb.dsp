@@ -7,4 +7,3 @@ filter0 = reverb
 # reverb_damping = 0.8
 # reverb_roomwidth = 0.56
 # reverb_roomsize = 0.56
-

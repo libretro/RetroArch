@@ -158,4 +158,3 @@ dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 }
 
 #undef dspfilter_get_implementation
-

@@ -455,7 +455,7 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
    track_path[0] = '\0';
 
-   rv = gdi_find_track(name, false, track_path, PATH_MAX_LENGTH);
+   rv = gdi_find_track(name, true, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0)
    {
@@ -1032,7 +1032,6 @@ static int task_database_iterate_playlist_lutro(
    return 0;
 }
 
-
 static int task_database_iterate_serial_lookup(
       db_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1311,7 +1310,7 @@ bool task_push_dbscan(
       const char *content_database,
       const char *fullpath,
       bool directory,
-      bool show_hidden_files,
+      bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
    retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
@@ -1325,7 +1324,7 @@ bool task_push_dbscan(
    t->callback               = cb;
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
-   db->show_hidden_files     = show_hidden_files;
+   db->show_hidden_files     = db_dir_show_hidden_files;
    db->is_directory          = directory;
    db->playlist_directory    = NULL;
    db->fullpath              = strdup(fullpath);

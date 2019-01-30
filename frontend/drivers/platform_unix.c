@@ -565,6 +565,9 @@ static bool device_is_xperia_play(const char *name)
          strstr(name, "R800at") ||
          strstr(name, "R800i") ||
          strstr(name, "R800a") ||
+         strstr(name, "R800") ||
+         strstr(name, "Xperia Play") ||
+         strstr(name, "Play") ||
          strstr(name, "SO-01D")
       )
       return true;
@@ -880,7 +883,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
    char  path[1024];
-   ssize_t length   = 0;
+   int64_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
@@ -1559,8 +1562,6 @@ static void frontend_unix_get_env(int *argc,
          {
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], app_dir,
-                  "tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
@@ -1625,6 +1626,10 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_app_path, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        internal_storage_app_path, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+
                   if(!string_is_empty(screenshot_dir)
                      && test_permissions(screenshot_dir))
                   {
@@ -1682,6 +1687,10 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         app_dir, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        app_dir, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
                   if(      !string_is_empty(screenshot_dir)
                         &&  test_permissions(screenshot_dir))
@@ -1746,6 +1755,10 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         internal_storage_path, "RetroArch/cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        internal_storage_path, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
                default:
                   break;
             }
@@ -1810,7 +1823,6 @@ static void frontend_unix_get_env(int *argc,
    }
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
-
 
    /* For gamepad-like/console devices:
     *

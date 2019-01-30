@@ -130,7 +130,6 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
     _Out_opt_ IDXGISwapChain **ppSwapChain,    
     _Out_opt_ ID3D10Device **ppDevice);
 
-
 ///////////////////////////////////////////////////////////////////////////
 // D3D10CreateBlob:
 // -----------------
@@ -147,5 +146,3 @@ HRESULT WINAPI D3D10CreateBlob(SIZE_T NumBytes, _Out_ LPD3D10BLOB *ppBuffer);
 #endif //__cplusplus
 
 #endif //__D3D10EFFECT_H__
-
-

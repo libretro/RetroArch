@@ -255,7 +255,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                "to the content.");
          break;
       case MENU_ENUM_LABEL_RESTART_CONTENT:
-         snprintf(s, len, "Restarts the content from the beginning.");
+         snprintf(s, len, "重新開始遊戲.");
          break;
       case MENU_ENUM_LABEL_CLOSE_CONTENT:
          snprintf(s, len, "關閉內容並從內存中卸載。");
@@ -519,11 +519,11 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
          snprintf(s, len,
-               "屏顯訊息的字體大小.");
+               "營幕訊息的字體大小.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
-               "Automatically increment slot index on each save, \n"
+               "存檔時自動增加 slot index , \n"
                "generating multiple savestate files. \n"
                "When the content is loaded, state slot will be \n"
                "set to the highest existing value (last savestate).");
@@ -1680,7 +1680,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
-               "Allow or disallow location services \n"
+               "開啟或關閉定位服務 \n"
                "access by cores.");
          break;
       case MENU_ENUM_LABEL_TURBO:
@@ -1731,11 +1731,11 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Increment cheat index.\n");
+               "增加 cheat index.\n");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Decrement cheat index.\n");
+               "減少 cheat index.\n");
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,

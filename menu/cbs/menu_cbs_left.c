@@ -51,254 +51,6 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
-int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
-{
-   unsigned port = 0;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   port = setting->index_offset;
-
-   configuration_set_uint(settings, settings->uints.input_analog_dpad_mode[port],
-      (settings->uints.input_analog_dpad_mode
-       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
-
-   return 0;
-}
-
-int setting_action_left_libretro_device_type(
-      void *data, bool wraparound)
-{
-   retro_ctx_controller_info_t pad;
-   unsigned current_device, current_idx, i, devices[128],
-            types = 0, port = 0;
-   const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting    = (rarch_setting_t*)data;
-   rarch_system_info_t *system = NULL;
-
-   if (!setting)
-      return -1;
-
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   system           = runloop_get_system_info();
-
-   if (system)
-   {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
-
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
-   }
-
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = input_config_get_device(port);
-   current_idx    = 0;
-   for (i = 0; i < types; i++)
-   {
-      if (current_device != devices[i])
-         continue;
-
-      current_idx = i;
-      break;
-   }
-
-   current_device = devices
-      [(current_idx + types - 1) % types];
-
-   input_config_set_device(port, current_device);
-
-   pad.port   = port;
-   pad.device = current_device;
-
-   core_set_controller_port_device(&pad);
-
-   return 0;
-}
-
-int setting_action_left_bind_device(void *data, bool wraparound)
-{
-   unsigned               *p = NULL;
-   unsigned index_offset     = 0;
-   unsigned max_devices      = input_config_get_device_count();
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting || max_devices == 0)
-      return -1;
-
-   index_offset = setting->index_offset;
-
-   p = &settings->uints.input_joypad_map[index_offset];
-
-   if ((*p) >= max_devices)
-      *p = max_devices - 1;
-   else if ((*p) > 0)
-      (*p)--;
-
-   return 0;
-}
-
-int setting_action_left_mouse_index(void *data, bool wraparound)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   settings_t *settings     = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   if (settings->uints.input_mouse_index[setting->index_offset])
-   {
-      --settings->uints.input_mouse_index[setting->index_offset];
-      settings->modified = true;
-   }
-
-   return 0;
-}
-
-int setting_uint_action_left_custom_viewport_width(
-      void *data, bool wraparound)
-{
-   video_viewport_t vp;
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
-   settings_t                 *settings = config_get_ptr();
-   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
-      &av_info->geometry;
-
-   if (!settings || !av_info)
-      return -1;
-
-   video_driver_get_viewport_info(&vp);
-
-   if (custom->width <= 1)
-      custom->width = 1;
-   else if (settings->bools.video_scale_integer)
-   {
-      if (custom->width > geom->base_width)
-         custom->width -= geom->base_width;
-   }
-   else
-      custom->width -= 1;
-
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
-
-   return 0;
-}
-
-int setting_uint_action_left_custom_viewport_height(
-      void *data, bool wraparound)
-{
-   video_viewport_t vp;
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
-   settings_t                 *settings = config_get_ptr();
-   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
-      &av_info->geometry;
-
-   if (!settings || !av_info)
-      return -1;
-
-   video_driver_get_viewport_info(&vp);
-
-   if (custom->height <= 1)
-      custom->height = 1;
-   else if (settings->bools.video_scale_integer)
-   {
-      if (custom->height > geom->base_height)
-         custom->height -= geom->base_height;
-   }
-   else
-      custom->height -= 1;
-
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
-
-   return 0;
-}
-
-int setting_string_action_left_audio_device(
-      void *data, bool wraparound)
-{
-#if !defined(RARCH_CONSOLE)
-   int audio_device_index;
-   struct string_list *ptr  = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!audio_driver_get_devices_list((void**)&ptr))
-      return -1;
-
-   if (!ptr)
-      return -1;
-
-   /* Get index in the string list */
-   audio_device_index = string_list_find_elem(
-         ptr, setting->value.target.string) - 1;
-   audio_device_index--;
-
-   /* Reset index if needed */
-   if (audio_device_index < 0)
-      audio_device_index = (int)(ptr->size - 1);
-
-   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
-#endif
-
-   return 0;
-}
-
-int setting_string_action_left_driver(void *data,
-      bool wraparound)
-{
-   driver_ctx_info_t drv;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   drv.label = setting->name;
-   drv.s     = setting->value.target.string;
-   drv.len   = setting->size;
-
-   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
-   {
-      settings_t *settings = config_get_ptr();
-
-      if (settings && settings->bools.menu_navigation_wraparound_enable)
-      {
-         drv.label = setting->name;
-         drv.s     = setting->value.target.string;
-         drv.len   = setting->size;
-         driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
-      }
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return 0;
-}
-
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
@@ -413,7 +165,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
-      if(remap_id == key_descriptors[key_id].key)
+      if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
@@ -465,11 +217,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   menu_driver_list_get_selection(&list_info);
 
    list_info.type = MENU_LIST_PLAIN;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_info);
+   menu_driver_list_get_size(&list_info);
 
    if (list_info.size == 1)
    {
@@ -481,7 +233,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
    }
    else
       push_list = 2;
-
 
    switch (push_list)
    {
@@ -498,7 +249,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
             list_info.type             = MENU_LIST_HORIZONTAL;
             list_info.action           = MENU_ACTION_LEFT;
 
-            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+            menu_driver_list_cache(&list_info);
 
             if (cbs && cbs->action_content_list_switch)
                return cbs->action_content_list_switch(
@@ -574,7 +325,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
       new_size = cheat_manager_get_size() - 1;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    return 0;
 }
@@ -595,44 +346,6 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, shader);
-
-   return 0;
-}
-
-static int action_left_netplay_mitm_server(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   int i;
-   bool found = false;
-   int list_len = ARRAY_SIZE(netplay_mitm_server_list);
-
-   for (i = 0; i < list_len; i++)
-   {
-      /* find the currently selected server in the list */
-      if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
-      {
-         /* move to the previous one in the list, wrap around if necessary */
-         if (i - 1 >= 0)
-         {
-            found = true;
-            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i - 1].name, sizeof(settings->arrays.netplay_mitm_server));
-            break;
-         }
-         else if (wraparound)
-         {
-            found = true;
-            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[list_len - 1].name, sizeof(settings->arrays.netplay_mitm_server));
-            break;
-         }
-      }
-   }
-
-   if (!found)
-   {
-      /* current entry was invalid, go back to the end */
-      strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[list_len - 1].name, sizeof(settings->arrays.netplay_mitm_server));
-   }
 
    return 0;
 }
@@ -791,6 +504,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;
@@ -802,9 +517,6 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_default);
-               break;
-            case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-               BIND_ACTION_LEFT(cbs, action_left_netplay_mitm_server);
                break;
             case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
                BIND_ACTION_LEFT(cbs, action_left_shader_watch_for_changes);

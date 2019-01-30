@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" xmlns:uap6="http://schemas.microsoft.com/appx/manifest/uap/windows10/6" IgnorableNamespaces="uap uap3 uap6 mp">
+  <Identity Name="176695a3-0144-488b-9a1a-68e6eb1318ff" Publisher="CN=krzys" Version="1.0.0.0" />
+  <mp:PhoneIdentity PhoneProductId="176695a3-0144-488b-9a1a-68e6eb1318ff" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Properties>
+    <DisplayName>RetroArch: non-free cores</DisplayName>
+    <PublisherDisplayName>libretro</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.15063.0" MaxVersionTested="10.0.17763.0" />
+    <uap3:MainPackageDependency Name="1e4cf179-f3c2-404f-b9f3-cb2070a5aad8" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="CoresNonFree" Executable="$targetnametoken$.exe" EntryPoint="RetroArch.CoresNonFree">
+      <uap:VisualElements AppListEntry="none" DisplayName="RetroArch: non-free cores" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="The 'non-free' cores package for RetroArch" BackgroundColor="transparent">
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+</Package>

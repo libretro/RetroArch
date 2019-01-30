@@ -81,7 +81,6 @@ typedef interface ID2D1Brush ID2D1Brush;
 #define D2D1_INVALID_TAG ULONGLONG_MAX
 #define D2D1_DEFAULT_FLATTENING_TOLERANCE (0.25f)
 
-
 /// <summary>
 /// This defines the superset of interpolation mode supported by D2D APIs
 /// and built-in effects
@@ -98,7 +97,6 @@ enum
     D2D1_INTERPOLATION_MODE_DEFINITION_MIPMAP_LINEAR = 7
 
 };
-
 
 /// <summary>
 /// This determines what gamma is used for interpolation/blending.
@@ -118,7 +116,6 @@ typedef enum D2D1_GAMMA
     D2D1_GAMMA_FORCE_DWORD = 0xffffffff
 
 } D2D1_GAMMA;
-
 
 /// <summary>
 /// Specifies what the contents are of an opacity mask.
@@ -143,7 +140,6 @@ typedef enum D2D1_OPACITY_MASK_CONTENT
     D2D1_OPACITY_MASK_CONTENT_FORCE_DWORD = 0xffffffff
 
 } D2D1_OPACITY_MASK_CONTENT;
-
 
 /// <summary>
 /// Enum which describes how to sample from a source outside its base tile.
@@ -172,7 +168,6 @@ typedef enum D2D1_EXTEND_MODE
 
 } D2D1_EXTEND_MODE;
 
-
 /// <summary>
 /// Enum which describes the manner in which we render edges of non-text primitives.
 /// </summary>
@@ -191,7 +186,6 @@ typedef enum D2D1_ANTIALIAS_MODE
     D2D1_ANTIALIAS_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_ANTIALIAS_MODE;
-
 
 /// <summary>
 /// Describes the antialiasing mode used for drawing text.
@@ -222,7 +216,6 @@ typedef enum D2D1_TEXT_ANTIALIAS_MODE
 
 } D2D1_TEXT_ANTIALIAS_MODE;
 
-
 /// <summary>
 /// Specifies the algorithm that is used when images are scaled or rotated. Note
 /// Starting in Windows 8, more interpolations modes are available. See
@@ -244,7 +237,6 @@ typedef enum D2D1_BITMAP_INTERPOLATION_MODE
     D2D1_BITMAP_INTERPOLATION_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_BITMAP_INTERPOLATION_MODE;
-
 
 /// <summary>
 /// Modifications made to the draw text call that influence how the text is
@@ -300,7 +292,6 @@ typedef struct D2D1_BITMAP_PROPERTIES
 
 } D2D1_BITMAP_PROPERTIES;
 
-
 /// <summary>
 /// Contains the position and color of a gradient stop.
 /// </summary>
@@ -311,7 +302,6 @@ typedef struct D2D1_GRADIENT_STOP
 
 } D2D1_GRADIENT_STOP;
 
-
 /// <summary>
 /// Describes the opacity and transformation of a brush.
 /// </summary>
@@ -321,7 +311,6 @@ typedef struct D2D1_BRUSH_PROPERTIES
     D2D1_MATRIX_3X2_F transform;
 
 } D2D1_BRUSH_PROPERTIES;
-
 
 /// <summary>
 /// Describes the extend modes and the interpolation mode of an ID2D1BitmapBrush.
@@ -334,7 +323,6 @@ typedef struct D2D1_BITMAP_BRUSH_PROPERTIES
 
 } D2D1_BITMAP_BRUSH_PROPERTIES;
 
-
 /// <summary>
 /// Contains the starting point and endpoint of the gradient axis for an
 /// ID2D1LinearGradientBrush.
@@ -345,7 +333,6 @@ typedef struct D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES
     D2D1_POINT_2F endPoint;
 
 } D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES;
-
 
 /// <summary>
 /// Contains the gradient origin offset and the size and position of the gradient
@@ -360,7 +347,6 @@ typedef struct D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES
 
 } D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES;
 
-
 /// <summary>
 /// Differentiates which of the two possible arcs could match the given arc
 /// parameters.
@@ -372,7 +358,6 @@ typedef enum D2D1_ARC_SIZE
     D2D1_ARC_SIZE_FORCE_DWORD = 0xffffffff
 
 } D2D1_ARC_SIZE;
-
 
 /// <summary>
 /// Enum which describes the drawing of the ends of a line.
@@ -403,7 +388,6 @@ typedef enum D2D1_CAP_STYLE
 
 } D2D1_CAP_STYLE;
 
-
 /// <summary>
 /// Describes the sequence of dashes and gaps in a stroke.
 /// </summary>
@@ -418,7 +402,6 @@ typedef enum D2D1_DASH_STYLE
     D2D1_DASH_STYLE_FORCE_DWORD = 0xffffffff
 
 } D2D1_DASH_STYLE;
-
 
 /// <summary>
 /// Enum which describes the drawing of the corners on the line.
@@ -448,7 +431,6 @@ typedef enum D2D1_LINE_JOIN
     D2D1_LINE_JOIN_FORCE_DWORD = 0xffffffff
 
 } D2D1_LINE_JOIN;
-
 
 /// <summary>
 /// This enumeration describes the type of combine operation to be performed.
@@ -482,7 +464,6 @@ typedef enum D2D1_COMBINE_MODE
     D2D1_COMBINE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_COMBINE_MODE;
-
 
 /// <summary>
 /// Describes how one geometry object is spatially related to another geometry
@@ -520,7 +501,6 @@ typedef enum D2D1_GEOMETRY_RELATION
 
 } D2D1_GEOMETRY_RELATION;
 
-
 /// <summary>
 /// Specifies how simple the output of a simplified geometry sink should be.
 /// </summary>
@@ -531,7 +511,6 @@ typedef enum D2D1_GEOMETRY_SIMPLIFICATION_OPTION
     D2D1_GEOMETRY_SIMPLIFICATION_OPTION_FORCE_DWORD = 0xffffffff
 
 } D2D1_GEOMETRY_SIMPLIFICATION_OPTION;
-
 
 /// <summary>
 /// Indicates whether the given figure is filled or hollow.
@@ -544,7 +523,6 @@ typedef enum D2D1_FIGURE_BEGIN
 
 } D2D1_FIGURE_BEGIN;
 
-
 /// <summary>
 /// Indicates whether the figure is open or closed on its end point.
 /// </summary>
@@ -555,7 +533,6 @@ typedef enum D2D1_FIGURE_END
     D2D1_FIGURE_END_FORCE_DWORD = 0xffffffff
 
 } D2D1_FIGURE_END;
-
 
 /// <summary>
 /// Describes a cubic bezier in a path.
@@ -568,7 +545,6 @@ typedef struct D2D1_BEZIER_SEGMENT
 
 } D2D1_BEZIER_SEGMENT;
 
-
 /// <summary>
 /// Describes a triangle.
 /// </summary>
@@ -579,7 +555,6 @@ typedef struct D2D1_TRIANGLE
     D2D1_POINT_2F point3;
 
 } D2D1_TRIANGLE;
-
 
 /// <summary>
 /// Indicates whether the given segment should be stroked, or, if the join between
@@ -596,7 +571,6 @@ typedef enum D2D1_PATH_SEGMENT
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_PATH_SEGMENT);
 
-
 /// <summary>
 /// Defines the direction that an elliptical arc is drawn.
 /// </summary>
@@ -607,7 +581,6 @@ typedef enum D2D1_SWEEP_DIRECTION
     D2D1_SWEEP_DIRECTION_FORCE_DWORD = 0xffffffff
 
 } D2D1_SWEEP_DIRECTION;
-
 
 /// <summary>
 /// Specifies how the intersecting areas of geometries or figures are combined to
@@ -620,7 +593,6 @@ typedef enum D2D1_FILL_MODE
     D2D1_FILL_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_FILL_MODE;
-
 
 /// <summary>
 /// Describes an arc that is defined as part of a path.
@@ -635,7 +607,6 @@ typedef struct D2D1_ARC_SEGMENT
 
 } D2D1_ARC_SEGMENT;
 
-
 /// <summary>
 /// Contains the control point and end point for a quadratic Bezier segment.
 /// </summary>
@@ -645,7 +616,6 @@ typedef struct D2D1_QUADRATIC_BEZIER_SEGMENT
     D2D1_POINT_2F point2;
 
 } D2D1_QUADRATIC_BEZIER_SEGMENT;
-
 
 /// <summary>
 /// Contains the center point, x-radius, and y-radius of an ellipse.
@@ -658,7 +628,6 @@ typedef struct D2D1_ELLIPSE
 
 } D2D1_ELLIPSE;
 
-
 /// <summary>
 /// Contains the dimensions and corner radii of a rounded rectangle.
 /// </summary>
@@ -669,7 +638,6 @@ typedef struct D2D1_ROUNDED_RECT
     FLOAT radiusY;
 
 } D2D1_ROUNDED_RECT;
-
 
 /// <summary>
 /// Properties, aside from the width, that allow geometric penning to be specified.
@@ -685,7 +653,6 @@ typedef struct D2D1_STROKE_STYLE_PROPERTIES
     FLOAT dashOffset;
 
 } D2D1_STROKE_STYLE_PROPERTIES;
-
 
 /// <summary>
 /// Specified options that can be applied when a layer resource is applied to create
@@ -709,7 +676,6 @@ typedef enum D2D1_LAYER_OPTIONS
 } D2D1_LAYER_OPTIONS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_LAYER_OPTIONS);
-
 
 /// <summary>
 /// Contains the content bounds, mask information, opacity settings, and other
@@ -761,7 +727,6 @@ typedef struct D2D1_LAYER_PARAMETERS
 
 } D2D1_LAYER_PARAMETERS;
 
-
 /// <summary>
 /// Describes whether a window is occluded.
 /// </summary>
@@ -774,7 +739,6 @@ typedef enum D2D1_WINDOW_STATE
 } D2D1_WINDOW_STATE;
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_WINDOW_STATE);
-
 
 /// <summary>
 /// Describes whether a render target uses hardware or software rendering, or if
@@ -801,7 +765,6 @@ typedef enum D2D1_RENDER_TARGET_TYPE
 
 } D2D1_RENDER_TARGET_TYPE;
 
-
 /// <summary>
 /// Describes the minimum DirectX support required for hardware rendering by a
 /// render target.
@@ -826,7 +789,6 @@ typedef enum D2D1_FEATURE_LEVEL
     D2D1_FEATURE_LEVEL_FORCE_DWORD = 0xffffffff
 
 } D2D1_FEATURE_LEVEL;
-
 
 /// <summary>
 /// Describes how a render target is remoted and whether it should be
@@ -854,7 +816,6 @@ typedef enum D2D1_RENDER_TARGET_USAGE
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_RENDER_TARGET_USAGE);
 
-
 /// <summary>
 /// Describes how present should behave.
 /// </summary>
@@ -877,7 +838,6 @@ typedef enum D2D1_PRESENT_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_PRESENT_OPTIONS);
 
-
 /// <summary>
 /// Contains rendering options (hardware or software), pixel format, DPI
 /// information, remoting options, and Direct3D support requirements for a render
@@ -894,7 +854,6 @@ typedef struct D2D1_RENDER_TARGET_PROPERTIES
 
 } D2D1_RENDER_TARGET_PROPERTIES;
 
-
 /// <summary>
 /// Contains the HWND, pixel size, and presentation options for an
 /// ID2D1HwndRenderTarget.
@@ -906,7 +865,6 @@ typedef struct D2D1_HWND_RENDER_TARGET_PROPERTIES
     D2D1_PRESENT_OPTIONS presentOptions;
 
 } D2D1_HWND_RENDER_TARGET_PROPERTIES;
-
 
 /// <summary>
 /// Specifies additional features supportable by a compatible render target when it
@@ -928,7 +886,6 @@ typedef enum D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS);
 
-
 /// <summary>
 /// Allows the drawing state to be atomically created. This also specifies the
 /// drawing state that is saved into an IDrawingStateBlock object.
@@ -942,7 +899,6 @@ typedef struct D2D1_DRAWING_STATE_DESCRIPTION
     D2D1_MATRIX_3X2_F transform;
 
 } D2D1_DRAWING_STATE_DESCRIPTION;
-
 
 /// <summary>
 /// Specifies how a device context is initialized for GDI rendering when it is
@@ -964,7 +920,6 @@ typedef enum D2D1_DC_INITIALIZE_MODE
 
 } D2D1_DC_INITIALIZE_MODE;
 
-
 /// <summary>
 /// Indicates the debug level to be output by the debug layer.
 /// </summary>
@@ -977,7 +932,6 @@ typedef enum D2D1_DEBUG_LEVEL
     D2D1_DEBUG_LEVEL_FORCE_DWORD = 0xffffffff
 
 } D2D1_DEBUG_LEVEL;
-
 
 /// <summary>
 /// Specifies the threading model of the created factory and all of its derived
@@ -1002,7 +956,6 @@ typedef enum D2D1_FACTORY_TYPE
 
 } D2D1_FACTORY_TYPE;
 
-
 /// <summary>
 /// Allows additional parameters for factory creation.
 /// </summary>
@@ -1017,14 +970,11 @@ typedef struct D2D1_FACTORY_OPTIONS
 
 } D2D1_FACTORY_OPTIONS;
 
-
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
-
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-
 
 EXTERN_C CONST IID IID_ID2D1Resource;
 EXTERN_C CONST IID IID_ID2D1Image;
@@ -1055,23 +1005,18 @@ EXTERN_C CONST IID IID_ID2D1HwndRenderTarget;
 EXTERN_C CONST IID IID_ID2D1DCRenderTarget;
 EXTERN_C CONST IID IID_ID2D1Factory;
 
-
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
 
-
 EXTERN_C CONST IID IID_ID2D1GdiInteropRenderTarget;
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
@@ -1090,14 +1035,12 @@ interface DX_DECLARE_INTERFACE("2cd90691-12e2-11dc-9fed-001143a055f9") ID2D1Reso
         ) CONST PURE;
 }; // interface ID2D1Resource
 
-
 /// <summary>
 /// Represents a producer of pixels that can fill an arbitrary 2D plane.
 /// </summary>
 interface DX_DECLARE_INTERFACE("65019f75-8da2-497c-b32c-dfa34e48ede6") ID2D1Image  : public ID2D1Resource
 {
 }; // interface ID2D1Image
-
 
 /// <summary>
 /// Root bitmap resource, linearly scaled on a draw call.
@@ -1150,7 +1093,6 @@ interface DX_DECLARE_INTERFACE("a2296057-ea42-4099-983b-539fb6505426") ID2D1Bitm
         ) PURE;
 }; // interface ID2D1Bitmap
 
-
 /// <summary>
 /// Represents an collection of gradient stops that can then be the source resource
 /// for either a linear or radial gradient brush.
@@ -1182,7 +1124,6 @@ interface DX_DECLARE_INTERFACE("2cd906a7-12e2-11dc-9fed-001143a055f9") ID2D1Grad
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendMode)(
         ) CONST PURE;
 }; // interface ID2D1GradientStopCollection
-
 
 /// <summary>
 /// The root brush interface. All brushes can be used to fill or pen a geometry.
@@ -1220,7 +1161,6 @@ interface DX_DECLARE_INTERFACE("2cd906a8-12e2-11dc-9fed-001143a055f9") ID2D1Brus
         SetTransform(&transform);
     }
 }; // interface ID2D1Brush
-
 
 /// <summary>
 /// A bitmap brush allows a bitmap to be used to fill a geometry.
@@ -1272,7 +1212,6 @@ interface DX_DECLARE_INTERFACE("2cd906aa-12e2-11dc-9fed-001143a055f9") ID2D1Bitm
         ) CONST PURE;
 }; // interface ID2D1BitmapBrush
 
-
 /// <summary>
 /// Paints an area with a solid color.
 /// </summary>
@@ -1295,7 +1234,6 @@ interface DX_DECLARE_INTERFACE("2cd906a9-12e2-11dc-9fed-001143a055f9") ID2D1Soli
         SetColor(&color);
     }
 }; // interface ID2D1SolidColorBrush
-
 
 /// <summary>
 /// Paints an area with a linear gradient.
@@ -1325,7 +1263,6 @@ interface DX_DECLARE_INTERFACE("2cd906ab-12e2-11dc-9fed-001143a055f9") ID2D1Line
         _Outptr_ ID2D1GradientStopCollection **gradientStopCollection 
         ) CONST PURE;
 }; // interface ID2D1LinearGradientBrush
-
 
 /// <summary>
 /// Paints an area with a radial gradient.
@@ -1373,7 +1310,6 @@ interface DX_DECLARE_INTERFACE("2cd906ac-12e2-11dc-9fed-001143a055f9") ID2D1Radi
         ) CONST PURE;
 }; // interface ID2D1RadialGradientBrush
 
-
 /// <summary>
 /// Resource interface that holds pen style properties.
 /// </summary>
@@ -1413,7 +1349,6 @@ interface DX_DECLARE_INTERFACE("2cd9069d-12e2-11dc-9fed-001143a055f9") ID2D1Stro
         UINT32 dashesCount 
         ) CONST PURE;
 }; // interface ID2D1StrokeStyle
-
 
 /// <summary>
 /// Represents a geometry resource and defines a set of helper methods for
@@ -2095,7 +2030,6 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     }
 }; // interface ID2D1Geometry
 
-
 /// <summary>
 /// Describes a two-dimensional rectangle.
 /// </summary>
@@ -2106,7 +2040,6 @@ interface DX_DECLARE_INTERFACE("2cd906a2-12e2-11dc-9fed-001143a055f9") ID2D1Rect
         _Out_ D2D1_RECT_F *rect 
         ) CONST PURE;
 }; // interface ID2D1RectangleGeometry
-
 
 /// <summary>
 /// Describes a rounded rectangle.
@@ -2119,7 +2052,6 @@ interface DX_DECLARE_INTERFACE("2cd906a3-12e2-11dc-9fed-001143a055f9") ID2D1Roun
         ) CONST PURE;
 }; // interface ID2D1RoundedRectangleGeometry
 
-
 /// <summary>
 /// Represents an ellipse.
 /// </summary>
@@ -2130,7 +2062,6 @@ interface DX_DECLARE_INTERFACE("2cd906a4-12e2-11dc-9fed-001143a055f9") ID2D1Elli
         _Out_ D2D1_ELLIPSE *ellipse 
         ) CONST PURE;
 }; // interface ID2D1EllipseGeometry
-
 
 /// <summary>
 /// Represents a composite geometry, composed of other ID2D1Geometry objects.
@@ -2150,7 +2081,6 @@ interface DX_DECLARE_INTERFACE("2cd906a6-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         ) CONST PURE;
 }; // interface ID2D1GeometryGroup
 
-
 /// <summary>
 /// Represents a geometry that has been transformed.
 /// </summary>
@@ -2165,7 +2095,6 @@ interface DX_DECLARE_INTERFACE("2cd906bb-12e2-11dc-9fed-001143a055f9") ID2D1Tran
         _Out_ D2D1_MATRIX_3X2_F *transform 
         ) CONST PURE;
 }; // interface ID2D1TransformedGeometry
-
 
 /// <summary>
 /// Describes a geometric path that does not contain quadratic bezier curves or
@@ -2204,7 +2133,6 @@ interface DX_DECLARE_INTERFACE("2cd9069e-12e2-11dc-9fed-001143a055f9") ID2D1Simp
     STDMETHOD(Close)(
         ) PURE;
 }; // interface ID2D1SimplifiedGeometrySink
-
 
 /// <summary>
 /// Describes a geometric path that can contain lines, arcs, cubic Bezier curves,
@@ -2262,7 +2190,6 @@ interface DX_DECLARE_INTERFACE("2cd9069f-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     }
 }; // interface ID2D1GeometrySink
 
-
 /// <summary>
 /// Populates an ID2D1Mesh object with triangles.
 /// </summary>
@@ -2277,7 +2204,6 @@ interface DX_DECLARE_INTERFACE("2cd906c1-12e2-11dc-9fed-001143a055f9") ID2D1Tess
     STDMETHOD(Close)(
         ) PURE;
 }; // interface ID2D1TessellationSink
-
 
 /// <summary>
 /// Represents a complex shape that may be composed of arcs, curves, and lines.
@@ -2309,7 +2235,6 @@ interface DX_DECLARE_INTERFACE("2cd906a5-12e2-11dc-9fed-001143a055f9") ID2D1Path
         ) CONST PURE;
 }; // interface ID2D1PathGeometry
 
-
 /// <summary>
 /// Represents a set of vertices that form a list of triangles.
 /// </summary>
@@ -2324,7 +2249,6 @@ interface DX_DECLARE_INTERFACE("2cd906c2-12e2-11dc-9fed-001143a055f9") ID2D1Mesh
         ) PURE;
 }; // interface ID2D1Mesh
 
-
 /// <summary>
 /// Represents the backing store required to render a layer.
 /// </summary>
@@ -2334,7 +2258,6 @@ interface DX_DECLARE_INTERFACE("2cd9069b-12e2-11dc-9fed-001143a055f9") ID2D1Laye
     STDMETHOD_(D2D1_SIZE_F, GetSize)(
         ) CONST PURE;
 }; // interface ID2D1Layer
-
 
 /// <summary>
 /// Represents the drawing state of a render target: the antialiasing mode,
@@ -2382,7 +2305,6 @@ interface DX_DECLARE_INTERFACE("28506e39-ebf6-46a1-bb47-fd85565ab957") ID2D1Draw
         SetDescription(&stateDescription);
     }
 }; // interface ID2D1DrawingStateBlock
-
 
 /// <summary>
 /// Represents an object that can receive drawing commands. Interfaces that inherit
@@ -3242,7 +3164,6 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     }
 }; // interface ID2D1RenderTarget
 
-
 /// <summary>
 /// Renders to an intermediate texture created by the CreateCompatibleRenderTarget
 /// method.
@@ -3254,7 +3175,6 @@ interface DX_DECLARE_INTERFACE("2cd90695-12e2-11dc-9fed-001143a055f9") ID2D1Bitm
         _COM_Outptr_ ID2D1Bitmap **bitmap 
         ) PURE;
 }; // interface ID2D1BitmapRenderTarget
-
 
 /// <summary>
 /// Renders drawing instructions to a window.
@@ -3290,8 +3210,6 @@ interface DX_DECLARE_INTERFACE("2cd90698-12e2-11dc-9fed-001143a055f9") ID2D1Hwnd
     }
 }; // interface ID2D1HwndRenderTarget
 
-
-
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
@@ -3314,8 +3232,6 @@ interface DX_DECLARE_INTERFACE("e0db51c3-6f77-4bae-b3d5-e47509b35838") ID2D1GdiI
         ) PURE;
 }; // interface ID2D1GdiInteropRenderTarget
 
-
-
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
 
@@ -3333,7 +3249,6 @@ interface DX_DECLARE_INTERFACE("1c51bc64-de61-46fd-9899-63a5d8f03950") ID2D1DCRe
         _In_ CONST RECT *pSubRect 
         ) PURE;
 }; // interface ID2D1DCRenderTarget
-
 
 /// <summary>
 /// The root factory interface for all of D2D's objects.
@@ -3558,17 +3473,12 @@ interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Fact
     }
 }; // interface ID2D1Factory
 
-
-
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
-
 #endif
 
-
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
@@ -3646,9 +3556,7 @@ typedef interface ID2D1Factory ID2D1Factory;
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 
-
 #endif
-
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
@@ -3669,7 +3577,6 @@ extern "C"
         _In_opt_ CONST D2D1_FACTORY_OPTIONS *pFactoryOptions,
         _Out_ void **ppIFactory
         );
-
 
     void WINAPI
     D2D1MakeRotateMatrix(
@@ -3707,7 +3614,6 @@ extern "C"
         
 #include <d2d1helper.h>
 
-
 #ifndef D2D_USE_C_DEFINITIONS
 
 COM_DECLSPEC_NOTHROW
@@ -3726,7 +3632,6 @@ D2D1CreateFactory(
             NULL,
             factory);
 }
-
 
 template<class Factory>
 COM_DECLSPEC_NOTHROW

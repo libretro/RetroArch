@@ -13,6 +13,9 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
+#include "../../switch_performance_profiles.h"
+#include "../../configuration.h"
+#include <unistd.h>
 #else
 #include <libtransistor/nx.h>
 #include <libtransistor/ipc_helpers.h>
@@ -35,6 +38,7 @@
 #include "../../retroarch.h"
 #include "../../file_path_special.h"
 #include "../../audio/audio_driver.h"
+#include <string/stdstring.h>
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU
@@ -44,6 +48,7 @@
 
 #ifdef HAVE_LIBNX
 #define SD_PREFIX
+#include "../../gfx/common/switch_common.h"
 #else
 #define SD_PREFIX "/sd"
 #endif
@@ -53,15 +58,65 @@ static const char *elf_path_cst = "/switch/retroarch_switch.nro";
 
 static uint64_t frontend_switch_get_mem_used(void);
 
+bool platform_switch_has_focus = true;
+
 #ifdef HAVE_LIBNX
 
-// Splash
+/* Splash */
 static uint32_t *splashData = NULL;
 
-// switch_gfx.c protypes, we really need a header
-extern void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend);
+static bool psmInitialized = false;
 
-#endif // HAVE_LIBNX
+static AppletHookCookie applet_hook_cookie;
+
+#ifdef NXLINK
+extern bool nxlink_connected;
+#endif
+
+void libnx_apply_overclock() {
+   const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES) / sizeof(SWITCH_CPU_PROFILES[1]);
+   if (config_get_ptr()->uints.libnx_overclock >= 0 && config_get_ptr()->uints.libnx_overclock <= profiles_count)
+      pcvSetClockRate(PcvModule_Cpu, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+}
+
+static void on_applet_hook(AppletHookType hook, void *param) {
+   u32 performance_mode;
+   AppletFocusState focus_state;
+
+   /* Exit request */
+   switch (hook)
+   {
+   case AppletHookType_OnExitRequest:
+      RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
+      retroarch_main_quit();
+      break;
+
+   /* Focus state*/
+   case AppletHookType_OnFocusState:
+      focus_state = appletGetFocusState();
+      RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
+      platform_switch_has_focus = focus_state == AppletFocusState_Focused;
+      if(!platform_switch_has_focus) {
+         pcvSetClockRate(PcvModule_Cpu, 1020000000);
+      } else {
+         libnx_apply_overclock();
+      }
+      break;
+
+   /* Performance mode */
+   case AppletHookType_OnPerformanceMode:
+      // 0 == Handheld, 1 == Docked
+      // Since CPU doesn't change we just re-apply
+      performance_mode = appletGetPerformanceMode();
+      libnx_apply_overclock();
+      break;
+
+   default:
+      break;
+   }
+}
+
+#endif /* HAVE_LIBNX */
 
 static void get_first_valid_core(char *path_return)
 {
@@ -105,17 +160,17 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], SD_PREFIX "/retroarch/retroarch_switch.nro", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_CORE],
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], g_defaults.dirs[DEFAULT_DIR_CORE],
                       "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
@@ -126,52 +181,91 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_CORE],
                       "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_CORE],
-                      "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "config/remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                      "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
 
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+
+   int i = 0;
+   for (i; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         path_mkdir(dir_path);
+   }
+   
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
 
+extern switch_ctx_data_t *nx_ctx_ptr;
 static void frontend_switch_deinit(void *data)
 {
    (void)data;
 
 #ifdef HAVE_LIBNX
+   nifmExit();
+   pcvSetClockRate(PcvModule_Cpu, 1020000000); // Always 1020 MHz, unless SDEV
+   pcvExit();
 #if defined(SWITCH) && defined(NXLINK)
    socketExit();
 #endif
 
-   // Splash
+   /* Splash */
    if (splashData)
    {
       free(splashData);
       splashData = NULL;
    }
 
-   gfxExit();
+   if (psmInitialized)
+       psmExit();
+
+   appletUnlockExit();
 #endif
 }
 
 #ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
-   char game_path[PATH_MAX];
+   char game_path[PATH_MAX-4];
    const char *arg_data[3];
    char error_string[200 + PATH_MAX];
    int args = 0;
@@ -282,52 +376,58 @@ static void frontend_switch_exitspawn(char *s, size_t len)
 
 void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
 {
-   // Convert
-   for (uint32_t h = 0; h < height; h++)
+   uint32_t h, w;
+   /* Convert */
+   for (h = 0; h < height; h++)
    {
-      for (uint32_t w = 0; w < width; w++)
+      for (w = 0; w < width; w++)
       {
          uint32_t offset = (h * width) + w;
-         uint32_t c = buff[offset];
+         uint32_t c      = buff[offset];
 
-         uint32_t a = (uint32_t)((c & 0xff000000) >> 24);
-         uint32_t r = (uint32_t)((c & 0x00ff0000) >> 16);
-         uint32_t g = (uint32_t)((c & 0x0000ff00) >> 8);
-         uint32_t b = (uint32_t)(c & 0x000000ff);
+         uint32_t a      = (uint32_t)((c & 0xff000000) >> 24);
+         uint32_t r      = (uint32_t)((c & 0x00ff0000) >> 16);
+         uint32_t g      = (uint32_t)((c & 0x0000ff00) >> 8);
+         uint32_t b      = (uint32_t)(c & 0x000000ff);
 
-         buff[offset] = RGBA8(r, g, b, a);
+         buff[offset]    = RGBA8(r, g, b, a);
       }
    }
 }
 
-void frontend_switch_showsplash()
+void frontend_switch_showsplash(void)
 {
    printf("[Splash] Showing splashScreen\n");
 
+   NWindow *win = nwindowGetDefault();
+   Framebuffer fb;
+   framebufferCreate(&fb, win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
+   framebufferMakeLinear(&fb);
+
    if (splashData)
    {
-      uint32_t width, height;
-      width = height = 0;
+      uint32_t width       = 0;
+      uint32_t height      = 0;
+      uint32_t stride;
+      uint32_t *frambuffer = (uint32_t *)framebufferBegin(&fb, &stride);
 
-      uint32_t *frambuffer = (uint32_t *)gfxGetFramebuffer(&width, &height);
+      gfx_cpy_dsp_buf(frambuffer, splashData, width, height, stride, false);
 
-      gfx_slow_swizzling_blit(frambuffer, splashData, width, height, 0, 0, false);
-
-      gfxFlushBuffers();
-      gfxSwapBuffers();
-      gfxWaitForVsync();
+      framebufferEnd(&fb);
    }
+
+   framebufferClose(&fb);
 }
 
-// From rpng_test.c
-bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, unsigned *height)
+/* From rpng_test.c */
+bool rpng_load_image_argb(const char *path,
+      uint32_t **data, unsigned *width, unsigned *height)
 {
    int retval;
    size_t file_len;
-   bool ret = true;
-   rpng_t *rpng = NULL;
-   void *ptr = NULL;
-
+   bool ret              = true;
+   rpng_t *rpng          = NULL;
+   void *ptr             = NULL;
    struct nbio_t *handle = (struct nbio_t *)nbio_open(path, NBIO_READ);
 
    if (!handle)
@@ -420,7 +520,7 @@ ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize)
    return -1;
 }
 
-// Taken from glibc
+/* Taken from glibc */
 char *realpath(const char *name, char *resolved)
 {
    char *rpath, *dest, *extra_buf = NULL;
@@ -549,48 +649,62 @@ error:
    return NULL;
 }
 
-#endif // HAVE_LIBNX
+#endif /* HAVE_LIBNX */
 
 static void frontend_switch_shutdown(bool unused)
 {
    (void)unused;
 }
 
-// runloop_get_system_info isnt initialized that early..
+/* runloop_get_system_info isnt initialized that early.. */
 extern void retro_get_system_info(struct retro_system_info *info);
 
 static void frontend_switch_init(void *data)
 {
+
    (void)data;
 
-#ifdef HAVE_LIBNX // splash
-   // Init Resolution before initDefault
-   gfxInitResolution(1280, 720);
+#ifdef HAVE_LIBNX
+   nifmInitialize();
+   pcvInitialize();
 
-   gfxInitDefault();
-   gfxSetMode(GfxMode_TiledDouble);
+   appletLockExit();
+   appletHook(&applet_hook_cookie, on_applet_hook, NULL);
+   appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
 
-   gfxConfigureTransform(0);
+   bool recording_supported = false;
+   appletIsGamePlayRecordingSupported(&recording_supported);
+   if(recording_supported)
+      appletInitializeGamePlayRecording();
 
 #ifdef NXLINK
    socketInitializeDefault();
-   nxlinkStdio();
+   nxlink_connected = nxlinkStdio() != -1;
 #ifndef IS_SALAMANDER
    verbosity_enable();
-#endif
-#endif // NXLINK
+#endif /* IS_SALAMANDER */
+#endif /* NXLINK */
+
+   Result rc;
+   rc = psmInitialize();
+   if (R_SUCCEEDED(rc))
+   {
+       psmInitialized = true;
+   }
+   else
+   {
+       RARCH_WARN("Error initializing psm\n");
+   }
 
    rarch_system_info_t *sys_info = runloop_get_system_info();
    retro_get_system_info(sys_info);
 
    const char *core_name = NULL;
-
-   printf("[Video]: Video initialized\n");
-
    uint32_t width, height;
    width = height = 0;
 
-   // Load splash
+#ifndef HAVE_OPENGL
+   /* Load splash */
    if (!splashData)
    {
       if (sys_info)
@@ -631,12 +745,13 @@ static void frontend_switch_init(void *data)
    {
       frontend_switch_showsplash();
    }
-#endif // HAVE_LIBNX (splash)
+#endif
+#endif /* HAVE_LIBNX (splash) */
 }
 
 static int frontend_switch_get_rating(void)
 {
-   return 1000;
+   return 11;
 }
 
 enum frontend_architecture frontend_switch_get_architecture(void)
@@ -664,7 +779,7 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
 static uint64_t frontend_switch_get_mem_total(void)
 {
    uint64_t memoryTotal = 0;
-   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0); // avaiable
+   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0);
    memoryTotal += frontend_switch_get_mem_used();
 
    return memoryTotal;
@@ -673,15 +788,43 @@ static uint64_t frontend_switch_get_mem_total(void)
 static uint64_t frontend_switch_get_mem_used(void)
 {
    uint64_t memoryUsed = 0;
-   svcGetInfo(&memoryUsed, 7, 0xffff8001, 0); // used
+   svcGetInfo(&memoryUsed, 7, 0xffff8001, 0);
 
    return memoryUsed;
 }
 
 static enum frontend_powerstate frontend_switch_get_powerstate(int *seconds, int *percent)
 {
-   // This is fine monkaS
-   return FRONTEND_POWERSTATE_CHARGED;
+   if (!psmInitialized)
+      return FRONTEND_POWERSTATE_NONE;
+
+   uint32_t pct;
+   ChargerType ct;
+   Result rc;
+
+   rc = psmGetBatteryChargePercentage(&pct);
+   if (!R_SUCCEEDED(rc))
+      return FRONTEND_POWERSTATE_NONE;
+
+   rc = psmGetChargerType(&ct);
+   if (!R_SUCCEEDED(rc))
+      return FRONTEND_POWERSTATE_NONE;
+
+   *percent = (int)pct;
+
+   if (*percent >= 100)
+      return FRONTEND_POWERSTATE_CHARGED;
+
+   switch (ct)
+   {
+   case ChargerType_Charger:
+   case ChargerType_Usb:
+      return FRONTEND_POWERSTATE_CHARGING;
+   default:
+      break;
+   }
+
+   return FRONTEND_POWERSTATE_NO_SOURCE;
 }
 
 static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
@@ -689,13 +832,17 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
    strlcpy(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
-   // There is pretty sure a better way, but this will do just fine
-   if (kernelAbove500())
+   /* There is pretty sure a better way, but this will do just fine */
+   if (kernelAbove600())
+   {
+      *major = 6;
+      *minor = 0;
+   }
+   else if(kernelAbove500())
    {
       *major = 5;
       *minor = 0;
-   }
-   else if (kernelAbove400())
+   }else if (kernelAbove400())
    {
       *major = 4;
       *minor = 0;
@@ -712,18 +859,18 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
    }
    else
    {
-      // either 1.0 or > 5.x
+      /* either 1.0 or > 5.x */
       *major = 1;
       *minor = 0;
    }
 #else
-   // defaults in case we error out
+   /* defaults in case we error out */
    *major = 0;
    *minor = 0;
 
    char firmware_version[0x100];
 
-   result_t r; // used by LIB_ASSERT_OK macros
+   result_t r; /* used by LIB_ASSERT_OK macros */
    LIB_ASSERT_OK(fail, sm_init());
 
    ipc_object_t set_sys;
@@ -751,7 +898,7 @@ fail:
 
 static void frontend_switch_get_name(char *s, size_t len)
 {
-   // TODO: Add Mariko at some point
+   /* TODO: Add Mariko at some point */
    strlcpy(s, "Nintendo Switch", len);
 }
 
@@ -769,12 +916,12 @@ frontend_ctx_driver_t frontend_ctx_switch =
 #else
         frontend_switch_set_fork,
 #endif
-#else // HAVE_LIBNX
+#else /* HAVE_LIBNX */
         NULL,
         NULL,
         NULL,
         NULL,
-#endif // HAVE_LIBNX
+#endif /* HAVE_LIBNX */
         frontend_switch_shutdown,
         frontend_switch_get_name,
         frontend_switch_get_os,

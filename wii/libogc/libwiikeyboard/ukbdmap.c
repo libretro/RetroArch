@@ -568,7 +568,6 @@ static const keysym_t ukbd_keydesc_be[] = {
     KC(230),	KS_Mode_switch,	KS_Multi_key,
 };
 
-
 static const keysym_t ukbd_keydesc_us_dvorak[] = {
 /*  pos      command		normal		shifted */
     KC(5),	KS_x,

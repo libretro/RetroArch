@@ -39,7 +39,6 @@
 #include "lwip/stats.h"
 #include "lwip/mem.h"
 
-
 #if LWIP_STATS
 struct stats_ lwip_stats;
 
@@ -112,4 +111,3 @@ stats_display(void)
 }
 #endif /* LWIP_STATS_DISPLAY */
 #endif /* LWIP_STATS */
-

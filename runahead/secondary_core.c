@@ -18,6 +18,7 @@
 #include "mem_util.h"
 
 #include "../core.h"
+#include "../configuration.h"
 #include "../dynamic.h"
 #include "../paths.h"
 #include "../content.h"
@@ -50,23 +51,35 @@ void clear_controller_port_map(void);
 
 static char *get_temp_directory_alloc(void)
 {
-   char *path       = NULL;
+   char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD pathLength = GetTempPath(0, NULL) + 1;
-   path             = (char*)malloc(pathLength * sizeof(char));
+   DWORD pathLength       = GetTempPath(0, NULL) + 1;
+   path                   = (char*)malloc(pathLength * sizeof(char));
 
-   path[pathLength - 1] = 0;
+   if (!path)
+      return NULL;
+
+   path[pathLength - 1]   = 0;
    GetTempPath(pathLength, path);
 #else
    DWORD pathLength = GetTempPathW(0, NULL) + 1;
    wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
+
+   if (!wideStr)
+      return NULL;
+
    wideStr[pathLength - 1] = 0;
    GetTempPathW(pathLength, wideStr);
 
    path = utf16_to_utf8_string_alloc(wideStr);
    free(wideStr);
 #endif
+#elif defined ANDROID
+   {
+      settings_t *settings = config_get_ptr();
+      path = strcpy_alloc_force(settings->paths.directory_libretro);
+   }
 #else
    path = "/tmp";
    if (getenv("TMPDIR"))
@@ -85,6 +98,7 @@ static bool write_file_with_random_name(char **tempDllPath,
    bool okay                = false;
    const char *prefix       = "tmp";
    time_t time_value        = time(NULL);
+   unsigned number_value    = (unsigned)time_value;
    char *ext                = strcpy_alloc_force(
          path_get_extension(*tempDllPath));
    int ext_len              = (int)strlen(ext);
@@ -100,8 +114,9 @@ static bool write_file_with_random_name(char **tempDllPath,
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      unsigned int number_value = (unsigned int)time_value * 214013 + 2531011;
-      int          number       = (number_value >> 14) % 100000;
+      int number;
+      number_value = number_value * 214013 + 2531011;
+      number       = (number_value >> 14) % 100000;
 
       snprintf(number_buf, sizeof(number_buf), "%05d", number);
 
@@ -318,7 +333,6 @@ static bool secondary_core_create(void)
    return true;
 }
 
-
 void secondary_core_set_variable_update(void)
 {
    has_variable_update = true;
@@ -429,4 +443,3 @@ void secondary_core_set_variable_update(void) { }
 void clear_controller_port_map(void) { }
 
 #endif
-

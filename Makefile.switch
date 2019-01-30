@@ -34,12 +34,12 @@ else
 	HAVE_DYNAMIC = 1
 
 	include Makefile.common
-        BLACKLIST :=
+	CFLAGS += $(DEF_FLAGS)
+	BLACKLIST :=
 	BLACKLIST += input/input_overlay.o
-        BLACKLIST += tasks/task_overlay.o
+	BLACKLIST += tasks/task_overlay.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
-
 
 ifeq ($(strip $(LIBTRANSISTOR_HOME)),)
 $(error "Please set LIBTRANSISTOR_HOME in your environment. export LIBTRANSISTOR_HOME=<path/to/libtransistor/dist/>")

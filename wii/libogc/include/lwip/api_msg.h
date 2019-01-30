@@ -83,4 +83,3 @@ struct api_msg {
 };
 
 #endif /* __LWIP_API_MSG_H__ */
-

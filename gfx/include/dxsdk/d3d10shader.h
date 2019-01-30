@@ -10,14 +10,12 @@
 #ifndef __D3D10SHADER_H__
 #define __D3D10SHADER_H__
 
-
 #include "d3d10.h"
 
 /*#include <winapifamily.h>*/
 
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
-
 
 //---------------------------------------------------------------------------
 // D3D10_TX_VERSION:
@@ -26,7 +24,6 @@
 // Used by D3D10Fill[]TX functions
 //---------------------------------------------------------------------------
 #define D3D10_TX_VERSION(_Major,_Minor) (('T' << 24) | ('X' << 16) | ((_Major) << 8) | (_Minor))
-
 
 //----------------------------------------------------------------------------
 // D3D10SHADER flags:
@@ -111,25 +108,19 @@
 #define D3D10_SHADER_DEBUG_NAME_FOR_SOURCE          (1 << 22)
 #define D3D10_SHADER_DEBUG_NAME_FOR_BINARY          (1 << 23)
 
-
 // optimization level flags
 #define D3D10_SHADER_OPTIMIZATION_LEVEL0            (1 << 14)
 #define D3D10_SHADER_OPTIMIZATION_LEVEL1            0
 #define D3D10_SHADER_OPTIMIZATION_LEVEL2            ((1 << 14) | (1 << 15))
 #define D3D10_SHADER_OPTIMIZATION_LEVEL3            (1 << 15)
 
-
 // Force root signature flags. (Passed in Flags2)
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_LATEST   0
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_1_0      (1 << 4)
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_1_1      (1 << 5)
 
-
-
-
 typedef D3D_SHADER_MACRO D3D10_SHADER_MACRO;
 typedef D3D10_SHADER_MACRO* LPD3D10_SHADER_MACRO;
-
 
 typedef D3D_SHADER_VARIABLE_CLASS D3D10_SHADER_VARIABLE_CLASS;
 typedef D3D10_SHADER_VARIABLE_CLASS* LPD3D10_SHADER_VARIABLE_CLASS;
@@ -164,7 +155,6 @@ typedef D3D_INCLUDE_TYPE D3D10_INCLUDE_TYPE;
 typedef interface ID3DInclude ID3D10Include;
 typedef interface ID3DInclude* LPD3D10INCLUDE;
 #define IID_ID3D10Include IID_ID3DInclude
-
 
 //----------------------------------------------------------------------------
 // ID3D10ShaderReflection:
@@ -266,13 +256,9 @@ typedef struct _D3D10_SIGNATURE_PARAMETER_DESC
     
 } D3D10_SIGNATURE_PARAMETER_DESC;
 
-
 //
 // Interface definitions
 //
-
-
-
 
 typedef interface ID3D10ShaderReflectionType ID3D10ShaderReflectionType;
 typedef interface ID3D10ShaderReflectionType *LPD3D10SHADERREFLECTIONTYPE;
@@ -430,7 +416,6 @@ HRESULT WINAPI D3D10CompileShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData,
 
 HRESULT WINAPI D3D10DisassembleShader(_In_reads_bytes_(BytecodeLength) CONST void *pShader, SIZE_T BytecodeLength, BOOL EnableColorCode, _In_opt_ LPCSTR pComments, _Out_ ID3D10Blob** ppDisassembly);
 
-
 //----------------------------------------------------------------------------
 // D3D10GetPixelShaderProfile/D3D10GetVertexShaderProfile/D3D10GetGeometryShaderProfile:
 // -----------------------------------------------------
@@ -557,4 +542,3 @@ HRESULT WINAPI D3D10GetShaderDebugInfo(_In_reads_bytes_(BytecodeLength) CONST vo
 /*#pragma endregion*/
     
 #endif //__D3D10SHADER_H__
-

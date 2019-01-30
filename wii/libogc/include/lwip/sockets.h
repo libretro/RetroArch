@@ -30,7 +30,6 @@
  *
  */
 
-
 #ifndef __LWIP_SOCKETS_H__
 #define __LWIP_SOCKETS_H__
 #include "lwip/ip_addr.h"
@@ -52,7 +51,6 @@ struct sockaddr {
 #ifndef socklen_t
 #  define socklen_t int
 #endif
-
 
 #define SOCK_STREAM     1
 #define SOCK_DGRAM      2
@@ -86,8 +84,6 @@ struct sockaddr {
 #define  SO_ERROR  0x1007    /* get error status and clear */
 #define  SO_TYPE    0x1008    /* get socket type */
 
-
-
 /*
  * Structure used for manipulating linger option.
  */
@@ -100,7 +96,6 @@ struct linger {
  * Level number for (get/set)sockopt() to apply to socket itself.
  */
 #define  SOL_SOCKET  0xfff    /* options for socket level */
-
 
 #define AF_UNSPEC       0
 #define AF_INET         2
@@ -117,13 +112,11 @@ struct linger {
 /* Flags we can use with send and recv. */
 #define MSG_DONTWAIT    0x40            /* Nonblocking i/o for this operation only */
 
-
 /*
  * Options for level IPPROTO_IP
  */
 #define IP_TOS       1
 #define IP_TTL       2
-
 
 #define IPTOS_TOS_MASK          0x1E
 #define IPTOS_TOS(tos)          ((tos) & IPTOS_TOS_MASK)
@@ -146,7 +139,6 @@ struct linger {
 #define IPTOS_PREC_IMMEDIATE            0x40
 #define IPTOS_PREC_PRIORITY             0x20
 #define IPTOS_PREC_ROUTINE              0x00
-
 
 /*
  * Commands for ioctlsocket(),  taken from the BSD file fcntl.h.
@@ -268,4 +260,3 @@ int lwip_ioctl(int s, long cmd, void *argp);
 #endif /* LWIP_COMPAT_SOCKETS */
 
 #endif /* __LWIP_SOCKETS_H__ */
-

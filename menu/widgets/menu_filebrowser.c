@@ -39,6 +39,7 @@
 #include "../../core.h"
 #include "../../content.h"
 #include "../../verbosity.h"
+#include "../../dynamic.h"
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
@@ -65,7 +66,6 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    unsigned files_count                 = 0;
    unsigned dirs_count                  = 0;
    settings_t *settings                 = config_get_ptr();
-   rarch_system_info_t *system          = runloop_get_system_info();
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
    const char *path                     = info ? info->path : NULL;
@@ -73,6 +73,16 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
       ? path_is_compressed_file(path) : false;
    bool filter_ext                      =
       settings->bools.menu_navigation_browser_filter_supported_extensions_enable;
+
+   rarch_system_info_t *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data + content_get_subsystem();
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data + content_get_subsystem();
 
    if (info && string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
@@ -82,22 +92,14 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    {
       if (filebrowser_types != FILEBROWSER_SELECT_FILE_SUBSYSTEM)
          str_list = file_archive_get_file_list(path, info->exts);
-      else
-      {
-         const struct retro_subsystem_info *subsystem = system->subsystem.data + content_get_subsystem();
-
-         if (subsystem)
-            str_list  = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
-      }
+      else if (subsystem && subsystem_current_count > 0)
+         str_list  = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
    }
    else if (!string_is_empty(path))
    {
       if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         const struct retro_subsystem_info *subsystem = 
-            system->subsystem.data + content_get_subsystem();
-
-         if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+         if (subsystem && subsystem_current_count > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
             str_list = dir_list_new(path,
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, settings->bools.show_hidden_files, true, false);
@@ -107,7 +109,6 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                (filter_ext && info) ? info->exts : NULL,
                true, settings->bools.show_hidden_files, true, false);
    }
-
 
    switch (filebrowser_types)
    {
@@ -303,7 +304,7 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    }
 
 end:
-   if (info)
+   if (info && !path_is_compressed)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
             path,

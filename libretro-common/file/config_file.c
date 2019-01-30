@@ -34,7 +34,10 @@
 #elif defined(_XBOX)
 #include <xtl.h>
 #endif
-
+#ifdef ORBIS
+#include <sys/fcntl.h>
+#include <orbisFile.h>
+#endif
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -66,7 +69,7 @@ struct config_include_list
 };
 
 static config_file_t *config_file_new_internal(
-      const char *path, unsigned depth);
+      const char *path, unsigned depth, config_file_cb_t *cb);
 
 static int config_sort_compare_func(struct config_entry_list *a,
       struct config_entry_list *b)
@@ -267,7 +270,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
       parent->tail = NULL;
 }
 
-static void add_sub_conf(config_file_t *conf, char *path)
+static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 {
    char real_path[PATH_MAX_LENGTH];
    config_file_t         *sub_conf  = NULL;
@@ -314,7 +317,7 @@ static void add_sub_conf(config_file_t *conf, char *path)
 #endif
 
    sub_conf = (config_file_t*)
-      config_file_new_internal(real_path, conf->include_depth + 1);
+      config_file_new_internal(real_path, conf->include_depth + 1, cb);
    if (!sub_conf)
       return;
 
@@ -324,7 +327,7 @@ static void add_sub_conf(config_file_t *conf, char *path)
 }
 
 static bool parse_line(config_file_t *conf,
-      struct config_entry_list *list, char *line)
+      struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
    char *comment   = NULL;
    char *key_tmp   = NULL;
@@ -351,7 +354,7 @@ static bool parse_line(config_file_t *conf,
             if (conf->include_depth >= MAX_INCLUDE_DEPTH)
                fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
             else
-               add_sub_conf(conf, path);
+               add_sub_conf(conf, path, cb);
             free(path);
          }
          goto error;
@@ -396,25 +399,27 @@ error:
 }
 
 static config_file_t *config_file_new_internal(
-      const char *path, unsigned depth)
+      const char *path, unsigned depth, config_file_cb_t *cb)
 {
    RFILE              *file = NULL;
    struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
 
-   conf->path          = NULL;
-   conf->entries       = NULL;
-   conf->tail          = NULL;
-   conf->includes      = NULL;
-   conf->include_depth = 0;
+   conf->path                     = NULL;
+   conf->entries                  = NULL;
+   conf->tail                     = NULL;
+   conf->last                     = NULL;
+   conf->includes                 = NULL;
+   conf->include_depth            = 0;
+   conf->guaranteed_no_duplicates = false ;
 
    if (!path || !*path)
       return conf;
-
+#if !defined(ORBIS)
    if (path_is_directory(path))
       goto error;
-
+#endif
    conf->path          = strdup(path);
    if (!conf->path)
       goto error;
@@ -455,7 +460,7 @@ static config_file_t *config_file_new_internal(
          continue;
       }
 
-      if (*line && parse_line(conf, list, line))
+      if (*line && parse_line(conf, list, line, cb))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -463,6 +468,9 @@ static config_file_t *config_file_new_internal(
             conf->entries = list;
 
          conf->tail = list;
+
+         if (cb != NULL && list->key != NULL && list->value != NULL)
+            cb->config_file_new_entry_cb(list->key, list->value) ;
       }
 
       free(line);
@@ -539,7 +547,6 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-
 config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;
@@ -551,11 +558,13 @@ config_file_t *config_file_new_from_string(const char *from_string)
    if (!from_string)
       return conf;
 
-   conf->path          = NULL;
-   conf->entries       = NULL;
-   conf->tail          = NULL;
-   conf->includes      = NULL;
-   conf->include_depth = 0;
+   conf->path                     = NULL;
+   conf->entries                  = NULL;
+   conf->tail                     = NULL;
+   conf->last                     = NULL;
+   conf->includes                 = NULL;
+   conf->include_depth            = 0;
+   conf->guaranteed_no_duplicates = false ;
 
    lines = string_split(from_string, "\n");
    if (!lines)
@@ -580,7 +589,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
       if (line && conf)
       {
-         if (*line && parse_line(conf, list, line))
+         if (*line && parse_line(conf, list, line, NULL))
          {
             if (conf->entries)
                conf->tail->next = list;
@@ -600,9 +609,13 @@ config_file_t *config_file_new_from_string(const char *from_string)
    return conf;
 }
 
+config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb)
+{
+   return config_file_new_internal(path, 0, cb);
+}
 config_file_t *config_file_new(const char *path)
 {
-   return config_file_new_internal(path, 0);
+   return config_file_new_internal(path, 0, NULL);
 }
 
 static struct config_entry_list *config_get_entry(const config_file_t *conf,
@@ -833,8 +846,8 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
-   struct config_entry_list *last  = conf->entries;
-   struct config_entry_list *entry = config_get_entry(conf, key, &last);
+   struct config_entry_list *last  = (conf->guaranteed_no_duplicates && conf->last) ? conf->last : conf->entries;
+   struct config_entry_list *entry = conf->guaranteed_no_duplicates?NULL:config_get_entry(conf, key, &last);
 
    if (entry && !entry->readonly)
    {
@@ -859,6 +872,9 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       last->next    = entry;
    else
       conf->entries = entry;
+
+   conf->last = entry ;
+
 }
 
 void config_unset(config_file_t *conf, const char *key)
@@ -962,32 +978,73 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-bool config_file_write(config_file_t *conf, const char *path)
+bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!string_is_empty(path))
    {
       void* buf  = NULL;
+#ifdef ORBIS
+      int fd = orbisOpen(path,O_RDWR|O_CREAT,0644);
+      RARCH_LOG("[Config]config_file_write orbisOpen path=%s fd=%d\n", path, fd);
+      if (fd < 0)
+         return false;
+      config_file_dump_orbis(conf,fd);
+      orbisClose(fd);
+      RARCH_LOG("[Config]config_file_write orbisClose path=%s fd=%d\n", path, fd);
+#else
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
          return false;
 
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+#if !defined(PS2)
       buf = calloc(1, 0x4000);
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+#endif
 
-      config_file_dump(conf, file);
+      config_file_dump(conf, file, sort);
 
       if (file != stdout)
          fclose(file);
       free(buf);
+#endif
    }
    else
-      config_file_dump(conf, stdout);
+      config_file_dump(conf, stdout, sort);
 
    return true;
 }
 
-void config_file_dump(config_file_t *conf, FILE *file)
+#ifdef ORBIS
+void config_file_dump_orbis(config_file_t *conf, int fd)
+{
+   struct config_entry_list       *list = NULL;
+   struct config_include_list *includes = conf->includes;
+   while (includes)
+   {
+      char cad[256];
+      sprintf(cad,"#include %s\n", includes->path);
+      orbisWrite(fd,cad,strlen(cad));
+      includes = includes->next;
+   }
+
+   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   conf->entries = list;
+
+   while (list)
+   {
+      if (!list->readonly && list->key)
+      {
+         char newlist[256];
+         sprintf(newlist,"%s = %s\n", list->key, list->value);
+         orbisWrite(fd,newlist,strlen(newlist));
+      }
+      list = list->next;
+   }
+}
+#endif
+
+void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -998,7 +1055,11 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   if (sort)
+      list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   else
+      list = (struct config_entry_list*)conf->entries;
+
    conf->entries = list;
 
    while (list)

@@ -42,50 +42,55 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
          switch (idx) {
             case RARCH_FAST_FORWARD_KEY:
                 snprintf(s, len,
-                         "빨리감기와 보통속도 전환."
+                         "빨리감기와 보통속도간 전환합니다."
 
                 );
                 break;
             case RARCH_FAST_FORWARD_HOLD_KEY:
                 snprintf(s, len,
-                         "빨리감기 일시정지. \n"
-                                 " \n"
-                                 "버튼을 놓으면 빨기감기 중지."
+                         "빨리감기를 실행합니다. \n"
+                         " \n"
+                         "버튼을 놓으면 빨리감기를 중지합니다."
                 );
                 break;
+            case RARCH_SLOWMOTION_KEY:
+             snprintf(s, len,
+                   "슬로우모션을 전환합니다.");
+             break;
             case RARCH_SLOWMOTION_HOLD_KEY:
                 snprintf(s, len,
-                         "슬로우모션 대기.");
+                         "슬로우모션을 실행합니다.");
                 break;
             case RARCH_PAUSE_TOGGLE:
                 snprintf(s, len,
-                         "일시정지 상태와 해제 상태의 전환.");
+                         "일시정지/해제 상태를 전환합니다.");
                 break;
+            
             case RARCH_FRAMEADVANCE:
                 snprintf(s, len,
-                         "컨텐츠가 일시정지시 프레임 진행.");
+                         "컨텐츠 일시정지시 프레임을 진행합니다.");
                 break;
             case RARCH_SHADER_NEXT:
                 snprintf(s, len,
-                         "디렉토리 안의 다음 쉐이더 적용.");
+                         "디렉토리 안의 다음 쉐이더를 적용합니다.");
                 break;
             case RARCH_SHADER_PREV:
                 snprintf(s, len,
-                         "디렉토리 안의 이전 쉐이더 적용.");
+                         "디렉토리 안의 이전 쉐이더를 적용합니다.");
                 break;
             case RARCH_CHEAT_INDEX_PLUS:
             case RARCH_CHEAT_INDEX_MINUS:
             case RARCH_CHEAT_TOGGLE:
                 snprintf(s, len,
-                         "치트.");
+                         "치트");
                 break;
             case RARCH_RESET:
                 snprintf(s, len,
-                         "컨텐츠 초기화.");
+                         "컨텐츠를 초기화합니다.");
                 break;
             case RARCH_SCREENSHOT:
                 snprintf(s, len,
-                         "스크린샷 촬영.");
+                         "스크린샷을 촬영합니다.");
                 break;
             case RARCH_MUTE:
                 snprintf(s, len,
@@ -93,57 +98,62 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                 break;
             case RARCH_OSK:
                 snprintf(s, len,
-                         "온스크린 키보드 전환.");
+                         "온스크린 키보드를 전환합니다.");
                 break;
+            case RARCH_FPS_TOGGLE:
+             snprintf(s, len,
+                   "FPS 표시를 전환합니다.");
+             break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
-                         "넷플레이 플레이/관전 모드 전환.");
+                         "넷플레이 플레이/관전 모드를 전환합니다.");
                 break;
             case RARCH_ENABLE_HOTKEY:
                 snprintf(s, len,
-                         "추가 핫키 사용. \n"
+                         "추가 핫키를 사용합니다. \n"
                                  " \n"
                                  "이 핫키가 설정되면 키보드, 조이스틱 버튼,\n"
-                                 "조이스틱 축등 모든 핫키가 설정된 키와 \n"
+                                 "조이스틱 축등 모든 핫키가 이 키와 \n"
                                  "함께 눌렸을 때에만 사용가능하게 됩니다. \n"
                                  " \n"
                                  " \n"
-                                 "다시 말하면 키보드상의 모듯 핫키를 \n"
-                                 "사용자가 차단할 수 있게됩니다.");
+                                 "또는 키보드상의 모든 핫키가 \n"
+                                 "사용자에 의해 차단될수 있습니다.");
                 break;
             case RARCH_VOLUME_UP:
                 snprintf(s, len,
-                         "오디오 볼륨 증가.");
+                         "오디오 볼륨을 증가합니다.");
                 break;
             case RARCH_VOLUME_DOWN:
                 snprintf(s, len,
-                         "오디오 볼륨 감소.");
+                         "오디오 볼륨을 감소합니다.");
                 break;
             case RARCH_OVERLAY_NEXT:
                 snprintf(s, len,
-                         "다음 오버레이로 전환. 화면 적용.");
+                         "다음 오버레이로 전환합니다. 화면을 \n"
+                         "덮어 씌웁니다.");
                 break;
             case RARCH_DISK_EJECT_TOGGLE:
                 snprintf(s, len,
-                         "디스크 꺼네기 전환. \n"
+                         "디스크 꺼내기를 전환합니다. \n"
                                  " \n"
-                                 "다중-디스크 컨텐츠에 사용. ");
+                                 "다중 디스크 컨텐츠에 사용됩니다. ");
                 break;
             case RARCH_DISK_NEXT:
             case RARCH_DISK_PREV:
                 snprintf(s, len,
-                         "Cycles through disk images. Use after ejecting. \n"
-                                 " \n"
-                                 "Complete by toggling eject again.");
+                         "디스크 이미지간 탐색합니다. \n"
+                         "디스크 이미지를 꺼낸 후에 사용하세요. \n"
+                         " \n"
+                         "꺼내기 전환을 다시 눌러 완료합니다.");
                 break;
             case RARCH_GRAB_MOUSE_TOGGLE:
                 snprintf(s, len,
-                         "Toggles mouse grab. \n"
+                         "마우스 고정을 전환합니다. \n"
                                  " \n"
-                                 "When mouse is grabbed, RetroArch hides the \n"
-                                 "mouse, and keeps the mouse pointer inside \n"
-                                 "the window to allow relative mouse input to \n"
-                                 "work better.");
+                                 "마우스 고정이 활성화 되면, RetroArch가 마우스를 \n"
+                                 "숨기고 창 안에 고정시켜 마우스 입력을 원활하게 \n"
+                                 "끔 합니다.");
                 break;
             case RARCH_GAME_FOCUS_TOGGLE:
                 snprintf(s, len,
@@ -153,15 +163,15 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                                  "hotkeys and keep/warp the mouse pointer inside the window.");
                 break;
             case RARCH_MENU_TOGGLE:
-                snprintf(s, len, "Toggles menu.");
+                snprintf(s, len, "메뉴를 전환합니다.");
                 break;
             case RARCH_LOAD_STATE_KEY:
                 snprintf(s, len,
-                         "Loads state.");
+                         "상태 불러오기");
                 break;
             case RARCH_FULLSCREEN_TOGGLE_KEY:
                 snprintf(s, len,
-                         "Toggles fullscreen.");
+                         "전체화면을 전환합니다.");
                 break;
             case RARCH_QUIT_KEY:
                 snprintf(s, len,

@@ -391,7 +391,6 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    return false;
 }
 
-
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
      struct retro_keybind * output,

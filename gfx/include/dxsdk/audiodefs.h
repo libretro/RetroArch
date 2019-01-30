@@ -25,7 +25,6 @@
 
 #pragma pack(push, 1)  // Pack structures to 1-byte boundaries
 
-
 /**************************************************************************
  *
  *  WAVEFORMATEX: Base structure for many audio formats.  Format-specific
@@ -55,7 +54,6 @@
 
 typedef WAVEFORMATEX *PWAVEFORMATEX, *NPWAVEFORMATEX, *LPWAVEFORMATEX;
 typedef const WAVEFORMATEX *PCWAVEFORMATEX, *LPCWAVEFORMATEX;
-
 
 /**************************************************************************
  *
@@ -89,8 +87,6 @@ typedef const WAVEFORMATEX *PCWAVEFORMATEX, *LPCWAVEFORMATEX;
 
 typedef WAVEFORMATEXTENSIBLE *PWAVEFORMATEXTENSIBLE, *LPWAVEFORMATEXTENSIBLE;
 typedef const WAVEFORMATEXTENSIBLE *PCWAVEFORMATEXTENSIBLE, *LPCWAVEFORMATEXTENSIBLE;
-
-
 
 /**************************************************************************
  *
@@ -184,7 +180,6 @@ typedef const WAVEFORMATEXTENSIBLE *PCWAVEFORMATEXTENSIBLE, *LPCWAVEFORMATEXTENS
     #define WAVE_FORMAT_EXTENSIBLE      0xFFFE // All WAVEFORMATEXTENSIBLE formats
 #endif
 
-
 /**************************************************************************
  *
  *  Define the most common wave format GUIDs used in WAVEFORMATEXTENSIBLE
@@ -212,7 +207,6 @@ typedef const WAVEFORMATEXTENSIBLE *PCWAVEFORMATEXTENSIBLE, *LPCWAVEFORMATEXTENS
     #endif
 
 #endif
-
 
 /**************************************************************************
  *
@@ -256,7 +250,6 @@ typedef const WAVEFORMATEXTENSIBLE *PCWAVEFORMATEXTENSIBLE, *LPCWAVEFORMATEXTENS
     #define SPEAKER_5POINT1_SURROUND (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT)
     #define SPEAKER_7POINT1_SURROUND (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT | SPEAKER_SIDE_LEFT  | SPEAKER_SIDE_RIGHT)
 #endif
-
 
 #pragma pack(pop)
 

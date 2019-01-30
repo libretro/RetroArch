@@ -48,9 +48,9 @@ const video_display_server_t dispserv_null = {
    null_display_server_destroy,
    null_display_server_set_window_opacity,
    null_display_server_set_window_progress,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* set_window_decorations */
+   NULL, /* set_resolution */
+   NULL, /* get_resolution_list */
+   NULL, /* get_output_options */
    "null"
 };
-

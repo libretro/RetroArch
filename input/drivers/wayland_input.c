@@ -50,7 +50,6 @@
 /* TODO/FIXME - 
  * fix game focus toggle */
 
-
 /* Forward declaration */
 
 void flush_wayland_fd(void *data);
@@ -282,9 +281,6 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
    return 0;
 }
 
-
-
-
 static int16_t input_wl_state(void *data,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
@@ -426,4 +422,3 @@ input_driver_t input_wayland = {
    input_wl_keyboard_mapping_is_blocked,
    input_wl_keyboard_mapping_set_block,
 };
-

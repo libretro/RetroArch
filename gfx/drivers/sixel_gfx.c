@@ -30,6 +30,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/sixel_common.h"
@@ -188,9 +189,10 @@ static void scroll_on_demand(int pixelheight)
 static void *sixel_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_input_t inp;
+   void *ctx_data                       = NULL;
    settings_t *settings                 = config_get_ptr();
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
-   gfx_ctx_input_t inp;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    const char *scale_str                = NULL;
 
@@ -218,11 +220,15 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    ctx_driver = video_context_driver_init_first(sixel,
          settings->arrays.video_context_driver,
-         GFX_CTX_SIXEL_API, 1, 0, false);
+         GFX_CTX_SIXEL_API, 1, 0, false, &ctx_data);
 
    if (!ctx_driver)
       goto error;
 
+   if (ctx_data)
+      sixel->ctx_data = ctx_data;
+
+   sixel->ctx_driver = ctx_driver;
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("[SIXEL]: Found SIXEL context: %s\n", ctx_driver->ident);
@@ -434,16 +440,14 @@ static bool sixel_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
+   sixel_t *sixel       = (sixel_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
-
-   video_context_driver_check_window(&size_data);
+   sixel->ctx_driver->check_window(sixel->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);

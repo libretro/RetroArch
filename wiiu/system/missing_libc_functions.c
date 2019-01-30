@@ -5,10 +5,18 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <wiiu/os.h>
+#include <wiiu/ac.h>
+#include <wiiu/types.h>
 #include <pwd.h>
 #include <sys/reent.h>
+#include <ifaddrs.h>
 #include <errno.h>
 #include <time.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <string.h>
+
+#include <verbosity.h>
 
 /* This is usually in libogc; we can't use that on wiiu */
 int usleep(useconds_t microseconds) {
@@ -111,4 +119,125 @@ int clock_gettime(clockid_t clk_id, struct timespec* tp) {
          return -1;
    }
    return 0;
+}
+
+/**
+ * Implementation of getifaddrs() and freeifaddrs() for WiiU.
+ */
+
+// the Wii U doesn't define an interface name, so we'll use something generic.
+static const char *wiiu_iface_name = "eth0";
+
+/**
+ * Allocate and zeroize the hunk of memory for the ifaddrs struct and its contents; the struct will be filled
+ * out later.
+ * 
+ * returns NULL if any of the memory allocations fail.
+ */
+static struct ifaddrs *buildEmptyIfa() {
+      struct ifaddrs *result = (struct ifaddrs *)malloc(sizeof(struct ifaddrs));
+      if(result != NULL) {
+            memset(result, 0, sizeof(struct ifaddrs));
+            result->ifa_name = strdup(wiiu_iface_name);
+            result->ifa_addr = (struct sockaddr *)malloc(sizeof(struct sockaddr_in));
+            result->ifa_netmask = (struct sockaddr *)malloc(sizeof(struct sockaddr_in));
+            result->ifa_dstaddr = (struct sockaddr *)malloc(sizeof(struct sockaddr_in));
+
+            if(!result->ifa_name || !result->ifa_addr || !result->ifa_netmask || !result->ifa_dstaddr)
+                  goto error;
+
+            memset(result->ifa_addr, 0, sizeof(struct sockaddr_in));
+            result->ifa_addr->sa_family = AF_INET;
+            memset(result->ifa_netmask, 0, sizeof(struct sockaddr_in));
+            result->ifa_netmask->sa_family = AF_INET;
+            memset(result->ifa_dstaddr, 0, sizeof(struct sockaddr_in));
+            result->ifa_dstaddr->sa_family = AF_INET;
+      }
+
+      return result;
+      error:
+      freeifaddrs(result);
+      return NULL;
+}
+
+static int getAssignedAddress(struct sockaddr_in *sa) {
+      if(sa == NULL)
+            return -1;
+      ACIpAddress addr;
+      int result = ACGetAssignedAddress(&addr);
+      if(result == 0)
+            sa->sin_addr.s_addr = addr;
+
+      return result;
+}
+
+static int getAssignedSubnet(struct sockaddr_in *sa) {
+      if(sa == NULL)
+            return -1;
+
+      ACIpAddress mask;
+      int result = ACGetAssignedSubnet(&mask);
+      if(result == 0)
+            sa->sin_addr.s_addr = mask;
+
+      return result;
+}
+
+static int getBroadcastAddress(struct sockaddr_in *sa, struct sockaddr_in *addr, struct sockaddr_in *mask) {
+      if(!sa || !addr || !mask)
+            return -1;
+
+      sa->sin_addr.s_addr = addr->sin_addr.s_addr | (~mask->sin_addr.s_addr);
+      return 0;
+}
+
+static struct ifaddrs *getWiiUInterfaceAddressData(void) {
+      struct ifaddrs *result = buildEmptyIfa();
+
+      if(result != NULL) {
+            if(getAssignedAddress((struct sockaddr_in *)result->ifa_addr) < 0 ||
+               getAssignedSubnet((struct sockaddr_in *)result->ifa_netmask) < 0 ||
+               getBroadcastAddress((struct sockaddr_in *)result->ifa_dstaddr,
+               (struct sockaddr_in *)result->ifa_addr,
+               (struct sockaddr_in *)result->ifa_netmask) < 0) {
+                  goto error;
+            }
+      }
+
+      return result;
+
+      error:
+      freeifaddrs(result);
+      return NULL;
+}
+
+int getifaddrs(struct ifaddrs **ifap) {
+      if(ifap == NULL) {
+            return -1;
+      }
+      *ifap = getWiiUInterfaceAddressData();
+
+      return (*ifap == NULL) ? -1 : 0;
+}
+
+void freeifaddrs(struct ifaddrs *ifp) {
+      if(ifp != NULL) {
+            if(ifp->ifa_name) {
+                  free(ifp->ifa_name);
+                  ifp->ifa_name = NULL;
+            }
+            if(ifp->ifa_addr) {
+                  free(ifp->ifa_addr);
+                  ifp->ifa_addr = NULL;
+            }
+            if(ifp->ifa_netmask) {
+                  free(ifp->ifa_netmask);
+                  ifp->ifa_netmask = NULL;
+            }
+            if(ifp->ifa_dstaddr) {
+                  free(ifp->ifa_dstaddr);
+                  ifp->ifa_dstaddr = NULL;
+            }
+            free(ifp);
+      }
 }

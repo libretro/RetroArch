@@ -154,7 +154,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
-
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
@@ -497,6 +496,28 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
 }
 
 #ifdef HAVE_EGL
+static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
+{
+   EGLint r, g, b, id;
+   (void)display_data;
+
+   /* Makes sure we have 8 bit color. */
+   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+      return false;
+
+   if (r != 8 || g != 8 || b != 8)
+      return false;
+
+   if (!eglGetConfigAttrib(dpy, config, EGL_NATIVE_VISUAL_ID, &id))
+      return false;
+
+   return id == GBM_FORMAT_XRGB8888;
+}
+
 #define DRM_EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
@@ -575,7 +596,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 #ifdef HAVE_EGL
          if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
                   (EGLNativeDisplayType)g_gbm_dev, &major,
-                  &minor, &n, attrib_ptr))
+                  &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
             goto error;
 
          attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
@@ -685,7 +706,6 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
    }
 
-
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -723,7 +743,6 @@ error:
 
    return false;
 }
-
 
 static void gfx_ctx_drm_destroy(void *data)
 {

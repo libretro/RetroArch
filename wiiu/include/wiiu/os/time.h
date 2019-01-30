@@ -37,7 +37,6 @@ typedef struct
    int32_t tm_year;
 }OSCalendarTime;
 
-
 OSTime OSGetTime();
 OSTime OSGetSystemTime();
 OSTick OSGetTick();

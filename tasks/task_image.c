@@ -28,6 +28,7 @@
 #include "../file_path_special.h"
 #include "../verbosity.h"
 
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 
 enum image_status_enum

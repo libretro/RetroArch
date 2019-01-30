@@ -44,6 +44,7 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+#include "../content.h"
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
@@ -266,7 +267,6 @@ static void autosave_free(autosave_t *handle)
       free(handle->buffer);
    handle->buffer = NULL;
 }
-
 
 bool autosave_init(void)
 {
@@ -597,7 +597,8 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file = intfstream_open_file(state->path, RETRO_VFS_FILE_ACCESS_WRITE,
+      state->file   = intfstream_open_file(
+            state->path, RETRO_VFS_FILE_ACCESS_WRITE,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
@@ -605,21 +606,15 @@ static void task_save_handler(retro_task_t *task)
    }
 
    if (!state->data)
-   {
-      state->data = get_serialized_data(state->path, state->size) ;
-   }
+      state->data  = get_serialized_data(state->path, state->size) ;
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
 
    if ( state->data )
-   {
       written         = (int)intfstream_write(state->file,
          (uint8_t*)state->data + state->written, remaining);
-   }
    else
-   {
-      written = 0 ;
-   }
+      written = 0;
 
    state->written += written;
 
@@ -627,7 +622,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-      char err[256];
+      char err[8192];
 
       err[0] = '\0';
 
@@ -642,7 +637,9 @@ static void task_save_handler(retro_task_t *task)
                   "RAM");
       }
       else
-         snprintf(err, sizeof(err), "%s %s", msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
+         snprintf(err, sizeof(err),
+               "%s %s",
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
 
       task_set_error(task, strdup(err));
       task_save_handler_finished(task, state);
@@ -766,6 +763,10 @@ static void task_load_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+
+   if (!task_data)
+      return;
+
    memcpy(task_data, state, sizeof(*task_data));
 
    task_set_data(task, task_data);
@@ -821,12 +822,12 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
-         char *msg = (char*)malloc(1024 * sizeof(char));
+         char *msg = (char*)malloc(8192 * sizeof(char));
 
          msg[0] = '\0';
 
          snprintf(msg,
-               1024 * sizeof(char),
+               8192 * sizeof(char),
                "%s \"%s\" %s.",
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
@@ -845,30 +846,26 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
-      char *msg = (char*)malloc(1024 * sizeof(char));
+      size_t sizeof_msg = 8192;
+      char         *msg = (char*)malloc(sizeof_msg * sizeof(char));
 
-      msg[0] = '\0';
+      msg[0]            = '\0';
 
       task_free_title(task);
 
       if (state->autoload)
-      {
-         snprintf(msg,
-               1024 * sizeof(char),
+         snprintf(msg, sizeof_msg,
                "%s \"%s\" %s.",
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_SUCCEEDED));
-      }
       else
       {
          if (state->state_slot < 0)
             strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
-                  1024 * sizeof(char)
-                  );
+                 sizeof_msg);
          else
-            snprintf(msg,
-                  1024 * sizeof(char),
+            snprintf(msg, sizeof_msg,
                   msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   state->state_slot);
 
@@ -1200,7 +1197,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
             path);
 
       data = get_serialized_data(path, info.size) ;
-
 
       if (!data)
       {

@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __DSP_H__
 #define __DSP_H__
 
@@ -53,7 +52,6 @@ distribution.
  * @}
  */
 
-
 /*!
  * \addtogroup dsp_taskflag DSP task flags
  * \brief DSP task queue state flag indicating the task's current queue state. Multiple states are OR'd.
@@ -72,13 +70,11 @@ distribution.
    extern "C" {
 #endif /* __cplusplus */
 
-
 /*!
 \typedef struct _dsp_task dsptask_t
 \brief forward typdef to struct _dsp_task. This struture holds certain DSP task information for execution.
 */
 typedef struct _dsp_task dsptask_t;
-
 
 /*! \typedef void (*DSPTaskCallback)(dsptask_t *task)
 \brief function pointer typedef for the user's DSP task callbacks
@@ -86,12 +82,10 @@ typedef struct _dsp_task dsptask_t;
 */
 typedef void (*DSPTaskCallback)(dsptask_t *task);
 
-
 /*! \typedef void (*DSPCallback)(void)
 \brief function pointer typedef for the user's DSP interrupt callback
 */
 typedef void (*DSPCallback)(void);
-
 
 /*! \typedef struct _dsp_task dsptask_t
 \param state current task \ref dsp_taskstate "state" set
@@ -137,14 +131,12 @@ struct _dsp_task {
 	struct _dsp_task *prev;
 };
 
-
 /*! \fn void DSP_Init()
 \brief Initialize DSP subsystem.
 
 \return none
 */
 void DSP_Init();
-
 
 /*! \fn u32 DSP_CheckMailTo()
 \brief Check if mail was sent to DSP
@@ -153,14 +145,12 @@ void DSP_Init();
 */
 u32 DSP_CheckMailTo();
 
-
 /*! \fn u32 DSP_CheckMailFrom()
 \brief Check for mail from DSP
 
 \return 1: has mail, 0: no mail
 */
 u32 DSP_CheckMailFrom();
-
 
 /*! \fn u32 DSP_ReadMailFrom()
 \brief Read mail from DSP
@@ -169,14 +159,12 @@ u32 DSP_CheckMailFrom();
 */
 u32 DSP_ReadMailFrom();
 
-
 /*! \fn void DSP_AssertInt()
 \brief Asserts the processor interface interrupt
 
 \return none
 */
 void DSP_AssertInt();
-
 
 /*! \fn void DSP_SendMailTo(u32 mail)
 \brief Send mail to DSP
@@ -186,14 +174,12 @@ void DSP_AssertInt();
 */
 void DSP_SendMailTo(u32 mail);
 
-
 /*! \fn u32 DSP_ReadCPUtoDSP()
 \brief Read back CPU->DSP mailbox
 
 \return mail value received
 */
 u32 DSP_ReadCPUtoDSP();
-
 
 /*! \fn dsptask_t* DSP_AddTask(dsptask_t *task)
 \brief Add a DSP task to the tasklist and start executing if necessary.

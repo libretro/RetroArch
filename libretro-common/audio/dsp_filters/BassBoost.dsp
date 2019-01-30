@@ -9,4 +9,3 @@ iir_frequency = 200.0
 # Avoids clipping.
 panning_left_mix = "0.3 0.0"
 panning_right_mix = "0.0 0.3"
-

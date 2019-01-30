@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 char *inet_ntoa(struct in_addr in);
 const char *inet_ntop(int af, const void *cp, char *buf, socklen_t len);
