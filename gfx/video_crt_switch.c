@@ -174,6 +174,7 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt
 {
    /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
+	
    ra_core_width  = width;
    ra_core_height = height;
    ra_core_hz     = hz;
