@@ -1,0 +1,940 @@
+0x00000010, 0xe0021227, // mov rb_0x10,    0x10
+0x000001d0, 0xe0021967, // mov r5rep,      0x1D0
+0x00005555, 0xe00207a7, // mov rx_0x5555,  0x5555
+0x00003333, 0xe00217a7, // mov rx_0x3333,  0x3333
+0x00000f0f, 0xe00207e7, // mov rx_0x0F0F,  0x0F0F
+0x000000ff, 0xe00217e7, // mov rx_0x00FF,  0x00FF
+0x15827d80, 0x100203e7, // mov rx_tw_shared, unif
+0x15827d80, 0x100213e7, // mov rx_tw_unique, unif
+0x15827d80, 0x10021167, // mov rb_inst, unif
+0x00101200, 0xe0020827, // mov r0, vpm_setup(1, 1, v32( 0,0))
+0x00000010, 0xe0020867, // mov r1, vpm_setup(1, 1, v32(16,0)) - vpm_setup(1, 1, v32(0,0))
+0x00000002, 0xe00208a7, // mov r2, vpm_setup(1, 1, v32( 0,2)) - vpm_setup(1, 1, v32(0,0))
+0x409c5017, 0x100049e2, // nop; mul24 r2, r2, in_inst
+0xcc9e7081, 0x10025020, // add out_0, r0, r2; v8adds r0, r0, r1
+0xcc9e7081, 0x10025060, // add out_1, r0, r2; v8adds r0, r0, r1
+0xcc9e7081, 0x100250a0, // add out_2, r0, r2; v8adds r0, r0, r1
+0x0c9e7080, 0x100211e7, // add out_3, r0, r2
+0x000000c8, 0xf0f80127, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x152e7d80, 0x10021c67, // mov vw_setup, ra_vpm_lo
+0x01267c00, 0x10020c27, // fadd vpm, ra_32_re, r0
+0x019c9e40, 0x10020c27, // fadd vpm, rb_32_im, r1
+0x15327d80, 0x10021c67, // mov vw_setup, ra_vpm_hi
+0x02267c00, 0x10020c27, // fsub vpm, ra_32_re, r0
+0x029c9e40, 0x10020c27, // fsub vpm, rb_32_im, r1
+0x159f2fc0, 0x100009e7, // mov -, vw_wait
+0x00000019, 0xe80009e7, // mov -, sacq(i+9)
+0x00000001, 0xe80009e7, // mov -, srel(i+1)
+0x0000001a, 0xe80009e7, // mov -, sacq(i+9)
+0x00000002, 0xe80009e7, // mov -, srel(i+1)
+0x0000001b, 0xe80009e7, // mov -, sacq(i+9)
+0x00000003, 0xe80009e7, // mov -, srel(i+1)
+0x0000001c, 0xe80009e7, // mov -, sacq(i+9)
+0x00000004, 0xe80009e7, // mov -, srel(i+1)
+0x0000001d, 0xe80009e7, // mov -, sacq(i+9)
+0x00000005, 0xe80009e7, // mov -, srel(i+1)
+0x0000001e, 0xe80009e7, // mov -, sacq(i+9)
+0x00000006, 0xe80009e7, // mov -, srel(i+1)
+0x0000001f, 0xe80009e7, // mov -, sacq(i+9)
+0x00000007, 0xe80009e7, // mov -, srel(i+1)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x153a7d80, 0x10021c67, // mov vw_setup, ra_vdw_32
+0xc0003fc0, 0xe0021c67, // mov vw_setup, vdw_setup_1(0) + PASS32_STRIDE-16*4
+0x8c04ddf6, 0x10024072, // add ra_save_ptr, ra_save_ptr, rb_0x40; mov vw_addr, ra_save_ptr
+0x00000050, 0xf0f81127, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x152e7d80, 0x10021c67, // mov vw_setup, ra_vpm_lo
+0x01267c00, 0x10020c27, // fadd vpm, ra_32_re, r0
+0x019c9e40, 0x10020c27, // fadd vpm, rb_32_im, r1
+0x15327d80, 0x10021c67, // mov vw_setup, ra_vpm_hi
+0x02267c00, 0x10020c27, // fsub vpm, ra_32_re, r0
+0x029c9e40, 0x10020c27, // fsub vpm, rb_32_im, r1
+0x00000000, 0xf0f4c9e7, // bra -, ra_sync
+0x009e7000, 0x100009e7, // nop
+0x152e7d80, 0x10020c67, // mov vr_setup, ra_vpm_lo
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x00000100, 0xf0f802a7, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000040, 0xe0020827, // mov r0, 0x40
+0x159f2fc0, 0x100009e7, // mov -, vw_wait
+0x00000001, 0xe80009e7, // mov -, srel(i+1)
+0x00000002, 0xe80009e7, // mov -, srel(i+1)
+0x00000003, 0xe80009e7, // mov -, srel(i+1)
+0x00000004, 0xe80009e7, // mov -, srel(i+1)
+0x00000005, 0xe80009e7, // mov -, srel(i+1)
+0x00000006, 0xe80009e7, // mov -, srel(i+1)
+0x00000007, 0xe80009e7, // mov -, srel(i+1)
+0x159c0fc0, 0x10021c67, // mov vw_setup, rb_vpm
+0x012cbdc0, 0x10020c27, // fadd vpm, ra_64+0, rb_64+0
+0x0130cdc0, 0x10020c27, // fadd vpm, ra_64+1, rb_64+1
+0x159c1fc0, 0x10021c67, // mov vw_setup, rb_vpm_16
+0x0134ddc0, 0x10020c27, // fadd vpm, ra_64+2, rb_64+2
+0x0138edc0, 0x10020c27, // fadd vpm, ra_64+3, rb_64+3
+0x159c2fc0, 0x10021c67, // mov vw_setup, rb_vpm_32
+0x022cbdc0, 0x10020c27, // fsub vpm, ra_64+0, rb_64+0
+0x0230cdc0, 0x10020c27, // fsub vpm, ra_64+1, rb_64+1
+0x159c7fc0, 0x10021c67, // mov vw_setup, rb_vpm_48
+0x0234ddc0, 0x10020c27, // fsub vpm, ra_64+2, rb_64+2
+0x0238edc0, 0x10020c27, // fsub vpm, ra_64+3, rb_64+3
+0x00000019, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001a, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001b, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001c, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001d, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001e, 0xe80009e7, // mov -, sacq(i+9)
+0x0000001f, 0xe80009e7, // mov -, sacq(i+9)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0xa0104000, 0xe0021c67, // mov vw_setup, vdw_setup_0(64, 16, dma_h32(0,0))
+0xc0001fc0, 0xe0021c67, // mov vw_setup, vdw_setup_1(PASS64_STRIDE-16*4)
+0x8c067c36, 0x10024072, // add ra_save_ptr, ra_save_ptr, step; mov vw_addr, ra_save_ptr
+0x000002b8, 0xf0f812a7, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x159c5fc0, 0x10020827, // mov r0, rb_inst
+0x119c51c0, 0xd00200a7, // shl ra_temp, r0, 5
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0fc49e7, // brr -, ra_temp
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x000000e0, 0xf0f809e7, // brr -, r:2f
+0x00000010, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x000000c0, 0xf0f809e7, // brr -, r:2f
+0x00000011, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x000000a0, 0xf0f809e7, // brr -, r:2f
+0x00000012, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000080, 0xf0f809e7, // brr -, r:2f
+0x00000013, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000060, 0xf0f809e7, // brr -, r:2f
+0x00000014, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000040, 0xf0f809e7, // brr -, r:2f
+0x00000015, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000020, 0xf0f809e7, // brr -, r:2f
+0x00000016, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f809e7, // brr -, r:2f
+0x00000017, 0xe80009e7, // mov -, sacq(i)
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x159c0fc0, 0x10021c67, // mov vw_setup, rb_vpm
+0x012cbdc0, 0x10020c27, // fadd vpm, ra_64+0, rb_64+0
+0x0130cdc0, 0x10020c27, // fadd vpm, ra_64+1, rb_64+1
+0x159c1fc0, 0x10021c67, // mov vw_setup, rb_vpm_16
+0x0134ddc0, 0x10020c27, // fadd vpm, ra_64+2, rb_64+2
+0x0138edc0, 0x10020c27, // fadd vpm, ra_64+3, rb_64+3
+0x159c2fc0, 0x10021c67, // mov vw_setup, rb_vpm_32
+0x022cbdc0, 0x10020c27, // fsub vpm, ra_64+0, rb_64+0
+0x0230cdc0, 0x10020c27, // fsub vpm, ra_64+1, rb_64+1
+0x159c7fc0, 0x10021c67, // mov vw_setup, rb_vpm_48
+0x0234ddc0, 0x10020c27, // fsub vpm, ra_64+2, rb_64+2
+0x0238edc0, 0x10020c27, // fsub vpm, ra_64+3, rb_64+3
+0x00000000, 0xf0fc49e7, // brr -, ra_temp
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x00000008, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x00000009, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000a, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000b, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000c, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000d, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000e, 0xe80009e7, // mov -, srel(i+8)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x159c0fc0, 0x10020c67, // mov vr_setup, rb_vpm
+0x15c27d80, 0x100009e7, // mov -, vpm
+0x0000000f, 0xe80009e7, // mov -, srel(i+8)
+0x00000080, 0xf0f801a7, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x159f2fc0, 0x100009e7, // mov -, vw_wait
+0x00000019, 0xe80009e7, // mov -, sacq(i+9)
+0x00000001, 0xe80009e7, // mov -, srel(i+1)
+0x0000001a, 0xe80009e7, // mov -, sacq(i+9)
+0x00000002, 0xe80009e7, // mov -, srel(i+1)
+0x0000001b, 0xe80009e7, // mov -, sacq(i+9)
+0x00000003, 0xe80009e7, // mov -, srel(i+1)
+0x0000001c, 0xe80009e7, // mov -, sacq(i+9)
+0x00000004, 0xe80009e7, // mov -, srel(i+1)
+0x0000001d, 0xe80009e7, // mov -, sacq(i+9)
+0x00000005, 0xe80009e7, // mov -, srel(i+1)
+0x0000001e, 0xe80009e7, // mov -, sacq(i+9)
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x00000006, 0xe80009e7, // mov -, srel(i+1)
+0x0000001f, 0xe80009e7, // mov -, sacq(i+9)
+0x00000007, 0xe80009e7, // mov -, srel(i+1)
+0x00000858, 0xf0f811a7, // brr rx_ptr, label
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x00000009, 0xe80009e7, // mov -, srel(i+9)
+0x00000011, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000a, 0xe80009e7, // mov -, srel(i+9)
+0x00000012, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000b, 0xe80009e7, // mov -, srel(i+9)
+0x00000013, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000c, 0xe80009e7, // mov -, srel(i+9)
+0x00000014, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000d, 0xe80009e7, // mov -, srel(i+9)
+0x00000015, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000e, 0xe80009e7, // mov -, srel(i+9)
+0x00000016, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x00000000, 0xf0f509e7, // bra -, ra_link_1
+0x0000000f, 0xe80009e7, // mov -, srel(i+9)
+0x00000017, 0xe80009e7, // mov -, sacq(i+1)
+0x009e7000, 0x100009e7, // nop
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (1<<i)
+0x204a7030, 0x1000d9c2, // nop;                       fmul.ifnz ra_temp, ra_tw_re+TW16+i, r0
+0x209d2039, 0x1000c9e2, // nop;                       fmul.ifnz r2,      rb_tw_im+TW16+i, r1
+0x22092cb8, 0x1006c823, // fsub.ifnz r0, ra_temp, r2; fmul.ifnz r3,      rb_tw_im+TW16+i, r0
+0x204a7031, 0x1000c9e1, // nop;                       fmul.ifnz r1,      ra_tw_re+TW16+i, r1
+0x819ff2c0, 0xd0064862, // fadd.ifnz r1, r1, r3; mov r2, r0 << (1<<i)
+0x819f1400, 0xd0044823, // fadd.ifz  r0, r2, r0; mov r3, r0 >> (1<<i)
+0x829ff609, 0xd0064822, // fsub.ifnz r0, r3, r0; mov r2, r1 << (1<<i)
+0x819f1449, 0xd0044863, // fadd.ifz  r1, r2, r1; mov r3, r1 >> (1<<i)
+0x029e7640, 0x10060867, // fsub.ifnz r1, r3, r1
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (1<<i)
+0x204e7030, 0x1000d9c2, // nop;                       fmul.ifnz ra_temp, ra_tw_re+TW16+i, r0
+0x209d3039, 0x1000c9e2, // nop;                       fmul.ifnz r2,      rb_tw_im+TW16+i, r1
+0x22093cb8, 0x1006c823, // fsub.ifnz r0, ra_temp, r2; fmul.ifnz r3,      rb_tw_im+TW16+i, r0
+0x204e7031, 0x1000c9e1, // nop;                       fmul.ifnz r1,      ra_tw_re+TW16+i, r1
+0x819fe2c0, 0xd0064862, // fadd.ifnz r1, r1, r3; mov r2, r0 << (1<<i)
+0x819f2400, 0xd0044823, // fadd.ifz  r0, r2, r0; mov r3, r0 >> (1<<i)
+0x829fe609, 0xd0064822, // fsub.ifnz r0, r3, r0; mov r2, r1 << (1<<i)
+0x819f2449, 0xd0044863, // fadd.ifz  r1, r2, r1; mov r3, r1 >> (1<<i)
+0x029e7640, 0x10060867, // fsub.ifnz r1, r3, r1
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (1<<i)
+0x20527030, 0x1000d9c2, // nop;                       fmul.ifnz ra_temp, ra_tw_re+TW16+i, r0
+0x209d4039, 0x1000c9e2, // nop;                       fmul.ifnz r2,      rb_tw_im+TW16+i, r1
+0x22094cb8, 0x1006c823, // fsub.ifnz r0, ra_temp, r2; fmul.ifnz r3,      rb_tw_im+TW16+i, r0
+0x20527031, 0x1000c9e1, // nop;                       fmul.ifnz r1,      ra_tw_re+TW16+i, r1
+0x819fc2c0, 0xd0064862, // fadd.ifnz r1, r1, r3; mov r2, r0 << (1<<i)
+0x819f4400, 0xd0044823, // fadd.ifz  r0, r2, r0; mov r3, r0 >> (1<<i)
+0x829fc609, 0xd0064822, // fsub.ifnz r0, r3, r0; mov r2, r1 << (1<<i)
+0x819f4449, 0xd0044863, // fadd.ifz  r1, r2, r1; mov r3, r1 >> (1<<i)
+0x029e7640, 0x10060867, // fsub.ifnz r1, r3, r1
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (1<<i)
+0x20567030, 0x1000d9c2, // nop;                       fmul.ifnz ra_temp, ra_tw_re+TW16+i, r0
+0x209d5039, 0x1000c9e2, // nop;                       fmul.ifnz r2,      rb_tw_im+TW16+i, r1
+0x22095cb8, 0x1006c823, // fsub.ifnz r0, ra_temp, r2; fmul.ifnz r3,      rb_tw_im+TW16+i, r0
+0x20567031, 0x1000c9e1, // nop;                       fmul.ifnz r1,      ra_tw_re+TW16+i, r1
+0x819f82c0, 0xd0064862, // fadd.ifnz r1, r1, r3; mov r2, r0 << (1<<i)
+0x819f8400, 0xd0044823, // fadd.ifz  r0, r2, r0; mov r3, r0 >> (1<<i)
+0x00000000, 0xf0f409e7, // bra -, ra_link_0
+0x829f8609, 0xd0064822, // fsub.ifnz r0, r3, r0; mov r2, r1 << (1<<i)
+0x819f8449, 0xd0044863, // fadd.ifz  r1, r2, r1; mov r3, r1 >> (1<<i)
+0x029e7640, 0x10060867, // fsub.ifnz r1, r3, r1
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x147a7180, 0x10020867, // and r1, r0, mask
+0x0e9c11c0, 0xd0020827, // shr r0, r0, shift
+0x147a7180, 0x10020827, // and r0, r0, mask
+0x119c13c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149de1c0, 0x10020867, // and r1, r0, mask
+0x0e9c21c0, 0xd0020827, // shr r0, r0, shift
+0x149de1c0, 0x10020827, // and r0, r0, mask
+0x119c23c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x147e7180, 0x10020867, // and r1, r0, mask
+0x0e9c41c0, 0xd0020827, // shr r0, r0, shift
+0x147e7180, 0x10020827, // and r0, r0, mask
+0x119c43c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149df1c0, 0x10020867, // and r1, r0, mask
+0x0e9c81c0, 0xd0020827, // shr r0, r0, shift
+0x149df1c0, 0x10020827, // and r0, r0, mask
+0x119c83c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x119c31c0, 0xd0020827, // shl r0, r0, STAGES-13
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0xfffffda0, 0xf0f80027, // brr ra_link_0, call
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x959e7009, 0x10024249, // mov ra_32_re, r0; mov rb_32_im, r1
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x147a7180, 0x10020867, // and r1, r0, mask
+0x0e9c11c0, 0xd0020827, // shr r0, r0, shift
+0x147a7180, 0x10020827, // and r0, r0, mask
+0x119c13c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149de1c0, 0x10020867, // and r1, r0, mask
+0x0e9c21c0, 0xd0020827, // shr r0, r0, shift
+0x149de1c0, 0x10020827, // and r0, r0, mask
+0x119c23c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x147e7180, 0x10020867, // and r1, r0, mask
+0x0e9c41c0, 0xd0020827, // shr r0, r0, shift
+0x147e7180, 0x10020827, // and r0, r0, mask
+0x119c43c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149df1c0, 0x10020867, // and r1, r0, mask
+0x0e9c81c0, 0xd0020827, // shr r0, r0, shift
+0x149df1c0, 0x10020827, // and r0, r0, mask
+0x119c83c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x119c31c0, 0xd0020827, // shl r0, r0, STAGES-13
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0xfffffc80, 0xf0f80027, // brr ra_link_0, call
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x205e7006, 0x100059c2, // nop;                  fmul ra_temp, r0, ra_tw_re+TW32
+0x209d700f, 0x100049e2, // nop;                  fmul r2,      r1, rb_tw_im+TW32
+0x205e700e, 0x100049e3, // nop;                  fmul r3,      r1, ra_tw_re+TW32
+0x22097c87, 0x10024821, // fsub r0, ra_temp, r2; fmul r1,      r0, rb_tw_im+TW32
+0x019e72c0, 0x10020867, // fadd r1, r1,      r3
+0x01267c00, 0x100202e7, // fadd ra_64+0, ra_32_re, r0
+0x019c9e40, 0x10020327, // fadd ra_64+1, rb_32_im, r1
+0x02267c00, 0x10020367, // fsub ra_64+2, ra_32_re, r0
+0x029c9e40, 0x100203a7, // fsub ra_64+3, rb_32_im, r1
+0x8c167d76, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x147a7180, 0x10020867, // and r1, r0, mask
+0x0e9c11c0, 0xd0020827, // shr r0, r0, shift
+0x147a7180, 0x10020827, // and r0, r0, mask
+0x119c13c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149de1c0, 0x10020867, // and r1, r0, mask
+0x0e9c21c0, 0xd0020827, // shr r0, r0, shift
+0x149de1c0, 0x10020827, // and r0, r0, mask
+0x119c23c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x147e7180, 0x10020867, // and r1, r0, mask
+0x0e9c41c0, 0xd0020827, // shr r0, r0, shift
+0x147e7180, 0x10020827, // and r0, r0, mask
+0x119c43c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149df1c0, 0x10020867, // and r1, r0, mask
+0x0e9c81c0, 0xd0020827, // shr r0, r0, shift
+0x149df1c0, 0x10020827, // and r0, r0, mask
+0x119c83c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x119c31c0, 0xd0020827, // shl r0, r0, STAGES-13
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0xfffffb20, 0xf0f80027, // brr ra_link_0, call
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x959e7009, 0x10024249, // mov ra_32_re, r0; mov rb_32_im, r1
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x147a7180, 0x10020867, // and r1, r0, mask
+0x0e9c11c0, 0xd0020827, // shr r0, r0, shift
+0x147a7180, 0x10020827, // and r0, r0, mask
+0x119c13c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149de1c0, 0x10020867, // and r1, r0, mask
+0x0e9c21c0, 0xd0020827, // shr r0, r0, shift
+0x149de1c0, 0x10020827, // and r0, r0, mask
+0x119c23c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x147e7180, 0x10020867, // and r1, r0, mask
+0x0e9c41c0, 0xd0020827, // shr r0, r0, shift
+0x147e7180, 0x10020827, // and r0, r0, mask
+0x119c43c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149df1c0, 0x10020867, // and r1, r0, mask
+0x0e9c81c0, 0xd0020827, // shr r0, r0, shift
+0x149df1c0, 0x10020827, // and r0, r0, mask
+0x119c83c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x119c31c0, 0xd0020827, // shl r0, r0, STAGES-13
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0xfffffa00, 0xf0f80027, // brr ra_link_0, call
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x205e7006, 0x100059c2, // nop;                  fmul ra_temp, r0, ra_tw_re+TW32
+0x209d700f, 0x100049e2, // nop;                  fmul r2,      r1, rb_tw_im+TW32
+0x205e700e, 0x100049e3, // nop;                  fmul r3,      r1, ra_tw_re+TW32
+0x22097c87, 0x10024821, // fsub r0, ra_temp, r2; fmul r1,      r0, rb_tw_im+TW32
+0x019e72c0, 0x10020867, // fadd r1, r1,      r3
+0x029c9e40, 0x100208e7, // fsub r3, rb_32_im, r1
+0x02267c00, 0x100208a7, // fsub r2, ra_32_re, r0
+0x019c9e40, 0x10020867, // fadd r1, rb_32_im, r1
+0x01267c00, 0x10020827, // fadd r0, ra_32_re, r0
+0x2066700e, 0x100049c9, // nop;                        fmul rb_32_im, r1, ra_tw_re+TW48
+0x209d900f, 0x100059c9, // nop;                        fmul ra_32_re, r1, rb_tw_im+TW48
+0x209d9007, 0x100049e1, // nop;                        fmul r1,       r0, rb_tw_im+TW48
+0x216493c6, 0x10025320, // fadd rb_64+1, r1, rb_32_im; fmul r0,       r0, ra_tw_re+TW48
+0x2225a19f, 0x100252c9, // fsub rb_64+0, r0, ra_32_re; fmul ra_32_re, r3, rb_tw_im+TW64
+0x206a701e, 0x100049c9, // nop;                        fmul rb_32_im, r3, ra_tw_re+TW64
+0x00000000, 0xf0f549e7, // bra -, ra_save_64
+0x209da017, 0x100049e3, // nop;                        fmul r3,       r2, rb_tw_im+TW64
+0x216897d6, 0x100253a2, // fadd rb_64+3, r3, rb_32_im; fmul r2,       r2, ra_tw_re+TW64
+0x02267580, 0x10021367, // fsub rb_64+2, r2, ra_32_re
+0x8c14cdf6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x119c31c0, 0xd0020827, // shl r0, r0, 3
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0xfffff920, 0xf0f80027, // brr ra_link_0, call
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0x959e7009, 0x10024249, // mov ra_32_re, r0; mov rb_32_im, r1
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x119c31c0, 0xd0020827, // shl r0, r0, 3
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0xfffff8d0, 0xf0f80027, // brr ra_link_0, call
+0x009e7000, 0xa00009e7, // nop;        ldtmu0
+0x159e7900, 0xa0020827, // mov r0, r4; ldtmu0
+0x159e7900, 0x10020867, // mov r1, r4
+0x205e7006, 0x100059c2, // nop;                  fmul ra_temp, r0, ra_tw_re+TW32
+0x209d700f, 0x100049e2, // nop;                  fmul r2,      r1, rb_tw_im+TW32
+0x205e700e, 0x100049e3, // nop;                  fmul r3,      r1, ra_tw_re+TW32
+0x22097c87, 0x10024821, // fsub r0, ra_temp, r2; fmul r1,      r0, rb_tw_im+TW32
+0x019e72c0, 0x10020867, // fadd r1, r1,      r3
+0x00000000, 0xf0f489e7, // bra -, ra_save_32
+0x952c2ff6, 0x100242c2, // mov ra_vpm_lo, rb_vpm_lo; mov rb_vpm_lo, ra_vpm_lo
+0x95307ff6, 0x10024307, // mov ra_vpm_hi, rb_vpm_hi; mov rb_vpm_hi, ra_vpm_hi
+0x9538eff6, 0x1002438e, // mov ra_vdw_32, rb_vdw_32; mov rb_vdw_32, ra_vdw_32
+0x159c5fc0, 0x10022827, // mov.setf r0, rb_inst
+0x0d9c11c0, 0xd0020827, // sub r0, r0, 1
+0x119c51c0, 0xd0020827, // shl r0, r0, 5
+0x0c9c6e00, 0x100601a7, // add.ifnz ra_sync, rx_sync_slave, r0
+0x159c4fc0, 0x10060127, // mov.ifnz ra_save_32, rx_save_slave_32
+0x159cafc0, 0x100602a7, // mov.ifnz ra_save_64, rx_save_slave_64
+0x15827d80, 0x100220e7, // mov.setf ra_addr_x, unif
+0x15827d80, 0x100210e7, // mov      rb_addr_y, unif
+0x00000df0, 0xf00809e7, // brr.allz -, r:end
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000003, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020567, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021567, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000002, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100205e7, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100215e7, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000000, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020667, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021667, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000001, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100206a7, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100216a7, // mov rb_tw_im+dst, r4
+0x00000000, 0xe0024596, // mov ra_tw_re+TW16+4, 0; mov rb_tw_im+TW16+4, 0
+0x00000000, 0xe0024618, // mov ra_tw_re+TW32+1, 0; mov rb_tw_im+TW32+1, 0
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+TW16+3; mov r3, rb_tw_im+TW16+3
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f8492, 0xd002c562, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f86db, 0xd002d563, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f4492, 0xd002c522, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f46db, 0xd002d523, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f2492, 0xd002c4e2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f26db, 0xd002d4e3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f1492, 0xd002c4a2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f16db, 0xd002d4a3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x159c5fc0, 0x10020827, // mov r0, rb_inst
+0x119c61c0, 0xd0020827, // shl r0, r0, m
+0x0c9a7180, 0x10020167, // add ra_load_idx, r0, elem_num
+0x00000000, 0xe00201e7, // mov ra_points, 0
+0x159c3fc0, 0x10020067, // mov ra_save_ptr, rb_addr_y
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x147a7180, 0x10020867, // and r1, r0, mask
+0x0e9c11c0, 0xd0020827, // shr r0, r0, shift
+0x147a7180, 0x10020827, // and r0, r0, mask
+0x119c13c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149de1c0, 0x10020867, // and r1, r0, mask
+0x0e9c21c0, 0xd0020827, // shr r0, r0, shift
+0x149de1c0, 0x10020827, // and r0, r0, mask
+0x119c23c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x147e7180, 0x10020867, // and r1, r0, mask
+0x0e9c41c0, 0xd0020827, // shr r0, r0, shift
+0x147e7180, 0x10020827, // and r0, r0, mask
+0x119c43c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x149df1c0, 0x10020867, // and r1, r0, mask
+0x0e9c81c0, 0xd0020827, // shr r0, r0, shift
+0x149df1c0, 0x10020827, // and r0, r0, mask
+0x119c83c0, 0xd0020867, // shl r1, r1, shift
+0x159e7040, 0x10020827, // or  r0, r0, r1
+0x119c31c0, 0xd0020827, // shl r0, r0, STAGES-13
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x94981dc0, 0xd00269e2, // and.setf -, elem_num, 1; mov r2, r0
+0x959f1489, 0xd004c820, // mov.ifz  r0, r2; mov.ifnz r0, r1 >> 1
+0x959ff252, 0xd0068861, // mov.ifnz r1, r1; mov.ifz  r1, r2 << 1
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0xfffff688, 0xf0f80227, // brr ra_link_1, r:pass_1
+0x009e7000, 0x100009e7, // nop
+0x00000200, 0xe0020827, // mov r0, 0x200
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x00000010, 0xe0020867, // mov r1, STAGES
+0x0e1e7c40, 0x100229e7, // shr.setf -, ra_points, r1
+0xfffff658, 0xf00809e7, // brr.allz -, r:pass_1
+0x009e7000, 0x100009e7, // nop
+0x00000200, 0xe0020827, // mov r0, 0x200
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x00000000, 0xf0f4c227, // bra ra_link_1, ra_sync
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0xa00009e7, // ldtmu0
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159c0fc0, 0x100202e7, // mov ra_vpm_lo, rb_vpm
+0x159c1fc0, 0x10020327, // mov ra_vpm_hi, rb_vpm_16
+0x90104000, 0xe00203a7, // mov ra_vdw_32, vdw_setup_0(32, 16, dma_h32( 0,0))
+0x90105000, 0xe00213a7, // mov rb_vdw_32, vdw_setup_0(32, 16, dma_h32(32,0))
+0x00000060, 0xe00212e7, // mov rb_3x4x8, 3*4*8
+0x000000f0, 0xe0021327, // mov rb_0xF0, 0xF0
+0x00000040, 0xe0021367, // mov rb_0x40, 0x40
+0x950c3dbf, 0x100250c3, // mov rb_addr_y, ra_addr_x; mov ra_addr_x, rb_addr_y
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000003, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020567, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021567, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000002, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100205e7, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100215e7, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000005, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020427, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021427, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000004, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020467, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021467, // mov rb_tw_im+dst, r4
+0x00000000, 0xe0024596, // mov ra_tw_re+TW16+4, 0; mov rb_tw_im+TW16+4, 0
+0x00000000, 0xe0024618, // mov ra_tw_re+TW32+1, 0; mov rb_tw_im+TW32+1, 0
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+TW16+3; mov r3, rb_tw_im+TW16+3
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f8492, 0xd002c562, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f86db, 0xd002d563, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f4492, 0xd002c522, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f46db, 0xd002d523, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f2492, 0xd002c4e2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f26db, 0xd002d4e3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f1492, 0xd002c4a2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f16db, 0xd002d4a3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x159c5fc0, 0x10020827, // mov r0, rb_inst
+0x119c51c0, 0xd0020827, // shl r0, r0, m
+0x0c9a7180, 0x10020167, // add ra_load_idx, r0, elem_num
+0x00000000, 0xe00201e7, // mov ra_points, 0
+0x159c3fc0, 0x10020067, // mov ra_save_ptr, rb_addr_y
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x119c31c0, 0xd0020827, // shl r0, r0, 3
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0xfffff900, 0xf0f80227, // brr ra_link_1, r:pass_2
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0xfffff8e0, 0xf0f80227, // brr ra_link_1, r:pass_2
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0xfffff8c0, 0xf0f80227, // brr ra_link_1, r:pass_2
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0xfffff8a0, 0xf0f80227, // brr ra_link_1, r:pass_2
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x955d7dbf, 0x100248a3, // mov r2, ra_tw_re+base; mov r3, rb_tw_im+base
+0x20467016, 0x100049e0, // nop;             fmul r0, r2, ra_tw_re+step
+0x209d1017, 0x100049e1, // nop;             fmul r1, r2, rb_tw_im+step
+0x209d101f, 0x100049e2, // nop;             fmul r2, r3, rb_tw_im+step
+0x2146709e, 0x100248a3, // fadd r2, r0, r2; fmul r3, r3, ra_tw_re+step
+0x029e7640, 0x100208e7, // fsub r3, r3, r1
+0x025e7c80, 0x10020827, // fsub r0,  a, b
+0x025e7180, 0x10020867, // fsub r1, r0, a
+0x019e7280, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x025e7c40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x01627380, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10025897, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x025e7c80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x10020627, // fadd a+1, r0, r1
+0x029d7ec0, 0x10020827, // fsub r0,  a, b
+0x029d71c0, 0x10020867, // fsub r1, r0, a
+0x019e72c0, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x029d7e40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x019d83c0, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10024897, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x029d7e80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x10021627, // fadd a+1, r0, r1
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+base; mov r3, rb_tw_im+base
+0x20427016, 0x100049e0, // nop;             fmul r0, r2, ra_tw_re+step
+0x209d0017, 0x100049e1, // nop;             fmul r1, r2, rb_tw_im+step
+0x209d001f, 0x100049e2, // nop;             fmul r2, r3, rb_tw_im+step
+0x2142709e, 0x100248a3, // fadd r2, r0, r2; fmul r3, r3, ra_tw_re+step
+0x029e7640, 0x100208e7, // fsub r3, r3, r1
+0x02567c80, 0x10020827, // fsub r0,  a, b
+0x02567180, 0x10020867, // fsub r1, r0, a
+0x019e7280, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x02567c40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x015a7380, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10025895, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x02567c80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x100205a7, // fadd a+1, r0, r1
+0x029d5ec0, 0x10020827, // fsub r0,  a, b
+0x029d51c0, 0x10020867, // fsub r1, r0, a
+0x019e72c0, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x029d5e40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x019d63c0, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10024895, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x029d5e80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x100215a7, // fadd a+1, r0, r1
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+TW16+3; mov r3, rb_tw_im+TW16+3
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f8492, 0xd002c562, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f86db, 0xd002d563, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f4492, 0xd002c522, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f46db, 0xd002d523, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f2492, 0xd002c4e2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f26db, 0xd002d4e3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f1492, 0xd002c4a2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f16db, 0xd002d4a3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x0e1c8dc0, 0x100229e7, // shr.setf -, ra_points, rb_STAGES
+0xfffff610, 0xf00809e7, // brr.allz -, r:pass_2
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x0d20bdc0, 0x10020227, // sub ra_link_1, ra_link_1, rb_3x4x8
+0x00000000, 0xf0f4c227, // bra ra_link_1, ra_sync
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0xa00009e7, // ldtmu0
+0x009e7000, 0xa00009e7, // ldtmu0
+0x950c3dbf, 0x100250c3, // mov rb_addr_y, ra_addr_x; mov ra_addr_x, rb_addr_y
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000001, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c9cfe00, 0x10020e27, // add t0s, ptr, r0
+0x0c9cfe40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020567, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021567, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000000, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c9cfe00, 0x10020e27, // add t0s, ptr, r0
+0x0c9cfe40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100205e7, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x100215e7, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000007, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020427, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021427, // mov rb_tw_im+dst, r4
+0x11983dc0, 0xd0020827, // shl r0, elem_num, 3
+0x00000006, 0xe0020867, // mov r1, src
+0x119c73c0, 0xd0020867, // shl r1, r1, 7
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c3e7c00, 0x10020e27, // add t0s, ptr, r0
+0x0c3e7c40, 0x10020e27, // add t0s, ptr, r1
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020467, // mov ra_tw_re+dst, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10021467, // mov rb_tw_im+dst, r4
+0x00000000, 0xe0024596, // mov ra_tw_re+TW16+4, 0; mov rb_tw_im+TW16+4, 0
+0x00000000, 0xe0024618, // mov ra_tw_re+TW32+1, 0; mov rb_tw_im+TW32+1, 0
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+TW16+3; mov r3, rb_tw_im+TW16+3
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f8492, 0xd002c562, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f86db, 0xd002d563, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f4492, 0xd002c522, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f46db, 0xd002d523, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f2492, 0xd002c4e2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f26db, 0xd002d4e3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f1492, 0xd002c4a2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f16db, 0xd002d4a3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x159c5fc0, 0x10020827, // mov r0, rb_inst
+0x119c51c0, 0xd0020827, // shl r0, r0, m
+0x0c9a7180, 0x10020167, // add ra_load_idx, r0, elem_num
+0x00000000, 0xe00201e7, // mov ra_points, 0
+0x159c3fc0, 0x10020067, // mov ra_save_ptr, rb_addr_y
+0x8c148df6, 0x10024160, // add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+0x119c31c0, 0xd0020827, // shl r0, r0, 3
+0x0c9c41c0, 0xd0020867, // add r1, r0, 4
+0x0c0e7c00, 0x10020e27, // add t0s, ra_addr_x, r0
+0x0c0e7c40, 0x10020e27, // add t0s, ra_addr_x, r1
+0xfffff3a0, 0xf0f80227, // brr ra_link_1, r:pass_3
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x955d7dbf, 0x100248a3, // mov r2, ra_tw_re+base; mov r3, rb_tw_im+base
+0x20467016, 0x100049e0, // nop;             fmul r0, r2, ra_tw_re+step
+0x209d1017, 0x100049e1, // nop;             fmul r1, r2, rb_tw_im+step
+0x209d101f, 0x100049e2, // nop;             fmul r2, r3, rb_tw_im+step
+0x2146709e, 0x100248a3, // fadd r2, r0, r2; fmul r3, r3, ra_tw_re+step
+0x029e7640, 0x100208e7, // fsub r3, r3, r1
+0x025e7c80, 0x10020827, // fsub r0,  a, b
+0x025e7180, 0x10020867, // fsub r1, r0, a
+0x019e7280, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x025e7c40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x01627380, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10025897, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x025e7c80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x10020627, // fadd a+1, r0, r1
+0x029d7ec0, 0x10020827, // fsub r0,  a, b
+0x029d71c0, 0x10020867, // fsub r1, r0, a
+0x019e72c0, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x029d7e40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x019d83c0, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10024897, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x029d7e80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x10021627, // fadd a+1, r0, r1
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+base; mov r3, rb_tw_im+base
+0x20427016, 0x100049e0, // nop;             fmul r0, r2, ra_tw_re+step
+0x209d0017, 0x100049e1, // nop;             fmul r1, r2, rb_tw_im+step
+0x209d001f, 0x100049e2, // nop;             fmul r2, r3, rb_tw_im+step
+0x2142709e, 0x100248a3, // fadd r2, r0, r2; fmul r3, r3, ra_tw_re+step
+0x029e7640, 0x100208e7, // fsub r3, r3, r1
+0x02567c80, 0x10020827, // fsub r0,  a, b
+0x02567180, 0x10020867, // fsub r1, r0, a
+0x019e7280, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x02567c40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x015a7380, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10025895, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x02567c80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x100205a7, // fadd a+1, r0, r1
+0x029d5ec0, 0x10020827, // fsub r0,  a, b
+0x029d51c0, 0x10020867, // fsub r1, r0, a
+0x019e72c0, 0x100208a7, // fadd r2, r1, b
+0x029e7040, 0x10020867, // fsub r1, r0, r1
+0x029d5e40, 0x10020867, // fsub r1,  a, r1
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x019d63c0, 0x10020867, // fadd r1, r1, a+1
+0x019e7040, 0x100208a7, // fadd r2, r0, r1
+0x829e7412, 0x10024895, // fsub r2, r2, r0; mov a, r2
+0x029e7280, 0x10020867, // fsub r1, r1, r2
+0x029d5e80, 0x100208a7, // fsub r2,  a, r2
+0x029e7080, 0x10020827, // fsub r0, r0, r2
+0x019e7040, 0x100215a7, // fadd a+1, r0, r1
+0x95555dbf, 0x100248a3, // mov r2, ra_tw_re+TW16+3; mov r3, rb_tw_im+TW16+3
+0x14988dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f8492, 0xd002c562, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f86db, 0xd002d563, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14984dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f4492, 0xd002c522, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f46db, 0xd002d523, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14982dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f2492, 0xd002c4e2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f26db, 0xd002d4e3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x14981dc0, 0xd00229e7, // and.setf -, elem_num, (8>>i)
+0x959f1492, 0xd002c4a2, // mov ra_tw_re+TW16+3-i, r2; mov.ifnz r2, r2 >> (8>>i)
+0x959f16db, 0xd002d4a3, // mov rb_tw_im+TW16+3-i, r3; mov.ifnz r3, r3 >> (8>>i)
+0x0e1c8dc0, 0x100229e7, // shr.setf -, ra_points, rb_STAGES
+0xfffff110, 0xf00809e7, // brr.allz -, r:pass_3
+0x009e7000, 0x100009e7, // nop
+0x00000100, 0xe0020827, // mov r0, 0x100
+0x0c1e7c00, 0x100201e7, // add ra_points, ra_points, r0
+0x00000000, 0xf0f4c227, // bra ra_link_1, ra_sync
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0xa00009e7, // ldtmu0
+0x009e7000, 0xa00009e7, // ldtmu0
+0xfffff1e0, 0xf0f809e7, // brr -, r:loop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x159c3fc0, 0x100209a7, // mov interrupt, flag
+0x009e7000, 0x300009e7, // nop; nop; thrend
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
