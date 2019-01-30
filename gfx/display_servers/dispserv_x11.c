@@ -40,6 +40,7 @@ static char new_mode[250]       = {0};
 static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
 static char output[500]         = {0};
+static char output4[500]         = {0};
 static bool crt_en              = false;
 static unsigned crtid           = 20;
 
@@ -69,7 +70,7 @@ static void x11_display_server_destroy(void *data)
 	   
 
       snprintf(output, sizeof(output),
-		      "xrandr --newmode \"700x480_59.941002\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync")
+		      "xrandr --newmode \"Desktop 700x480_59.94\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
       system(output);
       snprintf(output, sizeof(output),
 			 "xrandr --addmode %s 700x480_59.941002", orig_output);
