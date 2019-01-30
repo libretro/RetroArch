@@ -115,13 +115,8 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    fi
 fi
 
-if [ "$HAVE_SSA" != "no" ]; then
-   check_lib '' SSA -lass ass_library_init
-fi
-
-if [ "$HAVE_EXYNOS" != "no" ]; then
-   check_pkgconf EXYNOS libdrm_exynos
-fi
+check_lib '' SSA -lass ass_library_init
+check_pkgconf EXYNOS libdrm_exynos
 
 if [ "$HAVE_DISPMANX" != "no" ]; then
    PKG_CONF_USED="$PKG_CONF_USED DISPMANX"
