@@ -2554,6 +2554,12 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
+      case INPUT_TOGGLE_DOWN_SELECT:
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+            return false;
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return false;
+         break;
       case INPUT_TOGGLE_HOLD_START:
       {
          static rarch_timer_t timer = {0};
