@@ -41,6 +41,7 @@ static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
 static char output[500]         = {0};
 static bool crt_en              = false;
+static unsigned crtid           = 20;
 
 typedef struct
 {
@@ -78,7 +79,7 @@ static void x11_display_server_destroy(void *data)
       system(output);
 
       snprintf(output, sizeof(output),
-			 "xrandr --delmode %s %s",orig_mode, old_output);
+			 "xrandr --delmode %s %s",orig_mode, orig_output);
       system(output);
 
       
@@ -142,6 +143,13 @@ static bool x11_display_server_set_resolution(void *data,
    float pixel_clock  = 0;
 
    crt_en = true;
+   
+   Display* dsp      = XOpenDisplay(NULL);
+   Screen* scrn      = DefaultScreenOfDisplay(dsp);
+   XRRScreenResources  *res;
+   int screen = DefaultScreen ( dsp );
+   Window window  = RootWindow ( dsp, screen );
+   
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
