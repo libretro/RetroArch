@@ -145,7 +145,7 @@ if [ "$OS" = 'DOS' ]; then
 fi
 
 check_lib '' THREADS "$PTHREADLIB" pthread_create
-check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are'
+check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
 if [ "$OS" = 'Win32' ]; then
@@ -244,8 +244,8 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
-check_enabled CXX DISCORD discord 'The C++ compiler is'
-check_enabled CXX QT 'Qt companion' 'The C++ compiler is'
+check_enabled CXX DISCORD discord 'The C++ compiler is' false
+check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
 if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
@@ -308,7 +308,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
    fi
 fi
 
-check_enabled THREADS LIBUSB libusb 'Threads are'
+check_enabled THREADS LIBUSB libusb 'Threads are' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
@@ -372,7 +372,7 @@ check_val '' MPV -lmpv '' mpv '' '' false
 check_header DRMINGW exchndl.h
 check_lib '' DRMINGW -lexchndl
 
-check_enabled THREADS FFMPEG FFmpeg 'Threads are'
+check_enabled THREADS FFMPEG FFmpeg 'Threads are' false
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_val '' AVCODEC -lavcodec '' libavcodec 54 '' false
@@ -484,8 +484,8 @@ fi
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
-check_enabled CXX VULKAN vulkan 'The C++ compiler is'
-check_enabled THREADS VULKAN vulkan 'Threads are'
+check_enabled CXX VULKAN vulkan 'The C++ compiler is' false
+check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes
@@ -532,8 +532,5 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled ZLIB RPNG RPNG 'zlib is'
-
-if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
-   HAVE_VIDEO_PROCESSOR=yes
-fi
+check_enabled ZLIB RPNG RPNG 'zlib is' false
+check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
