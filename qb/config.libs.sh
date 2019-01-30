@@ -149,19 +149,13 @@ if [ "$OS" = 'DOS' ]; then
    HAVE_LANGEXTRA=no
 fi
 
+check_lib '' THREADS "$PTHREADLIB" pthread_create
+check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are'
+check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
+
 if [ "$OS" = 'Win32' ]; then
-   HAVE_THREADS=yes
-   HAVE_THREAD_STORAGE=yes
    HAVE_DYLIB=yes
 else
-   check_lib '' THREADS "$PTHREADLIB" pthread_create
-
-   if [ "$HAVE_THREADS" = 'yes' ]; then
-      check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
-   else
-      HAVE_THREAD_STORAGE=no
-   fi
-
    check_lib '' DYLIB "$DYLIB" dlopen
 fi
 
@@ -255,8 +249,8 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
-check_enabled CXX DISCORD discord 'the C++ compiler is'
-check_enabled CXX QT 'Qt companion' 'the C++ compiler is'
+check_enabled CXX DISCORD discord 'The C++ compiler is'
+check_enabled CXX QT 'Qt companion' 'The C++ compiler is'
 
 if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
@@ -319,7 +313,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
    fi
 fi
 
-check_enabled THREADS LIBUSB libusb 'threads are'
+check_enabled THREADS LIBUSB libusb 'Threads are'
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
@@ -380,13 +374,10 @@ fi
 
 check_val '' MPV -lmpv '' mpv '' '' false
 
-if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
-   HAVE_FFMPEG='no'
-   die : 'Notice: Threads are not available, FFmpeg will also be disabled.'
-fi
-
 check_header DRMINGW exchndl.h
 check_lib '' DRMINGW -lexchndl
+
+check_enabled THREADS FFMPEG FFmpeg 'Threads are'
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_val '' AVCODEC -lavcodec '' libavcodec 54 '' false
@@ -498,8 +489,8 @@ fi
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
-check_enabled CXX VULKAN vulkan 'the C++ compiler is'
-check_enabled THREADS VULKAN vulkan 'threads are'
+check_enabled CXX VULKAN vulkan 'The C++ compiler is'
+check_enabled THREADS VULKAN vulkan 'Threads are'
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes
