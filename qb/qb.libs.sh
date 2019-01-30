@@ -39,18 +39,25 @@ check_compiler()
 }
 
 # check_enabled:
-# $1 = HAVE_$1
-# $2 = lib
+# $1 = HAVE_$1 [Disabled feature]
+# $2 = USER_$2 [Enabled feature]
+# $3 = lib
+# $4 = feature
 check_enabled()
-{	[ "$HAVE_CXX" != 'no' ] && return 0
-	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+{	tmpvar="$(eval "printf %s \"\$HAVE_$1\"")"
+	[ "$tmpvar" != 'no' ] && return 0
+	tmpval="$(eval "printf %s \"\$USER_$2\"")"
 
 	if [ "$tmpval" != 'yes' ]; then
-		eval "HAVE_$1=no"
+		setval="$(eval "printf %s \"\$HAVE_$2\"")"
+		if [ "$setval" != 'no' ]; then
+			eval "HAVE_$2=no"
+			die : "Notice: $4 disabled, $3 support will also be disabled."
+		fi
 		return 0
 	fi
 
-	die 1 "Forced to build with $2 support and the C++ compiler is disabled. Exiting ..."
+	die 1 "Error: $4 disabled and forced to build with $3 support."
 }
 
 # check_lib:
