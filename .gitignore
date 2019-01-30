@@ -76,6 +76,7 @@ libretro-super
 run.sh
 convert_rumble.awk
 *~
+assets
 
 # Wii U
 *.depend
