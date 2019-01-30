@@ -307,6 +307,7 @@ static bool x11_display_server_set_resolution(void *data,
 	    system(output4);
         
     }
+ }
    return true;
 }
 
