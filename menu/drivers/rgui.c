@@ -1610,9 +1610,10 @@ static void rgui_render(void *data, bool is_idle)
       char title_buf[255];
       char core_title[64];
       char core_title_buf[64];
-      title[0] = title_buf[0] = core_title[0] = core_title_buf[0] = '\0';
       /* Need this in two places, so cache here */
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
+
+      title[0] = title_buf[0] = core_title[0] = core_title_buf[0] = '\0';
 
       menu_entries_get_title(title, sizeof(title));
 
