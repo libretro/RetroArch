@@ -12,6 +12,14 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
    ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
       background-color:#d4d4d4;
    }
+
+   QLabel#dropIndicator {
+      font-size: 9pt;
+      color: darkgrey;
+      border: 2px dashed lightgrey;
+      border-radius: 5px;
+      margin: 20px;
+   }
    ThumbnailWidget#thumbnailWidgetSelected {
       background-color:#d4d4d4;
       border:3px solid %1;
@@ -40,6 +48,13 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    }
    ListWidget {
       icon-size: 32px;
+   }
+   QLabel#dropIndicator {
+      font-size: 9pt;
+      color: #575757;
+      border: 2px dashed #575757;
+      border-radius: 5px;
+      margin: 20px;
    }
    QTextEdit, LogTextEdit {
       background-color:rgb(25,25,25);

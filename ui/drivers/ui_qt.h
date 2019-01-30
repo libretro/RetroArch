@@ -166,7 +166,8 @@ private:
    void loadImage(const QModelIndex &index, const QString &path);
 };
 
-class ThumbnailWidget : public QFrame
+
+class ThumbnailWidget : public QStackedWidget
 {
    Q_OBJECT
 public:
@@ -174,20 +175,15 @@ public:
    ThumbnailWidget(ThumbnailType type, QWidget *parent = 0);
    ThumbnailWidget(const ThumbnailWidget& other) { retro_assert(false && "DONT EVER USE THIS"); }
 
-   QSize sizeHint() const;
-   void setSizeHint(QSize size);
+   void setPixmap(const QPixmap &pixmap, bool acceptDrops);
 signals:
-   void mouseDoubleClicked();
-   void mousePressed();
    void filesDropped(const QImage& image, ThumbnailType type);
 private:
    QSize m_sizeHint;
    ThumbnailType m_thumbnailType;
+   ThumbnailLabel *m_thumbnailLabel;
+   QLabel *m_dropIndicator;
 protected:
-   void paintEvent(QPaintEvent *event);
-   void resizeEvent(QResizeEvent *event);
-   void mouseDoubleClickEvent(QMouseEvent *event);
-   void mousePressEvent(QMouseEvent *event);
    void dragEnterEvent(QDragEnterEvent *event);
    void dragMoveEvent(QDragMoveEvent *event);
    void dropEvent(QDropEvent *event);
@@ -437,10 +433,10 @@ public slots:
    void onStartCoreClicked();
    void onDropWidgetEnterPressed();
    void selectBrowserDir(QString path);
-   void resizeThumbnails(bool one, bool two, bool three);
-   void onResizeThumbnailOne();
-   void onResizeThumbnailTwo();
-   void onResizeThumbnailThree();
+   void setThumbnail(QString widgetName, QPixmap &pixmap, bool acceptDrop);
+   void onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop);
+   void onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop);
+   void onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop);
    void appendLogMessage(const QString &msg);
    void onGotLogMessage(const QString &msg);
    void onGotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
@@ -550,7 +546,6 @@ private:
    bool currentPlaylistIsAll();
    void applySearch();
    void updateItemsCount();
-   void setThumbnailsAcceptDrops(bool accept);
    QString changeThumbnail(const QImage &image, QString type);
 
    PlaylistModel *m_playlistModel;

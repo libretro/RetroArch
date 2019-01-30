@@ -1329,7 +1329,7 @@ void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnail
 
          m_thumbnailPixmap = new QPixmap(path);
 
-         onResizeThumbnailOne();
+         onResizeThumbnailOne(*m_thumbnailPixmap, true);
          break;
       }
 
@@ -1345,7 +1345,7 @@ void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnail
 
          m_thumbnailPixmap2 = new QPixmap(path);
 
-         onResizeThumbnailTwo();
+         onResizeThumbnailTwo(*m_thumbnailPixmap2, true);
          break;
       }
 
@@ -1361,7 +1361,7 @@ void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnail
 
          m_thumbnailPixmap3 = new QPixmap(path);
 
-         onResizeThumbnailThree();
+         onResizeThumbnailThree(*m_thumbnailPixmap3, true);
          break;
       }
    }
@@ -2209,21 +2209,6 @@ void MainWindow::setCoreActions()
    }
 }
 
-void MainWindow::setThumbnailsAcceptDrops(bool accept)
-{
-   ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>("thumbnail1Widget");
-   ThumbnailWidget *thumbnail2 = findChild<ThumbnailWidget*>("thumbnail2Widget");
-   ThumbnailWidget *thumbnail3 = findChild<ThumbnailWidget*>("thumbnail3Widget");
-
-   if (thumbnail)
-      thumbnail->setAcceptDrops(accept);
-
-   if (thumbnail2)
-      thumbnail2->setAcceptDrops(accept);
-
-   if (thumbnail3)
-      thumbnail3->setAcceptDrops(accept);
-}
 
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
@@ -2513,6 +2498,7 @@ void MainWindow::onCurrentFileChanged(const QModelIndex &index)
 void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
 {
    QString path = hash["path"];
+   bool acceptDrop = false;
 
    if (m_thumbnailPixmap)
       delete m_thumbnailPixmap;
@@ -2527,8 +2513,6 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap = new QPixmap(path);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
-
-      setThumbnailsAcceptDrops(false);
    }
    else
    {
@@ -2539,90 +2523,38 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap2 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
       m_thumbnailPixmap3 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
 
-      if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
-      {
-         if (currentPlaylistIsSpecial())
-            setThumbnailsAcceptDrops(false);
-         else
-            setThumbnailsAcceptDrops(true);
-      }
+      if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS && !currentPlaylistIsSpecial())
+         acceptDrop = true;
    }
 
-   resizeThumbnails(true, true, true);
+   onResizeThumbnailOne(*m_thumbnailPixmap, acceptDrop);
+   onResizeThumbnailTwo(*m_thumbnailPixmap2, acceptDrop);
+   onResizeThumbnailThree(*m_thumbnailPixmap3, acceptDrop);
 
    setCoreActions();
 }
 
-void MainWindow::onResizeThumbnailOne()
+void MainWindow::setThumbnail(QString widgetName, QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(true, false, false);
+   ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>(widgetName);
+
+   if (thumbnail)
+      thumbnail->setPixmap(pixmap, acceptDrop);
 }
 
-void MainWindow::onResizeThumbnailTwo()
+void MainWindow::onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(false, true, false);
+   setThumbnail("thumbnail", pixmap, acceptDrop);
 }
 
-void MainWindow::onResizeThumbnailThree()
+void MainWindow::onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(false, false, true);
+   setThumbnail("thumbnail2", pixmap, acceptDrop);
 }
 
-void MainWindow::resizeThumbnails(bool one, bool two, bool three)
+void MainWindow::onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop)
 {
-   QPixmap pixmap;
-   QPixmap pixmap2;
-   QPixmap pixmap3;
-   ThumbnailLabel *thumbnail = NULL;
-   ThumbnailLabel *thumbnail2 = NULL;
-   ThumbnailLabel *thumbnail3 = NULL;
-
-   if (m_thumbnailPixmap)
-      pixmap = *m_thumbnailPixmap;
-   if (m_thumbnailPixmap2)
-      pixmap2 = *m_thumbnailPixmap2;
-   if (m_thumbnailPixmap3)
-      pixmap3 = *m_thumbnailPixmap3;
-
-   thumbnail = findChild<ThumbnailLabel*>("thumbnail");
-   thumbnail2 = findChild<ThumbnailLabel*>("thumbnail2");
-   thumbnail3 = findChild<ThumbnailLabel*>("thumbnail3");
-
-   if (thumbnail && one)
-   {
-      if (pixmap.isNull())
-         thumbnail->hide();
-      else
-      {
-         thumbnail->show();
-         emit thumbnailChanged(pixmap);
-         thumbnail->update();
-      }
-   }
-
-   if (thumbnail2 && two)
-   {
-      if (pixmap2.isNull())
-         thumbnail2->hide();
-      else
-      {
-         thumbnail2->show();
-         emit thumbnail2Changed(pixmap2);
-         thumbnail2->update();
-      }
-   }
-
-   if (thumbnail3 && three)
-   {
-      if (pixmap3.isNull())
-         thumbnail3->hide();
-      else
-      {
-         thumbnail3->show();
-         emit thumbnail3Changed(pixmap3);
-         thumbnail3->update();
-      }
-   }
+   setThumbnail("thumbnail3", pixmap, acceptDrop);
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)
