@@ -1216,6 +1216,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #ifdef HAVE_MENU
    SETTING_PATH("menu_wallpaper",
          settings->paths.path_menu_wallpaper, false, NULL, true);
+   SETTING_PATH("rgui_menu_theme_preset",
+         settings->paths.path_rgui_theme_preset, false, NULL, true);
 #endif
    SETTING_PATH("content_history_path",
          settings->paths.path_content_history, false, NULL, true);
@@ -1965,13 +1967,6 @@ void config_set_defaults(void)
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->bools.menu_show_start_screen   = default_menu_show_start_screen;
-   settings->uints.menu_entry_normal_color     = menu_entry_normal_color;
-   settings->uints.menu_entry_hover_color      = menu_entry_hover_color;
-   settings->uints.menu_title_color            = menu_title_color;
-   settings->uints.menu_bg_dark_color          = menu_bg_dark_color;
-   settings->uints.menu_bg_light_color         = menu_bg_light_color;
-   settings->uints.menu_border_dark_color      = menu_border_dark_color;
-   settings->uints.menu_border_light_color     = menu_border_light_color;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -2074,6 +2069,7 @@ void config_set_defaults(void)
 #endif
    *settings->paths.path_cheat_database    = '\0';
    *settings->paths.path_menu_wallpaper    = '\0';
+   *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
    *settings->paths.path_record_config     = '\0';
@@ -2658,6 +2654,8 @@ static void config_file_dump_all(config_file_t *conf)
 }
 #endif
 
+/*
+ * This is no longer used, so comment out to silence warnings...
 #ifdef HAVE_MENU
 static void config_get_hex_base(config_file_t *conf,
       const char *key, unsigned *base)
@@ -2669,6 +2667,7 @@ static void config_get_hex_base(config_file_t *conf,
       *base = tmp;
 }
 #endif
+*/
 
 /**
  * config_load:
@@ -2884,22 +2883,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       settings->floats.video_msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
       settings->floats.video_msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
    }
-#ifdef HAVE_MENU
-   config_get_hex_base(conf, "menu_entry_normal_color",
-         &settings->uints.menu_entry_normal_color);
-   config_get_hex_base(conf, "menu_entry_hover_color",
-         &settings->uints.menu_entry_hover_color);
-   config_get_hex_base(conf, "menu_title_color",
-         &settings->uints.menu_title_color);
-   config_get_hex_base(conf, "menu_bg_dark_color",
-         &settings->uints.menu_bg_dark_color);
-   config_get_hex_base(conf, "menu_bg_light_color",
-         &settings->uints.menu_bg_light_color);
-   config_get_hex_base(conf, "menu_border_dark_color",
-         &settings->uints.menu_border_dark_color);
-   config_get_hex_base(conf, "menu_border_light_color",
-         &settings->uints.menu_border_light_color);
-#endif
 
    /* Float settings */
    for (i = 0; i < (unsigned)float_settings_size; i++)
@@ -3088,6 +3071,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
       *settings->paths.path_menu_wallpaper = '\0';
+   if (string_is_equal(settings->paths.path_rgui_theme_preset, "default"))
+      *settings->paths.path_rgui_theme_preset = '\0';
    if (string_is_equal(settings->paths.directory_video_shader, "default"))
       *settings->paths.directory_video_shader = '\0';
    if (string_is_equal(settings->paths.directory_video_filter, "default"))
@@ -4387,22 +4372,6 @@ bool config_save_file(const char *path)
 
    /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);
-#ifdef HAVE_MENU
-   config_set_hex(conf, "menu_entry_normal_color",
-         settings->uints.menu_entry_normal_color);
-   config_set_hex(conf, "menu_entry_hover_color",
-         settings->uints.menu_entry_hover_color);
-   config_set_hex(conf, "menu_title_color",
-         settings->uints.menu_title_color);
-   config_set_hex(conf, "menu_bg_dark_color",
-         settings->uints.menu_bg_dark_color);
-   config_set_hex(conf, "menu_bg_light_color",
-         settings->uints.menu_bg_light_color);
-   config_set_hex(conf, "menu_border_dark_color",
-         settings->uints.menu_border_dark_color);
-   config_set_hex(conf, "menu_border_light_color",
-         settings->uints.menu_border_light_color);
-#endif
 
    video_driver_save_settings(conf);
 

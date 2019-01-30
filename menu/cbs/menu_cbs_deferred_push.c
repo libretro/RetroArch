@@ -178,6 +178,7 @@ generic_deferred_push(deferred_push_rpl_entry_actions,              DISPLAYLIST_
 generic_deferred_push(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
 generic_deferred_push(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
 generic_deferred_push(deferred_push_menu_sounds_list,               DISPLAYLIST_MENU_SOUNDS_LIST)
+generic_deferred_push(deferred_push_rgui_theme_preset,              DISPLAYLIST_RGUI_THEME_PRESETS)
 
 #ifdef HAVE_NETWORKING
 generic_deferred_push(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
@@ -1103,6 +1104,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_STREAM_CONFIG:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_stream_configfile);
                break;
+            case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rgui_theme_preset);
+               break;
             case MENU_ENUM_LABEL_SHADER_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
                break;
@@ -1367,6 +1371,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_STREAM_CONFIG:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_stream_configfile);
+               break;
+            case MENU_LABEL_RGUI_MENU_THEME_PRESET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rgui_theme_preset);
                break;
             case MENU_LABEL_NETPLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);

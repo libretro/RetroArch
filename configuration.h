@@ -409,13 +409,6 @@ typedef struct settings
       unsigned menu_left_thumbnails;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_dpi_override_value;
-      unsigned menu_entry_normal_color;
-      unsigned menu_entry_hover_color;
-      unsigned menu_title_color;
-      unsigned menu_bg_dark_color;
-      unsigned menu_bg_light_color;
-      unsigned menu_border_dark_color;
-      unsigned menu_border_light_color;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
@@ -547,6 +540,7 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
+      char path_rgui_theme_preset[PATH_MAX_LENGTH];
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];
