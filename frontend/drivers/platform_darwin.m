@@ -115,11 +115,11 @@ static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
    switch (flags)
    {
       case CFDocumentDirectory:
-#if TARGET_OS_IOS      
-         return NSDocumentDirectory;
-#elif TARGET_OS_TV
-         return NSCachesDirectory;
-#endif                  
+#if TARGET_OS_TV
+           return NSCachesDirectory;
+#else
+           return NSDocumentDirectory;
+#endif
    }
 
    return 0;
