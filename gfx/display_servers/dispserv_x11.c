@@ -43,6 +43,7 @@ static char output[500]         = {0};
 static char output4[500]         = {0};
 static bool crt_en              = false;
 static unsigned crtid           = 20;
+static XRRModeInfo crt_rrmode;
 
 typedef struct
 {
