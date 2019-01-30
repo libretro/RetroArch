@@ -2672,12 +2672,17 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust);
+      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;
 
    /* trigger set resolution*/
+}
+
+void crt_switch_driver_reinit(void)
+{
+   video_driver_reinit();
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
