@@ -118,10 +118,6 @@ fi
 check_lib '' SSA -lass ass_library_init
 check_pkgconf EXYNOS libdrm_exynos
 
-if [ "$HAVE_DISPMANX" != "no" ]; then
-   PKG_CONF_USED="$PKG_CONF_USED DISPMANX"
-fi
-
 if [ "$LIBRETRO" ]; then
    die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
    HAVE_DYNAMIC='no'
