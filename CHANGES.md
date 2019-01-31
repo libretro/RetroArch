@@ -1,17 +1,21 @@
 # 1.7.7 (future)
 
 # 1.7.6
-- ANDROID: Fix Xperia Play input binding
-- CHEEVOS: Reset when hardcore mode is toggled
+- ANDROID: Fix Xperia Play input binding.
+- CHEEVOS: Reset when hardcore mode is toggled.
 - CHEEVOS: Update the hashing methods to identify NES, SNES and Lynx games (more accurate and accepting headerless ROMs).
-- COMMON: Add new JSON playlist format
-- COMMON: Fix playlist corruption when deleting items
-- COMMON: Fix archive progress display calculation
-- COMMON: Fix playlist entries appearing with previously used names
-- COMMON: Fix screenshot filename with no core or content
-- COMMON: Allow compiling without menu support
-- CORE UPDATER: Allow sideloading cores from the menu
+- COMMON: Add new JSON playlist format.
+- COMMON: Fix playlist corruption when deleting items.
+- COMMON: Fix archive progress display calculation.
+- COMMON: Fix playlist entries appearing with previously used names.
+- COMMON: Fix screenshot filename with no core or content.
+- COMMON: Allow compiling without menu support.
+- CORE UPDATER: Allow sideloading cores from the menu.
 - CPU FILTERS: Add Normal2x filter.
+- CRT/LINUX: New Linux switching method partially implemented.
+- CRT/LINUX: Linux restore desktop resolution fixed.
+- CRT/LINUX: Monitor index switching and auto enumerate for output detection in Linux (still working on the windows method).
+- CRT/RASPBERRY PI: Initial support.
 - DATE: Add Date / Time style options.
 - DEBUGGING: Add an integrated crash handler for debug builds (see https://docs.libretro.com/tech/debugging)
 - DISCORD: Register the application name properly.
@@ -28,13 +32,19 @@
 - MENU: New "ozone" menu driver.
 - MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
-- MENU: Add option to enable in-menu sound effects
-- MENU/QT/WIMP: Allow building with MSVC2017
-- MENU/QT/WIMP: Add detailed file browser table
-- MENU/QT/WIMP: New grid view implementation that is faster and loads thumbnails on-demand
+- MENU: Add option to enable in-menu sound effects.
+- MENU/D3D: Scissoring support (will be used for Ozone and menu widgets).
+- MENU/QT/WIMP: Allow building with MSVC2017.
+- MENU/QT/WIMP: Add detailed file browser table.
+- MENU/QT/WIMP: New grid view implementation that is faster and loads thumbnails on-demand.
+- MENU/QT/WIMP: Thumbnail drag and drop support.
+- MENU/RGUI: Overhaul custom theme interface + add wallpaper support.
+- MENU/RGUI: Thumbnail support and thumbnail downscaling.
+- MENU: Hide password values.
+- MENU/SOUNDS: Implement in-menu sound effects (not enabled by default for now, still experimental).
 - MIDI: Add a Linux ALSA driver for MIDI.
-- NETPLAY: Force fast-save-states when netlay is enabled
-- NETPLAY: Allow quick joining subsystem lobbies
+- NETPLAY: Force fast-save-states when netplay is enabled.
+- NETPLAY: Allow quick joining subsystem lobbies.
 - OSX: Initial CoreAudio V3 audio driver (not yet used in release builds).
 - OSX: OpenGL 3.2 Core support for cores.
 - PS2: Initial PlayStation2 port.
@@ -49,20 +59,21 @@
 - SWITCH: Proper button labels.
 - TVOS: Initial tvOS port.
 - VULKAN: Fix RGUI crashing at startup.
+- VULKAN/RGUI: Enable 'Menu Linear Filter' option.
 - VULKAN: Fix secondary screens in overlays not working.
 - WAYLAND: Implement idle-inhibit support (needed for screensaver suspend).
-- WAYLAND: Fix fullscreen toggle
+- WAYLAND: Fix fullscreen toggle.
 - WIIU: Initial netplay peer-to-peer support. Network information working.
 - WINDOWS/WSA: Network Information info is blank until first network operation.
-- WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
-- WINDOWS: Remember window size and position if so desired
+- WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows.
+- WINDOWS: Remember window size and position if so desired.
 - WINDOWS: SSL/TLS connections now work properly.
 - WINDOWS: Fall back to GDI driver if no accelerated graphics driver is found.
 - UWP: Initial UWP port.
-- VFS: Update to version 3
+- VFS: Update to version 3.
 - XBONE: Initial Xbox One port.
-- XMB/OZONE: Add more icons
-- ???: Easter Egg
+- XMB/OZONE: Add more icons.
+- ???: Easter Egg.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
