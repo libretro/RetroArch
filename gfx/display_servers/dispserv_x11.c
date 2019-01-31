@@ -72,23 +72,21 @@ static void x11_display_server_destroy(void *data)
 
    if (crt_en)
    {
-	   
-
       snprintf(output, sizeof(output),
-		      "xrandr --newmode \"700x480_59.94\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
+            "xrandr --newmode \"700x480_59.94\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
       system(output);
       snprintf(output, sizeof(output),
-			 "xrandr --addmode %s 700x480_59.94", orig_output);
+            "xrandr --addmode %s 700x480_59.94", orig_output);
       system(output);
       snprintf(output, sizeof(output),
-			 "xrandr --output %s --mode 700x480_59.94", orig_output);
+            "xrandr --output %s --mode 700x480_59.94", orig_output);
       system(output);
 
       snprintf(output, sizeof(output),
-			 "xrandr --delmode %s %s",orig_output, old_mode);
+            "xrandr --delmode %s %s",orig_output, old_mode);
       system(output);
 
-      
+
 
       snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
       system(output);
@@ -133,38 +131,41 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 static bool x11_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index)
 {
-   int i              = 0;
-   int hfp            = 0;
-   int hsp            = 0;
-   int hbp            = 0;
-   int vfp            = 0;
-   int vsp            = 0;
-   int vbp            = 0;
-   int hmax           = 0;
-   int vmax           = 0;
-   int pdefault       = 8;
-   int pwidth         = 0;
-   float roundw     = 0.0f;
-   float roundh     = 0.0f;
-   float pixel_clock  = 0;
+   int screen;
+   Window window;
+   XRRScreenResources  *res = NULL;
+   Display *dsp             = NULL;
+   Screen *scrn             = NULL;
+   int i                    = 0;
+   int hfp                  = 0;
+   int hsp                  = 0;
+   int hbp                  = 0;
+   int vfp                  = 0;
+   int vsp                  = 0;
+   int vbp                  = 0;
+   int hmax                 = 0;
+   int vmax                 = 0;
+   int pdefault             = 8;
+   int pwidth               = 0;
+   float roundw             = 0.0f;
+   float roundh             = 0.0f;
+   float pixel_clock        = 0;
 
-   crt_en = true;
-   sprintf(old_mode,"%s", new_mode);    
-   Display* dsp      = XOpenDisplay(NULL);
-   Screen* scrn      = DefaultScreenOfDisplay(dsp);
-   XRRScreenResources  *res;
-   int screen = DefaultScreen ( dsp );
-   Window window  = RootWindow ( dsp, screen );
-   
+   crt_en                   = true;
+
+   snprintf(old_mode, sizeof(old_mode), "%s", new_mode);    
+
+   dsp                      = XOpenDisplay(NULL);
+   scrn                     = DefaultScreenOfDisplay(dsp);
+   screen                   = DefaultScreen ( dsp );
+   window                   = RootWindow ( dsp, screen );
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
    /* following code is the mode line generator */
-
-   hsp = width * 1.140;
-   hfp = width * 1.055;
-
+   hsp    = width * 1.140;
+   hfp    = width * 1.055;
    pwidth = width;
 
    if (height < 400 && width > 400)
@@ -181,7 +182,7 @@ static bool x11_display_server_set_resolution(void *data,
    if (roundw < 1.20)
       roundw = 1.34;
 
-   hbp = width * roundw - 8;
+   hbp  = width * roundw - 8;
    hmax = hbp;
 
    if (height < 241)
