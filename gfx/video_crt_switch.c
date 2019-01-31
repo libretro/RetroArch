@@ -24,8 +24,12 @@
 #include "video_crt_switch.h"
 #include "video_display_server.h"
 
-#if defined(__arm__)
-   #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#if defined(HAVE_VIDEOCORE)
+#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
 #endif
 
 static unsigned ra_core_width     = 0;
@@ -35,7 +39,7 @@ static unsigned ra_tmp_height     = 0;
 static unsigned ra_set_core_hz    = 0;
 static unsigned orig_width        = 0;
 static unsigned orig_height       = 0;
-static int crt_center_adjust = 0;
+static int crt_center_adjust      = 0;
 
 static bool first_run             = true;
 
@@ -91,23 +95,23 @@ void crt_aspect_ratio_switch(unsigned width, unsigned height)
 
 static void switch_res_crt(unsigned width, unsigned height)
 {
-      video_display_server_set_resolution(width, height,
-            ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index);
-	  #if defined(__arm__)
-         crt_rpi_switch(width, height, ra_core_hz);
-         video_monitor_set_refresh_rate(ra_core_hz);
-         crt_switch_driver_reinit();
-      #endif
-      video_driver_apply_state_changes();
+   video_display_server_set_resolution(width, height,
+         ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index);
+#if defined(HAVE_VIDEOCORE)
+   crt_rpi_switch(width, height, ra_core_hz);
+   video_monitor_set_refresh_rate(ra_core_hz);
+   crt_switch_driver_reinit();
+#endif
+   video_driver_apply_state_changes();
 }
 
 /* Create correct aspect to fit video if resolution does not exist */
 static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
-   #if defined(__arm__)
-      if (height > 300)
-         height = height/2;
-   #endif
+#if defined(HAVE_VIDEOCORE)
+   if (height > 300)
+      height = height/2;
+#endif
 
    switch_crt_hz();
    /* get original resolution of core */
@@ -170,7 +174,9 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
    switch_res_crt(width, height);
 }
 
-void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt_mode, int crt_switch_center_adjust, int monitor_index)
+void crt_switch_res_core(unsigned width, unsigned height,
+      float hz, unsigned crt_mode,
+      int crt_switch_center_adjust, int monitor_index)
 {
    /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
@@ -218,9 +224,12 @@ void crt_video_restore(void)
    first_run = true;
 }
 
-#if defined(__arm__)
+#if defined(HAVE_VIDEOCORE)
 static void crt_rpi_switch(int width, int height, float hz)
 {
+   VCHI_INSTANCE_T vchi_instance;
+   VCHI_CONNECTION_T *vchi_connection = NULL;
+   char buffer[1024];
    static char output[250]         = {0};   
    static char output1[250]         = {0}; 
    static char output2[250]         = {0}; 
@@ -301,51 +310,53 @@ static void crt_rpi_switch(int width, int height, float hz)
    if (height < 300)
       vsp = vfp + 3; /* needs to be 3 for progressive */
    if (height > 300)
-     vsp = vfp + 6; /* needs to be 6 for interlaced */
+      vsp = vfp + 6; /* needs to be 6 for interlaced */
 
-	vsp = 3;
+   vsp = 3;
 
-  vbp = (vmax-height)-vsp-vfp;
+   vbp = (vmax-height)-vsp-vfp;
 
-  hmax = width+hfp+hsp+hbp;
- 
-    if (height < 300)
-    {
+   hmax = width+hfp+hsp+hbp;
+
+   if (height < 300)
+   {
       pixel_clock = (hmax * vmax * hz) ;
       ip_flag     = 0;
-    }
-   
+   }
+
    if (height > 300)
    {
       pixel_clock = (hmax * vmax * (hz/2)) /2 ; 
       ip_flag     = 1;
    }
    /* above code is the modeline generator */
-   
-  	  snprintf(set_hdmi_timing, sizeof(set_hdmi_timings), "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ", width, hfp, hsp, hbp, height, vfp,vsp, vbp, hz, ip_flag, pixel_clock); 
 
-      VCHI_INSTANCE_T vchi_instance;
-      VCHI_CONNECTION_T *vchi_connection = NULL;
-      char buffer[1024];
+   snprintf(set_hdmi_timing, sizeof(set_hdmi_timings),
+         "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
+         width, hfp, hsp, hbp, height, vfp,vsp, vbp,
+         hz, ip_flag, pixel_clock); 
 
-      vcos_init ();
+   vcos_init ();
 
-      vchi_initialise (&vchi_instance);
+   vchi_initialise (&vchi_instance);
 
-      vchi_connect (NULL, 0, vchi_instance);
+   vchi_connect (NULL, 0, vchi_instance);
 
-      vc_vchi_gencmd_init (vchi_instance, &vchi_connection, 1);
+   vc_vchi_gencmd_init (vchi_instance, &vchi_connection, 1);
 
 
-      vc_gencmd (buffer, sizeof (buffer), set_hdmi_timing);
+   vc_gencmd (buffer, sizeof (buffer), set_hdmi_timing);
 
-      vc_gencmd_stop ();
+   vc_gencmd_stop ();
 
-      vchi_disconnect (vchi_instance);
+   vchi_disconnect (vchi_instance);
 
-   snprintf(output1,  sizeof(output1),"tvservice -e \"DMT 87\" > /dev/null");
+   snprintf(output1,  sizeof(output1),
+         "tvservice -e \"DMT 87\" > /dev/null");
    system(output1);
-   snprintf(output2,  sizeof(output1),"fbset -g %d %d %d %d 24 > /dev/null",width, height, width, height);
+   snprintf(output2,  sizeof(output1),
+         "fbset -g %d %d %d %d 24 > /dev/null",
+         width, height, width, height);
    system(output2);
 }
 #endif
