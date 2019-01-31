@@ -78,10 +78,10 @@ static void x11_display_server_destroy(void *data)
 		      "xrandr --newmode \"700x480_59.94\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
       system(output);
       snprintf(output, sizeof(output),
-			 "xrandr --addmode %s 700x480_59.941002", orig_output);
+			 "xrandr --addmode %s 700x480_59.94", orig_output);
       system(output);
       snprintf(output, sizeof(output),
-			 "xrandr --output %s --mode 700x480_59.941002", orig_output);
+			 "xrandr --output %s --mode 700x480_59.94", orig_output);
       system(output);
 
       snprintf(output, sizeof(output),
