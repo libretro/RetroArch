@@ -84,26 +84,16 @@ if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon -marm"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
+   add_define MAKEFILE NEON_CFLAGS '-mfpu=neon -marm'
+   add_define MAKEFILE NEON_ASFLAGS -mfpu=neon
 fi
 
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
-   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
+   add_define MAKEFILE FLOATHARD_CFLAGS -mfloat-abi=hard
 fi
 
 if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
-fi
-
-if [ "$HAVE_SSE" = "yes" ]; then
-   CFLAGS="$CFLAGS -msse -msse2"
-   CXXFLAGS="$CXXFLAGS -msse -msse2"
+   add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
@@ -116,6 +106,7 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
 fi
 
 check_lib '' SSA -lass ass_library_init
+check_lib '' SSE '-msse -msse2'
 check_pkgconf EXYNOS libdrm_exynos
 
 if [ "$LIBRETRO" ]; then

@@ -63,8 +63,14 @@ ifeq ($(VULKAN_DEBUG), 1)
    DEF_FLAGS += -DVULKAN_DEBUG
 endif
 
-ifeq ($(HAVE_HARD_FLOAT), 1)
-   DEFINES += -mfloat-abi=hard
+ifeq ($(HAVE_FLOATHARD), 1)
+   ASFLAGS += $(FLOATHARD_CFLAGS)
+   DEFINES += $(FLOATHARD_CFLAGS)
+endif
+
+ifeq ($(HAVE_FLOATSOFTFP), 1)
+   ASFLAGS += $(FLOATSOFTFP_CFLAGS)
+   DEFINES += $(FLOATSOFTFP_CFLAGS)
 endif
 
 ifeq ($(TDM_GCC),)
@@ -370,6 +376,10 @@ ifeq ($(HAVE_SSA),1)
    LIBS += $(SSA_LIBS)
 endif
 
+ifeq ($(HAVE_SSE),1)
+   DEFINES += $(SSE_LIBS)
+endif
+
 # LibretroDB
 
 ifeq ($(HAVE_LIBRETRODB), 1)
@@ -621,7 +631,9 @@ ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o \
           memory/neon/memcpy-neon.o
-   DEFINES += -DHAVE_NEON
+
+   ASFLAGS += $(NEON_ASFLAGS)
+   DEFINES += -DHAVE_NEON $(NEON_CFLAGS)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \

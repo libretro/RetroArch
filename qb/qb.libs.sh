@@ -75,8 +75,8 @@ check_enabled()
 # $1 = language
 # $2 = HAVE_$2
 # $3 = lib
-# $4 = function in lib
-# $5 = extralibs
+# $4 = function in lib [checked only if non-empty]
+# $5 = extralibs [checked only if non-empty]
 # $6 = headers [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]
 check_lib()
