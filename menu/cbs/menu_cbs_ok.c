@@ -57,6 +57,7 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#include "../../tasks/task_audio_mixer.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"

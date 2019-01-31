@@ -28,8 +28,6 @@
 #include "../config.h"
 #endif
 
-#include "../audio/audio_driver.h"
-
 RETRO_BEGIN_DECLS
 
 #ifdef HAVE_NETWORKING
@@ -90,8 +88,6 @@ bool task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
-bool task_audio_mixer_load_handler(retro_task_t *task);
-
 bool take_screenshot(const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
@@ -124,18 +120,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 bool input_autoconfigure_get_swap_override(void);
 
 void input_autoconfigure_joypad_reindex_devices(void);
-
-bool task_push_audio_mixer_load_and_play(
-      const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system,
-      enum audio_mixer_slot_selection_type slot_selection_type,
-      int slot_selection_idx);
-
-bool task_push_audio_mixer_load(
-      const char *fullpath, retro_task_callback_t cb, void *user_data,
-      bool system,
-      enum audio_mixer_slot_selection_type slot_selection_type,
-      int slot_selection_idx);
 
 void set_save_state_in_background(bool state);
 
