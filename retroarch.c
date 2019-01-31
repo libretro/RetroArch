@@ -3769,3 +3769,39 @@ char *get_retroarch_launch_arguments(void)
 {
    return launch_arguments;
 }
+
+void rarch_force_video_driver_fallback(const char *driver)
+{
+   settings_t *settings = config_get_ptr();
+   ui_msg_window_t *msg_window = NULL;
+
+   strlcpy(settings->arrays.video_driver, driver, sizeof(settings->arrays.video_driver));
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+#ifdef _WIN32
+   /* UI companion driver is not inited yet, just call into it directly */
+   msg_window = &ui_msg_window_win32;
+#endif
+
+   if (msg_window)
+   {
+      ui_msg_window_state window_state = {0};
+      char *title = strdup(msg_hash_to_str(MSG_ERROR));
+      char text[PATH_MAX_LENGTH];
+
+      text[0] = '\0';
+
+      snprintf(text, sizeof(text), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK), driver);
+
+      window_state.buttons = UI_MSG_WINDOW_OK;
+      window_state.title = title;
+      window_state.text = strdup(text);
+
+      msg_window->error(&window_state);
+
+      free(title);
+   }
+
+   exit(1);
+}

@@ -404,6 +404,8 @@ void runloop_msg_queue_lock(void);
 void runloop_msg_queue_unlock(void);
 #endif
 
+void rarch_force_video_driver_fallback(const char *driver);
+
 RETRO_END_DECLS
 
 #endif

@@ -8112,3 +8112,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
     "Down + Select"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+    "Your graphics driver is not compatible with the current video driver in RetroArch, falling back to the %s driver. Please restart RetroArch for the changes to take effect."
+    )
