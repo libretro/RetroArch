@@ -38,11 +38,11 @@
 
 #if defined(HAVE_COCOATOUCH)
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 #include "../ui/drivers/cocoa/cocoatouch_menu.m"
+#endif
 
 #include "../ui/drivers/ui_cocoatouch.m"
-#endif
 
 #elif defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"

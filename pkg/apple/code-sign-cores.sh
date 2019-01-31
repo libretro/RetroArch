@@ -16,7 +16,7 @@ fi
 
 ITEMS=""
 
-CORES_DIR="${PROJECT_DIR}/iOS/modules"
+CORES_DIR="${PROJECT_DIR}/$1/modules"
 echo "Cores dir: ${CORES_DIR}"
 if [ -d "$CORES_DIR" ] ; then
     CORES=$(find "${CORES_DIR}" -depth -type d -name "*.framework" -or -name "*.dylib" -or -name "*.bundle" | sed -e "s/\(.*framework\)/\1\/Versions\/A\//")

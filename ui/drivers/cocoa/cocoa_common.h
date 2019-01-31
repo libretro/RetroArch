@@ -31,6 +31,10 @@
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
+#if TARGET_OS_TV
+#import <GameController/GameController.h>
+#endif
+
 #ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVCaptureOutput.h>
 #endif
@@ -59,8 +63,12 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
+#if TARGET_OS_IOS
 @interface CocoaView : UIViewController<CLLocationManagerDelegate,
 AVCaptureAudioDataOutputSampleBufferDelegate>
+#elif TARGET_OS_TV
+@interface CocoaView : GCEventViewController
+#endif
 + (CocoaView*)get;
 @end
 

@@ -133,12 +133,16 @@ static void glkitview_init_xibs(void)
 void *glkitview_init(void)
 {
 #if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IOS
    glkitview_init_xibs();
+#endif
 
    g_view = [GLKView new];
+#if TARGET_OS_IOS
    g_view.multipleTouchEnabled = YES;
+    [g_view addSubview:g_pause_indicator_view];
+#endif
    g_view.enableSetNeedsDisplay = NO;
-   [g_view addSubview:g_pause_indicator_view];
     
    return (BRIDGE void *)((GLKView*)g_view);
 #else
