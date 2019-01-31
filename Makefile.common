@@ -510,9 +510,19 @@ endif
 
 # Audio
 
+
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
-   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+	HAVE_COREAUDIO_LIBS = 1
+endif
+
+ifeq ($(HAVE_COREAUDIO3), 1)
+   OBJ += audio/drivers/coreaudio3.o
+	HAVE_COREAUDIO_LIBS = 1
+endif
+
+ifeq ($(HAVE_COREAUDIO_LIBS), 1)
+	LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)

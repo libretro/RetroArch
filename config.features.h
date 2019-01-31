@@ -152,6 +152,12 @@ static const bool _coreaudio_supp = true;
 static const bool _coreaudio_supp = false;
 #endif
 
+#ifdef HAVE_COREAUDIO3
+static const bool _coreaudio3_supp = true;
+#else
+static const bool _coreaudio3_supp = false;
+#endif
+
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
 static const bool _oss_supp = true;
 #else
