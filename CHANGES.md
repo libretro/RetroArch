@@ -1,4 +1,6 @@
-# 1.7.6 (future)
+# 1.7.7 (future)
+
+# 1.7.6
 - ANDROID: Fix Xperia Play input binding
 - CHEEVOS: Reset when hardcore mode is toggled
 - CHEEVOS: Update the hashing methods to identify NES, SNES and Lynx games (more accurate and accepting headerless ROMs).
@@ -33,6 +35,8 @@
 - MIDI: Add a Linux ALSA driver for MIDI.
 - NETPLAY: Force fast-save-states when netlay is enabled
 - NETPLAY: Allow quick joining subsystem lobbies
+- OSX: Initial CoreAudio V3 audio driver (not yet used in release builds).
+- OSX: OpenGL 3.2 Core support for cores.
 - PS2: Initial PlayStation2 port.
 - PS4: Initial PlayStation4 port.
 - RECORDING: Implement recording options in the menu complete with quality profiles, streaming, and proper file naming
@@ -43,6 +47,7 @@
 - SUBSYSTEM: Remember the last used folder to make loading subsystem type content faster
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
+- TVOS: Initial tvOS port.
 - VULKAN: Fix RGUI crashing at startup.
 - VULKAN: Fix secondary screens in overlays not working.
 - WAYLAND: Implement idle-inhibit support (needed for screensaver suspend).
