@@ -52,6 +52,7 @@
 - WINDOWS: Fix an ancient bug that caused wrong mappings for keyboard arrows
 - WINDOWS: Remember window size and position if so desired
 - WINDOWS: SSL/TLS connections now work properly.
+- WINDOWS: Fall back to GDI driver if no accelerated graphics driver is found.
 - UWP: Initial UWP port.
 - VFS: Update to version 3
 - XBONE: Initial Xbox One port.
