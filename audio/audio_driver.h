@@ -22,9 +22,9 @@
 #include <sys/types.h>
 
 #include <boolean.h>
-#include <audio/audio_mixer.h>
-#include <audio/audio_resampler.h>
 #include <retro_common_api.h>
+
+#include <audio/audio_mixer.h>
 
 RETRO_BEGIN_DECLS
 
@@ -339,8 +339,6 @@ float audio_driver_mixer_get_stream_volume(unsigned i);
 void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
 
 void audio_driver_mixer_remove_stream(unsigned i);
-
-enum resampler_quality audio_driver_get_resampler_quality(void);
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 

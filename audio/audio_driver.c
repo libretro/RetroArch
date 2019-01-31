@@ -21,6 +21,7 @@
 #include <lists/string_list.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
+#include <audio/audio_resampler.h>
 #include <audio/dsp_filter.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
@@ -224,7 +225,7 @@ static void audio_mixer_menu_stop_cb(
 #define audio_driver_unlock()
 #endif
 
-enum resampler_quality audio_driver_get_resampler_quality(void)
+static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
    settings_t *settings = config_get_ptr();
 

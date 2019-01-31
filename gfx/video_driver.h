@@ -37,7 +37,6 @@
 #include "video_coord_array.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
-#include "video_state_tracker.h"
 
 #include "../input/input_driver.h"
 

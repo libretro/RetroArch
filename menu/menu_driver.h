@@ -33,7 +33,6 @@
 #include "menu_entries.h"
 
 #include "../audio/audio_driver.h"
-#include "../gfx/video_driver.h"
 #include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 #include "../gfx/video_coord_array.h"
