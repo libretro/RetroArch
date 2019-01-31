@@ -67,7 +67,7 @@ ThumbnailWidget::ThumbnailWidget(ThumbnailType type, QWidget *parent) :
    QStackedWidget(parent)
    ,m_thumbnailType(type)
    ,m_thumbnailLabel(new ThumbnailLabel(this))
-   ,m_dropIndicator(new QLabel("Drop image here", this))
+   ,m_dropIndicator(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE), this))
 {
    m_dropIndicator->setObjectName("dropIndicator");
    m_dropIndicator->setAlignment(Qt::AlignCenter);
