@@ -149,7 +149,7 @@ static bool x11_display_server_set_resolution(void *data,
    float pixel_clock  = 0;
 
    crt_en = true;
-   
+   sprintf(old_mode,"%s", new_mode);    
    Display* dsp      = XOpenDisplay(NULL);
    Screen* scrn      = DefaultScreenOfDisplay(dsp);
    XRRScreenResources  *res;
