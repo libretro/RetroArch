@@ -3786,17 +3786,20 @@ void rarch_force_video_driver_fallback(const char *driver)
 
    if (msg_window)
    {
-      ui_msg_window_state window_state = {0};
+      ui_msg_window_state window_state;
       char *title = strdup(msg_hash_to_str(MSG_ERROR));
       char text[PATH_MAX_LENGTH];
 
-      text[0] = '\0';
+      text[0]              = '\0';
 
-      snprintf(text, sizeof(text), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK), driver);
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            driver);
 
       window_state.buttons = UI_MSG_WINDOW_OK;
-      window_state.title = title;
-      window_state.text = strdup(text);
+      window_state.text    = strdup(text);
+      window_state.title   = title;
+      window_state.window  = NULL;
 
       msg_window->error(&window_state);
 
