@@ -26,60 +26,9 @@
 
 #include <audio/audio_mixer.h>
 
+#include "audio_defines.h"
+
 RETRO_BEGIN_DECLS
-
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-
-#define AUDIO_MIXER_MAX_STREAMS        16
-
-#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 4)
-
-/* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
-enum audio_mixer_system_slot
-{
-   AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,
-   AUDIO_MIXER_SYSTEM_SLOT_CANCEL,
-   AUDIO_MIXER_SYSTEM_SLOT_NOTICE,
-   AUDIO_MIXER_SYSTEM_SLOT_BGM
-};
-
-enum audio_action
-{
-   AUDIO_ACTION_NONE = 0,
-   AUDIO_ACTION_RATE_CONTROL_DELTA,
-   AUDIO_ACTION_MIXER_MUTE_ENABLE,
-   AUDIO_ACTION_MUTE_ENABLE,
-   AUDIO_ACTION_VOLUME_GAIN,
-   AUDIO_ACTION_MIXER_VOLUME_GAIN,
-   AUDIO_ACTION_MIXER
-};
-
-enum audio_mixer_slot_selection_type
-{
-   AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC = 0,
-   AUDIO_MIXER_SLOT_SELECTION_MANUAL
-};
-
-enum audio_mixer_stream_type
-{
-   AUDIO_STREAM_TYPE_NONE = 0,
-   AUDIO_STREAM_TYPE_USER,
-   AUDIO_STREAM_TYPE_SYSTEM
-};
-
-enum audio_mixer_state
-{
-   AUDIO_STREAM_STATE_NONE = 0,
-   AUDIO_STREAM_STATE_STOPPED,
-   AUDIO_STREAM_STATE_PLAYING,
-   AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL
-};
 
 typedef struct audio_mixer_stream
 {
@@ -95,14 +44,19 @@ typedef struct audio_mixer_stream
    size_t bufsize;
 } audio_mixer_stream_t;
 
-typedef struct audio_statistics
+typedef struct audio_mixer_stream_params
 {
-   float average_buffer_saturation;
-   float std_deviation_percentage;
-   float close_to_underrun;
-   float close_to_blocking;
-   unsigned samples;
-} audio_statistics_t;
+   float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type  type;
+   enum audio_mixer_state state;
+   void *buf;
+   char *basename;
+   size_t bufsize;
+   audio_mixer_stop_cb_t cb;
+} audio_mixer_stream_params_t;
 
 typedef struct audio_driver
 {
@@ -185,20 +139,6 @@ typedef struct audio_driver
 
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
-
-typedef struct audio_mixer_stream_params
-{
-   float volume;
-   enum audio_mixer_slot_selection_type slot_selection_type;
-   unsigned slot_selection_idx;
-   enum audio_mixer_stream_type  stream_type;
-   enum audio_mixer_type  type;
-   enum audio_mixer_state state;
-   void *buf;
-   char *basename;
-   size_t bufsize;
-   audio_mixer_stop_cb_t cb;
-} audio_mixer_stream_params_t;
 
 void audio_driver_destroy_data(void);
 

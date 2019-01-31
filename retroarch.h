@@ -28,7 +28,7 @@
 #include "core.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_input.h"
+#include "menu/menu_defines.h"
 #endif
 
 RETRO_BEGIN_DECLS
