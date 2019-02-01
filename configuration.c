@@ -670,6 +670,8 @@ const char *config_get_default_audio(void)
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
+      case AUDIO_COREAUDIO3:
+         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:
