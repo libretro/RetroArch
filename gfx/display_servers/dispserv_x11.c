@@ -274,6 +274,8 @@ static bool x11_display_server_set_resolution(void *data,
       { 
 
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
+         if (res->noutput < 2)
+            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
       
          if (outputs->connection == RR_Connected)
          {
