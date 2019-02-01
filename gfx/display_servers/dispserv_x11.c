@@ -266,12 +266,12 @@ static bool x11_display_server_set_resolution(void *data,
  
    if (monitor_index == 0)
    {
+       if (res->noutput < 2)
+            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
+      
       for (int i = 0; i < res->noutput; i++)
       { 
-         if (res->noutput < 2)
-            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
-   
-        
+
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
       
          if (outputs->connection == RR_Connected)
