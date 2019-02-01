@@ -1789,6 +1789,12 @@ static void *gl_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
+#ifdef _WIN32
+   if (string_is_equal(vendor, "Microsoft Corporation"))
+      if (string_is_equal(renderer, "GDI Generic"))
+         rarch_force_video_driver_fallback("gdi");
+#endif
+
    hwr = video_driver_get_hw_context();
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)

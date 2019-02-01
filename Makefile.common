@@ -27,10 +27,6 @@ ifeq ($(HAVE_LIBRETRODB),)
    HAVE_LIBRETRODB = 1
 endif
 
-ifeq ($(HAVE_VIDEO_PROCESSOR), 1)
-   DEFINES += -DHAVE_VIDEO_PROCESSOR
-endif
-
 ifeq ($(HAVE_SOCKET_LEGACY), 1)
    DEFINES += -DHAVE_SOCKET_LEGACY
 endif
@@ -67,8 +63,14 @@ ifeq ($(VULKAN_DEBUG), 1)
    DEF_FLAGS += -DVULKAN_DEBUG
 endif
 
-ifeq ($(HAVE_HARD_FLOAT), 1)
-   DEFINES += -mfloat-abi=hard
+ifeq ($(HAVE_FLOATHARD), 1)
+   DEF_FLAGS += $(FLOATHARD_CFLAGS)
+   ASFLAGS   += $(FLOATHARD_CFLAGS)
+endif
+
+ifeq ($(HAVE_FLOATSOFTFP), 1)
+   DEF_FLAGS += $(FLOATSOFTFP_CFLAGS)
+   ASFLAGS   += $(FLOATSOFTFP_CFLAGS)
 endif
 
 ifeq ($(TDM_GCC),)
@@ -374,6 +376,10 @@ ifeq ($(HAVE_SSA),1)
    LIBS += $(SSA_LIBS)
 endif
 
+ifeq ($(HAVE_SSE),1)
+   DEF_FLAGS += $(SSE_LIBS)
+endif
+
 # LibretroDB
 
 ifeq ($(HAVE_LIBRETRODB), 1)
@@ -504,9 +510,19 @@ endif
 
 # Audio
 
+
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
-   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+	HAVE_COREAUDIO_LIBS = 1
+endif
+
+ifeq ($(HAVE_COREAUDIO3), 1)
+   OBJ += audio/drivers/coreaudio3.o
+	HAVE_COREAUDIO_LIBS = 1
+endif
+
+ifeq ($(HAVE_COREAUDIO_LIBS), 1)
+	LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)
@@ -625,7 +641,10 @@ ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o \
           memory/neon/memcpy-neon.o
-   DEFINES += -DHAVE_NEON
+
+   DEFINES   += -DHAVE_NEON
+   ASFLAGS   += $(NEON_ASFLAGS)
+   DEF_FLAGS += $(NEON_CFLAGS)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
@@ -1244,8 +1263,6 @@ endif
 ifeq ($(HAVE_DISPMANX), 1)
    OBJ += gfx/drivers/dispmanx_gfx.o
    HAVE_VIDEOCORE = 1
-   LIBS += $(DISPMANX_LIBS)
-   DEFINES += $(DISPMANX_CFLAGS)
 endif
 
 ifeq ($(HAVE_SUNXI), 1)
@@ -1602,7 +1619,8 @@ endif
 
 ifeq ($(HAVE_V4L2),1)
    OBJ += camera/drivers/video4linux2.o
-   ifeq ($(HAVE_VIDEO_PROCESSOR),1)
+   ifeq ($(HAVE_VIDEOPROCESSOR),1)
+      DEFINES += -DHAVE_VIDEOPROCESSOR
       OBJ += cores/libretro-video-processor/video_processor_v4l2.o
    endif
    DEFINES += -DHAVE_V4L2

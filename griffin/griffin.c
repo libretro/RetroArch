@@ -728,7 +728,7 @@ CAMERA
 #include "../camera/drivers/video4linux2.c"
 #endif
 
-#ifdef HAVE_VIDEO_PROCESSOR
+#ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 

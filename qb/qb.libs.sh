@@ -43,16 +43,26 @@ check_compiler()
 # $2 = USER_$2 [Enabled feature]
 # $3 = lib
 # $4 = feature
+# $5 = enable lib when true [checked only if non-empty]
 check_enabled()
 {	tmpvar="$(eval "printf %s \"\$HAVE_$1\"")"
-	[ "$tmpvar" != 'no' ] && return 0
+	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+
+	if [ "$tmpvar" != 'no' ]; then
+		if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+			eval "HAVE_$2=yes"
+		fi
+		return 0
+	fi
+
 	tmpval="$(eval "printf %s \"\$USER_$2\"")"
 
 	if [ "$tmpval" != 'yes' ]; then
-		setval="$(eval "printf %s \"\$HAVE_$2\"")"
 		if [ "$setval" != 'no' ]; then
 			eval "HAVE_$2=no"
-			die : "Notice: $4 disabled, $3 support will also be disabled."
+			if [ "${5:-}" != 'true' ]; then
+				die : "Notice: $4 disabled, $3 support will also be disabled."
+			fi
 		fi
 		return 0
 	fi
@@ -65,8 +75,8 @@ check_enabled()
 # $1 = language
 # $2 = HAVE_$2
 # $3 = lib
-# $4 = function in lib
-# $5 = extralibs
+# $4 = function in lib [checked only if non-empty]
+# $5 = extralibs [checked only if non-empty]
 # $6 = headers [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]
 check_lib()

@@ -560,10 +560,12 @@ static bool content_file_load(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
-   size_t msg_size = 1024 * sizeof(char);
-   char *msg       = (char*)malloc(msg_size);
-   rarch_system_info_t *system = runloop_get_system_info();
+   size_t msg_size             = 1024 * sizeof(char);
+   char *msg                   = (char*)malloc(msg_size);
    bool used_vfs_fallback_copy = false;
+#ifdef __WINRT__
+   rarch_system_info_t *system = runloop_get_system_info();
+#endif
 
    msg[0]          = '\0';
 
@@ -629,14 +631,13 @@ static bool content_file_load(
          if (!system->supports_vfs && !uwp_is_path_accessible_using_standard_io(path))
          {
             /* Fallback to a file copy into an accessible directory */
-
-            union string_list_elem_attr attributes;
-            size_t new_basedir_size = PATH_MAX_LENGTH * sizeof(char);
-            size_t new_path_size = PATH_MAX_LENGTH * sizeof(char);
-            char *new_basedir = (char*)malloc(new_basedir_size);
-            char *new_path = (char*)malloc(new_path_size);
             char* buf;
             int64_t len;
+            union string_list_elem_attr attributes;
+            size_t new_basedir_size = PATH_MAX_LENGTH * sizeof(char);
+            size_t new_path_size    = PATH_MAX_LENGTH * sizeof(char);
+            char *new_basedir       = (char*)malloc(new_basedir_size);
+            char *new_path          = (char*)malloc(new_path_size);
 
             new_path[0] = '\0';
             new_basedir[0] = '\0';
@@ -658,7 +659,8 @@ static bool content_file_load(
             fill_pathname_join(new_path, new_basedir,
                path_basename(path), new_path_size);
 
-            /* TODO: This may fail on very large files... but copying large files is not a good idea anyway */
+            /* TODO: This may fail on very large files... 
+             * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
                snprintf(msg,
@@ -697,7 +699,8 @@ static bool content_file_load(
 #endif
 
 
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+         RARCH_LOG("%s\n", msg_hash_to_str(
+                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
 
@@ -710,19 +713,17 @@ static bool content_file_load(
 
    if (!core_load_game(&load_info))
    {
+      /* This is probably going to fail on multifile ROMs etc. 
+       * so give a visible explanation of what is likely wrong */
       if (used_vfs_fallback_copy)
-      {
-         /* This is probably going to fail on multifile ROMs etc. so give a visible explanation of what is likely wrong */
          snprintf(msg,
             msg_size,
             "%s.", msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
-      }
       else
-      {
          snprintf(msg,
             msg_size,
             "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
-      }
+
       *error_string = strdup(msg);
       goto error;
    }

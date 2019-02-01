@@ -7884,3 +7884,11 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Mantener Start (2 segundos)"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
+    )

@@ -191,6 +191,7 @@ enum audio_driver_enum
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
+   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -394,6 +395,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
+#elif defined(HAVE_COREAUDIO3)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_XAUDIO)
@@ -526,14 +529,14 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
+#elif defined(IOS)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_HID)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
 #elif defined(EMSCRIPTEN)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
-#elif defined(IOS)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #else
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
 #endif
@@ -667,6 +670,8 @@ const char *config_get_default_audio(void)
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
+      case AUDIO_COREAUDIO3:
+         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:
@@ -1685,7 +1690,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
 #ifdef HAVE_OZONE
-   SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 0, false);
+   SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 1, false);
 #endif
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);

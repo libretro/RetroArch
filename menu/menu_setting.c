@@ -3746,7 +3746,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,

@@ -390,6 +390,7 @@ static void retroarch_print_features(void)
    _PSUPP(vg,              "OpenVG",          "Video context driver");
 
    _PSUPP(coreaudio,       "CoreAudio",       "Audio driver");
+   _PSUPP(coreaudio3,      "CoreAudioV3",     "Audio driver");
    _PSUPP(alsa,            "ALSA",            "Audio driver");
    _PSUPP(oss,             "OSS",             "Audio driver");
    _PSUPP(jack,            "Jack",            "Audio driver");
@@ -3768,4 +3769,43 @@ struct retro_system_info *runloop_get_libretro_system_info(void)
 char *get_retroarch_launch_arguments(void)
 {
    return launch_arguments;
+}
+
+void rarch_force_video_driver_fallback(const char *driver)
+{
+   settings_t *settings = config_get_ptr();
+   ui_msg_window_t *msg_window = NULL;
+
+   strlcpy(settings->arrays.video_driver, driver, sizeof(settings->arrays.video_driver));
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+#ifdef _WIN32
+   /* UI companion driver is not inited yet, just call into it directly */
+   msg_window = &ui_msg_window_win32;
+#endif
+
+   if (msg_window)
+   {
+      ui_msg_window_state window_state;
+      char *title = strdup(msg_hash_to_str(MSG_ERROR));
+      char text[PATH_MAX_LENGTH];
+
+      text[0]              = '\0';
+
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            driver);
+
+      window_state.buttons = UI_MSG_WINDOW_OK;
+      window_state.text    = strdup(text);
+      window_state.title   = title;
+      window_state.window  = NULL;
+
+      msg_window->error(&window_state);
+
+      free(title);
+   }
+
+   exit(1);
 }

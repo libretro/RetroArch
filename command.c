@@ -175,7 +175,7 @@ static bool command_version(const char* arg)
 {
    char reply[256] = {0};
 
-   sprintf(reply, "%s\n", PACKAGE_VERSION);
+   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
 #if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
    command_reply(reply, strlen(reply));
 #endif
@@ -292,7 +292,7 @@ static bool command_read_ram(const char *arg)
 
    if (data)
    {
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
@@ -304,7 +304,7 @@ static bool command_read_ram(const char *arg)
    }
    free(reply);
 #else
-      cheevos_var_t var;
+   cheevos_var_t var;
    unsigned i;
    char reply[256]      = {0};
    const uint8_t * data = NULL;
@@ -324,7 +324,7 @@ static bool command_read_ram(const char *arg)
    {
       unsigned nbytes = strtol(reply_at, NULL, 10);
 
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);

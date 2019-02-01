@@ -1091,6 +1091,24 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT),
+         _coreaudio_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT),
+         _coreaudio3_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT),
          _dsound_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
@@ -4207,7 +4225,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
    if (info->push_builtin_cores)
    {
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
             msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),

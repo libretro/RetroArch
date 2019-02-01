@@ -57,6 +57,7 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#include "../../tasks/task_audio_mixer.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
@@ -4698,7 +4699,7 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
       refreshrate = strtoul(pch, NULL, 0);
 
    if (video_display_server_set_resolution(width, height,
-         refreshrate, (float)refreshrate, 0, NULL))
+         refreshrate, (float)refreshrate, 0, 0))
    {
       settings_t *settings = config_get_ptr();
 

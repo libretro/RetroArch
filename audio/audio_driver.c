@@ -21,6 +21,7 @@
 #include <lists/string_list.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
+#include <audio/audio_resampler.h>
 #include <audio/dsp_filter.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
@@ -36,6 +37,7 @@
 #include "../gfx/video_driver.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
+#include "../tasks/task_audio_mixer.h"
 #include "../tasks/tasks_internal.h"
 
 #include "../command.h"
@@ -86,6 +88,9 @@ static const audio_driver_t *audio_drivers[] = {
 #endif
 #ifdef HAVE_COREAUDIO
    &audio_coreaudio,
+#endif
+#ifdef HAVE_COREAUDIO3
+   &audio_coreaudio3,
 #endif
 #ifdef HAVE_AL
    &audio_openal,
@@ -224,7 +229,7 @@ static void audio_mixer_menu_stop_cb(
 #define audio_driver_unlock()
 #endif
 
-enum resampler_quality audio_driver_get_resampler_quality(void)
+static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
    settings_t *settings = config_get_ptr();
 

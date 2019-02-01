@@ -25,7 +25,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "gfx/video_driver.h"
+#include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
