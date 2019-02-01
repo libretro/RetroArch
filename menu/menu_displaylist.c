@@ -542,7 +542,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    if (frontend)
    {
-      char tmp2[8192];
+      char tmp2[PATH_MAX_LENGTH];
       int                  major = 0;
       int                  minor = 0;
 
