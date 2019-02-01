@@ -52,7 +52,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#include <sys/poll.h>
+#include <poll.h>
 #endif
 #include <fcntl.h>
 #ifdef _WIN32
