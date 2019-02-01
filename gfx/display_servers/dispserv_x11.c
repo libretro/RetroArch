@@ -83,7 +83,7 @@ static void x11_display_server_destroy(void *data)
       system(output);
 
       snprintf(output, sizeof(output),
-            "xrandr --delmode %s %s",orig_output, old_mode);
+            "xrandr --delmode %s %.s",orig_output, old_mode);
       system(output);
 
 
@@ -267,14 +267,16 @@ static bool x11_display_server_set_resolution(void *data,
  
    if (monitor_index == 0)
    {
+      
       for (int i = 0; i < res->noutput; i++)
       { 
-   
-        
+
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
+
       
          if (outputs->connection == RR_Connected)
          {
+            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
  
             snprintf(output4, sizeof(output4),"xrandr --addmode %s %s",outputs->name ,new_mode);
             system(output4);
