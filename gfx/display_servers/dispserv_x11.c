@@ -83,7 +83,7 @@ static void x11_display_server_destroy(void *data)
       system(output);
 
       snprintf(output, sizeof(output),
-            "xrandr --delmode %s %s",orig_output, old_mode);
+            "xrandr --delmode %s %.s",orig_output, old_mode);
       system(output);
 
 
