@@ -401,6 +401,8 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
 #elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+#elif TARGET_OS_TV
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
 #else
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
