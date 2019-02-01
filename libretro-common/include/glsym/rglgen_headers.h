@@ -39,6 +39,7 @@
 #endif
 
 #elif defined(__APPLE__)
+#include <compat/apple_compat.h>
 #if MAC_OS_X_VERSION_10_7
 #include <OpenGL/gl3.h>
 #include <OpenGL/gl3ext.h>
