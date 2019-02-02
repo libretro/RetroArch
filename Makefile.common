@@ -1554,8 +1554,6 @@ ifeq ($(HAVE_ZLIB), 1)
    else
       LIBS += $(ZLIB_LIBS)
    endif
-endif
-
 ifeq ($(HAVE_CHD), 1)
    DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
@@ -1567,7 +1565,6 @@ ifeq ($(HAVE_CHD), 1)
 	
 
 
-   ifeq ($(HAVE_ZLIB), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
    ifeq ($(HAVE_FLAC),1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
@@ -1576,7 +1573,7 @@ ifeq ($(HAVE_CHD), 1)
    ifeq ($(HAVE_7ZIP), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
    endif
-   endif
+endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)
