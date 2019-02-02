@@ -1566,15 +1566,15 @@ ifeq ($(HAVE_CHD), 1)
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
 	
 
-   ifeq ($(HAVE_7ZIP), 1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
-   endif
 
    ifeq ($(HAVE_ZLIB), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
    ifeq ($(HAVE_FLAC),1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+   endif
+   ifeq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
    endif
    endif
 endif
