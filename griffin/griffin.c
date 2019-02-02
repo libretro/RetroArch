@@ -1381,9 +1381,9 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_ZLIB
-#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 
 #ifdef HAVE_CHD
+#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
