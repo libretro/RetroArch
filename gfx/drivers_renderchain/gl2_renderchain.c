@@ -215,6 +215,64 @@ static void gl2_renderchain_convert_geometry(
    }
 }
 
+static void gl_size_format(GLint* internalFormat)
+{
+#ifndef HAVE_PSGL
+   switch (*internalFormat)
+   {
+      case GL_RGB:
+         /* FIXME: PS3 does not support this, neither does it have GL_RGB565_OES. */
+         *internalFormat = GL_RGB565;
+         break;
+      case GL_RGBA:
+#ifdef HAVE_OPENGLES2
+         *internalFormat = GL_RGBA8_OES;
+#else
+         *internalFormat = GL_RGBA8;
+#endif
+         break;
+   }
+#endif
+}
+
+/* This function should only be used without mipmaps
+   and when data == NULL */
+static void gl_load_texture_image(GLenum target,
+      GLint level,
+      GLint internalFormat,
+      GLsizei width,
+      GLsizei height,
+      GLint border,
+      GLenum format,
+      GLenum type,
+      const GLvoid * data)
+{
+#if !defined(HAVE_PSGL) && !defined(ORBIS)
+#ifdef HAVE_OPENGLES2
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT) && internalFormat != GL_BGRA_EXT)
+   {
+      gl_size_format(&internalFormat);
+      glTexStorage2DEXT(target, 1, internalFormat, width, height);
+   }
+#else
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE) && internalFormat != GL_BGRA_EXT)
+   {
+      gl_size_format(&internalFormat);
+      glTexStorage2D(target, 1, internalFormat, width, height);
+   }
+#endif
+   else
+#endif
+   {
+#ifdef HAVE_OPENGLES
+      if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
+#endif
+         gl_size_format(&internalFormat);
+      glTexImage2D(target, level, internalFormat, width,
+            height, border, format, type, data);
+   }
+}
+
 static bool gl_recreate_fbo(
       struct video_fbo_rect *fbo_rect,
       GLuint fbo,

@@ -411,7 +411,6 @@ VIDEO DRIVER
 #include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
-#include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
 #include "../gfx/drivers_renderchain/gl2_renderchain.c"

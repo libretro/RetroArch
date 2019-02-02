@@ -356,26 +356,6 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-bool gl_query_core_context_in_use(void);
-
-void gl_load_texture_image(GLenum target,
-      GLint level,
-      GLint internalFormat,
-      GLsizei width,
-      GLsizei height,
-      GLint border,
-      GLenum format,
-      GLenum type,
-      const GLvoid * data);
-
-void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size);
-
 static INLINE GLenum gl_min_filter_to_mag(GLenum type)
 {
    switch (type)
@@ -407,6 +387,8 @@ static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
 
    return true;
 }
+
+bool gl_query_core_context_in_use(void);
 
 bool gl_load_luts(
       const void *shader_data,
