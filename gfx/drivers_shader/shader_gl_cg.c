@@ -761,33 +761,6 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    return true;
 }
 
-static bool gl_cg_load_luts(
-      const struct video_shader *shader,
-      GLuint *textures_lut)
-{
-   unsigned i;
-   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
-
-   if (!shader->luts)
-      return true;
-
-   glGenTextures(num_luts, textures_lut);
-
-   for (i = 0; i < num_luts; i++)
-   {
-      if (!gl_add_lut(
-               shader->lut[i].path,
-               shader->lut[i].mipmap,
-               shader->lut[i].filter,
-               shader->lut[i].wrap,
-               i, textures_lut))
-         return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
-}
-
 static bool gl_cg_load_preset(void *data, const char *path)
 {
    unsigned i;
@@ -848,7 +821,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       }
    }
 
-   if (!gl_cg_load_luts(cg->shader, cg->lut_textures))
+   if (!gl_load_luts(cg->shader, cg->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;

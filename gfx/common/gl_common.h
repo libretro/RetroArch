@@ -415,6 +415,10 @@ bool gl_add_lut(
       enum gfx_wrap_type lut_wrap_type,
       unsigned i, void *textures_data);
 
+bool gl_load_luts(
+      const void *shader_data,
+      GLuint *textures_lut);
+
 RETRO_END_DECLS
 
 #endif

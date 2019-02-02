@@ -128,6 +128,35 @@ void context_bind_hw_render(void *data, bool enable)
    gl_context_bind_hw_render(gl, enable);
 }
 
+bool gl_load_luts(
+      const void *shader_data,
+      GLuint *textures_lut)
+{
+   unsigned i;
+   const struct video_shader *shader = 
+      (const struct video_shader*)shader_data;
+   unsigned num_luts                 = MIN(shader->luts, GFX_MAX_TEXTURES);
+
+   if (!shader->luts)
+      return true;
+
+   glGenTextures(num_luts, textures_lut);
+
+   for (i = 0; i < num_luts; i++)
+   {
+      if (!gl_add_lut(
+               shader->lut[i].path,
+               shader->lut[i].mipmap,
+               shader->lut[i].filter,
+               shader->lut[i].wrap,
+               i, textures_lut))
+         return false;
+   }
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return true;
+}
+
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl)
 {

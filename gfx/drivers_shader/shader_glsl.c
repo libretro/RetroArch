@@ -158,33 +158,6 @@ static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
 
-static bool gl_glsl_load_luts(
-      const struct video_shader *shader,
-      GLuint *textures_lut)
-{
-   unsigned i;
-   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
-
-   if (!shader->luts)
-      return true;
-
-   glGenTextures(num_luts, textures_lut);
-
-   for (i = 0; i < num_luts; i++)
-   {
-      if (!gl_add_lut(
-               shader->lut[i].path,
-               shader->lut[i].mipmap,
-               shader->lut[i].filter,
-               shader->lut[i].wrap,
-               i, textures_lut))
-         return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
-}
-
 static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
 {
@@ -1020,7 +993,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!gl_glsl_compile_programs(glsl, &glsl->prg[1]))
       goto error;
 
-   if (!gl_glsl_load_luts(glsl->shader, glsl->lut_textures))
+   if (!gl_load_luts(glsl->shader, glsl->lut_textures))
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       goto error;
