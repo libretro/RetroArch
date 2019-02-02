@@ -12,7 +12,6 @@
 #ifndef __D3DX11TEX_H__
 #define __D3DX11TEX_H__
 
-
 //----------------------------------------------------------------------------
 // D3DX11_FILTER flags:
 // ------------------
@@ -144,8 +143,6 @@ typedef enum D3DX11_CHANNEL_FLAG
     D3DX11_CHANNEL_LUMINANCE     =    (1 << 4),
 } D3DX11_CHANNEL_FLAG;
 
-
-
 //----------------------------------------------------------------------------
 // D3DX11_IMAGE_FILE_FORMAT:
 // ---------------------
@@ -166,7 +163,6 @@ typedef enum D3DX11_IMAGE_FILE_FORMAT
 
 } D3DX11_IMAGE_FILE_FORMAT;
 
-
 //----------------------------------------------------------------------------
 // D3DX11_SAVE_TEXTURE_FLAG:
 // ---------------------
@@ -178,7 +174,6 @@ typedef enum D3DX11_SAVE_TEXTURE_FLAG
 {
     D3DX11_STF_USEINPUTBLOB      = 0x0001,
 } D3DX11_SAVE_TEXTURE_FLAG;
-
 
 //----------------------------------------------------------------------------
 // D3DX11_IMAGE_INFO:
@@ -220,15 +215,9 @@ typedef struct D3DX11_IMAGE_INFO
     D3DX11_IMAGE_FILE_FORMAT    ImageFileFormat;
 } D3DX11_IMAGE_INFO;
 
-
-
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Image File APIs ///////////////////////////////////////////////////////////
@@ -270,7 +259,6 @@ extern "C" {
 //      (optional) pointer to a D3DX11_IMAGE_INFO structure that will get 
 //      populated with source image information
 //----------------------------------------------------------------------------
-
 
 typedef struct D3DX11_IMAGE_LOAD_INFO
 {
@@ -358,7 +346,6 @@ HRESULT WINAPI
 #define D3DX11GetImageInfoFromFile D3DX11GetImageInfoFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DX11GetImageInfoFromResourceA(
         HMODULE                   hSrcModule,
@@ -381,7 +368,6 @@ HRESULT WINAPI
 #define D3DX11GetImageInfoFromResource D3DX11GetImageInfoFromResourceA
 #endif
 
-
 HRESULT WINAPI
     D3DX11GetImageInfoFromMemory(
         LPCVOID                   pSrcData,
@@ -389,7 +375,6 @@ HRESULT WINAPI
         ID3DX11ThreadPump*        pPump,
         D3DX11_IMAGE_INFO*        pSrcInfo,
         HRESULT*                  pHResult);
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Create/Save Texture APIs //////////////////////////////////////////////////
@@ -431,7 +416,6 @@ HRESULT WINAPI
 //      the asynchronous execution completes.
 //
 //----------------------------------------------------------------------------
-
 
 // FromFile
 
@@ -482,7 +466,6 @@ HRESULT WINAPI
 #else
 #define D3DX11CreateTextureFromFile D3DX11CreateTextureFromFileA
 #endif
-
 
 // FromResource (resources in dll/exes)
 
@@ -538,7 +521,6 @@ HRESULT WINAPI
 #define D3DX11CreateTextureFromResource D3DX11CreateTextureFromResourceA
 #endif
 
-
 // FromFileInMemory
 
 HRESULT WINAPI
@@ -560,7 +542,6 @@ HRESULT WINAPI
         ID3DX11ThreadPump*        pPump,    
         ID3D11Resource**          ppTexture,
         HRESULT*                  pHResult);
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Misc Texture APIs /////////////////////////////////////////////////////////
@@ -603,7 +584,6 @@ typedef struct _D3DX11_TEXTURE_LOAD_INFO
 
 } D3DX11_TEXTURE_LOAD_INFO;
 
-
 //----------------------------------------------------------------------------
 // D3DX11LoadTextureFromTexture:
 // ----------------------------
@@ -613,14 +593,12 @@ typedef struct _D3DX11_TEXTURE_LOAD_INFO
 //
 //----------------------------------------------------------------------------
 
-
 HRESULT WINAPI
     D3DX11LoadTextureFromTexture(
 		ID3D11DeviceContext       *pContext,
         ID3D11Resource            *pSrcTexture,
         D3DX11_TEXTURE_LOAD_INFO  *pLoadInfo,
         ID3D11Resource            *pDstTexture);
-
 
 //----------------------------------------------------------------------------
 // D3DX11FilterTexture:
@@ -644,7 +622,6 @@ HRESULT WINAPI
         ID3D11Resource            *pTexture,
         UINT                      SrcLevel,
         UINT                      MipFilter);
-
 
 //----------------------------------------------------------------------------
 // D3DX11SaveTextureToFile:
@@ -681,7 +658,6 @@ HRESULT WINAPI
 #define D3DX11SaveTextureToFile D3DX11SaveTextureToFileA
 #endif
 
-
 //----------------------------------------------------------------------------
 // D3DX11SaveTextureToMemory:
 // ----------------------
@@ -705,7 +681,6 @@ HRESULT WINAPI
         D3DX11_IMAGE_FILE_FORMAT   DestFormat,
         ID3D10Blob**               ppDestBuf,
         UINT                       Flags);
-
 
 //----------------------------------------------------------------------------
 // D3DX11ComputeNormalMap:
@@ -734,7 +709,6 @@ HRESULT WINAPI
         UINT                      Channel,
         FLOAT                     Amplitude,
         ID3D11Texture2D		     *pDestTexture);
-
 
 //----------------------------------------------------------------------------
 // D3DX11SHProjectCubeMap:
@@ -769,4 +743,3 @@ HRESULT WINAPI
 #endif //__cplusplus
 
 #endif //__D3DX11TEX_H__
-

@@ -1,8 +1,8 @@
 #ifndef __DIRTY_INPUT_H___
 #define __DIRTY_INPUT_H___
 
-#include "retro_common_api.h"
-#include "boolean.h"
+#include <boolean.h>
+#include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 

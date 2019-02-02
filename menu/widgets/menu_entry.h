@@ -56,6 +56,7 @@ typedef struct menu_entry
    char *sublabel;
    char *rich_label;
    char *value;
+   bool checked;
 } menu_entry_t;
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
@@ -99,6 +100,8 @@ char *menu_entry_get_sublabel(menu_entry_t *entry);
 void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len);
 
 void menu_entry_set_value(uint32_t i, const char *s);
+
+bool menu_entry_is_password(menu_entry_t *entry);
 
 uint32_t menu_entry_num_has_range(uint32_t i);
 

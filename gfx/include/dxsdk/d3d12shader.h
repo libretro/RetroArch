@@ -40,7 +40,6 @@ typedef D3D_RESOURCE_RETURN_TYPE D3D12_RESOURCE_RETURN_TYPE;
 
 typedef D3D_CBUFFER_TYPE D3D12_CBUFFER_TYPE;
 
-
 typedef struct _D3D12_SIGNATURE_PARAMETER_DESC
 {
     LPCSTR                      SemanticName;   // Name of the semantic
@@ -173,7 +172,6 @@ typedef struct _D3D12_SHADER_INPUT_BIND_DESC
 #define D3D_SHADER_REQUIRES_ROVS                                                            0x00001000
 #define D3D_SHADER_REQUIRES_VIEWPORT_AND_RT_ARRAY_INDEX_FROM_ANY_SHADER_FEEDING_RASTERIZER  0x00002000
 
-
 typedef struct _D3D12_LIBRARY_DESC
 {
     LPCSTR    Creator;           // The name of the originator of the library.
@@ -238,7 +236,6 @@ typedef struct _D3D12_PARAMETER_DESC
     UINT                        FirstOutComponent;  // The first output register component for this parameter.
 } D3D12_PARAMETER_DESC;
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Interfaces ////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -263,7 +260,6 @@ typedef interface ID3D12FunctionReflection *LPD3D12FUNCTIONREFLECTION;
 
 typedef interface ID3D12FunctionParameterReflection ID3D12FunctionParameterReflection;
 typedef interface ID3D12FunctionParameterReflection *LPD3D12FUNCTIONPARAMETERREFLECTION;
-
 
 // {E913C351-783D-48CA-A1D1-4F306284AD56}
 interface DECLSPEC_UUID("E913C351-783D-48CA-A1D1-4F306284AD56") ID3D12ShaderReflectionType;
@@ -442,7 +438,6 @@ DECLARE_INTERFACE(ID3D12FunctionParameterReflection)
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_PARAMETER_DESC * pDesc) PURE;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////
 // APIs //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -456,4 +451,3 @@ extern "C" {
 #endif //__cplusplus
     
 #endif //__D3D12SHADER_H__
-

@@ -20,8 +20,15 @@
 #include "video_driver.h"
 #include "../verbosity.h"
 
-static const video_display_server_t *current_display_server = NULL;
-static void *current_display_server_data = NULL;
+static const video_display_server_t *current_display_server = &dispserv_null;
+static void                    *current_display_server_data = NULL;
+
+const char *video_display_server_get_ident(void)
+{
+   if (!current_display_server)
+      return "null";
+   return current_display_server->ident;
+}
 
 void* video_display_server_init(void)
 {
@@ -32,7 +39,7 @@ void* video_display_server_init(void)
    switch (type)
    {
       case RARCH_DISPLAY_WIN32:
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          current_display_server = &dispserv_win32;
 #endif
          break;
@@ -82,13 +89,19 @@ bool video_display_server_set_window_decorations(bool on)
    return false;
 }
 
-
-bool video_display_server_switch_resolution(unsigned width, unsigned height,
-      int int_hz, float hz, int center)
+bool video_display_server_set_resolution(unsigned width, unsigned height,
+      int int_hz, float hz, int center, int monitor_index)
 {
-   if (current_display_server && current_display_server->switch_resolution)
-      return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz, center);
+   if (current_display_server && current_display_server->set_resolution)
+      return current_display_server->set_resolution(current_display_server_data, width, height, int_hz, hz, center, monitor_index);
    return false;
+}
+
+void *video_display_server_get_resolution_list(unsigned *size)
+{
+   if (current_display_server && current_display_server->get_resolution_list)
+      return current_display_server->get_resolution_list(current_display_server_data, size);
+   return NULL;
 }
 
 const char *video_display_server_get_output_options(void)

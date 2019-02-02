@@ -41,7 +41,7 @@
 #endif
 
 static char msg_old[PATH_MAX_LENGTH];
-id<ApplePlatform> apple_platform;
+static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
@@ -239,7 +239,7 @@ enum
 // This is for iOS versions < 9.0
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   /* This gets called twice with the same timestamp 
+   /* This gets called twice with the same timestamp
     * for each keypress, that's fine for polling
     * but is bad for business with events. */
    static double last_time_stamp;
@@ -248,7 +248,7 @@ enum
       return [super _keyCommandForEvent:event];
    last_time_stamp = event.timestamp;
    
-   /* If the _hidEvent is null, [event _keyCode] will crash. 
+   /* If the _hidEvent is null, [event _keyCode] will crash.
     * (This happens with the on screen keyboard). */
    if (event._hidEvent)
    {
@@ -299,13 +299,13 @@ enum
       handle_touch_event(event.allTouches.allObjects);
 
    get_ios_version(&major, &minor);
-    
+   
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
    if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       /* Keyboard event hack for iOS versions prior to iOS 7.
        *
-       * Derived from: 
+       * Derived from:
        * http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
        */
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
@@ -338,7 +338,12 @@ enum
 
 -(NSString*)documentsDirectory {
     if ( _documentsDirectory == nil ) {
+#if TARGET_OS_IOS       
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+#elif TARGET_OS_TV
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+#endif        
+        
         _documentsDirectory = paths.firstObject;
     }
     return _documentsDirectory;
@@ -362,9 +367,11 @@ enum
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
+#if TARGET_OS_IOS
    self.mainmenu = [RAMainMenu new];
    self.mainmenu.last_menu = self.mainmenu;
    [self pushViewController:self.mainmenu animated:NO];
+#endif
 
    [self refreshSystemConfig];
    [self showGameView];
@@ -379,7 +386,7 @@ enum
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-    
+  
 #ifdef HAVE_MFI
     extern bool apple_gamecontroller_joypad_init(void *data);
     apple_gamecontroller_joypad_init(NULL);
@@ -430,7 +437,7 @@ enum
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
    NSError     *error = nil;
-    
+   
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
    if (error)
@@ -441,7 +448,9 @@ enum
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
+#if TARGET_OS_IOS
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
+#endif
    [self refreshSystemConfig];
 }
 
@@ -451,10 +460,15 @@ enum
     /* implicitly initializes your audio session */
    [self supportOtherAudioSessions];
 #endif
-   [self popToRootViewControllerAnimated:NO];
+   
+    [self popToRootViewControllerAnimated:NO];
+
+#if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
-   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+#endif
+   
+    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
    ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_START);
@@ -468,7 +482,10 @@ enum
 #endif
    rarch_enable_ui();
 
+#if TARGET_OS_IOS
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
+#endif
+    
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];
 }
@@ -491,23 +508,28 @@ enum
 
 - (void)refreshSystemConfig
 {
+#if TARGET_OS_IOS
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait 
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
+#endif
 }
 
-- (void)mainMenuRefresh 
+- (void)mainMenuRefresh
 {
+#if TARGET_OS_IOS
   [self.mainmenu reloadData];
+#endif
 }
 
 - (void)mainMenuPushPop: (bool)pushp
 {
+#if TARGET_OS_IOS
   if ( pushp )
   {
      self.menu_count++;
@@ -525,9 +547,10 @@ enum
         self.menu_count--;
 
         [self popViewControllerAnimated:YES];
-        self.mainmenu = self.mainmenu.last_menu;      
+        self.mainmenu = self.mainmenu.last_menu;
      }
   }
+#endif
 }
 
 - (void)supportOtherAudioSessions
@@ -542,7 +565,9 @@ enum
 
 - (void)mainMenuRenderMessageBox:(NSString *)msg
 {
+#if TARGET_OS_IOS
   [self.mainmenu renderMessageBox:msg];
+#endif
 }
 
 @end
@@ -593,7 +618,7 @@ static void ui_companion_cocoatouch_notify_content_loaded(void *data)
       [ap showGameView];
 }
 
-static void ui_companion_cocoatouch_toggle(void *data, bool force)
+static void ui_companion_cocoatouch_toggle(void *data)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
@@ -608,7 +633,7 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
    RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
 
    (void)data;
-    
+   
    if (ap)
       [ap showPauseMenu:ap];
 
@@ -662,7 +687,7 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
      printf( "notify_list_pushed: old size should not be larger\n" );
 
    old_size = new_size;
-      
+   
    if (ap)
      [ap mainMenuPushPop: pushp];
 }
@@ -686,15 +711,16 @@ static void ui_companion_cocoatouch_render_messagebox(const char *msg)
    }
 }
 
-static void ui_companion_cocoatouch_msg_queue_push(void *data,
-      const char *msg,
-      unsigned priority, unsigned duration, bool flush)
+static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
+   unsigned priority, unsigned duration, bool flush)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
    if (ap && msg)
    {
+#if TARGET_OS_IOS
       [ap.mainmenu msgQueuePush: [NSString stringWithUTF8String:msg]];
+#endif
    }
 }
 

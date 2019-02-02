@@ -4,7 +4,10 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
@@ -13,7 +16,10 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #undef TEMP_EXTENSION
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
@@ -191,7 +197,6 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    reply->disconnect();
    reply->close();
-   reply->deleteLater();
 }
 
 void MainWindow::onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
@@ -309,6 +314,11 @@ void MainWindow::onThumbnailPackExtractFinished(bool success)
 
    emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
 
+   QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
+
+   m_playlistModel->reloadSystemThumbnails(reply->property("system").toString());
+   reply->deleteLater();
+   updateVisibleItems();
    /* reload thumbnail image */
    emit itemChanged();
 }

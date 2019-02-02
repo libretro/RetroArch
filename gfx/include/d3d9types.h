@@ -10,7 +10,6 @@
 #ifndef _d3d9TYPES_H_
 #define _d3d9TYPES_H_
 
-
 #ifndef DIRECT3D_VERSION
 #define DIRECT3D_VERSION         0x0900
 #endif
@@ -47,7 +46,6 @@ typedef DWORD D3DCOLOR;
 #define D3DCOLOR_COLORVALUE(r,g,b,a) \
     D3DCOLOR_RGBA((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f),(DWORD)((a)*255.f))
 
-
 #ifndef D3DVECTOR_DEFINED
 typedef struct _D3DVECTOR {
     float x;
@@ -77,8 +75,6 @@ typedef struct _D3DRECT {
 #define D3DRECT_DEFINED
 #endif
 
-
-
 #ifndef D3DMATRIX_DEFINED
 typedef struct _D3DMATRIX {
     union {
@@ -94,8 +90,6 @@ typedef struct _D3DMATRIX {
 } D3DMATRIX;
 #define D3DMATRIX_DEFINED
 #endif
-
-
 
 typedef struct _D3DVIEWPORT9 {
     DWORD       X;
@@ -439,7 +433,6 @@ typedef enum _D3DRENDERSTATETYPE {
     D3DRS_DESTBLENDALPHA            = 208,  /* DST blend factor for the alpha channel when D3DRS_SEPARATEDESTALPHAENABLE is TRUE */
     D3DRS_BLENDOPALPHA              = 209,  /* Blending operation for the alpha channel when D3DRS_SEPARATEDESTALPHAENABLE is TRUE */
 
-
     D3DRS_FORCE_DWORD               = 0x7fffffff /* force 32-bit size enum */
 } D3DRENDERSTATETYPE;
 
@@ -499,7 +492,6 @@ typedef enum _D3DTEXTURESTAGESTATETYPE
     D3DTSS_ALPHAARG0      = 27, /* D3DTA_* third arg for triadic ops */
     D3DTSS_RESULTARG      = 28, /* D3DTA_* arg for result (CURRENT or TEMP) */
     D3DTSS_CONSTANT       = 32, /* Per-stage constant D3DTA_CONSTANT */
-
 
     D3DTSS_FORCE_DWORD   = 0x7fffffff /* force 32-bit size enum */
 } D3DTEXTURESTAGESTATETYPE;
@@ -781,8 +773,6 @@ typedef struct _D3DVERTEXELEMENT9
  */
 #define D3DSTREAMSOURCE_INDEXEDDATA  (1<<30)
 #define D3DSTREAMSOURCE_INSTANCEDATA (2<<30)
-
-
 
 /*---------------------------------------------------------------------
  *
@@ -1203,7 +1193,6 @@ typedef enum _D3DSHADER_MIN_PRECISION
 #define D3DPS_END()  0x0000FFFF
 #define D3DVS_END()  0x0000FFFF
 
-
 /*--------------------------------------------------------------------- */
 
 /* High order surfaces */
@@ -1272,7 +1261,6 @@ typedef enum _D3DTEXTURETRANSFORMFLAGS {
 #define D3DFVF_TEXCOORDSIZE2(CoordIndex) (D3DFVF_TEXTUREFORMAT2)
 #define D3DFVF_TEXCOORDSIZE4(CoordIndex) (D3DFVF_TEXTUREFORMAT4 << (CoordIndex*2 + 16))
 #define D3DFVF_TEXCOORDSIZE1(CoordIndex) (D3DFVF_TEXTUREFORMAT1 << (CoordIndex*2 + 16))
-
 
 /*--------------------------------------------------------------------- */
 
@@ -1351,7 +1339,6 @@ typedef enum _D3DMULTISAMPLE_TYPE
                 ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
 #endif /* defined(MAKEFOURCC) */
 
-
 typedef enum _D3DFORMAT
 {
     D3DFMT_UNKNOWN              =  0,
@@ -1419,7 +1406,6 @@ typedef enum _D3DFORMAT
 #endif /* !D3D_DISABLE_9EX */
 /* -- D3D9Ex only */
 
-
     D3DFMT_L16                  = 81,
 
     D3DFMT_VERTEXDATA           =100,
@@ -1453,13 +1439,11 @@ typedef enum _D3DFORMAT
     /* 2.8 biased fixed point */
     D3DFMT_A2B10G10R10_XR_BIAS  = 119,
 
-
     /* Binary format indicating that the data has no inherent type */
     D3DFMT_BINARYBUFFER         = 199,
 
 #endif /* !D3D_DISABLE_9EX */
 /* -- D3D9Ex only */
-
 
     D3DFMT_FORCE_DWORD          =0x7fffffff
 } D3DFORMAT;
@@ -1481,7 +1465,6 @@ typedef struct _D3DDEVICE_CREATION_PARAMETERS
     HWND            hFocusWindow;
     DWORD           BehaviorFlags;
 } D3DDEVICE_CREATION_PARAMETERS;
-
 
 /* SwapEffects */
 typedef enum _D3DSWAPEFFECT
@@ -1510,10 +1493,8 @@ typedef enum _D3DPOOL {
     D3DPOOL_FORCE_DWORD             = 0x7fffffff
 } D3DPOOL;
 
-
 /* RefreshRate pre-defines */
 #define D3DPRESENT_RATE_DEFAULT         0x00000000
-
 
 /* Resize Optional Parameters */
 typedef struct _D3DPRESENT_PARAMETERS_
@@ -1578,7 +1559,6 @@ typedef enum _D3DBACKBUFFER_TYPE
     D3DBACKBUFFER_TYPE_FORCE_DWORD  = 0x7fffffff
 } D3DBACKBUFFER_TYPE;
 
-
 /* Types */
 typedef enum _D3DRESOURCETYPE {
     D3DRTYPE_SURFACE                =  1,
@@ -1588,7 +1568,6 @@ typedef enum _D3DRESOURCETYPE {
     D3DRTYPE_CUBETEXTURE            =  5,
     D3DRTYPE_VERTEXBUFFER           =  6,
     D3DRTYPE_INDEXBUFFER            =  7, /* if this changes, change _D3DDEVINFO_RESOURCEMANAGER definition */
-
 
     D3DRTYPE_FORCE_DWORD            = 0x7fffffff
 } D3DRESOURCETYPE;
@@ -1655,7 +1634,6 @@ typedef enum _D3DCUBEMAP_FACES
     D3DCUBEMAP_FACE_FORCE_DWORD    = 0x7fffffff
 } D3DCUBEMAP_FACES;
 
-
 /* Lock flags */
 
 #define D3DLOCK_READONLY           0x00000010L
@@ -1665,12 +1643,6 @@ typedef enum _D3DCUBEMAP_FACES
 #define D3DLOCK_DONOTWAIT          0x00004000L
 
 #define D3DLOCK_NO_DIRTY_UPDATE     0x00008000L
-
-
-
-
-
-
 
 /* Vertex Buffer Description */
 typedef struct _D3DVERTEXBUFFER_DESC
@@ -1694,7 +1666,6 @@ typedef struct _D3DINDEXBUFFER_DESC
     D3DPOOL             Pool;
     UINT                Size;
 } D3DINDEXBUFFER_DESC;
-
 
 /* Surface Description */
 typedef struct _D3DSURFACE_DESC
@@ -1801,15 +1772,12 @@ typedef struct _D3DADAPTER_IDENTIFIER9
 
 } D3DADAPTER_IDENTIFIER9;
 
-
 /* Raster Status structure returned by GetRasterStatus */
 typedef struct _D3DRASTER_STATUS
 {
     BOOL            InVBlank;
     UINT            ScanLine;
 } D3DRASTER_STATUS;
-
-
 
 /* Debug monitor tokens (DEBUG only)
 
@@ -1860,7 +1828,6 @@ typedef enum _D3DQUERYTYPE {
 /* Flags field for GetData */
 #define D3DGETDATA_FLUSH (1 << 0) /* Tells the runtime to flush if the query is outstanding. */
 
-
 typedef struct _D3DRESOURCESTATS
 {
    /* Data collected since last Present() */
@@ -1894,7 +1861,6 @@ typedef struct _D3DDEVINFO_D3DVERTEXSTATS
     DWORD   NumRenderedTriangles;       /* total number of triangles that are not clipped in this frame */
     DWORD   NumExtraClippingTriangles;  /* Number of new triangles generated by clipping */
 } D3DDEVINFO_D3DVERTEXSTATS, *LPD3DDEVINFO_D3DVERTEXSTATS;
-
 
 typedef struct _D3DDEVINFO_VCACHE {
     DWORD   Pattern;                    /* bit pattern, return value must be FOUR_CC('C', 'A', 'C', 'H') */
@@ -1978,7 +1944,6 @@ typedef struct _D3DCOMPOSERECTDESTINATION
 #define D3DFMT_A1_SURFACE_MAXWIDTH  8192
 #define D3DFMT_A1_SURFACE_MAXHEIGHT 2048
 
-
 typedef struct _D3DPRESENTSTATS {
     UINT PresentCount;
     UINT PresentRefreshCount;
@@ -1993,7 +1958,6 @@ typedef enum D3DSCANLINEORDERING
     D3DSCANLINEORDERING_PROGRESSIVE                = 1,
     D3DSCANLINEORDERING_INTERLACED                 = 2
 } D3DSCANLINEORDERING;
-
 
 typedef struct D3DDISPLAYMODEEX
 {
@@ -2011,7 +1975,6 @@ typedef struct D3DDISPLAYMODEFILTER
     D3DFORMAT               Format;
     D3DSCANLINEORDERING     ScanLineOrdering;
 } D3DDISPLAYMODEFILTER;
-
 
 typedef enum D3DDISPLAYROTATION
 {
@@ -2084,7 +2047,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYPROTECTION_OUTPUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYPROTECTION_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_CHANNELTYPE,
 0xbc1b18a5, 0xb1fb, 0x42ab, 0xbd, 0x94, 0xb5, 0x82, 0x8b, 0x4b, 0xf7, 0xbe);
 
@@ -2096,7 +2058,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYCHANNELTYPE_OUTPUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYCHANNELTYPE_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_DEVICEHANDLE,
 0xec1c539d, 0x8cff, 0x4e2a, 0xbc, 0xc4, 0xf5, 0x69, 0x2f, 0x99, 0xf4, 0x80);
 
@@ -2107,7 +2068,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYDEVICEHANDLE_OUTPUT
     HANDLE   DeviceHandle;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYDEVICEHANDLE_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_CRYPTOSESSION,
 0x2634499e, 0xd018, 0x4d74, 0xac, 0x17, 0x7f, 0x72, 0x40, 0x59, 0x52, 0x8d);
@@ -2130,7 +2090,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYCRYPTOSESSION_OUTPUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYCRYPTOSESSION_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_RESTRICTEDSHAREDRESOURCEPROCESSCOUNT,
 0xdb207b3, 0x9450, 0x46a6, 0x82, 0xde, 0x1b, 0x96, 0xd4, 0x4f, 0x9c, 0xf2);
 
@@ -2141,7 +2100,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYRESTRICTEDSHAREDRESOURCEPROCESSCOUN
     UINT   NumRestrictedSharedResourceProcesses;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYRESTRICTEDSHAREDRESOURCEPROCESSCOUNT_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_RESTRICTEDSHAREDRESOURCEPROCESS,
 0x649bbadb, 0xf0f4, 0x4639, 0xa1, 0x5b, 0x24, 0x39, 0x3f, 0xc3, 0xab, 0xac);
@@ -2171,7 +2129,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYRESTRICTEDSHAREDRESOURCEPROCESS_OUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYRESTRICTEDSHAREDRESOURCEPROCESS_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_UNRESTRICTEDPROTECTEDSHAREDRESOURCECOUNT,
 0x12f0bd6, 0xe662, 0x4474, 0xbe, 0xfd, 0xaa, 0x53, 0xe5, 0x14, 0x3c, 0x6d);
 
@@ -2182,7 +2139,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYUNRESTRICTEDPROTECTEDSHAREDRESOURCE
     UINT   NumUnrestrictedProtectedSharedResources;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYUNRESTRICTEDPROTECTEDSHAREDRESOURCECOUNT_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_OUTPUTIDCOUNT,
 0x2c042b5e, 0x8c07, 0x46d5, 0xaa, 0xbe, 0x8f, 0x75, 0xcb, 0xad, 0x4c, 0x31);
@@ -2205,7 +2161,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYOUTPUTIDCOUNT_OUTPUT
     UINT    NumOutputIDs;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYOUTPUTIDCOUNT_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_OUTPUTID,
 0x839ddca3, 0x9b4e, 0x41e4, 0xb0, 0x53, 0x89, 0x2b, 0xd2, 0xa1, 0x1e, 0xe7);
@@ -2230,7 +2185,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYOUTPUTID_OUTPUT
     UINT64  OutputID;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYOUTPUTID_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_ACCESSIBILITYATTRIBUTES,
 0x6214d9d2, 0x432c, 0x4abb, 0x9f, 0xce, 0x21, 0x6e, 0xea, 0x26, 0x9e, 0x3b);
@@ -2260,7 +2214,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYINFOBUSTYPE_OUTPUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYINFOBUSTYPE_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_ENCRYPTIONWHENACCESSIBLEGUIDCOUNT,
 0xb30f7066, 0x203c, 0x4b07, 0x93, 0xfc, 0xce, 0xaa, 0xfd, 0x61, 0x24, 0x1e);
 
@@ -2271,7 +2224,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYEVICTIONENCRYPTIONGUIDCOUNT_OUTPUT
     UINT   NumEncryptionGuids;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYEVICTIONENCRYPTIONGUIDCOUNT_OUTPUT;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_ENCRYPTIONWHENACCESSIBLEGUID,
 0xf83a5958, 0xe986, 0x4bda, 0xbe, 0xb0, 0x41, 0x1f, 0x6a, 0x7a, 0x1, 0xb7);
@@ -2293,7 +2245,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYEVICTIONENCRYPTIONGUID_OUTPUT
 
 } D3DAUTHENTICATEDCHANNEL_QUERYEVICTIONENCRYPTIONGUID_OUTPUT;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDQUERY_CURRENTENCRYPTIONWHENACCESSIBLE,
 0xec1791c7, 0xdad3, 0x4f15, 0x9e, 0xc3, 0xfa, 0xa9, 0x3d, 0x60, 0xd4, 0xf0);
 
@@ -2304,7 +2255,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_QUERYUNCOMPRESSEDENCRYPTIONLEVEL_OUTPUT
     GUID       EncryptionGuid;
 
 } D3DAUTHENTICATEDCHANNEL_QUERYUNCOMPRESSEDENCRYPTIONLEVEL_OUTPUT;
-
 
 typedef struct _D3DAUTHENTICATEDCHANNEL_CONFIGURE_INPUT
 {
@@ -2337,7 +2287,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_CONFIGUREINITIALIZE
 
 } D3DAUTHENTICATEDCHANNEL_CONFIGUREINITIALIZE;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDCONFIGURE_PROTECTION,
 0x50455658, 0x3f47, 0x4362, 0xbf, 0x99, 0xbf, 0xdf, 0xcd, 0xe9, 0xed, 0x29);
 
@@ -2348,7 +2297,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_CONFIGUREPROTECTION
     D3DAUTHENTICATEDCHANNEL_PROTECTION_FLAGS Protections;
 
 } D3DAUTHENTICATEDCHANNEL_CONFIGUREPROTECTION;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDCONFIGURE_CRYPTOSESSION,
 0x6346cc54, 0x2cfc, 0x4ad4, 0x82, 0x24, 0xd1, 0x58, 0x37, 0xde, 0x77, 0x0);
@@ -2363,7 +2311,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_CONFIGURECRYPTOSESSION
 
 } D3DAUTHENTICATEDCHANNEL_CONFIGURECRYPTOSESSION;
 
-
 DEFINE_GUID(D3DAUTHENTICATEDCONFIGURE_SHAREDRESOURCE,
 0x772d047, 0x1b40, 0x48e8, 0x9c, 0xa6, 0xb5, 0xf5, 0x10, 0xde, 0x9f, 0x1);
 
@@ -2376,7 +2323,6 @@ typedef struct _D3DAUTHENTICATEDCHANNEL_CONFIGURESHAREDRESOURCE
     BOOL                                          AllowAccess;
 
 } D3DAUTHENTICATEDCHANNEL_CONFIGURESHAREDRESOURCE;
-
 
 DEFINE_GUID(D3DAUTHENTICATEDCONFIGURE_ENCRYPTIONWHENACCESSIBLE,
 0x41fff286, 0x6ae0, 0x4d43, 0x9d, 0x55, 0xa4, 0x6e, 0x9e, 0xfd, 0x15, 0x8a);
@@ -2402,8 +2348,6 @@ typedef struct _D3DAES_CTR_IV
     UINT64   Count;      /* Big-Endian Block Count */
 } D3DAES_CTR_IV;
 
-
-
 #endif /* !D3D_DISABLE_9EX */
 /* -- D3D9Ex only */
 
@@ -2411,7 +2355,6 @@ typedef struct _D3DAES_CTR_IV
 #if _MSC_VER >= 1200
 #pragma warning(pop)
 #endif
-
 
 #endif /* (DIRECT3D_VERSION >= 0x0900) */
 #endif /* _d3d9TYPES(P)_H_ */

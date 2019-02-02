@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: VCSM
+Description: VideoCore Shared Memory library for RPi
+Version: 1
+Libs: -L${libdir} -lvcsm -lvcos
+Cflags: -I${includedir}

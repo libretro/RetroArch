@@ -54,7 +54,6 @@ struct filter_data
    int burst_toggle;
 };
 
-
 static unsigned blargg_ntsc_snes_generic_input_fmts(void)
 {
    return SOFTFILTER_FMT_RGB565;
@@ -142,7 +141,6 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
 
    return filt;
 }
-
 
 static void blargg_ntsc_snes_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,

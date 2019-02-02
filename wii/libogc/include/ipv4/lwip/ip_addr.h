@@ -113,7 +113,6 @@ extern const struct ip_addr ip_addr_broadcast;
 
 #define IN_LOOPBACKNET      127         /* official! */
 
-
 #define IP4_ADDR(ipaddr, a,b,c,d) (ipaddr)->addr = htonl(((u32_t)(a & 0xff) << 24) | ((u32_t)(b & 0xff) << 16) | \
                                                          ((u32_t)(c & 0xff) << 8) | (u32_t)(d & 0xff))
 
@@ -140,7 +139,6 @@ u8_t ip_addr_isbroadcast(struct ip_addr *, struct netif *);
 
 #define ip_addr_ismulticast(addr1) (((addr1)->addr & ntohl(0xf0000000)) == ntohl(0xe0000000))
 
-
 #define ip_addr_debug_print(debug, ipaddr) LWIP_DEBUGF(debug, ("%"U16_F".%"U16_F".%"U16_F".%"U16_F, \
         ipaddr?(u16_t)(ntohl((ipaddr)->addr) >> 24) & 0xff:0, \
         ipaddr?(u16_t)(ntohl((ipaddr)->addr) >> 16) & 0xff:0, \
@@ -154,9 +152,3 @@ u8_t ip_addr_isbroadcast(struct ip_addr *, struct netif *);
 #define ip4_addr3(ipaddr) ((u16_t)(ntohl((ipaddr)->addr) >> 8) & 0xff)
 #define ip4_addr4(ipaddr) ((u16_t)(ntohl((ipaddr)->addr)) & 0xff)
 #endif /* __LWIP_IP_ADDR_H__ */
-
-
-
-
-
-

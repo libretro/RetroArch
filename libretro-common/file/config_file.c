@@ -34,7 +34,10 @@
 #elif defined(_XBOX)
 #include <xtl.h>
 #endif
-
+#ifdef ORBIS
+#include <sys/fcntl.h>
+#include <orbisFile.h>
+#endif
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -413,10 +416,10 @@ static config_file_t *config_file_new_internal(
 
    if (!path || !*path)
       return conf;
-
+#if !defined(ORBIS)
    if (path_is_directory(path))
       goto error;
-
+#endif
    conf->path          = strdup(path);
    if (!conf->path)
       goto error;
@@ -543,7 +546,6 @@ bool config_append_file(config_file_t *conf, const char *path)
    config_file_free(new_conf);
    return true;
 }
-
 
 config_file_t *config_file_new_from_string(const char *from_string)
 {
@@ -976,32 +978,73 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-bool config_file_write(config_file_t *conf, const char *path)
+bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!string_is_empty(path))
    {
       void* buf  = NULL;
+#ifdef ORBIS
+      int fd = orbisOpen(path,O_RDWR|O_CREAT,0644);
+      RARCH_LOG("[Config]config_file_write orbisOpen path=%s fd=%d\n", path, fd);
+      if (fd < 0)
+         return false;
+      config_file_dump_orbis(conf,fd);
+      orbisClose(fd);
+      RARCH_LOG("[Config]config_file_write orbisClose path=%s fd=%d\n", path, fd);
+#else
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
          return false;
 
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+#if !defined(PS2) && !defined(PSP)
       buf = calloc(1, 0x4000);
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+#endif
 
-      config_file_dump(conf, file);
+      config_file_dump(conf, file, sort);
 
       if (file != stdout)
          fclose(file);
       free(buf);
+#endif
    }
    else
-      config_file_dump(conf, stdout);
+      config_file_dump(conf, stdout, sort);
 
    return true;
 }
 
-void config_file_dump(config_file_t *conf, FILE *file)
+#ifdef ORBIS
+void config_file_dump_orbis(config_file_t *conf, int fd)
+{
+   struct config_entry_list       *list = NULL;
+   struct config_include_list *includes = conf->includes;
+   while (includes)
+   {
+      char cad[256];
+      sprintf(cad,"#include %s\n", includes->path);
+      orbisWrite(fd,cad,strlen(cad));
+      includes = includes->next;
+   }
+
+   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   conf->entries = list;
+
+   while (list)
+   {
+      if (!list->readonly && list->key)
+      {
+         char newlist[256];
+         sprintf(newlist,"%s = %s\n", list->key, list->value);
+         orbisWrite(fd,newlist,strlen(newlist));
+      }
+      list = list->next;
+   }
+}
+#endif
+
+void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -1012,7 +1055,11 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   if (sort)
+      list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   else
+      list = (struct config_entry_list*)conf->entries;
+
    conf->entries = list;
 
    while (list)

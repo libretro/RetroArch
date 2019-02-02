@@ -209,7 +209,21 @@ static void frontend_gx_get_environment_settings(
    chdir("carda:/retroarch");
 #endif
    getcwd(g_defaults.dirs[DEFAULT_DIR_CORE], PATH_MAX_LENGTH);
-
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   /* When using external loaders(Wiiflow etc.), getcwd doesn't return the path correctly and
+    * as a result the cfg file is not found. */
+   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   {
+      if(gx_devices[GX_DEVICE_SD].mounted)
+      {
+         chdir("sd:/");
+      }
+      else if(gx_devices[GX_DEVICE_USB].mounted)
+      {
+         chdir("usb:/");
+      }
+   }
+#endif
    last_slash = strrchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
    if (last_slash)
       *last_slash = 0;

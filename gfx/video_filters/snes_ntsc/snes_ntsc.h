@@ -68,7 +68,6 @@ value. */
 #define SNES_NTSC_IN_WIDTH( out_width ) \
 	(((out_width) / snes_ntsc_out_chunk - 1) * snes_ntsc_in_chunk + 1)
 
-
 /* Interface for user-defined custom blitters */
 
 enum { snes_ntsc_in_chunk    = 3  }; /* number of input pixels read per chunk */
@@ -128,7 +127,6 @@ statement in a block (unless you're using C++). */
 	SNES_NTSC_CLAMP_( raw_, 0 );\
 	SNES_NTSC_RGB_OUT_( rgb_out, (bits), 0 );\
 }
-
 
 /* private */
 enum { snes_ntsc_entry_size = 128 };

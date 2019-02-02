@@ -99,7 +99,6 @@ struct shader_uniforms
    struct shader_uniforms_frame prev[PREV_TEXTURES];
 };
 
-
 static const char *glsl_prefixes[] = {
    "",
    "ruby",
@@ -159,50 +158,6 @@ static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
 
-static bool gl_glsl_add_lut(
-      const struct video_shader *shader,
-      unsigned i, void *textures_data)
-{
-   struct texture_image img;
-   GLuint *textures_lut                 = (GLuint*)textures_data;
-   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-   img.width         = 0;
-   img.height        = 0;
-   img.pixels        = NULL;
-   img.supports_rgba = video_driver_supports_rgba();
-
-   if (!image_texture_load(&img, shader->lut[i].path))
-   {
-      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
-            shader->lut[i].path);
-      return false;
-   }
-
-   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
-   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-      filter_type = TEXTURE_FILTER_NEAREST;
-
-   if (shader->lut[i].mipmap)
-   {
-      if (filter_type == TEXTURE_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-      else
-         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-   }
-
-   gl_load_texture_data(textures_lut[i],
-         shader->lut[i].wrap,
-         filter_type, 4,
-         img.width, img.height,
-         img.pixels, sizeof(uint32_t));
-   image_texture_free(&img);
-
-   return true;
-}
-
 static bool gl_glsl_load_luts(
       const struct video_shader *shader,
       GLuint *textures_lut)
@@ -217,7 +172,12 @@ static bool gl_glsl_load_luts(
 
    for (i = 0; i < num_luts; i++)
    {
-      if (!gl_glsl_add_lut(shader, i, textures_lut))
+      if (!gl_add_lut(
+               shader->lut[i].path,
+               shader->lut[i].mipmap,
+               shader->lut[i].filter,
+               shader->lut[i].wrap,
+               i, textures_lut))
          return false;
    }
 
@@ -401,7 +361,6 @@ static bool gl_glsl_link_program(GLuint prog)
    return true;
 }
 
-
 static bool gl_glsl_compile_program(
       void *data,
       unsigned idx,
@@ -480,11 +439,11 @@ error:
    return false;
 }
 
-static void gl_glsl_strip_parameter_pragmas(char *source)
+static void gl_glsl_strip_parameter_pragmas(char *source, const char *str)
 {
    /* #pragma parameter lines tend to have " characters in them,
     * which is not legal GLSL. */
-   char *s = strstr(source, "#pragma parameter");
+   char *s = strstr(source, str);
 
    while (s)
    {
@@ -492,7 +451,7 @@ static void gl_glsl_strip_parameter_pragmas(char *source)
        * so we can just replace the entire line with spaces. */
       while (*s != '\0' && *s != '\n')
          *s++ = ' ';
-      s = strstr(s, "#pragma parameter");
+      s = strstr(s, str);
    }
 }
 
@@ -506,7 +465,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
    if (nitems <= 0 || len <= 0)
       return false;
 
-   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex);
+   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex, "#pragma parameter");
    pass->source.string.fragment = strdup(pass->source.string.vertex);
    return pass->source.string.fragment && pass->source.string.vertex;
 }
@@ -1411,7 +1370,6 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
          glUniform1i(uni->prev[i].texture, texunit);
          texunit++;
       }
-
 
       if (uni->prev[i].texture_size >= 0)
          glUniform2fv(uni->prev[i].texture_size, 1, prev_info[i].tex_size);

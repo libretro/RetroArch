@@ -5782,4 +5782,3 @@ XMFINLINE VOID XMStoreFloat4x4NC
 }
 
 #endif // __XNAMATHCONVERT_INL__
-

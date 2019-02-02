@@ -442,6 +442,7 @@ static bool vg_frame(void *data, const void *frame,
 static bool vg_alive(void *data)
 {
    bool quit            = false;
+   bool resize          = false;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    vg_t            *vg  = (vg_t*)data;

@@ -14,7 +14,6 @@
  *
  */
 
-
 /*
  * Copyright (c) 2001-2003, Adam Dunkels.
  * All rights reserved.
@@ -98,7 +97,6 @@
 #   endif /* BYTE_ORDER == BIG_ENDIAN */
 #endif /* HTONS */
 
-
 /**
  * Convert 16-bit quantity from host byte order to network byte order.
  *
@@ -114,6 +112,4 @@ u16_t htons(u16_t val);
 
 #endif /* __UIP_H__ */
 
-
 /** @} */
-

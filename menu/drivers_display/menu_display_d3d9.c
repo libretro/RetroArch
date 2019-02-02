@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -297,16 +297,50 @@ static void menu_display_d3d9_clear_color(
 
 static bool menu_display_d3d9_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float menu_font_size,
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, menu_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_D3D9_API)))
 		 return false;
    return true;
+}
+
+void menu_display_d3d9_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   RECT rect = {0};
+   d3d9_video_t *d3d9 = video_info ?
+      (d3d9_video_t*)video_info->userdata : NULL;
+
+   rect.left = x;
+   rect.top = y;
+   rect.right = width + x;
+   rect.bottom = height + y;
+
+   if (!d3d9 || !width || !height)
+      return;
+
+   d3d9_set_scissor_rect(d3d9->dev, &rect);
+}
+
+void menu_display_d3d9_scissor_end(video_frame_info_t *video_info)
+{
+   RECT rect = {0};
+   d3d9_video_t *d3d9 = video_info ?
+      (d3d9_video_t*)video_info->userdata : NULL;
+
+   if (!d3d9)
+      return;
+
+   rect.left = d3d9->vp.x;
+   rect.top = d3d9->vp.y;
+   rect.right = d3d9->vp.width;
+   rect.bottom = d3d9->vp.height;
+
+   d3d9_set_scissor_rect(d3d9->dev, &rect);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d9 = {
@@ -324,6 +358,6 @@ menu_display_ctx_driver_t menu_display_ctx_d3d9 = {
    MENU_VIDEO_DRIVER_DIRECT3D9,
    "d3d9",
    false,
-   NULL,
-   NULL
+   menu_display_d3d9_scissor_begin,
+   menu_display_d3d9_scissor_end
 };

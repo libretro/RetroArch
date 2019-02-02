@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __VIDEO_TYPES_H__
 #define __VIDEO_TYPES_H__
 
@@ -43,7 +42,6 @@ distribution.
  * @{
  */
 
-
 #define VI_DISPLAY_PIX_SZ           2		/*!< multiplier to get real pixel size in bytes */
 
 /*!
@@ -58,7 +56,6 @@ distribution.
 /*!
  * @}
  */
-
 
 /*!
  * \addtogroup vi_standardtypedef VIDEO standard types
@@ -76,10 +73,8 @@ distribution.
  * @}
  */
 
-
 #define VI_XFBMODE_SF				0
 #define VI_XFBMODE_DF				1
-
 
 /*!
  * \addtogroup vi_fielddef VIDEO field types
@@ -92,7 +87,6 @@ distribution.
 /*!
  * @}
  */
-
 
 // Maximum screen space
 #define VI_MAX_WIDTH_NTSC           720
@@ -112,7 +106,6 @@ distribution.
 /*!
  * @}
  */
-
 
 #define VI_TVMODE(fmt, mode)   ( ((fmt) << 2) + (mode) )
 
@@ -137,12 +130,10 @@ distribution.
 #define VI_TVMODE_DEBUG_PAL_INT		VI_TVMODE(VI_DEBUG_PAL,   VI_INTERLACE)
 #define VI_TVMODE_DEBUG_PAL_DS		VI_TVMODE(VI_DEBUG_PAL,   VI_NON_INTERLACE)
 
-
 /*!
  * \addtogroup vi_defines List of defines used for the VIDEO subsystem
  * @{
  */
-
 
 /*!
  * \addtogroup gxrmode_obj VIDEO render modes

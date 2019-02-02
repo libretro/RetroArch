@@ -491,7 +491,6 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
    if (!x11_connect())
       goto error;
 
-
    switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -1078,7 +1077,7 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES2
          {
-            Display *dpy = XOpenDisplay(NULL);
+            Display     *dpy = XOpenDisplay(NULL);
             const char *exts = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
             bool ret         = exts && strstr(exts,
                   "GLX_EXT_create_context_es2_profile");

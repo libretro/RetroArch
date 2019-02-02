@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
@@ -48,9 +48,6 @@
 
 #ifdef _XBOX
 #define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
-#else
-#define HAVE_MONITOR
-#define HAVE_WINDOW
 #endif
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
@@ -64,6 +61,10 @@
 #include "../../core.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+
+#ifdef __WINRT__
+#error "UWP does not support D3D9"
+#endif
 
 static LPDIRECT3D9 g_pD3D9;
 
@@ -1032,6 +1033,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
    d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
@@ -1055,7 +1057,6 @@ static bool d3d9_restore(void *data)
 
    return true;
 }
-
 
 static void d3d9_set_nonblock_state(void *data, bool state)
 {
@@ -1174,44 +1175,14 @@ static void d3d9_set_osd_msg(void *data,
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
+   const struct font_params *d3d_font_params = (const
+         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, params);
+   d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
    font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
+         msg, d3d_font_params);
    d3d9_end_scene(dev);
-}
-
-static void d3d9_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-   const char *name     = settings ? 
-      settings->arrays.input_joypad_driver : NULL;
-#ifdef _XBOX
-   void *xinput         = input_xinput.init(name);
-   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data          = xinput;
-#else
-
-#if _WIN32_WINNT >= 0x0501
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_winraw.init(name);
-      if (*input_data)
-      {
-         *input = &input_winraw;
-         dinput = NULL;
-         return;
-      }
-   }
-#endif
-
-   dinput               = input_dinput.init(name);
-   *input               = dinput ? &input_dinput : NULL;
-   *input_data          = dinput;
-#endif
 }
 
 static bool d3d9_init_internal(d3d9_video_t *d3d,
@@ -1325,7 +1296,8 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d9_input_driver(input, input_data);
+   d3d_input_driver(settings->arrays.input_joypad_driver,
+      settings->arrays.input_joypad_driver, input, input_data);
 
    RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
@@ -1695,7 +1667,6 @@ static bool d3d9_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
@@ -1765,14 +1736,14 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             d3d9_get_xrgb8888_format(),
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   if (d3d9_surface_lock_rect(dest, &rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1792,7 +1763,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect((void*)dest);
+      d3d9_surface_unlock_rect(dest);
    }
    else
       ret = false;
@@ -1856,12 +1827,14 @@ static void d3d9_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
+   if (!d3d || !d3d->menu)
+      return;
+
    if (    !d3d->menu->tex            || 
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      if (d3d->menu)
-	     d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1918,7 +1891,6 @@ static void d3d9_set_menu_texture_frame(void *data,
             }
          }
       }
-
 
       if (d3d->menu)
          d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)d3d->menu->tex);
@@ -2054,9 +2026,10 @@ static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,
-#ifdef _XBOX
+#if defined(_XBOX) || defined(__WINRT__)
    NULL,
 #else
+   /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
    NULL,

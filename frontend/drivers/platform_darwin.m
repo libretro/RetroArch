@@ -115,7 +115,11 @@ static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
    switch (flags)
    {
       case CFDocumentDirectory:
-         return NSDocumentDirectory;
+#if TARGET_OS_TV
+           return NSCachesDirectory;
+#else
+           return NSDocumentDirectory;
+#endif
    }
 
    return 0;
@@ -292,6 +296,12 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 // MAC_OS_X_VERSION_10_13
+   NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
+   *major = (int)version.majorVersion;
+   *minor = (int)version.minorVersion;
+#else
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -309,6 +319,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
+#endif
    strlcpy(s, "OSX", len);
 #endif
 }
@@ -356,7 +367,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
          home_dir_buf, "shaders_glsl",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 #endif
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     int major, minor;
     get_ios_version(&major, &minor);
     if (major >= 10 )
@@ -365,6 +376,16 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     else
         fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
               home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#elif TARGET_OS_TV
+    printf("tvOS bundle path = %s",bundle_path_buf);
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+                       bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+    NSError *fileError;
+    NSArray *bundleFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[NSString stringWithUTF8String:g_defaults.dirs[DEFAULT_DIR_CORE]] error:&fileError];
+    NSLog(@"tvOS Files in modules:");
+    for (NSString *f in bundleFiles) {
+        NSLog(@"%@",f);
+    }
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
@@ -416,7 +437,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     char assets_zip_path[PATH_MAX_LENGTH];
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
@@ -575,7 +596,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int
 end:
    if (blob)
       CFRelease(blob);
-#elif defined(IOS)
+#elif TARGET_OS_IOS
    float level;
    UIDevice *uidev = [UIDevice currentDevice];
 

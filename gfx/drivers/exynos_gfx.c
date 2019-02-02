@@ -88,7 +88,6 @@ static const struct exynos_config_default
    {400,  240, EXYNOS_BUFFER_AUX,  G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX, 2}  /* menu */
 };
 
-
 struct exynos_data;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
@@ -1042,7 +1041,6 @@ struct exynos_video
 
    bool aspect_changed;
 };
-
 
 static int exynos_init_font(struct exynos_video *vid)
 {

@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,6 +87,4 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
    return &delta_plug;
 }
 
-
 #undef dspfilter_get_implementation
-

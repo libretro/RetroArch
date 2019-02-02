@@ -114,6 +114,11 @@ static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;
 
+/* TODO/FIXME - Not thread safe to access this 
+ * on main thread as well in its current state -
+ * menu_input.c - menu_event calls this function
+ * right now, while the underlying variable can
+ * be modified by a task thread. */
 bool input_autoconfigure_get_swap_override(void)
 {
    return input_autoconfigure_swap_override;
@@ -297,7 +302,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       input_config_set_device_config_name(params->idx, path_basename(conf->path));
    else
       input_config_set_device_config_name(params->idx, "N/A");
-
 
    input_autoconfigure_joypad_reindex_devices();
 }

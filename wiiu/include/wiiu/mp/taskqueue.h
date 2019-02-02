@@ -24,7 +24,6 @@ typedef enum
    MP_TASK_QUEUE_STATE_FINISHED        = 1 << 4,
 } MPTaskQueueState;
 
-
 typedef uint32_t (*MPTaskFunc)(uint32_t, uint32_t);
 
 #pragma pack(push, 1)

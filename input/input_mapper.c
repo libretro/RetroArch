@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -195,7 +194,7 @@ void input_mapper_poll(input_mapper_t *handle)
 
                      handle->analog_value[i][
                         remap_button - RARCH_FIRST_CUSTOM_BIND] =
-                           32767 * invert;
+                           (current_input.analog_buttons[j] ? current_input.analog_buttons[j] : 32767) * invert;
                   }
                }
             }

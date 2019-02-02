@@ -309,13 +309,36 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
    return eglGetDisplay((EGLNativeDisplayType) native);
 }
 
+bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
+{
+   /* Makes sure we have 8 bit color. */
+   EGLint r, g, b;
+   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+      return false;
+
+   if (r != 8 || g != 8 || b != 8)
+      return false;
+
+   return true;
+}
+
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
       void *display_data,
       EGLint *major, EGLint *minor,
-     EGLint *n, const EGLint *attrib_ptr)
+      EGLint *count, const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb)
 {
-   EGLDisplay dpy = get_egl_display(platform, display_data);
+   EGLint i;
+   EGLConfig *configs = NULL;
+   EGLint matched     = 0;
+   int config_index   = -1;
+   EGLDisplay dpy     = get_egl_display(platform, display_data);
+
    if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
@@ -329,8 +352,39 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-   if (!eglChooseConfig(egl->dpy, attrib_ptr, &egl->config, 1, n) || *n != 1)
+   if (!eglGetConfigs(egl->dpy, NULL, 0, count) || *count < 1)
+   {
+      RARCH_ERR("[EGL]: No configs to choose from.\n");
       return false;
+   }
+
+   configs = (EGLConfig*)malloc(*count * sizeof(*configs));
+   if (!configs)
+      return false;
+
+   if (!eglChooseConfig(egl->dpy, attrib_ptr,
+            configs, *count, &matched) || !matched)
+   {
+      RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
+      return false;
+   }
+
+   for (i = 0; i < *count; i++)
+   {
+      if (!cb || cb(display_data, egl->dpy, configs[i]))
+      {
+         egl->config = configs[i];
+         break;
+      }
+   }
+
+   free(configs);
+
+   if (i == *count)
+   {
+      RARCH_ERR("[EGL]: No EGL config found which satifies requirements.\n");
+      return false;
+   }
 
    egl->major = g_egl_major;
    egl->minor = g_egl_minor;
@@ -364,7 +418,12 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 {
-   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, NULL);
+   EGLint window_attribs[] = {
+	   EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+	   EGL_NONE,
+   };
+
+   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
    if (egl->surf == EGL_NO_SURFACE)
       return false;

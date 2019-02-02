@@ -71,7 +71,6 @@ struct bd_addr {
 				   (addr1)->addr[4] = (addr2)->addr[4]; \
 				   (addr1)->addr[5] = (addr2)->addr[5]; }while(0)
 
-
 #ifdef __cplusplus
    }
 #endif /* __cplusplus */

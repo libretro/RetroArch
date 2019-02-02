@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,13 +41,11 @@ typedef interface IGameExplorer IGameExplorer;
 
 #endif 	/* __IGameExplorer_FWD_DEFINED__ */
 
-
 #ifndef __IGameStatistics_FWD_DEFINED__
 #define __IGameStatistics_FWD_DEFINED__
 typedef interface IGameStatistics IGameStatistics;
 
 #endif 	/* __IGameStatistics_FWD_DEFINED__ */
-
 
 #ifndef __IGameStatisticsMgr_FWD_DEFINED__
 #define __IGameStatisticsMgr_FWD_DEFINED__
@@ -59,13 +53,11 @@ typedef interface IGameStatisticsMgr IGameStatisticsMgr;
 
 #endif 	/* __IGameStatisticsMgr_FWD_DEFINED__ */
 
-
 #ifndef __IGameExplorer2_FWD_DEFINED__
 #define __IGameExplorer2_FWD_DEFINED__
 typedef interface IGameExplorer2 IGameExplorer2;
 
 #endif 	/* __IGameExplorer2_FWD_DEFINED__ */
-
 
 #ifndef __GameExplorer_FWD_DEFINED__
 #define __GameExplorer_FWD_DEFINED__
@@ -78,7 +70,6 @@ typedef struct GameExplorer GameExplorer;
 
 #endif 	/* __GameExplorer_FWD_DEFINED__ */
 
-
 #ifndef __GameStatistics_FWD_DEFINED__
 #define __GameStatistics_FWD_DEFINED__
 
@@ -90,7 +81,6 @@ typedef struct GameStatistics GameStatistics;
 
 #endif 	/* __GameStatistics_FWD_DEFINED__ */
 
-
 /* header files for imported files */
 #include "oaidl.h"
 #include "ocidl.h"
@@ -99,7 +89,6 @@ typedef struct GameStatistics GameStatistics;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_gameux_0000_0000 */
 /* [local] */ 
@@ -120,8 +109,6 @@ enum GAME_INSTALL_SCOPE
         GIS_ALL_USERS	= 3
     } 	GAME_INSTALL_SCOPE;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0000_v0_0_s_ifspec;
 
@@ -130,7 +117,6 @@ extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0000_v0_0_s_ifspec;
 
 /* interface IGameExplorer */
 /* [unique][helpstring][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IGameExplorer;
 
@@ -209,7 +195,6 @@ EXTERN_C const IID IID_IGameExplorer;
 
 #ifdef COBJMACROS
 
-
 #define IGameExplorer_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -218,7 +203,6 @@ EXTERN_C const IID IID_IGameExplorer;
 
 #define IGameExplorer_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IGameExplorer_AddGame(This,bstrGDFBinaryPath,bstrGameInstallDirectory,installScope,pguidInstanceID)	\
     ( (This)->lpVtbl -> AddGame(This,bstrGDFBinaryPath,bstrGameInstallDirectory,installScope,pguidInstanceID) ) 
@@ -234,14 +218,9 @@ EXTERN_C const IID IID_IGameExplorer;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IGameExplorer_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_gameux_0000_0001 */
 /* [local] */ 
@@ -260,8 +239,6 @@ enum GAMESTATS_OPEN_RESULT
         GAMESTATS_OPEN_OPENED	= 1
     } 	GAMESTATS_OPEN_RESULT;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0001_v0_0_s_ifspec;
 
@@ -270,7 +247,6 @@ extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0001_v0_0_s_ifspec;
 
 /* interface IGameStatistics */
 /* [unique][helpstring][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IGameStatistics;
 
@@ -413,7 +389,6 @@ EXTERN_C const IID IID_IGameStatistics;
 
 #ifdef COBJMACROS
 
-
 #define IGameStatistics_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -422,7 +397,6 @@ EXTERN_C const IID IID_IGameStatistics;
 
 #define IGameStatistics_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IGameStatistics_GetMaxCategoryLength(This,cch)	\
     ( (This)->lpVtbl -> GetMaxCategoryLength(This,cch) ) 
@@ -462,21 +436,15 @@ EXTERN_C const IID IID_IGameStatistics;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IGameStatistics_INTERFACE_DEFINED__ */
-
 
 #ifndef __IGameStatisticsMgr_INTERFACE_DEFINED__
 #define __IGameStatisticsMgr_INTERFACE_DEFINED__
 
 /* interface IGameStatisticsMgr */
 /* [unique][helpstring][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IGameStatisticsMgr;
 
@@ -539,7 +507,6 @@ EXTERN_C const IID IID_IGameStatisticsMgr;
 
 #ifdef COBJMACROS
 
-
 #define IGameStatisticsMgr_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -549,7 +516,6 @@ EXTERN_C const IID IID_IGameStatisticsMgr;
 #define IGameStatisticsMgr_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define IGameStatisticsMgr_GetGameStatistics(This,GDFBinaryPath,openType,pOpenResult,ppiStats)	\
     ( (This)->lpVtbl -> GetGameStatistics(This,GDFBinaryPath,openType,pOpenResult,ppiStats) ) 
 
@@ -558,21 +524,15 @@ EXTERN_C const IID IID_IGameStatisticsMgr;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IGameStatisticsMgr_INTERFACE_DEFINED__ */
-
 
 #ifndef __IGameExplorer2_INTERFACE_DEFINED__
 #define __IGameExplorer2_INTERFACE_DEFINED__
 
 /* interface IGameExplorer2 */
 /* [unique][helpstring][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IGameExplorer2;
 
@@ -642,7 +602,6 @@ EXTERN_C const IID IID_IGameExplorer2;
 
 #ifdef COBJMACROS
 
-
 #define IGameExplorer2_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -651,7 +610,6 @@ EXTERN_C const IID IID_IGameExplorer2;
 
 #define IGameExplorer2_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IGameExplorer2_InstallGame(This,binaryGDFPath,installDirectory,installScope)	\
     ( (This)->lpVtbl -> InstallGame(This,binaryGDFPath,installDirectory,installScope) ) 
@@ -664,22 +622,15 @@ EXTERN_C const IID IID_IGameExplorer2;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IGameExplorer2_INTERFACE_DEFINED__ */
-
-
 
 #ifndef __gameuxLib_LIBRARY_DEFINED__
 #define __gameuxLib_LIBRARY_DEFINED__
 
 /* library gameuxLib */
 /* [helpstring][version][uuid] */ 
-
 
 EXTERN_C const IID LIBID_gameuxLib;
 
@@ -706,7 +657,6 @@ GameStatistics;
 #endif /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 #pragma endregion
 
-
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0005_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_gameux_0000_0005_v0_0_s_ifspec;
 
@@ -729,5 +679,3 @@ void                      __RPC_USER  BSTR_UserFree64(     __RPC__in unsigned lo
 #endif
 
 #endif
-
-

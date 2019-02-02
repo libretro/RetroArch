@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +25,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "gfx/video_driver.h"
+#include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
@@ -103,11 +103,17 @@ typedef struct settings
       bool video_fps_show;
       bool video_statistics_show;
       bool video_framecount_show;
+      bool video_memory_show;
       bool video_msg_bgcolor_enable;
+      bool video_3ds_lcd_bottom;
 
       /* Audio */
       bool audio_enable;
       bool audio_enable_menu;
+      bool audio_enable_menu_ok;
+      bool audio_enable_menu_cancel;
+      bool audio_enable_menu_notice;
+      bool audio_enable_menu_bgm;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
@@ -175,11 +181,16 @@ typedef struct settings
       bool menu_content_show_history;
       bool menu_content_show_add;
       bool menu_content_show_playlists;
+      bool menu_use_preferred_system_color_theme;
+      bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_start_recording;
+      bool quick_menu_show_start_streaming;
+      bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
@@ -290,8 +301,10 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+      bool video_window_save_positions;
 
       bool sustained_performance_mode;
+      bool playlist_use_old_format;
    } bools;
 
    struct
@@ -369,8 +382,6 @@ typedef struct settings
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
-      unsigned video_window_x;
-      unsigned video_window_y;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
@@ -396,10 +407,9 @@ typedef struct settings
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_dpi_override_value;
-      unsigned menu_entry_normal_color;
-      unsigned menu_entry_hover_color;
-      unsigned menu_title_color;
+      unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
@@ -407,6 +417,7 @@ typedef struct settings
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_materialui_color_theme;
+      unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
@@ -435,6 +446,15 @@ typedef struct settings
 
       unsigned midi_volume;
       unsigned streaming_mode;
+
+      unsigned window_position_x;
+      unsigned window_position_y;
+      unsigned window_position_width;
+      unsigned window_position_height;
+
+      unsigned video_record_threads;
+
+      unsigned libnx_overclock;
    } uints;
 
    struct
@@ -520,6 +540,7 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
+      char path_rgui_theme_preset[PATH_MAX_LENGTH];
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];

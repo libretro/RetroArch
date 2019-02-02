@@ -48,7 +48,6 @@ typedef	u32		u32_t;
 typedef s32		s32_t;
 typedef u32		mem_ptr_t;
 
-
 #define PACK_STRUCT_FIELD(x) x
 #define PACK_STRUCT_STRUCT __attribute__((packed))
 #define PACK_STRUCT_BEGIN
@@ -68,6 +67,5 @@ typedef u32		mem_ptr_t;
 #define U32_F "u"
 #define S32_F "d"
 #define X32_F "x"
-
 
 #endif /* __ARCH_CC_H__ */

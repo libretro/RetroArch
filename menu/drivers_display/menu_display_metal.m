@@ -88,6 +88,25 @@ static void menu_display_metal_viewport(menu_display_ctx_draw_t *draw,
 {
 }
 
+static void menu_display_metal_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   MetalDriver *md = GET_DRIVER(video_info);
+   if (!md)
+      return;
+   
+   MTLScissorRect r = {.x = (NSUInteger)x, .y = (NSUInteger)y, .width = width, .height = height};
+   [md.display setScissorRect:r];
+}
+
+static void menu_display_metal_scissor_end(video_frame_info_t *video_info)
+{
+   MetalDriver *md = GET_DRIVER(video_info);
+   if (!md)
+      return;
+   
+   [md.display clearScissorRect];
+}
+
 static void menu_display_metal_restore_clear_color(void)
 {
    // nothing to do
@@ -135,7 +154,6 @@ menu_display_ctx_driver_t menu_display_ctx_metal = {
    .type                   = MENU_VIDEO_DRIVER_METAL,
    .ident                  = "menu_display_metal",
    .handles_transform      = NO,
-   .scissor_begin          = NULL,
-   .scissor_end            = NULL
+   .scissor_begin          = menu_display_metal_scissor_begin,
+   .scissor_end            = menu_display_metal_scissor_end
 };
-

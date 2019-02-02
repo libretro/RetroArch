@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -51,7 +51,6 @@
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
 #endif
-
 
 #include "../frontend/frontend_driver.h"
 
@@ -123,6 +122,7 @@ enum settings_list_type
    SETTINGS_LIST_MULTIMEDIA,
    SETTINGS_LIST_USER_INTERFACE,
    SETTINGS_LIST_POWER_MANAGEMENT,
+   SETTINGS_LIST_MENU_SOUNDS,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CORE_UPDATER,
@@ -187,7 +187,6 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
-
 
    return 0;
 }
@@ -271,6 +270,20 @@ static int setting_action_ok_video_refresh_rate_polled(rarch_setting_t *setting,
    return 0;
 }
 
+static int setting_action_ok_uint_special(rarch_setting_t *setting, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL);
+   return 0;
+}
 
 static int setting_action_ok_uint(rarch_setting_t *setting, bool wraparound)
 {
@@ -322,16 +335,16 @@ static void setting_get_string_representation_video_stream_quality(
    /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
-      case 5:
+      case 8:
          strlcpy(s, "Custom", len);
          break;
-      case 6:
+      case 9:
          strlcpy(s, "Low", len);
          break;
-      case 7:
+      case 10:
          strlcpy(s, "Medium", len);
          break;
-      case 8:
+      case 11:
          strlcpy(s, "High", len);
          break;
    }
@@ -360,6 +373,15 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
          break;
       case 4:
          strlcpy(s, "Lossless", len);
+         break;
+      case 5:
+         strlcpy(s, "WebM Fast", len);
+         break;
+      case 6:
+         strlcpy(s, "WebM High Quality", len);
+         break;
+      case 7:
+         strlcpy(s, "GIF", len);
          break;
    }
 }
@@ -555,6 +577,246 @@ static void setting_get_string_representation_uint_menu_timedate_style(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_menu_color_theme(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_THEME_CUSTOM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_RED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_ORANGE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_YELLOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_GREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_VIOLET:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET),
+               len);
+         break;
+      case RGUI_THEME_CLASSIC_GREY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY),
+               len);
+         break;
+      case RGUI_THEME_LEGACY_RED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED),
+               len);
+         break;
+      case RGUI_THEME_DARK_PURPLE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE),
+               len);
+         break;
+      case RGUI_THEME_MIDNIGHT_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE),
+               len);
+         break;
+      case RGUI_THEME_GOLDEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN),
+               len);
+         break;
+      case RGUI_THEME_ELECTRIC_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE),
+               len);
+         break;
+      case RGUI_THEME_APPLE_GREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN),
+               len);
+         break;
+      case RGUI_THEME_VOLCANIC_RED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED),
+               len);
+         break;
+      case RGUI_THEME_LAGOON:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON),
+               len);
+         break;
+      case RGUI_THEME_BROGRAMMER:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER),
+               len);
+         break;
+      case RGUI_THEME_DRACULA:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA),
+               len);
+         break;
+      case RGUI_THEME_FAIRYFLOSS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS),
+               len);
+         break;
+      case RGUI_THEME_FLATUI:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI),
+               len);
+         break;
+      case RGUI_THEME_GRUVBOX_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK),
+               len);
+         break;
+      case RGUI_THEME_GRUVBOX_LIGHT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT),
+               len);
+         break;
+      case RGUI_THEME_HACKING_THE_KERNEL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL),
+               len);
+         break;
+      case RGUI_THEME_NORD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD),
+               len);
+         break;
+      case RGUI_THEME_NOVA:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA),
+               len);
+         break;
+      case RGUI_THEME_ONE_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK),
+               len);
+         break;
+      case RGUI_THEME_PALENIGHT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT),
+               len);
+         break;
+      case RGUI_THEME_SOLARIZED_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK),
+               len);
+         break;
+      case RGUI_THEME_SOLARIZED_LIGHT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT),
+               len);
+         break;
+      case RGUI_THEME_TANGO_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK),
+               len);
+         break;
+      case RGUI_THEME_TANGO_LIGHT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT),
+               len);
+         break;
+      case RGUI_THEME_ZENBURN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN),
+               len);
+         break;
+      case RGUI_THEME_ANTI_ZENBURN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN),
+               len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_THUMB_SCALE_POINT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT),
+               len);
+         break;
+      case RGUI_THUMB_SCALE_BILINEAR:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR),
+               len);
+         break;
+      case RGUI_THUMB_SCALE_SINC:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC),
+               len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -632,6 +894,7 @@ static void setting_get_string_representation_uint_xmb_layout(
    }
 }
 
+#ifdef HAVE_MATERIALUI
 static void setting_get_string_representation_uint_materialui_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -680,7 +943,9 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
          break;
    }
 }
+#endif
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -764,7 +1029,38 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
          break;
    }
 }
+#endif
 
+#ifdef HAVE_OZONE
+static void setting_get_string_representation_uint_ozone_menu_color_theme(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   if (!setting)
+      return;
+
+   if (settings->bools.menu_preferred_system_color_theme_set)
+         strlcpy(s, "System default", len);
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
+         break;
+      case 0:
+      default:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
+         break;
+   }
+}
+#endif
+
+#ifdef HAVE_SHADERPIPELINE
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -809,6 +1105,7 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
@@ -982,7 +1279,6 @@ static int setting_action_left_libretro_device_type(
    return 0;
 }
 
-
 static int setting_uint_action_left_crt_switch_resolution_super(
       rarch_setting_t *setting, bool wraparound)
 {
@@ -1029,7 +1325,6 @@ static int setting_action_left_bind_device(rarch_setting_t *setting, bool wrapar
 
    return 0;
 }
-
 
 static int setting_action_left_mouse_index(rarch_setting_t *setting, bool wraparound)
 {
@@ -1167,7 +1462,6 @@ static int setting_string_action_left_driver(rarch_setting_t *setting,
 
    return 0;
 }
-
 
 #ifdef HAVE_NETWORKING
 static int setting_string_action_left_netplay_mitm_server(
@@ -1619,23 +1913,23 @@ static void setting_get_string_representation_uint_audio_resampler_quality(
                len);
          break;
       case RESAMPLER_QUALITY_LOWEST:
-         strlcpy(s, "Lowest",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWEST),
                len);
          break;
       case RESAMPLER_QUALITY_LOWER:
-         strlcpy(s, "Lower",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWER),
                len);
          break;
       case RESAMPLER_QUALITY_HIGHER:
-         strlcpy(s, "Higher",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHER),
                len);
          break;
       case RESAMPLER_QUALITY_HIGHEST:
-         strlcpy(s, "Highest",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHEST),
                len);
          break;
       case RESAMPLER_QUALITY_NORMAL:
-         strlcpy(s, "Normal",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL),
                len);
          break;
    }
@@ -1758,6 +2052,12 @@ static void setting_get_string_representation_toggle_gamepad_combo(
          break;
       case INPUT_TOGGLE_L_R:
          strlcpy(s, "L + R", len);
+         break;
+      case INPUT_TOGGLE_HOLD_START:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
+         break;
+      case INPUT_TOGGLE_DOWN_SELECT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_SELECT), len);
          break;
    }
 }
@@ -1960,7 +2260,6 @@ void menu_settings_list_current_add_enum_value_idx(
    unsigned idx = list_info->index - 1;
    (*list)[idx].enum_value_idx = enum_idx;
 }
-
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
@@ -2279,7 +2578,6 @@ static int setting_action_start_bind_device(rarch_setting_t *setting)
    return 0;
 }
 
-
 static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 {
    video_viewport_t vp;
@@ -2331,8 +2629,6 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 
    return 0;
 }
-
-
 
 static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
 {
@@ -2554,7 +2850,6 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
-
 
 /**
  * menu_setting_get_label:
@@ -2848,6 +3143,21 @@ void general_write_handler(rarch_setting_t *setting)
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 #endif
          break;
+      case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
+         if (settings->bools.audio_enable_menu)
+            audio_driver_load_menu_sounds();
+         else
+            audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+         break;
+      case MENU_ENUM_LABEL_MENU_SOUND_BGM:
+         if (settings->bools.audio_enable_menu)
+         {
+            if (settings->bools.audio_enable_menu_bgm)
+               audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+            else
+               audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
          break;
@@ -2958,12 +3268,10 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
    if (!setting)
       return;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable
-         && cheevos_state_loaded_flag
-         )
+   if (settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
    {
-      cheevos_hardcore_paused = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+      cheevos_toggle_hardcore_mode();
+      command_event(CMD_EVENT_RESET, NULL);
       return;
    }
 }
@@ -3438,7 +3746,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
@@ -3526,7 +3834,7 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "xmb"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -3690,8 +3998,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
-#if defined(HAVE_LAKKA)
-#ifdef HAVE_LAKKA_SWITCH
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
         CONFIG_ACTION(
               list, list_info,
               MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
@@ -3699,7 +4006,10 @@ static bool setting_append_list(
               &group_info,
               &subgroup_info,
               parent_group);
+#endif
 
+#if defined(HAVE_LAKKA)
+#ifdef HAVE_LAKKA_SWITCH
         CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
@@ -3776,6 +4086,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_MENU_SOUNDS,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3864,14 +4182,17 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RECORDING_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         if (string_is_not_equal(settings->arrays.record_driver, "null"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_RECORDING_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         }
 
          CONFIG_ACTION(
                list, list_info,
@@ -4027,7 +4348,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -4037,14 +4357,17 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         if (string_is_not_equal(settings->arrays.midi_driver, "null"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_MIDI_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         }
 
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
@@ -4230,7 +4553,6 @@ static bool setting_append_list(
                      general_read_handler,
                      bool_entries[i].flags);
             }
-
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
@@ -4489,7 +4811,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_autosave_interval;
 #endif
 
-
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
@@ -4617,8 +4938,6 @@ static bool setting_append_list(
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-
 
             config_uint_cbs(cheat_manager_state.working_cheat.idx, CHEAT_IDX,
                   NULL,NULL,
@@ -4827,7 +5146,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
 
-
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
@@ -4990,7 +5308,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
 
-
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -5039,6 +5356,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.video_memory_show,
+                  MENU_ENUM_LABEL_MEMORY_SHOW,
+                  MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+                  memory_show,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.video_statistics_show,
                   MENU_ENUM_LABEL_STATISTICS_SHOW,
                   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -5051,8 +5383,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
-
 
          CONFIG_BOOL(
                list, list_info,
@@ -5143,7 +5473,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
-               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -5158,7 +5488,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
-               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             }
@@ -5325,6 +5655,21 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+            if (true)
+#else
+            if (!string_is_equal(video_display_server_get_ident(), "null"))
+#endif
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                     MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+            }
+
             CONFIG_UINT(
                   list, list_info,
                   &custom_vp->width,
@@ -5393,28 +5738,30 @@ static bool setting_append_list(
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                CONFIG_UINT(
                      list, list_info,
-                     &settings->uints.video_window_x,
+                     &settings->uints.window_position_width,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-                     0,
+                     window_width,
                      &group_info,
                      &subgroup_info,
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                CONFIG_UINT(
                      list, list_info,
-                     &settings->uints.video_window_y,
+                     &settings->uints.window_position_height,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-                     0,
+                     window_height,
                      &group_info,
                      &subgroup_info,
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                CONFIG_UINT(
@@ -5449,6 +5796,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_window_save_positions,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5859,6 +6221,97 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_MENU_SOUNDS:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SOUNDS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu,
+               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
+               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+               audio_enable_menu,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_ok,
+               MENU_ENUM_LABEL_MENU_SOUND_OK,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+               audio_enable_menu_ok,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_cancel,
+               MENU_ENUM_LABEL_MENU_SOUND_CANCEL,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+               audio_enable_menu_cancel,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_notice,
+               MENU_ENUM_LABEL_MENU_SOUND_NOTICE,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+               audio_enable_menu_notice,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_menu_bgm,
+               MENU_ENUM_LABEL_MENU_SOUND_BGM,
+               MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+               audio_enable_menu_bgm,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_AUDIO:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
@@ -5874,22 +6327,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
                audio_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_enable_menu,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
-               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -6125,7 +6562,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -6465,7 +6902,6 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
 
-
             START_SUB_GROUP(
                   list,
                   list_info,
@@ -6608,7 +7044,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_record_quality;
-            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_GIF, 1, true, true);
 
             CONFIG_PATH(
                list, list_info,
@@ -6669,7 +7105,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
-            CONFIG_UINT(
+           CONFIG_UINT(
                list, list_info,
                &settings->uints.video_stream_quality,
                MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
@@ -6683,7 +7119,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_stream_quality;
-               (*list)[list_info->index - 1].offset_by = 5;
             menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
 
             CONFIG_PATH(
@@ -6714,14 +7149,29 @@ static bool setting_append_list(
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_record_threads,
+               MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+               MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+               video_record_threads,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 1, 8, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
             CONFIG_DIR(
                list, list_info,
                global->record.output_dir,
                sizeof(global->record.output_dir),
-               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -7384,7 +7834,6 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_pause_libretro,
@@ -7504,48 +7953,35 @@ static bool setting_append_list(
                      SD_FLAG_NONE
                      );
 
-            /* These colors are hints. The menu driver is not required to use them. */
-            CONFIG_HEX(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.menu_entry_normal_color,
-                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-                  MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-                  menu_entry_normal_color,
+                  &settings->uints.menu_rgui_color_theme,
+                  MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+                  rgui_color_theme,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_rgui_menu_color_theme;
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_THEME_LAST-1, 1, true, true);
 
-            CONFIG_HEX(
+            CONFIG_PATH(
                   list, list_info,
-                  &settings->uints.menu_entry_hover_color,
-                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-                  MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-                  menu_entry_hover_color,
+                  settings->paths.path_rgui_theme_preset,
+                  sizeof(settings->paths.path_rgui_theme_preset),
+                  MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+                  settings->paths.directory_assets,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-            CONFIG_HEX(
-                  list, list_info,
-                  &settings->uints.menu_title_color,
-                  MENU_ENUM_LABEL_TITLE_COLOR,
-                  MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-                  menu_title_color,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_values(list, list_info, "cfg");
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -7572,7 +8008,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_start  = NULL;
 #endif
          }
-
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -7612,7 +8047,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -7661,7 +8096,6 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 #endif
-
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -7780,8 +8214,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_float_video_msg_color;
             menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -7796,8 +8228,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_float_video_msg_color;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -7887,6 +8317,24 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
        }
 #endif
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_use_preferred_system_color_theme,
+                  MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+                  menu_use_preferred_system_color_theme,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_load_core,
@@ -8007,7 +8455,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
 
-
 #ifdef HAVE_LAKKA
             CONFIG_BOOL(
                   list, list_info,
@@ -8055,8 +8502,8 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 
-#ifdef HAVE_XMB
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -8287,6 +8734,27 @@ static bool setting_append_list(
          }
 #endif
 
+#ifdef HAVE_OZONE
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_ozone_color_theme,
+                  MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ozone_menu_color_theme;
+            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+         }
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_start_screen,
@@ -8302,7 +8770,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone") || string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -8319,7 +8787,29 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+         }
 
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_rgui_thumbnail_downscaler,
+                  MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  rgui_thumbnail_downscaler,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_rgui_thumbnail_scaler;
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_THUMB_SCALE_LAST-1, 1, true, true);
+         }
+
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_left_thumbnails,
@@ -8483,7 +8973,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-
 #ifdef HAVE_IMAGEVIEWER
          CONFIG_BOOL(
                list, list_info,
@@ -8591,6 +9080,24 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
+#ifdef _3DS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_3ds_lcd_bottom,
+               MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
+               MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+               video_3ds_lcd_bottom,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
+#endif
+
 #ifdef HAVE_NETWORKING
          CONFIG_BOOL(
                list, list_info,
@@ -8676,6 +9183,51 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
                quick_menu_show_add_to_favorites,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_start_recording,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+               quick_menu_show_start_recording,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_start_streaming,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+               quick_menu_show_start_streaming,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_reset_core_association,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+               quick_menu_show_reset_core_association,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -8980,6 +9532,22 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_use_old_format,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+               playlist_use_old_format,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);
@@ -9003,7 +9571,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               achievement_hardcore_mode_write_handler,
                general_read_handler,
                SD_FLAG_NONE
                );
@@ -9040,7 +9608,7 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.cheevos_badges_enable,
@@ -9472,7 +10040,6 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
 
-
 #if defined(HAVE_NETWORK_CMD)
             CONFIG_BOOL(
                   list, list_info,
@@ -9545,7 +10112,6 @@ static bool setting_append_list(
 
                   snprintf(s1, sizeof(s1), "%s_user_p%d", msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
                   snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE), user + 1);
-
 
                   CONFIG_BOOL_ALT(
                         list, list_info,
@@ -10385,7 +10951,6 @@ static bool setting_append_list(
          break;
    }
 
-
    return true;
 }
 
@@ -10494,6 +11059,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MULTIMEDIA,
       SETTINGS_LIST_USER_INTERFACE,
       SETTINGS_LIST_POWER_MANAGEMENT,
+      SETTINGS_LIST_MENU_SOUNDS,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,

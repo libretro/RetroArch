@@ -7,6 +7,7 @@
    "terminal.integrated.cursorBlinking": true,
 
    "editor.tabSize": 3,
+   "editor.detectIndentation": false,
    "editor.renderWhitespace": "all",
    "editor.insertSpaces": true,
    "files.associations": {
@@ -22,7 +23,26 @@
       "ios": "c",
       "list": "c",
       "input_driver.h": "c",
-      "video_driver.h": "c"
+      "video_driver.h": "c",
+      "menu_driver.h": "c",
+      "file_path.h": "c",
+      "unordered_map": "c",
+      "unordered_set": "c",
+      "sstream": "cpp",
+      "hash_map": "c",
+      "hash_set": "c",
+      "initializer_list": "c",
+      "string_view": "c",
+      "utility": "c",
+      "menu_input.h": "c",
+      "tasks_internal.h": "c",
+      "ozone.h": "c",
+      "ozone_theme.h": "c",
+      "ozone_texture.h": "c",
+      "string_list.h": "c",
+      "core_info.h": "c"
+      "thread": "c",
+      "xlocale": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

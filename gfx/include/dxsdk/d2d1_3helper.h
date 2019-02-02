@@ -257,4 +257,3 @@ namespace D2D1
 #endif // #if NTDDI_VERSION >= NTDDI_WINTHRESHOLD
 
 #endif // #ifndef _D2D1_HELPER_H_
-

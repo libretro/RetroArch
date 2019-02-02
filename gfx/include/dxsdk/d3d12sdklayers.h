@@ -4,13 +4,9 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
-
  /* File created by MIDL compiler version 8.00.0613 */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -49,13 +45,11 @@ typedef interface ID3D12Debug ID3D12Debug;
 
 #endif 	/* __ID3D12Debug_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Debug1_FWD_DEFINED__
 #define __ID3D12Debug1_FWD_DEFINED__
 typedef interface ID3D12Debug1 ID3D12Debug1;
 
 #endif 	/* __ID3D12Debug1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Debug2_FWD_DEFINED__
 #define __ID3D12Debug2_FWD_DEFINED__
@@ -63,13 +57,11 @@ typedef interface ID3D12Debug2 ID3D12Debug2;
 
 #endif 	/* __ID3D12Debug2_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugDevice1_FWD_DEFINED__
 #define __ID3D12DebugDevice1_FWD_DEFINED__
 typedef interface ID3D12DebugDevice1 ID3D12DebugDevice1;
 
 #endif 	/* __ID3D12DebugDevice1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12DebugDevice_FWD_DEFINED__
 #define __ID3D12DebugDevice_FWD_DEFINED__
@@ -77,13 +69,11 @@ typedef interface ID3D12DebugDevice ID3D12DebugDevice;
 
 #endif 	/* __ID3D12DebugDevice_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugCommandQueue_FWD_DEFINED__
 #define __ID3D12DebugCommandQueue_FWD_DEFINED__
 typedef interface ID3D12DebugCommandQueue ID3D12DebugCommandQueue;
 
 #endif 	/* __ID3D12DebugCommandQueue_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12DebugCommandList1_FWD_DEFINED__
 #define __ID3D12DebugCommandList1_FWD_DEFINED__
@@ -91,13 +81,11 @@ typedef interface ID3D12DebugCommandList1 ID3D12DebugCommandList1;
 
 #endif 	/* __ID3D12DebugCommandList1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugCommandList_FWD_DEFINED__
 #define __ID3D12DebugCommandList_FWD_DEFINED__
 typedef interface ID3D12DebugCommandList ID3D12DebugCommandList;
 
 #endif 	/* __ID3D12DebugCommandList_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12SharingContract_FWD_DEFINED__
 #define __ID3D12SharingContract_FWD_DEFINED__
@@ -105,13 +93,11 @@ typedef interface ID3D12SharingContract ID3D12SharingContract;
 
 #endif 	/* __ID3D12SharingContract_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12InfoQueue_FWD_DEFINED__
 #define __ID3D12InfoQueue_FWD_DEFINED__
 typedef interface ID3D12InfoQueue ID3D12InfoQueue;
 
 #endif 	/* __ID3D12InfoQueue_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -122,14 +108,12 @@ typedef interface ID3D12InfoQueue ID3D12InfoQueue;
 extern "C"{
 #endif 
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0000 */
 /* [local] */ 
 
 /*#include <winapifamily.h>*/
 /*#pragma region App Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_s_ifspec;
@@ -139,7 +123,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D12Debug */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Debug;
 
@@ -186,7 +169,6 @@ EXTERN_C const IID IID_ID3D12Debug;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -196,27 +178,20 @@ EXTERN_C const IID IID_ID3D12Debug;
 #define ID3D12Debug_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12Debug_EnableDebugLayer(This)	\
     ( (This)->lpVtbl -> EnableDebugLayer(This) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Debug_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Debug1_INTERFACE_DEFINED__
 #define __ID3D12Debug1_INTERFACE_DEFINED__
 
 /* interface ID3D12Debug1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Debug1;
 
@@ -277,7 +252,6 @@ EXTERN_C const IID IID_ID3D12Debug1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -286,7 +260,6 @@ EXTERN_C const IID IID_ID3D12Debug1;
 
 #define ID3D12Debug1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12Debug1_EnableDebugLayer(This)	\
     ( (This)->lpVtbl -> EnableDebugLayer(This) ) 
@@ -299,14 +272,9 @@ EXTERN_C const IID IID_ID3D12Debug1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Debug1_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0002 */
 /* [local] */ 
@@ -320,7 +288,6 @@ enum D3D12_GPU_BASED_VALIDATION_FLAGS
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D12_GPU_BASED_VALIDATION_FLAGS)
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_s_ifspec;
 
@@ -329,7 +296,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_s_ifspec;
 
 /* interface ID3D12Debug2 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12Debug2;
 
@@ -378,7 +344,6 @@ EXTERN_C const IID IID_ID3D12Debug2;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug2_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -388,20 +353,14 @@ EXTERN_C const IID IID_ID3D12Debug2;
 #define ID3D12Debug2_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12Debug2_SetGPUBasedValidationFlags(This,Flags)	\
     ( (This)->lpVtbl -> SetGPUBasedValidationFlags(This,Flags) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Debug2_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0003 */
 /* [local] */ 
@@ -468,8 +427,6 @@ typedef struct D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR
     FLOAT SlowdownFactor;
     } 	D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_s_ifspec;
 
@@ -478,7 +435,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_s_ifspec;
 
 /* interface ID3D12DebugDevice1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DebugDevice1;
 
@@ -549,7 +505,6 @@ EXTERN_C const IID IID_ID3D12DebugDevice1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugDevice1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -558,7 +513,6 @@ EXTERN_C const IID IID_ID3D12DebugDevice1;
 
 #define ID3D12DebugDevice1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DebugDevice1_SetDebugParameter(This,Type,pData,DataSize)	\
     ( (This)->lpVtbl -> SetDebugParameter(This,Type,pData,DataSize) ) 
@@ -571,21 +525,15 @@ EXTERN_C const IID IID_ID3D12DebugDevice1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugDevice1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DebugDevice_INTERFACE_DEFINED__
 #define __ID3D12DebugDevice_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugDevice */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DebugDevice;
 
@@ -646,7 +594,6 @@ EXTERN_C const IID IID_ID3D12DebugDevice;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugDevice_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -655,7 +602,6 @@ EXTERN_C const IID IID_ID3D12DebugDevice;
 
 #define ID3D12DebugDevice_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DebugDevice_SetFeatureMask(This,Mask)	\
     ( (This)->lpVtbl -> SetFeatureMask(This,Mask) ) 
@@ -668,20 +614,14 @@ EXTERN_C const IID IID_ID3D12DebugDevice;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugDevice_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0005 */
 /* [local] */ 
 
 DEFINE_GUID(DXGI_DEBUG_D3D12, 0xcf59a98c, 0xa950, 0x4326, 0x91, 0xef, 0x9b, 0xba, 0xa1, 0x7b, 0xfd, 0x95);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_s_ifspec;
@@ -691,7 +631,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_s_ifspec;
 
 /* interface ID3D12DebugCommandQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DebugCommandQueue;
 
@@ -744,7 +683,6 @@ EXTERN_C const IID IID_ID3D12DebugCommandQueue;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -754,20 +692,14 @@ EXTERN_C const IID IID_ID3D12DebugCommandQueue;
 #define ID3D12DebugCommandQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12DebugCommandQueue_AssertResourceState(This,pResource,Subresource,State)	\
     ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugCommandQueue_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0006 */
 /* [local] */ 
@@ -783,8 +715,6 @@ typedef struct D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS
     D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE ShaderPatchMode;
     } 	D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_s_ifspec;
 
@@ -793,7 +723,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_s_ifspec;
 
 /* interface ID3D12DebugCommandList1 */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DebugCommandList1;
 
@@ -868,7 +797,6 @@ EXTERN_C const IID IID_ID3D12DebugCommandList1;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandList1_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -877,7 +805,6 @@ EXTERN_C const IID IID_ID3D12DebugCommandList1;
 
 #define ID3D12DebugCommandList1_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DebugCommandList1_AssertResourceState(This,pResource,Subresource,State)	\
     ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
@@ -890,21 +817,15 @@ EXTERN_C const IID IID_ID3D12DebugCommandList1;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugCommandList1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DebugCommandList_INTERFACE_DEFINED__
 #define __ID3D12DebugCommandList_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugCommandList */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12DebugCommandList;
 
@@ -969,7 +890,6 @@ EXTERN_C const IID IID_ID3D12DebugCommandList;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandList_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -978,7 +898,6 @@ EXTERN_C const IID IID_ID3D12DebugCommandList;
 
 #define ID3D12DebugCommandList_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12DebugCommandList_AssertResourceState(This,pResource,Subresource,State)	\
     ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
@@ -991,21 +910,15 @@ EXTERN_C const IID IID_ID3D12DebugCommandList;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugCommandList_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12SharingContract_INTERFACE_DEFINED__
 #define __ID3D12SharingContract_INTERFACE_DEFINED__
 
 /* interface ID3D12SharingContract */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12SharingContract;
 
@@ -1065,7 +978,6 @@ EXTERN_C const IID IID_ID3D12SharingContract;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12SharingContract_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1075,7 +987,6 @@ EXTERN_C const IID IID_ID3D12SharingContract;
 #define ID3D12SharingContract_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D12SharingContract_Present(This,pResource,Subresource)	\
     ( (This)->lpVtbl -> Present(This,pResource,Subresource) ) 
 
@@ -1084,14 +995,9 @@ EXTERN_C const IID IID_ID3D12SharingContract;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12SharingContract_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0009 */
 /* [local] */ 
@@ -2266,7 +2172,6 @@ typedef struct D3D12_INFO_QUEUE_FILTER
 
 #define D3D12_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT 1024
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_s_ifspec;
 
@@ -2275,7 +2180,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_s_ifspec;
 
 /* interface ID3D12InfoQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D12InfoQueue;
 
@@ -2548,7 +2452,6 @@ EXTERN_C const IID IID_ID3D12InfoQueue;
 
 #ifdef COBJMACROS
 
-
 #define ID3D12InfoQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -2557,7 +2460,6 @@ EXTERN_C const IID IID_ID3D12InfoQueue;
 
 #define ID3D12InfoQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D12InfoQueue_SetMessageCountLimit(This,MessageCountLimit)	\
     ( (This)->lpVtbl -> SetMessageCountLimit(This,MessageCountLimit) ) 
@@ -2666,14 +2568,9 @@ EXTERN_C const IID IID_ID3D12InfoQueue;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12InfoQueue_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0010 */
 /* [local] */ 
@@ -2691,7 +2588,6 @@ DEFINE_GUID(IID_ID3D12DebugCommandList,0x09e0bf36,0x54ac,0x484f,0x88,0x47,0x4b,0
 DEFINE_GUID(IID_ID3D12SharingContract,0xa251ff70,0xcdeb,0x49fa,0x9b,0xcf,0x5e,0xbd,0xf4,0xdb,0xac,0xa9);
 DEFINE_GUID(IID_ID3D12InfoQueue,0x0742a90b,0xc387,0x483f,0xb9,0x46,0x30,0xa7,0xe4,0xe6,0x14,0x58);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_s_ifspec;
 
@@ -2704,5 +2600,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

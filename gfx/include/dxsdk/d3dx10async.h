@@ -17,7 +17,6 @@
 extern "C" {
 #endif //__cplusplus
 
-
 //----------------------------------------------------------------------------
 // D3DX10Compile:
 // ------------------
@@ -157,7 +156,6 @@ HRESULT WINAPI D3DX10CompileFromMemory(LPCSTR pSrcData, SIZE_T SrcDataLen, LPCST
 //      the asynchronous execution completes.
 //----------------------------------------------------------------------------
 
-
 HRESULT WINAPI D3DX10CreateEffectFromFileA(LPCSTR pFileName, CONST D3D10_SHADER_MACRO *pDefines, 
     ID3D10Include *pInclude, LPCSTR pProfile, UINT HLSLFlags, UINT FXFlags, ID3D10Device *pDevice, 
     ID3D10EffectPool *pEffectPool, ID3DX10ThreadPump* pPump, ID3D10Effect **ppEffect, ID3D10Blob **ppErrors, HRESULT* pHResult);
@@ -177,7 +175,6 @@ HRESULT WINAPI D3DX10CreateEffectFromResourceA(HMODULE hModule, LPCSTR pResource
 HRESULT WINAPI D3DX10CreateEffectFromResourceW(HMODULE hModule, LPCWSTR pResourceName, LPCWSTR pSrcFileName, CONST D3D10_SHADER_MACRO *pDefines, 
     ID3D10Include *pInclude, LPCSTR pProfile, UINT HLSLFlags, UINT FXFlags, ID3D10Device *pDevice, 
     ID3D10EffectPool *pEffectPool, ID3DX10ThreadPump* pPump, ID3D10Effect **ppEffect, ID3D10Blob **ppErrors, HRESULT* pHResult);
-
 
 #ifdef UNICODE
 #define D3DX10CreateEffectFromFile          D3DX10CreateEffectFromFileW
@@ -257,8 +254,6 @@ HRESULT WINAPI D3DX10CreateAsyncEffectPoolCreateProcessor(LPCSTR pFileName, CONS
 HRESULT WINAPI D3DX10CreateAsyncShaderPreprocessProcessor(LPCSTR pFileName, CONST D3D10_SHADER_MACRO* pDefines, LPD3D10INCLUDE pInclude, 
         ID3D10Blob** ppShaderText, ID3D10Blob **ppErrorBuffer, ID3DX10DataProcessor **ppProcessor);
 
-
-
 //----------------------------------------------------------------------------
 // D3DX10 Asynchronous texture I/O (advanced mode)
 //----------------------------------------------------------------------------
@@ -286,5 +281,3 @@ HRESULT WINAPI D3DX10CreateAsyncShaderResourceViewProcessor(ID3D10Device *pDevic
 #endif //__cplusplus
 
 #endif //__D3DX10ASYNC_H__
-
-

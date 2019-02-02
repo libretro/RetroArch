@@ -27,7 +27,6 @@ extern u8 g_CID[MAX_DRIVE][16];
 extern u8 g_mCode[MAX_MI_NUM];
 extern u16 g_dCode[MAX_MI_NUM][MAX_DI_NUM];
 
-
 void sdgecko_initIODefault();
 s32 sdgecko_initIO(s32 drv_no);
 s32 sdgecko_preIO(s32 drv_no);
@@ -42,7 +41,6 @@ s32 sdgecko_doUnmount(s32 drv_no);
 
 void sdgecko_insertedCB(s32 drv_no);
 void sdgecko_ejectedCB(s32 drv_no);
-
 
 #ifdef __cplusplus
    }

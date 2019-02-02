@@ -44,4 +44,3 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
 RETRO_END_DECLS
 
 #endif
-

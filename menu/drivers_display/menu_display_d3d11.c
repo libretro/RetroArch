@@ -45,14 +45,14 @@ static void* menu_display_d3d11_get_default_mvp(video_frame_info_t *video_info)
 
 static void menu_display_d3d11_blend_begin(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d11_blend_end(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
@@ -261,17 +261,51 @@ static bool menu_display_d3d11_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
-      float       font_size,
+      float       menu_font_size,
       bool        is_threaded)
 {
    font_data_t** handle     = (font_data_t**)font_handle;
    font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, font_size, true,
+         video_data, font_path, menu_font_size, true,
          is_threaded, FONT_DRIVER_RENDER_D3D11_API);
    if (!new_handle)
       return false;
    *handle = new_handle;
    return true;
+}
+
+void menu_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   D3D11_RECT rect = {0};
+   d3d11_video_t *d3d11 = video_info ?
+      (d3d11_video_t*)video_info->userdata : NULL;
+
+   rect.left = x;
+   rect.top = y;
+   rect.right = width + x;
+   rect.bottom = height + y;
+
+   if (!d3d11 || !width || !height)
+      return;
+
+   D3D11SetScissorRects(d3d11->context, 1, &rect);
+}
+
+void menu_display_d3d11_scissor_end(video_frame_info_t *video_info)
+{
+   D3D11_RECT rect = {0};
+   d3d11_video_t *d3d11 = video_info ?
+      (d3d11_video_t*)video_info->userdata : NULL;
+
+   if (!d3d11)
+      return;
+
+   rect.left = d3d11->vp.x;
+   rect.top = d3d11->vp.y;
+   rect.right = d3d11->vp.width;
+   rect.bottom = d3d11->vp.height;
+
+   D3D11SetScissorRects(d3d11->context, 1, &rect);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d11 = {
@@ -289,6 +323,6 @@ menu_display_ctx_driver_t menu_display_ctx_d3d11 = {
    MENU_VIDEO_DRIVER_DIRECT3D11,
    "d3d11",
    true,
-   NULL,
-   NULL
+   menu_display_d3d11_scissor_begin,
+   menu_display_d3d11_scissor_end
 };

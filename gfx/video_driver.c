@@ -119,7 +119,6 @@
 #define video_driver_context_unlock()  ((void)0)
 #endif
 
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -147,7 +146,6 @@ static bool                video_driver_state_out_rgb32      = false;
 static bool                video_driver_crt_switching_active = false;
 
 static struct retro_system_av_info video_driver_av_info;
-
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
@@ -274,14 +272,14 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(HAVE_D3D10)
-   &video_d3d10,
+#if defined(HAVE_D3D12)
+   &video_d3d12,
 #endif
 #if defined(HAVE_D3D11)
    &video_d3d11,
 #endif
-#if defined(HAVE_D3D12)
-   &video_d3d12,
+#if defined(HAVE_D3D10)
+   &video_d3d10,
 #endif
 #if defined(HAVE_D3D9)
    &video_d3d9,
@@ -294,6 +292,9 @@ static const video_driver_t *video_drivers[] = {
 #endif
 #ifdef PSP
    &video_psp1,
+#endif
+#ifdef PS2
+   &video_ps2,
 #endif
 #ifdef _3DS
    &video_ctr,
@@ -337,7 +338,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_XSHM
    &video_xshm,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &video_gdi,
 #endif
 #ifdef DJGPP
@@ -354,6 +355,9 @@ static const video_driver_t *video_drivers[] = {
 };
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
+#if defined(ORBIS)
+   &orbis_ctx,
+#endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif
@@ -395,7 +399,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__QNX__)
    &gfx_ctx_qnx,
 #endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
    &gfx_ctx_cocoagl,
 #endif
 #if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
@@ -413,7 +417,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &gfx_ctx_gdi,
 #endif
 #ifdef HAVE_SIXEL
@@ -948,7 +952,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
 
-
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = MAX(scale, 1);
@@ -982,10 +985,12 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      if (settings->uints.video_window_x || settings->uints.video_window_y)
+      /* To-Do: remove when the new window resizing core is hooked */
+      if (settings->bools.video_window_save_positions &&
+         (settings->uints.window_position_width || settings->uints.window_position_height))
       {
-         width  = settings->uints.video_window_x;
-         height = settings->uints.video_window_y;
+         width  = settings->uints.window_position_width;
+         height = settings->uints.window_position_height;
       }
       else
       {
@@ -999,7 +1004,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          else
             width  = roundf(geom->base_width   * settings->floats.video_scale);
          height = roundf(geom->base_height * settings->floats.video_scale);
-      }
+}
    }
 
    if (width && height)
@@ -1417,6 +1422,8 @@ bool video_driver_cached_frame(void)
 {
    void *recording  = recording_driver_get_data_ptr();
 
+   recording_driver_lock();
+
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
@@ -1427,6 +1434,8 @@ bool video_driver_cached_frame(void)
          frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
+
+   recording_driver_unlock();
 
    return true;
 }
@@ -1488,15 +1497,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   CONFIG_ACTION(
-         list, list_info,
-         MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-         MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-         group_info,
-         subgroup_info,
-         parent_group);
-#endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          list, list_info,
@@ -2026,7 +2026,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
    return false;
 }
 
-
 bool video_driver_frame_filter_alive(void)
 {
    return !!video_driver_state_filter;
@@ -2059,8 +2058,13 @@ void video_driver_load_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
+#else
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.gamma_correction, "gamma_correction");
+#endif
 
    if (config_get_bool(conf, "flicker_filter_enable",
          &tmp_bool))
@@ -2087,8 +2091,13 @@ void video_driver_save_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    config_set_bool(conf, "gamma_correction",
          global->console.screen.gamma_correction);
+#else
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+#endif
    config_set_bool(conf, "flicker_filter_enable",
          global->console.flickerfilter_enable);
    config_set_bool(conf, "soft_filter_enable",
@@ -2426,7 +2435,6 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
 
-
    if (data)
       frame_cache_data = data;
    frame_cache_width   = width;
@@ -2453,10 +2461,13 @@ void video_driver_frame(const void *data, unsigned width,
          char frames_text[64];
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
 
-         if (video_info.fps_show)
+         if (video_info.fps_show || video_info.framecount_show)
          {
-            snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                  "||  FPS: %6.1f ", last_fps);
+            if (video_info.fps_show)
+            {
+               snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+                     " ||  FPS: %6.1f ", last_fps);
+            }
             if (video_info.framecount_show)
             {
                snprintf(frames_text,
@@ -2465,7 +2476,8 @@ void video_driver_frame(const void *data, unsigned width,
                      (uint64_t)video_driver_frame_count);
             }
             snprintf(video_driver_window_title, sizeof(video_driver_window_title),
-               "%s%s%s", title, video_info.fps_text,
+               "%s%s%s", title,
+               video_info.fps_show ? video_info.fps_text : "",
                video_info.framecount_show ? frames_text : "");
          }
          else
@@ -2495,6 +2507,28 @@ void video_driver_frame(const void *data, unsigned width,
                   "FPS: %6.1f",
                   last_fps);
       }
+
+      if (video_info.fps_show && video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f || %s: %" PRIu64,
+               last_fps,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.framecount_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "%s: %" PRIu64,
+               msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+      else if (video_info.fps_show)
+         snprintf(
+               video_info.fps_text,
+               sizeof(video_info.fps_text),
+               "FPS: %6.1f",
+               last_fps);
    }
    else
    {
@@ -2624,7 +2658,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_frame_count++;
 
    /* Display the FPS, with a higher priority. */
-   if (video_info.fps_show)
+   if (video_info.fps_show || video_info.framecount_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 
    /* trigger set resolution*/
@@ -2638,12 +2672,17 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust);
+      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;
 
    /* trigger set resolution*/
+}
+
+void crt_switch_driver_reinit(void)
+{
+   video_driver_reinit();
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2748,6 +2787,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
+   video_info->input_menu_swap_ok_cancel_buttons    = settings->bools.input_menu_swap_ok_cancel_buttons;
    video_info->max_swapchain_images  = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen   = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen            = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
@@ -2785,6 +2825,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme = settings->uints.menu_materialui_color_theme;
+   video_info->ozone_color_theme      = settings->uints.menu_ozone_color_theme;
    video_info->menu_shader_pipeline   = settings->uints.menu_xmb_shader_pipeline;
    video_info->xmb_theme              = settings->uints.menu_xmb_theme;
    video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
@@ -3123,7 +3164,6 @@ void video_context_driver_make_current(bool release)
       current_video_context.make_current(release);
 }
 
-
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
    if (!video_context_data || !aspect)
@@ -3320,8 +3360,6 @@ bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
 
    return false;
 }
-
-
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 {

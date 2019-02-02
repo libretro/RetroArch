@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_NETPLAY_H
 #define __RARCH_NETPLAY_H
 
@@ -37,6 +36,7 @@ typedef struct mitm_server {
 static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
+   { "montreal", "Montreal, Canada" },
 };
 
 enum rarch_netplay_ctl_state

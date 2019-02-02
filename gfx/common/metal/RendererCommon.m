@@ -86,3 +86,17 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
 }
+
+matrix_float4x4 matrix_rotate_z(float rot)
+{
+   float cz, sz;
+   __sincosf(rot, &sz, &cz);
+   
+   simd_float4 P = simd_make_float4(cz, -sz, 0, 0);
+   simd_float4 Q = simd_make_float4(sz,  cz, 0, 0);
+   simd_float4 R = simd_make_float4( 0,   0, 1, 0);
+   simd_float4 S = simd_make_float4( 0,   0, 0, 1);
+   
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}

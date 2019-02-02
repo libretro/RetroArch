@@ -385,6 +385,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
@@ -470,6 +471,7 @@
 					"-DHAVE_7ZIP",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
@@ -521,6 +523,7 @@
 					"-DHAVE_7ZIP",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);

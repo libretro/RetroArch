@@ -23,6 +23,16 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct video_display_config
+{
+   unsigned width;
+   unsigned height;
+   unsigned bpp;
+   unsigned refreshrate;
+   unsigned idx;
+   bool current;
+} video_display_config_t;
+
 typedef struct video_display_server
 {
    void *(*init)(void);
@@ -30,8 +40,10 @@ typedef struct video_display_server
    bool (*set_window_opacity)(void *data, unsigned opacity);
    bool (*set_window_progress)(void *data, int progress, bool finished);
    bool (*set_window_decorations)(void *data, bool on);
-   bool (*switch_resolution)(void *data, unsigned width,
-         unsigned height, int int_hz, float hz, int center);
+   bool (*set_resolution)(void *data, unsigned width,
+         unsigned height, int int_hz, float hz, int center, int monitor_index);
+   void *(*get_resolution_list)(void *data,
+         unsigned *size);
    const char *(*get_output_options)(void *data);
    const char *ident;
 } video_display_server_t;
@@ -46,11 +58,15 @@ bool video_display_server_set_window_progress(int progress, bool finished);
 
 bool video_display_server_set_window_decorations(bool on);
 
-bool video_display_server_switch_resolution(
+bool video_display_server_set_resolution(
       unsigned width, unsigned height,
-      int int_hz, float hz, int center);
+      int int_hz, float hz, int center, int monitor_index);
+
+void *video_display_server_get_resolution_list(unsigned *size);
 
 const char *video_display_server_get_output_options(void);
+
+const char *video_display_server_get_ident(void);
 
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_x11;

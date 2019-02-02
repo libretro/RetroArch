@@ -183,14 +183,6 @@ typedef struct materialui_handle
 
 } materialui_handle_t;
 
-static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
-{
-   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
-   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
-   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
-   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
-}
-
 static const char *materialui_texture_path(unsigned id)
 {
    switch (id)
@@ -567,7 +559,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
                mui->font, msg,
                x - longest_width/2.0,
                y + i * line_height + mui->font->size / 3,
-               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    }
 
@@ -576,7 +568,8 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
             mui->font,
             video_info,
-            menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+            menu_event_get_osk_grid(), menu_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    if (list)
@@ -614,7 +607,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
 
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
-
 
       sublabel_str = menu_entry_get_sublabel(&entry);
       menu_entry_free(&entry);
@@ -871,7 +863,7 @@ static void materialui_render_label_value(
                mui->margin + icon_margin,
                y + (scale_factor / 4) + mui->font->size,
                width, height, sublabel_color, TEXT_ALIGN_LEFT,
-               1.0f, false, 0);
+               1.0f, false, 0, false);
       }
       free(sublabel_str);
    }
@@ -879,13 +871,13 @@ static void materialui_render_label_value(
    menu_display_draw_text(mui->font, label_str,
          mui->margin + icon_margin,
          y + (scale_factor / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
             y + (scale_factor / 5),
-            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
+            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
       materialui_draw_icon(video_info,
@@ -1005,7 +997,6 @@ static void materialui_render_menu_list(
    }
 }
 
-
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 {
    switch (type)
@@ -1024,22 +1015,12 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 static int materialui_get_core_title(char *s, size_t len)
 {
    settings_t *settings              = config_get_ptr();
-   rarch_system_info_t *info         = runloop_get_system_info();
-   struct retro_system_info *system  = &info->info;
-
-   const char *core_name             = system->library_name;
-   const char *core_version          = system->library_version;
+   struct retro_system_info *system  = runloop_get_libretro_system_info();
+   const char *core_name             = system ? system->library_name : NULL;
+   const char *core_version          = system ? system->library_version : NULL;
 
    if (!settings->bools.menu_core_enable)
       return -1;
-
-   if (info)
-   {
-      if (string_is_empty(core_name))
-         core_name = info->info.library_name;
-      if (!core_version)
-         core_version = info->info.library_version;
-   }
 
    if (string_is_empty(core_name))
       core_name    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
@@ -1579,7 +1560,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       menu_display_draw_text(mui->font, title_buf,
             title_margin,
             header_height / 2 + mui->font->size / 3,
-            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    materialui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
 
@@ -2074,6 +2055,12 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
+            if (system->load_no_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+               menu_displaylist_setting(&entry);
+            }
+
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
 #endif
@@ -2083,12 +2070,6 @@ static int materialui_list_push(void *data, void *userdata,
                   entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
                   menu_displaylist_setting(&entry);
                }
-            }
-
-            if (system->load_no_content)
-            {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_load_content)
@@ -2109,7 +2090,6 @@ static int materialui_list_push(void *data, void *userdata,
             menu_displaylist_setting(&entry);
 #else
             {
-               settings_t *settings      = config_get_ptr();
                if (settings->bools.menu_show_online_updater)
                {
                   entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
@@ -2221,7 +2201,6 @@ static int materialui_pointer_down(void *userdata,
             )
             menu_navigation_set_selection(ii);
       }
-
 
    }
 
@@ -2369,7 +2348,6 @@ static void materialui_list_insert(void *userdata,
             node->texture_switch2_index = MUI_TEXTURE_DATABASE;
             node->texture_switch2_set   = true;
             break;
-         case 32: /* TODO: Need to find out what this is */
          case FILE_TYPE_RDB_ENTRY:
             node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
             node->texture_switch2_set   = true;

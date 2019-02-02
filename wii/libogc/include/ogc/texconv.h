@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __TEXCONV_H__
 #define __TEXTCONV_H__
 

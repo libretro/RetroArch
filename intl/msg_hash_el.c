@@ -109,16 +109,22 @@ int menu_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Εναλλαγή λειτουργίας παιχνιδιού/παρακολούθησης Netplay.");
              break;
           case RARCH_ENABLE_HOTKEY:
-             snprintf(s, len,
+             {
+                /* Work around C89 limitations */
+                const char *t =
                    "Ενεργοποίηση άλλων πλήκτρων εντολών. \n"
                    " \n"
                    "Εάν αυτό το πλήκτρο είναι συνδεδεμένο είτε με\n"
                    "ένα πληκτρολόγιο ή κάποιο κουμπί χειριστιερίου, \n"
-                   "όλα τα υπόλοιπα κουμπιά εντολών θα ενεργοποιηθούν μόνο \n"
+                   "όλα τα υπόλοιπα κουμπιά εντολών θα ενεργοποιηθούν μόνο \n";
+                const char *u = 
                    "εάν και αυτό είναι πατημένο την ίδια στιγμή. \n"
                    " \n"
                    "Διαφορετικά, όλα τα κουμπιά εντολών πληκτρολογίου \n"
-                   "μπορούν να απενεργοποιηθούν από τον χρήστη.");
+                   "μπορούν να απενεργοποιηθούν από τον χρήστη.";
+                strlcpy(s, t, len);
+                strlcat(s, u, len);
+             }
              break;
           case RARCH_VOLUME_UP:
              snprintf(s, len,
@@ -238,18 +244,25 @@ int menu_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len, "Κωδικός για τον λογαριασμό σας στο Retro Achievements.");
             break;
         case MENU_ENUM_LABEL_USER_LANGUAGE:
-            snprintf(s, len, "Τοπικοποίηση του μενού και όλων των μηνυμάτων \n"
-                    "ανάλογα με την γλώσσα που έχετε επιλέξει \n"
-                    "εδώ. \n"
-                    " \n"
-                    "Χρειάζεται επανεκκίνηση για να ενεργοποιηθούν \n"
-                    "οι αλλαγές. \n"
-                    " \n"
-                    "Σημείωση: πιθανόν να μην έχουν εφαρμοστεί \n"
-                    "όλες οι γλώσσες. \n"
-                    " \n"
-                    "Σε περίπτωση που μία γλώσσα δεν έχει εφαρμοστεί, \n"
-                    "χρησιμοποιούμε τα Αγγλικά.");
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                  "Τοπικοποίηση του μενού και όλων των μηνυμάτων \n"
+                  "ανάλογα με την γλώσσα που έχετε επιλέξει \n"
+                  "εδώ. \n"
+                  " \n"
+                  "Χρειάζεται επανεκκίνηση για να ενεργοποιηθούν \n"
+                  "οι αλλαγές. \n";
+               const char *u = 
+                  " \n"
+                  "Σημείωση: πιθανόν να μην έχουν εφαρμοστεί \n"
+                  "όλες οι γλώσσες. \n"
+                  " \n"
+                  "Σε περίπτωση που μία γλώσσα δεν έχει εφαρμοστεί, \n"
+                  "χρησιμοποιούμε τα Αγγλικά.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             snprintf(s, len, "Αλλαγή της γραμματοσειράς που χρησιμοποιείται \n"
@@ -658,35 +671,36 @@ int menu_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Welcome to RetroArch\n"
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
-            /* Work around C89 limitations */
-            char u[501];
-            const char *t =
-                    "RetroArch relies on an unique form of\n"
-                            "audio/video synchronization where it needs to be\n"
-                            "calibrated against the refresh rate of your\n"
-                            "display for best performance results.\n"
-                            " \n"
-                            "If you experience any audio crackling or video\n"
-                            "tearing, usually it means that you need to\n"
-                            "calibrate the settings. Some choices below:\n"
-                            " \n";
-            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
+        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               const char *t =
+                  "RetroArch relies on an unique form of\n"
+                  "audio/video synchronization where it needs to be\n"
+                  "calibrated against the refresh rate of your\n"
+                  "display for best performance results.\n"
+                  " \n"
+                  "If you experience any audio crackling or video\n"
+                  "tearing, usually it means that you need to\n"
+                  "calibrate the settings. Some choices below:\n"
+                  " \n";
+               snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Go to '%s' -> '%s', and enable\n"
-                             "'Threaded Video'. Refresh rate will not matter\n"
-                             "in this mode, framerate will be higher,\n"
-                             "but video might be less smooth.\n"
-                             "b) Go to '%s' -> '%s', and look at\n"
-                             "'%s'. Let it run for\n"
-                             "2048 frames, then press 'OK'.",
+                     "'Threaded Video'. Refresh rate will not matter\n"
+                     "in this mode, framerate will be higher,\n"
+                     "but video might be less smooth.\n"
+                     "b) Go to '%s' -> '%s', and look at\n"
+                     "'%s'. Let it run for\n"
+                     "2048 frames, then press 'OK'.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcpy(s, t, len);
-            strlcat(s, u, len);
-        }
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,

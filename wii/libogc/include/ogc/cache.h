@@ -1,6 +1,5 @@
 /*-------------------------------------------------------------
 
-
 cache.h -- Cache interface
 
 Copyright (C) 2004
@@ -26,9 +25,7 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #ifndef __CACHE_H__
 #define __CACHE_H__
@@ -47,7 +44,6 @@ distribution.
    extern "C" {
 #endif /* __cplusplus */
 
-
 /*!
  * \fn void DCEnable()
  * \brief Enable L1 d-cache
@@ -56,7 +52,6 @@ distribution.
  */
 void DCEnable();
 
-
 /*!
  * \fn void DCDisable()
  * \brief Disable L1 d-cache
@@ -64,7 +59,6 @@ void DCEnable();
  * \return none
  */
 void DCDisable();
-
 
 /*!
  * \fn void DCFreeze()
@@ -77,7 +71,6 @@ void DCDisable();
  */
 void DCFreeze();
 
-
 /*!
  * \fn void DCUnfreeze()
  * \brief Undoes actions of DCFreeze().
@@ -89,7 +82,6 @@ void DCFreeze();
  */
 void DCUnfreeze();
 
-
 /*!
  * \fn void DCFlashInvalidate()
  * \brief Invalidate L1 d-cache.
@@ -100,7 +92,6 @@ void DCUnfreeze();
  * \return none
  */
 void DCFlashInvalidate();
-
 
 /*!
  * \fn void DCInvalidateRange(void *startaddress,u32 len)
@@ -114,7 +105,6 @@ void DCFlashInvalidate();
  * \return none
  */
 void DCInvalidateRange(void *startaddress,u32 len);
-
 
 /*!
  * \fn void DCFlushRange(void *startaddress,u32 len)
@@ -143,7 +133,6 @@ void DCFlushRange(void *startaddress,u32 len);
  */
 void DCStoreRange(void *startaddress,u32 len);
 
-
 /*!
  * \fn void DCFlushRangeNoSync(void *startaddress,u32 len)
  * \brief Flushes a given range.
@@ -158,7 +147,6 @@ void DCStoreRange(void *startaddress,u32 len);
  */
 void DCFlushRangeNoSync(void *startaddress,u32 len);
 
-
 /*!
  * \fn void DCStoreRangeNoSync(void *startaddress,u32 len)
  * \brief Ensures a range of memory is updated with any modified data in the cache.
@@ -172,7 +160,6 @@ void DCFlushRangeNoSync(void *startaddress,u32 len);
  */
 void DCStoreRangeNoSync(void *startaddress,u32 len);
 
-
 /*!
  * \fn void DCZeroRange(void *startaddress,u32 len)
  * \brief Loads a range of memory into cache and zeroes all the cache lines.
@@ -183,7 +170,6 @@ void DCStoreRangeNoSync(void *startaddress,u32 len);
  * \return none
  */
 void DCZeroRange(void *startaddress,u32 len);
-
 
 /*!
  * \fn void DCTouchRange(void *startaddress,u32 len)
@@ -196,7 +182,6 @@ void DCZeroRange(void *startaddress,u32 len);
  */
 void DCTouchRange(void *startaddress,u32 len);
 
-
 /*!
  * \fn void ICSync()
  * \brief Performs an instruction cache synchronization.
@@ -206,7 +191,6 @@ void DCTouchRange(void *startaddress,u32 len);
  * \return none
  */
 void ICSync();
-
 
 /*!
  * \fn void ICFlashInvalidate()
@@ -219,7 +203,6 @@ void ICSync();
  */
 void ICFlashInvalidate();
 
-
 /*!
  * \fn void ICEnable()
  * \brief Enable L1 i-cache
@@ -228,7 +211,6 @@ void ICFlashInvalidate();
  */
 void ICEnable();
 
-
 /*!
  * \fn void ICDisable()
  * \brief Disable L1 i-cache
@@ -236,7 +218,6 @@ void ICEnable();
  * \return none
  */
 void ICDisable();
-
 
 /*!
  * \fn void ICFreeze()
@@ -249,7 +230,6 @@ void ICDisable();
  */
 void ICFreeze();
 
-
 /*!
  * \fn void ICUnfreeze()
  * \brief Undoes actions of ICFreeze().
@@ -260,7 +240,6 @@ void ICFreeze();
  * \return none
  */
 void ICUnfreeze();
-
 
 /*!
  * \fn void ICBlockInvalidate(void *startaddress)
@@ -273,7 +252,6 @@ void ICUnfreeze();
  *\return none
  */
 void ICBlockInvalidate(void *startaddress);
-
 
 /*!
  * \fn void ICInvalidateRange(void *startaddress,u32 len)

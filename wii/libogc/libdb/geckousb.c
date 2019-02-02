@@ -89,7 +89,6 @@ static void __usb_flush(s32 chn)
 	EXI_Unlock(chn);
 }
 
-
 static int __usb_isgeckoalive(s32 chn)
 {
 	s32 ret;

@@ -47,7 +47,6 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
       pid = 1;
    }
 
-
    if (event_type == EMSCRIPTEN_EVENT_GAMEPADCONNECTED)
    {
       if(!input_autoconfigure_connect(
@@ -198,7 +197,6 @@ static bool rwebpad_joypad_query_pad(unsigned pad)
 
    return false;
 }
-
 
 static void rwebpad_joypad_destroy(void)
 {

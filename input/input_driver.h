@@ -59,6 +59,8 @@ enum input_toggle_type
    INPUT_TOGGLE_START_SELECT,
    INPUT_TOGGLE_L3_R,
    INPUT_TOGGLE_L_R,
+   INPUT_TOGGLE_HOLD_START,
+   INPUT_TOGGLE_DOWN_SELECT,
    INPUT_TOGGLE_LAST
 };
 
@@ -100,11 +102,11 @@ struct retro_keybind
 
    /* Joypad key. Joypad POV (hats)
     * are embedded into this key as well. */
-   uint64_t joykey;
+   uint16_t joykey;
 
    /* Default key binding value -
     * for resetting bind to default */
-   uint64_t def_joykey;
+   uint16_t def_joykey;
 
    /* Joypad axis. Negative and positive axes
     * are embedded into this variable. */
@@ -490,9 +492,9 @@ static INLINE bool input_joypad_pressed(
       unsigned key)
 {
    /* Auto-binds are per joypad, not per user. */
-   uint64_t                        joykey = (binds[key].joykey != NO_BTN)
+   const uint64_t joykey = (binds[key].joykey != NO_BTN)
       ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-   uint32_t                       joyaxis = (binds[key].joyaxis != AXIS_NONE)
+   const uint32_t joyaxis = (binds[key].joyaxis != AXIS_NONE)
       ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
 
    if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))
@@ -700,7 +702,6 @@ bool input_keyboard_line_append(const char *word);
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
-
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -804,8 +805,10 @@ extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
 extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ps2_joypad;
 extern input_device_driver_t ctr_joypad;
 extern input_device_driver_t switch_joypad;
 extern input_device_driver_t xdk_joypad;
@@ -823,14 +826,17 @@ extern input_driver_t input_android;
 extern input_driver_t input_sdl;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
+extern input_driver_t input_ps4;
 extern input_driver_t input_ps3;
 extern input_driver_t input_psp;
+extern input_driver_t input_ps2;
 extern input_driver_t input_ctr;
 extern input_driver_t input_switch;
 extern input_driver_t input_xenon360;
 extern input_driver_t input_gx;
 extern input_driver_t input_wiiu;
 extern input_driver_t input_xinput;
+extern input_driver_t input_uwp;
 extern input_driver_t input_linuxraw;
 extern input_driver_t input_udev;
 extern input_driver_t input_cocoa;

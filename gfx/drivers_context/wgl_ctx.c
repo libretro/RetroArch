@@ -665,7 +665,6 @@ error:
    return false;
 }
 
-
 static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
@@ -709,7 +708,6 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 
    return true;
 }
-
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
@@ -876,4 +874,3 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
 #endif
    NULL
 };
-

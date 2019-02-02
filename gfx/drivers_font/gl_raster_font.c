@@ -214,7 +214,6 @@ error:
    return NULL;
 }
 
-
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {

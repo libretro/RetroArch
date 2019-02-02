@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -55,7 +54,6 @@ distribution.
     ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w)	\
     ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
-
 
 struct _lck_dev {
 	lwp_node node;
@@ -730,7 +728,6 @@ void __ext_irq_handler(u32 nIrq,void *pCtx)
 	if(exi->CallbackEXT) exi->CallbackEXT(chan,dev);
 }
 
-
 /* EXI UART stuff */
 static s32 __probebarnacle(s32 chn,u32 dev,u32 *rev)
 {
@@ -794,7 +791,6 @@ void __SYS_EnableBarnacle(s32 chn,u32 dev)
 		|| id==0x04120000 || id==0x04060000 || id==0x04220000) return;
 
 	if(__probebarnacle(chn,dev,&rev)==0) return;
-
 
 	exi_uart_chan = chn;
 	exi_uart_dev = dev;

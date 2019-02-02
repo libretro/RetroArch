@@ -111,4 +111,3 @@ bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *met
 #endif
 
 #endif
-

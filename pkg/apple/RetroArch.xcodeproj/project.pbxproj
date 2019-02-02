@@ -503,6 +503,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -547,6 +548,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
@@ -567,6 +569,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -611,6 +614,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",

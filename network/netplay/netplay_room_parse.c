@@ -288,6 +288,11 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->frontend;
          }
+         else if (string_is_equal(pValue, "subsystem_name"))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->subsystem_name;
+         }
       }
    }
 

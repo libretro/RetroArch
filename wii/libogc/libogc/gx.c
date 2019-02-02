@@ -15,7 +15,6 @@
 
 #define TEXCACHE_TESTING
 
-
 #define GX_FINISH		2
 
 #if defined(HW_DOL)
@@ -128,7 +127,6 @@ static u32 _gxtexregionaddrtable[48] =
 	0x00080000,0x00050000,0x000A0000,0x00070000
 };
 #endif
-
 
 extern u8 __gxregs[];
 static struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
@@ -1652,7 +1650,6 @@ void GX_SetDrawDone()
 	_CPU_ISR_Restore(level);
 }
 
-
 void GX_WaitDrawDone()
 {
 	u32 level;
@@ -2962,7 +2959,6 @@ u16 GX_GetTexObjWidth(GXTexObj* obj)
 {
 	return (((struct __gx_texobj*)obj)->tex_size & 0x3ff) + 1;
 }
-
 
 void GX_GetTexObjAll(GXTexObj* obj, void** image_ptr, u16* width, u16* height,
                      u8* format, u8* wrap_s, u8* wrap_t, u8* mipmap)

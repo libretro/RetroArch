@@ -64,7 +64,6 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size)
    buffer->end = (buffer->end + size) % buffer->size;
 }
 
-
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
 {
    size_t first_read = size;
@@ -81,4 +80,3 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
 
    buffer->first = (buffer->first + size) % buffer->size;
 }
-

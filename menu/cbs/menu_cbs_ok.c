@@ -26,6 +26,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "../../discord/discord.h"
+#endif
+
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../wifi/wifi_driver.h"
@@ -53,6 +57,9 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#include "../../tasks/task_audio_mixer.h"
+#include "../../tasks/task_content.h"
+#include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
@@ -60,6 +67,7 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../gfx/video_display_server.h"
 
 #include <net/net_http.h>
 
@@ -74,6 +82,10 @@
 
 #include "../../record/record_driver.h"
 
+#ifdef __WINRT__
+#include "../../uwp/uwp_func.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -86,6 +98,7 @@ enum
    ACTION_OK_SUBSYSTEM_ADD,
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
+   ACTION_OK_SIDELOAD_CORE,
    ACTION_OK_LOAD_WALLPAPER,
    ACTION_OK_SET_PATH,
    ACTION_OK_SET_PATH_AUDIO_FILTER,
@@ -93,7 +106,8 @@ enum
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY,
    ACTION_OK_SHOW_WIMP,
-   ACTION_OK_LOAD_CHEAT_FILE_APPEND
+   ACTION_OK_LOAD_CHEAT_FILE_APPEND,
+   ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET
 };
 
 enum
@@ -148,6 +162,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    {
       case ACTION_OK_DL_DROPDOWN_BOX_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -196,6 +214,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST;
+      case ACTION_OK_DL_MENU_SOUNDS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST;
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST;
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -271,12 +291,17 @@ int generic_action_ok_displaylist_push(const char *path,
    enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+   char                  *menu_driver      = settings->arrays.menu_driver;
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    menu_displaylist_info_init(&info);
 
    info.list                               = menu_stack;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu) ||
+       string_is_equal(menu_driver, "null"))
       goto end;
 
    tmp[0] = '\0';
@@ -310,6 +335,24 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -498,24 +541,39 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
-         filebrowser_clear_type();
-         if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
-            content_clear_subsystem();
-         content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
-         filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_menu_content;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            char game_dir[PATH_MAX_LENGTH];
+            filebrowser_clear_type();
+            if (content_get_subsystem_rom_id() > 0)
+               strlcpy(game_dir, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(game_dir));
+            else
+               strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
+            path_basedir(game_dir);
+
+            if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+               content_clear_subsystem();
+            content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
+            filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
          {
@@ -542,6 +600,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
+      case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_assets;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
       case ACTION_OK_DL_CORE_LIST:
          filebrowser_clear_type();
          info.type          = type;
@@ -549,6 +615,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = settings->paths.directory_libretro;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_CORE;
+         break;
+      case ACTION_OK_DL_SIDELOAD_CORE_LIST:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_core_assets;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          info.type          = type;
@@ -810,6 +884,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
+      case ACTION_OK_DL_MENU_SOUNDS_LIST:
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
@@ -1075,7 +1150,6 @@ static int file_load_with_detect_core_wrapper(
                PATH_MAX_LENGTH * sizeof(char)))
          ret = -1;
 
-
       if (     !is_carchive && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
          fill_pathname_join(menu->detect_content_path,
@@ -1191,9 +1265,69 @@ static int set_path_generic(const char *label, const char *action_path)
 
 static int generic_action_ok_command(enum event_command cmd)
 {
+   settings_t *settings = config_get_ptr();
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
    return 0;
+}
+
+/* TO-DO: Localization for errors */
+static bool file_copy(const char *src_path, const char *dst_path, char *msg, size_t size)
+{
+   RFILE *src, *dst;
+   int numr, numw;
+   bool ret = true;
+
+   src = filestream_open(src_path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!src)
+   {
+      strlcpy(msg, "unable to open source file", size);
+      ret = false;
+   }
+
+   dst = filestream_open(dst_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!dst)
+   {
+      strlcpy(msg, "unable to open destination file", size);
+      ret = false;
+   }
+
+   while (!filestream_eof(src))
+   {
+      char buffer[100] = {0};
+      numr = filestream_read(src, buffer, sizeof(buffer));
+
+      if (filestream_error(dst) != 0)
+      {
+         strlcpy(msg, "error reading file\n", size);
+         ret = false;
+         break;
+      }
+
+      numw = filestream_write(dst, buffer, numr);
+
+      if (numw != numr)
+      {
+         strlcpy(msg, "error writing to file\n", size);
+         ret = false;
+         break;
+      }
+   }
+
+   filestream_close(src);
+   filestream_close(dst);
+
+   return ret;
 }
 
 static int generic_action_ok(const char *path,
@@ -1208,6 +1342,10 @@ static int generic_action_ok(const char *path,
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
    menu_handle_t               *menu = NULL;
+   settings_t              *settings = config_get_ptr();
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -1259,6 +1397,30 @@ static int generic_action_ok(const char *path,
 #ifndef HAVE_DYNAMIC
                ret = -1;
 #endif
+            }
+         }
+         break;
+      case ACTION_OK_SIDELOAD_CORE:
+         {
+            settings_t            *settings = config_get_ptr();
+            char destination_path[PATH_MAX_LENGTH];
+            char message[PATH_MAX_LENGTH];
+
+            fill_pathname_join(destination_path, settings->paths.directory_libretro, path_basename(action_path), sizeof(destination_path));
+
+            if(!file_copy(action_path, destination_path, message, sizeof(message)))
+            {
+               runloop_msg_queue_push(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true);
+               RARCH_LOG("[sideload] %s: %s\n", msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), message);
+               RARCH_LOG(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR));
+            }
+            else
+            {
+               runloop_msg_queue_push(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS), 1, 100, true);
+               RARCH_LOG("[sideload] %s\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS));
             }
          }
          break;
@@ -1347,6 +1509,16 @@ static int generic_action_ok(const char *path,
          if (!cheat_manager_load(action_path,true))
             goto error;
          break;
+      case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
+         {
+            settings_t *settings = config_get_ptr();
+            flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
+
+            if (settings)
+               strlcpy(settings->paths.path_rgui_theme_preset, action_path,
+                     sizeof(settings->paths.path_rgui_theme_preset));
+         }
+         break;
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_type = MENU_SETTINGS;
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
@@ -1420,7 +1592,6 @@ static int default_action_ok_load_content_from_playlist_from_menu(const char *_p
    return 0;
 }
 
-
 #define default_action_ok_set(funcname, _id, _flush) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -1432,6 +1603,7 @@ default_action_ok_set(action_ok_set_path_videofilter, ACTION_OK_SET_PATH_AUDIO_F
 default_action_ok_set(action_ok_set_path_overlay,     ACTION_OK_SET_PATH_OVERLAY,      MSG_UNKNOWN)
 default_action_ok_set(action_ok_set_path,             ACTION_OK_SET_PATH,              MSG_UNKNOWN)
 default_action_ok_set(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
+default_action_ok_set(action_ok_sideload_core,            ACTION_OK_SIDELOAD_CORE,             MSG_UNKNOWN)
 default_action_ok_set(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE,      MSG_UNKNOWN)
 default_action_ok_set(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
 default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
@@ -1442,6 +1614,7 @@ default_action_ok_set(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STRE
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
+default_action_ok_set(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
 
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1529,7 +1702,6 @@ static int action_ok_file_load(const char *path,
    return default_action_ok_load_content_with_core_from_menu(full_path_new,
          CORE_TYPE_PLAIN);
 }
-
 
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1899,7 +2071,10 @@ static int action_ok_audio_add_to_mixer(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0
+            );
 
    return 0;
 }
@@ -1918,7 +2093,9 @@ static int action_ok_audio_add_to_mixer_and_play(const char *path,
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load_and_play(entry_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -1946,7 +2123,9 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -1974,7 +2153,9 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
-            NULL, NULL);
+            NULL, NULL, false,
+            AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC,
+            0);
 
    return 0;
 }
@@ -2024,7 +2205,6 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
    menu_input_dialog_end();
 }
 
-
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
 {
@@ -2042,7 +2222,6 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                NULL,
                NULL);
    }
-
 
    menu_input_dialog_end();
 }
@@ -2211,14 +2390,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0] = tmp[0] = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
    {
@@ -2296,14 +2472,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0]          = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
       fill_pathname_join(
@@ -2507,25 +2680,33 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#ifdef HAVE_LAKKA_SWITCH
-
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
-
    char command[PATH_MAX_LENGTH] = {0};
 
+#ifdef HAVE_LAKKA_SWITCH
    snprintf(command, sizeof(command), "cpu-profile set %s", profile_name);
 
    system(command);
-        
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-        
+#else
+   config_get_ptr()->uints.libnx_overclock = entry_idx;
+
+   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
+   pcvSetClockRate(PcvModule_Cpu, (u32)profile_clock);
+   snprintf(command, sizeof(command), "Current Clock set to %i", profile_clock);
+#endif
+
    runloop_msg_queue_push(command, 1, 90, true);
 
 	return menu_cbs_exit();
 }
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
 
 static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2878,7 +3059,6 @@ static int action_ok_cheat_copy_before(const char *path,
 
    runloop_msg_queue_push(msg, 1, 180, true);
 
-
    return 0 ;
 }
 
@@ -3019,7 +3199,6 @@ static int action_ok_file_load_detect_core(const char *path,
 
    return 0;
 }
-
 
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3213,10 +3392,11 @@ static void cb_generic_dir_download(void *task_data,
 }
 
 /* expects http_transfer_t*, file_transfer_t* */
-static void cb_generic_download(void *task_data,
+void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
    bool extract                          = true;
 #endif
@@ -3293,6 +3473,14 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
          break;
+      case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
+      {
+         fill_pathname_application_special(buf,
+            PATH_MAX_LENGTH * sizeof(char),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+         dir_path = buf;
+         break;
+      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -3365,6 +3553,10 @@ finish:
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }
+#ifdef HAVE_DISCORD
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+      discord_avatar_set_ready(true);
+#endif
 
    if (data)
    {
@@ -3377,7 +3569,6 @@ finish:
       free(transf);
 }
 #endif
-
 
 static int action_ok_download_generic(const char *path,
       const char *label, const char *menu_label,
@@ -3531,7 +3722,7 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   if (config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path, true))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
@@ -3674,7 +3865,6 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
-
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3777,6 +3967,7 @@ default_action_ok_func(action_ok_quick_menu_override_options, ACTION_OK_DL_QUICK
 default_action_ok_func(action_ok_menu_views_list, ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_quick_menu_views_list, ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_power_management_list, ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST)
+default_action_ok_func(action_ok_menu_sounds_list, ACTION_OK_DL_MENU_SOUNDS_LIST)
 default_action_ok_func(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
 default_action_ok_func(action_ok_menu_file_browser_list, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST)
 default_action_ok_func(action_ok_retro_achievements_list, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
@@ -3791,6 +3982,7 @@ default_action_ok_func(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
 default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
+default_action_ok_func(action_ok_sideload_core_list, ACTION_OK_DL_SIDELOAD_CORE_LIST)
 default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
 default_action_ok_func(action_ok_cheat_file_append, ACTION_OK_DL_CHEAT_FILE_APPEND)
 default_action_ok_func(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
@@ -3824,6 +4016,40 @@ default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUN
 default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
+default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
+
+static int action_ok_open_uwp_permission_settings(const char *path,
+   const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef __WINRT__
+   uwp_open_broadfilesystemaccess_settings();
+#else
+   retro_assert(false);
+#endif
+   return 0;
+}
+
+static int action_ok_open_picker(const char *path,
+   const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* new_path;
+   int ret;
+#ifdef __WINRT__
+   new_path = uwp_trigger_picker();
+   if (!new_path)
+      return 0; /* User aborted */
+#else
+   retro_assert(false);
+#endif
+
+   ret = generic_action_ok_displaylist_push(path, new_path,
+      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+      type, idx,
+      entry_idx, ACTION_OK_DL_CONTENT_LIST);
+
+   free(new_path);
+   return ret;
+}
 
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3876,7 +4102,7 @@ static int action_ok_netplay_connect_room(const char *path,
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
       netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename);
+      tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
 
 #else
    return -1;
@@ -3884,7 +4110,6 @@ static int action_ok_netplay_connect_room(const char *path,
 #endif
    return 0;
 }
-
 
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4035,12 +4260,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
+   char *new_data                = NULL;
    const char *path              = NULL;
    const char *label             = NULL;
    unsigned menu_type            = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -4052,7 +4278,12 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!data || err)
       goto finish;
 
-   data->data = (char*)realloc(data->data, data->len + 1);
+   new_data = (char*)realloc(data->data, data->len + 1);
+
+   if (!new_data)
+      goto finish;
+
+   data->data            = new_data;
    data->data[data->len] = '\0';
 
    if (!strstr(data->data, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
@@ -4118,6 +4349,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].frontend,
                      host->frontend,
                      sizeof(netplay_room_list[i].frontend));
+               strlcpy(netplay_room_list[i].subsystem_name,
+                     host->subsystem_name,
+                     sizeof(netplay_room_list[i].subsystem_name));
 
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;
@@ -4195,7 +4429,7 @@ static void netplay_lan_scan_callback(void *task_data,
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://newlobby.libretro.com/list/";
+   char url [2048] = "http://lobby.libretro.com/list/";
 #ifndef RARCH_CONSOLE
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
@@ -4203,7 +4437,6 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
    return 0;
 }
 #endif
-
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4266,6 +4499,89 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_core_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      return -1;
+
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, path,
+         setting->size);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_int_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_float_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   float val                    = (float)atof(path);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.fraction = (float)val;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned value;
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   value = (unsigned)(idx + setting->offset_by);
+
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+
+   *setting->value.target.unsigned_integer = value;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_setting_core_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4325,13 +4641,25 @@ static int action_ok_push_dropdown_setting_float_item(const char *path,
 static int action_ok_push_dropdown_setting_uint_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   unsigned value;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
 
    if (!setting)
       return -1;
 
-   *setting->value.target.unsigned_integer = (unsigned)(idx + setting->offset_by);
+   value = (unsigned)(idx + setting->offset_by);
+
+#if 0
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+#endif
+
+   *setting->value.target.unsigned_integer = value;
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4346,6 +4674,45 @@ static int action_ok_push_dropdown_item(const char *path,
    RARCH_LOG("idx: %d \n", idx);
    RARCH_LOG("entry_idx: %d \n", entry_idx);
 #endif
+   return 0;
+}
+
+static int action_ok_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char str[100];
+   char *pch            = NULL;
+   unsigned width       = 0;
+   unsigned height      = 0;
+   unsigned refreshrate = 0;
+
+   snprintf(str, sizeof(str), "%s", path);
+
+   pch = strtok(str, "x");
+   if (pch)
+      width = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, " ");
+   if (pch)
+      height = strtoul(pch, NULL, 0);
+   pch = strtok(NULL, "(");
+   if (pch)
+      refreshrate = strtoul(pch, NULL, 0);
+
+   if (video_display_server_set_resolution(width, height,
+         refreshrate, (float)refreshrate, 0, 0))
+   {
+      settings_t *settings = config_get_ptr();
+
+      video_monitor_set_refresh_rate((float)refreshrate);
+
+      settings->uints.video_fullscreen_x = width;
+      settings->uints.video_fullscreen_y = height;
+
+      /* TODO/FIXME - menu drivers like XMB don't rescale
+       * automatically */
+      return menu_cbs_exit();
+   }
+
    return 0;
 }
 
@@ -4487,6 +4854,7 @@ default_action_ok_help(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -4510,6 +4878,12 @@ static int action_ok_video_resolution(const char *path,
                width, height);
       runloop_msg_queue_push(msg, 1, 100, true);
    }
+#else
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
+#endif
 
    return 0;
 }
@@ -4808,6 +5182,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
             BIND_ACTION_OK(cbs, action_ok_load_core);
             break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE:
+            BIND_ACTION_OK(cbs, action_ok_sideload_core);
+            break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
@@ -4935,6 +5312,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile);
             break;
+         case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_list);
@@ -5029,6 +5409,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -5115,6 +5497,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_core_list);
             break;
+         case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
+            BIND_ACTION_OK(cbs, action_ok_sideload_core_list);
+            break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
@@ -5166,8 +5551,17 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_power_management_list);
             break;
+         case MENU_ENUM_LABEL_MENU_SOUNDS:
+            BIND_ACTION_OK(cbs, action_ok_menu_sounds_list);
+            break;
          case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_menu_file_browser_list);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
+            BIND_ACTION_OK(cbs, action_ok_open_uwp_permission_settings);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
+            BIND_ACTION_OK(cbs, action_ok_open_picker);
             break;
          case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_retro_achievements_list);
@@ -5294,6 +5688,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile);
+            break;
+         case MENU_LABEL_RGUI_MENU_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
             break;
 #ifdef HAVE_NETWORKING
          case MENU_LABEL_UPDATE_LAKKA:
@@ -5437,8 +5834,26 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
             break;
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);
+            break;
          case MENU_SETTING_DROPDOWN_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -5464,6 +5879,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SET_SWITCH_BRIGHTNESS:
             BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
             break;
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;
@@ -5492,6 +5909,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_STREAM_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_stream_configfile_load);
+            break;
+         case FILE_TYPE_RGUI_THEME_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset_load);
             break;
          case FILE_TYPE_REMAP:
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
@@ -5570,6 +5990,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                   case MENU_LABEL_CORE_LIST:
                      BIND_ACTION_OK(cbs, action_ok_load_core);
+                     break;
+                  case MENU_LABEL_SIDELOAD_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_sideload_core);
                      break;
                }
             }

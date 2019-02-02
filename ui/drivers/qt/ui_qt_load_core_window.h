@@ -18,9 +18,15 @@
 #ifndef _QT_LOAD_CORE_WINDOW_H
 #define _QT_LOAD_CORE_WINDOW_H
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <retro_common_api.h>
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include <QtWidgets>
 

@@ -17,7 +17,6 @@
 #include "../../command.h"
 #include "string.h"
 
-
 #ifdef HAVE_LIBNX
 
 #ifndef MAX_PADS
@@ -170,6 +169,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
             }
          }
          lastMode = 1;
@@ -185,6 +185,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeDual(i);
                hidSetNpadJoyAssignmentModeDual(i + 1);
+               hidMergeSingleJoyAsDualJoy(i, i + 1);
             }
          }
          lastMode = 0;

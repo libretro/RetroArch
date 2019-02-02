@@ -230,7 +230,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
-
 #if defined(HAVE_VIVANTE_FBDEV)
 #include "../gfx/drivers_context/vivante_fbdev_ctx.c"
 #endif
@@ -438,6 +437,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(PS2)
+#include "../gfx/drivers/ps2_gfx.c"
 #elif defined(HAVE_VITA2D)
 #include "../deps/libvita2d/source/vita2d.c"
 #include "../deps/libvita2d/source/vita2d_texture.c"
@@ -494,6 +495,10 @@ FONTS
 
 #if defined(_XBOX1)
 #include "../gfx/drivers_font/xdk1_xfonts.c"
+#endif
+
+#if defined(PS2)
+#include "../gfx/drivers_font/ps2_font.c"
 #endif
 
 #if defined(VITA)
@@ -567,7 +572,13 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#elif defined(ORBIS)
+#include "../input/drivers/ps4_input.c"
+#include "../input/drivers_joypad/ps4_joypad.c"
+#elif defined(PS2)
+#include "../input/drivers/ps2_input.c"
+#include "../input/drivers_joypad/ps2_joypad.c"
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
@@ -596,6 +607,9 @@ INPUT
 #elif defined(DJGPP)
 #include "../input/drivers/dos_input.c"
 #include "../input/drivers_joypad/dos_joypad.c"
+#elif defined(__WINRT__)
+#include "../input/drivers/xdk_xinput_input.c"
+#include "../input/drivers/uwp_input.c"
 #endif
 
 #ifdef HAVE_WAYLAND
@@ -714,7 +728,7 @@ CAMERA
 #include "../camera/drivers/video4linux2.c"
 #endif
 
-#ifdef HAVE_VIDEO_PROCESSOR
+#ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 
@@ -762,8 +776,10 @@ AUDIO
 #include "../audio/drivers/wiiu_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/drivers/rwebaudio.c"
-#elif defined(PSP) || defined(VITA)
+#elif defined(PSP) || defined(VITA) || defined(ORBIS)
 #include "../audio/drivers/psp_audio.c"
+#elif defined(PS2)
+#include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
@@ -860,6 +876,7 @@ FILTERS
 #include "../gfx/video_filters/blargg_ntsc_snes.c"
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
+#include "../gfx/video_filters/normal2x.c"
 
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
@@ -909,13 +926,16 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
+#endif
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 #include "../libretro-common/file/nbio/nbio_linux.c"
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#include "../libretro-common/file/nbio/nbio_orbis.c"
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
@@ -943,6 +963,10 @@ FRONTEND
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "../frontend/drivers/platform_uwp.c"
+#endif
+
 #ifdef _XBOX
 #include "../frontend/drivers/platform_xdk.c"
 #endif
@@ -958,6 +982,10 @@ FRONTEND
 #include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(ORBIS)
+#include "../frontend/drivers/platform_orbis.c"
+#elif defined(PS2)
+#include "../frontend/drivers/platform_ps2.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(SWITCH) && defined(HAVE_LIBNX)
@@ -1006,7 +1034,6 @@ GIT
 #ifdef HAVE_GIT_VERSION
 #include "../version_git.c"
 #endif
-
 
 /*============================================================
 RETROARCH
@@ -1096,11 +1123,14 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
+#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
+/* needed for both playlists and netplay lobbies */
+#include "../libretro-common/formats/json/jsonsax_full.c"
+
 /*============================================================
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
@@ -1115,7 +1145,6 @@ NETPLAY
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
-#include "../libretro-common/formats/json/jsonsax_full.c"
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
@@ -1249,12 +1278,11 @@ MENU
 #include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../menu/drivers_display/menu_display_gdi.c"
 #endif
 
 #endif
-
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
@@ -1263,6 +1291,14 @@ MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__) || defined(HAVE_METAL)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
+#endif
+#ifdef HAVE_OZONE
+#include "../menu/drivers/ozone/ozone.c"
+#include "../menu/drivers/ozone/ozone_display.c"
+#include "../menu/drivers/ozone/ozone_entries.c"
+#include "../menu/drivers/ozone/ozone_sidebar.c"
+#include "../menu/drivers/ozone/ozone_texture.c"
+#include "../menu/drivers/ozone/ozone_theme.c"
 #endif
 
 #ifdef HAVE_STRIPES
@@ -1448,6 +1484,7 @@ SSL
 ============================================================ */
 #if defined(HAVE_SSL)
 #if defined(HAVE_NETWORKING)
+#if defined(HAVE_BUILTINMBEDTLS)
 #include "../deps/mbedtls/aes.c"
 #include "../deps/mbedtls/aesni.c"
 #include "../deps/mbedtls/arc4.c"
@@ -1524,4 +1561,9 @@ SSL
 
 #include "../libretro-common/net/net_socket_ssl.c"
 #endif
+#endif
+#endif
+
+#ifdef HAVE_EASTEREGG
+#include "../cores/libretro-gong/gong.c"
 #endif

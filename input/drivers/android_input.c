@@ -471,7 +471,6 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
 }
 #endif
 
-
 static bool android_input_init_handle(void)
 {
 #ifdef HAVE_DYNAMIC
@@ -1057,11 +1056,21 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "R800") &&
-         (
-          strstr(device_name, "keypad-game-zeus") ||
-          strstr(device_name, "keypad-zeus")
-         )
+   else if(
+            (
+               strstr(device_model, "R800x") ||
+               strstr(device_model, "R800at") ||
+               strstr(device_model, "R800i") ||
+               strstr(device_model, "R800a") ||
+               strstr(device_model, "R800") ||
+               strstr(device_model, "Xperia Play") ||
+               strstr(device_model, "Play") ||
+               strstr(device_model, "SO-01D")
+            ) && (
+               strstr(device_name, "keypad-game-zeus") ||
+               strstr(device_name, "keypad-zeus") ||
+               strstr(device_name, "Android Gamepad")
+            )
          )
    {
       /* only use the hack if the device is one of the built-in devices */

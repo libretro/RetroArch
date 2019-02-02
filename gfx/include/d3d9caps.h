@@ -17,8 +17,6 @@
 /* include this file content only if compiling for DX9 interfaces */
 #if(DIRECT3D_VERSION >= 0x0900)
 
-
-
 #if defined(_X86_) || defined(_IA64_)
 #pragma pack(4)
 #endif
@@ -85,7 +83,6 @@ typedef struct _D3DOVERLAYCAPS
 #define D3DOVERLAYCAPS_YCbCr_BT709_xvYCC     0x00000020
 #define D3DOVERLAYCAPS_STRETCHX              0x00000040
 #define D3DOVERLAYCAPS_STRETCHY              0x00000080
-
 
 typedef struct _D3DCONTENTPROTECTIONCAPS
 {
@@ -326,7 +323,6 @@ typedef struct _D3DCAPS9
 #endif /* !D3D_DISABLE_9EX */
 /* -- D3D9Ex only */
 
-
 /*
  * LineCaps
  */
@@ -554,9 +550,7 @@ typedef struct _D3DCAPS9
 #define D3DDTCAPS_FLOAT16_2  0x00000100L
 #define D3DDTCAPS_FLOAT16_4  0x00000200L
 
-
 #pragma pack()
-
 
 #endif /* (DIRECT3D_VERSION >= 0x0900) */
 #endif /* _d3d9CAPS_H_ */

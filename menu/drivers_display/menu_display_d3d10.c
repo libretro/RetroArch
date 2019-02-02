@@ -262,17 +262,51 @@ static bool menu_display_d3d10_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
-      float       font_size,
+      float       menu_font_size,
       bool        is_threaded)
 {
    font_data_t** handle     = (font_data_t**)font_handle;
    font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, font_size, true,
+         video_data, font_path, menu_font_size, true,
          is_threaded, FONT_DRIVER_RENDER_D3D10_API);
    if (!new_handle)
       return false;
    *handle = new_handle;
    return true;
+}
+
+void menu_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   D3D10_RECT rect = {0};
+   d3d10_video_t *d3d10 = video_info ?
+      (d3d10_video_t*)video_info->userdata : NULL;
+
+   rect.left = x;
+   rect.top = y;
+   rect.right = width + x;
+   rect.bottom = height + y;
+
+   if (!d3d10 || !width || !height)
+      return;
+
+   D3D10SetScissorRects(d3d10->device, 1, &rect);
+}
+
+void menu_display_d3d10_scissor_end(video_frame_info_t *video_info)
+{
+   D3D10_RECT rect = {0};
+   d3d10_video_t *d3d10 = video_info ?
+      (d3d10_video_t*)video_info->userdata : NULL;
+
+   if (!d3d10)
+      return;
+
+   rect.left = d3d10->vp.x;
+   rect.top = d3d10->vp.y;
+   rect.right = d3d10->vp.width;
+   rect.bottom = d3d10->vp.height;
+
+   D3D10SetScissorRects(d3d10->device, 1, &rect);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d10 = {
@@ -290,6 +324,6 @@ menu_display_ctx_driver_t menu_display_ctx_d3d10 = {
    MENU_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
    true,
-   NULL,
-   NULL
+   menu_display_d3d10_scissor_begin,
+   menu_display_d3d10_scissor_end
 };

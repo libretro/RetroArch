@@ -413,7 +413,6 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 				siglen -= 4;
 				btpbuf_header(p, -4);
 
-
 				LOG("l2cap_process_sig: Congfiguration request, flags = %d\n", flags);
 
 				/* Find PCB with matching cid */

@@ -217,7 +217,6 @@ static GX2UniformVar uniform_vars[] = {
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},
 };
 
-
 GX2Shader ribbon_simple_shader =
 {
    {

@@ -3251,4 +3251,3 @@ XMFINLINE XMFLOAT4X4A& XMFLOAT4X4A::operator=
 #endif // __cplusplus
 
 #endif // __XNAMATHMATRIX_INL__
-

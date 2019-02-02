@@ -60,7 +60,7 @@
 #include <time.h>
 #endif
 
-#if defined(VITA) || defined(BSD)
+#if defined(VITA) || defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
@@ -166,7 +166,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 }
 
 /* TODO/FIXME - this needs to be implemented for Switch/3DS */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO)
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -852,6 +852,10 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
+#elif defined(PS2)
+   int tickms = clock();
+   now.tv_sec = tickms/1000;
+   now.tv_nsec = tickms * 1000;
 #elif defined(__mips__) || defined(VITA) || defined(_3DS)
    struct timeval tm;
 

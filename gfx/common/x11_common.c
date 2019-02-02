@@ -55,7 +55,6 @@
 #define MOVERESIZE_X_SHIFT                   8
 #define MOVERESIZE_Y_SHIFT                   9
 
-
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 bool g_x11_entered                          = false;
@@ -134,7 +133,8 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 {
    XEvent xev               = {0};
 
-   XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy, "_NET_MOVERESIZE_WINDOW", False);
+   XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy,
+		   "_NET_MOVERESIZE_WINDOW", False);
 
    xev.xclient.type         = ClientMessage;
    xev.xclient.send_event   = True;
@@ -170,12 +170,12 @@ static void x11_set_window_pid(Display *dpy, Window win)
         XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid, 1);
 
     errno = 0;
-    if((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
+    if ((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
         return;
-    if((hostname = (char*)malloc(scret + 1)) == NULL)
+    if ((hostname = (char*)malloc(scret + 1)) == NULL)
         return;
 
-    if(gethostname(hostname, scret + 1) == -1)
+    if (gethostname(hostname, scret + 1) == -1)
         RARCH_WARN("Failed to get hostname.\n");
     else
     {
@@ -405,7 +405,7 @@ bool x11_get_metrics(void *data,
    return true;
 }
 
-static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
+static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool filter)
 {
    int i;
    Status status;
@@ -419,6 +419,7 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 
    chars[0]       = '\0';
 
+   /* this code generates the localized chars using keysyms */
    if (!filter)
    {
       if (down)
@@ -454,8 +455,10 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
     * to feed it keysyms anyway, so here is a little hack... */
    if (keysym >= XK_A && keysym <= XK_Z)
        keysym += XK_z - XK_Z;
-
-   key   = input_keymaps_translate_keysym_to_rk(keysym);
+       
+   /* Get the real keycode,
+      that correctly ignores international layouts as windows code does. */
+   key     = input_keymaps_translate_keysym_to_rk(keycode);
 
    if (state & ShiftMask)
       mod |= RETROKMOD_SHIFT;
@@ -465,10 +468,10 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
       mod |= RETROKMOD_CTRL;
    if (state & Mod1Mask)
       mod |= RETROKMOD_ALT;
+   if (state & Mod2Mask)
+      mod |= RETROKMOD_NUMLOCK;
    if (state & Mod4Mask)
       mod |= RETROKMOD_META;
-   if (IsKeypadKey(keysym))
-      mod |= RETROKMOD_NUMLOCK;
 
    input_keyboard_event(down, key, chars[0], mod, RETRO_DEVICE_KEYBOARD);
 
@@ -483,9 +486,14 @@ bool x11_alive(void *data)
    {
       XEvent event;
       bool filter = false;
+      unsigned keycode = 0;
 
       /* Can get events from older windows. Check this. */
       XNextEvent(g_x11_dpy, &event);
+      
+      /* IMPORTANT - Get keycode before XFilterEvent
+         because the event is localizated after the call */
+      keycode = event.xkey.keycode;
       filter = XFilterEvent(&event, g_x11_win);
 
       switch (event.type)
@@ -548,7 +556,7 @@ bool x11_alive(void *data)
          case KeyPress:
          case KeyRelease:
             if (event.xkey.window == g_x11_win)
-               x11_handle_key_event(&event, g_x11_xic, filter);
+               x11_handle_key_event(keycode, &event, g_x11_xic, filter);
             break;
       }
    }
@@ -752,22 +760,21 @@ bool x11_has_net_wm_fullscreen(Display *dpy)
 
 char *x11_get_wm_name(Display *dpy)
 {
+   Atom type;
+   int  format;
+   Window window;
    Atom XA_NET_SUPPORTING_WM_CHECK = XInternAtom(g_x11_dpy, "_NET_SUPPORTING_WM_CHECK", False);
    Atom XA_NET_WM_NAME             = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
    Atom XA_UTF8_STRING             = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
-   int status;
-   Atom type;
-   int  format;
-   unsigned long nitems;
-   unsigned long bytes_after;
-   unsigned char *propdata;
-   char *title;
-   Window window;
+   unsigned long nitems            = 0;
+   unsigned long bytes_after       = 0;
+   char *title                     = NULL;
+   unsigned char *propdata         = NULL;
 
    if (!XA_NET_SUPPORTING_WM_CHECK || !XA_NET_WM_NAME)
       return NULL;
 
-   status = XGetWindowProperty(dpy,
+   if (!(XGetWindowProperty(dpy,
                                DefaultRootWindow(dpy),
                                XA_NET_SUPPORTING_WM_CHECK,
                                0,
@@ -778,16 +785,15 @@ char *x11_get_wm_name(Display *dpy)
                                &format,
                                &nitems,
                                &bytes_after,
-                               &propdata);
+                               &propdata) == Success &&
+		   propdata))
+	   return NULL;
 
-   if (status == Success && propdata)
-      window = ((Window *) propdata)[0];
-   else
-      return NULL;
+   window = ((Window *) propdata)[0];
 
    XFree(propdata);
 
-   status = XGetWindowProperty(dpy,
+   if (!(XGetWindowProperty(dpy,
                                window,
                                XA_NET_WM_NAME,
                                0,
@@ -798,15 +804,12 @@ char *x11_get_wm_name(Display *dpy)
                                &format,
                                &nitems,
                                &bytes_after,
-                               &propdata);
+                               &propdata) == Success
+		   && propdata))
+	   return NULL;
 
-   if (status == Success && propdata)
-      title = strdup((char *) propdata);
-   else
-      return NULL;
-
+   title = strdup((char *) propdata);
    XFree(propdata);
 
    return title;
 }
-

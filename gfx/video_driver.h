@@ -37,9 +37,8 @@
 #include "video_coord_array.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
-#include "video_state_tracker.h"
 
-#include "../input/input_driver.h"
+#include "../input/input_types.h"
 
 #define RARCH_SCALE_BASE 256
 
@@ -404,6 +403,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool shared_context;
    bool black_frame_insertion;
@@ -444,6 +444,7 @@ typedef struct video_frame_info
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
    unsigned materialui_color_theme;
+   unsigned ozone_color_theme;
    unsigned custom_vp_width;
    unsigned custom_vp_height;
    unsigned custom_vp_full_width;
@@ -506,7 +507,6 @@ typedef void (*update_window_title_cb)(void*, void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
 typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
-
 
 typedef struct gfx_ctx_driver
 {
@@ -681,16 +681,6 @@ typedef struct gfx_ctx_ident
    const char *ident;
 } gfx_ctx_ident_t;
 
-typedef struct video_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} video_viewport_t;
-
 struct aspect_ratio_elem
 {
    char name[64];
@@ -746,7 +736,6 @@ typedef struct video_poke_interface
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
 } video_poke_interface_t;
-
 
 /* msg is for showing a message on the screen
  * along with the video frame. */
@@ -829,7 +818,6 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
-
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
@@ -1067,6 +1055,8 @@ const video_poke_interface_t *video_driver_get_poke(void);
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+void crt_switch_driver_reinit(void);
+	  
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
 
@@ -1249,6 +1239,7 @@ extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
+extern video_driver_t video_ps2;
 extern video_driver_t video_ctr;
 extern video_driver_t video_switch;
 extern video_driver_t video_d3d8;
@@ -1296,8 +1287,8 @@ extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t switch_ctx;
+extern const gfx_ctx_driver_t orbis_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;

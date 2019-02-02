@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,13 +41,11 @@ typedef interface IDXGIAdapter4 IDXGIAdapter4;
 
 #endif 	/* __IDXGIAdapter4_FWD_DEFINED__ */
 
-
 #ifndef __IDXGIOutput6_FWD_DEFINED__
 #define __IDXGIOutput6_FWD_DEFINED__
 typedef interface IDXGIOutput6 IDXGIOutput6;
 
 #endif 	/* __IDXGIOutput6_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "dxgi1_5.h"
@@ -59,7 +53,6 @@ typedef interface IDXGIOutput6 IDXGIOutput6;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_dxgi1_6_0000_0000 */
 /* [local] */ 
@@ -98,8 +91,6 @@ typedef struct DXGI_ADAPTER_DESC3
     DXGI_COMPUTE_PREEMPTION_GRANULARITY ComputePreemptionGranularity;
     } 	DXGI_ADAPTER_DESC3;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0000_v0_0_s_ifspec;
 
@@ -108,7 +99,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0000_v0_0_s_ifspec;
 
 /* interface IDXGIAdapter4 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIAdapter4;
 
@@ -261,7 +251,6 @@ EXTERN_C const IID IID_IDXGIAdapter4;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIAdapter4_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -270,7 +259,6 @@ EXTERN_C const IID IID_IDXGIAdapter4;
 
 #define IDXGIAdapter4_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIAdapter4_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -284,7 +272,6 @@ EXTERN_C const IID IID_IDXGIAdapter4;
 #define IDXGIAdapter4_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
 
-
 #define IDXGIAdapter4_EnumOutputs(This,Output,ppOutput)	\
     ( (This)->lpVtbl -> EnumOutputs(This,Output,ppOutput) ) 
 
@@ -294,14 +281,11 @@ EXTERN_C const IID IID_IDXGIAdapter4;
 #define IDXGIAdapter4_CheckInterfaceSupport(This,InterfaceName,pUMDVersion)	\
     ( (This)->lpVtbl -> CheckInterfaceSupport(This,InterfaceName,pUMDVersion) ) 
 
-
 #define IDXGIAdapter4_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
 
-
 #define IDXGIAdapter4_GetDesc2(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc2(This,pDesc) ) 
-
 
 #define IDXGIAdapter4_RegisterHardwareContentProtectionTeardownStatusEvent(This,hEvent,pdwCookie)	\
     ( (This)->lpVtbl -> RegisterHardwareContentProtectionTeardownStatusEvent(This,hEvent,pdwCookie) ) 
@@ -321,20 +305,14 @@ EXTERN_C const IID IID_IDXGIAdapter4;
 #define IDXGIAdapter4_UnregisterVideoMemoryBudgetChangeNotification(This,dwCookie)	\
     ( (This)->lpVtbl -> UnregisterVideoMemoryBudgetChangeNotification(This,dwCookie) ) 
 
-
 #define IDXGIAdapter4_GetDesc3(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc3(This,pDesc) ) 
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIAdapter4_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi1_6_0000_0001 */
 /* [local] */ 
@@ -367,7 +345,6 @@ enum DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS
 
 DEFINE_ENUM_FLAG_OPERATORS( DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS );
 
-
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0001_v0_0_s_ifspec;
 
@@ -376,7 +353,6 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0001_v0_0_s_ifspec;
 
 /* interface IDXGIOutput6 */
 /* [unique][local][uuid][object] */ 
-
 
 EXTERN_C const IID IID_IDXGIOutput6;
 
@@ -598,7 +574,6 @@ EXTERN_C const IID IID_IDXGIOutput6;
 
 #ifdef COBJMACROS
 
-
 #define IDXGIOutput6_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -607,7 +582,6 @@ EXTERN_C const IID IID_IDXGIOutput6;
 
 #define IDXGIOutput6_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define IDXGIOutput6_SetPrivateData(This,Name,DataSize,pData)	\
     ( (This)->lpVtbl -> SetPrivateData(This,Name,DataSize,pData) ) 
@@ -620,7 +594,6 @@ EXTERN_C const IID IID_IDXGIOutput6;
 
 #define IDXGIOutput6_GetParent(This,riid,ppParent)	\
     ( (This)->lpVtbl -> GetParent(This,riid,ppParent) ) 
-
 
 #define IDXGIOutput6_GetDesc(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc(This,pDesc) ) 
@@ -658,7 +631,6 @@ EXTERN_C const IID IID_IDXGIOutput6;
 #define IDXGIOutput6_GetFrameStatistics(This,pStats)	\
     ( (This)->lpVtbl -> GetFrameStatistics(This,pStats) ) 
 
-
 #define IDXGIOutput6_GetDisplayModeList1(This,EnumFormat,Flags,pNumModes,pDesc)	\
     ( (This)->lpVtbl -> GetDisplayModeList1(This,EnumFormat,Flags,pNumModes,pDesc) ) 
 
@@ -671,22 +643,17 @@ EXTERN_C const IID IID_IDXGIOutput6;
 #define IDXGIOutput6_DuplicateOutput(This,pDevice,ppOutputDuplication)	\
     ( (This)->lpVtbl -> DuplicateOutput(This,pDevice,ppOutputDuplication) ) 
 
-
 #define IDXGIOutput6_SupportsOverlays(This)	\
     ( (This)->lpVtbl -> SupportsOverlays(This) ) 
-
 
 #define IDXGIOutput6_CheckOverlaySupport(This,EnumFormat,pConcernedDevice,pFlags)	\
     ( (This)->lpVtbl -> CheckOverlaySupport(This,EnumFormat,pConcernedDevice,pFlags) ) 
 
-
 #define IDXGIOutput6_CheckOverlayColorSpaceSupport(This,Format,ColorSpace,pConcernedDevice,pFlags)	\
     ( (This)->lpVtbl -> CheckOverlayColorSpaceSupport(This,Format,ColorSpace,pConcernedDevice,pFlags) ) 
 
-
 #define IDXGIOutput6_DuplicateOutput1(This,pDevice,Flags,SupportedFormatsCount,pSupportedFormats,ppOutputDuplication)	\
     ( (This)->lpVtbl -> DuplicateOutput1(This,pDevice,Flags,SupportedFormatsCount,pSupportedFormats,ppOutputDuplication) ) 
-
 
 #define IDXGIOutput6_GetDesc1(This,pDesc)	\
     ( (This)->lpVtbl -> GetDesc1(This,pDesc) ) 
@@ -696,14 +663,9 @@ EXTERN_C const IID IID_IDXGIOutput6;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __IDXGIOutput6_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_dxgi1_6_0000_0002 */
 /* [local] */ 
@@ -712,7 +674,6 @@ EXTERN_C const IID IID_IDXGIOutput6;
 /*#pragma endregion*/
 DEFINE_GUID(IID_IDXGIAdapter4,0x3c8d99d1,0x4fbf,0x4181,0xa8,0x2c,0xaf,0x66,0xbf,0x7b,0xd2,0x4e);
 DEFINE_GUID(IID_IDXGIOutput6,0x068346e8,0xaaec,0x4b84,0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0002_v0_0_s_ifspec;
@@ -726,5 +687,3 @@ extern RPC_IF_HANDLE __MIDL_itf_dxgi1_6_0000_0002_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

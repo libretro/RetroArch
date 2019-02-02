@@ -14,7 +14,6 @@
 
 // Current name of the DLL shipped in the same SDK as this header.
 
-
 #define D3DX11_DLL_W L"d3dx11_43.dll"
 #define D3DX11_DLL_A "d3dx11_43.dll"
 
@@ -38,9 +37,7 @@ extern "C" {
 // D3DX11CreateVersion will return FALSE. (The number itself has no meaning.)
 ///////////////////////////////////////////////////////////////////////////
 
-
 #define D3DX11_SDK_VERSION 43
-
 
 #ifdef D3D_DIAG_DLL
 BOOL WINAPI D3DX11DebugMute(BOOL Mute);  
@@ -50,8 +47,6 @@ HRESULT WINAPI D3DX11CheckVersion(UINT D3DSdkVersion, UINT D3DX11SdkVersion);
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ID3DX11ThreadPump:
@@ -125,4 +120,3 @@ HRESULT WINAPI D3DX11UnsetAllDeviceObjects(ID3D11DeviceContext *pContext);
 #define D3DERR_WASSTILLDRAWING                  MAKE_D3DHRESULT(540)
 
 #endif //__D3DX11CORE_H__
-

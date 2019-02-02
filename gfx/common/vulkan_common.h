@@ -48,10 +48,7 @@
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
-#include "../../libretro-common/include/gfx/math/matrix_4x4.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/gfx/scaler/scaler.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
 
 RETRO_BEGIN_DECLS
 
@@ -264,7 +261,6 @@ void vulkan_buffer_chain_free(
       VkDevice device,
       struct vk_buffer_chain *chain);
 
-
 struct vk_descriptor_pool
 {
    VkDescriptorPool pool;
@@ -342,6 +338,7 @@ typedef struct vk
    struct video_viewport vp;
    struct vk_per_frame *chain;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   struct vk_texture default_texture;
 
    /* Currently active command buffer. */
    VkCommandBuffer cmd;
@@ -423,6 +420,8 @@ typedef struct vk
    struct
    {
       uint64_t dirty;
+      VkRect2D scissor;
+      bool use_scissor;
       VkPipeline pipeline;
       VkImageView view;
       VkSampler sampler;
@@ -440,7 +439,6 @@ uint32_t vulkan_find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs_first,
       uint32_t host_reqs_second);
-
 
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
@@ -586,4 +584,3 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 RETRO_END_DECLS
 
 #endif
-

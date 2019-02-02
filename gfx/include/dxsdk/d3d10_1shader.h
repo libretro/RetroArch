@@ -14,8 +14,6 @@
 
 /*#include <winapifamily.h>*/
 
-
-
 //----------------------------------------------------------------------------
 // Shader debugging structures
 //----------------------------------------------------------------------------
@@ -249,7 +247,6 @@ typedef struct _D3D10_SHADER_DEBUG_INFO
 // Interface definitions
 //
 
-
 typedef interface ID3D10ShaderReflection1 ID3D10ShaderReflection1;
 typedef interface ID3D10ShaderReflection1 *LPD3D10SHADERREFLECTION1;
 
@@ -303,4 +300,3 @@ extern "C" {
 #endif //__cplusplus
     
 #endif //__D3D10_1SHADER_H__
-

@@ -60,9 +60,9 @@ static void *runahead_save_state_alloc(void)
    return savestate;
 }
 
-static void runahead_save_state_free(void *state)
+static void runahead_save_state_free(void *data)
 {
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)state;
+   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)data;
    if (!savestate)
       return;
    free(savestate->data);
@@ -130,7 +130,6 @@ static void unload_hook(void)
       current_core.retro_unload_game();
 }
 
-
 static void deinit_hook(void)
 {
    remove_hooks();
@@ -155,7 +154,6 @@ static void add_hooks(void)
    }
    add_input_state_hook();
 }
-
 
 /* Runahead Code */
 
@@ -183,7 +181,6 @@ static uint64_t runahead_get_frame_count()
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
    return frame_count;
 }
-
 
 static void runahead_check_for_gui(void)
 {
@@ -466,7 +463,6 @@ void runahead_destroy(void)
 
 static bool request_fast_savestate;
 static bool hard_disable_audio;
-
 
 bool want_fast_savestate(void)
 {

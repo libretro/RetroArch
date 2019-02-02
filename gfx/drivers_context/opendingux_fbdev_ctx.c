@@ -87,7 +87,7 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
 
    if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
-            &n, attribs))
+            &n, attribs, NULL))
    {
       egl_report_error();
       goto error;
@@ -233,7 +233,6 @@ static void gfx_ctx_opendingux_set_swap_interval(
    egl_set_swap_interval(&viv->egl, swap_interval);
 #endif
 }
-
 
 static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
 {

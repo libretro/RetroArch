@@ -82,10 +82,13 @@ bool content_reset_savestate_backups(void);
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
 
-/* Clears the pending subsystem rom buffer*/
+/* Checks if launched from the commandline */
+bool content_launched_from_cli(void);
+
+/* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);
 
-/* Clears the pending subsystem rom buffer*/
+/* Clears the pending subsystem rom buffer */
 void content_clear_subsystem(void);
 
 /* Set the current subsystem*/
@@ -102,6 +105,12 @@ unsigned content_get_subsystem_rom_id(void);
 
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void);
+
+/* Get the path to the last selected subsystem rom */
+char* content_get_subsystem_rom(unsigned index);
+
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name);
 
 RETRO_END_DECLS
 

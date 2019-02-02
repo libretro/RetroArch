@@ -42,7 +42,7 @@
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #ifdef HAVE_NEW_CHEEVOS
-#include "cheevos/fixup.h"
+#include "cheevos-new/fixup.h"
 #else
 #include "cheevos/var.h"
 #endif
@@ -89,6 +89,7 @@
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "ui/ui_companion_driver.h"
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "list_special.h"
 
@@ -174,7 +175,7 @@ static bool command_version(const char* arg)
 {
    char reply[256] = {0};
 
-   sprintf(reply, "%s\n", PACKAGE_VERSION);
+   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
 #if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
    command_reply(reply, strlen(reply));
 #endif
@@ -220,6 +221,7 @@ static const struct cmd_map map[] = {
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
+   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -242,8 +244,6 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 #endif
-
-
 
 bool command_set_shader(const char *arg)
 {
@@ -272,7 +272,6 @@ bool command_set_shader(const char *arg)
 #endif
 }
 
-
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
@@ -293,7 +292,7 @@ static bool command_read_ram(const char *arg)
 
    if (data)
    {
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
@@ -305,7 +304,7 @@ static bool command_read_ram(const char *arg)
    }
    free(reply);
 #else
-      cheevos_var_t var;
+   cheevos_var_t var;
    unsigned i;
    char reply[256]      = {0};
    const uint8_t * data = NULL;
@@ -325,7 +324,7 @@ static bool command_read_ram(const char *arg)
    {
       unsigned nbytes = strtol(reply_at, NULL, 10);
 
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
@@ -424,7 +423,6 @@ static bool command_network_init(command_t *handle, uint16_t port)
    RARCH_LOG("%s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
-
 
    if (fd < 0)
       goto error;
@@ -1149,7 +1147,6 @@ static void command_event_init_cheats(void)
    cheat_manager_alloc_if_empty() ;
    cheat_manager_load_game_specific_cheats() ;
 
-
    if (settings != NULL && settings->bools.apply_cheats_after_load)
       cheat_manager_apply_cheats();
 }
@@ -1346,7 +1343,6 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
-
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
@@ -1368,7 +1364,6 @@ static bool command_event_init_core(enum rarch_core_type *data)
 
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
-
 
    rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
    return true;
@@ -1633,7 +1628,6 @@ static void command_event_save_current_config(enum override_type type)
          break;
    }
 
-
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
 }
@@ -1773,56 +1767,6 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name)
-{
-   if (!playlist)
-      return;
-
-   if (playlist_push(
-         playlist,
-         path,
-         label,
-         core_path,
-         core_name,
-         NULL,
-         NULL
-         ))
-      playlist_write_file(playlist);
-}
-
-void command_playlist_update_write(
-      playlist_t *plist,
-      size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name)
-{
-   playlist_t *playlist = plist ? plist : playlist_get_cached();
-
-   if (!playlist)
-      return;
-
-   playlist_update(
-         playlist,
-         idx,
-         path,
-         label,
-         core_path,
-         core_display_name,
-         crc32,
-         db_name);
-
-   playlist_write_file(playlist);
-}
-
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -1833,9 +1777,6 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-#ifdef HAVE_DISCORD
-   static bool discord_inited = false;
-#endif
    bool boolean               = false;
 
    switch (cmd)
@@ -1899,7 +1840,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
       {
-         bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+	 bool success   = false;
+         subsystem_current_count = 0;
+         content_clear_subsystem();
+         success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
          (void)success;
 
 #ifndef HAVE_DYNAMIC
@@ -2019,15 +1963,14 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 
             if (is_inited)
+            {
                if (!task_push_start_dummy_core(&content_info))
                   return false;
+            }
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
 #endif
-            core_unload_game();
-            if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               core_unload();
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
@@ -2037,6 +1980,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
 #endif
+            if (is_inited)
+            {
+               subsystem_current_count = 0;
+               content_clear_subsystem();
+            }
          }
          break;
       case CMD_EVENT_QUIT:
@@ -2175,6 +2123,12 @@ TODO: Add a setting for these tweaks */
 
             runloop_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
+         }
+         break;
+      case CMD_EVENT_FPS_TOGGLE:
+         {
+            settings_t *settings           = config_get_ptr();
+            settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          }
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
@@ -2445,17 +2399,12 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
-         global_t *global               = global_get_ptr();
-         rarch_system_info_t *sys_info  = runloop_get_system_info();
-         const char *core_name          = NULL;
-         const char *core_path          = NULL;
-         const char *label              = NULL;
-
-         if (sys_info)
-         {
-            core_name = sys_info->info.library_name;
-            core_path = path_get(RARCH_PATH_CORE);
-         }
+         /* TODO/FIXME - does path_get(RARCH_PATH_CORE) depend on the system info struct? Investigate */
+         global_t *global                 = global_get_ptr();
+         struct retro_system_info *system = runloop_get_libretro_system_info();
+         const char *label                = NULL;
+         const char *core_path            = system ? path_get(RARCH_PATH_CORE) : NULL;
+         const char *core_name            = system ? system->library_name : NULL;
 
          if (!string_is_empty(global->name.label))
             label = global->name.label;
@@ -2733,8 +2682,11 @@ TODO: Add a setting for these tweaks */
             settings_t *settings      = config_get_ptr();
             bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
+
             if (!video_driver_has_windowed())
                return false;
+
+            retroarch_set_switching_display_mode();
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2751,6 +2703,8 @@ TODO: Add a setting for these tweaks */
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
+
+            retroarch_unset_switching_display_mode();
          }
          break;
       case CMD_EVENT_COMMAND_DEINIT:
@@ -2969,26 +2923,24 @@ TODO: Add a setting for these tweaks */
 
             if (!settings->bools.discord_enable)
                return false;
-            if (discord_inited)
+            if (discord_is_ready())
                return true;
 
             discord_init();
-            discord_inited = true;
          }
 #endif
          break;
       case CMD_EVENT_DISCORD_DEINIT:
 #ifdef HAVE_DISCORD
-         if (!discord_inited)
+         if (!discord_is_ready())
             return false;
 
          discord_shutdown();
-         discord_inited = false;
 #endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
 #ifdef HAVE_DISCORD
-         if (!data || !discord_inited)
+         if (!data || !discord_is_ready())
             return false;
 
          {

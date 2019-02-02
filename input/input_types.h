@@ -25,6 +25,7 @@ typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
 typedef struct {
    uint32_t data[8];
    uint16_t analogs[8];
+   uint16_t analog_buttons[16];
 } input_bits_t;
 typedef struct joypad_connection joypad_connection_t;
 typedef struct pad_connection_listener_interface pad_connection_listener_t;

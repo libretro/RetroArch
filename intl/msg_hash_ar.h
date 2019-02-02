@@ -7,8 +7,9 @@ MSG_HASH(
       "Unknown compiler"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Native"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Device disconnected from port"
@@ -144,6 +145,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -654,10 +659,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "Dynamic Backgrounds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Enable Achievements")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Menu entry hover color")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Menu entry normal color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "False")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -888,8 +889,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
       "Overlay next")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
       "Pause toggle")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+      "Restart RetroArch")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
       "Quit RetroArch")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Reset game")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -1643,8 +1649,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "Title Screens")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "Show date / time")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-      "Menu title color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "True")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -2662,16 +2666,21 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Show network interface(s) and associated IP addresses.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "Show information specific to the device.")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+      "Restart the program.")
+#else
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "Quit the program.")
+#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
       "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution.")
+      "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution")
+      "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
       "Specify custom X axis position for onscreen text.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -3337,10 +3346,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "Show Help")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
       "Show/hide the 'Help' option.")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+      "Show Restart RetroArch")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+      "Show/hide the 'Restart RetroArch' option.")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
       "Show Quit RetroArch")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
       "Show/hide the 'Quit RetroArch' option.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
       "Show Reboot")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
@@ -3369,6 +3385,18 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Show Add to Favorites")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Show/hide the 'Add to Favorites' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+      "Show Start Recording")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+      "Show/hide the 'Start Recording' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+      "Show Start Streaming")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+      "Show/hide the 'Start Streaming' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Show Reset Core Association")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Show/hide the 'Reset Core Association' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
       "Show Options")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -3432,7 +3460,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
       "Notification Blue Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-      "Show frame count on FPS display")
+      "Display Frame Count")
 MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
       "Configuration override loaded.")
 MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
@@ -3673,4 +3701,62 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
     "Reset the current configuration to default values."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+    "OK"
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+      "Menu Color Theme")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+    "Basic White"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+    "Basic Black"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+    "Select a different color theme."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use preferred system color theme")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use your operating system's color theme (if any) - overrides theme settings.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Lowest")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lower")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Higher")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "No music available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "No videos available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "No images available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "No favorites available."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Remember Window Position and Size")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

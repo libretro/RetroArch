@@ -24,6 +24,7 @@
 
 #include "../verbosity.h"
 #include "../gfx/video_display_server.h"
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 
 enum http_status_enum

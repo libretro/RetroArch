@@ -104,7 +104,6 @@ struct android_app
     * receive user input events. */
    AInputQueue* inputQueue;
 
-
    /* When non-NULL, this is the window surface that the app can draw in. */
    ANativeWindow* window;
 
@@ -164,7 +163,6 @@ struct android_app
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
 };
-
 
 enum
 {

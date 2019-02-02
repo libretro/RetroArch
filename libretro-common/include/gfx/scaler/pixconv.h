@@ -29,7 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 void conv_0rgb1555_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
@@ -101,4 +100,3 @@ void conv_copy(void *output, const void *input,
 RETRO_END_DECLS
 
 #endif
-

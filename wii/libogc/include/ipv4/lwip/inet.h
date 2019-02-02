@@ -84,4 +84,3 @@ u32_t ntohl(u32_t x);
 #endif
 
 #endif /* __LWIP_INET_H__ */
-

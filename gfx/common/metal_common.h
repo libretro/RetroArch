@@ -44,7 +44,6 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 @end
 
-
 @interface MetalMenu : NSObject
 
 @property (nonatomic, readonly) bool hasFrame;
@@ -58,7 +57,6 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
              format:(RPixelFormat)format
              filter:(RTextureFilter)filter;
 @end
-
 
 @interface Overlay : NSObject
 @property (nonatomic, readwrite) bool enabled;
@@ -96,6 +94,8 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;
+- (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate;
+- (void)setRotation:(unsigned)rotation;
 
 @end
 

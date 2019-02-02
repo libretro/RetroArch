@@ -152,6 +152,12 @@ static const bool _coreaudio_supp = true;
 static const bool _coreaudio_supp = false;
 #endif
 
+#ifdef HAVE_COREAUDIO3
+static const bool _coreaudio3_supp = true;
+#else
+static const bool _coreaudio3_supp = false;
+#endif
+
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
 static const bool _oss_supp = true;
 #else
@@ -308,7 +314,7 @@ static const bool _python_supp = true;
 static const bool _python_supp = false;
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 static const bool _cocoa_supp = true;
 #else
 static const bool _cocoa_supp = false;

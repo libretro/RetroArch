@@ -43,24 +43,9 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
-#ifdef HAVE_METAL
-@implementation MetalView
-
-- (void)keyDown:(NSEvent*)theEvent
-{
-}
-
-/* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder
-{
-   return YES;
-}
-
-- (BOOL)isFlipped
-{
-   return YES;
-}
-@end
+#ifdef HAVE_COCOATOUCH
+#import "GCDWebUploader.h"
+#import "WebServer.h"
 #endif
 
 static CocoaView* g_instance;
@@ -68,13 +53,20 @@ static CocoaView* g_instance;
 #if defined(HAVE_COCOA)
 void *nsview_get_ptr(void)
 {
-    return (BRIDGE void *)g_instance;
+    return g_instance;
 }
 #endif
 
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
+
+#ifdef HAVE_COCOATOUCH
+@interface CocoaView()<GCDWebUploaderDelegate> {
+    
+}
+@end
+#endif
 
 @implementation CocoaView
 
@@ -85,7 +77,6 @@ void *glkitview_init(void);
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
 }
-
 #endif
 
 + (CocoaView*)get
@@ -102,24 +93,25 @@ void *glkitview_init(void);
    
 #if defined(HAVE_COCOA)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   ui_window_cocoa_t cocoa_view;
+   cocoa_view.data = (CocoaView*)self;
+   
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
-   
+#if TARGET_OS_IOS   
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
+#endif   
 #endif
    
    return self;
 }
 
 #if defined(HAVE_COCOA)
-- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
-   return YES;
-}
-
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
+
    cocoagl_gfx_ctx_update();
 }
 
@@ -173,47 +165,15 @@ void *glkitview_init(void);
     [self setNeedsDisplay: YES];
 }
 
-#elif defined(HAVE_COCOATOUCH)
-- (void)viewDidAppear:(BOOL)animated
+#elif TARGET_OS_IOS
+- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
 {
-   /* Pause Menus. */
-   [self showPauseIndicator];
+    return UIRectEdgeBottom;
 }
 
-- (void)showPauseIndicator
+-(BOOL)prefersHomeIndicatorAutoHidden
 {
-   g_pause_indicator_view.alpha = 1.0f;
-   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
-   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
-}
-
-- (void)viewWillLayoutSubviews
-{
-   float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
-   RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
-   UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-   CGRect screenSize = [screen bounds];
-   SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));
-    
-    if ([screen respondsToSelector:selector])
-    {
-        screenSize  = [[screen coordinateSpace] bounds];
-        width       = CGRectGetWidth(screenSize);
-        height      = CGRectGetHeight(screenSize);
-    }
-    else
-    {
-        width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-        height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
-    }
-   
-   tenpctw          = width  / 10.0f;
-   tenpcth          = height / 10.0f;
-   
-   g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
-   [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
-    
-    [self adjustViewFrameForSafeArea];
+    return NO;
 }
 
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
@@ -244,7 +204,40 @@ void *glkitview_init(void);
         self.view.frame = newFrame;
     }
 }
+- (void)showPauseIndicator
+{
+   g_pause_indicator_view.alpha = 1.0f;
+   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
+   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+}
 
+- (void)viewWillLayoutSubviews
+{
+   float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
+   RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
+   UIInterfaceOrientation orientation = self.interfaceOrientation;
+   CGRect screenSize = [screen bounds];
+   SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));
+    
+    if ([screen respondsToSelector:selector])
+    {
+        screenSize  = [[screen coordinateSpace] bounds];
+        width       = CGRectGetWidth(screenSize);
+        height      = CGRectGetHeight(screenSize);
+    }
+    else
+    {
+        width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
+        height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+    }
+   
+   tenpctw          = width  / 10.0f;
+   tenpcth          = height / 10.0f;
+   
+   g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
+   [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
+   [self adjustViewFrameForSafeArea];
+}
 
 #define ALMOST_INVISIBLE (.021f)
 
@@ -283,6 +276,58 @@ void *glkitview_init(void);
    return YES;
 }
 #endif
+
+#ifdef HAVE_COCOATOUCH
+- (void)viewDidAppear:(BOOL)animated
+{
+#if TARGET_OS_IOS
+    /* Pause Menus. */
+    [self showPauseIndicator];
+    if (@available(iOS 11.0, *)) {
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+    }
+#elif TARGET_OS_TV
+    
+#endif
+}
+
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+#if TARGET_OS_TV
+    [[WebServer sharedInstance] startUploader];
+    [WebServer sharedInstance].webUploader.delegate = self;
+#endif
+}
+
+#pragma mark GCDWebServerDelegate
+- (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server {
+    NSMutableString *servers = [[NSMutableString alloc] init];
+    if ( server.serverURL != nil ) {
+        [servers appendString:[NSString stringWithFormat:@"%@",server.serverURL]];
+    }
+    if ( servers.length > 0 ) {
+        [servers appendString:@"\n\n"];
+    }
+    if ( server.bonjourServerURL != nil ) {
+        [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
+    }
+#if TARGET_OS_TV
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Web Server Started" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    }]];
+    [self presentViewController:alert animated:YES completion:^{
+    }];
+#elif TARGET_OS_IOS
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Web Server Started" message:[NSString stringWithFormat:@"To transfer ROMs from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [[WebServer sharedInstance] webUploader].delegate = nil;
+        [[WebServer sharedInstance] stopUploader];
+    }]];
+    [self presentViewController:alert animated:YES completion:^{
+    }];
+#endif
+}
+#endif  // end HAVE_COCOATOUCH
 
 #ifdef HAVE_AVFOUNDATION
 #include "../../gfx/common/gl_common.h"
@@ -691,4 +736,3 @@ location_driver_t location_corelocation = {
 	"corelocation",
 };
 #endif
-

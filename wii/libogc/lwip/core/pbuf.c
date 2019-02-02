@@ -178,7 +178,6 @@ pbuf_pool_alloc(void)
   return p;
 }
 
-
 /**
  * Allocates a pbuf of the given type (possibly a chain for PBUF_POOL type).
  *
@@ -341,7 +340,6 @@ pbuf_alloc(pbuf_layer l, u16_t length, pbuf_flag flag)
   LWIP_DEBUGF(PBUF_DEBUG | DBG_TRACE | 3, ("pbuf_alloc(length=%"U16_F") == %p\n", length, (void *)p));
   return p;
 }
-
 
 #if PBUF_STATS
 #define DEC_PBUF_STATS do { --lwip_stats.pbuf.used; } while (0)

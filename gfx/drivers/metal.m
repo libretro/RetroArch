@@ -151,16 +151,22 @@ static void metal_free(void *data)
 static void metal_set_viewport(void *data, unsigned viewport_width,
                                unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-#if 0
-   RARCH_LOG("[Metal]: set_viewport size: %dx%d full: %s rotate: %s\n",
-             viewport_width, viewport_height,
-             force_full ? "YES" : "NO",
-             allow_rotate ? "YES" : "NO");
-#endif
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md == nil) {
+      return;
+   }
+   
+   [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)
 {
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md == nil) {
+      return;
+   }
+   
+   [md setRotation:rotation];
 }
 
 static void metal_viewport_info(void *data, struct video_viewport *vp)
@@ -191,9 +197,7 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
 static void metal_unload_texture(void *data, uintptr_t handle)
 {
    if (!handle)
-   {
       return;
-   }
    Texture *t = (__bridge_transfer Texture *)(void *)handle;
    t = nil;
 }

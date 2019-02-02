@@ -139,7 +139,6 @@ static int vulkan_get_message_width(void *data, const char *msg,
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
 
-
       if (glyph)
       {
          vulkan_raster_font_update_glyph(font, glyph);

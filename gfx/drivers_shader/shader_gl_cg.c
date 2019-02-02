@@ -131,7 +131,6 @@ struct uniform_cg
       cgGLEnableTextureParameter(param); \
    }
 
-
 #include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
@@ -206,7 +205,6 @@ static void gl_cg_set_uniform_parameter(
          break;
    }
 }
-
 
 #ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
@@ -763,50 +761,6 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    return true;
 }
 
-static bool gl_cg_add_lut(
-      const struct video_shader *shader,
-      unsigned i, void *textures_data)
-{
-   struct texture_image img;
-   GLuint *textures_lut                 = (GLuint*)textures_data;
-   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-   img.width         = 0;
-   img.height        = 0;
-   img.pixels        = NULL;
-   img.supports_rgba = video_driver_supports_rgba();
-
-   if (!image_texture_load(&img, shader->lut[i].path))
-   {
-      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
-            shader->lut[i].path);
-      return false;
-   }
-
-   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
-   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-      filter_type = TEXTURE_FILTER_NEAREST;
-
-   if (shader->lut[i].mipmap)
-   {
-      if (filter_type == TEXTURE_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-      else
-         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-   }
-
-   gl_load_texture_data(textures_lut[i],
-         shader->lut[i].wrap,
-         filter_type, 4,
-         img.width, img.height,
-         img.pixels, sizeof(uint32_t));
-   image_texture_free(&img);
-
-   return true;
-}
-
 static bool gl_cg_load_luts(
       const struct video_shader *shader,
       GLuint *textures_lut)
@@ -821,7 +775,12 @@ static bool gl_cg_load_luts(
 
    for (i = 0; i < num_luts; i++)
    {
-      if (!gl_cg_add_lut(shader, i, textures_lut))
+      if (!gl_add_lut(
+               shader->lut[i].path,
+               shader->lut[i].mipmap,
+               shader->lut[i].filter,
+               shader->lut[i].wrap,
+               i, textures_lut))
          return false;
    }
 
@@ -1169,7 +1128,6 @@ static void *gl_cg_init(void *data, const char *path)
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
-
    gl_cg_reset_attrib(cg);
 
    return cg;
@@ -1300,4 +1258,3 @@ const shader_backend_t gl_cg_backend = {
    RARCH_SHADER_CG,
    "gl_cg"
 };
-

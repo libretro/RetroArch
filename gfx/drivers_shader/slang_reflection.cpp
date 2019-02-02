@@ -15,6 +15,7 @@
 
 #include "spirv_cross.hpp"
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
@@ -679,4 +680,3 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
       return false;
    }
 }
-

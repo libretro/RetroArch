@@ -29,13 +29,13 @@
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
+#include <glsym/glsym.h>
 #include <formats/image.h>
 
 #include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_driver.h"
-#include <glsym/glsym.h>
 
 RETRO_BEGIN_DECLS
 
@@ -92,7 +92,9 @@ RETRO_BEGIN_DECLS
 #endif
 
 #if defined(__APPLE__) || defined(HAVE_PSGL)
+#ifndef GL_RGBA32F
 #define GL_RGBA32F GL_RGBA32F_ARB
+#endif
 #endif
 
 #if defined(HAVE_PSGL)
@@ -405,6 +407,13 @@ static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
 
    return true;
 }
+
+bool gl_add_lut(
+      const char *lut_path,
+      bool lut_mipmap,
+      unsigned lut_filter,
+      enum gfx_wrap_type lut_wrap_type,
+      unsigned i, void *textures_data);
 
 RETRO_END_DECLS
 

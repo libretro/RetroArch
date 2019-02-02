@@ -4,10 +4,17 @@ CONFIG_DEFINES=''
 PREFIX="${PREFIX:-/usr/local}"
 SHARE_DIR="${SHARE_DIR:-${PREFIX}/share}"
 
-add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
+# add_define:
+# $1 = MAKEFILE or CONFIG
+# $2 = define
+# $3 = value
+add_define()
 { eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
-add_dirs() # $1 = INCLUDE or LIBRARY  $@ = include or library paths
+# add_dirs:
+# $1 = INCLUDE or LIBRARY
+# $@ = include or library paths
+add_dirs()
 {	ADD="$1"; LINK="${1%"${1#?}"}"; shift
 	while [ "$1" ]; do
 		eval "${ADD}_DIRS=\"\${${ADD}_DIRS} -${LINK}${1}\""
@@ -16,7 +23,10 @@ add_dirs() # $1 = INCLUDE or LIBRARY  $@ = include or library paths
 	eval "${ADD}_DIRS=\"\${${ADD}_DIRS# }\""
 }
 
-check_compiler() # $1 = language  $2 = function in lib
+# check_compiler:
+# $1 = language
+# $2 = function in lib
+check_compiler()
 {	if [ "$1" = cxx ]; then
 		COMPILER="$CXX"
 		TEMP_CODE="$TEMP_CXX"
@@ -28,19 +38,48 @@ check_compiler() # $1 = language  $2 = function in lib
 	fi
 }
 
-check_enabled() # $1 = HAVE_$1  $2 = lib
-{	[ "$HAVE_CXX" != 'no' ] && return 0
-	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+# check_enabled:
+# $1 = HAVE_$1 [Disabled feature]
+# $2 = USER_$2 [Enabled feature]
+# $3 = lib
+# $4 = feature
+# $5 = enable lib when true [checked only if non-empty]
+check_enabled()
+{	tmpvar="$(eval "printf %s \"\$HAVE_$1\"")"
+	setval="$(eval "printf %s \"\$HAVE_$2\"")"
 
-	if [ "$tmpval" != 'yes' ]; then
-		eval "HAVE_$1=no"
+	if [ "$tmpvar" != 'no' ]; then
+		if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+			eval "HAVE_$2=yes"
+		fi
 		return 0
 	fi
 
-	die 1 "Forced to build with $2 support and the C++ compiler is disabled. Exiting ..."
+	tmpval="$(eval "printf %s \"\$USER_$2\"")"
+
+	if [ "$tmpval" != 'yes' ]; then
+		if [ "$setval" != 'no' ]; then
+			eval "HAVE_$2=no"
+			if [ "${5:-}" != 'true' ]; then
+				die : "Notice: $4 disabled, $3 support will also be disabled."
+			fi
+		fi
+		return 0
+	fi
+
+	die 1 "Error: $4 disabled and forced to build with $3 support."
 }
 
-check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
+# check_lib:
+# Compiles a simple test program to check if a library is available.
+# $1 = language
+# $2 = HAVE_$2
+# $3 = lib
+# $4 = function in lib [checked only if non-empty]
+# $5 = extralibs [checked only if non-empty]
+# $6 = headers [checked only if non-empty]
+# $7 = critical error message [checked only if non-empty]
+check_lib()
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
@@ -81,52 +120,72 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	return 0
 }
 
-check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
+# check_pkgconf:
+# If available uses $PKG_CONF_PATH to find a library.
+# $1 = HAVE_$1
+# $2 = package
+# $3 = version [checked only if non-empty]
+# $4 = critical error message [checked only if non-empty]
+check_pkgconf()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking presence of package $2"
-	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
+	[ "$3" ] && ECHOBUF="$ECHOBUF >= ${3##* }"
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
 		eval "HAVE_$1=no"
+		eval "${1#HAVE_}_VERSION=0.0"
 		printf %s\\n "$ECHOBUF ... no"
 		return 0
 	}
 
+	val="$1"
+	pkg="$2"
+	err="$4"
 	answer='no'
 	version='no'
-	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
-		answer='yes'
-		version="$("$PKG_CONF_PATH" --modversion "$2")"
-		eval "$1_CFLAGS=\"$("$PKG_CONF_PATH" "$2" --cflags)\""
-		eval "$1_LIBS=\"$("$PKG_CONF_PATH" "$2" --libs)\""
-	}
+
+	eval "set -- ${3:-0.0}"
+	for ver do
+		if $PKG_CONF_PATH --atleast-version="$ver" "$pkg"; then
+			answer='yes'
+			version="$("$PKG_CONF_PATH" --modversion "$pkg")"
+			eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" "$pkg" --cflags)\""
+			eval "${val}_LIBS=\"$("$PKG_CONF_PATH" "$pkg" --libs)\""
+			eval "${val#HAVE_}_VERSION=\"$ver\""
+			break
+		fi
+	done
 	
-	eval "HAVE_$1=\"$answer\""
+	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
-		[ "$4" ] && die 1 "$4"
-		[ "$tmpval" = 'yes' ] && \
-			die 1 "Forced to build with package $2, but cannot locate. Exiting ..."
+		[ "$err" ] && die 1 "$err"
+		[ "$tmpval" = 'yes' ] &&
+			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
 	else
-		PKG_CONF_USED="$PKG_CONF_USED $1"
+		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
 }
 
-check_header() #$1 = HAVE_$1  $2..$5 = header files
+# check_header:
+# $1 = HAVE_$1
+# $@ = header files
+check_header()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
-	CHECKHEADER="$2"
-	printf %s\\n "#include <$2>" > "$TEMP_C"
-	[ "$3" != '' ] && CHECKHEADER="$3" && printf %s\\n "#include <$3>" >> "$TEMP_C"
-	[ "$4" != '' ] && CHECKHEADER="$4" && printf %s\\n "#include <$4>" >> "$TEMP_C"
-	[ "$5" != '' ] && CHECKHEADER="$5" && printf %s\\n "#include <$5>" >> "$TEMP_C"
-	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
-	answer='no'
+	rm -f -- "$TEMP_C"
 	val="$1"
 	header="$2"
+	shift
+	for head do
+		CHECKHEADER="$head"
+		printf %s\\n "#include <$head>" >> "$TEMP_C"
+	done
+	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
+	answer='no'
 	eval "set -- $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
@@ -136,11 +195,22 @@ check_header() #$1 = HAVE_$1  $2..$5 = header files
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 }
 
-check_macro() #$1 = HAVE_$1  $2 = macro name
+# check_macro:
+# $1 = HAVE_$1
+# $2 = macro name
+# $3 = header name [included only if non-empty]
+check_macro()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
-	ECHOBUF="Checking presence of predefined macro $2"
+	if [ "${3}" ]; then
+		ECHOBUF="Checking presence of predefined macro $2 in $3"
+		header_include="#include <$3>"
+	else
+		ECHOBUF="Checking presence of predefined macro $2"
+		header_include=""
+	fi
 	cat << EOF > "$TEMP_C"
+$header_include
 #ifndef $2
 #error $2 is not defined
 #endif
@@ -158,7 +228,12 @@ EOF
 		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
 }
 
-check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error message [checked only if non-empty]
+# check_switch:
+# $1 = language
+# $2 = HAVE_$2
+# $3 = switch
+# $4 = critical error message [checked only if non-empty]
+check_switch()
 {	check_compiler "$1" ''
 
 	ECHOBUF="Checking for availability of switch $3 in $COMPILER"
@@ -173,8 +248,20 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 	}
 }
 
-check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [checked only if non-empty]
-{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+# check_val:
+# Uses check_pkgconf to find a library and falls back to check_lib if false.
+# $1 = language
+# $2 = HAVE_$2
+# $3 = lib
+# $4 = include directory [checked only if non-empty]
+# $5 = package
+# $6 = version [checked only if non-empty]
+# $7 = critical error message [checked only if non-empty]
+# $8 = force check_lib when true [checked only if non-empty]
+check_val()
+{	check_pkgconf "$2" "$5" "${6:-}" "${7:-}"
+	[ "$PKG_CONF_PATH" = "none" ] || [ "${8:-}" = true ] || return 0
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
@@ -234,8 +321,21 @@ create_config_make()
 
 	printf %s\\n "Creating make config: $outfile"
 
-	{	[ "$HAVE_CC" = 'yes' ] && printf %s\\n "CC = $CC" "CFLAGS = $CFLAGS"
-		[ "$HAVE_CXX" = 'yes' ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
+	{	if [ "$HAVE_CC" = 'yes' ]; then
+			printf %s\\n "CC = $CC"
+
+			if [ "${CFLAGS}" ]; then
+				printf %s\\n "CFLAGS = $CFLAGS"
+			fi
+		fi
+
+		if [ "$HAVE_CXX" = 'yes' ]; then
+			printf %s\\n "CXX = $CXX"
+
+			if [ "${CXXFLAGS}" ]; then
+				printf %s\\n "CXXFLAGS = $CXXFLAGS"
+			fi
+		fi
 
 		printf %s\\n "WINDRES = $WINDRES" \
 			"MOC = $MOC" \

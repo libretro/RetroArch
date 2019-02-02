@@ -29,6 +29,12 @@
 
 #include "frontend_driver.h"
 
+#ifndef __WINRT__
+#if defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define __WINRT__
+#endif
+#endif
+
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
    &frontend_ctx_emscripten,
@@ -56,14 +62,20 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(PSP) || defined(VITA)
    &frontend_ctx_psp,
 #endif
+#if defined(PS2)
+   &frontend_ctx_ps2,
+#endif
 #if defined(_3DS)
    &frontend_ctx_ctr,
 #endif
 #if defined(SWITCH) && defined(HAVE_LIBNX)
    &frontend_ctx_switch,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &frontend_ctx_win32,
+#endif
+#if defined(__WINRT__)
+   &frontend_ctx_uwp,
 #endif
 #ifdef XENON
    &frontend_ctx_xenon,
@@ -73,6 +85,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef SWITCH
    &frontend_ctx_switch,
+#endif
+#if defined(ORBIS)
+   &frontend_ctx_orbis,
 #endif
    &frontend_ctx_null,
    NULL
@@ -141,6 +156,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(VITA)
    strlcpy(s, "self|bin", len);
    return true;
+#elif defined(PS2)
+   strlcpy(s, "elf", len);
+   return true;
 #elif defined(_XBOX1)
    strlcpy(s, "xbe", len);
    return true;
@@ -186,6 +204,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(VITA)
    strlcpy(s, "eboot.bin", len);
+   return true;
+#elif defined(PS2)
+   strlcpy(s, "eboot.elf", len);
    return true;
 #elif defined(_XBOX1)
    strlcpy(s, "default.xbe", len);

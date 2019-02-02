@@ -20,7 +20,10 @@
 #include "coreoptionsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -30,7 +33,10 @@ extern "C" {
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
 #include "../../../managers/core_option_manager.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    QDialog(parent)
@@ -139,7 +145,7 @@ void CoreOptionsDialog::onSaveGameSpecificOptions()
       }
    }
 
-   if (config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path, true))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
@@ -222,10 +228,11 @@ void CoreOptionsDialog::buildLayout()
 
          if (settings->bools.game_specific_options)
          {
-            rarch_system_info_t *system = runloop_get_system_info();
             QString contentLabel;
             QString label;
+            rarch_system_info_t *system = runloop_get_system_info();
 
+            /* TODO/FIXME - why have this check here? system is not used */
             if (system)
                contentLabel = QFileInfo(path_get(RARCH_PATH_BASENAME)).completeBaseName();
 

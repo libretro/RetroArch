@@ -4,14 +4,10 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -50,20 +46,17 @@ typedef interface ID3D10Debug ID3D10Debug;
 
 #endif 	/* __ID3D10Debug_FWD_DEFINED__ */
 
-
 #ifndef __ID3D10SwitchToRef_FWD_DEFINED__
 #define __ID3D10SwitchToRef_FWD_DEFINED__
 typedef interface ID3D10SwitchToRef ID3D10SwitchToRef;
 
 #endif 	/* __ID3D10SwitchToRef_FWD_DEFINED__ */
 
-
 #ifndef __ID3D10InfoQueue_FWD_DEFINED__
 #define __ID3D10InfoQueue_FWD_DEFINED__
 typedef interface ID3D10InfoQueue ID3D10InfoQueue;
 
 #endif 	/* __ID3D10InfoQueue_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -73,7 +66,6 @@ typedef interface ID3D10InfoQueue ID3D10InfoQueue;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3d10sdklayers_0000_0000 */
 /* [local] */ 
@@ -89,8 +81,6 @@ extern "C"{
 
 #define	D3D10_DEBUG_FEATURE_PRESENT_PER_RENDER_OP	( 0x4 )
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0000_v0_0_s_ifspec;
 
@@ -99,7 +89,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D10Debug */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10Debug;
 
@@ -189,7 +178,6 @@ EXTERN_C const IID IID_ID3D10Debug;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10Debug_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -198,7 +186,6 @@ EXTERN_C const IID IID_ID3D10Debug;
 
 #define ID3D10Debug_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D10Debug_SetFeatureMask(This,Mask)	\
     ( (This)->lpVtbl -> SetFeatureMask(This,Mask) ) 
@@ -223,21 +210,15 @@ EXTERN_C const IID IID_ID3D10Debug;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10Debug_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D10SwitchToRef_INTERFACE_DEFINED__
 #define __ID3D10SwitchToRef_INTERFACE_DEFINED__
 
 /* interface ID3D10SwitchToRef */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10SwitchToRef;
 
@@ -292,7 +273,6 @@ EXTERN_C const IID IID_ID3D10SwitchToRef;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10SwitchToRef_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -302,7 +282,6 @@ EXTERN_C const IID IID_ID3D10SwitchToRef;
 #define ID3D10SwitchToRef_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D10SwitchToRef_SetUseRef(This,UseRef)	\
     ( (This)->lpVtbl -> SetUseRef(This,UseRef) ) 
 
@@ -311,14 +290,9 @@ EXTERN_C const IID IID_ID3D10SwitchToRef;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10SwitchToRef_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d10sdklayers_0000_0002 */
 /* [local] */ 
@@ -908,7 +882,6 @@ typedef struct D3D10_INFO_QUEUE_FILTER
 
 #define D3D10_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT 1024
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0002_v0_0_s_ifspec;
 
@@ -917,7 +890,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0002_v0_0_s_ifspec;
 
 /* interface ID3D10InfoQueue */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10InfoQueue;
 
@@ -1247,7 +1219,6 @@ EXTERN_C const IID IID_ID3D10InfoQueue;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10InfoQueue_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -1256,7 +1227,6 @@ EXTERN_C const IID IID_ID3D10InfoQueue;
 
 #define ID3D10InfoQueue_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
 
 #define ID3D10InfoQueue_SetMessageCountLimit(This,MessageCountLimit)	\
     ( (This)->lpVtbl -> SetMessageCountLimit(This,MessageCountLimit) ) 
@@ -1365,14 +1335,9 @@ EXTERN_C const IID IID_ID3D10InfoQueue;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10InfoQueue_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3d10sdklayers_0000_0003 */
 /* [local] */ 
@@ -1382,7 +1347,6 @@ EXTERN_C const IID IID_ID3D10InfoQueue;
 DEFINE_GUID(IID_ID3D10Debug,0x9B7E4E01,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUID(IID_ID3D10SwitchToRef,0x9B7E4E02,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUID(IID_ID3D10InfoQueue,0x1b940b17,0x2642,0x4d1f,0xab,0x1f,0xb9,0x9b,0xad,0x0c,0x39,0x5f);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0003_v0_0_s_ifspec;
@@ -1396,5 +1360,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d10sdklayers_0000_0003_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

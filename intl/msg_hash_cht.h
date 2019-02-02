@@ -7,8 +7,9 @@ MSG_HASH(
       "未知的編譯器"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Native"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "設備已從連接口上移開"
@@ -104,6 +105,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "使用模擬器硬體渲染私人內容時可避免硬體在各frames時的狀態改變."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -599,10 +604,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
 /* FIXME? Translate 'Enable Achievements' */
       "啟用成就系統")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "選單項懸停顏色")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "選單項正常顏色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "取消")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -985,6 +986,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - updat
       "選單文件瀏覽器")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "選單線性過濾")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+      "Horizontal Animation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "選單")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -1524,8 +1527,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "標題畫面")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "顯示時間日期")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-      "選單標題顏色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "真")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -1590,6 +1591,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Crop Overscan (Reload)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "禁用桌面元素")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+      "3DS底部屏幕")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "視訊驅動")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2497,9 +2500,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution.")
+      "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution")
+      "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
       "Specify custom X axis position for onscreen text.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -3143,10 +3146,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "顯示 Help")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
       "顯示/隱藏 the 'Help' option.")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+      "顯示 Restart RetroArch")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+      "顯示/隱藏 the 'Restart RetroArch' option.")
+#else
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
       "顯示 Quit RetroArch")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
       "顯示/隱藏 the 'Quit RetroArch' option.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
       "顯示 Reboot")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
@@ -3175,6 +3185,18 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "顯示 Add to Favorites")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "顯示/隱藏 the 'Add to Favorites' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+      "Show Start Recording")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+      "Show/hide the 'Start Recording' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+      "Show Start Streaming")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+      "Show/hide the 'Start Streaming' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Show Reset Core Association")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Show/hide the 'Reset Core Association' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
       "顯示 Options")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -3449,4 +3471,62 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
     "Reset the current configuration to default values."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+    "OK"
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+      "選單顏色主題")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+    "Basic White"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+    "Basic Black"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+    "Select a different color theme."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use preferred system color theme")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "Use your operating system's color theme (if any) - overrides theme settings.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Lowest")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lower")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Higher")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Highest")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "No music available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "No videos available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "No images available."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "No favorites available."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Remember Window Position and Size")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

@@ -92,4 +92,3 @@ typedef rxml_document_t *xmlDocPtr;
 RETRO_END_DECLS
 
 #endif
-

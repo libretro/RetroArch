@@ -128,7 +128,6 @@ void context_bind_hw_render(void *data, bool enable)
    gl_context_bind_hw_render(gl, enable);
 }
 
-
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl)
 {
@@ -246,7 +245,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
 #endif
-
 
 static void gl_set_projection(gl_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
@@ -369,10 +367,11 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    video_frame_info_t video_info;
+   gl_t               *gl = (gl_t*)data;
 
    video_driver_build_info(&video_info);
 
-   gl_set_viewport(data, &video_info,
+   gl_set_viewport(gl, &video_info,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
@@ -601,74 +600,6 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
    }
 }
 
-void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size)
-{
-   GLint mag_filter, min_filter;
-   bool want_mipmap = false;
-   bool use_rgba    = video_driver_supports_rgba();
-   bool rgb32       = (base_size == (sizeof(uint32_t)));
-   GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
-   GLuint id        = (GLuint)id_data;
-   bool have_mipmap = gl_check_capability(GL_CAPS_MIPMAP);
-
-   if (!have_mipmap)
-   {
-      /* Assume no mipmapping support. */
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-            filter_type = TEXTURE_FILTER_LINEAR;
-            break;
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            filter_type = TEXTURE_FILTER_NEAREST;
-            break;
-         default:
-            break;
-      }
-   }
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_NEAREST;
-         mag_filter = GL_LINEAR;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         min_filter = GL_NEAREST_MIPMAP_NEAREST;
-         mag_filter = GL_NEAREST;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_NEAREST:
-         min_filter = GL_NEAREST;
-         mag_filter = GL_NEAREST;
-         break;
-      case TEXTURE_FILTER_LINEAR:
-      default:
-         min_filter = GL_LINEAR;
-         mag_filter = GL_LINEAR;
-         break;
-   }
-
-   gl_bind_texture(id, wrap, mag_filter, min_filter);
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-   glTexImage2D(GL_TEXTURE_2D,
-         0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         width, height, 0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
-
-   if (want_mipmap && have_mipmap)
-      glGenerateMipmap(GL_TEXTURE_2D);
-}
 
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
@@ -687,7 +618,6 @@ static void gl_set_texture_frame(void *data,
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
-
 
    gl_load_texture_data(gl->menu_texture,
          RARCH_WRAP_EDGE, menu_filter,
@@ -940,7 +870,6 @@ static void gl_pbo_async_readback(gl_t *gl)
       gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
 }
 
-
 static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -956,12 +885,6 @@ static bool gl_frame(void *data, const void *frame,
 
    if (!gl)
       return false;
-
-#ifdef HAVE_LIBNX
-   // Should be called once per frame
-   if(!appletMainLoop())
-    return false;
-#endif
 
    gl_context_bind_hw_render(gl, false);
 
@@ -1239,7 +1162,6 @@ static bool gl_frame(void *data, const void *frame,
 
    return true;
 }
-
 
 static void gl_destroy_resources(gl_t *gl)
 {
@@ -1737,6 +1659,7 @@ static void *gl_init(const video_info_t *video,
    char *error_string                   = NULL;
    gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
    const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
+
    if (!gl || !ctx_driver)
       goto error;
 
@@ -1792,8 +1715,17 @@ static void *gl_init(const video_info_t *video,
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
 
+   if (string_is_equal(ctx_driver->ident, "null"))
+      goto error;
+
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+
+#ifdef _WIN32
+   if (string_is_equal(vendor, "Microsoft Corporation"))
+      if (string_is_equal(renderer, "GDI Generic"))
+         rarch_force_video_driver_fallback("gdi");
+#endif
 
    hwr = video_driver_get_hw_context();
 
@@ -2363,8 +2295,6 @@ static bool gl_overlay_load(void *data,
    return true;
 }
 
-
-
 static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl           = (gl_t*)data;
@@ -2401,7 +2331,6 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
    color[12 + 3]  = mod;
 }
 
-
 static const video_overlay_interface_t gl_overlay_interface = {
    gl_overlay_enable,
    gl_overlay_load,
@@ -2418,7 +2347,6 @@ static void gl_get_overlay_interface(void *data,
    *iface = &gl_overlay_interface;
 }
 #endif
-
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
@@ -2464,7 +2392,6 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->should_resize = true;
 }
 
-
 static void gl_apply_state_changes(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -2472,7 +2399,6 @@ static void gl_apply_state_changes(void *data)
    if (gl)
       gl->should_resize = true;
 }
-
 
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)

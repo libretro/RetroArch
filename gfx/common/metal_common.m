@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "metal_common.h"
-#import "../../ui/drivers/cocoa/cocoa_common.h"
+#import "../../ui/drivers/cocoa/cocoa_common_metal.h"
 #import <memory.h>
 #import <gfx/video_frame.h>
 #import <Metal/Metal.h>
@@ -216,21 +216,19 @@
    return YES;
 }
 
-- (void)_updateUniforms
+- (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
-   _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
-}
-
-- (void)_updateViewport:(CGSize)size
-{
-   RARCH_LOG("[Metal]: _updateViewport size %.0fx%.0f\n", size.width, size.height);
+#if 0
+   RARCH_LOG("[Metal]: setViewportWidth size %dx%d\n", width, height);
+#endif
    
-   _viewport->full_width = (unsigned int)size.width;
-   _viewport->full_height = (unsigned int)size.height;
+   _viewport->full_width = width;
+   _viewport->full_height = height;
    video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
-   _layer.drawableSize = size;
-   video_driver_update_viewport(_viewport, NO, _keepAspect);
+   _layer.drawableSize = CGSizeMake(width, height);
+   video_driver_update_viewport(_viewport, forceFull, _keepAspect);
    
+   // update matrix
    _context.viewport = _viewport;
    
    _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
@@ -256,8 +254,10 @@
       [self _beginFrame];
       
       _frameView.frameCount = frameCount;
-      _frameView.size = CGSizeMake(width, height);
-      [_frameView updateFrame:data pitch:pitch];
+      if (data && width && height) {
+         _frameView.size = CGSizeMake(width, height);
+         [_frameView updateFrame:data pitch:pitch];
+      }
       
       [self _drawViews:video_info];
       
@@ -277,7 +277,7 @@
          id<MTLRenderCommandEncoder> rce = _context.rce;
          [rce pushDebugGroup:@"overlay"];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
-         [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+         [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
          [_overlay drawWithEncoder:rce];
          [rce popDebugGroup];
@@ -338,7 +338,6 @@
       _context.viewport = _viewport;
    }
    [_context begin];
-   [self _updateUniforms];
 }
 
 - (void)_drawViews:(video_frame_info_t *)video_info
@@ -351,7 +350,7 @@
    
    if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
    {
-      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
       if (_frameView.filter == RTextureFilterNearest)
       {
@@ -410,6 +409,11 @@
    // TODO(sgc): resize all drawables
 }
 
+- (void)setRotation:(unsigned)rotation
+{
+   [_context setRotation:rotation];
+}
+
 - (Uniforms *)viewportMVP
 {
    return &_viewportMVP;
@@ -419,7 +423,7 @@
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
-   [self _updateViewport:size];
+   [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
 }
 
 - (void)drawInMTKView:(MTKView *)view
@@ -897,7 +901,7 @@ typedef struct MTLALIGN(16)
          rce = [cb renderCommandEncoderWithDescriptor:rpd];
       }
 
-#if METAL_DEBUG
+#if DEBUG && METAL_DEBUG
       rce.label = [NSString stringWithFormat:@"pass %d", i];
 #endif
       
@@ -1126,6 +1130,8 @@ typedef struct MTLALIGN(16)
       texture_t *source = &_engine.frame.texture[0];
       for (unsigned i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
+         matrix_float4x4 *mvp = (i == shader->passes-1) ? &_context.uniforms->projectionMatrix : &_engine.mvp;
+         
          /* clang-format off */
          semantics_map_t semantics_map = {
             {
@@ -1154,7 +1160,7 @@ typedef struct MTLALIGN(16)
                   &_engine.luts[0].size_data, sizeof(*_engine.luts)},
             },
             {
-               &_engine.mvp,                  /* MVP */
+               mvp,                           /* MVP */
                &_engine.pass[i].rt.size_data, /* OutputSize */
                &_engine.frame.output_size,    /* FinalViewportSize */
                &_engine.pass[i].frame_count,  /* FrameCount */

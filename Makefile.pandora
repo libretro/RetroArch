@@ -52,4 +52,3 @@ clean:
 	rm -f $(BINDIR)/retroarch-joyconfig
 	rm -f $(PNDDIR)/readme.html
 	rm -f retroarch
-

@@ -75,7 +75,7 @@ static void *x_input_init(const char *joypad_driver)
 
 static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
 {
-   int keycode = XKeysymToKeycode(x11->display, rarch_keysym_lut[(enum retro_key)key]);
+   int keycode = rarch_keysym_lut[(enum retro_key)key];
    return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
@@ -155,23 +155,20 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    unsigned id_plus      = 0;
    int id_minus_key      = 0;
    int id_plus_key       = 0;
-   unsigned sym          = 0;
-   int keycode           = 0;
+   unsigned keycode      = 0;
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
 
-   sym                   = rarch_keysym_lut[(enum retro_key)id_minus_key];
-   keycode               = XKeysymToKeycode(x11->display, sym);
+   keycode               = rarch_keysym_lut[(enum retro_key)id_minus_key];
    if (      binds[id_minus].valid
          && (id_minus_key < RETROK_LAST)
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_minus = -0x7fff;
 
-   sym                   = rarch_keysym_lut[(enum retro_key)id_plus_key];
-   keycode               = XKeysymToKeycode(x11->display, sym);
+   keycode               = rarch_keysym_lut[(enum retro_key)id_plus_key];
    if (      binds[id_plus].valid
          && (id_plus_key < RETROK_LAST)
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
@@ -451,7 +448,6 @@ static void x_input_poll_mouse(x11_input_t *x11)
       }
    }
 }
-
 
 static void x_input_poll(void *data)
 {

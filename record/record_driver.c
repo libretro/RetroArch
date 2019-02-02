@@ -37,6 +37,10 @@
 #include "../list_special.h"
 #include "../paths.h"
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
@@ -54,6 +58,51 @@ static bool streaming_enable                   = false;
 
 static const record_driver_t *recording_driver = NULL;
 void *recording_data                           = NULL;
+
+#ifdef HAVE_THREADS
+static slock_t *s_recording_driver_lock        = NULL;
+#endif
+
+bool recording_driver_lock_inited(void)
+{
+#ifdef HAVE_THREADS
+   return s_recording_driver_lock != NULL;
+#else
+   return false;
+#endif
+}
+
+void recording_driver_lock_init(void)
+{
+#ifdef HAVE_THREADS
+   s_recording_driver_lock = slock_new();
+#endif
+}
+
+void recording_driver_lock_free(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_free(s_recording_driver_lock);
+   s_recording_driver_lock = NULL;
+#endif
+}
+
+void recording_driver_lock(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_lock(s_recording_driver_lock);
+#endif
+}
+
+void recording_driver_unlock(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_unlock(s_recording_driver_lock);
+#endif
+}
 
 /**
  * record_driver_find_ident:
@@ -154,7 +203,6 @@ const record_driver_t *ffemu_find_backend(const char *ident)
 
    return NULL;
 }
-
 
 /**
  * gfx_ctx_init_first:
@@ -366,10 +414,24 @@ bool recording_init(void)
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-         fill_str_dated_filename(buf, game_name,
-                  "mkv", sizeof(buf));
-         fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
-
+         if (settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "mkv", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
+         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "webm", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
+         else
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "gif", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
       }
    }
 
@@ -392,12 +454,14 @@ bool recording_init(void)
       if (streaming_is_enabled())
       {
          params.config = settings->paths.path_stream_config;
-         params.preset = settings->uints.video_stream_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_stream_quality;
       }
       else
       {
          params.config = settings->paths.path_record_config;
-         params.preset = settings->uints.video_record_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_record_quality;
       }
    }
 
@@ -539,7 +603,7 @@ void recording_driver_update_streaming_url(void)
          else
          {
             /* To-Do: Show input box for twitch_stream_key*/
-            RARCH_LOG("[recording] twitch streaming key empty");
+            RARCH_LOG("[recording] twitch streaming key empty\n");
          }
          break;
       }
@@ -553,7 +617,7 @@ void recording_driver_update_streaming_url(void)
          else
          {
             /* To-Do: Show input box for youtube_stream_key*/
-            RARCH_LOG("[recording] youtube streaming key empty");
+            RARCH_LOG("[recording] youtube streaming key empty\n");
          }
          break;
       }

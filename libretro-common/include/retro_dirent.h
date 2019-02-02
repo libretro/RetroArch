@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_dirent.h).
@@ -23,12 +23,17 @@
 #ifndef __RETRO_DIRENT_H
 #define __RETRO_DIRENT_H
 
+#include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
+
+#define DIRENT_REQUIRED_VFS_VERSION 3
+
+void dirent_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 typedef struct RDIR RDIR;
 
@@ -44,11 +49,12 @@ typedef struct RDIR RDIR;
  */
 struct RDIR *retro_opendir(const char *name);
 
+struct RDIR *retro_opendir_include_hidden(const char *name, bool include_hidden);
+
 int retro_readdir(struct RDIR *rdir);
 
+/* Deprecated, returns false, left for compatibility */
 bool retro_dirent_error(struct RDIR *rdir);
-
-void retro_dirent_include_hidden(struct RDIR *rdir, bool include_hidden);
 
 const char *retro_dirent_get_name(struct RDIR *rdir);
 
@@ -56,13 +62,14 @@ const char *retro_dirent_get_name(struct RDIR *rdir);
  *
  * retro_dirent_is_dir:
  * @rdir         : pointer to the directory entry.
+ * @unused       : deprecated, included for compatibility reasons, pass NULL
  *
  * Is the directory listing entry a directory?
  *
  * Returns: true if directory listing entry is
  * a directory, false if not.
  */
-bool retro_dirent_is_dir(struct RDIR *rdir, const char *path);
+bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused);
 
 void retro_closedir(struct RDIR *rdir);
 

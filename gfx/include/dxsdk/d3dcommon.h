@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -45,13 +41,11 @@ typedef interface ID3D10Blob ID3D10Blob;
 
 #endif 	/* __ID3D10Blob_FWD_DEFINED__ */
 
-
 #ifndef __ID3DDestructionNotifier_FWD_DEFINED__
 #define __ID3DDestructionNotifier_FWD_DEFINED__
 typedef interface ID3DDestructionNotifier ID3DDestructionNotifier;
 
 #endif 	/* __ID3DDestructionNotifier_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -60,7 +54,6 @@ typedef interface ID3DDestructionNotifier ID3DDestructionNotifier;
 #ifdef __cplusplus
 extern "C"{
 #endif 
-
 
 /* interface __MIDL_itf_d3dcommon_0000_0000 */
 /* [local] */ 
@@ -351,7 +344,6 @@ typedef struct _D3D_SHADER_MACRO *LPD3D_SHADER_MACRO;
 
 DEFINE_GUID(IID_ID3D10Blob, 0x8ba5fb08, 0x5195, 0x40e2, 0xac, 0x58, 0xd, 0x98, 0x9c, 0x3a, 0x1, 0x2);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0000_v0_0_s_ifspec;
 
@@ -360,7 +352,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0000_v0_0_s_ifspec;
 
 /* interface ID3D10Blob */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3D10Blob;
 
@@ -413,7 +404,6 @@ EXTERN_C const IID IID_ID3D10Blob;
 
 #ifdef COBJMACROS
 
-
 #define ID3D10Blob_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -423,7 +413,6 @@ EXTERN_C const IID IID_ID3D10Blob;
 #define ID3D10Blob_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3D10Blob_GetBufferPointer(This)	\
     ( (This)->lpVtbl -> GetBufferPointer(This) ) 
 
@@ -432,14 +421,9 @@ EXTERN_C const IID IID_ID3D10Blob;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D10Blob_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3dcommon_0000_0001 */
 /* [local] */ 
@@ -452,8 +436,6 @@ typedef ID3DBlob* LPD3DBLOB;
 typedef void ( __stdcall *PFN_DESTRUCTION_CALLBACK )( 
     void *pData);
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0001_v0_0_s_ifspec;
 
@@ -462,7 +444,6 @@ extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0001_v0_0_s_ifspec;
 
 /* interface ID3DDestructionNotifier */
 /* [unique][local][object][uuid] */ 
-
 
 EXTERN_C const IID IID_ID3DDestructionNotifier;
 
@@ -531,7 +512,6 @@ EXTERN_C const IID IID_ID3DDestructionNotifier;
 
 #ifdef COBJMACROS
 
-
 #define ID3DDestructionNotifier_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
@@ -541,7 +521,6 @@ EXTERN_C const IID IID_ID3DDestructionNotifier;
 #define ID3DDestructionNotifier_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
-
 #define ID3DDestructionNotifier_RegisterDestructionCallback(This,callbackFn,pData,pCallbackID)	\
     ( (This)->lpVtbl -> RegisterDestructionCallback(This,callbackFn,pData,pCallbackID) ) 
 
@@ -550,14 +529,9 @@ EXTERN_C const IID IID_ID3DDestructionNotifier;
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3DDestructionNotifier_INTERFACE_DEFINED__ */
-
 
 /* interface __MIDL_itf_d3dcommon_0000_0002 */
 /* [local] */ 
@@ -987,7 +961,6 @@ DEFINE_GUID(WKPDID_CommentStringW,0xd0149dc0,0x90e8,0x4ec8,0x81, 0x44, 0xe9, 0x0
 #define D3D_COMPONENT_MASK_Z   4
 #define D3D_COMPONENT_MASK_W   8
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0002_v0_0_s_ifspec;
 
@@ -1000,5 +973,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3dcommon_0000_0002_v0_0_s_ifspec;
 #endif
 
 #endif
-
-
