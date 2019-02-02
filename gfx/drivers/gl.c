@@ -129,7 +129,7 @@ void context_bind_hw_render(void *data, bool enable)
 }
 
 static void gl_load_texture_data(
-      uint32_t id_data,
+      GLuint id,
       enum gfx_wrap_type wrap_type,
       enum texture_filter_type filter_type,
       unsigned alignment,
@@ -141,7 +141,6 @@ static void gl_load_texture_data(
    bool use_rgba    = video_driver_supports_rgba();
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
-   GLuint id        = (GLuint)id_data;
    bool have_mipmap = gl_check_capability(GL_CAPS_MIPMAP);
 
    if (!have_mipmap)
@@ -202,10 +201,9 @@ static bool gl_add_lut(
       bool lut_mipmap,
       unsigned lut_filter,
       enum gfx_wrap_type lut_wrap_type,
-      unsigned i, void *textures_data)
+      unsigned i, GLuint *textures_lut)
 {
    struct texture_image img;
-   GLuint *textures_lut                 = (GLuint*)textures_data;
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
 
    img.width         = 0;
