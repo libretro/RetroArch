@@ -165,14 +165,6 @@ static void gl2_renderchain_bind_backbuffer(void *data,
 
 void context_bind_hw_render(void *data, bool enable);
 
-void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size);
-
 void gl_set_viewport(
       gl_t *gl, video_frame_info_t *video_info,
       unsigned viewport_width,
