@@ -52,7 +52,11 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#ifdef __CELLOS_LV2__
+#include <sys/poll.h>
+#else
 #include <poll.h>
+#endif
 #endif
 #include <fcntl.h>
 #ifdef _WIN32
