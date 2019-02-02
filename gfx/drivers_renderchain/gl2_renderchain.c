@@ -1218,7 +1218,7 @@ error:
    return false;
 }
 
-void gl2_renderchain_free_internal(void *data, void *chain_data)
+void gl2_renderchain_chain_free(void *data, void *chain_data)
 {
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
 
@@ -1228,7 +1228,7 @@ void gl2_renderchain_free_internal(void *data, void *chain_data)
    free(chain);
 }
 
-static void *gl2_renderchain_new(void)
+static void *gl2_renderchain_chain_new(void)
 {
    gl2_renderchain_data_t *renderchain = 
       (gl2_renderchain_data_t*)calloc(1, sizeof(*renderchain));
@@ -1523,7 +1523,7 @@ static void gl2_renderchain_fence_free(void *data,
 #endif
 }
 
-static void gl2_renderchain_init_textures_reference(
+static void gl2_renderchain_init_texture_reference(
       gl_t *gl, void *chain_data, unsigned i,
       unsigned internal_fmt, unsigned texture_fmt,
       unsigned texture_type)
@@ -1578,7 +1578,7 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
 gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                        /* set_coords */
    NULL,                                        /* set_mvp    */
-   gl2_renderchain_init_textures_reference,
+   gl2_renderchain_init_texture_reference,
    gl2_renderchain_fence_iterate,
    gl2_renderchain_fence_free,
    gl2_renderchain_readback,
@@ -1591,15 +1591,15 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_free_vao,
    gl2_renderchain_bind_vao,
    gl2_renderchain_unbind_vao,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* disable_client_arrays */
+   NULL, /* ff_vertex */
+   NULL, /* ff_matrix */
    gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
    gl2_renderchain_read_viewport,
    gl2_renderchain_bind_prev_texture,
-   gl2_renderchain_free_internal,
-   gl2_renderchain_new,
+   gl2_renderchain_chain_free,
+   gl2_renderchain_chain_new,
    gl2_renderchain_init,
    gl2_renderchain_init_hw_render,
    gl2_renderchain_free,
