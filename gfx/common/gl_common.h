@@ -408,6 +408,13 @@ static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
    return true;
 }
 
+bool gl_add_lut(
+      const char *lut_path,
+      bool lut_mipmap,
+      unsigned lut_filter,
+      enum gfx_wrap_type lut_wrap_type,
+      unsigned i, void *textures_data);
+
 RETRO_END_DECLS
 
 #endif

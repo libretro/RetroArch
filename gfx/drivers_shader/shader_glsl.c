@@ -216,7 +216,12 @@ static bool gl_glsl_load_luts(
 
    for (i = 0; i < num_luts; i++)
    {
-      if (!gl_glsl_add_lut(shader, i, textures_lut))
+      if (!gl_add_lut(
+               shader->lut[i].path,
+               shader->lut[i].mipmap,
+               shader->lut[i].filter,
+               shader->lut[i].wrap,
+               i, textures_lut))
          return false;
    }
 
