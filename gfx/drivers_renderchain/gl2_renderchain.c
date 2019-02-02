@@ -1238,40 +1238,46 @@ static void *gl2_renderchain_new(void)
    return renderchain;
 }
 
-#ifndef HAVE_OPENGLES
 static void gl2_renderchain_bind_vao(void *data,
       void *chain_data)
 {
+#ifndef HAVE_OPENGLES
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
    if (!chain)
       return;
    glBindVertexArray(chain->vao);
+#endif
 }
 
 static void gl2_renderchain_unbind_vao(void *data,
       void *chain_data)
 {
+#ifndef HAVE_OPENGLES
    glBindVertexArray(0);
+#endif
 }
 
 static void gl2_renderchain_new_vao(void *data,
       void *chain_data)
 {
+#ifndef HAVE_OPENGLES
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
    if (!chain)
       return;
    glGenVertexArrays(1, &chain->vao);
+#endif
 }
 
 static void gl2_renderchain_free_vao(void *data,
       void *chain_data)
 {
+#ifndef HAVE_OPENGLES
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
    if (!chain)
       return;
    glDeleteVertexArrays(1, &chain->vao);
-}
 #endif
+}
 
 static void gl2_renderchain_restore_default_state(
       gl_t *gl,
@@ -1430,25 +1436,29 @@ static void gl2_renderchain_copy_frame(
 #endif
 }
 
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
 static void gl2_renderchain_bind_pbo(unsigned idx)
 {
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx);
+#endif
 }
 
 static void gl2_renderchain_unbind_pbo(void *data,
       void *chain_data)
 {
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#endif
 }
 
 static void gl2_renderchain_init_pbo(unsigned size,
       const void *data)
 {
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    glBufferData(GL_PIXEL_PACK_BUFFER, size,
          (const GLvoid*)data, GL_STREAM_READ);
-}
 #endif
+}
 
 static void gl2_renderchain_readback(
       gl_t *gl,
@@ -1468,12 +1478,12 @@ static void gl2_renderchain_readback(
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
-#ifndef HAVE_OPENGLES
 static void gl2_renderchain_fence_iterate(
       void *data,
       void *chain_data,
       unsigned hard_sync_frames)
 {
+#ifndef HAVE_OPENGLES
 #ifdef HAVE_GL_SYNC
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
 
@@ -1491,11 +1501,13 @@ static void gl2_renderchain_fence_iterate(
             chain->fence_count * sizeof(void*));
    }
 #endif
+#endif
 }
 
 static void gl2_renderchain_fence_free(void *data,
       void *chain_data)
 {
+#ifndef HAVE_OPENGLES
 #ifdef HAVE_GL_SYNC
    unsigned i;
    gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)chain_data;
@@ -1508,8 +1520,8 @@ static void gl2_renderchain_fence_free(void *data,
    }
    chain->fence_count = 0;
 #endif
-}
 #endif
+}
 
 static void gl2_renderchain_init_textures_reference(
       gl_t *gl, void *chain_data, unsigned i,
@@ -1567,36 +1579,18 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                        /* set_coords */
    NULL,                                        /* set_mvp    */
    gl2_renderchain_init_textures_reference,
-#ifdef HAVE_OPENGLES
-   NULL,
-   NULL,
-#else
    gl2_renderchain_fence_iterate,
    gl2_renderchain_fence_free,
-#endif
    gl2_renderchain_readback,
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    gl2_renderchain_init_pbo,
    gl2_renderchain_bind_pbo,
    gl2_renderchain_unbind_pbo,
-#else
-   NULL,
-   NULL,
-   NULL,
-#endif
    gl2_renderchain_copy_frame,
    gl2_renderchain_restore_default_state,
-#ifdef HAVE_OPENGLES
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#else
    gl2_renderchain_new_vao,
    gl2_renderchain_free_vao,
    gl2_renderchain_bind_vao,
    gl2_renderchain_unbind_vao,
-#endif
    NULL,
    NULL,
    NULL,
