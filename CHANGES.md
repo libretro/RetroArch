@@ -72,8 +72,9 @@
 - UWP: Initial UWP port.
 - VFS: Update to version 3.
 - XBONE: Initial Xbox One port.
-- XMB/OZONE: Add more icons.
-- ???: Easter Egg.
+- XMB/OZONE: Add more icons
+- XMB: Add Automatic Inverted theme
+- ???: Easter Egg
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.

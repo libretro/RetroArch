@@ -3603,6 +3603,10 @@ MSG_HASH(
     "Automatic"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+    "Automatic Inverted"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
     "Menu Color Theme"
     )
