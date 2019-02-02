@@ -193,6 +193,19 @@ static const char *getMountParams(const char *command, char *BlockDevice)
 
 static void create_path_names(void)
 {
+   char cwd[FILENAME_MAX];
+   getcwd(cwd, sizeof(cwd));
+   
+   strcat(cwd, "app");
+   strlcpy(eboot_path, cwd, sizeof(eboot_path));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+
+   strcat(cwd, "/data/retroarch");
+   strlcpy(user_path, cwd, sizeof(user_path));
+
+   // strlcpy(eboot_path, "mc0:/RETROARCH", sizeof(eboot_path));
+   // strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   // strlcpy(user_path, "mc0:/RETROARCH/data/retroarch", sizeof(user_path));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
          "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
