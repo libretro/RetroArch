@@ -254,44 +254,6 @@ static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 }
 
-static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
-{
-   switch (type)
-   {
-#ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
-         return GL_CLAMP_TO_BORDER;
-#else
-      case RARCH_WRAP_BORDER:
-#endif
-      case RARCH_WRAP_EDGE:
-         return GL_CLAMP_TO_EDGE;
-      case RARCH_WRAP_REPEAT:
-         return GL_REPEAT;
-      case RARCH_WRAP_MIRRORED_REPEAT:
-         return GL_MIRRORED_REPEAT;
-      default:
-	 break;
-   }
-
-   return 0;
-}
-
-static INLINE GLenum gl_min_filter_to_mag(GLenum type)
-{
-   switch (type)
-   {
-      case GL_LINEAR_MIPMAP_LINEAR:
-         return GL_LINEAR;
-      case GL_NEAREST_MIPMAP_NEAREST:
-         return GL_NEAREST;
-      default:
-         break;
-   }
-
-   return type;
-}
-
 static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
 {
    gfx_ctx_flags_t flags;
