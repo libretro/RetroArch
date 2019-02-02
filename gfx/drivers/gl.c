@@ -1082,7 +1082,7 @@ static void gl2_renderchain_start_render(
 }
 
 /* Set up render to texture. */
-void gl2_renderchain_init(
+static void gl2_renderchain_init(
       gl_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned fbo_width, unsigned fbo_height)
