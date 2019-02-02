@@ -413,7 +413,6 @@ VIDEO DRIVER
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers_renderchain/gl2_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
