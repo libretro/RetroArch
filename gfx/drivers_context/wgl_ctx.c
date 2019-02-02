@@ -41,6 +41,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../verbosity.h"
 #include "../video_driver.h"
 
 #include "../common/win32_common.h"

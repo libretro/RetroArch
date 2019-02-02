@@ -45,6 +45,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 #define WINDOW_BUFFERS 2
 

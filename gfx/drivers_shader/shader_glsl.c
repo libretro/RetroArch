@@ -36,6 +36,7 @@
 #include "shader_glsl.h"
 #include "../../managers/state_manager.h"
 #include "../../core.h"
+#include "../../verbosity.h"
 
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 

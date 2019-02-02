@@ -32,8 +32,6 @@
 #include <glsym/glsym.h>
 #include <formats/image.h>
 
-#include "../../verbosity.h"
-#include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_driver.h"
 

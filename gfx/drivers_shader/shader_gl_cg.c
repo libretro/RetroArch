@@ -48,6 +48,7 @@
 #include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
+#include "../../verbosity.h"
 #include "../../managers/state_manager.h"
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)

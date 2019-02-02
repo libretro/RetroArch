@@ -46,6 +46,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
+#include "../../verbosity.h"
 
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../common/wayland/idle-inhibit-unstable-v1.h"
