@@ -549,7 +549,6 @@ static void gl2_renderchain_render(
    int i;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
-   video_shader_ctx_info_t shader_info;
    static GLfloat fbo_tex_coords[8]       = {0.0f};
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    struct video_tex_info *fbo_info        = NULL;
@@ -588,11 +587,10 @@ static void gl2_renderchain_render(
 
       gl2_bind_fb(chain->fbo[i]);
 
-      shader_info.data       = gl;
-      shader_info.idx        = i + 1;
-      shader_info.set_active = true;
+      if (gl->shader->use)
+         gl->shader->use(gl, gl->shader_data,
+               i + 1, true);
 
-      video_shader_driver_use(&shader_info);
       glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[i - 1]);
 
       mip_level = i + 1;
@@ -662,11 +660,9 @@ static void gl2_renderchain_render(
    /* Render our FBO texture to back buffer. */
    gl2_renderchain_bind_backbuffer();
 
-   shader_info.data       = gl;
-   shader_info.idx        = chain->fbo_pass + 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
+   if (gl->shader->use)
+      gl->shader->use(gl, gl->shader_data,
+            chain->fbo_pass + 1, true);
 
    glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[chain->fbo_pass - 1]);
 
@@ -2014,6 +2010,7 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
+   bool ret                        = false;
    enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
    const char *shader_path         = retroarch_get_shader_preset();
 
@@ -2053,14 +2050,23 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.path                    = shader_path;
 
    if (video_shader_driver_init(&init_data))
+   {
+      gl->shader                     = init_data.shader;
+      gl->shader_data                = init_data.shader_data;
       return true;
+   }
 
    RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
 
    init_data.shader = NULL;
    init_data.path   = NULL;
 
-   return video_shader_driver_init(&init_data);
+   ret              = video_shader_driver_init(&init_data);
+
+   gl->shader       = init_data.shader;
+   gl->shader_data  = init_data.shader_data;
+
+   return ret;
 }
 
 static uintptr_t gl_get_current_framebuffer(void *data)
@@ -3673,13 +3679,18 @@ static bool gl_set_shader(void *data,
 
       video_shader_driver_init(&init_data);
 
+      gl->shader       = init_data.shader;
+      gl->shader_data  = init_data.shader_data;
+
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
       goto error;
    }
 
-   if (gl)
-      gl_update_tex_filter_frame(gl);
+   gl->shader       = init_data.shader;
+   gl->shader_data  = init_data.shader_data;
+
+   gl_update_tex_filter_frame(gl);
 
    video_shader_driver_get_prev_textures(&texture_info);
 

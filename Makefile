@@ -260,9 +260,6 @@ install: $(TARGET)
 		if test $(HAVE_MATERIALUI) = 1; then \
 			cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \
-		if test $(HAVE_NUKLEAR) = 1; then \
-			cp -r media/assets/nuklear/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		fi; \
 		if test $(HAVE_XMB) = 1; then \
 			cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \

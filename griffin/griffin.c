@@ -1307,13 +1307,6 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_NUKLEAR
-#include "../menu/drivers/nuklear/nk_common.c"
-#include "../menu/drivers/nuklear/nk_menu.c"
-#include "../menu/drivers/nuklear/nk_wnd_debug.c"
-#include "../menu/drivers/nuklear.c"
-#endif
-
 #ifdef HAVE_ZARCH
 #include "../menu/drivers/zarch.c"
 #endif

@@ -15,7 +15,6 @@ HAVE_XMB=auto              # XMB menu
 HAVE_OZONE=auto            # Ozone menu
 HAVE_STRIPES=no            # Stripes menu
 HAVE_ZARCH=no              # Zarch menu
-HAVE_NUKLEAR=no            # Nuklear menu
 HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_SSL=auto              # SSL/mbedtls support
 C89_SSL=no

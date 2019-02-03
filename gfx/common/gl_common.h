@@ -239,6 +239,8 @@ struct gl
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
 
+   const shader_backend_t *shader;
+   void *shader_data;
    void *renderchain_data;
    void *ctx_data;
    const gfx_ctx_driver_t *ctx_driver;

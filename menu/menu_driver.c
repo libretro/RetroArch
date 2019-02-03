@@ -88,9 +88,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
-#if defined(HAVE_NUKLEAR)
-   &menu_ctx_nuklear,
-#endif
 #if defined(HAVE_OZONE)
    &menu_ctx_ozone,
 #endif

@@ -125,8 +125,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static void (*video_driver_cb_shader_use)(void *data,
-      void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data,
       void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
@@ -2739,14 +2737,6 @@ bool video_driver_texture_unload(uintptr_t *id)
    return true;
 }
 
-static void video_shader_driver_use_null(void *data,
-      void *shader_data, unsigned idx, bool set_active)
-{
-   (void)data;
-   (void)idx;
-   (void)set_active;
-}
-
 static bool video_driver_cb_set_coords(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
@@ -3468,13 +3458,6 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-void video_shader_driver_use(video_shader_ctx_info_t *shader_info)
-{
-   if (current_shader && current_shader->use)
-      current_shader->use(shader_info->data, current_shader_data,
-            shader_info->idx, shader_info->set_active);
-}
-
 void video_shader_driver_set_parameter(struct uniform_info *param)
 {
    if (current_shader && current_shader->set_uniform_parameter)
@@ -3621,13 +3604,6 @@ static void video_shader_driver_reset_to_defaults(void)
    if (!current_shader->set_coords)
       current_shader->set_coords        = video_driver_cb_set_coords;
 
-   if (current_shader->use)
-      video_driver_cb_shader_use        = current_shader->use;
-   else
-   {
-      current_shader->use               = video_shader_driver_use_null;
-      video_driver_cb_shader_use        = video_shader_driver_use_null;
-   }
    if (!current_shader->set_params)
       current_shader->set_params        = video_shader_driver_set_params_null;
    if (!current_shader->shader_scale)
@@ -3677,6 +3653,7 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
       init->shader->init_menu_shaders(tmp);
    }
 
+   init->shader_data      = tmp;
    current_shader_data    = tmp;
 
    RARCH_LOG("Resetting shader to defaults ... \n");

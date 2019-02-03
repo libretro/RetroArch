@@ -396,8 +396,6 @@ static void gl_raster_font_render_message(
 static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
       gl_raster_t *font, bool full_screen)
 {
-   video_shader_ctx_info_t shader_info;
-
    video_driver_set_viewport(width, height, full_screen, false);
 
    glEnable(GL_BLEND);
@@ -406,11 +404,9 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   shader_info.data       = NULL;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
+   if (font->gl->shader && font->gl->shader->use)
+      font->gl->shader->use(font->gl,
+            font->gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
 
 static void gl_raster_font_render_msg(
