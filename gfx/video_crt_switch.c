@@ -30,6 +30,7 @@
 
 #if defined(HAVE_VIDEOCORE)
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+static void crt_rpi_switch(int width, int height, float hz);
 #endif
 
 static unsigned ra_core_width     = 0;
@@ -227,13 +228,13 @@ void crt_video_restore(void)
 #if defined(HAVE_VIDEOCORE)
 static void crt_rpi_switch(int width, int height, float hz)
 {
+   char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
    VCHI_CONNECTION_T *vchi_connection = NULL;
-   char buffer[1024];
-   static char output[250]         = {0};   
-   static char output1[250]         = {0}; 
-   static char output2[250]         = {0}; 
-   static char set_hdmi[250]       ={0};
+   static char output[250]             = {0};   
+   static char output1[250]            = {0}; 
+   static char output2[250]            = {0}; 
+   static char set_hdmi[250]           = {0};
    static char set_hdmi_timing[250]    = {0};
    int i              = 0;
    int hfp            = 0;
@@ -331,7 +332,7 @@ static void crt_rpi_switch(int width, int height, float hz)
    }
    /* above code is the modeline generator */
 
-   snprintf(set_hdmi_timing, sizeof(set_hdmi_timings),
+   snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
          "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
          width, hfp, hsp, hbp, height, vfp,vsp, vbp,
          hz, ip_flag, pixel_clock); 
