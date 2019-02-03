@@ -29,7 +29,7 @@
 #endif
 
 #if defined(HAVE_VIDEOCORE)
-#include "../include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
 #endif
 
 static unsigned ra_core_width     = 0;
