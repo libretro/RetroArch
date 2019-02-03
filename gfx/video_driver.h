@@ -1206,8 +1206,6 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init);
 
 bool video_shader_driver_get_feedback_pass(unsigned *data);
 
-bool video_shader_driver_mipmap_input(unsigned *index);
-
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);

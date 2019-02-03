@@ -3669,11 +3669,6 @@ bool video_shader_driver_get_feedback_pass(unsigned *data)
    return current_shader->get_feedback_pass(current_shader_data, data);
 }
 
-bool video_shader_driver_mipmap_input(unsigned *index)
-{
-   return current_shader->mipmap_input(current_shader_data, *index);
-}
-
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
 {
    if (!scaler || !scaler->scale)

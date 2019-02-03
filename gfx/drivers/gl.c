@@ -595,7 +595,9 @@ static void gl2_renderchain_render(
 
       mip_level = i + 1;
 
-      if (video_shader_driver_mipmap_input(&mip_level)
+      if (
+            gl->shader->mipmap_input &&
+            gl->shader->mipmap_input(gl->shader_data, mip_level)
             && gl->have_mipmap)
          glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -668,8 +670,10 @@ static void gl2_renderchain_render(
 
    mip_level = chain->fbo_pass + 1;
 
-   if (video_shader_driver_mipmap_input(&mip_level)
-         && gl->have_mipmap)
+   if (
+            gl->shader->mipmap_input &&
+            gl->shader->mipmap_input(gl->shader_data, mip_level) &&
+            gl->have_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -864,7 +868,7 @@ static void gl_create_fbo_texture(gl_t *gl,
    GLuint base_mip_filt          = settings->bools.video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
    unsigned mip_level            = i + 2;
-   bool mipmapped                = video_shader_driver_mipmap_input(&mip_level);
+   bool mipmapped                = gl->shader->mipmap_input(gl->shader_data, mip_level);
    GLenum min_filter             = mipmapped ? base_mip_filt : base_filt;
 
    filter_type.index             = i + 2;
@@ -3444,7 +3448,7 @@ static void *gl_init(const video_info_t *video,
    gl_set_shader_viewports(gl);
 
    mip_level            = 1;
-   gl->tex_mipmap       = video_shader_driver_mipmap_input(&mip_level);
+   gl->tex_mipmap       = gl->shader->mipmap_input(gl->shader_data, mip_level);
    shader_filter.index  = 1;
    shader_filter.smooth = &force_smooth;
 
@@ -3599,7 +3603,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    video_shader_driver_wrap_type(&wrap_info);
 
    wrap_mode             = gl_wrap_type_to_enum(wrap_info.type);
-   gl->tex_mipmap        = video_shader_driver_mipmap_input(&mip_level);
+   gl->tex_mipmap        = gl->shader->mipmap_input(gl->shader_data, mip_level);
    gl->video_info.smooth = smooth;
    new_filt              = gl->tex_mipmap ? (smooth ?
          GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
