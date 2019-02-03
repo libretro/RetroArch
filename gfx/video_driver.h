@@ -1180,6 +1180,8 @@ enum gfx_ctx_api video_context_driver_get_api(void);
 
 void video_context_driver_free(void);
 
+bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
+
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);

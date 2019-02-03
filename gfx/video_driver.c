@@ -3458,6 +3458,14 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
+bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
+{
+   if (!ident || !current_shader)
+      return false;
+   ident->ident = current_shader->ident;
+   return true;
+}
+
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    void *video_driver                       = video_driver_get_ptr(true);

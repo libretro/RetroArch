@@ -3413,7 +3413,9 @@ static void *gl_init(const video_info_t *video,
       goto error;
    }
 
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl->shader->ident);
+   video_shader_driver_get_ident(&ident_info);
+
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", ident_info.ident);
 
    if (!gl_shader_init(gl, ctx_driver, hwr))
    {
