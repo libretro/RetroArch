@@ -4087,6 +4087,11 @@ static float gl_get_refresh_rate(void *data)
 static void gl_set_mvp(void *data, void *shader_data,
       const void *mat_data)
 {
+   gl_t *gl = (gl_t*)data;
+
+   if (gl->shader && gl->shader->set_mvp)
+      gl->shader->set_mvp(gl, gl->shader_data,
+            mat_data);
 }
 
 static uint32_t gl_get_flags(void *data)

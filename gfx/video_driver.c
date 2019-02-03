@@ -3614,15 +3614,9 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
    if (!mvp || !mvp->matrix)
       return;
 
-   if (current_shader && current_shader->set_mvp)
-      current_shader->set_mvp(mvp->data,
+   if (video_driver_poke && video_driver_poke->set_mvp)
+      video_driver_poke->set_mvp(mvp->data,
             current_shader_data, mvp->matrix);
-   else
-   {
-      if (video_driver_poke && video_driver_poke->set_mvp)
-         video_driver_poke->set_mvp(mvp->data,
-               current_shader_data, mvp->matrix);
-   }
 }
 
 float video_driver_get_refresh_rate(void)
