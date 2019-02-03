@@ -1099,17 +1099,24 @@ static void gl2_renderchain_init(
 
    video_driver_get_size(&width, &height);
 
-   scaler.idx   = 1;
-   scaler.scale = &scale;
+   scale.valid         = false;
+   scaler.idx          = 1;
+   scaler.scale        = &scale;
 
-   video_shader_driver_scale(&scaler);
+   if (gl->shader->shader_scale)
+      gl->shader->shader_scale(gl->shader_data,
+            1, scaler.scale);
 
-   scaler.idx   = shader_info.num;
-   scaler.scale = &scale_last;
+   scale_last.valid   = false;
+   scaler.idx         = shader_info.num;
+   scaler.scale       = &scale_last;
 
-   video_shader_driver_scale(&scaler);
+   if (gl->shader->shader_scale)
+      gl->shader->shader_scale(gl->shader_data,
+            shader_info.num, scaler.scale);
 
-   /* we always want FBO to be at least initialized on startup for consoles */
+   /* we always want FBO to be at least initialized 
+    * on startup for consoles */
    if (shader_info.num == 1 && !scale.valid)
       return;
 
@@ -1135,10 +1142,13 @@ static void gl2_renderchain_init(
 
    for (i = 1; i < chain->fbo_pass; i++)
    {
-      scaler.idx   = i + 1;
-      scaler.scale = &chain->fbo_scale[i];
+      chain->fbo_scale[i].valid = false;
+      scaler.idx                = i + 1;
+      scaler.scale              = &chain->fbo_scale[i];
 
-      video_shader_driver_scale(&scaler);
+      if (gl->shader->shader_scale)
+         gl->shader->shader_scale(gl->shader_data,
+               i + 1, scaler.scale);
 
       if (!chain->fbo_scale[i].valid)
       {

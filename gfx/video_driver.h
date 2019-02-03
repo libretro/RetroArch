@@ -1192,8 +1192,6 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init);
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
-bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
-
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
