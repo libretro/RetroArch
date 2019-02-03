@@ -861,7 +861,7 @@ static void gl_create_fbo_texture(gl_t *gl,
       unsigned i, GLuint texture)
 {
    GLenum mag_filter, wrap_enum;
-   video_shader_ctx_wrap_t wrap  = {0};
+   enum gfx_wrap_type wrap_type;
    bool fp_fbo                   = false;
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
@@ -881,11 +881,10 @@ static void gl_create_fbo_texture(gl_t *gl,
    }
 
    mag_filter = gl_min_filter_to_mag(min_filter);
-   wrap.idx   = i + 2;
 
-   video_shader_driver_wrap_type(&wrap);
+   wrap_type  = gl->shader->wrap_type(gl->shader_data, i + 2);
 
-   wrap_enum  = gl_wrap_type_to_enum(wrap.type);
+   wrap_enum  = gl_wrap_type_to_enum(wrap_type);
 
    gl_bind_texture(texture, wrap_enum, mag_filter, min_filter);
 
@@ -3229,13 +3228,13 @@ static bool renderchain_gl_init_first(void **renderchain_handle)
 static void *gl_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   enum gfx_wrap_type wrap_type;
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
    settings_t *settings                 = config_get_ptr();
-   video_shader_ctx_wrap_t wrap_info    = {0};
    int interval                         = 0;
    unsigned mip_level                   = 0;
    unsigned win_width                   = 0;
@@ -3465,11 +3464,10 @@ static void *gl_init(const video_info_t *video,
 
    gl->tex_mag_filter = gl_min_filter_to_mag(gl->tex_min_filter);
 
-   wrap_info.idx      = 1;
+   wrap_type     = gl->shader->wrap_type(
+         gl->shader_data, 1);
 
-   video_shader_driver_wrap_type(&wrap_info);
-
-   gl->wrap_mode      = gl_wrap_type_to_enum(wrap_info.type);
+   gl->wrap_mode      = gl_wrap_type_to_enum(wrap_type);
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -3583,25 +3581,22 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
-   video_shader_ctx_wrap_t wrap_info;
+   enum gfx_wrap_type wrap_type;
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
-
-   wrap_info.idx                     = 0;
-   wrap_info.type                    = RARCH_WRAP_BORDER;
 
    gl_context_bind_hw_render(gl, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
             1, &smooth))
-      smooth = settings->bools.video_smooth;
+      smooth             = settings->bools.video_smooth;
 
-   mip_level                         = 1;
-   wrap_info.idx                     = 1;
+   mip_level             = 1;
 
-   video_shader_driver_wrap_type(&wrap_info);
+   wrap_type             = gl->shader->wrap_type(
+         gl->shader_data, 1);
 
-   wrap_mode             = gl_wrap_type_to_enum(wrap_info.type);
+   wrap_mode             = gl_wrap_type_to_enum(wrap_type);
    gl->tex_mipmap        = gl->shader->mipmap_input(gl->shader_data, mip_level);
    gl->video_info.smooth = smooth;
    new_filt              = gl->tex_mipmap ? (smooth ?

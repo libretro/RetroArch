@@ -3512,12 +3512,6 @@ bool video_shader_driver_deinit(void)
    return true;
 }
 
-static enum gfx_wrap_type video_shader_driver_wrap_type_null(
-      void *data, unsigned index)
-{
-   return RARCH_WRAP_BORDER;
-}
-
 static bool video_driver_cb_set_mvp(void *data,
       void *shader_data, const void *mat_data)
 {
@@ -3552,8 +3546,6 @@ static void video_shader_driver_reset_to_defaults(void)
    if (!current_shader)
       return;
 
-   if (!current_shader->wrap_type)
-      current_shader->wrap_type         = video_shader_driver_wrap_type_null;
    if (current_shader->set_mvp)
       video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
    else
@@ -3645,13 +3637,6 @@ bool video_shader_driver_compile_program(
       return current_shader->compile_program(program_info->data,
             program_info->idx, NULL, program_info);
    return false;
-}
-
-bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
-{
-   wrap->type = current_shader->wrap_type(
-         current_shader_data, wrap->idx);
-   return true;
 }
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)

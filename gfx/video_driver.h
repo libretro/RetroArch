@@ -306,12 +306,6 @@ typedef struct video_shader_ctx_filter
    bool *smooth;
 } video_shader_ctx_filter_t;
 
-typedef struct video_shader_ctx_wrap
-{
-   unsigned idx;
-   enum gfx_wrap_type type;
-} video_shader_ctx_wrap_t;
-
 typedef struct video_shader_ctx
 {
    struct video_shader *data;
@@ -1209,8 +1203,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
-
-bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 float video_driver_get_refresh_rate(void);
 
