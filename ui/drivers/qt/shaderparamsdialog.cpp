@@ -28,7 +28,6 @@ extern "C" {
 #include <file/file_path.h>
 #include "../../../command.h"
 #include "../../../configuration.h"
-#include "../../../gfx/video_driver.h"
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"

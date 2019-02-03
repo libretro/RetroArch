@@ -3562,6 +3562,16 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    return true;
 }
 
+bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
+{
+   if (!shader_info)
+      return false;
+
+   shader_info->num = current_shader->num_shaders(current_shader_data);
+
+   return true;
+}
+
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
    if (current_shader && current_shader->set_coords)
