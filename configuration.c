@@ -300,7 +300,6 @@ enum menu_driver_enum
    MENU_MATERIALUI,
    MENU_XMB,
    MENU_STRIPES,
-   MENU_NUKLEAR,
    MENU_OZONE,
    MENU_NULL
 };
@@ -1095,8 +1094,6 @@ const char *config_get_default_menu(void)
          return "xmb";
       case MENU_STRIPES:
          return "stripes";
-      case MENU_NUKLEAR:
-         return "nuklear";
       case MENU_NULL:
          break;
    }
