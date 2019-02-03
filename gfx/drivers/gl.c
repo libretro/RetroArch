@@ -1091,10 +1091,9 @@ static void gl2_renderchain_init(
    video_shader_ctx_info_t shader_info;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!video_shader_driver_info(&shader_info))
-      return;
+   shader_info.num = gl->shader->num_shaders(gl->shader_data);
 
-   if (!gl || shader_info.num == 0)
+   if (shader_info.num == 0)
       return;
 
    video_driver_get_size(&width, &height);
@@ -3439,11 +3438,7 @@ static void *gl_init(const video_info_t *video,
       gl->textures             = MAX(minimum + 1, gl->textures);
    }
 
-   if (!video_shader_driver_info(&shader_info))
-   {
-      RARCH_ERR("[GL]: Shader driver info check failed.\n");
-      goto error;
-   }
+   shader_info.num = gl->shader->num_shaders(gl->shader_data);
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
    RARCH_LOG("[GL]: Loaded %u program(s).\n",

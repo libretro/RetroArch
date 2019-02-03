@@ -1182,17 +1182,15 @@ void video_context_driver_free(void);
 
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
 
-bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
-
 bool video_shader_driver_deinit(void);
 
 bool video_shader_driver_init_first(void);
 
+bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
+
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
-
-bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
