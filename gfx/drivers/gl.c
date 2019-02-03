@@ -547,6 +547,7 @@ static void gl2_renderchain_render(
       const struct video_tex_info *feedback_info)
 {
    int i;
+   video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    static GLfloat fbo_tex_coords[8]       = {0.0f};
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
@@ -625,9 +626,10 @@ static void gl2_renderchain_render(
 
       gl->coords.vertices = 4;
 
-      if (gl->shader->set_coords)
-         gl->shader->set_coords(gl, gl->shader_data,
-               (const struct video_coords*)&gl->coords);
+      coords.handle_data  = NULL;
+      coords.data         = &gl->coords;
+
+      video_driver_set_coords(&coords);
 
       video_info->cb_set_mvp(gl,
             video_info->shader_data, &gl->mvp);
@@ -700,9 +702,10 @@ static void gl2_renderchain_render(
 
    gl->coords.vertices  = 4;
 
-   if (gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data,
-            (const struct video_coords*)&gl->coords);
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
+
+   video_driver_set_coords(&coords);
 
    video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp);
@@ -1953,6 +1956,7 @@ static void gl_overlay_tex_geom(void *data,
 
 static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
+   video_shader_ctx_coords_t coords;
    unsigned i;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
@@ -1972,9 +1976,10 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   if (gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data,
-            (const struct video_coords*)&gl->coords);
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
+
+   video_driver_set_coords(&coords);
 
    video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
@@ -2289,6 +2294,7 @@ static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
 {
+   video_shader_ctx_coords_t coords_data;
    video_coords_t coords;
    struct uniform_info uniform_param;
    float colors[4];
@@ -2346,6 +2352,9 @@ static void gl_render_osd_background(
    coords.lut_tex_coord    = dummy;
    coords.vertices         = vertices_total;
 
+   coords_data.handle_data = NULL;
+   coords_data.data        = &coords;
+
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
@@ -2353,9 +2362,7 @@ static void gl_render_osd_background(
       video_info->shader_driver->use(gl,
             video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
-   if (gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data,
-            (const struct video_coords*)&coords);
+   video_driver_set_coords(&coords_data);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2429,6 +2436,7 @@ static struct video_shader *gl_get_current_shader(void *data)
 #if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
+   video_shader_ctx_coords_t coords;
    GLfloat color[16];
    unsigned width         = video_info->width;
    unsigned height        = video_info->height;
@@ -2462,9 +2470,10 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    gl->coords.vertices    = 4;
 
-   if (gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data,
-            (const struct video_coords*)&gl->coords);
+   coords.handle_data     = NULL;
+   coords.data            = &gl->coords;
+
+   video_driver_set_coords(&coords);
 
    video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
@@ -2517,6 +2526,7 @@ static bool gl_frame(void *data, const void *frame,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
    gl_t                            *gl = (gl_t*)data;
@@ -2663,10 +2673,10 @@ static bool gl_frame(void *data, const void *frame,
       gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertices  = 4;
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
 
-   if (gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data,
-            (const struct video_coords*)&gl->coords);
+   video_driver_set_coords(&coords);
 
    video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
@@ -4069,10 +4079,6 @@ static void gl_unload_texture(void *data, uintptr_t id)
 static void gl_set_coords(void *handle_data, void *shader_data,
       const struct video_coords *coords)
 {
-   gl_t *gl = (gl_t*)handle_data;
-
-   if (gl->shader && gl->shader->set_coords)
-      gl->shader->set_coords(gl, gl->shader_data, coords);
 }
 
 static float gl_get_refresh_rate(void *data)

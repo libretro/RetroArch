@@ -257,7 +257,7 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font,
       font->atlas->dirty   = false;
    }
 
-   coords_data.handle_data = font->gl;
+   coords_data.handle_data = NULL;
    coords_data.data        = coords;
 
    video_driver_set_coords(&coords_data);

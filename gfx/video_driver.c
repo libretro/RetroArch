@@ -2737,6 +2737,17 @@ bool video_driver_texture_unload(uintptr_t *id)
    return true;
 }
 
+static bool video_driver_cb_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   video_shader_ctx_coords_t ctx_coords;
+   ctx_coords.handle_data = handle_data;
+   ctx_coords.data        = coords;
+
+   video_driver_set_coords(&ctx_coords);
+   return true;
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    bool is_perfcnt_enable            = false;
@@ -3503,6 +3514,8 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->set_mvp           = video_driver_cb_set_mvp;
       video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
    }
+   if (!current_shader->set_coords)
+      current_shader->set_coords        = video_driver_cb_set_coords;
 }
 
 /* Finds first suitable shader context driver. */
@@ -3551,10 +3564,17 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
-   if (video_driver_poke && video_driver_poke->set_coords)
-      video_driver_poke->set_coords(coords->handle_data,
+   if (current_shader && current_shader->set_coords)
+      current_shader->set_coords(coords->handle_data,
             current_shader_data,
             (const struct video_coords*)coords->data);
+   else
+   {
+      if (video_driver_poke && video_driver_poke->set_coords)
+         video_driver_poke->set_coords(coords->handle_data,
+               current_shader_data,
+               (const struct video_coords*)coords->data);
+   }
 }
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
