@@ -164,39 +164,6 @@ void fill_pathname_application_special(char *s,
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
          }
          break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:
-#ifdef HAVE_ZARCH
-         {
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
-#ifdef HAVE_ZARCH
-         {
-            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            s1[0]    = '\0';
-
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
-            fill_pathname_join(s,
-                  s1, "Roboto-Condensed.ttf", len);
-
-            free(s1);
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH:
-#ifdef HAVE_ZARCH
-         {
-            settings_t *settings     = config_get_ptr();
-            fill_pathname_join(s,
-                  settings->paths.directory_assets,
-                  "zarch",
-                  len);
-         }
-#endif
-         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {

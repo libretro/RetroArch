@@ -203,7 +203,6 @@
 		05A8C53B20DB72F000FF7857 /* xui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xui.cpp; sourceTree = "<group>"; };
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
 		05A8C53E20DB72F000FF7857 /* null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null.c; sourceTree = "<group>"; };
-		05A8C53F20DB72F000FF7857 /* zarch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = zarch.c; sourceTree = "<group>"; };
 		05A8C54020DB72F000FF7857 /* materialui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = materialui.c; sourceTree = "<group>"; };
 		05A8C54120DB72F000FF7857 /* menu_cbs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs.c; sourceTree = "<group>"; };
 		05A8C54220DB72F000FF7857 /* menu_networking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_networking.h; sourceTree = "<group>"; };
@@ -833,7 +832,6 @@
 				05EFAFC22191D64200D27059 /* stripes.c */,
 				05A8C53220DB72F000FF7857 /* xmb.c */,
 				05A8C53B20DB72F000FF7857 /* xui.cpp */,
-				05A8C53F20DB72F000FF7857 /* zarch.c */,
 			);
 			path = drivers;
 			sourceTree = "<group>";

@@ -254,9 +254,6 @@ install: $(TARGET)
 	@if test -d media/assets && test $(HAVE_ASSETS); then \
 		echo "Installing media assets..."; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets; \
-		if test $(HAVE_ZARCH) = 1; then \
-			cp -r media/assets/zarch/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		fi; \
 		if test $(HAVE_MATERIALUI) = 1; then \
 			cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \
