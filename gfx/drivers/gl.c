@@ -630,7 +630,7 @@ static void gl2_renderchain_render(
                (const struct video_coords*)&gl->coords);
 
       video_info->cb_set_mvp(gl,
-            video_info->shader_data, &gl->mvp);
+            gl->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -705,7 +705,7 @@ static void gl2_renderchain_render(
             (const struct video_coords*)&gl->coords);
 
    video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp);
+         gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1963,9 +1963,9 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (gl->shader->use)
+      gl->shader->use(gl,
+            gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -1977,7 +1977,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
             (const struct video_coords*)&gl->coords);
 
    video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+         gl->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -2234,9 +2234,8 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
 
    for (i = 0; i < 2; i++)
    {
-      if (video_info.shader_driver && video_info.shader_driver->use)
-         video_info.shader_driver->use(gl,
-               video_info.shader_data, i, true);
+      if (gl->shader->use)
+         gl->shader->use(gl, gl->shader_data, i, true);
 
       gl_set_viewport(gl, &video_info,
             width, height, false, true);
@@ -2349,9 +2348,9 @@ static void gl_render_osd_background(
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (gl->shader->use)
+      gl->shader->use(gl,
+            gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    if (gl->shader->set_coords)
       gl->shader->set_coords(gl, gl->shader_data,
@@ -2362,7 +2361,7 @@ static void gl_render_osd_background(
    glBlendEquation(GL_FUNC_ADD);
 
    video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+         gl->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -2456,9 +2455,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (gl->shader->use)
+      gl->shader->use(gl,
+            gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices    = 4;
 
@@ -2467,7 +2466,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
             (const struct video_coords*)&gl->coords);
 
    video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+         gl->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -2531,9 +2530,9 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->core_context_in_use)
       gl2_renderchain_bind_vao(gl->renderchain_data);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, 1, true);
+   if (gl->shader->use)
+      gl->shader->use(gl,
+            gl->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -2668,7 +2667,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->shader->set_coords(gl, gl->shader_data,
             (const struct video_coords*)&gl->coords);
 
-   video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
+   video_info->cb_set_mvp(gl, gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -2727,9 +2726,9 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      if (video_info->shader_driver && video_info->shader_driver->use)
-         video_info->shader_driver->use(gl,
-               video_info->shader_data, 0, true);
+      if (gl->shader->use)
+         gl->shader->use(gl,
+               gl->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
    }
