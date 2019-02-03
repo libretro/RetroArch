@@ -76,14 +76,14 @@ DiscordRichPresence discord_presence;
 
 char* discord_get_own_username(void)
 {
-   if (discord_is_ready)
+   if (discord_is_ready())
       return user_name;
    return NULL;
 }
 
 char* discord_get_own_avatar(void)
 {
-   if (discord_is_ready)
+   if (discord_is_ready())
       return user_avatar;
    return NULL;
 }
