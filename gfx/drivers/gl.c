@@ -2416,11 +2416,12 @@ static void gl_show_mouse(void *data, bool state)
 
 static struct video_shader *gl_get_current_shader(void *data)
 {
-   video_shader_ctx_t shader_info = {0};
+   gl_t                            *gl = (gl_t*)data;
 
-   video_shader_driver_direct_get_current_shader(&shader_info);
+   if (!gl)
+      return NULL;
 
-   return shader_info.data;
+   return gl->shader->get_current_shader(gl->shader_data);
 }
 
 #if defined(HAVE_MENU)

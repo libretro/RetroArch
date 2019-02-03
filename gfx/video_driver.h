@@ -1184,8 +1184,6 @@ bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
-bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
-
 bool video_shader_driver_deinit(void);
 
 bool video_shader_driver_init_first(void);
