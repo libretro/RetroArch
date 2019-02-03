@@ -493,7 +493,9 @@ typedef struct video_frame_info
          const void *mat_data);
 
    void *context_data;
+   void *shader_data;
    void *userdata;
+   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);
