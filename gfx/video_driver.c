@@ -3535,23 +3535,11 @@ video_shader_driver_get_current_shader_null(void *data)
    return NULL;
 }
 
-static void video_shader_driver_set_params_null(
-      void *data, void *shader_data)
-{
-}
-
 static void video_shader_driver_scale_null(void *data,
       unsigned idx, struct gfx_fbo_scale *scale)
 {
    (void)idx;
    (void)scale;
-}
-
-static bool video_shader_driver_mipmap_input_null(
-      void *data, unsigned idx)
-{
-   (void)idx;
-   return false;
 }
 
 static bool video_shader_driver_filter_type_null(
@@ -3584,12 +3572,8 @@ static void video_shader_driver_reset_to_defaults(void)
    if (!current_shader->set_coords)
       current_shader->set_coords        = video_driver_cb_set_coords;
 
-   if (!current_shader->set_params)
-      current_shader->set_params        = video_shader_driver_set_params_null;
    if (!current_shader->shader_scale)
       current_shader->shader_scale      = video_shader_driver_scale_null;
-   if (!current_shader->mipmap_input)
-      current_shader->mipmap_input      = video_shader_driver_mipmap_input_null;
    if (!current_shader->filter_type)
       current_shader->filter_type       = video_shader_driver_filter_type_null;
    if (!current_shader->num_shaders)
