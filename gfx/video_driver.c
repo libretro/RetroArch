@@ -3502,6 +3502,13 @@ static bool video_driver_cb_set_mvp(void *data,
    return true;
 }
 
+static void video_shader_driver_scale_null(void *data,
+      unsigned idx, struct gfx_fbo_scale *scale)
+{
+   (void)idx;
+   (void)scale;
+}
+
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader)
@@ -3516,6 +3523,9 @@ static void video_shader_driver_reset_to_defaults(void)
    }
    if (!current_shader->set_coords)
       current_shader->set_coords        = video_driver_cb_set_coords;
+
+   if (!current_shader->shader_scale)
+      current_shader->shader_scale      = video_shader_driver_scale_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -3559,6 +3569,18 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    current_shader         = (shader_backend_t*)init->shader;
    video_shader_driver_reset_to_defaults();
 
+   return true;
+}
+
+bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
+{
+   if (!scaler || !scaler->scale)
+      return false;
+
+   scaler->scale->valid = false;
+
+   current_shader->shader_scale(current_shader_data,
+         scaler->idx, scaler->scale);
    return true;
 }
 
