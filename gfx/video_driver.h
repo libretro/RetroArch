@@ -1200,8 +1200,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
-bool video_shader_driver_compile_program(struct shader_program_info *program_info);
-
 float video_driver_get_refresh_rate(void);
 
 extern bool (*video_driver_cb_has_focus)(void);

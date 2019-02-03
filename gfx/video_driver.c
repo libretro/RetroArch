@@ -3613,15 +3613,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
    return true;
 }
 
-bool video_shader_driver_compile_program(
-      struct shader_program_info *program_info)
-{
-   if (program_info)
-      return current_shader->compile_program(program_info->data,
-            program_info->idx, NULL, program_info);
-   return false;
-}
-
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
    if (current_shader && current_shader->set_coords)
