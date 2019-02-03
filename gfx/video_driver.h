@@ -1196,15 +1196,9 @@ bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-void video_shader_driver_set_parameter(struct uniform_info *param);
-
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
-
 bool video_shader_driver_init_first(void);
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-bool video_shader_driver_get_feedback_pass(unsigned *data);
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 

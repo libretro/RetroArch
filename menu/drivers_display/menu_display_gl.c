@@ -192,7 +192,9 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         if (gl->shader->set_uniform_parameter)
+            gl->shader->set_uniform_parameter(gl->shader_data,
+                  &uniform_param, NULL);
          break;
    }
 
@@ -208,7 +210,9 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
          uniform_param.result.f.v0       = draw->width;
          uniform_param.result.f.v1       = draw->height;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         if (gl->shader->set_uniform_parameter)
+            gl->shader->set_uniform_parameter(gl->shader_data,
+                  &uniform_param, NULL);
 #endif
          break;
    }

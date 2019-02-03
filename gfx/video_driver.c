@@ -3458,19 +3458,6 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-void video_shader_driver_set_parameter(struct uniform_info *param)
-{
-   if (current_shader && current_shader->set_uniform_parameter)
-      current_shader->set_uniform_parameter(current_shader_data,
-            param, NULL);
-}
-
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params)
-{
-   if (current_shader && current_shader->set_params)
-      current_shader->set_params(params, current_shader_data);
-}
-
 bool video_shader_driver_get_prev_textures(
       video_shader_ctx_texture_t *texture)
 {
@@ -3580,13 +3567,6 @@ static unsigned video_shader_driver_num_null(void *data)
    return 0;
 }
 
-static bool video_shader_driver_get_feedback_pass_null(
-      void *data, unsigned *idx)
-{
-   (void)idx;
-   return false;
-}
-
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader)
@@ -3616,8 +3596,6 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->num_shaders       = video_shader_driver_num_null;
    if (!current_shader->get_current_shader)
       current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
-   if (!current_shader->get_feedback_pass)
-      current_shader->get_feedback_pass = video_shader_driver_get_feedback_pass_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -3662,11 +3640,6 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    video_shader_driver_reset_to_defaults();
 
    return true;
-}
-
-bool video_shader_driver_get_feedback_pass(unsigned *data)
-{
-   return current_shader->get_feedback_pass(current_shader_data, data);
 }
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)

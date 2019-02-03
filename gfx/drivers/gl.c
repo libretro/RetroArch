@@ -621,7 +621,8 @@ static void gl2_renderchain_render(
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      video_shader_driver_set_parameters(&params);
+      if (gl->shader->set_params)
+         gl->shader->set_params(&params, gl->shader_data);
 
       gl->coords.vertices = 4;
 
@@ -694,7 +695,8 @@ static void gl2_renderchain_render(
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   video_shader_driver_set_parameters(&params);
+   if (gl->shader->set_params)
+      gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertex    = gl->vertex_ptr;
 
@@ -1162,7 +1164,7 @@ static void gl2_renderchain_init(
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(
+   gl->fbo_feedback_enable = gl->shader->get_feedback_pass(gl->shader_data,
          &gl->fbo_feedback_pass);
 
    if (gl->fbo_feedback_enable && gl->fbo_feedback_pass
@@ -2380,7 +2382,9 @@ static void gl_render_osd_background(
    uniform_param.result.f.v2       = colors[2];
    uniform_param.result.f.v3       = colors[3];
 
-   video_shader_driver_set_parameter(&uniform_param);
+   if (gl->shader->set_uniform_parameter)
+      gl->shader->set_uniform_parameter(gl->shader_data,
+            &uniform_param, NULL);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
 
@@ -2390,7 +2394,9 @@ static void gl_render_osd_background(
    uniform_param.result.f.v2       = 0.0f;
    uniform_param.result.f.v3       = 0.0f;
 
-   video_shader_driver_set_parameter(&uniform_param);
+   if (gl->shader->set_uniform_parameter)
+      gl->shader->set_uniform_parameter(gl->shader_data,
+            &uniform_param, NULL);
 
    free(dummy);
    free(verts);
@@ -2657,7 +2663,8 @@ static bool gl_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_parameters(&params);
+   if (gl->shader->set_params)
+      gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertices  = 4;
    coords.handle_data   = NULL;
