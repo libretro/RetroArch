@@ -670,10 +670,6 @@ endif
 
 # XMB and MaterialUI are always enabled if supported and not explicitly disabled
 ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
-   ifeq ($(HAVE_ZARCH),)
-      HAVE_ZARCH = 0
-   endif
-
    ifeq ($(HAVE_RGUI),)
       HAVE_RGUI = 1
    endif
@@ -694,7 +690,6 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_OZONE = 1
    endif
 else
-   HAVE_ZARCH       ?= 0
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_XMB         ?= 0
@@ -714,12 +709,6 @@ ifeq ($(HAVE_MENU), 1)
    ifeq ($(HAVE_MATERIALUI), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
-      HAVE_ASSETS = 1
-   endif
-
-   ifeq ($(HAVE_ZARCH), 1)
-      OBJ += menu/drivers/zarch.o
-      DEFINES += -DHAVE_ZARCH
       HAVE_ASSETS = 1
    endif
 
