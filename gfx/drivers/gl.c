@@ -3423,13 +3423,9 @@ static void *gl_init(const video_info_t *video,
    }
 
    {
-      unsigned minimum;
-      video_shader_ctx_texture_t texture_info;
-
-      video_shader_driver_get_prev_textures(&texture_info);
-
-      minimum          = texture_info.id;
-      gl->textures     = MAX(minimum + 1, gl->textures);
+      unsigned texture_info_id = gl->shader->get_prev_textures(gl->shader_data);
+      unsigned minimum         = texture_info_id;
+      gl->textures             = MAX(minimum + 1, gl->textures);
    }
 
    if (!video_shader_driver_info(&shader_info))
@@ -3628,7 +3624,6 @@ static bool gl_set_shader(void *data,
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    unsigned textures;
-   video_shader_ctx_texture_t texture_info;
    video_shader_ctx_init_t init_data;
    gl_t *gl = (gl_t*)data;
 
@@ -3690,9 +3685,10 @@ static bool gl_set_shader(void *data,
 
    gl_update_tex_filter_frame(gl);
 
-   video_shader_driver_get_prev_textures(&texture_info);
-
-   textures = texture_info.id + 1;
+   {
+      unsigned texture_info_id = gl->shader->get_prev_textures(gl->shader_data);
+      textures = texture_info_id + 1;
+   }
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {

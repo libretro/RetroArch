@@ -3458,16 +3458,6 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-bool video_shader_driver_get_prev_textures(
-      video_shader_ctx_texture_t *texture)
-{
-   if (!texture || !current_shader)
-      return false;
-   texture->id = current_shader->get_prev_textures(current_shader_data);
-
-   return true;
-}
-
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
 {
    if (!ident || !current_shader)
@@ -3536,11 +3526,6 @@ static void video_shader_driver_scale_null(void *data,
    (void)scale;
 }
 
-static unsigned video_shader_driver_num_null(void *data)
-{
-   return 0;
-}
-
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader)
@@ -3558,8 +3543,6 @@ static void video_shader_driver_reset_to_defaults(void)
 
    if (!current_shader->shader_scale)
       current_shader->shader_scale      = video_shader_driver_scale_null;
-   if (!current_shader->num_shaders)
-      current_shader->num_shaders       = video_shader_driver_num_null;
    if (!current_shader->get_current_shader)
       current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
 }
