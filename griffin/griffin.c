@@ -1307,10 +1307,6 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_ZARCH
-#include "../menu/drivers/zarch.c"
-#endif
-
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD

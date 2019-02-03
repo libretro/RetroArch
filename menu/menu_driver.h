@@ -693,10 +693,8 @@ extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
-extern menu_ctx_driver_t menu_ctx_nuklear;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
-extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;
 
 RETRO_END_DECLS

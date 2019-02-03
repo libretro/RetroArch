@@ -103,9 +103,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
 #endif
-#if defined(HAVE_ZARCH)
-   &menu_ctx_zarch,
-#endif
    &menu_ctx_null,
    NULL
 };

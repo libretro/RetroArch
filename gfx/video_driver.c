@@ -3478,17 +3478,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
    return true;
 }
 
-bool video_shader_driver_direct_get_current_shader(
-      video_shader_ctx_t *shader)
-{
-   if (!current_shader)
-      return false;
-
-   shader->data = current_shader->get_current_shader(current_shader_data);
-
-   return true;
-}
-
 bool video_shader_driver_deinit(void)
 {
    if (!current_shader)
@@ -3511,12 +3500,6 @@ static bool video_driver_cb_set_mvp(void *data,
 
    video_driver_set_mvp(&mvp);
    return true;
-}
-
-static struct video_shader *
-video_shader_driver_get_current_shader_null(void *data)
-{
-   return NULL;
 }
 
 static void video_shader_driver_scale_null(void *data,
@@ -3543,8 +3526,6 @@ static void video_shader_driver_reset_to_defaults(void)
 
    if (!current_shader->shader_scale)
       current_shader->shader_scale      = video_shader_driver_scale_null;
-   if (!current_shader->get_current_shader)
-      current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
 }
 
 /* Finds first suitable shader context driver. */
