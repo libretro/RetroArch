@@ -255,16 +255,15 @@ void vgft_font_term(VGFT_FONT_T *font)
    memset(font, 0, sizeof(*font));
 }
 
-
 #define CHAR_COUNT_MAX 200
 static VGuint glyph_indices[CHAR_COUNT_MAX];
 static VGfloat adjustments_x[CHAR_COUNT_MAX];
 static VGfloat adjustments_y[CHAR_COUNT_MAX];
 
-// Draws the first char_count characters from text, with adjustments, starting 
-// from the current origin.  The peek argument indicates whether to peek ahead 
-// and get a final adjustment based on the next character past char_count, or 
-// else just assume that this is the end of the text and add no final 
+// Draws the first char_count characters from text, with adjustments, starting
+// from the current origin.  The peek argument indicates whether to peek ahead
+// and get a final adjustment based on the next character past char_count, or
+// else just assume that this is the end of the text and add no final
 // adjustment.
 //
 // Returns silently in some error cases.  Assert fails in some error cases.
@@ -304,7 +303,7 @@ static void draw_chars(VGFT_FONT_T *font, const char *text, int char_count, VGbi
    vgDrawGlyphs(font->vg_font, char_count, glyph_indices, adjustments_x, adjustments_y, paint_modes, VG_FALSE);
 }
 
-// Goes to the x,y position and draws arbitrary number of characters, draws 
+// Goes to the x,y position and draws arbitrary number of characters, draws
 // iteratively if the char_count exceeds the max buffer size given above.
 
 static void draw_line(VGFT_FONT_T *font, VGfloat x, VGfloat y, const char *text, int char_count, VGbitfield paint_modes) {

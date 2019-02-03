@@ -57,7 +57,7 @@ size_t vcos_safe_sprintf(char *buf, size_t buflen, size_t offset, const char *fm
 {
    size_t space = (offset < buflen) ? (buflen - offset) : 0;
    va_list ap;
-   
+
    va_start(ap, fmt);
 
    offset += vcos_vsnprintf(buf ? (buf + offset) : NULL, space, fmt, ap);

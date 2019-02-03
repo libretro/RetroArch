@@ -102,7 +102,7 @@ static unsigned to_menu_pipeline(
 static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata 
+   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata
       : NULL;
 
    if (!vk || !draw)
@@ -125,7 +125,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
    static struct video_coords blank_coords;
    float output_size[2];
    video_coord_array_t *ca       = NULL;
-   vk_t *vk                      = video_info ? 
+   vk_t *vk                      = video_info ?
       (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
@@ -188,7 +188,7 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
-   vk_t *vk                      = video_info ? 
+   vk_t *vk                      = video_info ?
       (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)

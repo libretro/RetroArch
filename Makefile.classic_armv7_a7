@@ -1,7 +1,7 @@
 # This build was put together and is maintained by ModMyClassic.com for Libretro.
 # The purpose is to give Libretro a proper "official" build platform for classic consoles.
 # If you need any help in building for the classics or have any questions then please visit
-# https://modmyclassic.com/comp and we will help in any way possible! 
+# https://modmyclassic.com/comp and we will help in any way possible!
 
 # Building Prerequisites ##############
 # arm-linux-gnueabihf-gcc-8
@@ -79,7 +79,7 @@ retroarch:
 	rm -fr /tmp/$(HAKCHI_DIR) #clean up tmp
 
 	#COMMODORE 64 MINI BUILD (WIP)
-	
+
 	#Clean down dirty files
 	rm -f version.all version.dtd
 	mv version_BACKUP.all version.all && mv version_BACKUP.dtd version.dtd

@@ -64,7 +64,6 @@ static void netplay_crc_scan_callback(void *task_data,
 
    fflush(stdout);
 
-
    if (!string_is_empty(state->subsystem_name) && !string_is_equal(state->subsystem_name, "N/A"))
    {
       content_ctx_info_t content_info  = {0};
@@ -335,7 +334,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             RARCH_LOG("[lobby] searching rom %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
             playlist      = playlist_init(lpl_path, 99999);
             playlist_size = playlist_get_size(playlist);
-
 
             for(k = 0; k < playlist_size && !found[i]; k++)
             {

@@ -455,7 +455,7 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool f
     * to feed it keysyms anyway, so here is a little hack... */
    if (keysym >= XK_A && keysym <= XK_Z)
        keysym += XK_z - XK_Z;
-       
+
    /* Get the real keycode,
       that correctly ignores international layouts as windows code does. */
    key     = input_keymaps_translate_keysym_to_rk(keycode);
@@ -490,7 +490,7 @@ bool x11_alive(void *data)
 
       /* Can get events from older windows. Check this. */
       XNextEvent(g_x11_dpy, &event);
-      
+
       /* IMPORTANT - Get keycode before XFilterEvent
          because the event is localizated after the call */
       keycode = event.xkey.keycode;

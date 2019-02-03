@@ -68,7 +68,6 @@ int read_gps_data_once(gpsd_info *gpsd);
 /* helper functions */
 int deg_to_str(double f, char *buf, int buf_size);
 
-
 extern const char *LIBGPS_FILE;
 
 #endif /* LIBGPS_LOADER_H */

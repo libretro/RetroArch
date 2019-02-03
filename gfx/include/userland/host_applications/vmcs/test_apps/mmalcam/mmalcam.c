@@ -126,7 +126,6 @@ error:
    return result;
 }
 
-
 /*****************************************************************************/
 static void *test_mmal_camcorder(void *id)
 {

@@ -42,10 +42,9 @@ typedef unsigned int VC_METADATA_TYPE_T;
 Metadata and item headers.
 ******************************************************************************/
 typedef struct vc_metadata_item_s {
-   VC_METADATA_TYPE_T type;   
+   VC_METADATA_TYPE_T type;
    int len;
 } VC_METADATA_ITEM_T;
-
 
 typedef struct vc_metadata_header_s {
    int size;
@@ -57,7 +56,6 @@ typedef struct vc_metadata_header_s {
    int offset_next;
    RTOS_LATCH_T latch;
 } VC_METADATA_HEADER_T;
-
 
 /******************************************************************************
 Public declarations.

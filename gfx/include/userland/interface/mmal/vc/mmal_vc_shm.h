@@ -54,7 +54,6 @@ uint8_t *mmal_vc_shm_lock(uint8_t *mem, uint32_t workaround);
 /** Unlock a shared memory buffer */
 uint8_t *mmal_vc_shm_unlock(uint8_t *mem, uint32_t *length, uint32_t workaround);
 
-
 #ifdef __cplusplus
 }
 #endif

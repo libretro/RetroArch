@@ -115,7 +115,6 @@ static void current_thread_key_init(void)
    _vcos_thread_current_key_created = 1;
 }
 
-
 /* A VCOS wrapper for the thread which called vcos_init. */
 static VCOS_THREAD_T vcos_thread_main;
 
@@ -451,7 +450,6 @@ void vcos_thread_exit(void *arg)
    pthread_exit(arg);
 }
 
-
 void vcos_thread_attr_init(VCOS_THREAD_ATTR_T *attrs)
 {
    *attrs = default_attrs;
@@ -627,7 +625,6 @@ VCOS_STATUS_T vcos_once(VCOS_ONCE_T *once_control,
    }
 }
 
-
 VCOS_THREAD_T *vcos_dummy_thread_create(void)
 {
    VCOS_STATUS_T st;
@@ -657,7 +654,6 @@ VCOS_THREAD_T *vcos_dummy_thread_create(void)
 
    return( thread_hndl );
 }
-
 
 /***********************************************************
  *
@@ -894,4 +890,3 @@ void vcos_pthreads_timer_delete(VCOS_TIMER_T *timer)
    pthread_mutex_destroy(&timer->lock);
    pthread_cond_destroy(&timer->settings_changed);
 }
-

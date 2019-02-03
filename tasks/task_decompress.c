@@ -52,7 +52,7 @@ static int file_decompressed_subdir(const char *name,
 
    /* Ignore directories. */
    if (
-         name[strlen(name) - 1] == '/' || 
+         name[strlen(name) - 1] == '/' ||
          name[strlen(name) - 1] == '\\')
       goto next_file;
 

@@ -1205,7 +1205,7 @@ static VC_CONTAINER_STATUS_T mkv_read_element_track_entry( VC_CONTAINER_T *p_ctx
       {
          unsigned int sync_extension_type = 0x2B7;
          samplerate = track_module->es_type.audio.output_sampling_frequency;
-         for(samplerate_idx = 0; samplerate_idx < 13; samplerate_idx++) 
+         for(samplerate_idx = 0; samplerate_idx < 13; samplerate_idx++)
             if(sample_rates[samplerate_idx] == samplerate) break;
          extra[2] = (sync_extension_type >> 3) & 0xFF;
          extra[3] = ((sync_extension_type & 0x7) << 5) | 5;
@@ -1411,7 +1411,7 @@ static VC_CONTAINER_STATUS_T mkv_read_subelements_audio( VC_CONTAINER_T *p_ctx, 
 
       if(id == MKV_ELEMENT_ID_OUTPUT_SAMPLING_FREQUENCY)
          track_module->es_type.audio.output_sampling_frequency = fvalue;
-   
+
       return status;
    }
 

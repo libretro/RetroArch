@@ -800,4 +800,3 @@ VC_CONTAINER_STATUS_T h264_parameter_handler(VC_CONTAINER_T *p_ctx,
 
    return status;
 }
-

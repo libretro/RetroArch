@@ -115,7 +115,6 @@ const int MAX_BITRATE_LEVEL42 = 62500000; // 62.5Mbits/s
 /// Interval at which we check for an failure abort during capture
 const int ABORT_INTERVAL = 100; // ms
 
-
 /// Capture/Pause switch method
 /// Simply capture for time specified
 enum
@@ -226,7 +225,6 @@ struct RASPIVID_STATE_S
    MMAL_BOOL_T addSPSTiming;
    int slices;
 };
-
 
 /// Structure to cross reference H264 profile strings against the MMAL parameter equivalent
 static XREF_T  profile_map[] =
@@ -346,7 +344,6 @@ static COMMAND_LIST cmdline_commands[] =
 
 static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
 
-
 static struct
 {
    char *description;
@@ -361,8 +358,6 @@ static struct
 };
 
 static int wait_method_description_size = sizeof(wait_method_description) / sizeof(wait_method_description[0]);
-
-
 
 /**
  * Assign a default set of parameters to the state passed in
@@ -413,7 +408,6 @@ static void default_status(RASPIVID_STATE *state)
    state->netListen = false;
    state->addSPSTiming = MMAL_FALSE;
    state->slices = 1;
-
 
    // Setup preview window defaults
    raspipreview_set_defaults(&state->preview_parameters);
@@ -1684,7 +1678,6 @@ static MMAL_STATUS_T create_camera_component(RASPIVID_STATE *state)
    if (video_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
       video_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
 
-
    // Set the encode format on the still  port
 
    format = still_port->format;
@@ -1986,7 +1979,6 @@ static MMAL_STATUS_T create_encoder_component(RASPIVID_STATE *state)
    else
       encoder_output->buffer_size = 256<<10;
 
-
    if (encoder_output->buffer_size < encoder_output->buffer_size_min)
       encoder_output->buffer_size = encoder_output->buffer_size_min;
 
@@ -2256,7 +2248,6 @@ static int pause_and_test_abort(RASPIVID_STATE *state, int pause)
    return 0;
 }
 
-
 /**
  * Function to wait in various ways (depending on settings)
  *
@@ -2353,7 +2344,6 @@ static int wait_for_next_change(RASPIVID_STATE *state)
 
       return keep_running;
    }
-
 
    case WAIT_METHOD_SIGNAL:
    {

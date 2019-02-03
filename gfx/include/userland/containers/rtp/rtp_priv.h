@@ -91,7 +91,6 @@ typedef struct VC_CONTAINER_TRACK_MODULE_T
 #define BIT_IS_CLEAR(V, B)    (!((V) & (1 << (B))))
 /* }@ */
 
-
 /** Get a parameter's value as a decimal number.
  *
  * \param param_list The list of parameter name/value pairs.

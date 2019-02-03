@@ -145,16 +145,16 @@ static VC_CONTAINER_STATUS_T rv9_read_frame_header(VC_CONTAINER_T *p_ctx)
       {
          uint32_t valid_seg;
          uint32_t offset;
-         
+
          valid_seg = BI32(buffer);
          offset = BI32(buffer+4);
-         
+
          if (valid_seg && seg_offset > offset)
             seg_offset = offset;
-         
+
          // this boolean field should have only 0 or 1 values
          if(valid_seg > 1) return VC_CONTAINER_ERROR_FORMAT_INVALID;
-         
+
          buffer += 8;
       }
    }
@@ -177,7 +177,7 @@ static uint32_t rv9_get_frame_data(VC_CONTAINER_T *p_ctx, uint32_t len, uint8_t 
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    uint32_t ret = 0;
 
-   // we may have read some data before into the data array, so 
+   // we may have read some data before into the data array, so
    // check whether we've copied all this data out first.
    if(module->frame_read < module->data_len)
    {
@@ -198,8 +198,8 @@ static uint32_t rv9_get_frame_data(VC_CONTAINER_T *p_ctx, uint32_t len, uint8_t 
          ret += READ_BYTES(p_ctx, dest, len);
       else
          ret += SKIP_BYTES(p_ctx, len);
-   } 
-   
+   }
+
    module->frame_read += ret;
    return ret;
 }
@@ -218,7 +218,7 @@ static VC_CONTAINER_STATUS_T rv9_reader_read( VC_CONTAINER_T *p_ctx,
    if(!module->mid_frame)
    {
       if((status = rv9_read_frame_header(p_ctx)) != VC_CONTAINER_SUCCESS) return status;
-      
+
       module->mid_frame = 1;
       module->frame_read = 0;
    }
@@ -238,7 +238,7 @@ static VC_CONTAINER_STATUS_T rv9_reader_read( VC_CONTAINER_T *p_ctx,
       {
          module->frame_read = 0;
          module->mid_frame = 0;
-      }      
+      }
       return STREAM_STATUS(p_ctx);
    }
 
@@ -252,7 +252,7 @@ static VC_CONTAINER_STATUS_T rv9_reader_read( VC_CONTAINER_T *p_ctx,
       module->frame_read = 0;
       module->mid_frame = 0;
       packet->flags |= VC_CONTAINER_PACKET_FLAG_FRAME_END;
-   }      
+   }
    packet->size = size;
 
    return size ? VC_CONTAINER_SUCCESS : STREAM_STATUS(p_ctx);

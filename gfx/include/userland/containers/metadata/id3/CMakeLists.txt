@@ -10,4 +10,3 @@ add_library(reader_metadata_id3 ${LIBRARY_TYPE} id3_metadata_reader.c)
 target_link_libraries(reader_metadata_id3 containers)
 
 install(TARGETS reader_metadata_id3 DESTINATION ${VMCS_PLUGIN_DIR})
-

@@ -42,7 +42,5 @@ typedef void (*VCFILED_LOGMSG_T)(int level, const char *fmt, ...);
 int vcfiled_lock(const char *filename, VCFILED_LOGMSG_T logmsg);
 extern int vcfiled_is_running(const char *lockfile);
 
-
 #endif
-
 

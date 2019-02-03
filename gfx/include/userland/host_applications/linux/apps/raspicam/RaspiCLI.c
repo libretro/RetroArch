@@ -47,7 +47,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "RaspiCLI.h"
 
-
 /**
  * Convert a string from command line to a comand_id from the list
  *
@@ -86,7 +85,6 @@ int raspicli_get_command_id(const COMMAND_LIST *commands, const int num_commands
    return command_id;
 }
 
-
 /**
  * Display the list of commands in help format
  *
@@ -110,7 +108,6 @@ void raspicli_display_help(const COMMAND_LIST *commands, const int num_commands)
               commands[i].command, commands[i].help);
    }
 }
-
 
 /**
  * Function to take a string, a mapping, and return the int equivalent

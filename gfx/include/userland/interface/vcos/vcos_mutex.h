@@ -105,7 +105,6 @@ VCOS_INLINE_DECL
 VCOS_STATUS_T vcos_mutex_trylock(VCOS_MUTEX_T *m);
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif

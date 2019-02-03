@@ -25,7 +25,7 @@
    - Because the PS2SDK implementation is wrong
 
    Overrriding these methods here, make that the RetroArch will execute this code
-   rather than the code in the linked libraries   
+   rather than the code in the linked libraries
  */
 
 int islower(int c)
@@ -337,7 +337,7 @@ char *strtok(char *strToken, const char *strDelimit)
     // reached the end of the string before finding a delimiter
     // so dont move on to the next character
     return start;
-}  
+}
 
 char * strtok_r (char *s, const char *delim, char **save_ptr)
 {

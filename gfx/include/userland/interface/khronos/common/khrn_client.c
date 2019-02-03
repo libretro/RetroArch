@@ -156,7 +156,7 @@ bool client_process_state_init(CLIENT_PROCESS_STATE_T *process)
          khrn_pointer_map_term(&process->surfaces);
          return false;
       }
-      
+
 #if EGL_KHR_sync
       if (!khrn_pointer_map_init(&process->syncs, 64))
       {
@@ -246,7 +246,7 @@ void client_process_state_term(CLIENT_PROCESS_STATE_T *process)
       khrn_pointer_map_term(&process->surfaces);
 
       khrn_pointer_map_term(&process->windows);
-      
+
 #if EGL_KHR_sync
       egl_sync_destroy_all(&process->syncs);
       khrn_pointer_map_term(&process->syncs);
@@ -352,7 +352,7 @@ EGL_SURFACE_T *client_egl_get_locked_surface(CLIENT_THREAD_STATE_T *thread, CLIE
 }
 
 /*
- * just return if we've seen window before 
+ * just return if we've seen window before
  */
 EGLNativeWindowType client_egl_get_window(CLIENT_THREAD_STATE_T *thread, CLIENT_PROCESS_STATE_T *process, EGLNativeWindowType window)
 {
@@ -384,7 +384,6 @@ void client_send_make_current(CLIENT_THREAD_STATE_T *thread)
       if the size of this call in the merge buffer changes,
       CLIENT_MAKE_CURRENT_SIZE in khrn_client.h should be updated
    */
-
 
    if (!thread->opengl.context || !thread->opengl.draw)
    {
@@ -419,7 +418,7 @@ void client_send_make_current(CLIENT_THREAD_STATE_T *thread)
 
 PLATFORM_TLS_T client_tls;
 PLATFORM_MUTEX_T client_mutex;
-#ifdef CLIENT_THREAD_IS_PROCESS 
+#ifdef CLIENT_THREAD_IS_PROCESS
 PLATFORM_TLS_T client_tls_process;
 PLATFORM_TLS_T client_tls_mutex;
 #endif
@@ -437,7 +436,7 @@ bool client_process_attach()
    if (status != KHR_SUCCESS) {
       return false;
    }
-	
+
    status = platform_tls_create(&client_tls_mutex);
    if (status != KHR_SUCCESS) {
       return false;
@@ -473,23 +472,23 @@ bool client_thread_attach()
 	{  //add mutex into thread's tls
 		KHR_STATUS_T status;
 		PLATFORM_MUTEX_T *local_mutex = (PLATFORM_MUTEX_T*)vcos_tls_get(client_tls_mutex);
-		
+
 		if (!local_mutex)
-		{			
+		{
 			local_mutex = (PLATFORM_MUTEX_T*)khrn_platform_malloc(sizeof(PLATFORM_MUTEX_T),"thread mutex");
 			if (!local_mutex)
 				return false;
-			
-			status = platform_mutex_create(local_mutex);			
+
+			status = platform_mutex_create(local_mutex);
 			if (status != KHR_SUCCESS) {
 				khrn_platform_free(local_mutex);
 				return false;
 			}
-			
+
 			vcos_tls_set(client_tls_mutex,local_mutex);
 		}
 	}
-#endif	
+#endif
 
 #ifndef RPC_LIBRARY    //TODO
    client_send_make_current(state);
@@ -507,10 +506,10 @@ void client_thread_detach(void *dummy)
 
    khrn_platform_free(state);
    platform_maybe_free_process();
-	
+
 #ifdef CLIENT_THREAD_IS_PROCESS
 	{
-		CLIENT_PROCESS_STATE_T *process = CLIENT_GET_PROCESS_STATE();	
+		CLIENT_PROCESS_STATE_T *process = CLIENT_GET_PROCESS_STATE();
    	khrn_platform_free(process);
 		platform_tls_remove(client_tls_process);
 	}
@@ -533,7 +532,7 @@ void client_process_detach()
    platform_tls_destroy(client_tls);
    platform_mutex_destroy(&client_mutex);
 
-#ifdef CLIENT_THREAD_IS_PROCESS	
+#ifdef CLIENT_THREAD_IS_PROCESS
 	platform_tls_destroy(client_tls_process);
 #endif
 }
@@ -587,13 +586,13 @@ static void callback_set_error(KHRN_POINTER_MAP_T *map, uint32_t key, void *valu
 
    UNUSED(map);
    UNUSED_NDEBUG(key);
-   
+
    vcos_assert( context != NULL );
    vcos_assert((uintptr_t)key == (uintptr_t)context->name);
-   
+
    if (context->servercontext == *((uint32_t *)data)){
       CLIENT_THREAD_STATE_T *thread = context->thread;
-      /* todo: VG */      
+      /* todo: VG */
       if (thread && IS_OPENGLES_11_OR_20(thread)) {
          vcos_log_error("GL OOM context %d", context->servercontext);
          glxx_set_error(GLXX_GET_CLIENT_STATE(thread), GL_OUT_OF_MEMORY);

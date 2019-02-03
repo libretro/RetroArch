@@ -180,7 +180,7 @@ static VC_CONTAINER_STATUS_T qsynth_read_track(QSYNTH_SEGMENT_T *seg,
    uint32_t total_ticks = 0;
    uint32_t used = 8;
    uint8_t last = 0;
-  
+
    *time = 0LL;
    *tempo_ticks = 0;
 
@@ -200,11 +200,11 @@ static VC_CONTAINER_STATUS_T qsynth_read_track(QSYNTH_SEGMENT_T *seg,
          *us_perclock = new_tempo;
          *tempo_ticks = total_ticks;
       }
-      
+
       if(end)
          break;
    }
-   
+
    *ticks = total_ticks;
    return VC_CONTAINER_SUCCESS;
 }
@@ -256,9 +256,9 @@ static VC_CONTAINER_STATUS_T qsynth_get_duration(VC_CONTAINER_T *p_ctx)
       if(READ_BYTES(p_ctx, dummy, sizeof(dummy)) != sizeof(dummy) ||
          dummy[0] != 'M' || dummy[1] != 'T' || dummy[2] != 'r' || dummy[3] != 'k')
          return VC_CONTAINER_ERROR_FORMAT_INVALID;
-      
+
       len = BI32(dummy+4);
-      
+
       // impose a 1mb limit on track size
       if(len > (1<<20) || (*seg = malloc(sizeof(QSYNTH_SEGMENT_T) + 8 + len)) == NULL)
          return VC_CONTAINER_ERROR_OUT_OF_MEMORY;
@@ -273,7 +273,7 @@ static VC_CONTAINER_STATUS_T qsynth_get_duration(VC_CONTAINER_T *p_ctx)
          return VC_CONTAINER_ERROR_FORMAT_INVALID;
 
       if((status = qsynth_read_track(*seg, &ticks, &time, &us_perclock, &tempo_ticks)) != VC_CONTAINER_SUCCESS)
-         return status; 
+         return status;
 
       if(end_uspc == 0)
       {
@@ -298,7 +298,6 @@ static VC_CONTAINER_STATUS_T qsynth_get_duration(VC_CONTAINER_T *p_ctx)
    module->track->format->extradata_size = 4;
    return VC_CONTAINER_SUCCESS;
 }
-
 
 /*****************************************************************************
 Functions exported as part of the Container Module API
@@ -339,7 +338,7 @@ static VC_CONTAINER_STATUS_T qsynth_reader_read( VC_CONTAINER_T *p_ctx,
          // if we're playing then we can't really skip, but have to simulate a seek instead
          module->seek = 1;
          module->timestamp += 40;
-      }      
+      }
 
       return VC_CONTAINER_SUCCESS;
    }
@@ -383,7 +382,7 @@ static VC_CONTAINER_STATUS_T qsynth_reader_read( VC_CONTAINER_T *p_ctx,
          packet->data[1] = 0;
          packet->data[2] = 0;
          packet->data[3] = 0;
-         packet->data[4] = 40;         
+         packet->data[4] = 40;
          module->timestamp += 40 * 1000;
       }
    }

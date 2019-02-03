@@ -25,7 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 // ---- Include Files -------------------------------------------------------
 
 #include <stdio.h>
@@ -511,7 +510,7 @@ static int dump_edid( const char *filename )
             break;
          }
       }
-   } 
+   }
    if (fp)
       fclose(fp);
    if(written) {
@@ -1089,7 +1088,7 @@ int main( int argc, char **argv )
          goto err_stop_service;
       }
    }
-   
+
    if ( opt_audiosup == 1 )
    {
       if ( get_audiosup() != 0 )
@@ -1097,7 +1096,7 @@ int main( int argc, char **argv )
          goto err_stop_service;
       }
    }
-   
+
    if ( opt_dumpedid == 1 )
    {
       if ( dump_edid(dumpedid_filename) != 0 )

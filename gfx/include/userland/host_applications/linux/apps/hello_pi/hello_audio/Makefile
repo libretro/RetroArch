@@ -3,4 +3,3 @@ BIN=hello_audio.bin
 LDFLAGS+=-lilclient
 
 include ../Makefile.include
-

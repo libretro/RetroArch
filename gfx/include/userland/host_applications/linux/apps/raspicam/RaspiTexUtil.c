@@ -491,7 +491,6 @@ error:
    return -1;
 }
 
-
 /**
  * Takes a description of shader program, compiles it and gets the locations
  * of uniforms and attributes.
@@ -598,4 +597,3 @@ fail:
    }
    return -1;
 }
-

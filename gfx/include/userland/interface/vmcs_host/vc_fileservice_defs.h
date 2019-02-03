@@ -88,7 +88,7 @@ enum {
    VC_FILESYS_TOTALSPACE64= 95,
    VC_FILESYS_OPEN_DISK   = 96,
    VC_FILESYS_CLOSE_DISK  = 97,
-   
+
    /* extra simple functions for mass storage testing */
    VC_FILESYS_READ_SECTOR = 98, //1sect
    VC_FILESYS_STREAM_SECTOR_BEGIN = 99,

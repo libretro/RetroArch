@@ -639,8 +639,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    {
       UINT                 flags              = 0;
-      D3D_FEATURE_LEVEL    
-         requested_feature_levels[]           = 
+      D3D_FEATURE_LEVEL
+         requested_feature_levels[]           =
          {
             D3D_FEATURE_LEVEL_11_0,
             D3D_FEATURE_LEVEL_10_1,
@@ -753,7 +753,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
    d3d11->vsync           = video->vsync;
-   d3d11->format          = video->rgb32 ? 
+   d3d11->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
    d3d11->frame.texture[0].desc.Format = d3d11->format;
@@ -839,7 +839,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
-      D3D11_SUBRESOURCE_DATA 
+      D3D11_SUBRESOURCE_DATA
          vertexData             = { vertices };
 
       desc.ByteWidth            = sizeof(vertices);
@@ -1549,11 +1549,11 @@ static void d3d11_set_menu_texture_frame(
 {
    d3d11_video_t* d3d11    = (d3d11_video_t*)data;
    settings_t*    settings = config_get_ptr();
-   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : 
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d11->menu.texture.desc.Width  != width || 
+         d3d11->menu.texture.desc.Width  != width ||
          d3d11->menu.texture.desc.Height != height)
    {
       d3d11->menu.texture.desc.Format = format;

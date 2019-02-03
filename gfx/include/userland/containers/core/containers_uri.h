@@ -64,7 +64,7 @@ void vc_uri_clear( VC_URI_PARTS_T *p_uri );
 bool vc_uri_parse( VC_URI_PARTS_T *p_uri, const char *uri );
 
 /** Builds the URI component parts into a URI string.
- * If buffer is NULL, or buffer_size is too small, nothing is written to the 
+ * If buffer is NULL, or buffer_size is too small, nothing is written to the
  * buffer but the required string length is still returned. buffer_size must be
  * at least one more than the value returned.
  *

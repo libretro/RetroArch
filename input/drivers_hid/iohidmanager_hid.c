@@ -591,7 +591,7 @@ static void iohidmanager_hid_device_add_device(
         kHIDUsage_Sim_Accelerator,
         kHIDUsage_Sim_Brake
     };
-	
+
 #if !(defined(__ppc__) || defined(__ppc64__))
 	/* check if pad was already registered previously (by deterministic method)
 	 * if so do not re-add the pad */
@@ -604,7 +604,7 @@ static void iohidmanager_hid_device_add_device(
 			return;
 	}
 #endif
-	
+
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
    CFArrayRef elements_raw;
@@ -994,7 +994,7 @@ static int iohidmanager_hid_manager_set_device_matching(
 	  uint32_t lid;
 	  struct hid_list *next;
 	} hid_list_t;
-	
+
 	hid_list_t* devList = NULL;
 	for (long i=0; i<num_devices;i++)
 	{
@@ -1046,7 +1046,7 @@ static int iohidmanager_hid_manager_set_device_matching(
 #else
 		iohidmanager_hid_device_add_device(ptr->device, hid);
 #endif
-		
+
 		//printf("%d\n",ptr->lid);
 		ptr = ptr->next;
 		free(devList);

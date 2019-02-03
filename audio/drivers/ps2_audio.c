@@ -53,7 +53,7 @@ static void audioMainLoop(void *data)
       size_t size;
 
       WaitSema(ps2->lock);
-      size = MIN(fifo_read_avail(ps2->buffer), sizeof(out_tmp)); 
+      size = MIN(fifo_read_avail(ps2->buffer), sizeof(out_tmp));
       fifo_read(ps2->buffer, out_tmp, size);
       iSignalSema(ps2->lock);
       iSignalSema(ps2->cond_lock);
@@ -262,7 +262,7 @@ static size_t ps2_audio_write_avail(void *data)
    {
       size_t size;
       WaitSema(ps2->lock);
-      size = AUDIO_BUFFER - fifo_read_avail(ps2->buffer); 
+      size = AUDIO_BUFFER - fifo_read_avail(ps2->buffer);
       iSignalSema(ps2->lock);
       return size;
    }

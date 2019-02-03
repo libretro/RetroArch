@@ -60,7 +60,6 @@ typedef struct MMAL_VC_CLIENT_BUFFER_CONTEXT_T
    struct mmal_worker_buffer_from_host msg;
 } MMAL_VC_CLIENT_BUFFER_CONTEXT_T;
 
-
 MMAL_CLIENT_T *mmal_vc_get_client(void);
 
 MMAL_STATUS_T mmal_vc_sendwait_message(MMAL_CLIENT_T *client,
@@ -77,4 +76,3 @@ MMAL_STATUS_T mmal_vc_send_message(MMAL_CLIENT_T *client,
                                    uint32_t msgid);
 
 #endif
-

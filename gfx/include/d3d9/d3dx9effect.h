@@ -199,7 +199,7 @@ DECLARE_INTERFACE_(ID3DXBaseEffect, IUnknown)
     STDMETHOD(GetVertexShader)(THIS_ D3DXHANDLE hParameter, LPDIRECT3DVERTEXSHADER9 *ppVShader) PURE;
 
     /* Set Range of an Array to pass to device
-     * Useful for sending only a subrange of an 
+     * Useful for sending only a subrange of an
      * array down to the device
      */
     STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE;

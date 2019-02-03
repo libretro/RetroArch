@@ -466,13 +466,13 @@ bool libretro_get_system_info(const char *path,
    current_valid_extensions[0] = '\0';
 
    if (!string_is_empty(dummy_info.library_name))
-      strlcpy(current_library_name, 
+      strlcpy(current_library_name,
             dummy_info.library_name, sizeof(current_library_name));
    if (!string_is_empty(dummy_info.library_version))
-      strlcpy(current_library_version, 
+      strlcpy(current_library_version,
             dummy_info.library_version, sizeof(current_library_version));
    if (dummy_info.valid_extensions)
-      strlcpy(current_valid_extensions, 
+      strlcpy(current_valid_extensions,
             dummy_info.valid_extensions, sizeof(current_valid_extensions));
 
    info->library_name     = current_library_name;
@@ -517,8 +517,8 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
 #ifdef HAVE_RUNAHEAD
          else
          {
-            /* for a secondary core, we already have a 
-             * primary library loaded, so we can skip 
+            /* for a secondary core, we already have a
+             * primary library loaded, so we can skip
              * some checks and just load the library */
             retro_assert(lib_path != NULL && lib_handle_p != NULL);
             lib_handle_local = dylib_load(lib_path);
@@ -847,7 +847,7 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
       return false;
 
 #ifdef HAVE_RUNAHEAD
-   /* remember last core type created, so creating a 
+   /* remember last core type created, so creating a
     * secondary core will know what core type to use. */
    set_last_core_type(type);
 #endif
@@ -1923,7 +1923,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          core_set_shared_context = true;
          break;
       }
- 
+
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
          const uint32_t supported_vfs_version = 3;
@@ -2034,7 +2034,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          *(retro_environment_t *)data = rarch_clear_all_thread_waits;
          break;
       }
-      
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

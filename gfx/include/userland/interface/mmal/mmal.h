@@ -167,7 +167,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   * \subsection pool Pools of Buffer Headers
   *
-  * Pools (\ref MMAL_POOL_T) let clients allocate a fixed number of buffer headers, and 
+  * Pools (\ref MMAL_POOL_T) let clients allocate a fixed number of buffer headers, and
   * a queue (\ref MMAL_QUEUE_T). They are used for buffer header allocation.
   * Optionally a pool can also allocate the payload memory for the client.
   *

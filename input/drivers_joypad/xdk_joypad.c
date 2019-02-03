@@ -285,7 +285,7 @@ static void xdk_joypad_poll(void)
       if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
 #endif
-      
+
       memset(&g_xinput_states[port], 0, sizeof(xinput_joypad_state));
 
       g_xinput_states[port].connected = !

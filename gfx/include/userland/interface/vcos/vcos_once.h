@@ -59,4 +59,3 @@ VCOS_STATUS_T vcos_once(VCOS_ONCE_T *once_control,
 }
 #endif
 #endif
-

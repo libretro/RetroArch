@@ -431,7 +431,7 @@ static void vidtex_draw(VIDTEX_T *vt, void *video_frame)
             vcos_log_trace("Created EGL image %p for buf %p", image, video_frame);
             slot->video_frame = video_frame;
             slot->image = image;
-         } 
+         }
          VIDTEX_CHECK_GL(vt);
 
          break;

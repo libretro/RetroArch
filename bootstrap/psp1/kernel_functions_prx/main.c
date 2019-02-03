@@ -56,7 +56,7 @@ void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
    game_param.unk5 = 0x10000;
 
    int k1 = pspSdkSetK1(0);
-   //sceKernelSuspendAllUserThreads(); 
+   //sceKernelSuspendAllUserThreads();
    int ret = sceKernelLoadExecVSHMs2(fileName, &game_param);
    pspSdkSetK1(k1);
 }

@@ -194,7 +194,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         {
             /* find a new slot for this controller that's unused */
             unsigned i;
-            
+
             for (i = 0; i < MAX_MFI_CONTROLLERS; ++i)
             {
                 if (mfi_controllers[i])
@@ -355,7 +355,7 @@ static const char *apple_gamecontroller_joypad_name(unsigned pad)
 {
     if (pad >= MAX_USERS)
         return NULL;
-    
+
     return "mFi Controller";
 }
 

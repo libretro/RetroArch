@@ -535,7 +535,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
    printf("Aspect ratio: %f\n",info->geometry.aspect_ratio);
    printf("Buffer Resolution %ux%u %f fps\n", info->geometry.base_width,
              info->geometry.base_height, info->timing.fps);
-   printf("Buffer Max Resolution %ux%u\n", info->geometry.max_width, 
+   printf("Buffer Max Resolution %ux%u\n", info->geometry.max_width,
              info->geometry.max_height);
 }
 
@@ -552,7 +552,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_reset)(void)
 //TODO improve this mess and make it generic enough for use with dummy mode
 void v4l2_frame_times(struct v4l2_buffer buf) {
    if (strcmp("Off", video_frame_times) == 0)
-       return; 
+       return;
 
    if (ft_info == NULL)
        ft_info = calloc(5000, sizeof(char));
@@ -626,15 +626,15 @@ void source_dummy(int width, int height) {
       }
    }
 
-   if(video_buf.field == V4L2_FIELD_TOP) 
+   if(video_buf.field == V4L2_FIELD_TOP)
       video_buf.field = V4L2_FIELD_BOTTOM;
-   else if (video_buf.field == V4L2_FIELD_BOTTOM) 
+   else if (video_buf.field == V4L2_FIELD_BOTTOM)
       video_buf.field = V4L2_FIELD_TOP;
 }
 
 void source_v4l2_normal(int width, int height) {
    struct v4l2_buffer bufcp;
-   
+
    int error;
 
    // Wait until v4l2 dequees a buffer
@@ -651,7 +651,7 @@ void source_v4l2_normal(int width, int height) {
 
    bufcp = video_buf;
    memcpy( (uint32_t*) frame_cap, (uint8_t*) v4l2_capbuf[video_buf.index].start, video_format.fmt.pix.width * video_format.fmt.pix.height * 3);
-   
+
    error = v4l2_ioctl(video_device_fd, VIDIOC_QBUF, &video_buf);
    if (error != 0)
       printf("VIDIOC_QBUF failed: %s\n", strerror(errno));
@@ -664,7 +664,7 @@ void source_v4l2_alternate_hack(int width, int height) {
    struct v4l2_format fmt;
    struct v4l2_requestbuffers reqbufs;
    enum v4l2_buf_type type;
-   
+
    int error;
    uint32_t index;
 
@@ -844,7 +844,7 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
 
       // Skips a scanline if we reach the end of the current one
       //On progressive sources, should only skip the destination lines,
-      //On interlaced sources, should skip both the source and the destination lines 
+      //On interlaced sources, should skip both the source and the destination lines
       if ( ((i+1) % width) == 0 ) {
          dst += width;
          if (skip_lines_src == 1) {
@@ -888,7 +888,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
           (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0))) {
           VIDEOPROC_CORE_PREFIX(retro_unload_game)();
           // This core does not cares for the retro_game_info * argument?
-          VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL); 
+          VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL);
       }
 
       if (frametimes.value != NULL) {
@@ -915,7 +915,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
          }
       }
 
-      if (video_buf.field == V4L2_FIELD_INTERLACED) 
+      if (video_buf.field == V4L2_FIELD_INTERLACED)
          video_half_feed_rate = 1;
    } else {
       video_half_feed_rate = 0;
@@ -927,7 +927,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    if (strcmp(video_output_mode, "deinterlaced") == 0) {
       processing_bgr_xrgb(frame_cap, frame_curr, video_cap_width, video_cap_height);
       // When deinterlacing a interlaced intput, we need to process both fields of a frame,
-      //one at a time (retro_run needs to be called twice, vide_half_feed_rate prevents the 
+      //one at a time (retro_run needs to be called twice, vide_half_feed_rate prevents the
       //source from being read twice...
       if (strcmp(video_capture_mode, "interlaced") == 0) {
          enum v4l2_field field_read;
@@ -1106,7 +1106,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
       fmt.fmt.pix.height = 240;
       fmt.fmt.pix.field = V4L2_FIELD_TOP;
-              
+
       //TODO Query the size and FPS
       if (strcmp(video_capture_mode, "interlaced") == 0) {
          v4l2_ncapbuf_target = 2;
@@ -1244,7 +1244,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       }
    // Each frame has one field, full frame-rate
    } else if (strcmp(video_output_mode, "progressive") == 0) {
-      video_out_height = video_cap_height; 
+      video_out_height = video_cap_height;
    // Each frame has one or both field to be deinterlaced into a full frame (double the lines if one field), full frame-rate
    } else if (strcmp(video_output_mode, "deinterlaced") == 0) {
       if (strcmp(video_capture_mode, "interlaced") == 0)
@@ -1252,7 +1252,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       else
          video_out_height = video_cap_height*2;
    } else
-      video_out_height = video_cap_height; 
+      video_out_height = video_cap_height;
 
    printf("Capture Resolution %ux%u\n", video_cap_width, video_cap_height);
    printf("Output Resolution %ux%u\n", video_cap_width, video_out_height);

@@ -10,4 +10,3 @@ add_library(reader_mpga ${LIBRARY_TYPE} mpga_reader.c)
 target_link_libraries(reader_mpga containers)
 
 install(TARGETS reader_mpga DESTINATION ${VMCS_PLUGIN_DIR})
-

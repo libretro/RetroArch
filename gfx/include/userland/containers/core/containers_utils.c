@@ -288,26 +288,26 @@ unsigned int vc_container_es_format_to_bitmapinfoheader(VC_CONTAINER_ES_FORMAT_T
 
 /*****************************************************************************/
 VC_CONTAINER_STATUS_T vc_container_bitmapinfoheader_to_es_format(uint8_t *p,
-   unsigned int buffer_size, unsigned int *extra_offset, unsigned int *extra_size, 
+   unsigned int buffer_size, unsigned int *extra_offset, unsigned int *extra_size,
    VC_CONTAINER_ES_FORMAT_T *format)
 {
    VC_CONTAINER_FOURCC_T fourcc;
-   
+
    if(!p || buffer_size < BITMAPINFOHEADER_SIZE_MAX) return VC_CONTAINER_ERROR_INVALID_ARGUMENT;
    /* size = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]; */
    format->type->video.width = (p[7] << 24) | (p[6] << 16) | (p[5] << 8) | p[4];
    format->type->video.height = (p[11] << 24) | (p[10] << 16) | (p[9] << 8) | p[8];
    memcpy(&fourcc, p + 16, 4);
-  
+
    format->es_type = VC_CONTAINER_ES_TYPE_VIDEO;
    format->codec = vfw_fourcc_to_codec(fourcc);
-   
+
    /* If no mapping is found from vfw, try a more generic one */
    if (format->codec == fourcc && (fourcc = fourcc_to_codec(fourcc)) != VC_CONTAINER_CODEC_UNKNOWN)
       format->codec = fourcc;
 
    if(extra_offset) *extra_offset = BITMAPINFOHEADER_SIZE_MAX;
-   if(extra_size) 
+   if(extra_size)
    {
       if (buffer_size > BITMAPINFOHEADER_SIZE_MAX)
          *extra_size = buffer_size - BITMAPINFOHEADER_SIZE_MAX;
@@ -315,7 +315,7 @@ VC_CONTAINER_STATUS_T vc_container_bitmapinfoheader_to_es_format(uint8_t *p,
          *extra_size = 0;
    }
 
-   return VC_CONTAINER_SUCCESS;   
+   return VC_CONTAINER_SUCCESS;
 }
 
 /*****************************************************************************/

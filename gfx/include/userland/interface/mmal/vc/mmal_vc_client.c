@@ -25,7 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #include "mmal.h"
 #include "mmal_vc_msgs.h"
 #include "mmal_vc_api.h"
@@ -64,7 +63,7 @@ typedef struct MMAL_WAITER_T
   * If there are none free, the calling thread will block until
   * one becomes available.
   */
-typedef struct 
+typedef struct
 {
    MMAL_WAITER_T waiters[MAX_WAITERS];
    VCOS_SEMAPHORE_T sem;
@@ -304,7 +303,6 @@ static MMAL_STATUS_T mmal_vc_release_internal(MMAL_CLIENT_T *client)
    vcos_mutex_unlock(&client->lock);
    return status;
 }
-
 
 /** Callback invoked by VCHIQ
   */
@@ -771,7 +769,6 @@ MMAL_STATUS_T mmal_vc_init_fd(int dev_vchiq_fd)
    vcos_mutex_unlock(&client.lock);
    /* assume we're not using VC immediately.  Do this outside the lock */
    mmal_vc_release();
-
 
    return MMAL_SUCCESS;
 

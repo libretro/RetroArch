@@ -32,7 +32,6 @@ VideoCore OS Abstraction Layer - public header file
 #ifndef VCOS_EVENT_FLAGS_H
 #define VCOS_EVENT_FLAGS_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -103,7 +102,6 @@ VCOS_STATUS_T vcos_event_flags_get(VCOS_EVENT_FLAGS_T *flags,
                                                      VCOS_UNSIGNED ms_suspend,
                                                      VCOS_UNSIGNED *retrieved_events);
 
-
 /**
  * Delete an event flags instance.
  */
@@ -115,4 +113,3 @@ void vcos_event_flags_delete(VCOS_EVENT_FLAGS_T *);
 #endif
 
 #endif
-

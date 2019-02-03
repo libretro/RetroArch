@@ -92,4 +92,3 @@ void wfc_server_stream_update_rects(WFCNativeStreamType stream,
 bool wfc_server_stream_is_empty(void);
 
 #endif /* WFC_SERVER_STREAM_H_ */
-

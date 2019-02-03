@@ -327,7 +327,7 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *system_id        = core_info->system_id 
+            const char *system_id        = core_info->system_id
                ? core_info->system_id : "core";
             char *label                  = NULL;
             playlist_t *current_playlist = playlist_get_cached();

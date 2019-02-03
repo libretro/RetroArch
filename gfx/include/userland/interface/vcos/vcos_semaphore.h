@@ -47,7 +47,7 @@ extern "C" {
  * \section sem Semaphores
  *
  * This provides counting semaphores. Semaphores are not re-entrant. On sensible
- * operating systems a semaphore can always be posted but can only be taken in 
+ * operating systems a semaphore can always be posted but can only be taken in
  * thread (not interrupt) context. Under Nucleus, a LISR cannot post a semaphore,
  * although it would not be hard to lift this restriction.
  *
@@ -66,10 +66,10 @@ extern "C" {
  *  \arg there's no support for NU_PRIORITY in threadx (though it can be emulated, slowly)
  *  \arg we don't appear to actually consciously use it - for example, Dispmanx uses
  *  it, but all threads waiting are the same priority.
- *         
+ *
  */
 
-/** 
+/**
   * \brief Create a semaphore.
   *
   * Create a semaphore.
@@ -79,7 +79,7 @@ extern "C" {
   * @param count The initial count for the semaphore.
   *
   * @return VCOS_SUCCESS if the semaphore was created.
-  * 
+  *
   */
 VCOS_INLINE_DECL
 VCOS_STATUS_T vcos_semaphore_create(VCOS_SEMAPHORE_T *sem, const char *name, VCOS_UNSIGNED count);
@@ -155,4 +155,3 @@ void vcos_semaphore_delete(VCOS_SEMAPHORE_T *sem);
 }
 #endif
 #endif
-

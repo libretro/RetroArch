@@ -2446,7 +2446,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;
@@ -2467,7 +2467,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;

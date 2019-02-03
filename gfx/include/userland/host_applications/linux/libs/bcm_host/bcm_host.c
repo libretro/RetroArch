@@ -49,14 +49,14 @@ int32_t graphics_get_display_size( const uint16_t display_number,
 
    if (display_handle) {
       success = vc_dispmanx_display_get_info(display_handle, &mode_info);
-         
+
       if( success >= 0 )
       {
          if( NULL != width )
          {
             *width = mode_info.width;
          }
-         
+
          if( NULL != height )
          {
             *height = mode_info.height;
@@ -86,7 +86,7 @@ void bcm_host_init(void)
    static int initted;
    int success = -1;
    char response[ 128 ];
-   
+
    if (initted)
 	return;
    initted = 1;
@@ -108,7 +108,7 @@ void bcm_host_init(void)
 
    vcos_log("vchi_connect");
    vchi_connect(&global_connection, 1, global_initialise_instance);
-  
+
    vc_vchi_gencmd_init (global_initialise_instance, &global_connection, 1);
    vc_vchi_dispmanx_init (global_initialise_instance, &global_connection, 1);
    vc_vchi_tv_init (global_initialise_instance, &global_connection, 1);
@@ -164,5 +164,4 @@ unsigned bcm_host_get_sdram_address(void)
    unsigned address = get_dt_ranges("/proc/device-tree/axi/vc_mem/reg", 8);
    return address == ~0 ? 0x40000000 : address;
 }
-
 

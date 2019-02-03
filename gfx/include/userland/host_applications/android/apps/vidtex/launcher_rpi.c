@@ -74,7 +74,6 @@ int runApp(const char *name, RUN_APP_FN_T run_app_fn, const void *params, size_t
    EGL_DISPMANX_WINDOW_T win;
    (void) param_size;
 
-
    vcos_log_trace("Initialsing BCM HOST");
    bcm_host_init();
 
@@ -84,4 +83,3 @@ int runApp(const char *name, RUN_APP_FN_T run_app_fn, const void *params, size_t
 
    return run_app_fn(params, (EGLNativeWindowType *) &win);
 }
-

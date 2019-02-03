@@ -108,9 +108,7 @@ extern void platform_tls_remove(PLATFORM_TLS_T tls);
  */
 extern void *platform_tls_get(PLATFORM_TLS_T tls);
 
-
 #define platform_tls_set(tls, v) vcos_tls_set(tls, v)
 #define platform_tls_remove(tls) vcos_tls_set(tls,NULL)
 
 #endif
-

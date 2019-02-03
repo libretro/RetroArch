@@ -442,7 +442,7 @@ namespace D2D1
             _22 = a._21 * b._12 + a._22 * b._22 + a._23 * b._32 + a._24 * b._42;
             _23 = a._21 * b._13 + a._22 * b._23 + a._23 * b._33 + a._24 * b._43;
             _24 = a._21 * b._14 + a._22 * b._24 + a._23 * b._34 + a._24 * b._44;
- 
+
             _31 = a._31 * b._11 + a._32 * b._21 + a._33 * b._31 + a._34 * b._41;
             _32 = a._31 * b._12 + a._32 * b._22 + a._33 * b._32 + a._34 * b._42;
             _33 = a._31 * b._13 + a._32 * b._23 + a._33 * b._33 + a._34 * b._43;
@@ -622,7 +622,7 @@ namespace D2D1
         };
 
         return bitmapProperties;
-    }    
+    }
 
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
@@ -852,7 +852,7 @@ namespace D2D1
     //
     // Sets a bitmap as an effect input, while inserting a DPI compensation effect
     // to preserve visual appearance as the device context's DPI changes.
-    // 
+    //
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
     HRESULT

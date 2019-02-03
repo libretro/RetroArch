@@ -39,7 +39,6 @@ extern "C" {
 #include "interface/vcos/vcos_types.h"
 #include "vcos.h"
 
-
 /** Create a new thread local storage data key visible to all threads in
   * the current process.
   *
@@ -81,4 +80,3 @@ void *vcos_tls_get(VCOS_TLS_KEY_T tls);
 #endif
 
 #endif
-

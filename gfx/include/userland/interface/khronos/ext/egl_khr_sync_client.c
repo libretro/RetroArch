@@ -102,7 +102,7 @@ static EGL_SYNC_T *egl_sync_create(EGLSyncKHR sync, EGLenum type,
                                RPC_UINT(condition),
                                RPC_INT(threshold),
                                RPC_UINT(sem));
-   } else 
+   } else
 #endif
    {
       sync_ptr->serversync = RPC_UINT_RES(RPC_CALL4_RES(eglIntCreateSync_impl,

@@ -31,21 +31,21 @@ typedef enum  {
    // IMPORTANT - DO NOT ALTER THE ORDER OF COMMANDS IN THIS ENUMERATION
    // NEW FUNCTIONS SHOULD BE ADDED TO THE END, AND MUST ALSO BE ADDED TO
    // THE HOST SIDE FUNCTION TABLE IN display_server.c.
-   
+
    // No function configured - do not use
    EDispmanNoFunction = 0,
-   
+
    // Dispman pre-configure functions
    EDispmanGetDevices,
    EDispmanGetModes,
-   
+
    // Dispman resource-related functions
    EDispmanResourceCreate,
    EDispmanResourceCreateFromImage,
    EDispmanResourceDelete,
    EDispmanResourceGetData,
    EDispmanResourceGetImage,
-   
+
    // Dispman display-related functions
    EDispmanDisplayOpen,
    EDispmanDisplayOpenMode,
@@ -55,12 +55,12 @@ typedef enum  {
    EDispmanDisplaySetBackground,
    EDispmanDisplayGetInfo,
    EDispmanDisplayClose,
-   
+
    // Dispman update-related functions
    EDispmanUpdateStart,
    EDispmanUpdateSubmit,
    EDispmanUpdateSubmitSync,
-   
+
    // Dispman element-related functions
    EDispmanElementAdd,
    EDispmanElementModified,

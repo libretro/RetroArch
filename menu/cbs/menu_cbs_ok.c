@@ -2680,7 +2680,7 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2718,9 +2718,9 @@ static int action_ok_set_switch_gpu_profile(const char *path,
    snprintf(command, sizeof(command), "gpu-profile set %s", profile_name);
 
    system(command);
-        
+
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-        
+
    runloop_msg_queue_push(command, 1, 90, true);
 
 	return menu_cbs_exit();
@@ -2736,9 +2736,9 @@ static int action_ok_set_switch_backlight(const char *path,
    snprintf(command, sizeof(command), "echo %d > /sys/class/backlight/backlight/brightness", brightness);
 
    system(command);
-       
+
    snprintf(command, sizeof(command), "Brightness set to %d%%", brightness);
-        
+
    runloop_msg_queue_push(command, 1, 90, true);
 
    return 0;
@@ -2845,7 +2845,7 @@ static int action_ok_core_option_dropdown_list(const char *path,
 
    generic_action_ok_displaylist_push(
          core_option_lbl, NULL,
-         core_option_idx, 0, 0, 0, 
+         core_option_idx, 0, 0, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
    return 0;
 }
@@ -5410,7 +5410,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
 #endif
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -5880,7 +5880,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
             break;
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;

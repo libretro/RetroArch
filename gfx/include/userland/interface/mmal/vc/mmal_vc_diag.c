@@ -450,7 +450,6 @@ static int do_components(int argc, const char **argv)
    MMAL_VC_STATS_T stats;
    int rc;
 
-
    if (argc > 2 && (strcasecmp(argv[2], "update") == 0))
    {
       MMAL_STATUS_T status;

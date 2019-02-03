@@ -87,7 +87,7 @@ struct audio_mixer_sound
          const void* data;
       } ogg;
 #endif
-     
+
 #ifdef HAVE_DR_FLAC
       struct
       {
@@ -95,7 +95,7 @@ struct audio_mixer_sound
          unsigned size;
          const void* data;
       } flac;
-#endif 
+#endif
 
 #ifdef HAVE_DR_MP3
       struct
@@ -104,7 +104,7 @@ struct audio_mixer_sound
          unsigned size;
          const void* data;
       } mp3;
-#endif 
+#endif
 
 #ifdef HAVE_IBXM
       struct
@@ -278,7 +278,7 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    const retro_resampler_t* resampler = NULL;
    float ratio                        = (double)s_rate / (double)rate;
 
-   if (!retro_resampler_realloc(&data, &resampler, NULL, 
+   if (!retro_resampler_realloc(&data, &resampler, NULL,
             RESAMPLER_QUALITY_DONTCARE, ratio))
       return false;
 
@@ -675,7 +675,6 @@ static bool audio_mixer_play_flac(
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
    drflac *dr_flac          = drflac_open_memory((const unsigned char*)sound->types.flac.data,sound->types.flac.size);
-   
 
    if (!dr_flac)
       return false;
@@ -1176,7 +1175,7 @@ static void audio_mixer_mix_mp3(float* buffer, size_t num_frames,
    {
 again:
       temp_samples = (unsigned)drmp3_read_f32(&voice->types.mp3.stream, AUDIO_MIXER_TEMP_BUFFER/2, temp_buffer) * 2;
-      
+
       if (temp_samples == 0)
       {
          if (voice->repeat)

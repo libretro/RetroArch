@@ -59,7 +59,7 @@ CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
 flags   := -I$(LIBRETRO_COMM_DIR)/include
 asflags := $(extra_flags)
-LDFLAGS := 
+LDFLAGS :=
 flags   += -std=c99 -DMD5_BUILD_UTILITY -DSHA1_BUILD_UTILITY
 
 ifeq (1,$(use_neon))

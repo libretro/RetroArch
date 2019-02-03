@@ -64,7 +64,7 @@ static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
 {
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
-   ctr_video_t             *ctr     = video_info ? 
+   ctr_video_t             *ctr     = video_info ?
       (ctr_video_t*)video_info->userdata : NULL;
 
    if (!ctr || !draw)

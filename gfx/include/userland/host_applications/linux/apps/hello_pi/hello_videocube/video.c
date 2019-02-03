@@ -49,7 +49,6 @@ void my_fill_buffer_done(void* data, COMPONENT_T* comp)
    }
 }
 
-
 // Modified function prototype to work with pthreads
 void *video_decode_test(void* arg)
 {
@@ -204,7 +203,6 @@ void *video_decode_test(void* arg)
             // Set egl_render to executing
             ilclient_change_component_state(egl_render, OMX_StateExecuting);
 
-
             // Request egl_render to write data to the texture buffer
             if(OMX_FillThisBuffer(ILC_GET_HANDLE(egl_render), eglBuffer) != OMX_ErrorNone)
             {
@@ -263,4 +261,3 @@ void *video_decode_test(void* arg)
    ilclient_destroy(client);
    return (void *)status;
 }
-

@@ -47,7 +47,7 @@ typedef struct {
    uint32_t fieldrate_num;
    uint32_t fieldrate_denom;
    uint32_t fields_per_frame;
-   uint32_t transform;        
+   uint32_t transform;
 } GET_MODES_DATA_T;
 
 typedef struct {

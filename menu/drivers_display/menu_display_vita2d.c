@@ -56,7 +56,7 @@ static const float *menu_display_vita2d_get_default_tex_coords(void)
 static void *menu_display_vita2d_get_default_mvp(
       video_frame_info_t *video_info)
 {
-   vita_video_t *vita2d = video_info ? 
+   vita_video_t *vita2d = video_info ?
       (vita_video_t*)video_info->userdata : NULL;
 
    if (!vita2d)
@@ -113,7 +113,7 @@ static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
     const float *vertex              = NULL;
     const float *tex_coord           = NULL;
     const float *color               = NULL;
-    vita_video_t             *vita2d = video_info ? 
+    vita_video_t             *vita2d = video_info ?
        (vita_video_t*)video_info->userdata : NULL;
 
    if (!vita2d || !draw)

@@ -589,12 +589,12 @@ static bool request_wallpaper(const char *path)
       if (string_is_equal(wallpaper.path, path))
          return true;
    }
-   
+
    /* 'Reset' current wallpaper */
    wallpaper.is_valid = false;
    free(wallpaper.path);
    wallpaper.path = NULL;
-   
+
    /* Ensure that new path is valid... */
    if (!string_is_empty(path))
    {
@@ -608,18 +608,18 @@ static bool request_wallpaper(const char *path)
          return true;
       }
    }
-   
+
    return false;
 }
 
 static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
-   
+
    /* Sanity check */
    if (!image->pixels || (image->width != WALLPAPER_WIDTH) || (image->height != WALLPAPER_HEIGHT))
       return;
-   
+
    /* Copy image to wallpaper buffer, performing pixel format conversion */
    for (x = 0; x < WALLPAPER_WIDTH; x++)
    {
@@ -629,9 +629,9 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
             argb32_to_pixel_platform_format(image->pixels[x + (y * WALLPAPER_WIDTH)]);
       }
    }
-   
+
    wallpaper.is_valid = true;
-   
+
    /* Tell menu that a display update is required */
    rgui->force_redraw = true;
 }
@@ -644,14 +644,14 @@ static void request_thumbnail(rgui_t *rgui, const char *path)
       if (string_is_equal(thumbnail.path, path))
          return;
    }
-   
+
    /* 'Reset' current thumbnail */
    thumbnail.width = 0;
    thumbnail.height = 0;
    thumbnail.is_valid = false;
    free(thumbnail.path);
    thumbnail.path = NULL;
-   
+
    /* Ensure that new path is valid... */
    if (!string_is_empty(path))
    {
@@ -671,7 +671,7 @@ static void request_thumbnail(rgui_t *rgui, const char *path)
 static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, struct texture_image *image_dst)
 {
    settings_t *settings = config_get_ptr();
-   
+
    /* Determine output dimensions */
    static const float display_aspect_ratio = (float)THUMB_MAX_WIDTH / (float)THUMB_MAX_HEIGHT;
    float aspect_ratio = (float)image_src->width / (float)image_src->height;
@@ -691,24 +691,24 @@ static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, s
       image_dst->width = (image_dst->width < 1) ? 1 : image_dst->width;
       image_dst->width = (image_dst->width > THUMB_MAX_WIDTH) ? THUMB_MAX_WIDTH : image_dst->width;
    }
-   
+
    /* Allocate pixel buffer */
    image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
    if (!image_dst->pixels)
       return false;
-   
+
    /* Determine scaling method */
    if (settings->uints.menu_rgui_thumbnail_downscaler == RGUI_THUMB_SCALE_POINT)
    {
       uint32_t x_ratio, y_ratio;
       unsigned x_src, y_src;
       unsigned x_dst, y_dst;
-      
+
       /* Perform nearest neighbour resampling
        * > Fastest method, minimal performance impact */
       x_ratio = ((image_src->width  << 16) / image_dst->width);
       y_ratio = ((image_src->height << 16) / image_dst->height);
-      
+
       for (y_dst = 0; y_dst < image_dst->height; y_dst++)
       {
          y_src = (y_dst * y_ratio) >> 16;
@@ -730,15 +730,15 @@ static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, s
       rgui->image_scaler.in_height   = image_src->height;
       rgui->image_scaler.in_stride   = image_src->width * sizeof(uint32_t);
       rgui->image_scaler.in_fmt      = SCALER_FMT_ARGB8888;
-      
+
       rgui->image_scaler.out_width   = image_dst->width;
       rgui->image_scaler.out_height  = image_dst->height;
       rgui->image_scaler.out_stride  = image_dst->width * sizeof(uint32_t);
       rgui->image_scaler.out_fmt     = SCALER_FMT_ARGB8888;
-      
+
       rgui->image_scaler.scaler_type = (settings->uints.menu_rgui_thumbnail_downscaler == RGUI_THUMB_SCALE_SINC) ?
          SCALER_TYPE_SINC : SCALER_TYPE_BILINEAR;
-      
+
       /* This reset is redundant, since scaler_ctx_gen_filter()
        * calls it - but do it anyway in case the
        * scaler_ctx_gen_filter() internals ever change... */
@@ -750,13 +750,13 @@ static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, s
          scaler_ctx_gen_reset(&rgui->image_scaler);
          return false;
       }
-      
+
       scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, image_src->pixels);
       /* Reset again - don't want to leave anything hanging around
        * if the user switches back to nearest neighbour scaling */
       scaler_ctx_gen_reset(&rgui->image_scaler);
    }
-   
+
    return true;
 }
 
@@ -770,7 +770,7 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
       NULL,
       false
    };
-   
+
    /* Ensure that we only process the most recently loaded
     * thumbnail image (i.e. don't waste CPU cycles processing
     * old images if we have a backlog)
@@ -783,11 +783,11 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
       rgui->thumbnail_queue_size--;
    if (rgui->thumbnail_queue_size > 0)
       return;
-   
+
    /* Sanity check */
    if (!image_src->pixels || (image_src->width < 1) || (image_src->height < 1))
       return;
-   
+
    /* Downscale thumbnail if it exceeds maximum size limits */
    if ((image_src->width > THUMB_MAX_WIDTH) || (image_src->height > THUMB_MAX_HEIGHT))
    {
@@ -799,10 +799,10 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
    {
       image = image_src;
    }
-   
+
    thumbnail.width = image->width;
    thumbnail.height = image->height;
-   
+
    /* Copy image to thumbnail buffer, performing pixel format conversion */
    for (x = 0; x < thumbnail.width; x++)
    {
@@ -812,12 +812,12 @@ static void process_thumbnail(rgui_t *rgui, struct texture_image *image_src)
             argb32_to_pixel_platform_format(image->pixels[x + (y * thumbnail.width)]);
       }
    }
-   
+
    thumbnail.is_valid = true;
-   
+
    /* Tell menu that a display update is required */
    rgui->force_redraw = true;
-   
+
    /* Clean up */
    image = NULL;
    if (image_resampled.pixels)
@@ -857,21 +857,21 @@ static bool rgui_render_wallpaper(void)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   
+
    if (wallpaper.is_valid && rgui_framebuf_data)
    {
       menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-      
+
       /* Sanity check */
       if ((fb_width != WALLPAPER_WIDTH) || (fb_height != WALLPAPER_HEIGHT) || (fb_pitch != WALLPAPER_WIDTH << 1))
          return false;
-      
+
       /* Copy wallpaper to framebuffer */
       memcpy(rgui_framebuf_data, wallpaper.data, WALLPAPER_WIDTH * WALLPAPER_HEIGHT * sizeof(uint16_t));
-      
+
       return true;
    }
-   
+
    return false;
 }
 
@@ -883,11 +883,11 @@ static void rgui_render_thumbnail(void)
    unsigned fb_x_offset, fb_y_offset;
    unsigned thumb_x_offset, thumb_y_offset;
    unsigned width, height;
-   
+
    if (thumbnail.is_valid && rgui_framebuf_data)
    {
       menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-      
+
       /* Ensure that thumbnail is centred
        * > Have to perform some stupid tests here because we
        *   cannot assume fb_width and fb_height are constant and
@@ -917,7 +917,7 @@ static void rgui_render_thumbnail(void)
          fb_y_offset = 0;
          height = fb_height;
       }
-      
+
       /* Copy thumbnail to framebuffer */
       for (y = 0; y < height; y++)
       {
@@ -1001,7 +1001,7 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
       default:
          break;
    }
-   
+
    return &rgui_theme_classic_green;
 }
 
@@ -1013,48 +1013,48 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       border_dark_color, border_light_color;
    char wallpaper_file[PATH_MAX_LENGTH];
    bool success = false;
-   
+
    wallpaper_file[0] = '\0';
-   
+
    /* Sanity check */
    if (string_is_empty(theme_path))
       goto end;
    if (!filestream_exists(theme_path))
       goto end;
-   
+
    /* Open config file */
    conf = config_file_new(theme_path);
    if (!conf)
       goto end;
-   
+
    /* Parse config file */
    if(!config_get_hex(conf, "rgui_entry_normal_color", &normal_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_entry_hover_color", &hover_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_title_color", &title_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_bg_dark_color", &bg_dark_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_bg_light_color", &bg_light_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_border_dark_color", &border_dark_color))
       goto end;
-   
+
    if(!config_get_hex(conf, "rgui_border_light_color", &border_light_color))
       goto end;
-   
+
    config_get_array(conf, "rgui_wallpaper", wallpaper_file, sizeof(wallpaper_file));
-   
+
    success = true;
-   
+
 end:
-   
+
    if (success)
    {
       theme_colors->normal_color = (uint32_t)normal_color;
@@ -1064,13 +1064,13 @@ end:
       theme_colors->bg_light_color = (uint32_t)bg_light_color;
       theme_colors->border_dark_color = (uint32_t)border_dark_color;
       theme_colors->border_light_color = (uint32_t)border_light_color;
-      
+
       /* Load wallpaper, if required */
       if (!string_is_empty(wallpaper_file))
       {
          char wallpaper_path[PATH_MAX_LENGTH];
          wallpaper_path[0] = '\0';
-         
+
          fill_pathname_resolve_relative(wallpaper_path, theme_path, wallpaper_file, sizeof(wallpaper_path));
          rgui->show_wallpaper = request_wallpaper(wallpaper_path);
       }
@@ -1086,7 +1086,7 @@ end:
       theme_colors->border_dark_color = rgui_theme_classic_green.border_dark_color;
       theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
    }
-   
+
    if (conf)
       config_file_free(conf);
    conf = NULL;
@@ -1121,7 +1121,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.bg_light_color = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
    rgui->colors.border_dark_color = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
    rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
-   
+
    rgui->bg_modified = true;
 }
 
@@ -1279,7 +1279,7 @@ static void rgui_render_background(rgui_t *rgui)
    unsigned fb_width, fb_height;
    uint16_t             *src  = NULL;
    uint16_t             *dst  = NULL;
-   
+
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
@@ -1485,7 +1485,7 @@ static void rgui_render(void *data, bool is_idle)
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
-   
+
    if (rgui->bg_modified)
       rgui->bg_modified = false;
 
@@ -1578,10 +1578,10 @@ static void rgui_render(void *data, bool is_idle)
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
       thumbnail_title_buf[0] = '\0';
-      
+
       /* Draw thumbnail */
       rgui_render_thumbnail();
-      
+
       /* Format thumbnail title */
       ticker.s        = thumbnail_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
@@ -1589,16 +1589,16 @@ static void rgui_render(void *data, bool is_idle)
       ticker.str      = rgui->thumbnail_content;
       ticker.selected = true;
       menu_animation_ticker(&ticker);
-      
+
       title_width = utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE;
       title_x = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
-      
+
       if (rgui_framebuf_data)
       {
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch,
                         title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
-         
+
          /* Draw thumbnail title */
          blit_line((int)title_x, 0, thumbnail_title_buf, rgui->colors.hover_color);
       }
@@ -1642,9 +1642,9 @@ static void rgui_render(void *data, bool is_idle)
          ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
          ticker.str      = core_title;
          ticker.selected = true;
-         
+
          menu_animation_ticker(&ticker);
-         
+
          if (rgui_framebuf_data)
             blit_line(
                   RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
@@ -1837,7 +1837,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->thumbnail_queue_size = 0;
    /* Ensure that we start with thumbnails disabled */
    rgui->show_thumbnail = false;
-   
+
    return menu;
 
 error:
@@ -1852,7 +1852,7 @@ static void rgui_free(void *data)
    const uint8_t *font_fb;
    bool fb_font_inited   = false;
    rgui_t *rgui = (rgui_t*)data;
-   
+
    if (rgui)
    {
       if (!string_is_empty(rgui->thumbnail_system))
@@ -1878,7 +1878,7 @@ static void rgui_free(void *data)
 
    if (!string_is_empty(thumbnail.path))
       free(thumbnail.path);
-   
+
    if (!string_is_empty(wallpaper.path))
       free(wallpaper.path);
 }
@@ -1916,7 +1916,7 @@ static const char *rgui_thumbnail_ident()
 {
    char folder = 0;
    settings_t *settings = config_get_ptr();
-   
+
    folder = settings->uints.menu_thumbnails;
 
    switch (folder)
@@ -1942,13 +1942,13 @@ static void rgui_update_thumbnail_path(void *userdata)
    char new_path[PATH_MAX_LENGTH] = {0};
    const char *thumbnail_base_dir = settings->paths.directory_thumbnails;
    const char *thumb_ident = rgui_thumbnail_ident();
-   
+
    if (!string_is_empty(rgui->thumbnail_path))
    {
       free(rgui->thumbnail_path);
       rgui->thumbnail_path = NULL;
    }
-   
+
    /* NB: The following is copied directly from xmb.c (xmb_update_thumbnail_path()) */
    if (!string_is_equal(thumb_ident, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) &&
        !string_is_empty(thumbnail_base_dir) &&
@@ -1957,19 +1957,19 @@ static void rgui_update_thumbnail_path(void *userdata)
    {
       /* Append thumbnail system directory */
       fill_pathname_join(new_path, thumbnail_base_dir, rgui->thumbnail_system, sizeof(new_path));
-      
+
       if (!string_is_empty(new_path))
       {
          char *tmp_new2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
          tmp_new2[0] = '\0';
-         
+
          /* Append Named_Snaps/Named_Boxarts/Named_Titles */
          fill_pathname_join(tmp_new2, new_path, thumb_ident, PATH_MAX_LENGTH * sizeof(char));
-         
+
          strlcpy(new_path, tmp_new2, PATH_MAX_LENGTH * sizeof(char));
          free(tmp_new2);
          tmp_new2 = NULL;
-         
+
          if (!string_is_empty(new_path))
          {
             /* Scrub characters that are not cross-platform and/or violate the
@@ -1980,27 +1980,27 @@ static void rgui_update_thumbnail_path(void *userdata)
             char *scrub_char_pointer = NULL;
             char *tmp_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             char *tmp = strdup(rgui->thumbnail_content);
-            
+
             tmp_new[0] = '\0';
-            
+
             while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
                *scrub_char_pointer = '_';
-            
+
             fill_pathname_join(tmp_new, new_path, tmp, PATH_MAX_LENGTH * sizeof(char));
-            
+
             if (!string_is_empty(tmp_new))
                strlcpy(new_path, tmp_new, sizeof(new_path));
-            
+
             free(tmp_new);
             tmp_new = NULL;
             free(tmp);
             tmp = NULL;
-            
+
             /* Append png extension */
             if (!string_is_empty(new_path))
             {
                strlcat(new_path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(new_path));
-               
+
                if (!string_is_empty(new_path))
                   rgui->thumbnail_path = strdup(new_path);
             }
@@ -2037,10 +2037,10 @@ static void rgui_update_thumbnail_content(void *userdata)
    playlist_t *playlist = NULL;
    char title[255];
    size_t selection = menu_navigation_get_selection();
-   
+
    if (!rgui)
       return;
-   
+
    /* Check whether current selection is a playlist entry
     * (i.e. whether we should be looking for a thumbnail image) */
    rgui->is_playlist_entry = false;
@@ -2061,13 +2061,13 @@ static void rgui_update_thumbnail_content(void *userdata)
             {
                const char *label = NULL;
                playlist_get_index(playlist, selection, NULL, &label, NULL, NULL, NULL, NULL);
-               
+
                if (!string_is_empty(rgui->thumbnail_content))
                {
                   free(rgui->thumbnail_content);
                   rgui->thumbnail_content = NULL;
                }
-               
+
                if (!string_is_empty(label))
                {
                   rgui->thumbnail_content = strdup(label);
@@ -2084,7 +2084,7 @@ static void rgui_update_thumbnail_image(void *userdata)
    rgui_t *rgui = (rgui_t*)userdata;
    if (!rgui)
       return;
-   
+
    rgui->show_thumbnail = !rgui->show_thumbnail;
 
    if (rgui->show_thumbnail)

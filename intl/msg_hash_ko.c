@@ -65,7 +65,7 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                 snprintf(s, len,
                          "일시정지/해제 상태를 전환합니다.");
                 break;
-            
+
             case RARCH_FRAMEADVANCE:
                 snprintf(s, len,
                          "컨텐츠 일시정지시 프레임을 진행합니다.");

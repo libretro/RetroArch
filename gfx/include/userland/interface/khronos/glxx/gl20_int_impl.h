@@ -90,7 +90,6 @@ FN(void, glValidateProgram_impl_20, (GLuint program))
 //FN(void, glVertexAttrib3fv_impl_20, (GLuint indx, const GLfloat *values))
 //FN(void, glVertexAttrib4fv_impl_20, (GLuint indx, const GLfloat *values))
 
-
 /* OES_shader_source */
 FN(void, glCompileShader_impl_20, (GLuint shader))
 FN(int, glGetShaderiv_impl_20, (GLuint shader, GLenum pname, GLint *params))

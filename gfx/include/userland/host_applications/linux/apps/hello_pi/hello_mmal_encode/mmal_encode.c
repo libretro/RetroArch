@@ -98,7 +98,7 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
    int outputWritten = 0;
    FILE* outFile;
    int nw;
-  
+
    printf("Encoding test image %s\n", filename);
 
    // Configure input
@@ -139,7 +139,7 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
           portIn->format->es->video.width, portIn->format->es->video.height);
 
    // Configure output
-  
+
    portOut = encoder->output[0];
 
    if (portOut->is_enabled) {
@@ -156,7 +156,7 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
    }
 
    mmal_port_parameter_set_uint32(portOut, MMAL_PARAMETER_JPEG_Q_FACTOR, 100);
-  
+
    portOut->buffer_size = portOut->buffer_size_recommended;
    portOut->buffer_num = portOut->buffer_num_recommended;
 
@@ -167,7 +167,7 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
    }
 
    printf("- output %4.4s\n", (char*)&encoding);
-  
+
    // Perform the encoding
 
    outFile = fopen(filename, "w");
@@ -175,9 +175,9 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
       fprintf(stderr, "Failed to open file %s (%s)\n", filename, strerror(errno));
       exit(1);
    }
-  
+
    while (!eos) {
-    
+
       // Send output buffers to be filled with encoded image.
       while (mmal_wrapper_buffer_get_empty(portOut, &out, 0) == MMAL_SUCCESS) {
          if (mmal_port_send_buffer(portOut, out) != MMAL_SUCCESS) {
@@ -219,7 +219,7 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
          exit(1);
       }
       outputWritten += nw;
-    
+
       mmal_buffer_header_release(out);
    }
 
@@ -228,7 +228,6 @@ void mmal_encode_test(MMAL_FOURCC_T encoding, // Encoding
    fclose(outFile);
    printf("- written %u bytes to %s\n\n", outputWritten, filename);
 }
-
 
 int main(int argc, const char** argv)
 {
@@ -245,7 +244,7 @@ int main(int argc, const char** argv)
       exit(1);
    }
    encoder->callback = mmalCallback;
-  
+
    // Perform test encodings in various formats
    mmal_encode_test(MMAL_ENCODING_PNG, "out.png");
    mmal_encode_test(MMAL_ENCODING_JPEG, "out.jpg");
@@ -257,5 +256,4 @@ int main(int argc, const char** argv)
 
    return 0;
 }
-
 

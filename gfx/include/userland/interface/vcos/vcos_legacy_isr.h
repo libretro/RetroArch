@@ -45,7 +45,7 @@ extern "C" {
   * New code should use the single-dispatch scheme - the LISR/HISR
   * distinction is not necessary.
   *
-  * Under ThreadX, a HISR is implemented as a high-priority thread which 
+  * Under ThreadX, a HISR is implemented as a high-priority thread which
   * waits on a counting semaphore to call the HISR function. Although this
   * provides a good approximation to the Nucleus semantics, it is potentially
   * slow if all you are trying to do is to wake a thread from LISR context.
@@ -73,7 +73,7 @@ VCOS_STATUS_T vcos_legacy_hisr_create(VCOS_HISR_T *hisr, const char *name,
 VCOS_INLINE_DECL
 void vcos_legacy_hisr_activate(VCOS_HISR_T *hisr);
 
-/** Delete a HISR. 
+/** Delete a HISR.
   *
   * @param hisr HISR to delete.
   */

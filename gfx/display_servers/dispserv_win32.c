@@ -328,9 +328,9 @@ void *win32_display_server_get_resolution_list(void *data,
       if (!win32_get_video_output(&dm, i, sizeof(dm)))
          break;
 
-      conf[i].width       = dm.dmPelsWidth; 
-      conf[i].height      = dm.dmPelsHeight; 
-      conf[i].bpp         = dm.dmBitsPerPel; 
+      conf[i].width       = dm.dmPelsWidth;
+      conf[i].height      = dm.dmPelsHeight;
+      conf[i].bpp         = dm.dmBitsPerPel;
       conf[i].refreshrate = dm.dmDisplayFrequency;
       conf[i].idx         = i;
       conf[i].current     = false;

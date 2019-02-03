@@ -99,7 +99,6 @@ typedef uint32_t vc_container_net_open_flags_t;
  * Used with the VC_CONTAINER_NET_CONTROL_SET_READ_TIMEOUT_MS control operation. */
 #define INFINITE_TIMEOUT_MS   0xFFFFFFFFUL
 
-
 /** Opens a network socket instance.
  * The network address can be a host name, dotted IP4, hex IP6 address or NULL. Passing NULL
  * signifies the socket is either to be used as a datagram receiver or a stream server,
@@ -206,7 +205,7 @@ size_t vc_container_net_maximum_datagram_size( VC_CONTAINER_NET_T *p_ctx );
  * terminating NUL character.
  * Calling this function on a non-stream server instance, or one that is not
  * connected to a client, will result in an error status.
- * 
+ *
  * \param p_ctx The socket instance.
  * \param name Pointer where the name should be written.
  * \param name_len Maximum number of characters to write to name.
@@ -217,7 +216,7 @@ vc_container_net_status_t vc_container_net_get_client_name( VC_CONTAINER_NET_T *
  * The port is written to the address in host order.
  * Calling this function on a non-stream server instance, or one that is not
  * connected to a client, will result in an error status.
- * 
+ *
  * \param p_ctx The socket instance.
  * \param port Pointer where the port should be written.
  * \return The status of the socket. */
@@ -225,7 +224,7 @@ vc_container_net_status_t vc_container_net_get_client_port( VC_CONTAINER_NET_T *
 
 /** Perform a control operation on the socket.
  * See vc_container_net_control_t for more details.
- * 
+ *
  * \param p_ctx The socket instance.
  * \param operation The control operation to perform.
  * \param args Variable list of additional arguments to the operation.

@@ -14,4 +14,3 @@ add_library(reader_rtp ${LIBRARY_TYPE} ${rtp_SRCS})
 target_link_libraries(reader_rtp containers)
 
 install(TARGETS reader_rtp DESTINATION ${VMCS_PLUGIN_DIR})
-

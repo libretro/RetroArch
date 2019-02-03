@@ -86,10 +86,8 @@ void vcos_quickslow_mutex_unlock_quick(VCOS_QUICKSLOW_MUTEX_T *m)
 
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif
 #endif
-
 

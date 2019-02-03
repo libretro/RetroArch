@@ -45,12 +45,10 @@ typedef struct xref_t
    int mmal_mode;
 } XREF_T;
 
-
 void raspicli_display_help(const COMMAND_LIST *commands, const int num_commands);
 int raspicli_get_command_id(const COMMAND_LIST *commands, const int num_commands, const char *arg, int *num_parameters);
 
 int raspicli_map_xref(const char *str, const XREF_T *map, int num_refs);
 const char *raspicli_unmap_xref(const int en, XREF_T *map, int num_refs);
-
 
 #endif

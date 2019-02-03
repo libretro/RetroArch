@@ -7,4 +7,3 @@ LDFLAGS+=-lmmal -lmmal_core -lmmal_components -lmmal_util -lmmal_vc_client
 LDFLAGS+=-Wl,--no-as-needed
 
 include ../Makefile.include
-

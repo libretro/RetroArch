@@ -197,7 +197,7 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
          {
             unsigned addr = address;
             pointer       = desc->core.ptr;
-            
+
             address       = (unsigned)cheevos_var_reduce(
                (addr - desc->core.start) & desc->disconnect_mask,
                desc->core.disconnect);

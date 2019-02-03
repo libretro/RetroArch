@@ -405,9 +405,9 @@ static uint64_t drm_plane_type(drmModePlane *plane)
 {
    int i,j;
 
-   /* The property values and their names are stored in different arrays, 
+   /* The property values and their names are stored in different arrays,
     * so we access them simultaneously here.
-    * We are interested in OVERLAY planes only, that's 
+    * We are interested in OVERLAY planes only, that's
     * type 0 or DRM_PLANE_TYPE_OVERLAY
     * (see /usr/xf86drmMode.h for definition). */
    drmModeObjectPropertiesPtr props =

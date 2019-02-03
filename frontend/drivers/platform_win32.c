@@ -101,7 +101,7 @@ static bool gfx_init_dwm(void)
 
    DragAcceptFiles_func =
       (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
-   
+
    mmcss =
 	   (HRESULT(WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
 #else

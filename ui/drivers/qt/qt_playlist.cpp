@@ -168,7 +168,7 @@ QString PlaylistModel::getSanitizedThumbnailName(QString label) const
 }
 
 QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QString type) const
-{   
+{
    if (isSupportedImage(hash["path"]))
    {
       /* use thumbnail widgets to show regular image files */

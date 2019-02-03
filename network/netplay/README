@@ -128,9 +128,7 @@ For the server:
 7) Receive INFO
 8) Send SYNC
 
-
 * Guarantee not actually a guarantee.
-
 
 Netplay's command format
 
@@ -357,7 +355,6 @@ Unused
 
 Command: CFG_ACK
 Unused
-
 
 Input types
 

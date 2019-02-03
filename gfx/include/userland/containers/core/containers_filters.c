@@ -39,13 +39,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    #define DL_SUFFIX VCOS_SO_EXT
    #ifndef DL_PATH_PREFIX
       #define DL_PATH_PREFIX ""
-   #endif   
+   #endif
 #endif
 
 typedef struct VC_CONTAINER_FILTER_PRIVATE_T
 {
    /** Pointer to the container filter code and symbols */
-   void *handle;   
+   void *handle;
 } VC_CONTAINER_FILTER_PRIVATE_T;
 
 typedef VC_CONTAINER_STATUS_T (*VC_CONTAINER_FILTER_OPEN_FUNC_T)(VC_CONTAINER_FILTER_T*, VC_CONTAINER_FOURCC_T);
@@ -63,7 +63,7 @@ static struct {
    {0, NULL}
 };
 
-static VC_CONTAINER_STATUS_T vc_container_filter_load(VC_CONTAINER_FILTER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T vc_container_filter_load(VC_CONTAINER_FILTER_T *p_ctx,
                                                       VC_CONTAINER_FOURCC_T filter,
                                                       VC_CONTAINER_FOURCC_T type)
 {
@@ -71,8 +71,8 @@ static VC_CONTAINER_STATUS_T vc_container_filter_load(VC_CONTAINER_FILTER_T *p_c
    VC_CONTAINER_FILTER_OPEN_FUNC_T func;
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
    unsigned int i;
-   
-   for(i = 0; filter_to_name_table[i].filter; ++i) 
+
+   for(i = 0; filter_to_name_table[i].filter; ++i)
    {
       if (filter_to_name_table[i].filter == filter)
       {
@@ -85,7 +85,7 @@ static VC_CONTAINER_STATUS_T vc_container_filter_load(VC_CONTAINER_FILTER_T *p_c
          }
       }
    }
-    
+
    p_ctx->priv->handle = handle;
    return status;
 }
@@ -97,9 +97,9 @@ static void vc_container_filter_unload(VC_CONTAINER_FILTER_T *p_ctx)
 }
 
 /*****************************************************************************/
-VC_CONTAINER_FILTER_T *vc_container_filter_open(VC_CONTAINER_FOURCC_T filter, 
+VC_CONTAINER_FILTER_T *vc_container_filter_open(VC_CONTAINER_FOURCC_T filter,
                                                 VC_CONTAINER_FOURCC_T type,
-                                                VC_CONTAINER_T *p_container, 
+                                                VC_CONTAINER_T *p_container,
    VC_CONTAINER_STATUS_T *p_status )
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_ERROR_NOT_FOUND;
@@ -112,10 +112,10 @@ VC_CONTAINER_FILTER_T *vc_container_filter_open(VC_CONTAINER_FOURCC_T filter,
    memset(p_ctx, 0, sizeof(*p_ctx) + sizeof(*priv));
    p_ctx->priv = priv = (VC_CONTAINER_FILTER_PRIVATE_T *)&p_ctx[1];
    p_ctx->container = p_container;
-   
+
    status = vc_container_filter_load(p_ctx, filter, type);
    if(status != VC_CONTAINER_SUCCESS) goto error;
-   
+
  end:
    if(p_status) *p_status = status;
    return p_ctx;
@@ -160,7 +160,7 @@ VC_CONTAINER_STATUS_T vc_container_filter_control(VC_CONTAINER_FILTER_T *p_ctx, 
 }
 
 static VC_CONTAINER_FILTER_OPEN_FUNC_T load_library(void **handle, VC_CONTAINER_FOURCC_T filter, const char *name)
-{  
+{
    VC_CONTAINER_FILTER_OPEN_FUNC_T func = NULL;
 #ifdef ENABLE_CONTAINERS_STANDALONE
    VC_CONTAINER_PARAM_UNUSED(handle);
@@ -177,7 +177,7 @@ static VC_CONTAINER_FILTER_OPEN_FUNC_T load_library(void **handle, VC_CONTAINER_
    snprintf(filter_, sizeof(filter_), "%4.4s", (const char*)&filter);
    ptr = strchr(filter_, '\0');
    while (ptr > filter_ && isspace(*--ptr)) *ptr = '\0';
-   strncat(filter_, "_", 1);    
+   strncat(filter_, "_", 1);
 
    dl_name_len = strlen(DL_PATH_PREFIX) + strlen(filter_) + strlen(name) + strlen(DL_SUFFIX) + 1;
    dl_name = malloc(dl_name_len);
@@ -203,7 +203,7 @@ static VC_CONTAINER_FILTER_OPEN_FUNC_T load_library(void **handle, VC_CONTAINER_
       if (func)
          *handle = dl_handle;
       else
-         vcos_dlclose(dl_handle);      
+         vcos_dlclose(dl_handle);
    }
 
    free(dl_name);
@@ -211,7 +211,7 @@ static VC_CONTAINER_FILTER_OPEN_FUNC_T load_library(void **handle, VC_CONTAINER_
 #endif
    return func;
 }
-      
+
 static void unload_library(void *handle)
 {
 #ifdef ENABLE_CONTAINERS_STANDALONE

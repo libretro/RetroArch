@@ -9,4 +9,3 @@ Version: 10
 Requires: bcm_host
 Libs: -L${libdir} -lGLESv2
 Cflags: -I${includedir}
-

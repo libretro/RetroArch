@@ -54,7 +54,7 @@ typedef struct
    VCOS_MUTEX_T eglimages_lock;
    KHRN_MAP_T wintoeglimage;//TODO window ids should be per process?
    VCOS_MUTEX_T wintoeglimage_mutex;
-   
+
 #if EGL_KHR_sync
    KHRN_MAP_T syncs;
 #endif
@@ -159,9 +159,8 @@ typedef struct
    uint32_t swap_interval;
    uint32_t semaphoreId;  //Symbian needs a handle passed back in Khan, not just surface number
 
-
    //for android, the mh_storage this points at needs updating to point to where rendering happened
-   uint32_t egl_render_image; 
+   uint32_t egl_render_image;
 
    EGL_DISP_HANDLE_T disp_handle;
 } EGL_SERVER_SURFACE_T;

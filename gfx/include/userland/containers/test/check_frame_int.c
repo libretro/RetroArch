@@ -106,7 +106,6 @@ int main(int argc, char **argv)
       track->is_enabled =  (track->format->es_type == VC_CONTAINER_ES_TYPE_VIDEO);
    }
 
-
    LOG_DEBUG(0, "TEST start reading");
    for(i = 0; !packets_num || (long)i < packets_num; i++)
    {
@@ -344,5 +343,4 @@ static int container_test_info(VC_CONTAINER_T *ctx, bool b_reader)
 
    return 0;
 }
-
 

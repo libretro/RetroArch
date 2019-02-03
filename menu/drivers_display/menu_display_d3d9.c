@@ -80,7 +80,7 @@ static INT32 menu_display_prim_to_d3d9_enum(
 
 static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 {
-   d3d9_video_t *d3d = video_info ? 
+   d3d9_video_t *d3d = video_info ?
       (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
@@ -91,7 +91,7 @@ static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 
 static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
 {
-   d3d9_video_t *d3d = video_info ? 
+   d3d9_video_t *d3d = video_info ?
       (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
@@ -126,8 +126,8 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
    LPDIRECT3DDEVICE9 dev;
-   d3d9_video_t *d3d              = video_info ? 
-      (d3d9_video_t*)video_info->userdata : NULL;   
+   d3d9_video_t *d3d              = video_info ?
+      (d3d9_video_t*)video_info->userdata : NULL;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -215,8 +215,8 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
    d3d9_draw_primitive(dev,
          (D3DPRIMITIVETYPE)menu_display_prim_to_d3d9_enum(draw->prim_type),
          d3d->menu_display.offset,
-         draw->coords->vertices - 
-         ((draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) 
+         draw->coords->vertices -
+         ((draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP)
           ? 2 : 0));
 
    d3d->menu_display.offset += draw->coords->vertices;
@@ -228,7 +228,7 @@ static void menu_display_d3d9_draw_pipeline(menu_display_ctx_draw_t *draw,
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
    static float t                    = 0;
    video_coord_array_t *ca           = NULL;
-   
+
    if (!draw)
       return;
 
@@ -277,7 +277,7 @@ static void menu_display_d3d9_clear_color(
 {
    LPDIRECT3DDEVICE9 dev;
    DWORD    clear_color = 0;
-   d3d9_video_t     *d3d = video_info ? 
+   d3d9_video_t     *d3d = video_info ?
       (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d || !clearcolor)

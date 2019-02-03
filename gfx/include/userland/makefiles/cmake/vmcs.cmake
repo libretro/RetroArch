@@ -1,5 +1,4 @@
 
-
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
 SET(CPACK_PACKAGE_VERSION_PATCH "pre-1")
@@ -78,4 +77,3 @@ install(DIRECTORY ${vmcs_root}/interface/khronos/include       DESTINATION ${VMC
 install(DIRECTORY ${vmcs_root}/interface/vmcs_host/khronos/IL  DESTINATION ${VMCS_INSTALL_PREFIX}/include     FILES_MATCHING PATTERN "*.h")
 
 install(DIRECTORY ${vmcs_root}/host_applications/linux/libs/bcm_host/include     DESTINATION ${VMCS_INSTALL_PREFIX}       FILES_MATCHING PATTERN "*.h")
-

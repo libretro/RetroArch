@@ -1382,7 +1382,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif
 
-
 #ifdef HAVE_7ZIP
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
 #endif

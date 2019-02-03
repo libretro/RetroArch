@@ -26,7 +26,7 @@ static void free_retro_game_info(struct retro_game_info *dest)
    dest->meta = NULL;
 }
 
-static struct retro_game_info* clone_retro_game_info(const 
+static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
    void *data                   = NULL;
@@ -116,9 +116,9 @@ static struct string_list *string_list_clone(
 }
 
 #if 0
-/* for cloning the Special field, however, attempting 
+/* for cloning the Special field, however, attempting
  * to use this feature crashes retroarch */
-static void free_retro_subsystem_memory_info(struct 
+static void free_retro_subsystem_memory_info(struct
       retro_subsystem_memory_info *dest)
 {
    if (!dest)
@@ -128,7 +128,7 @@ static void free_retro_subsystem_memory_info(struct
    dest->extension = NULL;
 }
 
-static void clone_retro_subsystem_memory_info(struct 
+static void clone_retro_subsystem_memory_info(struct
       retro_subsystem_memory_info* dest,
       const struct retro_subsystem_memory_info *src)
 {
@@ -136,7 +136,7 @@ static void clone_retro_subsystem_memory_info(struct
    dest->type      = src->type;
 }
 
-static void free_retro_subsystem_rom_info(struct 
+static void free_retro_subsystem_rom_info(struct
       retro_subsystem_rom_info *dest)
 {
    int i;
@@ -151,7 +151,7 @@ static void free_retro_subsystem_rom_info(struct
    dest->valid_extensions = NULL;
 
    for (i = 0; i < dest->num_memory; i++)
-      free_retro_subsystem_memory_info((struct 
+      free_retro_subsystem_memory_info((struct
                retro_subsystem_memory_info*)&dest->memory[i]);
 
    if (dest->memory)
@@ -159,7 +159,7 @@ static void free_retro_subsystem_rom_info(struct
    dest->memory = NULL;
 }
 
-static void clone_retro_subsystem_rom_info(struct 
+static void clone_retro_subsystem_rom_info(struct
       retro_subsystem_rom_info *dest,
       const struct retro_subsystem_rom_info *src)
 {
@@ -173,7 +173,7 @@ static void clone_retro_subsystem_rom_info(struct
    dest->desc             = strcpy_alloc(src->desc);
    dest->valid_extensions = strcpy_alloc(src->valid_extensions);
 
-   memory                 = (struct retro_subsystem_memory_info*)calloc(1, 
+   memory                 = (struct retro_subsystem_memory_info*)calloc(1,
          dest->num_memory * sizeof(struct retro_subsystem_memory_info));
 
    dest->memory           = memory;
@@ -197,7 +197,7 @@ static void free_retro_subsystem_info(struct retro_subsystem_info *dest)
    dest->ident = NULL;
 
    for (i = 0; i < dest->num_roms; i++)
-      free_retro_subsystem_rom_info((struct 
+      free_retro_subsystem_rom_info((struct
                retro_subsystem_rom_info*)&dest->roms[i]);
 
    if (dest->roms)
@@ -205,7 +205,7 @@ static void free_retro_subsystem_info(struct retro_subsystem_info *dest)
    dest->roms = NULL;
 }
 
-static retro_subsystem_info* clone_retro_subsystem_info(struct 
+static retro_subsystem_info* clone_retro_subsystem_info(struct
       const retro_subsystem_info *src)
 {
    int i;
@@ -231,7 +231,7 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
 }
 #endif
 
-static void free_retro_ctx_load_content_info(struct 
+static void free_retro_ctx_load_content_info(struct
       retro_ctx_load_content_info *dest)
 {
    if (!dest)
@@ -255,7 +255,7 @@ static void free_retro_ctx_load_content_info(struct
 #endif
 }
 
-static struct retro_ctx_load_content_info 
+static struct retro_ctx_load_content_info
 *clone_retro_ctx_load_content_info(
       const struct retro_ctx_load_content_info *src)
 {

@@ -52,7 +52,7 @@ Defines.
 #define AVI_INDEX_OF_CHUNKS   0x01
 #define AVI_INDEX_2FIELD      0x01
 #define AVI_INDEX_DELTAFRAME  0x80000000
- 
+
 #define AVI_TRACKS_MAX 16 /*< We won't try to handle streams with more tracks than this */
 
 #define AVI_TWOCC(a,b) ((a) | (b << 8))
@@ -68,7 +68,7 @@ Defines.
       SKIP_BYTES(ctx, size);                              \
       AVI_SYNC_CHUNK(ctx);                                \
    } while(0)
-      
+
 /******************************************************************************
 Type definitions
 ******************************************************************************/
@@ -101,23 +101,23 @@ typedef struct VC_CONTAINER_TRACK_MODULE_T
    int64_t  time_start;    /**< i.e. 'dwStart' in 'strh' (converted to microseconds) */
    int64_t  duration;      /**< i.e. 'dwLength' in 'strh' (converted to microseconds) */
    uint32_t time_num;      /**< i.e. 'dwScale' in 'strh' */
-   uint32_t time_den;      /**< i.e. 'dwRate' in 'strh', time_num / time_den = 
+   uint32_t time_den;      /**< i.e. 'dwRate' in 'strh', time_num / time_den =
                                 samples (or frames) / second for audio (or video) */
    uint32_t sample_size;   /**< i.e. 'dwSampleSize' in 'strh' */
 
-   uint64_t index_offset;  /**< Offset to the start of an OpenDML index i.e. 'indx' 
+   uint64_t index_offset;  /**< Offset to the start of an OpenDML index i.e. 'indx'
                                 (if available) */
    uint32_t index_size;    /**< Size of the OpenDML index chunk */
    AVI_TRACK_CHUNK_STATE_T chunk;
 } VC_CONTAINER_TRACK_MODULE_T;
 
 typedef struct VC_CONTAINER_MODULE_T
-{ 
+{
    VC_CONTAINER_TRACK_T *tracks[AVI_TRACKS_MAX];
-   uint64_t data_offset;           /**< Offset to the start of data packets i.e. 
+   uint64_t data_offset;           /**< Offset to the start of data packets i.e.
                                         the data in the 'movi' list */
    uint64_t data_size;             /**< Size of the chunk containing data packets */
-   uint64_t index_offset;          /**< Offset to the start of index data e.g. 
+   uint64_t index_offset;          /**< Offset to the start of index data e.g.
                                         the data in a 'idx1' list */
    uint32_t index_size;            /**< Size of the chunk containing index data */
    AVI_TRACK_STREAM_STATE_T state;
@@ -143,7 +143,7 @@ static VC_CONTAINER_STATUS_T avi_find_chunk(VC_CONTAINER_T *p_ctx, VC_CONTAINER_
       chunk_size = READ_U32(p_ctx, "Chunk size");
       if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) return status;
 
-      if(chunk_id == id) 
+      if(chunk_id == id)
       {
          *size = chunk_size;
          return VC_CONTAINER_SUCCESS;
@@ -161,13 +161,13 @@ static VC_CONTAINER_STATUS_T avi_find_list(VC_CONTAINER_T *p_ctx, VC_CONTAINER_F
    VC_CONTAINER_FOURCC_T chunk_id;
    uint32_t chunk_size;
    uint32_t peek_buf[1];
-   
+
    do {
       chunk_id = READ_FOURCC(p_ctx, "Chunk ID");
       chunk_size = READ_U32(p_ctx, "Chunk size");
       if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) return status;
 
-      if(chunk_id == VC_FOURCC('L','I','S','T')) 
+      if(chunk_id == VC_FOURCC('L','I','S','T'))
       {
          if (PEEK_BYTES(p_ctx, (uint8_t*)peek_buf, 4) != 4)
             return VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
@@ -197,7 +197,7 @@ static int64_t avi_calculate_chunk_time(VC_CONTAINER_TRACK_MODULE_T *track_modul
    if (track_module->sample_size == 0)
       return track_module->time_start + avi_stream_ticks_to_us(track_module, track_module->chunk.index);
    else
-      return track_module->time_start + avi_stream_ticks_to_us(track_module, 
+      return track_module->time_start + avi_stream_ticks_to_us(track_module,
          ((track_module->chunk.offs + (track_module->sample_size >> 1)) / track_module->sample_size));
 }
 
@@ -209,8 +209,8 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
    uint32_t list_size, chunk_id, chunk_size;
 
    int stream_header_chunk_read = 0, stream_format_chunk_read = 0;
-   
-   /* Look for a 'strl' LIST (sub)chunk */   
+
+   /* Look for a 'strl' LIST (sub)chunk */
    status = avi_find_list(p_ctx, VC_FOURCC('s','t','r','l'), &chunk_size);
    if (status != VC_CONTAINER_SUCCESS)
    {
@@ -235,14 +235,14 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
       {
          VC_CONTAINER_FOURCC_T fourcc_type, fourcc_handler;
          uint32_t flags, scale, rate, div, start, length, sample_size;
-         
+
          /* We won't accept more than one 'strh' per stream */
          if (stream_header_chunk_read)
          {
             LOG_DEBUG(p_ctx, "rejecting invalid 'strl', found more than one 'strh'");
             return VC_CONTAINER_ERROR_FORMAT_INVALID;
          }
-         
+
          fourcc_type = READ_FOURCC(p_ctx, "fccType");
          fourcc_handler = READ_FOURCC(p_ctx, "fccHandler");
          flags = READ_U32(p_ctx, "dwFlags");
@@ -270,7 +270,7 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
          }
 
          div = vc_container_maths_gcd((int64_t)scale, (int64_t)rate);
-         scale = scale / div; 
+         scale = scale / div;
          rate = rate / div;
 
          track->format->flags |= VC_CONTAINER_ES_FORMAT_FLAG_FRAMED;
@@ -279,7 +279,7 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
             track->format->es_type = VC_CONTAINER_ES_TYPE_VIDEO;
             track->format->type->video.frame_rate_num = rate;
             track->format->type->video.frame_rate_den = scale;
-            
+
             if (sample_size != 0)
             {
                LOG_DEBUG(p_ctx, "ignoring dwSampleSize (%d) for video stream", sample_size);
@@ -294,32 +294,32 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
          }
          else if(fourcc_type == VC_FOURCC('t','x','t','s'))
             track->format->es_type = VC_CONTAINER_ES_TYPE_SUBPICTURE;
-   
-         /* Don't overwrite any existing value (i.e. in the unlikely case where we 
+
+         /* Don't overwrite any existing value (i.e. in the unlikely case where we
             see 'strf' before 'strh') */
          if(!track->format->codec) track->format->codec = vfw_fourcc_to_codec(fourcc_handler);
-   
+
          /* FIXME: enable this once read_media does the right thing */
          if (!(flags & AVISF_DISABLED) || 1)
             track->is_enabled = 1;
-            
+
          track_module->time_num = scale;
          track_module->time_den = rate;
          track_module->time_start = avi_stream_ticks_to_us(track_module, (uint64_t)start);
          track_module->duration = avi_stream_ticks_to_us(track_module, (uint64_t)length);
          track_module->sample_size = sample_size;
-         
+
          p_ctx->duration = MAX(p_ctx->duration, track_module->duration);
-         
+
          stream_header_chunk_read = 1;
       }
-      else if(chunk_id == VC_FOURCC('s','t','r','f')) 
+      else if(chunk_id == VC_FOURCC('s','t','r','f'))
       {
          uint8_t *buffer;
          unsigned extra_offset = 0, extra_size = 0;
 
          /* We won't accept more than one 'strf' per stream */
-         if (stream_format_chunk_read) 
+         if (stream_format_chunk_read)
          {
             LOG_DEBUG(p_ctx, "rejecting invalid 'strl', found more than one 'strf'");
             return VC_CONTAINER_ERROR_FORMAT_INVALID;
@@ -331,12 +331,12 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
             LOG_DEBUG(p_ctx, "failed to allocate memory for 'strf' (%d bytes)", chunk_size);
             return status;
          }
-         
+
          buffer = track->priv->extradata;
-         if(READ_BYTES(p_ctx, buffer, chunk_size) != chunk_size) 
+         if(READ_BYTES(p_ctx, buffer, chunk_size) != chunk_size)
             return VC_CONTAINER_ERROR_FORMAT_INVALID;
          AVI_SYNC_CHUNK(p_ctx);
-         
+
          if(track->format->es_type == VC_CONTAINER_ES_TYPE_VIDEO)
          {
             status = vc_container_bitmapinfoheader_to_es_format(buffer, chunk_size, &extra_offset, &extra_size, track->format);
@@ -346,9 +346,9 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
             status = vc_container_waveformatex_to_es_format(buffer, chunk_size, &extra_offset, &extra_size, track->format);
             if (track_module->sample_size != 0 && track_module->sample_size != track->format->type->audio.block_align)
             {
-               LOG_DEBUG(p_ctx, "invalid dwSampleSize (%d), should match nBlockAlign (%d) for audio streams.", 
+               LOG_DEBUG(p_ctx, "invalid dwSampleSize (%d), should match nBlockAlign (%d) for audio streams.",
                   track_module->sample_size, track->format->type->audio.block_align);
-   
+
                /* Note that if nBlockAlign really is 0, strf is seriously broken... */
                if (track->format->type->audio.block_align != 0)
                   track_module->sample_size = track->format->type->audio.block_align;
@@ -356,13 +356,13 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
             else
             {
                /* Flawed muxers might only set nBlockAlign (i.e. not set dwSampleSize correctly). */
-               if (track->format->type->audio.block_align == 1) 
+               if (track->format->type->audio.block_align == 1)
                   track_module->sample_size = 1;
             }
          }
 
          if (status != VC_CONTAINER_SUCCESS) return status;
-   
+
          if (extra_size)
          {
             track->format->extradata = buffer + extra_offset;
@@ -394,25 +394,25 @@ static VC_CONTAINER_STATUS_T avi_read_stream_header_list(VC_CONTAINER_T *p_ctx, 
       }
       else if(chunk_id == VC_FOURCC('s','t','r','d'))
       {
-         /* The data in a 'strd' chunk is either codec configuration data or DRM information, 
-            we can safely assume it might be either as long as we don't overwrite any config 
+         /* The data in a 'strd' chunk is either codec configuration data or DRM information,
+            we can safely assume it might be either as long as we don't overwrite any config
             data read previously from a 'strf' chunk */
          if ((status = vc_container_track_allocate_drmdata(p_ctx, track, chunk_size)) != VC_CONTAINER_SUCCESS)
          {
             LOG_DEBUG(p_ctx, "failed to allocate memory for 'strd' (%d bytes)", chunk_size);
             return status;
          }
-                 
-         if(READ_BYTES(p_ctx, track->priv->drmdata, chunk_size) != chunk_size) 
+
+         if(READ_BYTES(p_ctx, track->priv->drmdata, chunk_size) != chunk_size)
             return VC_CONTAINER_ERROR_FORMAT_INVALID;
          AVI_SYNC_CHUNK(p_ctx);
-         
+
          if (!track->format->extradata)
          {
             if (vc_container_track_allocate_extradata(p_ctx, track, chunk_size) == VC_CONTAINER_SUCCESS)
             {
                memcpy(track->format->extradata, track->priv->drmdata, chunk_size);
-               
+
                track->format->extradata = track->priv->extradata;
                track->format->extradata_size = chunk_size;
             }
@@ -461,7 +461,7 @@ static VC_CONTAINER_STATUS_T avi_find_next_data_chunk(VC_CONTAINER_T *p_ctx, uin
          break;
 
       /* Check if this is a 'rec ' or a 'movi' LIST instead of a plain data chunk */
-      if(chunk_id == VC_FOURCC('L','I','S','T')) 
+      if(chunk_id == VC_FOURCC('L','I','S','T'))
       {
          if (PEEK_BYTES(p_ctx, (uint8_t*)peek_buf, 4) != 4)
             return VC_CONTAINER_ERROR_EOS;
@@ -516,7 +516,7 @@ static void avi_track_from_chunk_id(VC_CONTAINER_FOURCC_T chunk_id, uint16_t *da
 static VC_CONTAINER_STATUS_T avi_check_track(VC_CONTAINER_T *p_ctx, uint16_t data_type, uint16_t track_num)
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;
-   
+
    if (track_num < p_ctx->tracks_num)
    {
       if (data_type == AVI_TWOCC('w','b') && p_ctx->tracks[track_num]->format->es_type != VC_CONTAINER_ES_TYPE_AUDIO)
@@ -542,26 +542,26 @@ static VC_CONTAINER_STATUS_T avi_check_track(VC_CONTAINER_T *p_ctx, uint16_t dat
    }
    else
    {
-      LOG_DEBUG(p_ctx, "invalid track number %d (no more than %d tracks expected)", 
+      LOG_DEBUG(p_ctx, "invalid track number %d (no more than %d tracks expected)",
          track_num, p_ctx->tracks_num);
-      status = VC_CONTAINER_ERROR_FAILED;        
+      status = VC_CONTAINER_ERROR_FAILED;
    }
-      
+
    return status;
 }
 
-static int avi_compare_seek_time(int64_t chunk_time, int64_t seek_time, 
+static int avi_compare_seek_time(int64_t chunk_time, int64_t seek_time,
    int chunk_is_keyframe, VC_CONTAINER_SEEK_FLAGS_T seek_flags)
 {
    if (chunk_time == seek_time && chunk_is_keyframe && !(seek_flags & VC_CONTAINER_SEEK_FLAG_FORWARD))
       return 0;
-   
+
    if (chunk_time > seek_time && chunk_is_keyframe && (seek_flags & VC_CONTAINER_SEEK_FLAG_FORWARD))
       return 0;
 
    if (chunk_time > seek_time && !(seek_flags & VC_CONTAINER_SEEK_FLAG_FORWARD))
       return 1; /* Chunk time is past seek time, caller should use the previous keyframe */
-      
+
    return -1;
 }
 
@@ -594,8 +594,8 @@ static VC_CONTAINER_STATUS_T avi_scan_legacy_index_chunk(VC_CONTAINER_T *p_ctx, 
       size         = READ_U32(p_ctx, "dwSize");
 
       if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) break;
-   
-      /* Although it's rare, the offsets might be given from the start of the file 
+
+      /* Although it's rare, the offsets might be given from the start of the file
       instead of the data chunk, we have to handle both cases. */
       if (first_chunk_offset)
       {
@@ -603,10 +603,10 @@ static VC_CONTAINER_STATUS_T avi_scan_legacy_index_chunk(VC_CONTAINER_T *p_ctx, 
          selected_chunk_offset = base_offset + 4;
          first_chunk_offset = 0;
       }
-   
+
       avi_track_from_chunk_id(chunk_id, &data_type, &track_num);
       LOG_DEBUG(p_ctx, "reading track %"PRIu16, track_num);
-      
+
       if (avi_check_track(p_ctx, data_type, track_num) != VC_CONTAINER_SUCCESS)
       {
          LOG_DEBUG(p_ctx, "skipping index entry for track %d/%d", track_num, p_ctx->tracks_num);
@@ -625,14 +625,14 @@ static VC_CONTAINER_STATUS_T avi_scan_legacy_index_chunk(VC_CONTAINER_T *p_ctx, 
       /* If this entry does not affect timing, skip it */
       if ((chunk_flags & (AVIIF_LIST | AVIIF_NOTIME)) || data_type == AVI_TWOCC('d','d'))
          continue;
-   
+
       position = base_offset + offset + extra_offset;
       extra_offset = INT64_C(0);
 
       /* Check validity of position */
       if (position <= module->data_offset /* || (*pos > module->data_offset + module->data_size*/)
           return VC_CONTAINER_ERROR_FORMAT_INVALID;
-     
+
       if (track_num == seek_track_num)
       {
          bool is_keyframe = true;
@@ -685,12 +685,12 @@ static VC_CONTAINER_STATUS_T avi_scan_legacy_index_chunk(VC_CONTAINER_T *p_ctx, 
    return VC_CONTAINER_ERROR_NOT_FOUND;
 }
 
-static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx, uint64_t index_offset, 
-   unsigned seek_track_num, int64_t *time, VC_CONTAINER_SEEK_FLAGS_T flags, uint64_t *pos) 
+static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx, uint64_t index_offset,
+   unsigned seek_track_num, int64_t *time, VC_CONTAINER_SEEK_FLAGS_T flags, uint64_t *pos)
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_ERROR_NOT_FOUND;
    VC_CONTAINER_TRACK_MODULE_T *track_module = NULL;
-   VC_CONTAINER_FOURCC_T chunk_id; 
+   VC_CONTAINER_FOURCC_T chunk_id;
    uint32_t chunk_size;
    uint16_t data_type, track_num;
    uint8_t index_type, index_sub_type;
@@ -717,7 +717,7 @@ static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx
    if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS)
       return status;
 
-   avi_track_from_chunk_id(chunk_id, &data_type, &track_num);   
+   avi_track_from_chunk_id(chunk_id, &data_type, &track_num);
    status = avi_check_track(p_ctx, data_type, track_num);
    if (status || chunk_size < 24 || track_num != seek_track_num)
       return VC_CONTAINER_ERROR_FORMAT_INVALID;
@@ -733,16 +733,16 @@ static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx
    {
       uint32_t chunk_offset;
       int key_frame = 0;
-      
+
       chunk_offset = READ_U32(p_ctx, "dwOffset");
       chunk_size = READ_U32(p_ctx, "dwSize");
-      
+
       if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS)
          break;
 
       status = VC_CONTAINER_ERROR_NOT_FOUND;
 
-      if (!(chunk_size & AVI_INDEX_DELTAFRAME)) 
+      if (!(chunk_size & AVI_INDEX_DELTAFRAME))
          key_frame = 1;
       chunk_size &= ~AVI_INDEX_DELTAFRAME;
 
@@ -777,7 +777,7 @@ static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx
             }
             break;
          }
-           
+
          if (key_frame)
          {
             prev_keyframe_offs = position;
@@ -787,7 +787,7 @@ static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx
       else
       {
          /* Not seeking to a time position, but scanning
-            track chunk state up to a certain file position 
+            track chunk state up to a certain file position
             instead */
          if (position >= *pos)
          {
@@ -804,7 +804,7 @@ static VC_CONTAINER_STATUS_T avi_scan_standard_index_chunk(VC_CONTAINER_T *p_ctx
    return status;
 }
 
-static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, unsigned index_track_num, 
+static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, unsigned index_track_num,
    int64_t *time, VC_CONTAINER_SEEK_FLAGS_T flags, uint64_t *pos)
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_ERROR_NOT_FOUND;
@@ -813,14 +813,14 @@ static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, u
    uint32_t index_size;
    uint16_t data_type, track_num;
    uint32_t entry, entry_count;
-   uint16_t entry_size; 
+   uint16_t entry_size;
    uint8_t index_sub_type, index_type;
-   
+
    index_offset = p_ctx->tracks[index_track_num]->priv->module->index_offset;
    index_size = p_ctx->tracks[index_track_num]->priv->module->index_size;
-   
+
    SEEK(p_ctx, index_offset);
-   
+
    entry_size = READ_U16(p_ctx, "wLongsPerEntry");
    index_sub_type = READ_U8(p_ctx, "bIndexSubType");
    index_type = READ_U8(p_ctx, "bIndexType");
@@ -832,17 +832,17 @@ static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, u
 
    if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS)
       return status;
-      
+
    if (index_type == AVI_INDEX_OF_INDEXES)
    {
       avi_track_from_chunk_id(chunk_id, &data_type, &track_num);
       status = avi_check_track(p_ctx, data_type, track_num);
       if (status || index_size < 24 || track_num != index_track_num) return VC_CONTAINER_ERROR_FORMAT_INVALID;
-      
+
       /* FIXME: We should probably support AVI_INDEX_2FIELD as well */
       if (entry_size != 4 || index_sub_type != 0)
          return VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
-   
+
       entry_count = MIN(entry_count, (index_size - 24) / entry_size);
 
       for (entry = 0; entry < entry_count; ++entry)
@@ -851,9 +851,9 @@ static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, u
          standard_index_offset = READ_U64(p_ctx, "qwOffset");
          SKIP_U32(p_ctx, "dwSize");
          SKIP_U32(p_ctx, "dwDuration");
-         
-         if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) 
-            break;            
+
+         if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS)
+            break;
 
          if (standard_index_offset == UINT64_C(0))
          {
@@ -876,7 +876,7 @@ static VC_CONTAINER_STATUS_T avi_scan_super_index_chunk(VC_CONTAINER_T *p_ctx, u
    {
       status = VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
    }
-   
+
    return status;
 }
 
@@ -938,7 +938,7 @@ static VC_CONTAINER_STATUS_T avi_reader_read( VC_CONTAINER_T *p_ctx,
       VC_CONTAINER_FOURCC_T chunk_id;
       uint32_t chunk_size;
       uint16_t data_type, track_num;
-      
+
       if ((status = avi_find_next_data_chunk(p_ctx, &chunk_id, &chunk_size)) != VC_CONTAINER_SUCCESS)
       {
          LOG_DEBUG(p_ctx, "unable to find the next data chunk %d", status);
@@ -1071,7 +1071,7 @@ static VC_CONTAINER_STATUS_T avi_reader_read( VC_CONTAINER_T *p_ctx,
          if (track_module->sample_size == 0)
             p_packet->flags |= VC_CONTAINER_PACKET_FLAG_FRAME_END;
       }
-    
+
       p_packet->dts = VC_CONTAINER_TIME_UNKNOWN;
    }
 
@@ -1091,14 +1091,14 @@ static VC_CONTAINER_STATUS_T avi_reader_read( VC_CONTAINER_T *p_ctx,
 
       return VC_CONTAINER_SUCCESS;
    }
-   
+
    if (p_packet)
    {
       uint8_t *data = p_packet->data;
       uint32_t buffer_size = p_packet->buffer_size;
       uint32_t size = 0;
-      uint32_t len;     
-      
+      uint32_t len;
+
       /* See if we need to insert extra data */
       if (p_state->extra_chunk_data_len)
       {
@@ -1155,7 +1155,7 @@ static VC_CONTAINER_STATUS_T avi_reader_seek( VC_CONTAINER_T *p_ctx, int64_t *p_
 
    LOG_DEBUG(p_ctx, "AVI seeking to %"PRIi64"us", *p_offset);
 
-   /* Save current position and chunk state so we can restore it if we 
+   /* Save current position and chunk state so we can restore it if we
       hit an error whilst scanning index data */
    position = STREAM_POSITION(p_ctx);
    for(i = 0; i < p_ctx->tracks_num; i++)
@@ -1315,7 +1315,7 @@ error:
 /*****************************************************************************/
 static VC_CONTAINER_STATUS_T avi_reader_close( VC_CONTAINER_T *p_ctx )
 {
-   VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;   
+   VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    unsigned int i;
 
    for(i = 0; i < p_ctx->tracks_num; i++)
@@ -1323,7 +1323,7 @@ static VC_CONTAINER_STATUS_T avi_reader_close( VC_CONTAINER_T *p_ctx )
    p_ctx->tracks = NULL;
    p_ctx->tracks_num = 0;
    free(module);
-   p_ctx->priv->module = 0;  
+   p_ctx->priv->module = 0;
    return VC_CONTAINER_SUCCESS;
 }
 
@@ -1353,7 +1353,7 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
    SKIP_U32(p_ctx, "fileSize");
    SKIP_FOURCC(p_ctx, "fileType");
 
-   /* Look for the 'hdrl' LIST (sub)chunk */   
+   /* Look for the 'hdrl' LIST (sub)chunk */
    status = avi_find_list(p_ctx, VC_FOURCC('h','d','r','l'), &chunk_size);
    if (status != VC_CONTAINER_SUCCESS)
    {
@@ -1392,7 +1392,7 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
 
    /* Allocate our context and tracks */
    if ((module = malloc(sizeof(*module))) == NULL)
-      return VC_CONTAINER_ERROR_OUT_OF_MEMORY; 
+      return VC_CONTAINER_ERROR_OUT_OF_MEMORY;
    memset(module, 0, sizeof(*module));
    p_ctx->priv->module = module;
    p_ctx->tracks = module->tracks;
@@ -1400,7 +1400,7 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
    if (num_streams > AVI_TRACKS_MAX)
    {
       LOG_DEBUG(p_ctx, "cannot handle %u tracks, restricted to %d", num_streams, AVI_TRACKS_MAX);
-      num_streams = AVI_TRACKS_MAX; 
+      num_streams = AVI_TRACKS_MAX;
    }
 
    for (p_ctx->tracks_num = 0; p_ctx->tracks_num != num_streams; p_ctx->tracks_num++)
@@ -1426,7 +1426,7 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
       status = VC_CONTAINER_ERROR_FORMAT_INVALID;
       goto error;
    }
-         
+
    /* Store offset to the start and size of data (the 'movi' LIST) */
    module->data_offset = STREAM_POSITION(p_ctx);
    module->data_size = chunk_size;
@@ -1440,11 +1440,11 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
       LOG_DEBUG(p_ctx, "AVIF_MUSTUSEINDEX not supported, playback might not work properly");
    }
 
-   /* If the stream is seekable, see if we can find an index (for at 
-      least one of the tracks); even if we cannot find an index now, 
+   /* If the stream is seekable, see if we can find an index (for at
+      least one of the tracks); even if we cannot find an index now,
       one might become available later (e.g. when the stream grows
-      run-time), in that case we might want to report that we can seek 
-      and re-search for the index again if or when we're requested to 
+      run-time), in that case we might want to report that we can seek
+      and re-search for the index again if or when we're requested to
       seek. */
    if(STREAM_SEEKABLE(p_ctx))
    {
@@ -1475,7 +1475,7 @@ VC_CONTAINER_STATUS_T avi_reader_open( VC_CONTAINER_T *p_ctx )
             p_ctx->capabilities |= VC_CONTAINER_CAPS_HAS_INDEX;
             p_ctx->capabilities |= VC_CONTAINER_CAPS_DATA_HAS_KEYFRAME_FLAG;
          }
-   
+
          /* Seek back to the start of the data */
          SEEK(p_ctx, module->data_offset);
       }

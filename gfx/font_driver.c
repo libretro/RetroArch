@@ -554,7 +554,7 @@ static bool ctr_font_init_first(
 }
 #endif
 
-#ifdef HAVE_LIBNX 
+#ifdef HAVE_LIBNX
 static const font_renderer_t *switch_font_backends[] = {
    &switch_font,
    NULL
@@ -963,7 +963,7 @@ void font_driver_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   font_data_t *font = (font_data_t*)(font_data 
+   font_data_t *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
 
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)

@@ -29,7 +29,7 @@ ifneq (,$(findstring Darwin,$(UNAME_S)))
 endif
 
 #---------------------------------------------------------------------------------
-# path to tools 
+# path to tools
 #---------------------------------------------------------------------------------
 export PORTLIBS	:=	$(DEVKITPRO)/portlibs/ppc
 export PATH	:=	$(DEVKITPPC)/bin:$(PORTLIBS)/bin:$(PATH)
@@ -56,7 +56,7 @@ ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSION
 #---------------------------------------------------------------------------------
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-	
+
 #---------------------------------------------------------------------------------
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

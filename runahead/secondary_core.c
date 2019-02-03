@@ -241,7 +241,7 @@ static bool secondary_core_create(void)
    bool contentless       = false;
    bool is_inited         = false;
 
-   if (  last_core_type != CORE_TYPE_PLAIN || 
+   if (  last_core_type != CORE_TYPE_PLAIN ||
          !load_content_info                ||
          load_content_info->special)
       return false;

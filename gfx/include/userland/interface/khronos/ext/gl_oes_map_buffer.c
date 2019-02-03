@@ -25,7 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #define GL_GLEXT_PROTOTYPES /* we want the prototypes so the compiler will check that the signatures match */
 
 #include "interface/khronos/common/khrn_int_common.h"
@@ -40,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "interface/khronos/include/GLES/gl.h"
 #include "interface/khronos/include/GLES/glext.h"
-
 
 GL_API void* GL_APIENTRY glMapBufferOES (GLenum target, GLenum access)
 {
@@ -72,7 +70,7 @@ GL_API void* GL_APIENTRY glMapBufferOES (GLenum target, GLenum access)
             }
             else
             {
-               
+
                pointer = khrn_platform_malloc(buffer.cached_size,"glxx_mapped_buffer");
 
                if(pointer != 0)
@@ -131,7 +129,7 @@ GL_API GLboolean GL_APIENTRY glUnmapBufferOES (GLenum target)
             {
                void * p = buffer.mapped_pointer;
                GLsizeiptr size = buffer.mapped_size;
-               
+
                buffer.mapped_pointer = 0;
                buffer.mapped_size = 0;
                glxx_buffer_info_set(state, target, &buffer);
@@ -139,14 +137,14 @@ GL_API GLboolean GL_APIENTRY glUnmapBufferOES (GLenum target)
                glBufferSubData (target, 0, size, p);
                khrn_platform_free(p);
             }
-         }         
+         }
       }
    }
 
    /*
    if (IS_OPENGLES_11_OR_20(thread)) {
       success = RPC_BOOLEAN_RES(RPC_CALL1_RES(glUnmapBufferOES_impl,
-                         thread,      
+                         thread,
                          GLUNMAPBUFFEROES_ID,
                          RPC_ENUM(target)));
    */
@@ -183,9 +181,9 @@ GL_API void GL_APIENTRY glGetBufferPointervOES (GLenum target, GLenum pname, GLv
    }
 
    /*
-   
+
       RPC_CALL3_OUT_CTRL(glGetBufferPointervOES_impl,
-                         thread,      
+                         thread,
                          GLGETBUFFERPOINTERVOES_ID,
                          RPC_ENUM(target),
                          RPC_ENUM(pname),

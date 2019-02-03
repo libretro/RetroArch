@@ -48,7 +48,7 @@ VC_CONTAINER_STATUS_T avi_writer_open( VC_CONTAINER_T *p_ctx );
 Defines.
 ******************************************************************************/
 #define AVISF_DISABLED        0x00000001 /*< If set stream should not be enabled by default. */
-#define AVIF_HASINDEX         0x00000010 
+#define AVIF_HASINDEX         0x00000010
 #define AVIF_TRUSTCKTYPE      0x00000800
 #define AVIIF_KEYFRAME        0x00000010
 
@@ -80,11 +80,11 @@ Type definitions.
 typedef struct VC_CONTAINER_TRACK_MODULE_T
 {
    uint32_t chunk_index;      /**< index of current chunk */
-   uint32_t chunk_offs;       /**< current offset into bytestream consisting of all 
+   uint32_t chunk_offs;       /**< current offset into bytestream consisting of all
                                    chunks for this track  */
    uint32_t sample_size;      /**< i.e. 'dwSampleSize' in 'strh' */
    uint32_t max_chunk_size;   /**< largest chunk written so far */
-   uint64_t index_offset;     /**< Offset to the start of an OpenDML index for this track 
+   uint64_t index_offset;     /**< Offset to the start of an OpenDML index for this track
                                    i.e. 'indx' */
    uint32_t index_size;       /**< Size of the OpenDML index for this track i.e. 'indx' */
 } VC_CONTAINER_TRACK_MODULE_T;
@@ -98,11 +98,11 @@ typedef struct VC_CONTAINER_MODULE_T
 
    uint32_t header_list_offset;           /**< Offset to the header list chunk ('hdrl') */
    uint32_t header_list_size;             /**< Size of the header list chunk ('hdrl') */
-   uint32_t data_offset;                  /**< Offset to the start of data packets i.e. 
+   uint32_t data_offset;                  /**< Offset to the start of data packets i.e.
                                                the data in the AVI RIFF 'movi' list */
    uint64_t data_size;                    /**< Size of the chunk containing data packets */
-   uint32_t index_offset;                 /**< Offset to the start of index data e.g. 
-                                               the data in an 'idx1' list */                                          
+   uint32_t index_offset;                 /**< Offset to the start of index data e.g.
+                                               the data in an 'idx1' list */
    unsigned current_track_num;            /**< Number of track currently being written */
    uint32_t chunk_size;                   /**< Final size of the current chunk being written (if known) */
    uint32_t chunk_data_written;           /**< Data written to the current chunk so far */
@@ -115,7 +115,7 @@ typedef struct VC_CONTAINER_MODULE_T
 /******************************************************************************
 Local Functions
 ******************************************************************************/
-static void avi_chunk_id_from_track_num( VC_CONTAINER_T *p_ctx, 
+static void avi_chunk_id_from_track_num( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_FOURCC_T *p_chunk_id, unsigned int track_num )
 {
    VC_CONTAINER_TRACK_T *track = p_ctx->tracks[track_num];
@@ -128,7 +128,7 @@ static void avi_chunk_id_from_track_num( VC_CONTAINER_T *p_ctx,
       chunk_id = VC_FOURCC('0','0','w','b');
    else
    {
-      /* Note that avi_writer_add_track should ensure this 
+      /* Note that avi_writer_add_track should ensure this
          can't happen */
       *p_chunk_id  = VC_FOURCC('J','U','N','K'); return;
    }
@@ -140,7 +140,7 @@ static void avi_chunk_id_from_track_num( VC_CONTAINER_T *p_ctx,
 }
 
 /*****************************************************************************/
-static void avi_index_chunk_id_from_track_num(VC_CONTAINER_FOURCC_T *p_chunk_id, 
+static void avi_index_chunk_id_from_track_num(VC_CONTAINER_FOURCC_T *p_chunk_id,
    unsigned int track_num )
 {
    VC_CONTAINER_FOURCC_T chunk_id = 0;
@@ -169,7 +169,7 @@ static uint32_t avi_num_chunks( VC_CONTAINER_T *p_ctx )
 static VC_CONTAINER_STATUS_T avi_finish_data_chunk( VC_CONTAINER_T *p_ctx, uint32_t chunk_size )
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;
- 
+
    if (chunk_size)
    {
       /* Rewrite the chunk size, this won't be efficient if it happens often */
@@ -185,7 +185,7 @@ static VC_CONTAINER_STATUS_T avi_finish_data_chunk( VC_CONTAINER_T *p_ctx, uint3
          status = VC_CONTAINER_ERROR_FAILED;
       }
    }
-      
+
    AVI_END_CHUNK(p_ctx);
 
    if (status != VC_CONTAINER_SUCCESS) status = STREAM_STATUS(p_ctx);
@@ -194,7 +194,7 @@ static VC_CONTAINER_STATUS_T avi_finish_data_chunk( VC_CONTAINER_T *p_ctx, uint3
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T avi_write_index_entry( VC_CONTAINER_T *p_ctx, uint8_t track_num, 
+static VC_CONTAINER_STATUS_T avi_write_index_entry( VC_CONTAINER_T *p_ctx, uint8_t track_num,
    uint32_t chunk_size, int keyframe )
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
@@ -219,13 +219,13 @@ static VC_CONTAINER_STATUS_T avi_read_index_entry( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    uint32_t chunk_size;
    uint8_t track_num;
-   
+
    track_num = vc_container_io_read_uint8(module->temp_io.io);
    chunk_size = vc_container_io_read_be_uint32(module->temp_io.io);
 
    /* This shouldn't really happen if the temporary I/O is reliable */
    if (track_num >= p_ctx->tracks_num) return VC_CONTAINER_ERROR_FAILED;
-      
+
    *p_track_num = track_num;
    *p_chunk_size = chunk_size;
 
@@ -233,16 +233,16 @@ static VC_CONTAINER_STATUS_T avi_read_index_entry( VC_CONTAINER_T *p_ctx,
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T avi_write_stream_format_chunk(VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T avi_write_stream_format_chunk(VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_TRACK_T *track, uint32_t chunk_size)
 {
    VC_CONTAINER_STATUS_T status;
-   
+
    WRITE_FOURCC(p_ctx, VC_FOURCC('s','t','r','f'), "Chunk ID");
    WRITE_U32(p_ctx, chunk_size, "Chunk Size");
-  
+
    if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) return status;
-  
+
    if(track->format->es_type == VC_CONTAINER_ES_TYPE_VIDEO)
       status = vc_container_write_bitmapinfoheader(p_ctx, track->format);
    else if(track->format->es_type == VC_CONTAINER_ES_TYPE_AUDIO)
@@ -251,19 +251,19 @@ static VC_CONTAINER_STATUS_T avi_write_stream_format_chunk(VC_CONTAINER_T *p_ctx
    if (status != VC_CONTAINER_SUCCESS) return status;
 
    AVI_END_CHUNK(p_ctx);
-   
+
    return STREAM_STATUS(p_ctx);
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T avi_write_stream_header_chunk(VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T avi_write_stream_header_chunk(VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_TRACK_T *track)
 {
    VC_CONTAINER_FOURCC_T fourcc_type = 0, fourcc_handler = 0;
    uint32_t flags, scale = 0, rate = 0, div, start = 0, sample_size = 0;
    uint16_t left = 0, right = 0, top = 0, bottom = 0;
    uint32_t max_chunk_size, length = 0;
-   
+
    WRITE_FOURCC(p_ctx, VC_FOURCC('s','t','r','h'), "Chunk ID");
    WRITE_U32(p_ctx, 56, "Chunk Size");
 
@@ -296,13 +296,13 @@ static VC_CONTAINER_STATUS_T avi_write_stream_header_chunk(VC_CONTAINER_T *p_ctx
       sample_size = track->format->type->audio.block_align;
       scale = 1;
 
-      if (track->format->type->audio.block_align) 
+      if (track->format->type->audio.block_align)
          rate = (track->format->bitrate / track->format->type->audio.block_align) >> 3;
 
       if (rate == 0)
       {
          rate = track->format->type->audio.sample_rate ? track->format->type->audio.sample_rate : 32000;
-         LOG_DEBUG(p_ctx, "invalid audio rate, using %d (playback timing will almost certainly be incorrect)", 
+         LOG_DEBUG(p_ctx, "invalid audio rate, using %d (playback timing will almost certainly be incorrect)",
                    rate);
       }
    }
@@ -311,7 +311,7 @@ static VC_CONTAINER_STATUS_T avi_write_stream_header_chunk(VC_CONTAINER_T *p_ctx
       /* avi_writer_add_track should ensure this can't happen */
       vc_container_assert(0);
    }
-   
+
    fourcc_handler = codec_to_vfw_fourcc(track->format->codec);
 
    div = vc_container_maths_gcd((int64_t)scale, (int64_t)rate);
@@ -339,7 +339,7 @@ static VC_CONTAINER_STATUS_T avi_write_stream_header_chunk(VC_CONTAINER_T *p_ctx
    WRITE_U16(p_ctx, top, "rcFrame.top");
    WRITE_U16(p_ctx, right, "rcFrame.right");
    WRITE_U16(p_ctx, bottom, "rcFrame.bottom");
-   
+
    return STREAM_STATUS(p_ctx);
 }
 
@@ -349,7 +349,7 @@ static VC_CONTAINER_STATUS_T avi_write_super_index_chunk(VC_CONTAINER_T *p_ctx, 
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    VC_CONTAINER_TRACK_MODULE_T *track_module = p_ctx->tracks[index_track_num]->priv->module;
-   VC_CONTAINER_FOURCC_T chunk_id; 
+   VC_CONTAINER_FOURCC_T chunk_id;
    uint32_t num_indices = 1; /* FIXME: support for multiple RIFF chunks (AVIX) */
    unsigned int i;
 
@@ -359,15 +359,15 @@ static VC_CONTAINER_STATUS_T avi_write_super_index_chunk(VC_CONTAINER_T *p_ctx, 
       WRITE_BYTES(p_ctx, NULL, 8 + 24 + num_indices * (int64_t)AVI_SUPER_INDEX_ENTRY_SIZE);
       return STREAM_STATUS(p_ctx);
    }
-  
+
    if (track_module->index_offset)
       WRITE_FOURCC(p_ctx, VC_FOURCC('i','n','d','x'), "Chunk ID");
    else
       WRITE_FOURCC(p_ctx, VC_FOURCC('J','U','N','K'), "Chunk ID");
-      
+
    WRITE_U32(p_ctx, index_size, "Chunk Size");
-   
-   avi_chunk_id_from_track_num(p_ctx, &chunk_id, index_track_num);   
+
+   avi_chunk_id_from_track_num(p_ctx, &chunk_id, index_track_num);
    WRITE_U16(p_ctx, 4, "wLongsPerEntry");
    WRITE_U8(p_ctx, 0, "bIndexSubType");
    WRITE_U8(p_ctx, AVI_INDEX_OF_INDEXES, "bIndexType");
@@ -376,12 +376,12 @@ static VC_CONTAINER_STATUS_T avi_write_super_index_chunk(VC_CONTAINER_T *p_ctx, 
    WRITE_U32(p_ctx, 0, "dwReserved0");
    WRITE_U32(p_ctx, 0, "dwReserved1");
    WRITE_U32(p_ctx, 0, "dwReserved2");
-   
+
    for (i = 0; i < num_indices; ++i)
-   {  
+   {
       uint64_t index_offset = track_module->index_offset;
-      uint32_t chunk_size = track_module->index_size;  
-      uint32_t length = track_module->sample_size ? 
+      uint32_t chunk_size = track_module->index_size;
+      uint32_t length = track_module->sample_size ?
          track_module->chunk_offs : track_module->chunk_index;
       WRITE_U64(p_ctx, index_offset, "qwOffset");
       WRITE_U32(p_ctx, chunk_size, "dwSize");
@@ -394,7 +394,7 @@ static VC_CONTAINER_STATUS_T avi_write_super_index_chunk(VC_CONTAINER_T *p_ctx, 
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T avi_write_stream_header_list(VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T avi_write_stream_header_list(VC_CONTAINER_T *p_ctx,
    unsigned int track_num, uint32_t list_size)
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
@@ -419,7 +419,7 @@ static VC_CONTAINER_STATUS_T avi_write_stream_header_list(VC_CONTAINER_T *p_ctx,
       chunk_size = STREAM_POSITION(p_ctx) - 8;
    }
    vc_container_writer_extraio_disable(p_ctx, &module->null_io);
-      
+
    status = avi_write_stream_format_chunk(p_ctx, track, chunk_size);
    if (status != VC_CONTAINER_SUCCESS) return status;
 
@@ -441,10 +441,10 @@ static VC_CONTAINER_STATUS_T avi_write_stream_header_list(VC_CONTAINER_T *p_ctx,
       chunk_size = STREAM_POSITION(p_ctx) - 8;
    }
    vc_container_writer_extraio_disable(p_ctx, &module->null_io);
-      
+
    status = avi_write_super_index_chunk(p_ctx, track_num, chunk_size);
    if (status != VC_CONTAINER_SUCCESS) return status;
-      
+
    AVI_END_CHUNK(p_ctx);
 
    return STREAM_STATUS(p_ctx);
@@ -468,7 +468,7 @@ static VC_CONTAINER_STATUS_T avi_write_avi_header_chunk(VC_CONTAINER_T *p_ctx)
          width = track->format->type->video.width;
          height = track->format->type->video.height;
          if (track->format->type->video.frame_rate_num)
-            frame_interval = track->format->type->video.frame_rate_den * UINT64_C(1000000) / 
+            frame_interval = track->format->type->video.frame_rate_den * UINT64_C(1000000) /
                               track->format->type->video.frame_rate_num;
          num_chunks = track_module->chunk_index;
          max_video_chunk_size = track_module->max_chunk_size;
@@ -476,7 +476,7 @@ static VC_CONTAINER_STATUS_T avi_write_avi_header_chunk(VC_CONTAINER_T *p_ctx)
       }
    }
 
-   flags = (module->index_offset && module->index_status == VC_CONTAINER_SUCCESS) ? 
+   flags = (module->index_offset && module->index_status == VC_CONTAINER_SUCCESS) ?
       (AVIF_HASINDEX | AVIF_TRUSTCKTYPE) : 0;
 
    WRITE_FOURCC(p_ctx, VC_FOURCC('a','v','i','h'), "Chunk ID");
@@ -505,7 +505,7 @@ static VC_CONTAINER_STATUS_T avi_write_header_list( VC_CONTAINER_T *p_ctx, uint3
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    VC_CONTAINER_STATUS_T status;
    unsigned int i;
-   
+
    WRITE_FOURCC(p_ctx, VC_FOURCC('L','I','S','T'), "Chunk ID");
    WRITE_U32(p_ctx, header_list_size, "LIST Size");
    WRITE_FOURCC(p_ctx, VC_FOURCC('h','d','r','l'), "Chunk ID");
@@ -518,7 +518,7 @@ static VC_CONTAINER_STATUS_T avi_write_header_list( VC_CONTAINER_T *p_ctx, uint3
    for (i = 0; i < p_ctx->tracks_num; i++)
    {
       uint32_t list_size = 0;
-      
+
       /* Write a stream header list chunk ('strl') */
       if(!vc_container_writer_extraio_enable(p_ctx, &module->null_io))
       {
@@ -527,7 +527,7 @@ static VC_CONTAINER_STATUS_T avi_write_header_list( VC_CONTAINER_T *p_ctx, uint3
          list_size = STREAM_POSITION(p_ctx) - 8;
       }
       vc_container_writer_extraio_disable(p_ctx, &module->null_io);
-   
+
       status = avi_write_stream_header_list(p_ctx, i, list_size);
       if (status != VC_CONTAINER_SUCCESS) return status;
    }
@@ -558,7 +558,7 @@ static VC_CONTAINER_STATUS_T avi_write_headers( VC_CONTAINER_T *p_ctx )
       module->header_list_offset = header_list_offset;
       module->header_list_size = header_list_size;
    }
-   
+
    return status;
 }
 
@@ -574,40 +574,40 @@ static VC_CONTAINER_STATUS_T avi_write_legacy_index_chunk( VC_CONTAINER_T *p_ctx
 
    if(module->null_io.refcount)
    {
-      /* Assume that we're not actually writing the data, 
+      /* Assume that we're not actually writing the data,
          just want know the index size */
       WRITE_BYTES(p_ctx, NULL, 8 + avi_num_chunks(p_ctx) * (int64_t)AVI_INDEX_ENTRY_SIZE);
       return STREAM_STATUS(p_ctx);
    }
-      
+
    module->index_offset = STREAM_POSITION(p_ctx);
-  
+
    WRITE_FOURCC(p_ctx, VC_FOURCC('i','d','x','1'), "Chunk ID");
    WRITE_U32(p_ctx, index_size, "Chunk Size");
 
    /* Scan through all written entries, convert to appropriate index format */
    vc_container_io_seek(module->temp_io.io, INT64_C(0));
-   
+
    while((status = STREAM_STATUS(p_ctx)) == VC_CONTAINER_SUCCESS)
-   {      
+   {
       VC_CONTAINER_FOURCC_T chunk_id;
       uint32_t chunk_size, flags;
-      
+
       status = avi_read_index_entry(p_ctx, &track_num, &chunk_size);
       if (status != VC_CONTAINER_SUCCESS) break;
 
       avi_chunk_id_from_track_num(p_ctx, &chunk_id, track_num);
       flags = (chunk_size & AVI_INDEX_DELTAFRAME) ? 0 : AVIIF_KEYFRAME;
       chunk_size &= ~AVI_INDEX_DELTAFRAME;
-   
+
       WRITE_FOURCC(p_ctx, chunk_id, "Chunk ID");
       WRITE_U32(p_ctx, flags, "dwFlags");
       WRITE_U32(p_ctx, chunk_offset, "dwOffset");
       WRITE_U32(p_ctx, chunk_size, "dwSize");
-      
+
       chunk_offset += ((chunk_size + 1) & ~1) + 8;
    }
-   
+
    AVI_END_CHUNK(p_ctx);
 
    /* Note that currently, we might write a partial index but still set AVIF_HASINDEX */
@@ -617,13 +617,13 @@ static VC_CONTAINER_STATUS_T avi_write_legacy_index_chunk( VC_CONTAINER_T *p_ctx
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T avi_write_standard_index_chunk( VC_CONTAINER_T *p_ctx, unsigned int index_track_num, 
+static VC_CONTAINER_STATUS_T avi_write_standard_index_chunk( VC_CONTAINER_T *p_ctx, unsigned int index_track_num,
    uint32_t index_size )
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    VC_CONTAINER_TRACK_MODULE_T *track_module = p_ctx->tracks[index_track_num]->priv->module;
    VC_CONTAINER_STATUS_T status;
-   VC_CONTAINER_FOURCC_T chunk_id; 
+   VC_CONTAINER_FOURCC_T chunk_id;
    int64_t base_offset = module->data_offset + 12;
    uint32_t num_chunks = track_module->chunk_index;
    uint32_t chunk_offset = 4;
@@ -655,23 +655,23 @@ static VC_CONTAINER_STATUS_T avi_write_standard_index_chunk( VC_CONTAINER_T *p_c
 
    /* Scan through all written entries, convert to appropriate index format */
    vc_container_io_seek(module->temp_io.io, INT64_C(0));
-   
+
    while(STREAM_STATUS(p_ctx) == VC_CONTAINER_SUCCESS)
-   {      
+   {
       uint32_t chunk_size;
       unsigned int track_num;
-      
+
       status = avi_read_index_entry(p_ctx, &track_num, &chunk_size);
       if (status != VC_CONTAINER_SUCCESS) break;
-         
+
       if(track_num != index_track_num) continue;
-   
+
       WRITE_U32(p_ctx, chunk_offset, "dwOffset");
       WRITE_U32(p_ctx, chunk_size, "dwSize");
 
       chunk_offset += ((chunk_size + 1) & ~(1 | AVI_INDEX_DELTAFRAME)) + 12;
    }
-   
+
    AVI_END_CHUNK(p_ctx);
 
    return STREAM_STATUS(p_ctx);
@@ -681,7 +681,7 @@ static VC_CONTAINER_STATUS_T avi_write_standard_index_chunk( VC_CONTAINER_T *p_c
 static VC_CONTAINER_STATUS_T avi_write_legacy_index_data( VC_CONTAINER_T *p_ctx )
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
-   VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;   
+   VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;
    uint32_t chunk_size = 0;
 
    /* Write the legacy index chunk ('idx1') */
@@ -693,7 +693,7 @@ static VC_CONTAINER_STATUS_T avi_write_legacy_index_data( VC_CONTAINER_T *p_ctx 
    }
    vc_container_writer_extraio_disable(p_ctx, &module->null_io);
 
-   status = avi_write_legacy_index_chunk(p_ctx, chunk_size);  
+   status = avi_write_legacy_index_chunk(p_ctx, chunk_size);
    return status;
 }
 
@@ -715,16 +715,16 @@ static VC_CONTAINER_STATUS_T avi_write_standard_index_data( VC_CONTAINER_T *p_ct
          chunk_size = STREAM_POSITION(p_ctx) - 8;
       }
       vc_container_writer_extraio_disable(p_ctx, &module->null_io);
-   
+
       status = avi_write_standard_index_chunk(p_ctx, i, chunk_size);
       if (status != VC_CONTAINER_SUCCESS) return status;
    }
-   
+
    return status;
 }
 
 /*****************************************************************************/
-static int64_t avi_calculate_file_size( VC_CONTAINER_T *p_ctx, 
+static int64_t avi_calculate_file_size( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_PACKET_T *p_packet )
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
@@ -736,7 +736,7 @@ static int64_t avi_calculate_file_size( VC_CONTAINER_T *p_ctx,
    filesize = STREAM_POSITION(p_ctx);
 
    refcount = vc_container_writer_extraio_enable(p_ctx, &module->null_io);
-   vc_container_assert(refcount == 0); /* Although perfectly harmless, we should 
+   vc_container_assert(refcount == 0); /* Although perfectly harmless, we should
                                           not be called with the null i/o enabled. */
    VC_CONTAINER_PARAM_UNUSED(refcount);
 
@@ -745,18 +745,18 @@ static int64_t avi_calculate_file_size( VC_CONTAINER_T *p_ctx,
          we can use that here to avoid writing a partial final packet */
       WRITE_BYTES(p_ctx, NULL, p_packet->frame_size ? p_packet->frame_size : p_packet->size);
       AVI_END_CHUNK(p_ctx);
-      
+
       /* Index entries for the chunk */
       WRITE_BYTES(p_ctx, NULL, AVI_INDEX_ENTRY_SIZE + AVI_STD_INDEX_ENTRY_SIZE);
-      
+
       /* Current standard index data */
       if (avi_write_standard_index_data(p_ctx) != VC_CONTAINER_SUCCESS) break;
-      
+
       /* Current legacy index data */
       status = avi_write_legacy_index_data(p_ctx);
       if (status != VC_CONTAINER_SUCCESS) break;
    } while(0);
-   
+
    filesize += STREAM_POSITION(p_ctx);
 
    vc_container_writer_extraio_disable(p_ctx, &module->null_io);
@@ -767,7 +767,7 @@ static int64_t avi_calculate_file_size( VC_CONTAINER_T *p_ctx,
 /*****************************************************************************
 Functions exported as part of the Container Module API
  *****************************************************************************/
- 
+
 static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
                                                VC_CONTAINER_PACKET_T *p_packet )
 {
@@ -795,8 +795,8 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
       if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) return status;
    }
 
-   /* If the container is passing in a frame from a new track but we 
-      arent't finished with a chunk from another track we need to finish 
+   /* If the container is passing in a frame from a new track but we
+      arent't finished with a chunk from another track we need to finish
       that chunk first */
    if (module->chunk_data_written && p_packet->track != module->current_track_num)
    {
@@ -821,7 +821,7 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
 
    /* FIXME: are we expected to handle this case or should it be picked up by the above layer? */
    vc_container_assert(!(module->chunk_data_written && (p_packet->flags & VC_CONTAINER_PACKET_FLAG_FRAME_START)));
-   
+
    track = p_ctx->tracks[p_packet->track];
    track_module = p_ctx->tracks[p_packet->track]->priv->module;
    module->current_track_num = p_packet->track;
@@ -860,10 +860,10 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
             return VC_CONTAINER_ERROR_OUT_OF_RESOURCES;
          module->frame_packet = *p_packet;
          module->frame_packet.data = module->avi_frame_buffer;
-         memcpy(module->frame_packet.data, 
+         memcpy(module->frame_packet.data,
                   p_packet->data, module->frame_packet.size);
       }
-      
+
       module->chunk_data_written = p_packet->size;
    }
    else
@@ -874,7 +874,7 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
          {
             if(module->frame_packet.size + p_packet->size > AVI_FRAME_BUFFER_SIZE)
                return VC_CONTAINER_ERROR_OUT_OF_RESOURCES;
-            memcpy(module->frame_packet.data + module->frame_packet.size, 
+            memcpy(module->frame_packet.data + module->frame_packet.size,
                      p_packet->data, p_packet->size);
             module->frame_packet.size += p_packet->size;
          }
@@ -886,11 +886,11 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
       module->chunk_data_written += p_packet->size;
    }
 
-   if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) 
+   if ((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS)
       return status;
 
    if ((p_packet->flags & VC_CONTAINER_PACKET_FLAG_FRAME_END) ||
-       (track->format->es_type == VC_CONTAINER_ES_TYPE_AUDIO && 
+       (track->format->es_type == VC_CONTAINER_ES_TYPE_AUDIO &&
         track->format->type->audio.block_align &&
         module->chunk_data_written > AVI_AUDIO_CHUNK_SIZE_LIMIT))
    {
@@ -901,7 +901,7 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
          p_packet->size = module->frame_packet.size;
          module->frame_packet.size = 0;
       }
-      
+
       if (!module->chunk_size && module->chunk_data_written > p_packet->size)
       {
          /* The chunk size needs to be rewritten */
@@ -932,7 +932,6 @@ static VC_CONTAINER_STATUS_T avi_writer_write( VC_CONTAINER_T *p_ctx,
       if (status != VC_CONTAINER_SUCCESS) return status;
    }
 
-
    return STREAM_STATUS(p_ctx);
 }
 
@@ -949,9 +948,9 @@ static VC_CONTAINER_STATUS_T avi_writer_close( VC_CONTAINER_T *p_ctx )
       VC_CONTAINER_TRACK_MODULE_T *track_module = p_ctx->tracks[module->current_track_num]->priv->module;
       status = avi_finish_data_chunk(p_ctx, module->chunk_data_written);
       if (status != VC_CONTAINER_SUCCESS)
-      {       
+      {
          LOG_DEBUG(p_ctx, "warning, writing failed, last chunk truncated");
-      }      
+      }
       avi_write_index_entry(p_ctx, module->current_track_num, module->chunk_data_written, 0);
       track_module->chunk_index++;
       track_module->chunk_offs += module->chunk_data_written;
@@ -992,7 +991,7 @@ static VC_CONTAINER_STATUS_T avi_writer_close( VC_CONTAINER_T *p_ctx )
       if(STREAM_STATUS(p_ctx) != VC_CONTAINER_SUCCESS)
       {
          LOG_DEBUG(p_ctx, "warning, rewriting 'fileSize' failed, file will be malformed");
-      }   
+      }
 
       /* Rewrite the header list chunk ('hdrl') */
       SEEK(p_ctx, module->header_list_offset);
@@ -1070,7 +1069,7 @@ static VC_CONTAINER_STATUS_T avi_writer_control( VC_CONTAINER_T *p_ctx, VC_CONTA
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    VC_CONTAINER_STATUS_T status;
-   
+
    switch(operation)
    {
       case VC_CONTAINER_CONTROL_TRACK_ADD:
@@ -1142,7 +1141,7 @@ VC_CONTAINER_STATUS_T avi_writer_open( VC_CONTAINER_T *p_ctx )
    WRITE_FOURCC(p_ctx, VC_FOURCC('R','I','F','F'), "RIFF ID");
    WRITE_U32(p_ctx, 0, "fileSize");
    WRITE_FOURCC(p_ctx, VC_FOURCC('A','V','I',' '), "fileType");
-   
+
    if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) goto error;
 
    p_ctx->priv->pf_close = avi_writer_close;

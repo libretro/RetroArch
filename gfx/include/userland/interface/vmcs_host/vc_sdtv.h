@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
  * SDTV common host header for TV service
  */
- 
+
 #ifndef _VC_SDTV_H_
 #define _VC_SDTV_H_
 
@@ -49,7 +49,7 @@ typedef enum SDTV_MODE_T_
    SDTV_MODE_PAL        = 2, /**<Normal PAL */
    SDTV_MODE_PAL_M      = 3, /**<Brazilian version of PAL - 525/60 rather than 625/50, different subcarrier */
    SDTV_MODE_FORMAT_MASK = 0x3,
-   
+
    SDTV_MODE_OUTPUT_MASK = 0xc,
 
    SDTV_MODE_YPRPB_480i = (SDTV_MODE_NTSC | SDTV_COLOUR_YPRPB),
@@ -121,7 +121,7 @@ typedef struct {
 /**
  * SDTV notifications
  */
-typedef enum 
+typedef enum
 {
    VC_SDTV_UNPLUGGED          = 1 << 16, /**<SDTV cable unplugged, subject to platform support */
    VC_SDTV_ATTACHED           = 1 << 17, /**<SDTV cable is plugged in */

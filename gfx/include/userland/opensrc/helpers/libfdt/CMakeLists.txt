@@ -1,7 +1,7 @@
 include_directories(.)
 
 add_library(fdt
-            fdt.c 
+            fdt.c
             fdt_empty_tree.c
             fdt_ro.c
             fdt_rw.c
@@ -10,4 +10,3 @@ add_library(fdt
             fdt_wip.c)
 
 INSTALL(FILES)
-

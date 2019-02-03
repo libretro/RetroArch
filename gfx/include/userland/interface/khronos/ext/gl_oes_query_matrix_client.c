@@ -49,12 +49,12 @@ GL_API GLbitfield GL_APIENTRY glQueryMatrixxOES( GLfixed mantissa[16], GLint exp
                             thread,
                             GLQUERYMATRIXXOES_ID_11,
                             mantissa);
-               
+
       for(i=0;i<16;i++)
          exponent[i] = 0;
-         
-      return 0;                            
+
+      return 0;
    }
-   
+
    return 0xff; /* all components invalid */
 }

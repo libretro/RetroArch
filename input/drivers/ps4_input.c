@@ -29,7 +29,7 @@
 
 #include "../input_driver.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct ps4_input

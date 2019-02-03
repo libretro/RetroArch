@@ -53,4 +53,3 @@ void vcos_backtrace_self(void)
    }
 #endif
 }
-

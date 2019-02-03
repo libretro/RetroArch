@@ -665,7 +665,7 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
    game_name                  = path_basename(global->name.cheatfile);
 
    if (string_is_empty(settings->paths.path_cheat_database)  ||
-       string_is_empty(core_name)                            || 
+       string_is_empty(core_name)                            ||
        string_is_empty(game_name))
       return false;
 
@@ -759,7 +759,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             {
                unsigned *val = (unsigned*)realloc(
                      cheat_manager_state.memory_size_list,
-                     sizeof(unsigned) * 
+                     sizeof(unsigned) *
                      cheat_manager_state.num_memory_buffers);
 
                if (val)
@@ -1242,7 +1242,7 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
 
    cheat->rumble_prev_value = curr_value;
 
-   /* Give the emulator enough time 
+   /* Give the emulator enough time
     * to initialize, load state, etc */
    if (cheat->rumble_initialized > 300)
    {
@@ -1308,7 +1308,7 @@ void cheat_manager_apply_retro_cheats(void)
       if (!cheat_manager_state.memory_initialized)
          cheat_manager_initialize_memory(NULL, false);
 
-      /* If we're still not initialized, something 
+      /* If we're still not initialized, something
        * must have gone wrong - just bail */
       if (!cheat_manager_state.memory_initialized)
          return;
@@ -1319,7 +1319,7 @@ void cheat_manager_apply_retro_cheats(void)
          continue;
       }
       cheat_manager_setup_search_meta(cheat_manager_state.cheats[i].memory_search_size, &bytes_per_item, &mask, &bits);
-      
+
       curr = cheat_manager_state.curr_memory_buf;
       idx  = cheat_manager_state.cheats[i].address;
 

@@ -29,22 +29,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _METADATA_FOURCC_H
 
 /******************************************************************************
-Definition of 4CCs assigned to metadata items. This list acts more as a 
-central repository of 4CCs for different metadata items so as to avoid clashes. 
+Definition of 4CCs assigned to metadata items. This list acts more as a
+central repository of 4CCs for different metadata items so as to avoid clashes.
 They are not otherwise necessary for library to function correctly.
 ******************************************************************************/
 
 /*
-   Note: Multi-character constants are not valid C and although supported by 
-   some compilers such as Metaware, they are ambiguous in how they should be 
-   packed into a long due to endian-ness (and also due to size for 2 and 3 
+   Note: Multi-character constants are not valid C and although supported by
+   some compilers such as Metaware, they are ambiguous in how they should be
+   packed into a long due to endian-ness (and also due to size for 2 and 3
    character constants).
 */
 
 typedef enum {
 
-   METADATA_CDI                  = ('C'<<24)+('D'<<16)+('M'<<8)+('D'),   // 'CDMD'    struct CDI_METADATA_T in /middleware/camplus/cdi/cdi.h 
-   METADATA_CAM_CAL              = ('C'<<24)+('C'<<16)+('A'<<8)+('L'),   // 'CCAL'    struct CAMERA_CALIBRATION_METADATA_T in /middleware/camplus/cdi/cdi.h 
+   METADATA_CDI                  = ('C'<<24)+('D'<<16)+('M'<<8)+('D'),   // 'CDMD'    struct CDI_METADATA_T in /middleware/camplus/cdi/cdi.h
+   METADATA_CAM_CAL              = ('C'<<24)+('C'<<16)+('A'<<8)+('L'),   // 'CCAL'    struct CAMERA_CALIBRATION_METADATA_T in /middleware/camplus/cdi/cdi.h
    METADATA_TIMING               = ('T'<<24)+('I'<<16)+('M'<<8)+('E'),   // 'TIME'    struct TIMING_METADATA_T in /middleware/camplus/cdi/cdi.h
    METADATA_CDI_FILE             = ( 0 <<24)+('C'<<16)+('D'<<8)+('F'),   // '\x00CDF' struct CDI_FILE_METADATA_T in /middleware/camplus/cdi/cdi_file.h
    METADATA_CDI_RAW              = ('C'<<24)+('D'<<16)+('R'<<8)+('W'),   // 'CDRW'    struct CDI_FILE_RAW_METADATA_T in /middleware/camplus/cdi/cdi_file_raw.h
@@ -63,7 +63,7 @@ typedef enum {
    METADATA_ANTISHAKE            = ('S'<<24)+('H'<<16)+('A'<<8)+('K'),   // 'SHAK'    struct SHAKE_METADATA_T defined in /middleware/camplus/sw/shake_metadata.h
    METADATA_RER                  = ( 0 <<24)+('R'<<16)+('E'<<8)+('R'),   // '\x00RER'    struct RER_METADATA_T defined in /middleware/camplus/sw/rer_metadata.h
    METADATA_SCENEDETECTION       = ( 0 <<24)+('A'<<16)+('S'<<8)+('D'),   // '\x00ASD'    struct ASD_METADATA_T defined in /middleware/camplus/sw/asd_metadata.h
-   METADATA_TUNER_SYNC           = ('S'<<24)+('Y'<<16)+('N'<<8)+('C'),   // 'SYNC'    NULL data, just adds the item header.   
+   METADATA_TUNER_SYNC           = ('S'<<24)+('Y'<<16)+('N'<<8)+('C'),   // 'SYNC'    NULL data, just adds the item header.
    METADATA_DARK_FRAME_CORRECT   = ('D'<<24)+('F'<<16)+('R'<<8)+('C'),   // 'DFRC'    5 byte literal string "dfrc"
    METADATA_DARK_FRAME_SUB       = ('D'<<24)+('F'<<16)+('S'<<8)+('B'),   // 'DFSB'    3 byte literal string "on"
    METADATA_TUNER_DROP_FRAME     = ('T'<<24)+('D'<<16)+('R'<<8)+('P'),
@@ -76,9 +76,8 @@ typedef enum {
    METADATA_IL_CAMERA_NAME         = ('I'<<24)+('L'<<16)+('C'<<8)+('A'), // 'ILCA'
    METADATA_IL_CROP_RECTANGLE      = ('I'<<24)+('L'<<16)+('C'<<8)+('R'), // 'ILCR'
    METADATA_IL_PIXEL_ASPECT_RATIO  = ('I'<<24)+('L'<<16)+('P'<<8)+('A'), // 'ILPA'
-   
-   METADATA_TUNER_FLASH_MONITOR    = ('F'<<24)+('L'<<16)+('M'<<8)+('N'), // 'FLMN'  Flash monitor - type ISP_TUNER_BRCM_FLASH_MONITOR_T from isp_tuner_brcm.h
 
+   METADATA_TUNER_FLASH_MONITOR    = ('F'<<24)+('L'<<16)+('M'<<8)+('N'), // 'FLMN'  Flash monitor - type ISP_TUNER_BRCM_FLASH_MONITOR_T from isp_tuner_brcm.h
 
    // VoWIFI video analysis
    METADATA_SPATIAL_ACT_A     = ( 'S'<<24)+('P'<<16)+('T'<<8)+('A'), // 'SPTA' : SPATIAL_ACTIVITY_METADATA_T defined in /middleware/camplus/sw/perceptual/spatial_activity.h
@@ -88,7 +87,7 @@ typedef enum {
    METADATA_FLAT_AREA_A      = ( 'F'<<24)+('L'<<16)+('T'<<8)+('A'), // 'FLTA' : FLAT_AREA_METADATA_T defined in /middleware/camplus/sw/perceptual/flatarea.h
    METADATA_STILL_AREA_A     = ( 'S'<<24)+('T'<<16)+('L'<<8)+('A'), // 'STLA' : FLAT_AREA_METADATA_T defined in /middleware/camplus/sw/perceptual/stillarea.h
    METADATA_DDITHER_A        = ( 'D'<<24)+('D'<<16)+('T'<<8)+('A'), // 'DDTA' : DDITHER_METADATA_T defined in /middleware/camplus/sw/perceptual/...
-   
+
    METADATA_LINKED_MULTICHANN = ( 'I'<<24)+('L'<<16)+('M'<<8)+('C'), // 'ILMC' : VC_IMAGE_LINKED_MULTICHANN_T defined in /helpers/vc_image/vc_image.h
 
    METADATA_HDR              = ( 0 <<24)+( 'H'<<16)+('D'<<8)+('R'), // 'HDR' : HDR_METADATA_T defined in /middleware/camplus/sw/hdr/hdr_metadata.h
@@ -99,7 +98,7 @@ typedef enum {
    METADATA_SNAPSHOT_JPEG_QUANTISER = ('S'<<24)+('S'<<16)+('J'<<8) + ('S'), // 'SSJQ' : The size of the snapshot frame when JPEG-encoded.
 
    METADATA_SUPPLEMENTARY_INFO   = ('S'<<24)+('U'<<16)+('P'<<8) + ('P'), // 'SUPP' : Supplimentary info defined in /codecs/video/hw/enc/venc_supplementary_info.h
-   
+
    METADATA_UNKNOWN        = ('U'<<24)+('N'<<16)+('K'<<8)+('N') // 'UNKN'
 
 } METADATA_CODE_T;

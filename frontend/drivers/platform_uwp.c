@@ -323,7 +323,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 static void frontend_uwp_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   /* On UWP, we have to use the writable directory 
+   /* On UWP, we have to use the writable directory
     * instead of the install directory. */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
       "~\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -353,7 +353,7 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
       "~\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       "~\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-   /* This one is an exception: cores have to be loaded from 
+   /* This one is an exception: cores have to be loaded from
     * the install directory,
     * since this is the only place UWP apps can take .dlls from */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],

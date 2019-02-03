@@ -54,15 +54,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ***********************************************************/
 typedef struct _ILCLIENT_T ILCLIENT_T;
 
-
 /**
  * Each <DFN>ILEVENT_T</DFN> structure stores the result of an <DFN>EventHandler</DFN>
  * callback from a component, storing the event message type and any
  * parameters returned.
  ***********************************************************/
 typedef struct _ILEVENT_T ILEVENT_T;
-
-
 
 struct _COMPONENT_T;
 
@@ -80,7 +77,6 @@ struct _COMPONENT_T;
  ***********************************************************/
 typedef struct _COMPONENT_T COMPONENT_T;
 
-
 /**
  * The generic callback function is used for communicating events from
  * a particular component to the user.
@@ -96,7 +92,6 @@ typedef struct _COMPONENT_T COMPONENT_T;
  ***********************************************************/
 typedef void (*ILCLIENT_CALLBACK_T)(void *userdata, COMPONENT_T *comp, OMX_U32 data);
 
-
 /**
  * The buffer callback function is used for indicating that a
  * component has returned a buffer on a port using client buffer
@@ -109,7 +104,6 @@ typedef void (*ILCLIENT_CALLBACK_T)(void *userdata, COMPONENT_T *comp, OMX_U32 d
  * @return Void.
  ***********************************************************/
 typedef void (*ILCLIENT_BUFFER_CALLBACK_T)(void *data, COMPONENT_T *comp);
-
 
 /**
  * The malloc function is passed into
@@ -129,7 +123,6 @@ typedef void (*ILCLIENT_BUFFER_CALLBACK_T)(void *data, COMPONENT_T *comp);
  ***********************************************************/
 typedef void *(*ILCLIENT_MALLOC_T)(void *userdata, VCOS_UNSIGNED size, VCOS_UNSIGNED align, const char *description);
 
-
 /**
  * The free function is passed into
  * <DFN>ilclient_enable_port_buffers()</DFN> and
@@ -146,7 +139,6 @@ typedef void *(*ILCLIENT_MALLOC_T)(void *userdata, VCOS_UNSIGNED size, VCOS_UNSI
  * @return Void.
  ***********************************************************/
 typedef void (*ILCLIENT_FREE_T)(void *userdata, void *pointer);
-
 
 /**
  * The event mask enumeration describes the possible events that the
@@ -198,9 +190,8 @@ typedef enum {
                                            changed. */
 } ILEVENT_MASK_T;
 
-
 /**
- * On component creation the user can set flags to control the 
+ * On component creation the user can set flags to control the
  * creation of that component.
  ***********************************************************/
 typedef enum {
@@ -233,9 +224,8 @@ typedef enum {
 
    ILCLIENT_OUTPUT_ZERO_BUFFERS   = 0x10 /**< All output ports will have
                                             nBufferCountActual set to zero,
-                                            if supported by the component. */                                            
+                                            if supported by the component. */
 } ILCLIENT_CREATE_FLAGS_T;
-  
 
 /**
  * \brief This structure represents a tunnel in the OpenMAX IL API.
@@ -251,7 +241,6 @@ typedef struct {
    COMPONENT_T *sink;    /**< The sink component */
    int sink_port;        /**< The input port index on the sink component */
 } TUNNEL_T;
-
 
 /**
  * The <DFN>set_tunnel</DFN> macro is a useful function that initialises a
@@ -374,10 +363,9 @@ VCHPRE_ void VCHPOST_ ilclient_set_error_callback(ILCLIENT_T *handle,
  *
  * @return void
  ***********************************************************/
-VCHPRE_ void VCHPOST_ ilclient_set_configchanged_callback(ILCLIENT_T *handle, 
-                                                          ILCLIENT_CALLBACK_T func, 
+VCHPRE_ void VCHPOST_ ilclient_set_configchanged_callback(ILCLIENT_T *handle,
+                                                          ILCLIENT_CALLBACK_T func,
                                                           void *userdata);
-
 
 /**
  * The <DFN>ilclient_set_fill_buffer_done_callback()</DFN> function registers a
@@ -425,10 +413,9 @@ VCHPRE_ void VCHPOST_ ilclient_set_empty_buffer_done_callback(ILCLIENT_T *handle
                                                               ILCLIENT_BUFFER_CALLBACK_T func,
                                                               void *userdata);
 
-
 /**
  * Components are created using the <DFN>ilclient_create_component()</DFN>
- * function.  
+ * function.
  *
  * @param handle The client handle
  *
@@ -442,7 +429,7 @@ VCHPRE_ void VCHPOST_ ilclient_set_empty_buffer_done_callback(ILCLIENT_T *handle
  * component.
  *
  * @param flags The client can specify some creation behaviour by using
- * the <DFN>flags</DFN> field.  The meaning of each flag is defined 
+ * the <DFN>flags</DFN> field.  The meaning of each flag is defined
  * by the <DFN>ILCLIENT_CREATE_FLAGS_T</DFN> type.
  *
  * @return 0 on success, -1 on failure
@@ -460,11 +447,10 @@ VCHPRE_ int VCHPOST_ ilclient_create_component(ILCLIENT_T *handle,
  *
  * @param list A null-terminated list of component pointers to be
  * deallocated.
- * 
+ *
  * @return void
  ***********************************************************/
 VCHPRE_ void VCHPOST_ ilclient_cleanup_components(COMPONENT_T *list[]);
-
 
 /**
  * The <DFN>ilclient_change_component_state()</DFN> function changes the
@@ -483,10 +469,9 @@ VCHPRE_ void VCHPOST_ ilclient_cleanup_components(COMPONENT_T *list[]);
 VCHPRE_ int VCHPOST_ ilclient_change_component_state(COMPONENT_T *comp,
                                                      OMX_STATETYPE state);
 
-
 /**
  * The <DFN>ilclient_state_transition()</DFN> function transitions a set of
- * components that need to perform a simultaneous state transition; 
+ * components that need to perform a simultaneous state transition;
  * for example, when two components are tunnelled and the buffer
  * supplier port needs to allocate and pass buffers to a non-supplier
  * port.  All components are sent a command to change state, then the
@@ -501,7 +486,6 @@ VCHPRE_ int VCHPOST_ ilclient_change_component_state(COMPONENT_T *comp,
  ***********************************************************/
 VCHPRE_ void VCHPOST_  ilclient_state_transition(COMPONENT_T *list[],
                                                  OMX_STATETYPE state);
-
 
 /**
  * The <DFN>ilclient_disable_port()</DFN> function disables a port on a
@@ -520,7 +504,6 @@ VCHPRE_ void VCHPOST_  ilclient_state_transition(COMPONENT_T *list[],
 VCHPRE_ void VCHPOST_ ilclient_disable_port(COMPONENT_T *comp,
                                             int portIndex);
 
-
 /**
  * The <DFN>ilclient_enable_port()</DFN> function enables a port on a
  * given component.  This function sends the enable port message to
@@ -537,8 +520,6 @@ VCHPRE_ void VCHPOST_ ilclient_disable_port(COMPONENT_T *comp,
  ***********************************************************/
 VCHPRE_ void VCHPOST_ ilclient_enable_port(COMPONENT_T *comp,
                                            int portIndex);
-
-
 
 /**
  * The <DFN>ilclient_enable_port_buffers()</DFN> function enables a port
@@ -570,7 +551,6 @@ VCHPRE_ int VCHPOST_ ilclient_enable_port_buffers(COMPONENT_T *comp,
                                                   ILCLIENT_FREE_T ilclient_free,
                                                   void *userdata);
 
-
 /**
  * The <DFN>ilclient_disable_port_buffers()</DFN> function disables a
  * port in base profile mode on a given component.  The port is not
@@ -599,7 +579,6 @@ VCHPRE_ void VCHPOST_ ilclient_disable_port_buffers(COMPONENT_T *comp,
                                                     OMX_BUFFERHEADERTYPE *bufferList,
                                                     ILCLIENT_FREE_T ilclient_free,
                                                     void *userdata);
-
 
 /**
  * With a populated tunnel structure, the
@@ -644,7 +623,6 @@ VCHPRE_ int VCHPOST_ ilclient_setup_tunnel(TUNNEL_T *tunnel,
                                            unsigned int portStream,
                                            int timeout);
 
-
 /**
  * The <DFN>ilclient_disable_tunnel()</DFN> function disables both ports listed in
  * the tunnel structure.  It will send a port disable command to each
@@ -660,7 +638,6 @@ VCHPRE_ int VCHPOST_ ilclient_setup_tunnel(TUNNEL_T *tunnel,
  * @return void
  ***********************************************************/
 VCHPRE_ void VCHPOST_ ilclient_disable_tunnel(TUNNEL_T *tunnel);
-
 
 /**
  * The <DFN>ilclient_enable_tunnel()</DFN> function enables both ports listed in
@@ -687,7 +664,6 @@ VCHPRE_ void VCHPOST_ ilclient_disable_tunnel(TUNNEL_T *tunnel);
  ***********************************************************/
 VCHPRE_ int VCHPOST_ ilclient_enable_tunnel(TUNNEL_T *tunnel);
 
-
 /**
  * The <DFN>ilclient_flush_tunnels()</DFN> function will flush a number of tunnels
  * from the list of tunnels presented.  For each tunnel that is to be
@@ -706,7 +682,6 @@ VCHPRE_ int VCHPOST_ ilclient_enable_tunnel(TUNNEL_T *tunnel);
 VCHPRE_ void VCHPOST_ ilclient_flush_tunnels(TUNNEL_T *tunnel,
                                              int max);
 
-
 /**
  * The <DFN>ilclient_teardown_tunnels()</DFN> function tears down all tunnels in
  * the list of tunnels presented.  For each tunnel in the list, the
@@ -714,7 +689,7 @@ VCHPRE_ void VCHPOST_ ilclient_flush_tunnels(TUNNEL_T *tunnel,
  * where for both calls the destination component is <DFN>NULL</DFN> and the
  * destination port is zero.  The VMCSX IL implementation requires
  * that all tunnels are torn down in this manner before components are
- * freed. 
+ * freed.
  *
  * @param tunnels List of tunnels to teardown.  The list must be
  * terminated with a tunnel structure with <DFN>NULL</DFN> component entries.
@@ -722,7 +697,6 @@ VCHPRE_ void VCHPOST_ ilclient_flush_tunnels(TUNNEL_T *tunnel,
  * @return void
  ***********************************************************/
 VCHPRE_ void VCHPOST_ ilclient_teardown_tunnels(TUNNEL_T *tunnels);
-
 
 /**
  * The <DFN>ilclient_get_output_buffer()</DFN> function returns a buffer
@@ -742,7 +716,6 @@ VCHPRE_ OMX_BUFFERHEADERTYPE* VCHPOST_ ilclient_get_output_buffer(COMPONENT_T *c
                                                                   int portIndex,
                                                                   int block);
 
-
 /**
  * The <DFN>ilclient_get_input_buffer()</DFN> function returns a buffer
  * that was sent to an input port and that has been returned from a
@@ -760,7 +733,6 @@ VCHPRE_ OMX_BUFFERHEADERTYPE* VCHPOST_ ilclient_get_output_buffer(COMPONENT_T *c
 VCHPRE_ OMX_BUFFERHEADERTYPE* VCHPOST_ ilclient_get_input_buffer(COMPONENT_T *comp,
                                                                  int portIndex,
                                                                  int block);
-
 
 /**
  * The <DFN>ilclient_remove_event()</DFN> function queries the event list for the
@@ -793,7 +765,6 @@ VCHPRE_ int VCHPOST_ ilclient_remove_event(COMPONENT_T *comp,
                                            OMX_U32 nData2,
                                            int ignore2);
 
-
 /**
  * The <DFN>ilclient_return_events()</DFN> function removes all events
  * from a component event list and adds them to the IL client free
@@ -806,7 +777,6 @@ VCHPRE_ int VCHPOST_ ilclient_remove_event(COMPONENT_T *comp,
  * @return void
  ***********************************************************/
 VCHPRE_ void VCHPOST_ ilclient_return_events(COMPONENT_T *comp);
-
 
 /**
  * The <DFN>ilclient_wait_for_event()</DFN> function is similar to
@@ -859,13 +829,12 @@ VCHPRE_ int VCHPOST_ ilclient_wait_for_event(COMPONENT_T *comp,
                                              int event_flag,
                                              int timeout);
 
-
 /**
  * The <DFN>ilclient_wait_for_command_complete()</DFN> function waits
  * for a message from a component that indicates that the command
- * has completed.  This is either a command success message, or an 
+ * has completed.  This is either a command success message, or an
  * error message that signals the completion of an event.
- * 
+ *
  * @param comp The component currently processing a command.
  *
  * @param command The command being processed.  This must be either
@@ -883,7 +852,6 @@ VCHPRE_ int VCHPOST_ ilclient_wait_for_command_complete(COMPONENT_T *comp,
                                                         OMX_COMMANDTYPE command,
                                                         OMX_U32 nData2);
 
-
 /**
  * The <DFN>ilclient_wait_for_command_complete_dual()</DFN> function
  * is similar to <DFN>ilclient_wait_for_command_complete()</DFN>.  The
@@ -894,7 +862,7 @@ VCHPRE_ int VCHPOST_ ilclient_wait_for_command_complete(COMPONENT_T *comp,
  * enable a port, or change state to <DFN>OMX_StateIdle</DFN>.  If the
  * other component is the buffer supplier and reports an error, then
  * it will not allocate buffers, so our first component may stall.
- * 
+ *
  * @param comp The component currently processing a command.
  *
  * @param command The command being processed.  This must be either
@@ -918,15 +886,14 @@ VCHPRE_ int VCHPOST_ ilclient_wait_for_command_complete_dual(COMPONENT_T *comp,
                                                              OMX_COMMANDTYPE command,
                                                              OMX_U32 nData2,
                                                              COMPONENT_T *related);
-                                                             
 
 /**
- * The <DFN>ilclient_debug_output()</DFN> function adds a message to a 
+ * The <DFN>ilclient_debug_output()</DFN> function adds a message to a
  * host-specific debug display.  For a local VideoCore host the message is
  * added to the internal message log.  For a Win32 host the message is
  * printed to the debug display.  This function should be customised
  * when IL client is ported to another platform.
- * 
+ *
  * @param format A message to add, together with the variable
  * argument list similar to <DFN>printf</DFN> and other standard C functions.
  *
@@ -945,7 +912,6 @@ VCHPRE_ void VCHPOST_ ilclient_debug_output(char *format, ...);
  * @return The <DFN>OMX_HANDLETYPE</DFN> value for the component.
  ***********************************************************/
 VCHPRE_ OMX_HANDLETYPE VCHPOST_ ilclient_get_handle(COMPONENT_T *comp);
-
 
 #ifndef OMX_SKIP64BIT
 
@@ -991,7 +957,6 @@ static inline int64_t ilclient_ticks_to_s64(OMX_TICKS t) {
    return u;
 }
 
-
 #endif /* OMX_SKIP64BIT */
 
 /**
@@ -1011,7 +976,6 @@ VCHPRE_ int VCHPOST_ ilclient_get_port_index(COMPONENT_T *comp,
                                              OMX_PORTDOMAINTYPE type,
                                              int index);
 
-
 /**
  * The <DFN>ilclient_suggest_bufsize()</DFN> function gives a
  * component a hint about the size of buffer it should use.  This size
@@ -1026,7 +990,6 @@ VCHPRE_ int VCHPOST_ ilclient_get_port_index(COMPONENT_T *comp,
  ***********************************************************/
 VCHPRE_ int VCHPOST_ ilclient_suggest_bufsize(COMPONENT_T *comp,
                                               OMX_U32 nBufSizeHint);
-
 
 /**
  * The <DFN>ilclient_stack_size()</DFN> function suggests a minimum

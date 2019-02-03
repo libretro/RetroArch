@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include <stdlib.h>
 
-
 int vcos_verify_bkpts = 0;
 #ifdef __VIDEOCORE__
 VC_DEBUG_VAR(vcos_verify_bkpts);

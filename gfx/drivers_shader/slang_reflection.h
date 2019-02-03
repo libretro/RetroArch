@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -67,7 +67,7 @@ enum slang_semantic
    /* vec4, viewport size of final pass */
    SLANG_SEMANTIC_FINAL_VIEWPORT  = 2,
    /* uint, frame count with modulo */
-   SLANG_SEMANTIC_FRAME_COUNT     = 3,   
+   SLANG_SEMANTIC_FRAME_COUNT     = 3,
    SLANG_NUM_BASE_SEMANTICS,
 
    /* float, user defined parameter, arrayed */

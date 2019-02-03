@@ -230,7 +230,7 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
-   
+
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
@@ -886,7 +886,7 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
 
    int patch;
    sscanf(firmware_version + 0x68, "%d.%d.%d", major, minor, &patch);
-   
+
 fail_object:
    ipc_close(set_sys);
 fail_sm:

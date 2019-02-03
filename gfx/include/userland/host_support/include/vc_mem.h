@@ -49,4 +49,3 @@ extern int vc_mem_access_mem( int write_mem, void *buf, uint32_t vc_mem_addr, si
 #endif
 
 #endif  /* VC_MEM_H */
-

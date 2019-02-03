@@ -62,7 +62,7 @@ extern "C" {
   */
 #define VCOS_TLS_MAX_SLOTS 4
 
-/** TLS key. Allocating one of these reserves the client one of the 
+/** TLS key. Allocating one of these reserves the client one of the
   * available slots.
   */
 typedef VCOS_UNSIGNED VCOS_TLS_KEY_T;
@@ -77,7 +77,7 @@ typedef struct VCOS_TLS_THREAD_T
 } VCOS_TLS_THREAD_T;
 
 /*
- * Internal APIs 
+ * Internal APIs
  */
 
 /** Register this thread's TLS storage area. */
@@ -160,5 +160,4 @@ void vcos_tls_delete(VCOS_TLS_KEY_T tls) {
 #endif
 
 #endif
-
 

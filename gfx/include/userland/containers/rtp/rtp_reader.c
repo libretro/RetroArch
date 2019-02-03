@@ -820,7 +820,6 @@ static VC_CONTAINER_STATUS_T l16_payload_handler(VC_CONTAINER_T *p_ctx,
    return status;
 }
 
-
 /*****************************************************************************
 Utility functions for use by RTP payload handlers
  *****************************************************************************/

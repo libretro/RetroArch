@@ -635,9 +635,9 @@ static void win32_set_position_from_config(void)
 
    g_win32_pos_x         = settings->uints.window_position_x;
    g_win32_pos_y         = settings->uints.window_position_y;
-   g_win32_pos_width     = settings->uints.window_position_width 
+   g_win32_pos_width     = settings->uints.window_position_width
       + border_thickness * 2;
-   g_win32_pos_height    = settings->uints.window_position_height 
+   g_win32_pos_height    = settings->uints.window_position_height
       + border_thickness * 2 + title_bar_height;
 }
 
@@ -719,7 +719,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
-         if (  wparam != SIZE_MAXHIDE && 
+         if (  wparam != SIZE_MAXHIDE &&
                wparam != SIZE_MINIMIZED)
          {
             if (LOWORD(lparam) != g_win32_resize_width ||
@@ -1171,14 +1171,14 @@ bool win32_suppress_screensaver(void *data, bool enable)
                POWER_REQUEST_CONTEXT RequestContext;
                HANDLE Request;
 
-               RequestContext.Version                   = 
+               RequestContext.Version                   =
                   POWER_REQUEST_CONTEXT_VERSION;
-               RequestContext.Flags                     = 
+               RequestContext.Flags                     =
                   POWER_REQUEST_CONTEXT_SIMPLE_STRING;
                RequestContext.Reason.SimpleReasonString = (LPWSTR)
                   L"RetroArch running";
 
-               Request                                  = 
+               Request                                  =
                   powerCreateRequest(&RequestContext);
 
                powerSetRequest( Request, PowerRequestDisplayRequired);

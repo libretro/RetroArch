@@ -70,7 +70,6 @@ static uint64_t pad_state[PS4_MAX_ORBISPADS];
 static int16_t analog_state[PS4_MAX_ORBISPADS][2][2];
 static int16_t num_players = 0;
 
-
 static const char *ps4_joypad_name(unsigned pad)
 {
    return "PS4 Controller";
@@ -165,7 +164,7 @@ static void ps4_joypad_poll(void)
       unsigned j, k;
       unsigned i  = player;
       unsigned p  = player;
-   
+
       int ret = scePadReadState(ds_joypad_states[player].handle,&buttons);
       if (ret == 0)
       {
@@ -203,7 +202,6 @@ static bool ps4_joypad_rumble(unsigned pad,
 {
    return false;
 }
-
 
 static void ps4_joypad_destroy(void)
 {

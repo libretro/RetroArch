@@ -68,7 +68,7 @@ static void menu_display_d3d12_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    int                      vertex_count;
-   d3d12_video_t*           d3d12 = video_info ? 
+   d3d12_video_t*           d3d12 = video_info ?
       (d3d12_video_t*)video_info->userdata : NULL;
 
    if (!d3d12 || !draw || !draw->texture)
@@ -205,7 +205,7 @@ static void menu_display_d3d12_draw(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d12_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   d3d12_video_t           *d3d12 = video_info ? 
+   d3d12_video_t           *d3d12 = video_info ?
       (d3d12_video_t*)video_info->userdata : NULL;
 
    if (!d3d12 || !draw)

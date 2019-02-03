@@ -28,7 +28,6 @@ rm -f ../retroarch_wiiu_salamander.rpx.elf
 cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/rpx/wiiu/apps/retroarch/meta.xml
 cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/rpx/wiiu/apps/retroarch/icon.png
 
-
 make -C ../ -f Makefile.${platform} clean || exit 1
 
 lookup()

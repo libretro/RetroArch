@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef int VC_HDMI_BOOL_T;
 
 /**
- * HDMI resolution groups. There are two main groups: 
+ * HDMI resolution groups. There are two main groups:
  * CEA - the conventional HDMI ones like 720p
  * DMT - computer monitor resolutions like XGA
  */
@@ -298,16 +298,16 @@ typedef enum {
    HDMI_DMT_1440x900_85     = 0x31,
    HDMI_DMT_1440x900_120    = 0x32, /** reduced blanking */
    HDMI_DMT_UXGA_60         = 0x33, /**<1600x1200 60Hz */
-   HDMI_DMT_UXGA_65         = 0x34, 
-   HDMI_DMT_UXGA_70         = 0x35, 
-   HDMI_DMT_UXGA_75         = 0x36, 
-   HDMI_DMT_UXGA_85         = 0x37, 
+   HDMI_DMT_UXGA_65         = 0x34,
+   HDMI_DMT_UXGA_70         = 0x35,
+   HDMI_DMT_UXGA_75         = 0x36,
+   HDMI_DMT_UXGA_85         = 0x37,
    HDMI_DMT_UXGA_120        = 0x38, /** reduced blanking */
    HDMI_DMT_SWXGAP_RB       = 0x39, /**<1680x1050 reduced blanking */
    HDMI_DMT_SWXGAP_60       = 0x3A, /**<1680x1050 60Hz */
-   HDMI_DMT_SWXGAP_75       = 0x3B, 
-   HDMI_DMT_SWXGAP_85       = 0x3C, 
-   HDMI_DMT_SWXGAP_120      = 0x3D, /** reduced blanking */ 
+   HDMI_DMT_SWXGAP_75       = 0x3B,
+   HDMI_DMT_SWXGAP_85       = 0x3C,
+   HDMI_DMT_SWXGAP_120      = 0x3D, /** reduced blanking */
    HDMI_DMT_1792x1344_60    = 0x3E, /**<1792x1344 60Hz */
    HDMI_DMT_1792x1344_75    = 0x3F, /**<1792x1344 75Hz */
    HDMI_DMT_1792x1344_120   = 0x40, /** reduced blanking */

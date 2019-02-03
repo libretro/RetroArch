@@ -157,7 +157,6 @@ static struct {
    { MMAL_ENCODING_UNKNOWN,   MMAL_ENCODING_UNKNOWN      },
 };
 
-
 uint32_t mmal_encoding_stride_to_width(uint32_t encoding, uint32_t stride)
 {
    unsigned int i;
@@ -432,7 +431,6 @@ typedef struct {
    MMAL_PARAMETER_HEADER_T header;
    MMAL_FOURCC_T encodings[MAX_ENCODINGS_NUM];
 } MMAL_SUPPORTED_ENCODINGS_T;
-
 
 int mmal_util_rgb_order_fixed(MMAL_PORT_T *port)
 {

@@ -43,13 +43,11 @@ typedef struct MMAL_COMPONENT_MODULE_T
    MMAL_STATUS_T status;     /**< current status of the component */
 } MMAL_COMPONENT_MODULE_T;
 
-
 typedef struct MMAL_PORT_MODULE_T
 {
    MMAL_QUEUE_T *queue;      /**< queue for the buffers sent to the port */
    int64_t last_ts;          /***< Last timestamp seen on the input port */
 } MMAL_PORT_MODULE_T;
-
 
 /*****************************************************************************/
 /** Process an event buffer */
@@ -482,4 +480,3 @@ void mmal_register_component_scheduler(void)
 {
    mmal_component_supplier_register("scheduler", mmal_component_create_scheduler);
 }
-

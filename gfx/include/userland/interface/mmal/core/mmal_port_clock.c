@@ -83,7 +83,6 @@ static void mmal_port_clock_payload_free(MMAL_PORT_T *port, uint8_t *payload)
 }
 #endif
 
-
 /* Callback invoked by the clock module in response to a client request */
 static void mmal_port_clock_request_cb(MMAL_CLOCK_T* clock, int64_t media_time, void *cb_data, MMAL_CLOCK_VOID_FP cb)
 {
@@ -800,4 +799,3 @@ void mmal_port_clock_output_buffer_info(MMAL_PORT_T *port, const MMAL_CLOCK_BUFF
    if (port->priv->clock->buffer_info_reporting)
       mmal_port_clock_forward_output_buffer_info(port, info);
 }
-

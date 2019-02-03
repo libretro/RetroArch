@@ -202,7 +202,7 @@ VC_CONTAINER_STATUS_T vc_container_helper_write_debug(VC_CONTAINER_T *ctx, int t
    else if(type == LOG_FORMAT_TYPE_FOURCC)
    {
       status = vc_container_io_write_fourcc(ctx->priv->io, (uint32_t)value);
-   }  
+   }
    else if(type == LOG_FORMAT_TYPE_GUID)
    {
       value = vc_container_io_write(ctx->priv->io, buffer, 16);

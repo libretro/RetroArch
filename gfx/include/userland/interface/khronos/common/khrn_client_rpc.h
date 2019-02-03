@@ -110,7 +110,7 @@ extern void rpc_term(void);
 #define RPC_TERM() rpc_term()
 #else
 #define RPC_INIT() true
-#define RPC_TERM() 
+#define RPC_TERM()
 #endif
 
 #define RPC_FLUSH(thread) RPC_CALL0(khrn_misc_rpc_flush_impl, thread, no_id)
@@ -390,7 +390,6 @@ extern void rpc_recv_bulk_gather(CLIENT_THREAD_STATE_T *thread, void *out, uint3
 
 extern void rpc_begin(CLIENT_THREAD_STATE_T *thread);
 extern void rpc_end(CLIENT_THREAD_STATE_T *thread);
-
 
 /******************************************************************************
 helpers

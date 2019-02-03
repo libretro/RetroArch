@@ -200,19 +200,19 @@
 
 //
 // A text client drawing effect object is of the wrong type
-// 
+//
 #define D2DERR_TEXT_EFFECT_IS_WRONG_TYPE    MAKE_D2DHR_ERR(0x01B)
 
 //
-// The application is holding a reference to the IDWriteTextRenderer interface 
-// after the corresponding DrawText or DrawTextLayout call has returned. The 
+// The application is holding a reference to the IDWriteTextRenderer interface
+// after the corresponding DrawText or DrawTextLayout call has returned. The
 // IDWriteTextRenderer instance will be zombied.
-// 
+//
 #define D2DERR_TEXT_RENDERER_NOT_RELEASED   MAKE_D2DHR_ERR(0x01C)
 
 //
 // The requested size is larger than the guaranteed supported texture size.
-// 
+//
 #define D2DERR_EXCEEDS_MAX_BITMAP_SIZE     MAKE_D2DHR_ERR(0x01D)
 
 #else /*D2DERR_WRONG_STATE*/

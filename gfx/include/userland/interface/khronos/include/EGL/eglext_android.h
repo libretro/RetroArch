@@ -73,7 +73,6 @@ EGLAPI EGLBoolean EGLAPIENTRY eglSetSwapRectangleANDROID (EGLDisplay dpy, EGLSur
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLSETSWAPRECTANGLEANDROIDPROC) (EGLDisplay dpy, EGLSurface draw, EGLint left, EGLint top, EGLint width, EGLint height);
 #endif /* EGL_ANDROID_swap_rectangle */
 
-
 #ifndef EGL_ANDROID_render_buffer
 #define EGL_ANDROID_render_buffer 1
 #endif

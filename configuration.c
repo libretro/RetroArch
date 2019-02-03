@@ -573,7 +573,7 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
-#elif defined(HAVE_OZONE) && (defined(HAVE_LIBNX) || TARGET_OS_TV) 
+#elif defined(HAVE_OZONE) && (defined(HAVE_LIBNX) || TARGET_OS_TV)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
@@ -2487,7 +2487,7 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "metal")  ||
          string_is_equal(video_driver, "ctr")    ||
          string_is_equal(video_driver, "vita2d"))
-      return true;   
+      return true;
 
    return false;
 }

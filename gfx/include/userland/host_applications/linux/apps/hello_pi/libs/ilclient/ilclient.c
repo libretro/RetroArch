@@ -159,10 +159,10 @@ ILCLIENT_T *ilclient_init()
 {
    ILCLIENT_T *st = vcos_malloc(sizeof(ILCLIENT_T), "ilclient");
    int i;
-   
+
    if (!st)
       return NULL;
-   
+
    vcos_log_set_level(VCOS_LOG_CATEGORY, VCOS_LOG_WARN);
    vcos_log_register("ilclient", VCOS_LOG_CATEGORY);
 
@@ -361,7 +361,7 @@ int ilclient_create_component(ILCLIENT_T *client, COMPONENT_T **comp, char *name
                {
                   if(flags & ILCLIENT_DISABLE_ALL_PORTS)
                      ilclient_disable_port(*comp, ports.nStartPortNumber+j);
-                  
+
                   if(flags & ILCLIENT_OUTPUT_ZERO_BUFFERS)
                   {
                      OMX_PARAM_PORTDEFINITIONTYPE portdef;
@@ -436,7 +436,7 @@ int ilclient_remove_event(COMPONENT_T *st, OMX_EVENTTYPE eEvent,
    cur->eEvent = -1; // mark as unused
 
    // if we're removing an OMX_EventError or OMX_EventParamOrConfigChanged event, then clear the error bit from the eventgroup,
-   // since the user might have been notified through the error callback, and then 
+   // since the user might have been notified through the error callback, and then
    // can't clear the event bit - this will then cause problems the next time they
    // wait for an error.
    if(eEvent == OMX_EventError)
@@ -540,7 +540,7 @@ void ilclient_teardown_tunnels(TUNNEL_T *tunnel)
 void ilclient_disable_tunnel(TUNNEL_T *tunnel)
 {
    OMX_ERRORTYPE error;
-   
+
    if(tunnel->source == 0 || tunnel->sink == 0)
       return;
 
@@ -636,7 +636,6 @@ int ilclient_enable_tunnel(TUNNEL_T *tunnel)
    return 0;
 }
 
-
 /***********************************************************
  * Name: ilclient_flush_tunnels
  *
@@ -669,7 +668,6 @@ void ilclient_flush_tunnels(TUNNEL_T *tunnel, int max)
       i++;
    }
 }
-
 
 /***********************************************************
  * Name: ilclient_return_events
@@ -786,7 +784,6 @@ void ilclient_enable_port(COMPONENT_T *comp, int portIndex)
       vc_assert(0);
 }
 
-
 /***********************************************************
  * Name: ilclient_enable_port_buffers
  *
@@ -810,7 +807,7 @@ int ilclient_enable_port_buffers(COMPONENT_T *comp, int portIndex,
    portdef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
    portdef.nVersion.nVersion = OMX_VERSION;
    portdef.nPortIndex = portIndex;
-   
+
    // work out buffer requirements, check port is in the right state
    error = OMX_GetParameter(comp->comp, OMX_IndexParamPortDefinition, &portdef);
    if(error != OMX_ErrorNone || portdef.bEnabled != OMX_FALSE || portdef.nBufferCountActual == 0 || portdef.nBufferSize == 0)
@@ -882,7 +879,6 @@ int ilclient_enable_port_buffers(COMPONENT_T *comp, int portIndex,
    return 0;
 }
 
-
 /***********************************************************
  * Name: ilclient_disable_port_buffers
  *
@@ -907,17 +903,17 @@ void ilclient_disable_port_buffers(COMPONENT_T *comp, int portIndex,
    portdef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
    portdef.nVersion.nVersion = OMX_VERSION;
    portdef.nPortIndex = portIndex;
-   
+
    // work out buffer requirements, check port is in the right state
    error = OMX_GetParameter(comp->comp, OMX_IndexParamPortDefinition, &portdef);
    if(error != OMX_ErrorNone || portdef.bEnabled != OMX_TRUE || portdef.nBufferCountActual == 0 || portdef.nBufferSize == 0)
       return;
-   
+
    num = portdef.nBufferCountActual;
-   
+
    error = OMX_SendCommand(comp->comp, OMX_CommandPortDisable, portIndex, NULL);
    vc_assert(error == OMX_ErrorNone);
-      
+
    while(num > 0)
    {
       VCOS_UNSIGNED set;
@@ -925,23 +921,23 @@ void ilclient_disable_port_buffers(COMPONENT_T *comp, int portIndex,
       if(list == NULL)
       {
          vcos_semaphore_wait(&comp->sema);
-         
+
          // take buffers for this port off the relevant queue
          head = portdef.eDir == OMX_DirInput ? &comp->in_list : &comp->out_list;
          clist = *head;
          prev = NULL;
-         
+
          while(clist)
          {
             if((portdef.eDir == OMX_DirInput ? clist->nInputPortIndex : clist->nOutputPortIndex) == portIndex)
             {
                OMX_BUFFERHEADERTYPE *pBuffer = clist;
-               
+
                if(!prev)
                   clist = *head = (OMX_BUFFERHEADERTYPE *) pBuffer->pAppPrivate;
                else
                   clist = prev->pAppPrivate = (OMX_BUFFERHEADERTYPE *) pBuffer->pAppPrivate;
-               
+
                pBuffer->pAppPrivate = list;
                list = pBuffer;
             }
@@ -951,7 +947,7 @@ void ilclient_disable_port_buffers(COMPONENT_T *comp, int portIndex,
                clist = (OMX_BUFFERHEADERTYPE *) &(clist->pAppPrivate);
             }
          }
-         
+
          vcos_semaphore_post(&comp->sema);
       }
 
@@ -959,15 +955,15 @@ void ilclient_disable_port_buffers(COMPONENT_T *comp, int portIndex,
       {
          void *buf = list->pBuffer;
          OMX_BUFFERHEADERTYPE *next = list->pAppPrivate;
-         
+
          error = OMX_FreeBuffer(comp->comp, portIndex, list);
          vc_assert(error == OMX_ErrorNone);
-         
+
          if(ilclient_free)
             ilclient_free(private, buf);
          else
             vcos_free(buf);
-         
+
          num--;
          list = next;
       }
@@ -985,13 +981,12 @@ void ilclient_disable_port_buffers(COMPONENT_T *comp, int portIndex,
 
          if((set & ILCLIENT_PORT_DISABLED) && ilclient_remove_event(comp, OMX_EventCmdComplete, OMX_CommandPortDisable, 0, portIndex, 0) >= 0)
             return;
-      }            
+      }
    }
-  
+
    if(ilclient_wait_for_command_complete(comp, OMX_CommandPortDisable, portIndex) < 0)
       vc_assert(0);
 }
-
 
 /***********************************************************
  * Name: ilclient_setup_tunnel
@@ -1030,7 +1025,7 @@ int ilclient_setup_tunnel(TUNNEL_T *tunnel, unsigned int portStream, int timeout
       status = ilclient_wait_for_event(tunnel->source, OMX_EventPortSettingsChanged,
                                        tunnel->source_port, 0, -1, 1,
                                        ILCLIENT_PARAMETER_CHANGED | ILCLIENT_EVENT_ERROR, timeout);
-      
+
       if (status < 0)
       {
          ilclient_debug_output(
@@ -1080,7 +1075,7 @@ int ilclient_setup_tunnel(TUNNEL_T *tunnel, unsigned int portStream, int timeout
       vc_assert(error == OMX_ErrorNone);
       error = OMX_SetupTunnel(tunnel->sink->comp, tunnel->sink_port, NULL, 0);
       vc_assert(error == OMX_ErrorNone);
-      
+
       if(enable_error)
       {
          //Clean up the errors. This does risk removing an error that was nothing to do with this tunnel :-/
@@ -1124,9 +1119,9 @@ int ilclient_wait_for_event(COMPONENT_T *comp, OMX_EVENTTYPE event,
          ILEVENT_T *cur;
          ilclient_lock_events(comp->client);
          cur = comp->list;
-         while(cur && cur->eEvent != OMX_EventError)            
+         while(cur && cur->eEvent != OMX_EventError)
             cur = cur->next;
-         
+
          if(cur)
          {
             // clear error flag
@@ -1145,14 +1140,14 @@ int ilclient_wait_for_event(COMPONENT_T *comp, OMX_EVENTTYPE event,
          cur = comp->list;
          while(cur && cur->eEvent != OMX_EventParamOrConfigChanged)
             cur = cur->next;
-         
+
          ilclient_unlock_events(comp->client);
 
          if(cur)
             return ilclient_remove_event(comp, event, nData1, ignore1, nData2, ignore2) == 0 ? 0 : -3;
       }
 
-      status = vcos_event_flags_get(&comp->event, event_flag, VCOS_OR_CONSUME, 
+      status = vcos_event_flags_get(&comp->event, event_flag, VCOS_OR_CONSUME,
                                     suspend, &set);
       if (status != 0)
          return -1;
@@ -1164,8 +1159,6 @@ int ilclient_wait_for_event(COMPONENT_T *comp, OMX_EVENTTYPE event,
 
    return 0;
 }
-
-
 
 /***********************************************************
  * Name: ilclient_wait_for_command_complete_dual
@@ -1224,7 +1217,7 @@ int ilclient_wait_for_command_complete_dual(COMPONENT_T *comp, OMX_COMMANDTYPE c
          cur->next = comp->client->event_list;
          comp->client->event_list = cur;
          cur->eEvent = -1; // mark as unused
-         
+
          ilclient_unlock_events(comp->client);
          break;
       }
@@ -1257,7 +1250,6 @@ int ilclient_wait_for_command_complete_dual(COMPONENT_T *comp, OMX_COMMANDTYPE c
 
    return ret;
 }
-
 
 /***********************************************************
  * Name: ilclient_wait_for_command_complete
@@ -1293,14 +1285,14 @@ OMX_BUFFERHEADERTYPE *ilclient_get_output_buffer(COMPONENT_T *comp, int portInde
          prev = ret;
          ret = ret->pAppPrivate;
       }
-      
+
       if(ret)
       {
          if(prev == NULL)
             comp->out_list = ret->pAppPrivate;
          else
             prev->pAppPrivate = ret->pAppPrivate;
-         
+
          ret->pAppPrivate = NULL;
       }
       vcos_semaphore_post(&comp->sema);
@@ -1336,14 +1328,14 @@ OMX_BUFFERHEADERTYPE *ilclient_get_input_buffer(COMPONENT_T *comp, int portIndex
          prev = ret;
          ret = ret->pAppPrivate;
       }
-      
+
       if(ret)
       {
          if(prev == NULL)
             comp->in_list = ret->pAppPrivate;
          else
             prev->pAppPrivate = ret->pAppPrivate;
-         
+
          ret->pAppPrivate = NULL;
       }
       vcos_semaphore_post(&comp->sema);
@@ -1437,7 +1429,7 @@ static OMX_ERRORTYPE ilclient_event_handler(OMX_IN OMX_HANDLETYPE hComponent,
          {
             // remove this duplicate
             ILEVENT_T *rem = *list;
-            ilclient_debug_output("%s: removing %d/%d/%d", st->name, event->eEvent, event->nData1, event->nData2);            
+            ilclient_debug_output("%s: removing %d/%d/%d", st->name, event->eEvent, event->nData1, event->nData2);
             *list = rem->next;
             rem->eEvent = -1;
             rem->next = st->client->event_list;
@@ -1615,7 +1607,7 @@ static OMX_ERRORTYPE ilclient_event_handler(OMX_IN OMX_HANDLETYPE hComponent,
    }
    ilclient_unlock_events(st->client);
 
-   // now call any callbacks without the event lock so the client can 
+   // now call any callbacks without the event lock so the client can
    // remove the event in context
    switch(eEvent) {
    case OMX_EventError:
@@ -1726,7 +1718,7 @@ static OMX_ERRORTYPE ilclient_fill_buffer_done(OMX_OUT OMX_HANDLETYPE hComponent
       st->out_list = pBuffer;
    else
       list->pAppPrivate = pBuffer;
-      
+
    pBuffer->pAppPrivate = NULL;
    vcos_semaphore_post(&st->sema);
 
@@ -1754,14 +1746,11 @@ static OMX_ERRORTYPE ilclient_fill_buffer_done_error(OMX_OUT OMX_HANDLETYPE hCom
    return OMX_ErrorNone;
 }
 
-
-
 OMX_HANDLETYPE ilclient_get_handle(COMPONENT_T *comp)
 {
    vcos_assert(comp);
    return comp->comp;
 }
-
 
 static struct {
    OMX_PORTDOMAINTYPE dom;
@@ -1833,4 +1822,3 @@ unsigned int ilclient_stack_size(void)
 {
    return ILCLIENT_THREAD_DEFAULT_STACK_SIZE;
 }
-

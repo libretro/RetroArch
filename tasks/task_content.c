@@ -659,7 +659,7 @@ static bool content_file_load(
             fill_pathname_join(new_path, new_basedir,
                path_basename(path), new_path_size);
 
-            /* TODO: This may fail on very large files... 
+            /* TODO: This may fail on very large files...
              * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
@@ -698,7 +698,6 @@ static bool content_file_load(
          }
 #endif
 
-
          RARCH_LOG("%s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
@@ -713,7 +712,7 @@ static bool content_file_load(
 
    if (!core_load_game(&load_info))
    {
-      /* This is probably going to fail on multifile ROMs etc. 
+      /* This is probably going to fail on multifile ROMs etc.
        * so give a visible explanation of what is likely wrong */
       if (used_vfs_fallback_copy)
          snprintf(msg,
@@ -1839,8 +1838,6 @@ bool task_push_load_subsystem_with_core_from_menu(
 
    return true;
 }
-
-
 
 void content_get_status(
       bool *contentless,

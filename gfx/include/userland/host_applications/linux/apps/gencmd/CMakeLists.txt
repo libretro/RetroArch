@@ -7,7 +7,7 @@ else ()
    add_definitions(-Wall -Werror)
 endif ()
 
-include_directories( ../../../.. 
+include_directories( ../../../..
                      ../../../../interface/vcos
                      ../../../../interface/vcos/${VCOS_PLATFORM} )
 
@@ -17,4 +17,3 @@ include_directories( ../../../..
 add_executable(vcgencmd gencmd.c)
 target_link_libraries(vcgencmd vcos vchiq_arm vchostif)
 install(TARGETS vcgencmd RUNTIME DESTINATION bin)
-

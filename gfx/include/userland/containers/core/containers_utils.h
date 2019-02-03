@@ -64,7 +64,7 @@ VC_CONTAINER_STATUS_T vc_container_waveformatex_to_es_format(uint8_t *p,
    unsigned int buffer_size, unsigned int *extra_offset, unsigned int *extra_size,
    VC_CONTAINER_ES_FORMAT_T *format);
 VC_CONTAINER_STATUS_T vc_container_bitmapinfoheader_to_es_format(uint8_t *p,
-   unsigned int buffer_size, unsigned int *extra_offset, unsigned int *extra_size, 
+   unsigned int buffer_size, unsigned int *extra_offset, unsigned int *extra_size,
    VC_CONTAINER_ES_FORMAT_T *format);
 
 /** Find the greatest common denominator of 2 numbers.

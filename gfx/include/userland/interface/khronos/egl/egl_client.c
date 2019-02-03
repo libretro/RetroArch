@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    Server is up (needed by RPC_CALL[n]_RES)
 
-
    Spec ambiguity:
 
    What should we do if eglGetError is called twice? Currently we reset the error to EGL_SUCCESS.
@@ -79,17 +78,13 @@ by an attribute value"
    as a valid handle (and fail if it's invalid), and ignore it only if it's not in the list
    at all.
 
-
    EGL_MATCH_NATIVE_PIXMAP: todo: we'll set thread->error to something like EGL_BAD_ATTRIBUTE; should we be setting it to EGL_BAD_NATIVE_PIXMAP?
    What is EGL_PRESERVED_RESOURCES?
-
-
 
    Do we need to do anything for EGL_LEVEL?
 
    What is EGL_PRESERVED_RESOURCES?
    What exactly are EGL_NATIVE_VISUAL_ID, EGL_NATIVE_VISUAL_TYPE?
-
 
    Implementation notes:
 
@@ -102,7 +97,6 @@ by an attribute value"
 
    We allow implicit casts from bool to EGLint
 
-
    We make the following assumptions:
 
       EGL_CONFIG_CAVEAT (all EGL_NONE)
@@ -113,7 +107,6 @@ by an attribute value"
 
       All configs support all of:
          (EGL_PBUFFER_BIT | EGL_PIXMAP_BIT | EGL_WINDOW_BIT | EGL_VG_COLORSPACE_LINEAR_BIT | EGL_VG_ALPHA_FORMAT_PRE_BIT | EGL_MULTISAMPLE_RESOLVE_BOX_BIT | EGL_SWAP_BEHAVIOR_PRESERVED_BIT);
-
 
    EGL_OPTIMAL_FORMAT_BIT_KHR: Considered optimal if no format conversion needs doing
 
@@ -152,7 +145,6 @@ by an attribute value"
 
 #include <stdlib.h>
 #include <string.h>
-
 
 #include "interface/khronos/egl/egl_client_cr.c"
 
@@ -1204,7 +1196,6 @@ EGLAPI EGLBoolean EGLAPIENTRY eglReleaseThread(void)
 {
    CLIENT_THREAD_STATE_T *thread = CLIENT_GET_THREAD_STATE();
    bool destroy = false;
-
 
    vcos_log_trace("eglReleaseThread start.");
 
@@ -2508,4 +2499,3 @@ EGLAPI void EGLAPIENTRY eglProcStateValid( EGLDisplay dpy, EGLBoolean *result )
    return;
 }
 #endif
-

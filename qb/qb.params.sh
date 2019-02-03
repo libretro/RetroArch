@@ -72,7 +72,7 @@ parse_input() # Parse stuff :V
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
-	
+
 	while [ "$1" ]; do
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;

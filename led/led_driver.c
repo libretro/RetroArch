@@ -39,7 +39,7 @@ bool led_driver_init(void)
 #if HAVE_RPILED
    if(string_is_equal("rpi", drivername))
       current_led_driver = &rpi_led_driver;
-#endif          
+#endif
 
    RARCH_LOG("[LED]: LED driver = '%s' %p\n",
          drivername, current_led_driver);

@@ -1627,13 +1627,13 @@ static void d3d12_set_menu_texture_frame(
 {
    d3d12_video_t* d3d12    = (d3d12_video_t*)data;
    settings_t*    settings = config_get_ptr();
-   int            pitch    = width * 
+   int            pitch    = width *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM 
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d12->menu.texture.desc.Width  != width || 
+         d3d12->menu.texture.desc.Width  != width ||
          d3d12->menu.texture.desc.Height != height)
    {
       d3d12->menu.texture.desc.Width  = width;

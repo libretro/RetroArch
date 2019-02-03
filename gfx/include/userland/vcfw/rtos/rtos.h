@@ -116,7 +116,6 @@ extern uint32_t rtos_disable_interrupts( void );
 //Routine to re-enable interrupts
 extern void rtos_restore_interrupts( const uint32_t previous_state );
 
-
 //Routine to query if interrupts are enable or not
 #ifdef __VIDEOCORE__
 static inline uint32_t rtos_interrupts_enabled( void )
@@ -137,13 +136,12 @@ typedef uint32_t RTOS_SECURE_FUNC_HANDLE_T;
 #if defined( __linux__ )
 // I get compiler warnings when building for linux (MxC) since () isn't a valid prototype.
 // Using (...) isn't valid under ANSI C, (you need to have at least one fixed argument).
-// So since I don't think that this stuff is actually used from linux, I decided to make it 
+// So since I don't think that this stuff is actually used from linux, I decided to make it
 // use (void) until a better solution can be done.
 typedef void (*RTOS_SECURE_FUNC_T)(void);
 #else
 typedef void (*RTOS_SECURE_FUNC_T)();
 #endif
-
 
 //Function to register secure functions
 //NOTE - these functions should be encrypted
@@ -222,7 +220,6 @@ extern void rtos_latch_put_real( RTOS_LATCH_T *latch );
 // Routine to try and get a latch. Can be called from an interrupt
 extern int32_t rtos_latch_try_real( RTOS_LATCH_T *latch );
 
-
 // See vcfw/rtos/common/rtos_latch_logging.c for more about latch logging.
 //#define LATCH_LOGGING_ENABLED
 
@@ -235,7 +232,6 @@ extern int32_t rtos_latch_try_real( RTOS_LATCH_T *latch );
 extern void rtos_latch_logging_latch_get( RTOS_LATCH_T *latch, const char * name );
 extern void rtos_latch_logging_latch_put( RTOS_LATCH_T *latch, const char * name );
 extern int32_t rtos_latch_logging_latch_try( RTOS_LATCH_T *latch, const char * name );
-
 
 #ifndef STRINGISED
 #define _STRINGISED(x) #x
@@ -254,9 +250,7 @@ extern void rtos_latch_logging_init();
 #define rtos_latch_put( latch ) rtos_latch_put_real( (latch) )
 #define rtos_latch_try( latch ) rtos_latch_try_real( (latch) )
 
-
 #endif
-
 
 /******************************************************************************
  CPU-related functions
@@ -278,7 +272,6 @@ extern uint32_t rtos_get_sleep_time( const uint32_t cpu );
 // CPU1 has a running thread system after being started:
 // zeroing the recorded sleep time is otherwise undesirable.
 extern void rtos_reset_sleep_time( const uint32_t cpu );
-
 
 // Returns a count of the total usecs spent executing LISRs on the
 // specified CPU
@@ -339,7 +332,6 @@ extern int32_t rtos_timer_reset( RTOS_TIMER_T *timer, const RTOS_TIMER_TIME_T de
 
 // TIMER is cancelled if running and the callback is not called. Returns 0 if the timer was running
 extern int32_t rtos_timer_cancel( RTOS_TIMER_T *timer );
-
 
 /******************************************************************************
  Memory- and address space-related functions
@@ -426,7 +418,6 @@ extern void *   rtos_get_sys_mem_start(void);
 
 // Returns the size of the memory addressable by VideoCore
 extern uint32_t rtos_get_sys_mem_size(void);
-
 
 /******************************************************************************
  Malloc / free funcs
@@ -535,6 +526,5 @@ extern void vctest_start_failure_testing(void);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif // RTOS_H_

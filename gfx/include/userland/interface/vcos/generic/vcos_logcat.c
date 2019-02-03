@@ -46,12 +46,12 @@ static int inited;
 #if VCOS_HAVE_CMD
 
 /*
- * For kernel or videocore purposes, we generally want the log command. For 
- * user-space apps, they might want to provide their own log command, so we 
- * don't include the built in on. 
- *  
- * So pthreads/vcos_platform.h defines VCOS_WANT_LOG_CMD to be 0. It is 
- * undefined elsewhere. 
+ * For kernel or videocore purposes, we generally want the log command. For
+ * user-space apps, they might want to provide their own log command, so we
+ * don't include the built in on.
+ *
+ * So pthreads/vcos_platform.h defines VCOS_WANT_LOG_CMD to be 0. It is
+ * undefined elsewhere.
  */
 
 #  if !defined( VCOS_WANT_LOG_CMD )
@@ -574,4 +574,3 @@ void vcos_set_vlog_impl( VCOS_VLOG_IMPL_FUNC_T vlog_impl_func )
       vcos_vlog_impl_func = vlog_impl_func;
    }
 }
-

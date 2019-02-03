@@ -40,7 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /** Container Filter Context.
  * This structure defines the context for a container filter instance */
 typedef struct VC_CONTAINER_FILTER_T
-{   
+{
    /** Pointer to container instance */
    struct VC_CONTAINER_T *container;
    /** Pointer to information private to the container filter instance */
@@ -49,7 +49,7 @@ typedef struct VC_CONTAINER_FILTER_T
    struct VC_CONTAINER_FILTER_MODULE_T *module;
 
    /** \note the following list of function pointers should not be used directly.
-    * They defines the interface for implementing container filter modules and are 
+    * They defines the interface for implementing container filter modules and are
     * filled in by the container filter modules themselves. */
 
    /** \private
@@ -78,7 +78,7 @@ typedef struct VC_CONTAINER_FILTER_T
  *                      of the container filter. Returns NULL on failure.
  */
 VC_CONTAINER_FILTER_T *vc_container_filter_open(VC_CONTAINER_FOURCC_T filter,
-                                                VC_CONTAINER_FOURCC_T type, 
+                                                VC_CONTAINER_FOURCC_T type,
                                                 VC_CONTAINER_T *container,
                                                 VC_CONTAINER_STATUS_T *status );
 
@@ -94,7 +94,7 @@ VC_CONTAINER_STATUS_T vc_container_filter_close( VC_CONTAINER_FILTER_T *context 
  * \return              the status of the operation
  */
 VC_CONTAINER_STATUS_T vc_container_filter_process(VC_CONTAINER_FILTER_T *context, VC_CONTAINER_PACKET_T *p_packet);
- 
+
 /** Extensible control function for container filter modules.
 * This function takes a variable number of arguments which will depend on the specific operation.
 *
@@ -102,7 +102,7 @@ VC_CONTAINER_STATUS_T vc_container_filter_process(VC_CONTAINER_FILTER_T *context
 * \param  operation    The requested operation
 * \param  args         Arguments for the operation
 * \return              the status of the operation
-*/ 
+*/
 VC_CONTAINER_STATUS_T vc_container_filter_control(VC_CONTAINER_FILTER_T *context, VC_CONTAINER_CONTROL_T operation, ... );
 
 /* @} */

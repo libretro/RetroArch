@@ -59,7 +59,6 @@ extern "C" {
 #include <stdlib.h>
 #include <dlfcn.h>
 
-
 #define VCOS_HAVE_RTOS         1
 #define VCOS_HAVE_SEMAPHORE    1
 #define VCOS_HAVE_EVENT        1
@@ -243,7 +242,6 @@ typedef struct {
 #undef VCOS_ASSERT_LOGGING_DISABLE
 #define VCOS_ASSERT_LOGGING_DISABLE 1
 
-
 /*
  * Counted Semaphores
  */
@@ -351,7 +349,6 @@ VCOS_STATUS_T vcos_semaphore_post(VCOS_SEMAPHORE_T *sem) {
  *
  ***********************************************************/
 
-
 extern VCOS_THREAD_T *vcos_dummy_thread_create(void);
 extern pthread_key_t _vcos_thread_current_key;
 extern uint64_t vcos_getmicrosecs64_internal(void);
@@ -423,7 +420,6 @@ void vcos_thread_set_affinity(VCOS_THREAD_T *thread, VCOS_UNSIGNED affinity) {
    vcos_unused(affinity);
 }
 
-
 VCOS_INLINE_IMPL
 void vcos_thread_attr_setaffinity(VCOS_THREAD_ATTR_T *attrs, VCOS_UNSIGNED affinity) {
    attrs->ta_affinity = affinity;
@@ -480,7 +476,6 @@ void vcos_thread_resume(VCOS_THREAD_T *thread) {
    vcos_unused(thread);
    /* Nothing to do */
 }
-
 
 /*
  * Mutexes
@@ -698,7 +693,6 @@ void vcos_pthreads_timer_delete(VCOS_TIMER_T *timer);
   * and VOID* are the same size.
   */
 
-
 VCOS_INLINE_IMPL
 VCOS_STATUS_T vcos_timer_create(VCOS_TIMER_T *timer,
                                 const char *name,
@@ -825,4 +819,3 @@ typedef void (*VCOS_ISR_HANDLER_T)(VCOS_UNSIGNED vecnum);
 }
 #endif
 #endif /* VCOS_PLATFORM_H */
-

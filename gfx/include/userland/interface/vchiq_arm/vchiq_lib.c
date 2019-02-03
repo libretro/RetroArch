@@ -1132,7 +1132,6 @@ vchi_connect( VCHI_CONNECTION_T **connections,
    return (status == VCHIQ_SUCCESS) ? 0 : -1;
 }
 
-
 /***********************************************************
  * Name: vchi_disconnect
  *
@@ -1153,7 +1152,6 @@ vchi_disconnect( VCHI_INSTANCE_T instance_handle )
 
    return (status == VCHIQ_SUCCESS) ? 0 : -1;
 }
-
 
 /***********************************************************
  * Name: vchi_service_open
@@ -1409,8 +1407,6 @@ VCHIQ_STATUS_T vchiq_dump_phys_mem( VCHIQ_SERVICE_HANDLE_T handle,
    RETRY(ret,ioctl(service->fd, VCHIQ_IOC_DUMP_PHYS_MEM, &dump_mem));
    return (ret >= 0) ? VCHIQ_SUCCESS : VCHIQ_ERROR;
 }
-
-
 
 /*
  * Support functions
@@ -1738,7 +1734,6 @@ fill_peek_buf(VCHI_SERVICE_T *service,
 
    return ret;
 }
-
 
 static void *
 alloc_msgbuf(void)

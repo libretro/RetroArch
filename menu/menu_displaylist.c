@@ -4364,7 +4364,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
    switch (type)
    {
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
          unsigned i;
@@ -4374,15 +4374,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
          runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
-         
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-      
+
 #ifdef HAVE_LAKKA_SWITCH
-         profile = popen("cpu-profile get", "r");          
-         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         profile = popen("cpu-profile get", "r");
+         fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
-   
-         
+
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
@@ -4394,7 +4393,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             "",
             0,
             MENU_INFO_MESSAGE, 0, 0);
-         
+
          for (i = 0; i < profiles_count; i++)
          {
             char* profile               = SWITCH_CPU_PROFILES[i];
@@ -4404,17 +4403,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
                   0, MENU_SET_SWITCH_CPU_PROFILE, 0, i);
 
-         } 
-            
+         }
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
-      
+
          break;
       }
 #if defined(HAVE_LAKKA_SWITCH)
@@ -4428,12 +4427,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
 
-         profile = popen("gpu-profile get", "r");          
-         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         profile = popen("gpu-profile get", "r");
+         fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
-         
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
+
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 
          menu_entries_append_enum(info->list,
@@ -4441,8 +4440,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             "",
             0,
             MENU_INFO_MESSAGE, 0, 0);
-         
-                     
+
          for (i = 0; i < profiles_count; i++)
          {
             char* profile               = SWITCH_GPU_PROFILES[i];
@@ -4451,16 +4449,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
-                  0, MENU_SET_SWITCH_GPU_PROFILE, 0, i); 
-         }        
-               
+                  0, MENU_SET_SWITCH_GPU_PROFILE, 0, i);
+         }
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
-         
+
          break;
       }
       case DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL:
@@ -4476,7 +4474,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
                   0, MENU_SET_SWITCH_BRIGHTNESS, 0, i);

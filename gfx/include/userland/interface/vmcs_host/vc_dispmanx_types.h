@@ -49,8 +49,6 @@ typedef uint32_t DISPMANX_PROTECTION_T;
 #define DISPMANX_PROTECTION_NONE  0
 #define DISPMANX_PROTECTION_HDCP  11   // Derived from the WM DRM levels, 101-300
 
-
-
 /* Default display IDs.
    Note: if you overwrite with your own dispmanx_platform_init function, you
    should use IDs you provided during dispmanx_display_attach.
@@ -193,7 +191,7 @@ typedef struct tag_DISPMANX_DISPLAY_FUNCS_T {
    int32_t (*get_hvs_config)(void *instance, uint32_t *pchan,
                              uint32_t *poptions, DISPLAY_INFO_T *info,
                              uint32_t *bg_colour, uint32_t *test_mode);
-   
+
    // Get optional HVS configuration for gamma tables, OLED matrix and dither controls.
    // Set these function pointers to NULL if the relevant features are not required.
    int32_t (*get_gamma_params)(void * instance,
@@ -201,20 +199,20 @@ typedef struct tag_DISPMANX_DISPLAY_FUNCS_T {
    int32_t (*get_oled_params)(void * instance, uint32_t * poffsets,
                               uint32_t coeffs[3]);
    int32_t (*get_dither)(void * instance, uint32_t * dither_depth, uint32_t * dither_type);
-   
+
    // Get mode information, which may be returned to the applications as a courtesy.
    // Transform should be set to 0, and {width,height} should be final dimensions.
    int32_t (*get_info)(void * instance, DISPMANX_MODEINFO_T * info);
-   
+
    // Inform driver that the application refcount has become nonzero / zero
    // These callbacks might perhaps be used for backlight and power management.
    int32_t (*open)(void * instance);
    int32_t (*close)(void * instance);
-   
+
    // Display list updated callback. Primarily of use to a "one-shot" display.
    // For convenience of the driver, we pass the register address of the HVS FIFO.
    void (*dlist_updated)(void * instance, volatile uint32_t * fifo_reg);
-   
+
    // End-of-field callback. This may occur in an interrupt context.
    void (*eof_callback)(void * instance);
 

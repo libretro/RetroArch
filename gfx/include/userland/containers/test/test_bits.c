@@ -62,7 +62,6 @@ static uint8_t exp_golomb_oversize[] = {
    0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80
 };
 
-
 static const char *plural_ext(uint32_t val)
 {
    return (val == 1) ? "" : "s";

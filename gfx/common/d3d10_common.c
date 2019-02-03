@@ -246,7 +246,7 @@ bool d3d10_init_shader(
 
    if (vs_code && input_element_descs)
       D3D10CreateInputLayout(
-            device, 
+            device,
             (D3D10_INPUT_ELEMENT_DESC*)input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
             D3DGetBufferSize(vs_code), &out->layout);
 

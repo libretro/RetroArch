@@ -2,7 +2,7 @@
 
 """
    License statement applies to this file (glgen.py) only.
-""" 
+"""
 
 """
    Permission is hereby granted, free of charge,

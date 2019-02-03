@@ -173,4 +173,3 @@ MMAL_STATUS_T mmal_parse_geometry(MMAL_RECT_T *dest, const char *str)
    }
    return ret;
 }
-

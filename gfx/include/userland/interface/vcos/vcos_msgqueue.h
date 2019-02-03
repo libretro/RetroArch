@@ -277,4 +277,3 @@ VCOSPRE_ void VCOSPOST_ vcos_msgq_pool_free(VCOS_MSG_T *msg);
 #endif
 #endif
 
-

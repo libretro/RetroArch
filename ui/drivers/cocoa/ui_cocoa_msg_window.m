@@ -31,11 +31,11 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
 {
     NSInteger response;
     NSAlert* alert = [[NSAlert new] autorelease];
-    
+
     if (!string_is_empty(state->title))
         [alert setMessageText:BOXSTRING(state->title)];
     [alert setInformativeText:BOXSTRING(state->text)];
-    
+
     switch (state->buttons)
     {
         case UI_MSG_WINDOW_OK:
@@ -55,7 +55,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
             [alert addButtonWithTitle:BOXSTRING("Cancel")];
             break;
     }
-    
+
     switch (type)
     {
         case UI_MSG_WINDOW_TYPE_ERROR:
@@ -71,13 +71,13 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
             [alert setAlertStyle:NSInformationalAlertStyle];
             break;
     }
-    
+
     [alert beginSheetModalForWindow:ui_companion_driver_get_main_window()
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];
     response = [[NSApplication sharedApplication] runModalForWindow:[alert window]];
-    
+
     switch (state->buttons)
     {
         case UI_MSG_WINDOW_OK:
@@ -105,7 +105,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
                 return UI_MSG_RESPONSE_CANCEL;
             break;
     }
-    
+
     return UI_MSG_RESPONSE_NA;
 }
 

@@ -33,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <stdint.h>
 
-
 #include "interface/vcos/vcos.h"
 #include "interface/mmal/mmal.h"
 #include "interface/mmal/mmal_logging.h"
@@ -85,7 +84,6 @@ void display_valid_parameters(char *name, void (*app_help)(char*))
 
    fprintf(stdout, "\n");
 }
-
 
 void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *height )
 {
@@ -151,7 +149,6 @@ const char *get_app_name()
 {
    return app_name;
 }
-
 
 /**
  * Connect two specific ports together
@@ -280,7 +277,6 @@ int mmal_status_to_int(MMAL_STATUS_T status)
       return 1;
    }
 }
-
 
 uint64_t get_microseconds64()
 {

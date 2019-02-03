@@ -71,7 +71,6 @@ typedef struct dtblob_struct
    int trailer_len;
 } DTBLOB_T;
 
-
 typedef void DTOVERLAY_LOGGING_FUNC(dtoverlay_logging_type_t type,
                                     const char *fmt, va_list args);
 

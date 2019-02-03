@@ -126,4 +126,3 @@ extern VCOS_STATUS_T _vcos_llthread_create_attach(VCOS_LLTHREAD_T *thread);
 }
 #endif
 #endif
-

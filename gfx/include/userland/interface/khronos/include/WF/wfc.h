@@ -147,7 +147,6 @@ typedef enum {
     WFC_STRINGID_FORCE_32BIT                = 0x7FFFFFFF
 } WFCStringID;
 
-
 /* Function Prototypes */
 
 /* Device */

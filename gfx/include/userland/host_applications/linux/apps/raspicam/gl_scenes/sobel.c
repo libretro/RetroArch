@@ -3,7 +3,6 @@ Copyright (c) 2013, Broadcom Europe Ltd
 Copyright (c) 2013, Tim Gover
 All rights reserved.
 
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
     * Redistributions of source code must retain the above copyright
@@ -105,7 +104,6 @@ static const EGLint sobel_egl_config_attribs[] =
    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
    EGL_NONE
 };
-
 
 /**
  * Initialisation of shader uniforms.

@@ -94,7 +94,7 @@ static size_t io_pktfile_read(VC_CONTAINER_IO_T *p_ctx, void *buffer, size_t siz
    VC_CONTAINER_IO_MODULE_T *module = p_ctx->module;
    uint32_t length = 0;
    size_t ret;
-   
+
    ret = fread(&length, 1, sizeof(length), module->stream);
    if (ret != sizeof(length))
    {
@@ -136,7 +136,7 @@ static size_t io_pktfile_write(VC_CONTAINER_IO_T *p_ctx, const void *buffer, siz
 {
    uint32_t size_word;
    size_t ret;
-   
+
    if (size >= 0xFFFFFFFFUL)
       size_word = 0xFFFFFFFFUL;
    else
@@ -154,7 +154,7 @@ static size_t io_pktfile_write(VC_CONTAINER_IO_T *p_ctx, const void *buffer, siz
       p_ctx->status = VC_CONTAINER_ERROR_FAILED;
    if (fflush(p_ctx->module->stream) != 0)
       p_ctx->status = VC_CONTAINER_ERROR_FAILED;
-   
+
    return ret;
 }
 

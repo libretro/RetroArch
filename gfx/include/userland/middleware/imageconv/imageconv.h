@@ -58,7 +58,6 @@ typedef struct
    uint32_t vpitch;
 } IMAGECONV_IMAGE_DATA_T;
 
-
 typedef struct IMAGECONV_DRIVER_IMAGE_T IMAGECONV_DRIVER_IMAGE_T;
 
 /** Converter class */
@@ -279,7 +278,7 @@ int imageconv_create(const IMAGE_CONVERT_CLASS_T *converter, const IMAGECONV_IMA
 int imageconv_get_size(const IMAGE_CONVERT_CLASS_T *converter, MEM_HANDLE_T self,
      uint32_t *width, uint32_t *height, uint32_t *pitch, VC_IMAGE_TYPE_T *type);
 
-/** Converts the image writing the result to the memory specified at 
+/** Converts the image writing the result to the memory specified at
  * dst, dst_offset.
  *
  * @return IMAGECONV_ERR_NOT_SUPPORTED if not implemented by the converter class
@@ -322,7 +321,7 @@ int imageconv_get(const IMAGE_CONVERT_CLASS_T *converter,
  * @return IMAGECONV_ERR_GENERAL if image handle is invalid.
  */
 int imageconv_get_converted_size(const IMAGE_CONVERT_CLASS_T *converter,
-      MEM_HANDLE_T src, VC_IMAGE_TYPE_T type, IMAGECONV_IMAGE_DATA_T *dest_info); 
+      MEM_HANDLE_T src, VC_IMAGE_TYPE_T type, IMAGECONV_IMAGE_DATA_T *dest_info);
 
 /** Release an image that was previously taken with imageconv_get().
  *
@@ -347,7 +346,6 @@ void imageconv_unget(const IMAGE_CONVERT_CLASS_T *converter,
  */
 int imageconv_acquire(const IMAGE_CONVERT_CLASS_T *converter,
                       MEM_HANDLE_T src);
-
 
 /** Acquire a lock on an image to prevent it being recycled into its
  * image pool.
@@ -445,4 +443,3 @@ void imageconv_cancel_notify(const IMAGE_CONVERT_CLASS_T *converter,
                              IMAGECONV_DRIVER_IMAGE_T *image);
 
 #endif
-

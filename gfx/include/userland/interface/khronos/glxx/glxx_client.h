@@ -62,9 +62,9 @@ typedef struct buffer_info {
 } GLXX_BUFFER_INFO_T;
 
 typedef struct {
-   
+
    GLenum error;
-   
+
    /*
       Open GL version
 
@@ -72,8 +72,8 @@ typedef struct {
 
       OPENGL_ES_11 or OPENGL_ES_20
    */
-   
-   unsigned int type;    
+
+   unsigned int type;
 
    /*
       alignments
@@ -97,7 +97,7 @@ typedef struct {
    GL_FLUSH_CALLBACK_T flush_callback;
 
    KHRN_CACHE_T cache;
-   
+
    //gl 1.1 specific
    struct {
       GLenum client;

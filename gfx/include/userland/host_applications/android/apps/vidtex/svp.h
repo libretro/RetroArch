@@ -138,7 +138,6 @@ void svp_stop(SVP_T *svp);
  */
 void svp_get_stats(SVP_T *svp, SVP_STATS_T *stats);
 
-
 #ifdef __cplusplus
 }
 #endif

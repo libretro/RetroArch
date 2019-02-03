@@ -113,4 +113,3 @@ typedef struct
 
 #endif /* __VC_INCLUDE_IMAGE_TYPES_H__ */
 
-

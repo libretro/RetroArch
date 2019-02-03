@@ -317,7 +317,6 @@ int32_t audioplay_set_dest(AUDIOPLAY_STATE_T *st, const char *name)
    return success;
 }
 
-
 uint32_t audioplay_get_latency(AUDIOPLAY_STATE_T *st)
 {
    OMX_PARAM_U32TYPE param;
@@ -423,4 +422,3 @@ int main (int argc, char **argv)
    play_api_test(samplerate, bitdepth, channels, audio_dest);
    return 0;
 }
-

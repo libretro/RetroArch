@@ -69,8 +69,8 @@ typedef uint32_t VC_MEM_PTRDIFF_T; /* equivalent to ptrdiff_t */
 int OpenVideoCoreMemory( VC_MEM_ACCESS_HANDLE_T *handle  );
 
 /*
- * Get access to the videocore space from a file. The file might be /dev/mem, or 
- * it might be saved image on disk. 
+ * Get access to the videocore space from a file. The file might be /dev/mem, or
+ * it might be saved image on disk.
  */
 int OpenVideoCoreMemoryFile( const char *filename, VC_MEM_ACCESS_HANDLE_T *vcHandlePtr );
 
@@ -210,6 +210,4 @@ VC_MEM_ADDR_T GetVideoCoreMemoryPhysicalAddress( VC_MEM_ACCESS_HANDLE_T handle )
 }
 #endif
 
-
 #endif /* DEBUG_SYM_H */
-

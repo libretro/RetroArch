@@ -62,7 +62,6 @@ VCHPRE_ int VCHPOST_ vc_filesys_write(int fildes, const void *buf, unsigned int 
 VCHPRE_ int VCHPOST_ vc_filesys_mount(const char *device, const char *mountpoint, const char *options);
 VCHPRE_ int VCHPOST_ vc_filesys_umount(const char *mountpoint);
 
-
 // Ends a directory listing iteration
 VCHPRE_ int VCHPOST_ vc_filesys_closedir(void *dhandle);
 
@@ -163,4 +162,3 @@ VCHPRE_ int VCHPOST_ vc_filesys_write_sector(const char *buf);
 VCHPRE_ int VCHPOST_ vc_filesys_write_sectors_end(uint32_t *sectors_written);
 
 #endif //VCFILESYS_H_
-

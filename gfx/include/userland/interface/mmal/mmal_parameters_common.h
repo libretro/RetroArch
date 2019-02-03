@@ -52,7 +52,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /** Miracast-specific parameter ID group. */
 #define MMAL_PARAMETER_GROUP_MIRACAST       (5<<16)
 
-
 /**@}*/
 
 /** Common MMAL parameter IDs.
@@ -188,4 +187,3 @@ typedef struct MMAL_PARAMETER_LOGGING_T
 } MMAL_PARAMETER_LOGGING_T;
 
 #endif /* MMAL_PARAMETERS_COMMON_H */
-

@@ -283,7 +283,7 @@ static void switch_update_viewport(switch_video_t *sw,
 
             if (fabsf(device_aspect - desired_aspect) < 0.0001f)
             {
-                /* 
+                /*
                     * If the aspect ratios of screen and desired aspect
                     * ratio are sufficiently equal (floating point stuff),
                     * assume they are actually equal.

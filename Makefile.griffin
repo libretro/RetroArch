@@ -112,7 +112,7 @@ else ifeq ($(libogc_platform), 1)
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
    INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
- 
+
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
       CXXFLAGS += -DEXTERNAL_LIBOGC
@@ -384,7 +384,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
 
    PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
-   
+
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/include")
@@ -432,7 +432,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
 
    PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
-   
+
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/include")
@@ -766,7 +766,7 @@ else
    CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
    INCLUDE += -I./libretro-common/include \
 				  -Ideps \
-				  -Ideps/stb 
+				  -Ideps/stb
 endif
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
@@ -973,8 +973,8 @@ ifneq (,$(findstring msvc,$(platform)))
 	LINKOUT = -out:
 	LINK = link.exe
 else
-	OBJOUT   = -o 
-	LINKOUT  = -o 
+	OBJOUT   = -o
+	LINKOUT  = -o
 	LINK = $(CXX)
 endif
 

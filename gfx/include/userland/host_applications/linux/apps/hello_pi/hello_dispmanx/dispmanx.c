@@ -85,7 +85,7 @@ int main(void)
     int width = WIDTH, height = HEIGHT;
     int pitch = ALIGN_UP(width*2, 32);
     int aligned_height = ALIGN_UP(height, 16);
-    VC_DISPMANX_ALPHA_T alpha = { DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 
+    VC_DISPMANX_ALPHA_T alpha = { DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS,
                              120, /*alpha 0->255*/
                              0 };
 
@@ -160,4 +160,3 @@ int main(void)
 
     return 0;
 }
-

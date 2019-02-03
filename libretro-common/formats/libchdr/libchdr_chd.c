@@ -952,7 +952,7 @@ chd_error chd_open(const char *filename, int mode, chd_file *parent, chd_file **
 	}
 
 	/* open the file */
-	file = filestream_open(filename, 
+	file = filestream_open(filename,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 

@@ -240,7 +240,6 @@ extern VCOS_STATUS_T vcos_generic_event_flags_get(VCOS_EVENT_FLAGS_T *flags,
    return rc;
 }
 
-
 /** Called when a get call times out. Remove this thread's
   * entry from the waiting queue, then resume the thread.
   */

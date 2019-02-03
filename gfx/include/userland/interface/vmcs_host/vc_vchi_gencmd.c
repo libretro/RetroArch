@@ -62,7 +62,6 @@ typedef struct {
 
 static GENCMD_SERVICE_T gencmd_client;
 
-
 /******************************************************************************
 Static function.
 ******************************************************************************/
@@ -100,7 +99,6 @@ int release_gencmd_service(void) {
    }
    return ret;
 }
-
 
 //call vc_vchi_gencmd_init to initialise
 int vc_gencmd_init() {
@@ -227,7 +225,7 @@ void vc_gencmd_stop () {
       gencmd_client.initialised = 0;
 
       lock_release();
-            
+
       vcos_mutex_delete(&gencmd_client.lock);
       vcos_event_delete(&gencmd_client.message_available_event);
    }
@@ -254,7 +252,7 @@ int vc_gencmd_send_list ( const char *format, va_list a )
    if(lock_obtain() == 0)
    {
       int length = vsnprintf( gencmd_client.command_buffer, GENCMD_MAX_LENGTH, format, a );
-      
+
       if (length >= 0 && length < GENCMD_MAX_LENGTH)
       {
          int i;
@@ -329,7 +327,7 @@ int vc_gencmd_read_response (char *response, int maxlen) {
             }
          }
       } while(!gencmd_client.response_length && vcos_event_wait(&gencmd_client.message_available_event) == VCOS_SUCCESS);
-      
+
       if(gencmd_client.response_length && sem_ok == 0) {
          gencmd_client.response_length -= sizeof(int); //first word is error code
          memcpy(response, gencmd_client.response_buffer+sizeof(int), (size_t) vcos_min((int)gencmd_client.response_length, (int)maxlen));
@@ -529,4 +527,3 @@ int vc_gencmd_until( char        *cmd,
 
    return ret;
 }
-

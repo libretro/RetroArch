@@ -150,7 +150,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
    pad->rumble_props.dwTriggerRepeatInterval = 0;
    pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
    pad->rumble_props.dwDuration              = INFINITE;
-   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN | 
+   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN |
       DIEFF_OBJECTOFFSETS;
    pad->rumble_props.dwGain                  = 0;
    pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
@@ -257,7 +257,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
       if ((raw_devs[i].dwType == RIM_TYPEHID) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
                                   RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
-          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) 
+          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
            == ((LONG)product_guid->Data1)) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )

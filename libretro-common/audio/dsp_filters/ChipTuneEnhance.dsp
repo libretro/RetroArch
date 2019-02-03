@@ -13,7 +13,7 @@ eq_gains = "6 9 12 7 6 5 7 9 11 6 0"
  reverb_damping = 0.8
  reverb_roomwidth = 0.25
  reverb_roomsize = 0.25
- 
+
 # IIR - filters out some harsh sounds on the upper end
 iir_type = RIAA_CD
 

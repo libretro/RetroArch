@@ -6,7 +6,7 @@
 #include "../common/egl_common.h"
 #endif
 
-#define ATTR_ORBISGL_WIDTH 1920 
+#define ATTR_ORBISGL_WIDTH 1920
 #define ATTR_ORBISGL_HEIGHT 1080
 
 typedef struct

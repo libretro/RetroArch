@@ -212,4 +212,3 @@ void audio_resampler_unlock(void)
       slock_unlock(s_resampler_lock);
 #endif
 }
-

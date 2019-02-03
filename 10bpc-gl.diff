@@ -48,7 +48,7 @@ index b90a8e40c3..e57c4df194 100644
 +#endif
 +
  #endif
- 
+
  #if defined(HAVE_OPENGL)
 @@ -313,6 +354,43 @@ static void create_gl_context(HWND hwnd, bool *quit)
           RARCH_LOG("[WGL]: Adaptive VSync supported.\n");

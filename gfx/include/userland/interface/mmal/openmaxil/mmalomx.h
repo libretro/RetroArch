@@ -127,4 +127,3 @@ OMX_ERRORTYPE mmalomx_callback_event_handler(
 #define MMALOMX_UNLOCK(a) vcos_mutex_unlock(&a->lock)
 #define MMALOMX_LOCK_PORT(a,b) vcos_mutex_lock(&a->lock_port)
 #define MMALOMX_UNLOCK_PORT(a,b) vcos_mutex_unlock(&a->lock_port)
-

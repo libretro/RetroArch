@@ -158,7 +158,7 @@ static uint32_t vc_container_bits_get_leading_zero_bits( VC_CONTAINER_BITS_T *bi
 
    /* Return cached value of bits to the stream */
    bit_stream->bits = bits;
-   
+
    return leading_zero_bits;
 }
 
