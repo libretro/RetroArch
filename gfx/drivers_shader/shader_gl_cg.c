@@ -258,8 +258,7 @@ static bool gl_cg_set_mvp(void *data, void *shader_data,
    return false;
 }
 
-static bool gl_cg_set_coords(void *shader_data,
-      const struct video_coords *coords)
+static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
 
