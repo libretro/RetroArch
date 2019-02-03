@@ -626,7 +626,6 @@ static void gl2_renderchain_render(
 
       gl->coords.vertices = 4;
 
-      coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
       video_driver_set_coords(&coords);
@@ -702,7 +701,6 @@ static void gl2_renderchain_render(
 
    gl->coords.vertices  = 4;
 
-   coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
    video_driver_set_coords(&coords);
@@ -1976,7 +1974,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
    video_driver_set_coords(&coords);
@@ -2352,7 +2349,6 @@ static void gl_render_osd_background(
    coords.lut_tex_coord    = dummy;
    coords.vertices         = vertices_total;
 
-   coords_data.handle_data = NULL;
    coords_data.data        = &coords;
 
    video_driver_set_viewport(video_info->width,
@@ -2470,7 +2466,6 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    gl->coords.vertices    = 4;
 
-   coords.handle_data     = NULL;
    coords.data            = &gl->coords;
 
    video_driver_set_coords(&coords);
@@ -2673,7 +2668,6 @@ static bool gl_frame(void *data, const void *frame,
       gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertices  = 4;
-   coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
    video_driver_set_coords(&coords);
@@ -4076,7 +4070,7 @@ static void gl_unload_texture(void *data, uintptr_t id)
    glDeleteTextures(1, &glid);
 }
 
-static void gl_set_coords(void *handle_data, void *shader_data,
+static void gl_set_coords(void *shader_data,
       const struct video_coords *coords)
 {
 }

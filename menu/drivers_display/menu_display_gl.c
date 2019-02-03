@@ -122,7 +122,6 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
    if (draw)
       glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   coords.handle_data = gl;
    coords.data        = draw->coords;
 
    video_driver_set_coords(&coords);

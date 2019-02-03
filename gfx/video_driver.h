@@ -228,7 +228,7 @@ typedef struct shader_backend
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(void *handle_data,
+   bool (*set_coords)(
          void *shader_data, const struct video_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
          const void *mat_data);
@@ -276,7 +276,6 @@ typedef struct video_shader_ctx_params
 
 typedef struct video_shader_ctx_coords
 {
-   void *handle_data;
    const void *data;
 } video_shader_ctx_coords_t;
 
@@ -688,7 +687,7 @@ struct aspect_ratio_elem
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
-   void (*set_coords)(void *handle_data, void *shader_data,
+   void (*set_coords)(void *shader_data,
          const struct video_coords *coords);
    void (*set_mvp)(void *data, void *shader_data,
          const void *mat_data);
