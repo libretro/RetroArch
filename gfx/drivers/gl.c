@@ -873,7 +873,7 @@ static void gl_create_fbo_texture(gl_t *gl,
    GLenum min_filter             = mipmapped ? base_mip_filt : base_filt;
 
    if (gl->shader->filter_type(gl->shader_data,
-            i + 2, smooth))
+            i + 2, &smooth))
    {
       min_filter = mipmapped ? (smooth ?
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -3454,7 +3454,7 @@ static void *gl_init(const video_info_t *video,
    gl->tex_mipmap       = gl->shader->mipmap_input(gl->shader_data, mip_level);
 
    if (gl->shader->filter_type(gl->shader_data,
-            1, force_smooth))
+            1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ?
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -3593,7 +3593,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    gl_context_bind_hw_render(gl, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
-            1, smooth))
+            1, &smooth))
       smooth = settings->bools.video_smooth;
 
    mip_level                         = 1;
