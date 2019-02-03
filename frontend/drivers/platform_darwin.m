@@ -377,15 +377,8 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
         fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
               home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #elif TARGET_OS_TV
-    printf("tvOS bundle path = %s",bundle_path_buf);
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
                        bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-    NSError *fileError;
-    NSArray *bundleFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[NSString stringWithUTF8String:g_defaults.dirs[DEFAULT_DIR_CORE]] error:&fileError];
-    NSLog(@"tvOS Files in modules:");
-    for (NSString *f in bundleFiles) {
-        NSLog(@"%@",f);
-    }
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
