@@ -3542,14 +3542,6 @@ static void video_shader_driver_scale_null(void *data,
    (void)scale;
 }
 
-static bool video_shader_driver_filter_type_null(
-      void *data, unsigned idx, bool *smooth)
-{
-   (void)idx;
-   (void)smooth;
-   return false;
-}
-
 static unsigned video_shader_driver_num_null(void *data)
 {
    return 0;
@@ -3574,8 +3566,6 @@ static void video_shader_driver_reset_to_defaults(void)
 
    if (!current_shader->shader_scale)
       current_shader->shader_scale      = video_shader_driver_scale_null;
-   if (!current_shader->filter_type)
-      current_shader->filter_type       = video_shader_driver_filter_type_null;
    if (!current_shader->num_shaders)
       current_shader->num_shaders       = video_shader_driver_num_null;
    if (!current_shader->get_current_shader)
@@ -3646,14 +3636,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
    shader_info->num = current_shader->num_shaders(current_shader_data);
 
    return true;
-}
-
-bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
-{
-   if (filter)
-      return current_shader->filter_type(current_shader_data,
-            filter->index, filter->smooth);
-   return false;
 }
 
 bool video_shader_driver_compile_program(

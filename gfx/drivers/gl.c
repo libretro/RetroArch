@@ -861,7 +861,6 @@ static void gl_create_fbo_texture(gl_t *gl,
       unsigned i, GLuint texture)
 {
    GLenum mag_filter, wrap_enum;
-   video_shader_ctx_filter_t filter_type;
    video_shader_ctx_wrap_t wrap  = {0};
    bool fp_fbo                   = false;
    bool smooth                   = false;
@@ -873,10 +872,8 @@ static void gl_create_fbo_texture(gl_t *gl,
    bool mipmapped                = gl->shader->mipmap_input(gl->shader_data, mip_level);
    GLenum min_filter             = mipmapped ? base_mip_filt : base_filt;
 
-   filter_type.index             = i + 2;
-   filter_type.smooth            = &smooth;
-
-   if (video_shader_driver_filter_type(&filter_type))
+   if (gl->shader->filter_type(gl->shader_data,
+            i + 2, smooth))
    {
       min_filter = mipmapped ? (smooth ?
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -3235,7 +3232,6 @@ static void *gl_init(const video_info_t *video,
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
-   video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
    settings_t *settings                 = config_get_ptr();
@@ -3456,10 +3452,9 @@ static void *gl_init(const video_info_t *video,
 
    mip_level            = 1;
    gl->tex_mipmap       = gl->shader->mipmap_input(gl->shader_data, mip_level);
-   shader_filter.index  = 1;
-   shader_filter.smooth = &force_smooth;
 
-   if (video_shader_driver_filter_type(&shader_filter))
+   if (gl->shader->filter_type(gl->shader_data,
+            1, force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ?
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -3585,7 +3580,6 @@ static bool gl_suppress_screensaver(void *data, bool enable)
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
-   video_shader_ctx_filter_t shader_filter;
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
@@ -3598,10 +3592,8 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 
    gl_context_bind_hw_render(gl, false);
 
-   shader_filter.index               = 1;
-   shader_filter.smooth              = &smooth;
-
-   if (!video_shader_driver_filter_type(&shader_filter))
+   if (!gl->shader->filter_type(gl->shader_data,
+            1, smooth))
       smooth = settings->bools.video_smooth;
 
    mip_level                         = 1;
