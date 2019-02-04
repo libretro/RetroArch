@@ -27,8 +27,6 @@
 #include "config.h"
 #endif
 
-#include "playlist.h"
-
 RETRO_BEGIN_DECLS
 
 typedef struct command command_t;
@@ -271,23 +269,6 @@ bool command_free(command_t *handle);
  * Returns: true (1) on success, otherwise false (0).
  **/
 bool command_event(enum event_command action, void *data);
-
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name);
-
-void command_playlist_update_write(
-      playlist_t *playlist,
-      size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name);
 
 RETRO_END_DECLS
 

@@ -36,10 +36,6 @@ static void* null_init(void **userdata, bool video_is_threaded)
 
 static void null_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   /*if (menu)
-      free(menu);*/
 }
 
 static void null_toggle(void *userdata, bool menu_on)

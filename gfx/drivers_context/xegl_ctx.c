@@ -25,6 +25,7 @@
 
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"

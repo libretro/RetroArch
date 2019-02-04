@@ -411,10 +411,8 @@ VIDEO DRIVER
 #include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
-#include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers_renderchain/gl2_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -728,7 +726,7 @@ CAMERA
 #include "../camera/drivers/video4linux2.c"
 #endif
 
-#ifdef HAVE_VIDEO_PROCESSOR
+#ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 
@@ -926,7 +924,9 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
+#endif
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
@@ -1307,17 +1307,6 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_NUKLEAR
-#include "../menu/drivers/nuklear/nk_common.c"
-#include "../menu/drivers/nuklear/nk_menu.c"
-#include "../menu/drivers/nuklear/nk_wnd_debug.c"
-#include "../menu/drivers/nuklear.c"
-#endif
-
-#ifdef HAVE_ZARCH
-#include "../menu/drivers/zarch.c"
-#endif
-
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1380,7 +1369,10 @@ DEPENDENCIES
 #include "../deps/libFLAC/stream_decoder.c"
 #endif
 
+#ifdef HAVE_ZLIB
+
 #ifdef HAVE_CHD
+#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
@@ -1390,9 +1382,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif
 
-#ifdef HAVE_ZLIB
-#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
-#endif
 
 #ifdef HAVE_7ZIP
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
@@ -1401,6 +1390,7 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #include "../libretro-common/streams/chd_stream.c"
+#endif
 #endif
 
 #ifdef HAVE_7ZIP

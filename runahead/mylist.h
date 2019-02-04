@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <dynamic/dylib.h>
 
 RETRO_BEGIN_DECLS
 

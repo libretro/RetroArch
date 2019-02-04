@@ -81,6 +81,18 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
 }
 
+static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
+{
+   D3D11_RECT scissor_rect = {0};
+
+   scissor_rect.left = 0;
+   scissor_rect.top = 0;
+   scissor_rect.right = video_info->width;
+   scissor_rect.bottom = video_info->height;
+
+   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
+}
+
 static void d3d11_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
@@ -993,6 +1005,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;
+      desc.ScissorEnable = TRUE;
 
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
@@ -1194,7 +1207,9 @@ static bool d3d11_gfx_frame(
    D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 #endif
 
+#if 0
    PERF_START();
+#endif
 
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
@@ -1378,6 +1393,8 @@ static bool d3d11_gfx_frame(
    D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
+   d3d11_clear_scissor(d3d11, video_info);
+
    D3D11Draw(context, 4, 0);
 
    D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
@@ -1456,7 +1473,9 @@ static bool d3d11_gfx_frame(
    }
    d3d11->sprites.enabled = false;
 
+#if 0
    PERF_STOP();
+#endif
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
 
    return true;

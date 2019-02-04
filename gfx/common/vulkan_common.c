@@ -28,15 +28,13 @@
 #endif
 
 #include "vulkan_common.h"
-#include "../../libretro-common/include/retro_timers.h"
+#include <retro_timers.h>
 #include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/retro_assert.h"
+#include <retro_assert.h>
 #include "vksym.h"
-#include "../../libretro-common/include/dynamic/dylib.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
-#include "../../libretro-common/include/retro_math.h"
-#include "../../libretro-common/include/string/stdstring.h"
+#include <libretro_vulkan.h>
+#include <retro_math.h>
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE

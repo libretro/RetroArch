@@ -1091,6 +1091,24 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT),
+         _coreaudio_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT),
+         _coreaudio3_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT),
          _dsound_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
@@ -1290,6 +1308,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    unsigned i;
    size_t selection = menu_navigation_get_selection();
    size_t list_size = playlist_size(playlist);
+   settings_t *settings = config_get_ptr();
 
    if (list_size == 0)
       goto error;
@@ -1330,7 +1349,11 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (core_name)
          strlcpy(fill_buf, core_name, path_size);
 
-      if (!is_history && i == selection && !string_is_empty(label))
+      /* Note: this function is never called when using RGUI,
+       * but if it ever were then we must ensure that thumbnail
+       * updates are omitted (since this functionality is
+       * handled elsewhere) */
+      if (!is_history && i == selection && !string_is_empty(label) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
          char *content_basename = strdup(label);
 
@@ -1659,16 +1682,24 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
-      if (!string_is_empty(db_info_entry->name))
-         strlcpy(thumbnail_content, db_info_entry->name,
-               sizeof(thumbnail_content));
+      /* It is unclear why parsing a database should trigger a
+       * thumbnail update, but I guess this is here for a reason...
+       * Regardless, thumbnail updates must be disabled when using
+       * RGUI, since this functionality is handled elsewhere
+       * (and doing it here creates harmful conflicts) */
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      {
+         if (!string_is_empty(db_info_entry->name))
+            strlcpy(thumbnail_content, db_info_entry->name,
+                  sizeof(thumbnail_content));
 
-      if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content,
-               sizeof(thumbnail_content));
+         if (!string_is_empty(thumbnail_content))
+            menu_driver_set_thumbnail_content(thumbnail_content,
+                  sizeof(thumbnail_content));
 
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      }
 
       if (playlist)
       {
@@ -4194,7 +4225,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
    if (info->push_builtin_cores)
    {
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
             msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
@@ -5991,32 +6022,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_TITLE_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
+                  MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
+                  PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
@@ -6106,6 +6113,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -6122,6 +6133,44 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_MENU_SOUNDS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_OK,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_CANCEL,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_NOTICE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_BGM,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
 
@@ -6629,10 +6678,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (!string_is_equal(video_display_server_get_ident(), "null"))
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
-                  PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+               PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -6830,16 +6878,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,   PARSE_ACTION, false) == 0)
+               MENU_ENUM_LABEL_MIDI_SETTINGS,          PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,   PARSE_ACTION, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SOUNDS,            PARSE_ACTION, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_MUTE,
@@ -8064,6 +8112,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             free(info->exts);
          info->exts         = strdup("cfg");
          break;
+      case DISPLAYLIST_RGUI_THEME_PRESETS:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         filebrowser_clear_type();
+         info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
+         load_content       = false;
+         use_filebrowser    = true;
+         if (!string_is_empty(info->exts))
+            free(info->exts);
+         info->exts         = strdup("cfg");
+         break;
       case DISPLAYLIST_REMAP_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
@@ -8123,6 +8181,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_DEFAULT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         load_content    = false;
          use_filebrowser = true;
          break;
       case DISPLAYLIST_CORES_DETECTED:

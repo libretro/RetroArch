@@ -55,7 +55,6 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
-menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
@@ -76,6 +75,7 @@ libretro-super
 run.sh
 convert_rumble.awk
 *~
+assets
 
 # Wii U
 *.depend
@@ -121,7 +121,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/libretrodb/
 
 pkg/apple/iOS/build/
-pkg/apple/iOS/modules/
 pkg/apple/build/
 ui/drivers/qt/moc_*
 ui/drivers/moc_*

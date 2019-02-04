@@ -37,6 +37,7 @@
 #endif
 
 #include "../../frontend/drivers/platform_unix.h"
+#include "../../verbosity.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 

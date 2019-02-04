@@ -53,6 +53,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../verbosity.h"
+
 typedef struct
 {
    bool smooth;

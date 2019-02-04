@@ -51,7 +51,6 @@ void clear_controller_port_map(void);
 
 static char *get_temp_directory_alloc(void)
 {
-   settings_t *settings   = config_get_ptr();
    char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
@@ -77,7 +76,10 @@ static char *get_temp_directory_alloc(void)
    free(wideStr);
 #endif
 #elif defined ANDROID
-   path = strcpy_alloc_force(settings->paths.directory_libretro);
+   {
+      settings_t *settings = config_get_ptr();
+      path = strcpy_alloc_force(settings->paths.directory_libretro);
+   }
 #else
    path = "/tmp";
    if (getenv("TMPDIR"))

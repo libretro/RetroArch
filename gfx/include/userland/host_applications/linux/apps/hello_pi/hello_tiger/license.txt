@@ -1,0 +1,53 @@
+OpenVG 1.1 Reference Implementation
+-----------------------------------
+
+Copyright (c) 2007 The Khronos Group Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and /or associated documentation files
+(the "Materials "), to deal in the Materials without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Materials,
+and to permit persons to whom the Materials are furnished to do so,
+subject to the following conditions: 
+
+The above copyright notice and this permission notice shall be included 
+in all copies or substantial portions of the Materials. 
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE MATERIALS OR
+THE USE OR OTHER DEALINGS IN THE MATERIALS.
+
+
+Path data for the Tiger sample program has been extracted from Ghostscript's
+tiger.eps example file distributed under GNU General Public License.
+
+Ghostscript's License document:
+" The files in the src, lib, toolbin, examples, doc and man
+  directories (folders) and any subdirectories (sub-folders)
+  thereof are part of GPL Ghostscript.
+
+  The files in the Resource directory and any subdirectories thereof
+  are also part of GPL Ghostscript, with the explicit exception of
+  the files in the CMap subdirectory. The CMap files are copyright
+  Adobe Systems Incorporated and covered by a separate license
+  which permits only verbatim distribution.
+
+  GPL Ghostscript is free software; you can redistribute it and/or
+  modify it under the terms of version 2 of the GNU General Public
+  License as published by the Free Software Foundation.
+
+  GPL Ghostscript is distributed in the hope that it will be
+  useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+  of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program so you can know your rights and responsibilities.
+  It should be in a file named doc/COPYING. If not, write to the
+  Free Software Foundation, Inc., 59 Temple Place Suite 330, Boston, MA
+  02111-1307, USA."

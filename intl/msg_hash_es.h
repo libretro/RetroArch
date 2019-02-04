@@ -838,14 +838,6 @@ MSG_HASH(
     "Activar logros"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Color de resaltado del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Color normal del menú"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
     "Desactivado"
     )
@@ -2989,26 +2981,6 @@ MSG_HASH(
  MSG_HASH(
      MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
      "HH:MM:SS (AM/PM)"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Color de títulos del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
-    "Color oscuro del fondo del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
-    "Color claro del fondo del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
-    "Color oscuro del borde del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
-    "Color claro del borde del menú"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
@@ -7911,4 +7883,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Mantener Start (2 segundos)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

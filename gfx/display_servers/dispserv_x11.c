@@ -19,6 +19,10 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>  // run pkg-config --static --libs xrandr 
+#include <X11/extensions/randr.h>
+#include <X11/extensions/Xrender.h>
 
 #include "../../config.h"
 
@@ -35,11 +39,15 @@
 static unsigned orig_width      = 0;
 static unsigned orig_height     = 0;
 static char old_mode[250]       = {0};
+static char orig_output[250]    = {0};
 static char new_mode[250]       = {0};
 static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
 static char output[500]         = {0};
+static char output4[500]         = {0};
 static bool crt_en              = false;
+static unsigned crtid           = 20;
+static XRRModeInfo crt_rrmode;
 
 typedef struct
 {
@@ -65,25 +73,20 @@ static void x11_display_server_destroy(void *data)
    if (crt_en)
    {
       snprintf(output, sizeof(output),
-		      "xrandr -s %dx%d", orig_width, orig_height);
+            "xrandr --newmode \"700x480_59.94\" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
+      system(output);
+      snprintf(output, sizeof(output),
+            "xrandr --addmode %s 700x480_59.94", orig_output);
+      system(output);
+      snprintf(output, sizeof(output),
+            "xrandr --output %s --mode 700x480_59.94", orig_output);
       system(output);
 
-      for (i = 0; i < 3; i++)
-      {
-         snprintf(output, sizeof(output),
-			 "xrandr --delmode %s%d %s", "VGA", i, old_mode);
-         system(output);
-         snprintf(output, sizeof(output),
-			 "xrandr --delmode %s-%d %s", "VGA", i, old_mode);
-         system(output);
+      snprintf(output, sizeof(output),
+            "xrandr --delmode %s %.s",orig_output, old_mode);
+      system(output);
 
-         snprintf(output, sizeof(output),
-			 "xrandr --delmode %s%d %s", "DVI", i, old_mode);
-         system(output);
-         snprintf(output, sizeof(output),
-			 "xrandr --delmode %s-%d %s", "DVI", i, old_mode);
-         system(output);
-      }
+
 
       snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
       system(output);
@@ -126,33 +129,43 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 }
 
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index)
 {
-   int i              = 0;
-   int hfp            = 0;
-   int hsp            = 0;
-   int hbp            = 0;
-   int vfp            = 0;
-   int vsp            = 0;
-   int vbp            = 0;
-   int hmax           = 0;
-   int vmax           = 0;
-   int pdefault       = 8;
-   int pwidth         = 0;
-   float roundw     = 0.0f;
-   float roundh     = 0.0f;
-   float pixel_clock  = 0;
+   int screen;
+   Window window;
+   XRRScreenResources  *res = NULL;
+   Display *dsp             = NULL;
+   Screen *scrn             = NULL;
+   int i                    = 0;
+   int hfp                  = 0;
+   int hsp                  = 0;
+   int hbp                  = 0;
+   int vfp                  = 0;
+   int vsp                  = 0;
+   int vbp                  = 0;
+   int hmax                 = 0;
+   int vmax                 = 0;
+   int pdefault             = 8;
+   int pwidth               = 0;
+   float roundw             = 0.0f;
+   float roundh             = 0.0f;
+   float pixel_clock        = 0;
 
-   crt_en = true;
+   crt_en                   = true;
+
+   snprintf(old_mode, sizeof(old_mode), "%s", new_mode);    
+
+   dsp                      = XOpenDisplay(NULL);
+   scrn                     = DefaultScreenOfDisplay(dsp);
+   screen                   = DefaultScreen ( dsp );
+   window                   = RootWindow ( dsp, screen );
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
    /* following code is the mode line generator */
-
-   hsp = width * 1.140;
-   hfp = width * 1.055;
-
+   hsp    = width * 1.140;
+   hfp    = width * 1.055;
    pwidth = width;
 
    if (height < 400 && width > 400)
@@ -169,7 +182,7 @@ static bool x11_display_server_set_resolution(void *data,
    if (roundw < 1.20)
       roundw = 1.34;
 
-   hbp = width * roundw - 8;
+   hbp  = width * roundw - 8;
    hmax = hbp;
 
    if (height < 241)
@@ -218,76 +231,86 @@ static bool x11_display_server_set_resolution(void *data,
    /* create interlaced newmode from modline variables */
    if (height < 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"CRT_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"CRT_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
 
    /* variable for new mode */
-   snprintf(new_mode, sizeof(new_mode), "%dx%d_%0.2f", width, height, hz);
+   snprintf(new_mode, sizeof(new_mode), "CRT_%dx%d_%0.2f", width, height, hz);
 
    /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to 
     * add and delete modes */
-   for (i = 0; i < 3; i++)
+    crt_rrmode.id = crtid;
+   crt_rrmode.width = width;
+   crt_rrmode.height = height;
+   crt_rrmode.dotClock = pixel_clock;
+   crt_rrmode.hSyncStart = hfp;
+   crt_rrmode.hSyncEnd = hsp;
+   crt_rrmode.hTotal = hmax;
+   crt_rrmode.hSkew = 0;
+   crt_rrmode.vSyncStart = vfp;
+   crt_rrmode.vSyncEnd = vsp;
+   crt_rrmode.vTotal = vmax;
+   crt_rrmode.name = new_mode;
+   crt_rrmode.nameLength = sizeof(new_mode);
+   crt_rrmode.modeFlags = 0;
+   
+   res = XRRGetScreenResources (dsp, window);
+ 
+   if (monitor_index == 0)
    {
-      snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "DVI", i,
-            new_mode);
-      system(output);
-      snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "DVI", i,
-            old_mode);
-      system(output);
-   }
+      
+      for (int i = 0; i < res->noutput; i++)
+      { 
 
-   for (i = 0; i < 3; i++)
-   {
-      snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "DVI", i,
-            new_mode);
-      system(output);
-      snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "DVI", i,
-            old_mode);
-      system(output);
-   }
+         XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
 
-   for (i = 0; i < 3; i++)
-   {
-      snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "VGA", i, new_mode);
-      system(output);
-      snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "VGA", i, old_mode);
-      system(output);
-   }
+      
+         if (outputs->connection == RR_Connected)
+         {
+            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
+ 
+            snprintf(output4, sizeof(output4),"xrandr --addmode %s %s",outputs->name ,new_mode);
+            system(output4);
+            snprintf(output4, sizeof(output4),"xrandr --output %s --mode %s", outputs->name, new_mode);
+            system(output4);
+         
+            snprintf(output4, sizeof(output4),"xrandr --delmode %s %s", outputs->name,old_mode);
+            system(output4);
+            snprintf(output4, sizeof(output4),"xrandr --rmmode %s", old_mode);
+	        system(output4);
 
-   for (i = 0; i < 3; i++)
-   {
-      snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "VGA", i, new_mode);
-      system(output);
-      snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "VGA", i, old_mode);
-      system(output);
-   }
-
-   snprintf(output, sizeof(output), "xrandr -s %s", new_mode);
-   system(output);
-
-   /* remove old mode */
-   snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
-   system(output);
-
-   /* needs xdotool installed. needed to recapture window. */
-   system("xdotool windowactivate $(xdotool search --class RetroArch)");
-
-   /* variable for old mode */
-   snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
-
-   /* needs xdotool installed. needed to recapture window. */
-   system("xdotool windowactivate $(xdotool search --class RetroArch)");
-   /* Second run needed as some times it runs to fast to capture first time */
-
+         }
+      }
+  }
+ if (monitor_index > 0)
+ {
+    
+    XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[monitor_index]);
+    if (outputs->connection == RR_Connected)
+    {
+		snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
+		
+        snprintf(output4, sizeof(output4),"xrandr --addmode %s %s",outputs->name ,new_mode);
+        system(output4);
+        snprintf(output4, sizeof(output4),"xrandr --output %s --mode %s", outputs->name, new_mode);
+        system(output4);
+       
+        snprintf(output4, sizeof(output4),"xrandr --delmode %s %s", outputs->name, old_mode);
+        system(output4);
+        snprintf(output4, sizeof(output4),"xrandr --rmmode %s", old_mode);
+	    system(output4);
+        
+    }
+ }
    return true;
 }
 

@@ -44,6 +44,7 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+#include "../content.h"
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"

@@ -630,6 +630,32 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#define IOS_MFI_DEFAULT_BINDS \
+DECL_BTN(a, 8) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 9) \
+DECL_BTN(y, 1) \
+DECL_BTN(up, 4) \
+DECL_BTN(down, 5) \
+DECL_BTN(left, 6) \
+DECL_BTN(right, 7) \
+DECL_BTN(l, 10) \
+DECL_BTN(r, 11) \
+DECL_BTN(start, 3) \
+DECL_BTN(select, 2) \
+DECL_BTN(l2, 12) \
+DECL_BTN(r2, 13) \
+DECL_BTN(l3, 14) \
+DECL_BTN(r3, 15) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  -1) \
+DECL_AXIS(l_y_minus, +1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
 const char* const input_builtin_autoconfs[] =
 {
 #if defined(_WIN32) && defined(_XBOX)
@@ -704,6 +730,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef EMSCRIPTEN
    DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
+#endif
+#if TARGET_OS_IPHONE
+   DECL_AUTOCONF_DEVICE("mFi Controller", "mfi", IOS_MFI_DEFAULT_BINDS),
 #endif
    NULL
 };

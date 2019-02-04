@@ -44,6 +44,10 @@ typedef struct retro_vfs_dir_handle libretro_vfs_implementation_dir;
 typedef struct libretro_vfs_implementation_dir libretro_vfs_implementation_dir;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
@@ -83,5 +87,9 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *dirs
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

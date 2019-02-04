@@ -25,7 +25,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "gfx/video_driver.h"
+#include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
@@ -110,6 +110,10 @@ typedef struct settings
       /* Audio */
       bool audio_enable;
       bool audio_enable_menu;
+      bool audio_enable_menu_ok;
+      bool audio_enable_menu_cancel;
+      bool audio_enable_menu_notice;
+      bool audio_enable_menu_bgm;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
@@ -403,14 +407,8 @@ typedef struct settings
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_dpi_override_value;
-      unsigned menu_entry_normal_color;
-      unsigned menu_entry_hover_color;
-      unsigned menu_title_color;
-      unsigned menu_bg_dark_color;
-      unsigned menu_bg_light_color;
-      unsigned menu_border_dark_color;
-      unsigned menu_border_light_color;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
@@ -542,6 +540,7 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
+      char path_rgui_theme_preset[PATH_MAX_LENGTH];
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];

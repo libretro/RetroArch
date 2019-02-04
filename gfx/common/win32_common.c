@@ -44,6 +44,7 @@
 #include "../../driver.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
@@ -51,7 +52,6 @@
 
 #include <commdlg.h>
 #include <dbt.h>
-#include "../../retroarch.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"

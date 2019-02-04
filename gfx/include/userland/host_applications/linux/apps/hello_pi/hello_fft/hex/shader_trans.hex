@@ -1,0 +1,126 @@
+0x15827d80, 0x10020e27, // mov t0s, unif
+0x009e7000, 0xa00009e7, // ldtmu0
+0x0c9cc9c0, 0xd0020e27, // add t0s, r4, 3*4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x0c827980, 0x100200a7, // add ra_src_base, r4, unif
+0x15827d80, 0x10020e27, // mov t0s, unif
+0x009e7000, 0xa00009e7, // ldtmu0
+0x0c9cc9c0, 0xd0020e27, // add t0s, r4, 3*4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x0c827980, 0x100200e7, // add ra_dst_base, r4, unif
+0x15827d80, 0x100214a7, // mov rb_Y_STRIDE_SRC, unif
+0x15827d80, 0x100214e7, // mov rb_Y_STRIDE_DST, unif
+0x15827d80, 0x10021527, // mov rb_NX,           unif
+0x15827d80, 0x10021567, // mov rb_NY,           unif
+0x00000008, 0xe0021467, // mov rb_X_STRIDE, 2*4
+0x00000010, 0xe0021427, // mov rb_0x10, 0x10
+0xc0000000, 0xe0020827, // mov r0, vdw_setup_1(0)
+0x0c9d31c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_DST
+0x00000040, 0xe0020867, // mov r1, 16*4
+0x0d9e7040, 0x100201a7, // sub ra_vdw_stride, r0, r1
+0x40991037, 0x100049e0, // nop; mul24 r0, elem_num, rb_X_STRIDE
+0x159e7000, 0x10021027, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd0021227, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x10021067, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd0021267, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x100210a7, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd00212a7, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x100210e7, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd00212e7, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x10021127, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd0021327, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x10021167, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd0021367, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x100211a7, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd00213a7, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x159e7000, 0x100211e7, // mov rb_offsets_re+i, r0
+0x0c9c41c0, 0xd00213e7, // add rb_offsets_im+i, r0, 4
+0x0c9d21c0, 0x10020827, // add r0, r0, rb_Y_STRIDE_SRC
+0x00000000, 0xe0020067, // mov ra_y, 0
+0x00000000, 0xe0020027, // mov ra_x, 0
+0x40052037, 0x100049e1, // nop; mul24 r1, ra_y, rb_Y_STRIDE_SRC
+0x40011037, 0x100049e0, // nop; mul24 r0, ra_x, rb_X_STRIDE
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c0a7c00, 0x10020127, // add ra_src_cell, ra_src_base, r0
+0x40013037, 0x100049e1, // nop; mul24 r1, ra_x, rb_Y_STRIDE_DST
+0x40051037, 0x100049e0, // nop; mul24 r0, ra_y, rb_X_STRIDE
+0x0c9e7040, 0x10020827, // add r0, r0, r1
+0x0c0e7c00, 0x10020167, // add ra_dst_cell, ra_dst_base, r0
+0x00001200, 0xe0021c67, // mov vw_setup, vpm_setup(16, 1, v32(0,0))
+0x0c100dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re
+0x0c108dc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im
+0x0c101dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c109dc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c102dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10adc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c103dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10bdc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c104dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10cdc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c105dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10ddc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c106dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10edc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x0c107dc0, 0x10020e27, // add t0s, ra_src_cell, rb_offsets_re+1+i
+0x0c10fdc0, 0x10020f27, // add t1s, ra_src_cell, rb_offsets_im+1+i
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xa00009e7, // ldtmu0
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x009e7000, 0xb00009e7, // ldtmu1
+0x159e7900, 0x10020c27, // mov vpm, r4
+0x88104000, 0xe0021c67, // mov vw_setup, vdw_setup_0(16, 16, dma_h32(0,0))
+0x151a7d80, 0x10021c67, // mov vw_setup, ra_vdw_stride
+0x15167d80, 0x10021ca7, // mov vw_addr, ra_dst_cell
+0x159f2fc0, 0x100009e7, // mov -, vw_wait
+0x0c010dc0, 0x10020027, // add ra_x, ra_x, rb_0x10
+0x009e7000, 0x100009e7, // nop
+0x0d014dc0, 0x100229e7, // sub.setf -, ra_x, rb_NX
+0xfffffde0, 0xf01809e7, // brr.allnz -, r:inner
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x0c048dc0, 0xd0020067, // add ra_y, ra_y, 8
+0x009e7000, 0x100009e7, // nop
+0x0d055dc0, 0x100229e7, // sub.setf -, ra_y, rb_NY
+0xfffffda0, 0xf01809e7, // brr.allnz -, r:outer
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop
+0x00000001, 0xe00209a7, // mov interrupt, 1
+0x009e7000, 0x300009e7, // nop; nop; thrend
+0x009e7000, 0x100009e7, // nop
+0x009e7000, 0x100009e7, // nop

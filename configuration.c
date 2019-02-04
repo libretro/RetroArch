@@ -50,6 +50,7 @@
 #include "verbosity.h"
 #include "lakka.h"
 
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 
 #include "../list_special.h"
@@ -190,6 +191,7 @@ enum audio_driver_enum
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
+   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -298,7 +300,6 @@ enum menu_driver_enum
    MENU_MATERIALUI,
    MENU_XMB,
    MENU_STRIPES,
-   MENU_NUKLEAR,
    MENU_OZONE,
    MENU_NULL
 };
@@ -393,6 +394,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
+#elif defined(HAVE_COREAUDIO3)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_XAUDIO)
@@ -525,14 +528,14 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
+#elif defined(IOS)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_HID)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
 #elif defined(EMSCRIPTEN)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
-#elif defined(IOS)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #else
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
 #endif
@@ -570,7 +573,7 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
-#elif defined(HAVE_OZONE) && defined(HAVE_LIBNX)
+#elif defined(HAVE_OZONE) && (defined(HAVE_LIBNX) || TARGET_OS_TV) 
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
@@ -666,6 +669,8 @@ const char *config_get_default_audio(void)
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
+      case AUDIO_COREAUDIO3:
+         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:
@@ -1089,8 +1094,6 @@ const char *config_get_default_menu(void)
          return "xmb";
       case MENU_STRIPES:
          return "stripes";
-      case MENU_NUKLEAR:
-         return "nuklear";
       case MENU_NULL:
          break;
    }
@@ -1215,6 +1218,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #ifdef HAVE_MENU
    SETTING_PATH("menu_wallpaper",
          settings->paths.path_menu_wallpaper, false, NULL, true);
+   SETTING_PATH("rgui_menu_theme_preset",
+         settings->paths.path_rgui_theme_preset, false, NULL, true);
 #endif
    SETTING_PATH("content_history_path",
          settings->paths.path_content_history, false, NULL, true);
@@ -1394,7 +1399,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, audio_enable, false);
-   SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, false, false);
+   SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, audio_enable_menu, false);
+   SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, audio_enable_menu_ok, false);
+   SETTING_BOOL("audio_enable_menu_cancel",      &settings->bools.audio_enable_menu_cancel, true, audio_enable_menu_cancel, false);
+   SETTING_BOOL("audio_enable_menu_notice",      &settings->bools.audio_enable_menu_notice, true, audio_enable_menu_notice, false);
+   SETTING_BOOL("audio_enable_menu_bgm",         &settings->bools.audio_enable_menu_bgm, true, audio_enable_menu_bgm, false);
    SETTING_BOOL("audio_mute_enable",             audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE), true, false, false);
    SETTING_BOOL("audio_mixer_mute_enable",       audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE), true, false, false);
    SETTING_BOOL("location_allow",                &settings->bools.location_allow, true, false, false);
@@ -1653,6 +1662,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_timedate_style", &settings->uints.menu_timedate_style, true, menu_timedate_style, false);
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, rgui_color_theme, false);
+   SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
    SETTING_UINT("split_joycon_p2", &settings->uints.input_split_joycon[1], true, 0, false);
@@ -1677,7 +1687,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
 #ifdef HAVE_OZONE
-   SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 0, false);
+   SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 1, false);
 #endif
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);
@@ -1959,13 +1969,6 @@ void config_set_defaults(void)
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->bools.menu_show_start_screen   = default_menu_show_start_screen;
-   settings->uints.menu_entry_normal_color     = menu_entry_normal_color;
-   settings->uints.menu_entry_hover_color      = menu_entry_hover_color;
-   settings->uints.menu_title_color            = menu_title_color;
-   settings->uints.menu_bg_dark_color          = menu_bg_dark_color;
-   settings->uints.menu_bg_light_color         = menu_bg_light_color;
-   settings->uints.menu_border_dark_color      = menu_border_dark_color;
-   settings->uints.menu_border_light_color     = menu_border_light_color;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -2068,6 +2071,7 @@ void config_set_defaults(void)
 #endif
    *settings->paths.path_cheat_database    = '\0';
    *settings->paths.path_menu_wallpaper    = '\0';
+   *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
    *settings->paths.path_record_config     = '\0';
@@ -2652,6 +2656,8 @@ static void config_file_dump_all(config_file_t *conf)
 }
 #endif
 
+/*
+ * This is no longer used, so comment out to silence warnings...
 #ifdef HAVE_MENU
 static void config_get_hex_base(config_file_t *conf,
       const char *key, unsigned *base)
@@ -2663,6 +2669,7 @@ static void config_get_hex_base(config_file_t *conf,
       *base = tmp;
 }
 #endif
+*/
 
 /**
  * config_load:
@@ -2878,22 +2885,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       settings->floats.video_msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
       settings->floats.video_msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
    }
-#ifdef HAVE_MENU
-   config_get_hex_base(conf, "menu_entry_normal_color",
-         &settings->uints.menu_entry_normal_color);
-   config_get_hex_base(conf, "menu_entry_hover_color",
-         &settings->uints.menu_entry_hover_color);
-   config_get_hex_base(conf, "menu_title_color",
-         &settings->uints.menu_title_color);
-   config_get_hex_base(conf, "menu_bg_dark_color",
-         &settings->uints.menu_bg_dark_color);
-   config_get_hex_base(conf, "menu_bg_light_color",
-         &settings->uints.menu_bg_light_color);
-   config_get_hex_base(conf, "menu_border_dark_color",
-         &settings->uints.menu_border_dark_color);
-   config_get_hex_base(conf, "menu_border_light_color",
-         &settings->uints.menu_border_light_color);
-#endif
 
    /* Float settings */
    for (i = 0; i < (unsigned)float_settings_size; i++)
@@ -3082,6 +3073,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
       *settings->paths.path_menu_wallpaper = '\0';
+   if (string_is_equal(settings->paths.path_rgui_theme_preset, "default"))
+      *settings->paths.path_rgui_theme_preset = '\0';
    if (string_is_equal(settings->paths.directory_video_shader, "default"))
       *settings->paths.directory_video_shader = '\0';
    if (string_is_equal(settings->paths.directory_video_filter, "default"))
@@ -4381,22 +4374,6 @@ bool config_save_file(const char *path)
 
    /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);
-#ifdef HAVE_MENU
-   config_set_hex(conf, "menu_entry_normal_color",
-         settings->uints.menu_entry_normal_color);
-   config_set_hex(conf, "menu_entry_hover_color",
-         settings->uints.menu_entry_hover_color);
-   config_set_hex(conf, "menu_title_color",
-         settings->uints.menu_title_color);
-   config_set_hex(conf, "menu_bg_dark_color",
-         settings->uints.menu_bg_dark_color);
-   config_set_hex(conf, "menu_bg_light_color",
-         settings->uints.menu_bg_light_color);
-   config_set_hex(conf, "menu_border_dark_color",
-         settings->uints.menu_border_dark_color);
-   config_set_hex(conf, "menu_border_light_color",
-         settings->uints.menu_border_light_color);
-#endif
 
    video_driver_save_settings(conf);
 

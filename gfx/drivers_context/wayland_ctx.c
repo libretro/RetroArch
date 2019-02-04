@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/poll.h>
+#include <poll.h>
 #include <unistd.h>
 
 #include <wayland-client.h>
@@ -46,6 +46,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
+#include "../../verbosity.h"
 
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../common/wayland/idle-inhibit-unstable-v1.h"
@@ -94,8 +95,8 @@ typedef struct gfx_ctx_wayland_data
    bool resize;
    bool configured;
    bool activated;
-   int prev_width;
-   int prev_height;
+   unsigned prev_width;
+   unsigned prev_height;
    unsigned width;
    unsigned height;
    struct wl_registry *registry;
@@ -657,8 +658,11 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 		wl->width = width;
 		wl->height = height;
 	}
-	
-	wl_egl_window_resize(wl->win, width, height, 0, 0);
+   
+	if (wl->win)
+		wl_egl_window_resize(wl->win, width, height, 0, 0);
+	else
+		wl->win = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
 
 	wl->configured = false;
 }
@@ -724,7 +728,10 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 		wl->height = height;
 	}
 	
-	wl_egl_window_resize(wl->win, width, height, 0, 0);
+	if (wl->win)
+		wl_egl_window_resize(wl->win, width, height, 0, 0);
+	else
+		wl->win = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
 
 	wl->configured = false;
 }

@@ -125,7 +125,9 @@ static OSStatus audio_write_cb(void *userdata,
 static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
 {
     (void)data;
+#if TARGET_OS_IOS
     g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
+#endif
 }
 #else
 static void choose_output_device(coreaudio_t *dev, const char* device)
@@ -218,7 +220,7 @@ static void *coreaudio_init(const char *device,
    dev->lock = slock_new();
    dev->cond = scond_new();
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
    if (!session_initialized)
    {
       session_initialized = true;

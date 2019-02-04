@@ -104,7 +104,7 @@ static dylib_t lib_handle;
 #define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
 #endif
 
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
@@ -191,9 +191,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i = 0;
-         unsigned j = 0;
-         unsigned size = i;
+         unsigned i, j, size;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          subsystem_current_count = 0;
@@ -496,8 +494,9 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
+   dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
@@ -749,7 +748,7 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
 #endif
          break;
       case CORE_TYPE_VIDEO_PROCESSOR:
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
          SYMBOL_VIDEOPROCESSOR(retro_init);
          SYMBOL_VIDEOPROCESSOR(retro_deinit);
 
@@ -1960,6 +1959,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
+            system->supports_vfs = true;
          }
          else
          {

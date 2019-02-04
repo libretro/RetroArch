@@ -373,14 +373,7 @@ static unsigned menu_shader_pipeline = 2;
 #endif
 
 static bool show_advanced_settings            = false;
-static const uint32_t menu_entry_normal_color = 0xffffffff;
-static const uint32_t menu_entry_hover_color  = 0xff64ff64;
-static const uint32_t menu_title_color        = 0xff64ff64;
-static const uint32_t menu_bg_dark_color      = 0xc0202020;
-static const uint32_t menu_bg_light_color     = 0xc0404040;
-static const uint32_t menu_border_dark_color  = 0xc0204020;
-static const uint32_t menu_border_light_color = 0xc0408040;
-static unsigned rgui_color_theme = RGUI_THEME_CUSTOM;
+static unsigned rgui_color_theme = RGUI_THEME_CLASSIC_GREEN;
 
 #else
 static bool default_block_config_read = false;
@@ -402,12 +395,14 @@ static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
-#elif defined(PS2)
+#elif defined(PS2) || defined(PSP)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
 #elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+#elif TARGET_OS_TV
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
 #else
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
@@ -507,6 +502,13 @@ static const bool video_3ds_lcd_bottom = true;
 
 /* Will enable audio or not. */
 static const bool audio_enable = true;
+
+/* Enable menu audio sounds. */
+static const bool audio_enable_menu = false;
+static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu_cancel = false;
+static const bool audio_enable_menu_notice = false;
+static const bool audio_enable_menu_bgm = false;
 
 /* Output samplerate. */
 #ifdef GEKKO
@@ -751,6 +753,8 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
+
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;

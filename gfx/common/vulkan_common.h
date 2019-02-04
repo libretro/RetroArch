@@ -48,10 +48,7 @@
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
-#include "../../libretro-common/include/gfx/math/matrix_4x4.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/gfx/scaler/scaler.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
 
 RETRO_BEGIN_DECLS
 

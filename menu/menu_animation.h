@@ -127,6 +127,12 @@ typedef struct menu_timer_ctx_entry
    void *userdata;
 } menu_timer_ctx_entry_t;
 
+typedef struct menu_delayed_animation
+{
+   menu_timer_t timer;
+   menu_animation_ctx_entry_t entry;
+} menu_delayed_animation_t;
+
 void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
@@ -150,6 +156,8 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag);
 void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject);
 
 bool menu_animation_push(menu_animation_ctx_entry_t *entry);
+
+void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry);
 
 float menu_animation_get_delta_time(void);
 

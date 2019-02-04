@@ -29,14 +29,16 @@
 #endif
 
 #include "frontend.h"
+#include "frontend_driver.h"
 #include "../configuration.h"
 #include "../ui/ui_companion_driver.h"
-#include "../tasks/tasks_internal.h"
+#include "../tasks/task_content.h"
 
 #include "../driver.h"
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
+#include "../record/record_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include <objbase.h>
@@ -90,6 +92,7 @@ void main_exit(void *args)
    driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
    ui_companion_driver_free();
    frontend_driver_free();
+   recording_driver_lock_free();
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();

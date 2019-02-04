@@ -44,7 +44,7 @@
 #elif defined(HAVE_KQUEUE)
 #include <sys/event.h>
 #endif
-#include <sys/poll.h>
+#include <poll.h>
 
 #include <libudev.h>
 #ifdef __linux__

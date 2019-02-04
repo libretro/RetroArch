@@ -112,6 +112,7 @@
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "performance_counters.h"
 
@@ -389,6 +390,7 @@ static void retroarch_print_features(void)
    _PSUPP(vg,              "OpenVG",          "Video context driver");
 
    _PSUPP(coreaudio,       "CoreAudio",       "Audio driver");
+   _PSUPP(coreaudio3,      "CoreAudioV3",     "Audio driver");
    _PSUPP(alsa,            "ALSA",            "Audio driver");
    _PSUPP(oss,             "OSS",             "Audio driver");
    _PSUPP(jack,            "Jack",            "Audio driver");
@@ -1403,6 +1405,10 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
+   if (recording_driver_lock_inited())
+      recording_driver_lock_free();
+   recording_driver_lock_init();
+
    command_event(CMD_EVENT_CHEATS_INIT, NULL);
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
@@ -1433,6 +1439,15 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
+#ifdef HAVE_MENU
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings->bools.audio_enable_menu)
+         audio_driver_load_menu_sounds();
+   }
+#endif
+
    return true;
 
 error:
@@ -1453,34 +1468,42 @@ bool retroarch_is_on_main_thread(void)
 
 void rarch_menu_running(void)
 {
+   settings_t *settings                    = config_get_ptr();
+   (void)settings;
+
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
+
    /* Prevent stray input */
    input_driver_set_flushing_input();
+
+   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 #ifdef HAVE_OVERLAY
-   {
-      settings_t *settings                    = config_get_ptr();
-      if (settings && settings->bools.input_overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
+   if (settings && settings->bools.input_overlay_hide_in_menu)
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
 }
 
 void rarch_menu_running_finished(void)
 {
+   settings_t *settings                    = config_get_ptr();
+   (void)settings;
+
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
+
    /* Prevent stray input */
    input_driver_set_flushing_input();
+
+   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+      audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   {
-      settings_t *settings                    = config_get_ptr();
-      if (settings && settings->bools.input_overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
+   if (settings && settings->bools.input_overlay_hide_in_menu)
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
 
@@ -2530,6 +2553,12 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case INPUT_TOGGLE_DOWN_SELECT:
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+            return false;
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       case INPUT_TOGGLE_HOLD_START:
@@ -3740,4 +3769,43 @@ struct retro_system_info *runloop_get_libretro_system_info(void)
 char *get_retroarch_launch_arguments(void)
 {
    return launch_arguments;
+}
+
+void rarch_force_video_driver_fallback(const char *driver)
+{
+   settings_t *settings = config_get_ptr();
+   ui_msg_window_t *msg_window = NULL;
+
+   strlcpy(settings->arrays.video_driver, driver, sizeof(settings->arrays.video_driver));
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+#ifdef _WIN32
+   /* UI companion driver is not inited yet, just call into it directly */
+   msg_window = &ui_msg_window_win32;
+#endif
+
+   if (msg_window)
+   {
+      ui_msg_window_state window_state;
+      char *title = strdup(msg_hash_to_str(MSG_ERROR));
+      char text[PATH_MAX_LENGTH];
+
+      text[0]              = '\0';
+
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            driver);
+
+      window_state.buttons = UI_MSG_WINDOW_OK;
+      window_state.text    = strdup(text);
+      window_state.title   = title;
+      window_state.window  = NULL;
+
+      msg_window->error(&window_state);
+
+      free(title);
+   }
+
+   exit(1);
 }

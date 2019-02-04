@@ -37,9 +37,8 @@
 #include "video_coord_array.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
-#include "video_state_tracker.h"
 
-#include "../input/input_driver.h"
+#include "../input/input_types.h"
 
 #define RARCH_SCALE_BASE 256
 
@@ -251,6 +250,7 @@ typedef struct video_shader_ctx_init
    const char *path;
    const shader_backend_t *shader;
    void *data;
+   void *shader_data;
    struct
    {
       bool core_context_enabled;
@@ -305,12 +305,6 @@ typedef struct video_shader_ctx_filter
    unsigned index;
    bool *smooth;
 } video_shader_ctx_filter_t;
-
-typedef struct video_shader_ctx_wrap
-{
-   unsigned idx;
-   enum gfx_wrap_type type;
-} video_shader_ctx_wrap_t;
 
 typedef struct video_shader_ctx
 {
@@ -681,16 +675,6 @@ typedef struct gfx_ctx_ident
 {
    const char *ident;
 } gfx_ctx_ident_t;
-
-typedef struct video_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} video_viewport_t;
 
 struct aspect_ratio_elem
 {
@@ -1066,6 +1050,8 @@ const video_poke_interface_t *video_driver_get_poke(void);
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+void crt_switch_driver_reinit(void);
+	  
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
 
@@ -1194,27 +1180,15 @@ enum gfx_ctx_api video_context_driver_get_api(void);
 
 void video_context_driver_free(void);
 
-bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);
-
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
-bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
-
 bool video_shader_driver_deinit(void);
-
-void video_shader_driver_set_parameter(struct uniform_info *param);
-
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
 
 bool video_shader_driver_init_first(void);
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-bool video_shader_driver_get_feedback_pass(unsigned *data);
-
-bool video_shader_driver_mipmap_input(unsigned *index);
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
@@ -1223,14 +1197,6 @@ bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
-
-bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
-
-bool video_shader_driver_compile_program(struct shader_program_info *program_info);
-
-void video_shader_driver_use(video_shader_ctx_info_t *shader_info);
-
-bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 float video_driver_get_refresh_rate(void);
 
