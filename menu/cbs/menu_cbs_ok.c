@@ -4032,13 +4032,13 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char* new_path;
    int ret;
 #ifdef __WINRT__
-   new_path = uwp_trigger_picker();
+   char *new_path = uwp_trigger_picker();
    if (!new_path)
       return 0; /* User aborted */
 #else
+   char *new_path = NULL;
    retro_assert(false);
 #endif
 

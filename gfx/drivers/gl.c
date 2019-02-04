@@ -406,7 +406,7 @@ static void gl2_renderchain_check_fbo_dimensions(
    unsigned i;
 
    /* Check if we have to recreate our FBO textures. */
-   for (i = 0; i < chain->fbo_pass; i++)
+   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
    {
       struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
       if (fbo_rect)
@@ -775,7 +775,7 @@ static bool gl_create_fbo_targets(gl_t *gl, gl2_renderchain_data_t *chain)
    glBindTexture(GL_TEXTURE_2D, 0);
    gl2_gen_fb(chain->fbo_pass, chain->fbo);
 
-   for (i = 0; i < chain->fbo_pass; i++)
+   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
    {
       GLenum status;
 
@@ -1000,7 +1000,7 @@ static void gl2_renderchain_recompute_pass_sizes(
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
    /* Calculate viewports for FBOs. */
-   for (i = 0; i < chain->fbo_pass; i++)
+   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
    {
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
