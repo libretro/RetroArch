@@ -372,8 +372,9 @@ static unsigned menu_shader_pipeline = 1;
 static unsigned menu_shader_pipeline = 2;
 #endif
 
-static bool show_advanced_settings            = false;
-static unsigned rgui_color_theme = RGUI_THEME_CLASSIC_GREEN;
+static bool show_advanced_settings        = false;
+static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #else
 static bool default_block_config_read = false;
@@ -753,8 +754,6 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
-
-static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;

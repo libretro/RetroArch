@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 #include <file/config_file.h>
 #include <file/file_path.h>
