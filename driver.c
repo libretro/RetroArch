@@ -32,6 +32,7 @@
 
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
+#include "gfx/video_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
