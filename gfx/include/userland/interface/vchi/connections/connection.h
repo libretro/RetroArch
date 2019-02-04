@@ -50,7 +50,6 @@ typedef struct opaque_vchi_connection_info_t VCHI_CONNECTION_STATE_T;
 
 typedef struct vchi_connection_t VCHI_CONNECTION_T;
 
-
 /******************************************************************************
  API
  *****************************************************************************/
@@ -208,7 +207,6 @@ typedef void * (*VCHI_BUFFER_ALLOCATE)(VCHI_CONNECTION_SERVICE_HANDLE_T service_
 // free memory allocated by buffer_allocate
 typedef void   (*VCHI_BUFFER_FREE)(VCHI_CONNECTION_SERVICE_HANDLE_T service_handle, void * address);
 
-
 /******************************************************************************
  System driver struct
  *****************************************************************************/
@@ -317,7 +315,6 @@ struct vchi_connection_t {
    VCOS_SEMAPHORE_T             sem;
 #endif
 };
-
 
 #endif /* CONNECTION_H_ */
 

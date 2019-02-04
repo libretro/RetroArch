@@ -1342,7 +1342,6 @@ GL_API void GL_APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    }
 }
 
-
 GL_API void GL_APIENTRY glDrawElements (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices)
 {
    CLIENT_THREAD_STATE_T *thread = CLIENT_GET_THREAD_STATE();
@@ -2872,8 +2871,6 @@ GL_APICALL void GL_APIENTRY glGetVertexAttribfv (GLuint index, GLenum pname, GLf
             params[0] = (GLfloat)state->attrib[index].buffer;
             break;
 
-
-
          default:
             set_error(state, GL_INVALID_ENUM);
             break;
@@ -2911,7 +2908,6 @@ GL_APICALL void GL_APIENTRY glGetVertexAttribiv (GLuint index, GLenum pname, GLi
          case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
             params[0] = (GLint) state->attrib[index].buffer;
             break;
-
 
          //TODO: is this the best way to handle conversions? We duplicate
          //the entire switch statement.
@@ -5137,7 +5133,6 @@ GLboolean glxx_client_IsRenderbuffer(GLuint renderbuffer)
    return 0;
 }
 
-
 GL_APICALL GLboolean GL_APIENTRY glIsRenderbuffer(GLuint renderbuffer)
 {
    return glxx_client_IsRenderbuffer(renderbuffer);
@@ -5159,7 +5154,6 @@ GL_APICALL void GL_APIENTRY glBindRenderbuffer(GLenum target, GLuint renderbuffe
 {
    glxx_client_BindRenderbuffer(target, renderbuffer);
 }
-
 
 void glxx_client_DeleteRenderbuffers(GLsizei n, const GLuint *renderbuffers)
 {

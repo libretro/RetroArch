@@ -124,7 +124,7 @@ unsigned ozone_get_system_theme(void)
 {
 #ifdef HAVE_LIBNX
    unsigned ret = 0;
-   if (R_SUCCEEDED(setsysInitialize())) 
+   if (R_SUCCEEDED(setsysInitialize()))
    {
       ColorSetId theme;
       setsysGetColorSetId(&theme);

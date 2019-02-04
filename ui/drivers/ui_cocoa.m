@@ -289,7 +289,6 @@ static char** waiting_argv;
    return reply;
 }
 
-
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
    if (filenames.count == 1 && filenames[0])

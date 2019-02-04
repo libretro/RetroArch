@@ -252,7 +252,7 @@ static void d3d9_cg_renderchain_set_shader_params(
    frame_cnt            = chain->frame_count;
 
    if (pass->info.pass->frame_count_mod)
-      frame_cnt         = chain->frame_count 
+      frame_cnt         = chain->frame_count
          % pass->info.pass->frame_count_mod;
 
    d3d9_cg_set_param_1f(fprg, dev, "IN.frame_count", &frame_cnt);
@@ -587,7 +587,7 @@ static void d3d9_cg_renderchain_bind_pass(
       param = d3d9_cg_get_constant_by_name(pass->vprg, attr_coord);
       if (param)
       {
-         struct unsigned_vector_list *attrib_map = 
+         struct unsigned_vector_list *attrib_map =
             (struct unsigned_vector_list*)pass->attrib_map;
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
@@ -717,7 +717,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
    unsigned i;
    struct shader_pass pass;
    struct d3d_matrix ident;
-   unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
+   unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
       d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
 
    d3d_matrix_identity(&ident);

@@ -20,7 +20,7 @@
 
 #define MAX_PADS 10
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct switch_input
@@ -77,7 +77,7 @@ void calc_touch_scaling(switch_input_t *sw, uint32_t x, uint32_t y, uint32_t axi
    sw->touch_scale_y = axis_max / sw->touch_half_resolution_y;
 }
 
-static int16_t switch_pointer_device_state(switch_input_t *sw, 
+static int16_t switch_pointer_device_state(switch_input_t *sw,
       unsigned id, unsigned idx)
 {
    if (idx >= MULTITOUCH_LIMIT)
@@ -201,7 +201,7 @@ static bool switch_input_set_rumble(void *data, unsigned port,
 	(void)port;
 	(void)effect;
 	(void)strength;
-	
+
 	return false;
 }
 

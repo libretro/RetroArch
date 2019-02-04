@@ -35,7 +35,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "interface/vcos/vcos_stdint.h"
 
-
 /* ---- Constants and Types ---------------------------------------------- */
 
 struct VCOS_CMD_S;
@@ -117,4 +116,3 @@ VCOSPRE_ VCOS_STATUS_T VCOSPOST_ vcos_cmd_execute( int argc, char **argv, size_t
 VCOSPRE_ void VCOSPOST_ vcos_cmd_shutdown( void );
 
 #endif /* VCOS_CMD_H */
-

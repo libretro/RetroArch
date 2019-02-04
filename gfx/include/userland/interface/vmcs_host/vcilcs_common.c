@@ -109,7 +109,6 @@ static void vcilcs_mem_unlock(OMX_BUFFERHEADERTYPE *buffer)
 {
 }
 
-
 void vcilcs_config(ILCS_CONFIG_T *config)
 {
    config->fns = vcilcs_fns;
@@ -119,4 +118,3 @@ void vcilcs_config(ILCS_CONFIG_T *config)
    config->ilcs_mem_lock = vcilcs_mem_lock;
    config->ilcs_mem_unlock = vcilcs_mem_unlock;
 }
-

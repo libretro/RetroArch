@@ -50,7 +50,7 @@ public:
 
    /** Run a function in a separate thread.
     * A separate thread is launched to run the function, and a native surface created for
-    * that application. 
+    * that application.
     * @param name        Application name.
     * @param run_app_fn  Entry point function for application.
     * @param params      Application-specific parameters. This will be bitwise copyable, and

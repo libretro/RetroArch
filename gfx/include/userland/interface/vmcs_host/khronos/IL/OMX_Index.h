@@ -26,7 +26,6 @@
  *  and components .
  */
 
-
 #ifndef OMX_Index_h
 #define OMX_Index_h
 
@@ -34,13 +33,11 @@
 extern "C" {
 #endif /* __cplusplus */
 
-
 /* Each OMX header must include all required header files to allow the
  *  header to compile without errors.  The includes below are required
  *  for this header file to compile successfully
  */
 #include "OMX_Types.h"
-
 
 /** The OMX_INDEXTYPE enumeration is used to select a structure when either
  *  getting or setting parameters and/or configuration data.  Each entry in
@@ -222,7 +219,6 @@ typedef enum OMX_INDEXTYPE {
     OMX_IndexConfigOtherPower,              /**< reference: OMX_OTHER_CONFIG_POWERTYPE */
     OMX_IndexConfigOtherStats,              /**< reference: OMX_OTHER_CONFIG_STATSTYPE */
 
-
     /* Reserved Time range */
     OMX_IndexTimeStartUnused = 0x09000000,
     OMX_IndexConfigTimeScale,               /**< reference: OMX_TIME_CONFIG_SCALETYPE */
@@ -236,7 +232,6 @@ typedef enum OMX_INDEXTYPE {
     OMX_IndexConfigTimeClientStartTime,     /**<reference:  OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
     OMX_IndexConfigTimePosition,            /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE */
     OMX_IndexConfigTimeSeekMode,            /**< reference: OMX_TIME_CONFIG_SEEKMODETYPE */
-
 
     OMX_IndexKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */
     /* Vendor specific area */
@@ -548,4 +543,3 @@ typedef enum OMX_INDEXTYPE {
 
 #endif
 /* File EOF */
-

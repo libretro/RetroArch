@@ -214,8 +214,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    menu_driver_frame(video_info);
 #endif
 
-   if (  gdi_video_width  != frame_width  || 
-         gdi_video_height != frame_height || 
+   if (  gdi_video_width  != frame_width  ||
+         gdi_video_height != frame_height ||
          gdi_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
@@ -240,8 +240,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       height        = gdi_video_height;
       pitch         = gdi_video_pitch;
 
-      if (  frame_width  == 4 && 
-            frame_height == 4 && 
+      if (  frame_width  == 4 &&
+            frame_height == 4 &&
             (frame_width < width && frame_height < height)
          )
          draw = false;
@@ -280,7 +280,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          if (gdi_temp_buf)
             free(gdi_temp_buf);
 
-         tmp = (unsigned short*)malloc(width * height 
+         tmp = (unsigned short*)malloc(width * height
                * sizeof(unsigned short));
 
          if (tmp)
@@ -509,9 +509,9 @@ static void gdi_set_texture_frame(void *data,
       gdi_menu_frame = NULL;
    }
 
-   if ( !gdi_menu_frame            || 
-         gdi_menu_width != width   || 
-         gdi_menu_height != height || 
+   if ( !gdi_menu_frame            ||
+         gdi_menu_width != width   ||
+         gdi_menu_height != height ||
          gdi_menu_pitch != pitch)
    {
       if (pitch && height)
@@ -579,7 +579,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    void *tmpdata               = NULL;
    gdi_texture_t *texture      = NULL;
    struct texture_image *image = (struct texture_image*)data;
-   int size                    = image->width * 
+   int size                    = image->width *
       image->height * sizeof(uint32_t);
 
    if (!image || image->width > 2048 || image->height > 2048)
@@ -594,7 +594,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    texture->height             = image->height;
    texture->active_width       = image->width;
    texture->active_height      = image->height;
-   texture->data               = calloc(1, 
+   texture->data               = calloc(1,
          texture->width * texture->height * sizeof(uint32_t));
    texture->type               = filter_type;
 

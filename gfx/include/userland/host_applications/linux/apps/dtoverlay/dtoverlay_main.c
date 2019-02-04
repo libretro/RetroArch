@@ -39,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dtoverlay.h"
 #include "utils.h"
 
-
 #define CFG_DIR_1 "/sys/kernel/config"
 #define CFG_DIR_2 "/config"
 #define DT_SUBDIR "/device-tree"
@@ -49,7 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DT_OVERLAYS_SUBDIR "overlays"
 #define DTOVERLAY_PATH_MAX 128
 #define DIR_MODE 0755
-
 
 enum {
     OPT_ADD,

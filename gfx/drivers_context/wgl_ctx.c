@@ -530,7 +530,6 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
 #endif
- 
 
    win32_window_reset();
    win32_monitor_init();

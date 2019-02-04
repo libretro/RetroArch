@@ -51,7 +51,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (sp_)->version_min = ver_;          \
    } while (0)
 
-
 static struct test_params g_params = { MSG_CONFIG, 64, 100, 1, 1, 1, 0, 0, 0, 0 };
 static const char *g_servname = "echo";
 
@@ -165,7 +164,7 @@ static int vchiq_test(int argc, char **argv)
    int run_signal_test = 0;
    int verbose = 0;
    int argn;
- 
+
    argn = 1;
    while ((argn < argc) && (argv[argn][0] == '-'))
    {
@@ -316,7 +315,6 @@ static int vchiq_test(int argc, char **argv)
    vcos_event_create(&g_shutdown, "g_shutdown");
    vcos_mutex_create(&g_mutex, "g_mutex");
 
-
    status = VCHIQ_ERROR;
 
    if (run_bulk_test)
@@ -409,7 +407,7 @@ vchiq_bulk_test(void)
    element->data = &g_params;
    element->size = sizeof(g_params);
    element++;
-   
+
    vchiq_queue_message(vchiq_service, elements, element - elements);
 
    vcos_event_wait(&g_server_reply);
@@ -1308,7 +1306,6 @@ error_exit:
    return VCHIQ_ERROR;
 }
 
-
 #ifdef VCHIQ_LOCAL
 
 static void *vchiq_test_server(void *param)
@@ -1332,7 +1329,7 @@ clnt_callback(VCHIQ_REASON_T reason, VCHIQ_HEADER_T *header,
    vcos_mutex_lock(&g_mutex);
    if (reason == VCHIQ_MESSAGE_AVAILABLE)
    {
-      /* 
+      /*
        * Store the header size as it is going to be released
        * and the size may be overwritten by the release.
        */
@@ -1710,8 +1707,6 @@ static int setup_auto_kill(int timeout_ms)
 
    return 0;
 }
-
-
 
 #endif
 

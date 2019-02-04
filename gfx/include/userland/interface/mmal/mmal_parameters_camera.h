@@ -503,7 +503,6 @@ typedef struct MMAL_PARAMETER_CAMERA_CONFIG_T
                                     /**< Selects algorithm for timestamping frames if there is no clock component connected.
                                       */
 
-
 } MMAL_PARAMETER_CAMERA_CONFIG_T;
 
 #define MMAL_PARAMETER_CAMERA_INFO_MAX_CAMERAS 4
@@ -649,7 +648,6 @@ typedef struct MMAL_PARAMETER_ALGORITHM_CONTROL_T
    MMAL_PARAMETER_ALGORITHM_CONTROL_ALGORITHMS_T algorithm;
    MMAL_BOOL_T                      enabled;
 } MMAL_PARAMETER_ALGORITHM_CONTROL_T;
-
 
 typedef enum MMAL_PARAM_CAMERA_USE_CASE_T
 {

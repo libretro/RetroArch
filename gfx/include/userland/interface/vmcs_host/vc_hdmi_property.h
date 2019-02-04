@@ -29,7 +29,7 @@ modification, are permitted provided that the following conditions are met:
  * This file contains all the properties one can set in HDMI
  * Each property has up to two parameters corresponding to list of enums one can set via
  * the set/get property function from TV service (HOST) or HDMI middleware API (Videocore)
- * Each property also has a default value for these parameters. Please refer to 
+ * Each property also has a default value for these parameters. Please refer to
  * individual properties for details.
  */
 

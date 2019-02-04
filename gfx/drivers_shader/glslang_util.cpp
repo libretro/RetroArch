@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -102,7 +102,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
       output->push_back("#extension GL_GOOGLE_cpp_style_line_directive : require");
    }
 
-   /* At least VIM treats the first line as line #1, 
+   /* At least VIM treats the first line as line #1,
     * so offset everything by one. */
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
    output->push_back(tmp);
@@ -138,7 +138,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
          if (!glslang_read_shader_file(include_path, output, false))
             goto error;
 
-         /* After including a file, use line directive 
+         /* After including a file, use line directive
           * to pull it back to current file. */
          snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 1), basename);
          output->push_back(tmp);
@@ -147,7 +147,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
       {
          /* #line seems to be ignored if preprocessor tests fail,
           * so we should reapply #line after each #endif.
-          * Add extra offset here since we're setting #line 
+          * Add extra offset here since we're setting #line
           * for the line after this one.
           */
          snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 2), basename);
@@ -329,7 +329,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
                      return param.id == id;
                   });
 
-            /* Allow duplicate #pragma parameter, but only 
+            /* Allow duplicate #pragma parameter, but only
              * if they are exactly the same. */
             if (itr != end(meta->parameters))
             {

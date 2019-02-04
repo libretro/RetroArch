@@ -36,7 +36,7 @@ else ()
 
    add_definitions (-DVLL_PATH_PREFIX="${VMCS_PLUGIN_DIR}/")
 
-   add_library (openmaxil SHARED 
+   add_library (openmaxil SHARED
                 ../../host_applications/framework/common/ilcore.c
 #                core/ilcore.c
 #                core/ril_top.c

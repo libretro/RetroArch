@@ -60,7 +60,6 @@ extern "C" {
 
 /* @} */
 
-
 /** End-of-stream event. */
 typedef struct MMAL_EVENT_END_OF_STREAM_T
 {

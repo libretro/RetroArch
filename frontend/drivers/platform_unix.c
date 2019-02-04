@@ -2409,14 +2409,14 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
          {
             unsigned j;
 
-            /* A successful close does not guarantee that the 
-             * data has been successfully saved to disk, 
-             * as the kernel defers writes. It is 
-             * not common for a file system to flush 
+            /* A successful close does not guarantee that the
+             * data has been successfully saved to disk,
+             * as the kernel defers writes. It is
+             * not common for a file system to flush
              * the buffers when the stream is closed.
              *
-             * So we manually fsync() here to flush the data 
-             * to disk, to make sure that the new data is 
+             * So we manually fsync() here to flush the data
+             * to disk, to make sure that the new data is
              * immediately available when the file is re-read.
              */
             for (j = 0; j < inotify_data->wd_list->count; j++)

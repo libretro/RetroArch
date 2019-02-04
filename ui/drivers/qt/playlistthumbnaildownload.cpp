@@ -242,7 +242,7 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
       if (!m_playlistThumbnailDownloadFile.open(QIODevice::WriteOnly))
       {
          m_failedThumbnails++;
-         
+
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
 
          if (m_pendingPlaylistThumbnails.count() > 0)

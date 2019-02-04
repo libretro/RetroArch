@@ -285,7 +285,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                strlcpy(s,
                      "Implementazione SINC in modalità finestra.", len);
             else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
-               strlcpy(s, 
+               strlcpy(s,
                      "Implementazione coseno complesso.", len);
          }
          break;

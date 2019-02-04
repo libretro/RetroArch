@@ -55,7 +55,7 @@ extern void vc_os_close(void);
 #define VCHPOST_
 #endif
 #ifndef VCCPRE_
-#define VCCPRE_     
+#define VCCPRE_
 #endif
 
 #endif

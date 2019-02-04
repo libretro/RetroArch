@@ -131,7 +131,6 @@ extern void vclib_l1cache_invalidate_range(void *start_addr, int length);
 extern int vclib_disableint(void);
 extern void vclib_restoreint(int sr);
 
-
 /* Some support for automatic logging. */
 
 /* Have a macro that is guaranteed to be a simple "assert" even when logging is on. */
@@ -141,7 +140,6 @@ extern void vclib_restoreint(int sr);
 #define simple_assert(cond) if (cond) {} else _bkpt()
   #endif
 
-
 /*********
 ** HACK!!!!!! Temp function definition (code in cache_flush.s) used to enable the run domain in VCIII
 **********/
@@ -149,14 +147,12 @@ extern void vc_enable_run_domain( void );
 
 #define vclib_memory_is_valid rtos_memory_is_valid
 
-
 /* Latch events are fast and small event notifications */
 typedef RTOS_LATCH_T latch_event_t;
 
 #define latch_event_present() ((latch_event_t)rtos_latch_unlocked())
 
 #define latch_event_absent() ((latch_event_t)rtos_latch_locked())
-
 
 #define latch_event_is_present( latch ) (latch_event_present() == *(latch))
 
@@ -192,7 +188,6 @@ typedef RTOS_LATCH_T latch_event_t;
 
  #endif // defined __VIDEOCORE__
 
-
 // A few helpful things for windows / standalone Linux
 # ifndef __VIDEOCORE__
 
@@ -222,7 +217,7 @@ typedef RTOS_LATCH_T latch_event_t;
 #   define VCLIB_PRIORITY_UNIMPORTANT   0
 
 #   define vclib_fatal_assert(x, c) assert(x)
- 
+
 #   define vclib_prioritymalloc(size, align, priority, description) \
            rtos_prioritymalloc((size), (align), (priority), (description))
 #   define vclib_prioritycalloc(size, align, priority, description) \

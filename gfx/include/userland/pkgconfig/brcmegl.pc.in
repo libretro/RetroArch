@@ -10,4 +10,3 @@ Requires: bcm_host
 Libs: -L${libdir} -lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvchostif
 Cflags: -I${includedir} -I${includedir}/interface/vmcs_host/linux \
         -I${includedir}/interface/vcos/pthreads
-

@@ -166,7 +166,7 @@ static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
 {
    ozone_color_alpha(ozone->theme_dynamic.selection_border, alpha);
    ozone_color_alpha(ozone->theme_dynamic.selection, alpha);
-   
+
    /* Fill */
    menu_display_draw_quad(video_info, x_offset, y, width, height - 5, video_info->width, video_info->height, ozone->theme_dynamic.selection);
 

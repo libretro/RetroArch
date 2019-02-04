@@ -1987,7 +1987,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 void MainWindow::onRunClicked()
 {
    QHash<QString, QString> contentHash;
-  
+
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_FILES:
@@ -1997,10 +1997,10 @@ void MainWindow::onRunClicked()
          contentHash = getCurrentContentHash();
          break;
    }
-  
+
    if (contentHash.isEmpty())
       return;
-  
+
    loadContent(contentHash);
 }
 
@@ -2207,7 +2207,6 @@ void MainWindow::setCoreActions()
       m_launchWithComboBox->addItem(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE)) + "...", QVariant::fromValue(comboBoxMap));
    }
 }
-
 
 void MainWindow::onTabWidgetIndexChanged(int index)
 {

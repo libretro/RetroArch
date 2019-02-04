@@ -11,10 +11,10 @@
  * including without limitation the rights to use, copy, modify, merge,
  * publish, distribute, sublicense, and/or sell copies of the Materials,
  * and to permit persons to whom the Materials are furnished to do so,
- * subject to the following conditions: 
+ * subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included 
- * in all copies or substantial portions of the Materials. 
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Materials.
  *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -30,7 +30,7 @@
  *			rerenders the tiger in the new resolution. Pressing 1,2,3
  *			or 4 sets pixel zoom factor, mouse moves inside the zoomed
  *			image (mouse move works on OpenGL >= 1.2).
- * \note	
+ * \note
  *//*-------------------------------------------------------------------*/
 
 #include <stdio.h>
@@ -501,19 +501,19 @@ int main(void)
    dst_rect.y = 0;
    dst_rect.width = width;
    dst_rect.height = height;
-      
+
    src_rect.x = 0;
    src_rect.y = 0;
    src_rect.width = width << 16;
-   src_rect.height = height << 16;        
+   src_rect.height = height << 16;
 
    dispman_display = vc_dispmanx_display_open( 0 /* LCD */);
    dispman_update = vc_dispmanx_update_start( 0 );
-         
+
    dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
       1/*layer*/, &dst_rect, 0/*src*/,
       &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, 0/*transform*/);
-      
+
    nativewindow.element = dispman_element;
    nativewindow.width = width;
    nativewindow.height = height;
@@ -530,4 +530,3 @@ int main(void)
    return 0;
 }
 #endif
-

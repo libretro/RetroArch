@@ -120,7 +120,6 @@ extern "C" {
 #define VC_IMAGE_PROPLIST_COUNT(x) (sizeof(x)/sizeof(x[0]))
 #define VC_IMAGE_PROPLIST_NULL   ((VC_IMAGE_PROPLIST_T*)0)
 
-
    /* Useful bits that can be set, to check validity we'll assume that all other
       bits should be zero and enforce this in vc_image functions to catch people
       who aren't initialising the VC_IMAGE_T structure nicely; update when other
@@ -152,15 +151,13 @@ extern "C" {
                               && ((y) + (h)) <= ((cont_y) + (cont_h)) \
                               )
 
-
 #if !defined __SYMBIAN32__
-
 
    /**
     * \brief storage for pointers to image headers of the previous and next channel
     *
-    * 
-    * When linked-multichannel structure is being used, this structure stores the pointers 
+    *
+    * When linked-multichannel structure is being used, this structure stores the pointers
     * necessary to link the current image header in to make represent a multichannel image.
     */
    struct VC_IMAGE_LINKED_MULTICHANN_T {
@@ -206,7 +203,6 @@ extern "C" {
       width-=x_offset+width-dest_width;         \
    if (y_offset+height>dest_height)             \
       height-=y_offset+height-dest_height;      \
-
 
    /* Publicly exported functions. */
 
@@ -398,7 +394,6 @@ extern "C" {
    /* Add optionally rotated text to an image */
 
    void vc_image_textrotate(VC_IMAGE_BUF_T *dest, int x_offset, int y_offset, int fg_colour, int bg_colour, const char *text, int rotate);
-
 
    /* Line drawing. */
 
@@ -608,7 +603,6 @@ extern "C" {
    void vc_image_decimate_stripe_h(VC_IMAGE_BUF_T *src, int offset, int step);
    void vc_image_decimate_stripe_v(VC_IMAGE_BUF_T *src, int offset, int step);
 
-
    extern int vc_image_set_alpha(VC_IMAGE_BUF_T *image,
                                     const int x,
                                     const int y,
@@ -739,7 +733,6 @@ void vc_image_difference( VC_IMAGE_BUF_T         * const d,          /* in/out *
                           unsigned               * const max_y,      /*    out */
                           unsigned               * const max_uv      /*    out */ );
 
-
 /*
 ** The h.263 Annex J deblocker.
 ** ("dest" & "src" may point to the same storage.)
@@ -758,7 +751,6 @@ void vc_image_clone_field(VC_IMAGE_T * image, int clone_top_field);
 
 #endif
 
-
    /* RGBA32 colour macros */
 #define RGBA_ALPHA_TRANSPARENT 0
 #define RGBA_ALPHA_OPAQUE 255
@@ -773,7 +765,6 @@ void vc_image_clone_field(VC_IMAGE_T * image, int clone_top_field);
 #endif
 #define RGBA32_PIXEL(r, g, b, a) ((a) >= 255 ? RGBA32_SPIXEL(r, g, b, a) : RGBA32_APIXEL(r, g, b, a))
 #define RGBA32_ALPHA(rgba) ((unsigned long)rgba >> 24)
-
 
    /* RGBA16 colour macros */
 #define RGBA16_APIXEL(r, g, b, a) (((r) >> 4 << 12) | ((g) >> 4 << 8) | ((b) >> 4 << 4) | ((a) >> 4 << 0))

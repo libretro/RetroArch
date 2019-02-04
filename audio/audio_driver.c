@@ -278,12 +278,12 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
    stats->samples                = (unsigned)audio_driver_free_samples_count;
 
 #ifdef WARPUP
-   /* uint64 to double not implemented, fair chance 
+   /* uint64 to double not implemented, fair chance
     * signed int64 to double doesn't exist either */
    /* https://forums.libretro.com/t/unsupported-platform-help/13903/ */
    (void)stddev;
 #elif defined(_MSC_VER) && _MSC_VER <= 1200
-   /* FIXME: error C2520: conversion from unsigned __int64 
+   /* FIXME: error C2520: conversion from unsigned __int64
     * to double not implemented, use signed __int64 */
    (void)stddev;
 #else
@@ -301,9 +301,9 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
    stddev                                = (unsigned)
       sqrt((double)accum_var / (samples - 2));
 
-   stats->average_buffer_saturation      = (1.0f - (float)avg 
+   stats->average_buffer_saturation      = (1.0f - (float)avg
          / audio_driver_buffer_size) * 100.0;
-   stats->std_deviation_percentage       = ((float)stddev 
+   stats->std_deviation_percentage       = ((float)stddev
          / audio_driver_buffer_size)  * 100.0;
 #endif
 
@@ -975,7 +975,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
-   const struct retro_system_timing *info = 
+   const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
 
    if (info->sample_rate <= 0.0)
@@ -1281,7 +1281,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
       return false;
-   
+
    switch (params->slot_selection_type)
    {
       case AUDIO_MIXER_SLOT_SELECTION_MANUAL:

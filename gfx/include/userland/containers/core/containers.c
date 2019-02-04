@@ -79,8 +79,8 @@ VC_CONTAINER_T *vc_container_open_reader_with_io( struct VC_CONTAINER_IO_T *io,
    if (status != VC_CONTAINER_SUCCESS)
       goto error;
 
-   p_ctx->priv->drm_filter = vc_container_filter_open(VC_FOURCC('d','r','m',' '), 
-      VC_FOURCC('u','n','k','n'), p_ctx, &status); 
+   p_ctx->priv->drm_filter = vc_container_filter_open(VC_FOURCC('d','r','m',' '),
+      VC_FOURCC('u','n','k','n'), p_ctx, &status);
    if (status != VC_CONTAINER_SUCCESS)
    {
       /* Some other problem occurred aside from the filter not being appropriate or
@@ -348,7 +348,7 @@ VC_CONTAINER_STATUS_T vc_container_write( VC_CONTAINER_T *p_ctx, VC_CONTAINER_PA
    uint32_t metadata_length = 0;
 
    /* TODO: check other similar argument errors and non-stateless errors */
-   if (!p_packet || !p_packet->data || p_packet->track >= p_ctx->tracks_num) 
+   if (!p_packet || !p_packet->data || p_packet->track >= p_ctx->tracks_num)
       return VC_CONTAINER_ERROR_INVALID_ARGUMENT;
 
    /* Check for a previous error */
@@ -372,20 +372,20 @@ VC_CONTAINER_STATUS_T vc_container_write( VC_CONTAINER_T *p_ctx, VC_CONTAINER_PA
       if(status == VC_CONTAINER_SUCCESS)
       {
          /* Get the encryption metadata and send it to the output first. */
-         if(vc_container_control(p_ctx, VC_CONTAINER_CONTROL_GET_DRM_METADATA, 
+         if(vc_container_control(p_ctx, VC_CONTAINER_CONTROL_GET_DRM_METADATA,
              &p_metadata_buffer, &metadata_length) == VC_CONTAINER_SUCCESS && metadata_length > 0)
          {
             /* Make a packet up with the metadata in the payload and write it. */
             VC_CONTAINER_PACKET_T metadata_packet;
             metadata_packet.data = p_metadata_buffer;
-            metadata_packet.buffer_size = metadata_length; 
-            metadata_packet.size = metadata_length; 
-            metadata_packet.frame_size = p_packet->frame_size + metadata_length;                 
+            metadata_packet.buffer_size = metadata_length;
+            metadata_packet.size = metadata_length;
+            metadata_packet.frame_size = p_packet->frame_size + metadata_length;
             metadata_packet.pts = p_packet->pts;
             metadata_packet.dts = p_packet->dts;
-            metadata_packet.num = p_packet->num;   
+            metadata_packet.num = p_packet->num;
             metadata_packet.track = p_packet->track;
-            /* As this packet is written first, we must transfer any frame start 
+            /* As this packet is written first, we must transfer any frame start
                flag from the following packet. Also, this packet can never have the end flag set. */
             metadata_packet.flags = p_packet->flags & ~VC_CONTAINER_PACKET_FLAG_FRAME_END;
 
@@ -401,7 +401,7 @@ VC_CONTAINER_STATUS_T vc_container_write( VC_CONTAINER_T *p_ctx, VC_CONTAINER_PA
          goto end;
       }
    }
-     
+
    status = p_ctx->priv->pf_write(p_ctx, p_packet);
 
  end:
@@ -469,10 +469,10 @@ VC_CONTAINER_STATUS_T vc_container_control( VC_CONTAINER_T *p_ctx, VC_CONTAINER_
          memcpy(p_track->priv->drmdata, p_drm_data, drm_data_size);
 
          /* Track encryption enabled and no filter - create one now. */
-         p_ctx->priv->drm_filter = vc_container_filter_open(VC_FOURCC('d','r','m',' '), type, p_ctx, &status);  
+         p_ctx->priv->drm_filter = vc_container_filter_open(VC_FOURCC('d','r','m',' '), type, p_ctx, &status);
          if(status != VC_CONTAINER_SUCCESS)
             goto end;
-     
+
          status = vc_container_filter_control(p_ctx->priv->drm_filter, operation, track_num);
       }
    }
@@ -480,7 +480,7 @@ VC_CONTAINER_STATUS_T vc_container_control( VC_CONTAINER_T *p_ctx, VC_CONTAINER_
    {
       void *p_drm_data = va_arg(args, void *);
       int *drm_data_size = va_arg(args, int *);
-      status = vc_container_filter_control(p_ctx->priv->drm_filter, operation, p_drm_data, drm_data_size);      
+      status = vc_container_filter_control(p_ctx->priv->drm_filter, operation, p_drm_data, drm_data_size);
    }
 
    if(status == VC_CONTAINER_ERROR_UNSUPPORTED_OPERATION && p_ctx->priv->pf_control)

@@ -59,7 +59,7 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    if (!d3d10)
       return;
 
-   D3D10MapBuffer(d3d10->overlays.vbo, 
+   D3D10MapBuffer(d3d10->overlays.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
    sprites[index].pos.x    = x;
    sprites[index].pos.y    = y;
@@ -89,7 +89,7 @@ static void d3d10_overlay_tex_geom(void* data, unsigned index, float u, float v,
       return;
 
    D3D10MapBuffer(
-         d3d10->overlays.vbo, 
+         d3d10->overlays.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
    sprites[index].coords.u = u;
    sprites[index].coords.v = v;
@@ -142,7 +142,7 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
 #endif
    D3D10CreateBuffer(d3d10->device, &desc, NULL, &d3d10->overlays.vbo);
 
-   D3D10MapBuffer(d3d10->overlays.vbo, 
+   D3D10MapBuffer(d3d10->overlays.vbo,
          D3D10_MAP_WRITE_DISCARD, 0, (void**)&sprites);
 
    for (i = 0; i < (unsigned)num_images; i++)
@@ -615,10 +615,10 @@ d3d10_gfx_init(const video_info_t* video,
 
 #ifdef HAVE_MONITOR
    if (!d3d10->vp.full_width)
-      d3d10->vp.full_width = 
+      d3d10->vp.full_width =
          current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d10->vp.full_height)
-      d3d10->vp.full_height = 
+      d3d10->vp.full_height =
          current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
 #endif
 
@@ -680,7 +680,7 @@ d3d10_gfx_init(const video_info_t* video,
    d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->resize_viewport = true;
    d3d10->vsync           = video->vsync;
-   d3d10->format          = video->rgb32 ? 
+   d3d10->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
    d3d10->frame.texture[0].desc.Format = d3d10->format;
@@ -768,7 +768,7 @@ d3d10_gfx_init(const video_info_t* video,
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
-      D3D10_SUBRESOURCE_DATA 
+      D3D10_SUBRESOURCE_DATA
          vertexData               = { vertices };
 
       desc.ByteWidth              = sizeof(vertices);
@@ -926,7 +926,7 @@ d3d10_gfx_init(const video_info_t* video,
 
       blend_desc.BlendEnable[0] = FALSE;
       D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_disable);
-   }	
+   }
 
    {
       D3D10_RASTERIZER_DESC desc = { (D3D10_FILL_MODE)0 };

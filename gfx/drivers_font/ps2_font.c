@@ -61,12 +61,12 @@ static void ps2_upload_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
    int TexSize = gsKit_texture_size(gsFontM->Texture->Width, gsFontM->Texture->Height, gsFontM->Texture->PSM);
 
    gsFontM->Texture->VramClut = gsKit_vram_alloc(gsGlobal, FONTM_VRAM_SIZE, GSKIT_ALLOC_USERBUFFER);
-	
+
    for (pgindx = 0; pgindx < GS_FONTM_PAGE_COUNT; ++pgindx) {
       gsFontM->Vram[pgindx] = gsKit_vram_alloc(gsGlobal, TexSize, GSKIT_ALLOC_USERBUFFER);
       gsFontM->LastPage[pgindx] = (u32) -1;
    }
-   
+
    gsFontM->Texture->Vram = gsFontM->Vram[0];
    gsFontM->VramIdx = 0;
    gsFontM->Spacing = FONTM_TEXTURE_SPACING;
@@ -111,7 +111,7 @@ static void ps2_font_render_msg(
       if (ps2->ps2_video->clearVRAM) {
          ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
       }
-      gsKit_fontm_print_scaled(ps2->ps2_video->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION, 
+      gsKit_fontm_print_scaled(ps2->ps2_video->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION,
                                  FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
    }
 }

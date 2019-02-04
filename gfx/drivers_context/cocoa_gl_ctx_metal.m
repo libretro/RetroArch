@@ -136,12 +136,12 @@ void *glkitview_init(void)
 {
 #if defined(HAVE_COCOATOUCH)
    glkitview_init_xibs();
-   
+
    g_view = [GLKView new];
    g_view.multipleTouchEnabled = YES;
    g_view.enableSetNeedsDisplay = NO;
    [g_view addSubview:g_pause_indicator_view];
-   
+
    return (BRIDGE void *)((GLKView*)g_view);
 #else
    return nsview_get_ptr();
@@ -180,32 +180,31 @@ void *get_chosen_screen(void)
    NSArray *screens = [RAScreen screens];
    if (!screens || !settings)
       return NULL;
-   
+
    if (settings->uints.video_monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
       return (BRIDGE void*)screens;
    }
-   
+
    return ((BRIDGE void*)[screens objectAtIndex:settings->uints.video_monitor_index]);
 }
-
 
 float get_backing_scale_factor(void)
 {
    static float
    backing_scale_def = 0.0f;
    RAScreen *screen     = NULL;
-   
+
    (void)screen;
-   
+
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
-   
+
    backing_scale_def = 1.0f;
 #ifdef HAVE_COCOA_METAL
    screen = (BRIDGE RAScreen*)get_chosen_screen();
-   
+
    if (screen)
    {
       SEL selector = NSSelectorFromString(BOXSTRING("backingScaleFactor"));
@@ -219,7 +218,7 @@ float get_backing_scale_factor(void)
       }
    }
 #endif
-   
+
    return backing_scale_def;
 }
 
@@ -246,16 +245,16 @@ void cocoagl_gfx_ctx_update(void)
 static void cocoagl_gfx_ctx_destroy(void *data)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   
+
    if (!cocoa_ctx)
       return;
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          [GLContextClass clearCurrentContext];
-         
+
 #if defined(HAVE_COCOA_METAL)
          [g_context clearDrawable];
          RELEASE(g_context);
@@ -276,14 +275,14 @@ static void cocoagl_gfx_ctx_destroy(void *data)
             slock_free(cocoa_ctx->vk.context.queue_lock);
          }
          memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
-         
+
 #endif
          break;
       case GFX_CTX_NONE:
       default:
          break;
    }
-   
+
    free(cocoa_ctx);
 }
 
@@ -291,10 +290,10 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
    calloc(1, sizeof(cocoa_ctx_data_t));
-   
+
    if (!cocoa_ctx)
       return NULL;
-   
+
    switch (cocoagl_api)
    {
 #if defined(HAVE_COCOATOUCH)
@@ -320,9 +319,9 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
       default:
          break;
    }
-   
+
    return cocoa_ctx;
-   
+
 error:
    free(cocoa_ctx);
    return NULL;
@@ -353,11 +352,11 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
       default:
          return false;
    }
-   
+
    cocoagl_api = api;
    g_minor     = minor;
    g_major     = major;
-   
+
    return true;
 }
 
@@ -366,7 +365,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int interval)
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 #endif
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -398,13 +397,13 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int interval)
       default:
          break;
    }
-   
+
 }
 
 static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
    (void)data;
-   
+
 #ifdef HAVE_COCOA_METAL
    if (state)
       [NSCursor unhide];
@@ -420,12 +419,12 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    cocoa_ctx->width = width;
    cocoa_ctx->height = height;
-   
+
 #if defined(HAVE_COCOA_METAL)
    //CocoaView *g_view = (BRIDGE CocoaView *)nsview_get_ptr();
    NSView *g_view = apple_platform.renderView;
 #endif
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -434,7 +433,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #if defined(HAVE_COCOA_METAL)
          if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
             [g_view setWantsBestResolutionOpenGLSurface:YES];
-         
+
          NSOpenGLPixelFormatAttribute attributes [] = {
             NSOpenGLPFAColorSize,
             24,
@@ -446,7 +445,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
             0,                                /* profile enum */
             (NSOpenGLPixelFormatAttribute)0
          };
-         
+
 #if MAC_OS_X_VERSION_10_7
          if (g_major == 3 && (g_minor >= 1 && g_minor <= 3))
          {
@@ -454,7 +453,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
             attributes[7] = NSOpenGLProfileVersion3_2Core;
          }
 #endif
-         
+
 #if MAC_OS_X_VERSION_10_10
          if (g_major == 4 && g_minor == 1)
          {
@@ -462,9 +461,9 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
             attributes[7] = NSOpenGLProfileVersion4_1Core;
          }
 #endif
-         
+
          g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-         
+
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
          if (g_format == nil)
          {
@@ -474,7 +473,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
             g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
          }
 #endif
-         
+
          if (g_use_hw_ctx)
             g_hw_ctx  = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
          g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(g_use_hw_ctx) ? g_hw_ctx : nil];
@@ -485,7 +484,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
          g_view.context = g_context;
 #endif
-         
+
          [g_context makeCurrentContext];
          break;
       }
@@ -506,11 +505,11 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       default:
          break;
    }
-   
+
 #if defined(HAVE_COCOA_METAL)
    static bool has_went_fullscreen = false;
    /* TODO: Screen mode support. */
-   
+
    if (fullscreen)
    {
       if (!has_went_fullscreen)
@@ -527,15 +526,15 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          [[g_view window] makeFirstResponder:g_view];
          cocoagl_gfx_ctx_show_mouse(data, true);
       }
-      
+
       [[g_view window] setContentSize:NSMakeSize(width, height)];
    }
-   
+
    has_went_fullscreen = fullscreen;
 #endif
-   
+
    /* TODO: Maybe iOS users should be able to show/hide the status bar here? */
-   
+
    return true;
 }
 
@@ -544,15 +543,15 @@ float cocoagl_gfx_ctx_get_native_scale(void)
    static CGFloat ret = 0.0f;
    SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
    RAScreen *screen = (BRIDGE RAScreen*)get_chosen_screen();
-   
+
    if (ret != 0.0f)
       return ret;
    if (!screen)
       return 0.0f;
-   
+
    if ([screen respondsToSelector:selector])
       return (float)get_from_selector([screen class], screen, selector, &ret);
-   
+
    ret          = 1.0f;
    selector     = NSSelectorFromString(BOXSTRING("scale"));
    if ([screen respondsToSelector:selector])
@@ -589,18 +588,18 @@ static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    ui_window_cocoa_t view;
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-   
+
    //view.data = (CocoaView*)nsview_get_ptr();
    view.data = (BRIDGE void *)apple_platform.renderView;
-   
+
    if (window)
    {
       char title[128];
-      
+
       title[0] = '\0';
-      
+
       video_driver_get_window_title(title, sizeof(title));
-      
+
       if (title[0])
          window->set_title(&view, title);
    }
@@ -616,7 +615,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
    NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
    CGSize  display_physical_size = CGDisplayScreenSize(
                                                        [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-   
+
    float   display_width         = display_pixel_size.width;
    float   display_height        = display_pixel_size.height;
    float   physical_width        = display_physical_size.width;
@@ -631,7 +630,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
    float   physical_height       = screen_rect.size.height * scale;
    float   dpi                   = 160                     * scale;
    unsigned idiom_type           = UI_USER_INTERFACE_IDIOM();
-   
+
    switch (idiom_type)
    {
       case -1: /* UIUserInterfaceIdiomUnspecified */
@@ -649,9 +648,9 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
          break;
    }
 #endif
-   
+
    (void)display_height;
-   
+
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
@@ -668,7 +667,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
          *value = 0;
          return false;
    }
-   
+
    return true;
 }
 
@@ -686,7 +685,7 @@ static bool cocoagl_gfx_ctx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
-   
+
    return false;
 }
 
@@ -705,20 +704,19 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 }
 #endif
 
-
 static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
 {
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 #endif
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (!(--g_fast_forward_skips < 0))
             return;
-         
+
 #if defined(HAVE_COCOA_METAL)
          [g_context flushBuffer];
          [g_hw_ctx flushBuffer];
@@ -726,7 +724,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
          if (g_view)
             [g_view display];
 #endif
-         
+
          g_fast_forward_skips = g_is_syncing ? 0 : 3;
          break;
       case GFX_CTX_VULKAN_API:
@@ -754,7 +752,7 @@ static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
       default:
          break;
    }
-   
+
    return NULL;
 }
 
@@ -763,7 +761,7 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 #endif
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -773,7 +771,7 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
 #ifdef HAVE_VULKAN
          cocoa_ctx->width  = width;
          cocoa_ctx->height = height;
-         
+
          if (vulkan_create_swapchain(&cocoa_ctx->vk,
                   width, height, cocoa_ctx->swap_interval))
          {
@@ -786,7 +784,7 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
             RARCH_ERR("[macOS/Vulkan]: Failed to update swapchain.\n");
             return false;
          }
-         
+
          cocoa_ctx->vk.need_new_swapchain = false;
 #endif
          break;
@@ -794,10 +792,9 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
       default:
          break;
    }
-   
+
    return true;
 }
-
 
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
                                          bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
@@ -806,9 +803,9 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 #endif
-   
+
    *quit = false;
-   
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -849,7 +846,7 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          g_use_hw_ctx = enable;
-         
+
          if (enable)
             [g_hw_ctx makeCurrentContext];
          else
@@ -865,12 +862,12 @@ static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags                 = 0;
    cocoa_ctx_data_t    *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   
+
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   
+
    if (cocoa_ctx->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   
+
    return flags;
 }
 
@@ -878,7 +875,7 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
 {
    (void)flags;
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   
+
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       cocoa_ctx->core_hw_context_enable = true;
 }

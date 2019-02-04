@@ -16,7 +16,7 @@ MSG_HASH(
     "Ajusta el brillo de la pantalla"
     )
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"
@@ -7678,7 +7678,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
     "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla.\n"
-    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."                                                                                                       
+    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,

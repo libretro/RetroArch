@@ -73,7 +73,7 @@ enum {
    MMAL_PARAMETER_VIDEO_ENCODE_QP_P,            /**< Takes a @ref MMAL_PARAMETER_UINT32_T. */
    MMAL_PARAMETER_VIDEO_ENCODE_RC_SLICE_DQUANT, /**< Takes a @ref MMAL_PARAMETER_UINT32_T. */
    MMAL_PARAMETER_VIDEO_ENCODE_FRAME_LIMIT_BITS,    /**< Takes a @ref MMAL_PARAMETER_UINT32_T */
-   MMAL_PARAMETER_VIDEO_ENCODE_PEAK_RATE,       /**< Takes a @ref MMAL_PARAMETER_UINT32_T. */       
+   MMAL_PARAMETER_VIDEO_ENCODE_PEAK_RATE,       /**< Takes a @ref MMAL_PARAMETER_UINT32_T. */
 
    /*H264 specific parameters*/
    MMAL_PARAMETER_VIDEO_ENCODE_H264_DISABLE_CABAC,      /**< Take a @ref MMAL_PARAMETER_BOOLEAN_T. */
@@ -406,7 +406,7 @@ typedef struct MMAL_PARAMETER_VIDEO_NALUNITFORMAT_T {
    MMAL_VIDEO_NALUNITFORMAT_T format;
 } MMAL_PARAMETER_VIDEO_NALUNITFORMAT_T;
 
-/** H264 Only: Overrides for max macro-blocks per second, max framesize, 
+/** H264 Only: Overrides for max macro-blocks per second, max framesize,
  * and max bitrates. This overrides the default maximums for the configured level.
  */
 typedef struct MMAL_PARAMETER_VIDEO_LEVEL_EXTENSION_T {
@@ -523,6 +523,5 @@ typedef struct MMAL_PARAMETER_VIDEO_SOURCE_PATTERN_T {
    uint32_t framecount;                         /**< Number of frames to produce. 0 for continuous. */
    MMAL_RATIONAL_T framerate;                   /**< Framerate used when determining buffer timestamps */
 } MMAL_PARAMETER_VIDEO_SOURCE_PATTERN_T;
-
 
 #endif

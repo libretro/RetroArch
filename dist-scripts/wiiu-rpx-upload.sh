@@ -37,7 +37,7 @@ fi
 
 filesToUpload()
 {
-  find . -type f \( -name "*.rpx" -o -name "*.xml" -o -name "*.png" -o -name "*.info" \) 
+  find . -type f \( -name "*.rpx" -o -name "*.xml" -o -name "*.png" -o -name "*.info" \)
 }
 
 cd ../pkg/wiiu/rpx

@@ -33,7 +33,7 @@ TARGET_NAME := video_processor
 LIBV4L2		= -lv4l2
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
-   CFLAGS +=	-DHAVE_UDEV 
+   CFLAGS +=	-DHAVE_UDEV
    LIBUDEV	= -ludev
    CFLAGS +=	-DHAVE_ALSA
    LIBASOUND	= -lasound

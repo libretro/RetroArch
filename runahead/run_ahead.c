@@ -230,7 +230,7 @@ void run_ahead(int runahead_count, bool useSecondary)
 
    if (!useSecondary || !have_dynamic || !runahead_secondary_core_available)
    {
-      /* TODO: multiple savestates for higher performance 
+      /* TODO: multiple savestates for higher performance
        * when not using secondary core */
       for (frame_number = 0; frame_number <= runahead_count; frame_number++)
       {
@@ -386,7 +386,7 @@ static bool runahead_load_state(void)
    bool last_dirty                            = input_is_dirty;
 
    set_fast_savestate();
-   /* calling core_unserialize has side effects with 
+   /* calling core_unserialize has side effects with
     * netplay (it triggers transmitting your save state)
       call retro_unserialize directly from the core instead */
    okay = current_core.retro_unserialize(

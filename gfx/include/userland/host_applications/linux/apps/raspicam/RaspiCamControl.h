@@ -109,7 +109,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ANNOTATE_FRAME_NUMBER       512
 #define ANNOTATE_BLACK_BACKGROUND   1024
 
-
 // There isn't actually a MMAL structure for the following, so make one
 typedef struct mmal_param_colourfx_s
 {
@@ -179,7 +178,6 @@ typedef enum
    ZOOM_IN, ZOOM_OUT, ZOOM_RESET
 } ZOOM_COMMAND_T;
 
-
 void raspicamcontrol_check_configuration(int min_gpu_mem);
 
 int raspicamcontrol_parse_cmdline(RASPICAM_CAMERA_PARAMETERS *params, const char *arg1, const char *arg2);
@@ -241,7 +239,5 @@ MMAL_PARAM_COLOURFX_T raspicamcontrol_get_colourFX(MMAL_COMPONENT_T *camera);
 /** Default camera callback function
   */
 void default_camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-
-
 
 #endif /* RASPICAMCONTROL_H_ */

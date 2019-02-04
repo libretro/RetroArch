@@ -50,7 +50,7 @@ typedef enum {
    VC_FORMAT_TF_RGB565 = 25,
    VC_FORMAT_BGR888    = 31,
    VC_FORMAT_BGR888_NP = 32,
-   
+
    VC_FORMAT_ARGB8888  = 43,
    VC_FORMAT_XRGB8888  = 44,
 

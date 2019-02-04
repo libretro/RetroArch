@@ -52,4 +52,3 @@ void vcos_thread_reap(VCOS_THREAD_T *thread, void (*on_terminated)(void*), void 
 
 #endif
 
-

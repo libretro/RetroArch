@@ -116,7 +116,7 @@ static void dump_bytes(const uint8_t *buffer, size_t buffer_len)
          in_row = 0;
       }
    }
-   
+
    if (in_row)
    {
       LOG_INFO(NULL, dump_str);
@@ -131,13 +131,13 @@ static bool decode_packet(const uint8_t *buffer, size_t buffer_len)
    uint32_t timestamp;
    uint32_t ssrc;
    uint32_t csrc_count;
-   
+
    if (buffer_len < 12)
    {
       LOG_ERROR(NULL, "Packet too small: basic header missing");
       return false;
    }
-   
+
    flags = buffer[0];
    payload_type = buffer[1];
    seq_num = network_to_host_16(buffer + 2);
@@ -176,7 +176,7 @@ static bool decode_packet(const uint8_t *buffer, size_t buffer_len)
       if (csrc_count)
       {
          uint32_t ii;
-      
+
          if (buffer_len < (csrc_count * 4))
          {
             LOG_ERROR(NULL, "Packet too small: CSRCs missing");
@@ -204,20 +204,20 @@ static bool decode_packet(const uint8_t *buffer, size_t buffer_len)
             LOG_ERROR(NULL, "Packet too small: extension header missing");
             return false;
          }
-      
+
          extension_hdr = network_to_host_32(buffer);
          buffer += 4;
          buffer_len -= 4;
-      
+
          extension_len = (size_t)(extension_hdr & EXTENSION_LENGTH_MASK);
          extension_id = extension_hdr >> EXTENSION_ID_SHIFT;
-      
+
          if (buffer_len < extension_len)
          {
             LOG_ERROR(NULL, "Packet too small: extension content missing");
             return false;
          }
-      
+
          LOG_INFO(NULL, "Extension: 0x%4.4X (%u bytes)", extension_id, (unsigned)extension_len);
          dump_bytes(buffer, extension_len);
          buffer += extension_len;
@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 
       if (nb_char_available())
       {
-         if (nb_get_char() == ESCAPE_CHARACTER) 
+         if (nb_get_char() == ESCAPE_CHARACTER)
             ready = false;
       }
 

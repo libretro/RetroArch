@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   * Public API for MMAL VC client. (Divx DRM part)
   */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,7 +46,6 @@ int mmal_vc_drm_get_time(unsigned int * time);
 //   unsigned char buffer[32];
 //   success = mmal_vc_divx_drm_get_lhs(buffer);
 int mmal_vc_drm_get_lhs32(unsigned char * into);
-
 
 #ifdef __cplusplus
 }

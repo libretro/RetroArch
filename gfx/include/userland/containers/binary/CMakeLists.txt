@@ -16,4 +16,3 @@ add_library(writer_binary ${LIBRARY_TYPE} binary_writer.c)
 target_link_libraries(writer_binary containers)
 
 install(TARGETS writer_binary DESTINATION ${VMCS_PLUGIN_DIR})
-

@@ -426,7 +426,7 @@ static OMX_ERRORTYPE vcil_out_addBuffer(OMX_IN OMX_HANDLETYPE hComponent,
       {
          pHeader->pBuffer = (OMX_U8*)eglImage;
          port->bEGL = OMX_TRUE;
-      }         
+      }
       else
       {
          pHeader->pBuffer = pBuffer;
@@ -558,13 +558,13 @@ static OMX_ERRORTYPE vcil_out_EmptyThisBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
    OMX_COMPONENTTYPE *pComp = (OMX_COMPONENTTYPE *) hComponent;
    VC_PRIVATE_COMPONENT_T *comp;
    ILCS_COMMON_T *st;
- 
+
    if (!(pComp && pBuffer))
       return (OMX_ErrorBadParameter);
 
    st = pComp->pApplicationPrivate;
    comp = (VC_PRIVATE_COMPONENT_T *) pComp->pComponentPrivate;
-   
+
    return ilcs_pass_buffer(st->ilcs, IL_EMPTY_THIS_BUFFER, comp->reference, pBuffer);
 }
 
@@ -594,24 +594,24 @@ static OMX_ERRORTYPE vcil_out_FillThisBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
       return OMX_ErrorIncorrectStateOperation;
 
    vcos_assert(pComp != NULL && comp != NULL && port != NULL && st != NULL);
-   
+
    // The lower layers will attempt to transfer the bytes specified if we don't
    // clear these - callers should ideally do this themselves, but it is not
    // mandated in the specification.
    pBuffer->nFilledLen = 0;
    pBuffer->nFlags = 0;
 
-   vc_assert(port->bEGL == OMX_TRUE || is_valid_hostside_buffer(pBuffer));  
+   vc_assert(port->bEGL == OMX_TRUE || is_valid_hostside_buffer(pBuffer));
 
    err = ilcs_pass_buffer(st->ilcs, IL_FILL_THIS_BUFFER, comp->reference, pBuffer);
-   
+
    if (err == OMX_ErrorNone && port->bEGL == OMX_TRUE)
    {
-      // If an output port is marked as an EGL port, we request EGL to notify the IL component 
+      // If an output port is marked as an EGL port, we request EGL to notify the IL component
       // when it's allowed to render into the buffer/EGLImage.
       vc_assert(local_eglIntOpenMAXILDoneMarker != NULL);
       local_eglIntOpenMAXILDoneMarker(comp->reference, pBuffer->pBuffer);
-   }      
+   }
 
    return err;
 }

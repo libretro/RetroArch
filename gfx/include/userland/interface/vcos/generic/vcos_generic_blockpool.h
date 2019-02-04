@@ -286,9 +286,7 @@ uint32_t vcos_blockpool_is_valid_elem(VCOS_BLOCKPOOL_T *pool, const void *block)
 }
 #endif /* VCOS_INLINE_BODIES */
 
-
 #ifdef __cplusplus
 }
 #endif
 #endif /* VCOS_GENERIC_BLOCKPOOL_H */
-

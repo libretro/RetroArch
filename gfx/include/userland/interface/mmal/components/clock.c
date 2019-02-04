@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "util/mmal_list.h"
 #include "mmal_logging.h"
 
-
 #define CLOCK_PORTS_NUM         5
 
 #define MAX_CLOCK_EVENT_SLOTS   16
@@ -151,7 +150,6 @@ typedef struct MMAL_PORT_MODULE_T
 {
    CLOCK_STREAM_T *stream;     /**< stream associated with this clock port */
 } MMAL_PORT_MODULE_T;
-
 
 /*****************************************************************************/
 /** Round x up to the next power of two */
@@ -717,7 +715,6 @@ static void clock_event_cb(MMAL_PORT_T *port, const MMAL_CLOCK_EVENT_T *event)
    clock_event_queue(port->component, port, event);
 }
 
-
 /*****************************************************************************/
 /** Actual processing function */
 static MMAL_BOOL_T clock_do_processing(MMAL_COMPONENT_T *component)
@@ -760,7 +757,6 @@ static void clock_do_processing_loop(MMAL_COMPONENT_T *component)
 {
    while (clock_do_processing(component));
 }
-
 
 /*****************************************************************************/
 /** Set a parameter on the clock component's control port */
@@ -890,7 +886,6 @@ static MMAL_STATUS_T mmal_component_create_clock(const char *name, MMAL_COMPONEN
    clock_component_destroy(component);
    return status;
 }
-
 
 /*****************************************************************************/
 MMAL_CONSTRUCTOR(mmal_register_component_clock);

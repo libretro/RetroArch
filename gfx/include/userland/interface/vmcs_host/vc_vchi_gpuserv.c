@@ -61,7 +61,6 @@ typedef struct {
 
 static GPUSERV_SERVICE_T gpuserv_client;
 
-
 /******************************************************************************
 Static function.
 ******************************************************************************/
@@ -257,5 +256,5 @@ int32_t vc_gpuserv_execute_code(int num_jobs, struct gpu_job_s jobs[])
    }
    return 0;
    error_exit:
-   return -1; 
+   return -1;
 }

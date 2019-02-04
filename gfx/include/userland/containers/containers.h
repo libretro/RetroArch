@@ -144,7 +144,7 @@ typedef struct VC_CONTAINER_METADATA_T
     * We need an encoding conversion library! */
    char *value;
 
-   /** Size of the memory area reserved for metadata value (including any 
+   /** Size of the memory area reserved for metadata value (including any
     * terminating characters). */
    unsigned int size;
 } VC_CONTAINER_METADATA_T;
@@ -597,7 +597,6 @@ typedef struct VC_CONTAINER_WRITE_STATS_T
    /** This logs the length of time that we wait for a flush command to complete. */
    VC_CONTAINER_STATS_T flush;
 } VC_CONTAINER_WRITE_STATS_T;
-   
 
 /** Control operations which can be done on containers. */
 typedef enum
@@ -697,7 +696,7 @@ typedef enum
 
    /** Arguments:\n
     *   arg1= void *: metadata buffer
-    *   arg2= unsigned long: length of metadata in bytes */ 
+    *   arg2= unsigned long: length of metadata in bytes */
    VC_CONTAINER_CONTROL_GET_DRM_METADATA,
 
    /** Arguments:\n

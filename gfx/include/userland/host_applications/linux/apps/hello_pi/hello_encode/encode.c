@@ -195,7 +195,6 @@ video_encode_test(char *outputfilename)
       exit(1);
    }
 
-
    // get current bitrate
    memset(&bitrateType, 0, sizeof(OMX_VIDEO_PARAM_BITRATETYPE));
    bitrateType.nSize = sizeof(OMX_VIDEO_PARAM_BITRATETYPE);
@@ -210,8 +209,6 @@ video_encode_test(char *outputfilename)
       exit(1);
    }
    printf("Current Bitrate=%u\n",bitrateType.nTargetBitrate);
-
-
 
    printf("encode to idle...\n");
    if (ilclient_change_component_state(video_encode, OMX_StateIdle) == -1) {

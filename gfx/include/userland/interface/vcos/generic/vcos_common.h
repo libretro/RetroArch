@@ -72,7 +72,7 @@ VideoCore OS Abstraction Layer - common postamble code
 #error Can stack addresses be set on this platform? Please set this macro to either 0 or 1.
 #endif
 
-#if (_VCOS_AFFINITY_CPU0|_VCOS_AFFINITY_CPU1) & (~_VCOS_AFFINITY_MASK) 
+#if (_VCOS_AFFINITY_CPU0|_VCOS_AFFINITY_CPU1) & (~_VCOS_AFFINITY_MASK)
 #error _VCOS_AFFINITY_CPUxxx values are not consistent with _VCOS_AFFINITY_MASK
 #endif
 
@@ -93,4 +93,3 @@ VideoCore OS Abstraction Layer - common postamble code
 #ifndef VCOS_HAVE_TIMER
 VCOSPRE_ void VCOSPOST_ vcos_timer_init(void);
 #endif
-

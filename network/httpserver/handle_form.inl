@@ -19,7 +19,6 @@
 * THE SOFTWARE.
 */
 
-
 static int
 url_encoded_field_found(const struct mg_connection *conn,
   const char *key,
@@ -80,7 +79,6 @@ struct mg_form_data_handler *fdh)
   return ret;
 }
 
-
 static int
 url_encoded_field_get(const struct mg_connection *conn,
   const char *key,
@@ -114,7 +112,6 @@ struct mg_form_data_handler *fdh)
     fdh->user_data);
 }
 
-
 static int
 field_stored(const struct mg_connection *conn,
   const char *path,
@@ -127,7 +124,6 @@ struct mg_form_data_handler *fdh)
 
   return fdh->field_store(path, file_size, fdh->user_data);
 }
-
 
 static const char *
 search_boundary(const char *buf,
@@ -149,7 +145,6 @@ search_boundary(const char *buf,
   }
   return NULL;
 }
-
 
 int
 mg_handle_form_request(struct mg_connection *conn,

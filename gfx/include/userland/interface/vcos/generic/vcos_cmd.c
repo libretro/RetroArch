@@ -25,11 +25,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/***************************************************************************** 
-* 
+/*****************************************************************************
+*
 *    This file provides a generic command line interface which allows
 *    vcos internals to be manipulated and/or displayed.
-*  
+*
 *****************************************************************************/
 
 /* ---- Include Files ---------------------------------------------------- */
@@ -79,7 +79,7 @@ static VCOS_STATUS_T help_cmd( VCOS_CMD_PARAM_T *param );
 
 /* ---- Functions  ------------------------------------------------------- */
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Walks through the commands looking for a particular command
 *
@@ -101,9 +101,9 @@ static VCOS_CMD_T *find_cmd( VCOS_CMD_T *cmd_entry, const char *name )
     return NULL;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
-*   Saves away 
+*   Saves away
 *   each line individually.
 *
 *****************************************************************************/
@@ -113,7 +113,7 @@ void vcos_cmd_always_log_output( VCOS_LOG_CAT_T *log_category )
     cmd_globals.log_category = log_category;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Walks through a buffer containing newline separated lines, and logs
 *   each line individually.
@@ -158,7 +158,7 @@ static void cmd_log_results( VCOS_CMD_PARAM_T *param )
     param->result_buf[0] = '\0';
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Since we may have limited output space, we create a generic routine
 *   which tries to use the result space, but will switch over to using
@@ -181,7 +181,7 @@ void vcos_cmd_vprintf( VCOS_CMD_PARAM_T *param, const char *fmt, va_list args )
          * doesn't end in a newline, then we'll wait for one first.
          */
 
-        if ( (( bytes_written + 1 ) >= bytes_remaining ) 
+        if ( (( bytes_written + 1 ) >= bytes_remaining )
         ||   ( param->result_ptr[ bytes_written - 1 ] == '\n' ))
         {
             cmd_log_results( param );
@@ -209,7 +209,7 @@ void vcos_cmd_vprintf( VCOS_CMD_PARAM_T *param, const char *fmt, va_list args )
     }
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Prints the output.
 *
@@ -224,7 +224,7 @@ void vcos_cmd_printf( VCOS_CMD_PARAM_T *param, const char *fmt, ... )
     va_end( args );
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Prints the arguments which were on the command line prior to ours.
 *
@@ -240,7 +240,7 @@ static void print_argument_prefix( VCOS_CMD_PARAM_T *param )
     }
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Prints an error message, prefixed by the command chain required to get
 *   to where we're at.
@@ -302,7 +302,7 @@ static void usage( VCOS_CMD_PARAM_T *param, VCOS_CMD_T *cmd_entry )
     {
         scan_entry = &cmd_entry[cmd_idx];
 
-        vcos_cmd_printf( param, "  %-*s %-*s - %s\n", 
+        vcos_cmd_printf( param, "  %-*s %-*s - %s\n",
                     nameWidth, scan_entry->name,
                     argsWidth, scan_entry->args,
                     scan_entry->descr );
@@ -338,12 +338,12 @@ void vcos_cmd_usage( VCOS_CMD_PARAM_T *param )
     }
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Command to print out the help
-* 
+*
 *   This help command is only called from the main menu.
-* 
+*
 *****************************************************************************/
 
 static VCOS_STATUS_T help_cmd( VCOS_CMD_PARAM_T *param )
@@ -377,7 +377,7 @@ static VCOS_STATUS_T help_cmd( VCOS_CMD_PARAM_T *param )
         }
 
         /* For all other cases help requires an argument */
-            
+
         vcos_cmd_error( param, "%s requires an argument", param->argv[0] );
         return VCOS_EINVAL;
     }
@@ -403,7 +403,7 @@ static VCOS_STATUS_T help_cmd( VCOS_CMD_PARAM_T *param )
     return VCOS_ENOENT;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Command to print out the version/build information.
 *
@@ -439,7 +439,7 @@ static VCOS_CMD_T cmd_help    = { "help",    "[command]", help_cmd,    NULL, "Pr
 static VCOS_CMD_T cmd_version = { "version", "",          version_cmd, NULL, "Prints build/version information" };
 #endif
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Walks the command table and executes the commands
 *
@@ -505,7 +505,7 @@ static VCOS_STATUS_T execute_cmd( VCOS_CMD_PARAM_T *param, VCOS_CMD_T *cmd_entry
     return VCOS_ENOENT;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Initializes the command line parser.
 *
@@ -524,7 +524,7 @@ static void vcos_cmd_init( void )
 #endif
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Shuts down the command line parser.
 *
@@ -586,7 +586,7 @@ VCOS_STATUS_T vcos_cmd_execute( int argc, char **argv, size_t result_size, char 
     return rc;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Registers a command entry with the command line processor
 *
@@ -699,7 +699,7 @@ out:
     return rc;
 }
 
-/***************************************************************************** 
+/*****************************************************************************
 *
 *   Registers multiple commands.
 *
@@ -719,4 +719,3 @@ VCOS_STATUS_T vcos_cmd_register_multiple( VCOS_CMD_T *cmd_entry )
     }
     return VCOS_SUCCESS;
 }
-

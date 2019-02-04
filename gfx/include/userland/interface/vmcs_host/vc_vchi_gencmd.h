@@ -38,7 +38,6 @@ VCHPRE_ int VCHPOST_ vc_gencmd_init(void);
 
 VCHPRE_ void VCHPOST_ vc_vchi_gencmd_init(VCHI_INSTANCE_T initialise_instance, VCHI_CONNECTION_T **connections, uint32_t num_connections );
 
-
 /* Stop the service from being used. */
 
 VCHPRE_ void VCHPOST_ vc_gencmd_stop(void);
@@ -83,6 +82,5 @@ VCHPRE_ int VCHPOST_ vc_gencmd_until( char        *cmd,
                                       char        *value,
                                       const char  *error_string,
                                       int         timeout);
-
 
 #endif

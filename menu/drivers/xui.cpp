@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2015-     - Swizzy
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -188,11 +188,11 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
    HXUIRESOURCE hResource          = 0;
    BOOL         bIsMemoryResource  = FALSE;
    IDirect3DDevice9 * d3dDevice    = NULL;
-   HRESULT      hr                 = 
+   HRESULT      hr                 =
       XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
 
    if (FAILED(hr))
-      return hr; 
+      return hr;
 
    if (bIsMemoryResource)
    {
@@ -201,7 +201,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          goto cleanup;
       cbTextureData = XuiResourceGetTotalSize(hResource);
    }
-   else 
+   else
    {
       hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
       if (FAILED(hr))
@@ -232,9 +232,9 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
    /* Create our texture based on our conditions */
    hr = D3DXCreateTextureFromFileInMemoryEx(
          d3dDevice,
-         pbTextureData,  
+         pbTextureData,
          cbTextureData,
-         D3DX_DEFAULT_NONPOW2, 
+         D3DX_DEFAULT_NONPOW2,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
@@ -514,7 +514,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    XuiTextElementSetText(hTextLeft, leftText);
    XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
 
-   if(XuiHandleIsValid(hTextRight)) 
+   if(XuiHandleIsValid(hTextRight))
    {
       currText = XuiTextElementGetText(hTextRight);
       XuiElementGetBounds(hTextRight, &width, &height);
@@ -551,7 +551,7 @@ static void xui_render(void *data, bool is_idle)
          &fb_pitch);
 
    if (
-         menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
+         menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
          && menu_driver_is_alive()
          && !msg_force
       )
@@ -623,7 +623,7 @@ static void xui_render(void *data, bool is_idle)
       const char *label = menu_input_dialog_get_label_buffer();
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      xui_render_messagebox(NULL, msg);			
+      xui_render_messagebox(NULL, msg);
    }
 }
 

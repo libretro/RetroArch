@@ -212,7 +212,7 @@ VC_CONTAINER_NET_T *vc_container_net_open( const char *address, const char *port
       {
       case STREAM_CLIENT:
             /* Simply connect to the given address/port */
-            if (connect(sock, p->ai_addr, p->ai_addrlen) == SOCKET_ERROR) 
+            if (connect(sock, p->ai_addr, p->ai_addrlen) == SOCKET_ERROR)
                status = vc_container_net_private_last_error();
             break;
 

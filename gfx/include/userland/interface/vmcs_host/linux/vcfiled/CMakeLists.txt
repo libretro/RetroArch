@@ -14,7 +14,7 @@ target_link_libraries(vcfiled
                       vchiq_arm
                       vcos)
 
-install(TARGETS vcfiled 
+install(TARGETS vcfiled
         RUNTIME DESTINATION sbin)
 
 configure_file (etc/init.d/vcfiled ${PROJECT_BINARY_DIR}/etc/init.d/vcfiled)

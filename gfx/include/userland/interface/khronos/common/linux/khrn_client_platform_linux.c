@@ -67,7 +67,6 @@ static int application_error_handler(Display *display, XErrorEvent *theEvent)
 }
 #endif
 
-
 VCOS_STATUS_T khronos_platform_semaphore_create(PLATFORM_SEMAPHORE_T *sem, int name[3], int count)
 {
    char buf[64];
@@ -162,7 +161,6 @@ void khrn_platform_free(void *v)
 }
 
 #endif
-
 
 #ifdef WANT_X
 static XImage *current_ximage = NULL;
@@ -412,7 +410,6 @@ void platform_memcpy(void * aTrg, const void * aSrc, size_t aLength)
    memcpy(aTrg, aSrc, aLength);
 }
 
-
 #ifdef WANT_X
 uint32_t platform_get_handle(EGLNativeWindowType win)
 {
@@ -536,7 +533,6 @@ static void dump_ancestors(Window w)
    }
    vcos_log_trace("->end");
 }
-
 
 uint32_t khrn_platform_get_window_position(EGLNativeWindowType win)
 {
@@ -719,7 +715,6 @@ void khrn_platform_unbind_pixmap_from_egl_image(EGLImageKHR egl_image)
    }
 }
 
-
 #ifdef EGL_SERVER_DISPMANX
 #define NUM_WIN 6
 
@@ -800,7 +795,6 @@ static EGL_DISPMANX_WINDOW_T *check_default(EGLNativeWindowType win)
    } else
       return (EGL_DISPMANX_WINDOW_T*)win;
 }
-
 
 void platform_get_dimensions(EGLDisplay dpy, EGLNativeWindowType win,
       uint32_t *width, uint32_t *height, uint32_t *swapchain_count)

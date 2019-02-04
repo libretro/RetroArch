@@ -68,7 +68,6 @@ typedef struct RASPITEXUTIL_SHADER_PROGRAM_T
    GLint attribute_locations[SHADER_MAX_ATTRIBUTES];
 } RASPITEXUTIL_SHADER_PROGRAM_T;
 
-
 /* Uncomment to enable extra GL error checking */
 //#define CHECK_GL_ERRORS
 #if defined(CHECK_GL_ERRORS)

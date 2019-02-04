@@ -81,7 +81,6 @@ typedef enum {
 
    WFC_IPC_MSG_CALLBACK,               /**< Sent from server to complete callback */
 
-
    WFC_IPC_MSG_MAX = 0x7FFFFFFF        /**< Force type to be 32-bit */
 } WFC_IPC_MSG_TYPE;
 
@@ -314,7 +313,6 @@ typedef struct {
    WFC_IPC_CALLBACK_T image_available_cb;    /**< Opaque client function pointer */
    WFC_IPC_VOID_PTR_T image_available_data;  /**< Opaque client data */
 } WFC_IPC_MSG_SS_ON_IMAGE_AVAILABLE_T;
-
 
 /** All messages sent between the client and server must be represented in
  * this union.

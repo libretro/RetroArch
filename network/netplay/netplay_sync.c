@@ -126,7 +126,7 @@ static void netplay_merge_digital(netplay_t *netplay,
 {
    netplay_input_state_t simstate;
    uint32_t word, bit, client;
-   uint8_t share_mode = netplay->device_share_modes[device] 
+   uint8_t share_mode = netplay->device_share_modes[device]
       & NETPLAY_SHARE_DIGITAL_BITS;
 
    /* Make sure all real clients are accounted for */
@@ -141,7 +141,7 @@ static void netplay_merge_digital(netplay_t *netplay,
    if (share_mode == NETPLAY_SHARE_DIGITAL_VOTE)
    {
       unsigned i, j;
-      /* This just assumes we have no more than 
+      /* This just assumes we have no more than
        * three words, will need to be adjusted for new devices */
       struct vote_count votes[3];
       /* Vote mode requires counting all the bits */
@@ -257,7 +257,7 @@ static void merge_analog_part(netplay_t *netplay,
 {
    netplay_input_state_t simstate;
    uint32_t client, client_count = 0;
-   uint8_t share_mode            = netplay->device_share_modes[device] 
+   uint8_t share_mode            = netplay->device_share_modes[device]
       & NETPLAY_SHARE_ANALOG_BITS;
    int32_t value                 = 0, new_value;
 
@@ -374,7 +374,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                &simframe->real_input[device], client, dsize, false, true);
          if (!simstate)
          {
-            /* Don't already have this input, so must 
+            /* Don't already have this input, so must
              * simulate if we're supposed to have it at all */
             if (netplay->read_frame_count[client] > simframe->frame)
                continue;
@@ -429,7 +429,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                   || simframe->resolved_input[device]->client_num != 0))
       {
          /* The default resolved input is of the wrong size! */
-         netplay_input_state_t nextistate = 
+         netplay_input_state_t nextistate =
             simframe->resolved_input[device]->next;
          free(simframe->resolved_input[device]);
          simframe->resolved_input[device] = nextistate;
@@ -554,18 +554,18 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
       serial_info.size       = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if ((netplay->quirks & NETPLAY_QUIRK_INITIALIZATION) 
+      if ((netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
             || netplay->run_frame_count == 0)
       {
          /* Don't serialize until it's safe */
       }
-      else if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) 
+      else if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES)
             && core_serialize(&serial_info))
       {
-         if (netplay->force_send_savestate && !netplay->stall 
+         if (netplay->force_send_savestate && !netplay->stall
                && !netplay->remote_paused)
          {
-            /* Bring our running frame and input frames into 
+            /* Bring our running frame and input frames into
              * parity so we don't send old info. */
             if (netplay->run_ptr != netplay->self_ptr)
             {
@@ -590,7 +590,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          netplay->stateless_mode = true;
       }
 
-      /* If we can't transmit savestates, we must stall 
+      /* If we can't transmit savestates, we must stall
        * until the client is ready. */
       if (netplay->run_frame_count > 0 &&
           (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)) &&
@@ -677,7 +677,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
             else
             {
                size_t new_connections_size = netplay->connections_size * 2;
-               struct netplay_connection 
+               struct netplay_connection
                   *new_connections         = (struct netplay_connection*)
 
                   realloc(netplay->connections,
@@ -748,7 +748,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
    /* We've finished an input frame even if we're stalling */
    if ((!stalled || netplay->stall == NETPLAY_STALL_INPUT_LATENCY) &&
-       netplay->self_frame_count < 
+       netplay->self_frame_count <
        netplay->run_frame_count + netplay->input_latency_frames)
    {
       netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
@@ -1004,11 +1004,11 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          {
             uint32_t client_num;
             struct netplay_connection *connection = &netplay->connections[i];
-             
+
             if (!connection->active ||
                 connection->mode != NETPLAY_CONNECTION_PLAYING)
                continue;
-             
+
             client_num = (uint32_t)(i + 1);
 
             /* Are they ahead? */

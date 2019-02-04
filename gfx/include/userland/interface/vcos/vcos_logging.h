@@ -87,7 +87,6 @@ typedef enum VCOS_LOG_LEVEL_T
    VCOS_LOG_TRACE,
 } VCOS_LOG_LEVEL_T;
 
-
 /** Initialize a logging category without going through vcos_log_register().
  *
  * This is useful for the case where there is no obvious point to do the
@@ -182,10 +181,9 @@ VCOS_STATIC_INLINE void vcos_log_set_level(VCOS_LOG_CAT_T *category, VCOS_LOG_LE
    category->level = level;
 }
 
-
 /** Set the logging levels for many categories at once.
   *
-  * Set lots of categorys from a string cat:lev,cat:lev This can 
+  * Set lots of categorys from a string cat:lev,cat:lev This can
   * be used at startup time to set a bunch of category levels from
   * a single string.  Used with C(vcos_logging_level)
   */
@@ -237,8 +235,6 @@ void vcos_log_dump_mem_impl( const VCOS_LOG_CAT_T *cat,
 #  define _VCOS_LOG_X(cat, _level, fmt...) (void)0
 #  define _VCOS_VLOG_X(cat, _level, fmt, ap) (void)0
 # endif
-
-
 
 # define vcos_log_error(...)   _VCOS_LOG_X(VCOS_LOG_CATEGORY, VCOS_LOG_ERROR, __VA_ARGS__)
 # define vcos_log_warn(...)    _VCOS_LOG_X(VCOS_LOG_CATEGORY, VCOS_LOG_WARN, __VA_ARGS__)
@@ -306,9 +302,9 @@ void vcos_log_dump_mem_impl( const VCOS_LOG_CAT_T *cat,
 #include "interface/vcos/vcos_cmd.h"
 
 /*
- * These are the log sub-commands. They're exported here for user-mode apps which 
- * may want to call these, since the "log" command isn't registered for user-mode 
- * apps (vcdbg for example, has its own log command). 
+ * These are the log sub-commands. They're exported here for user-mode apps which
+ * may want to call these, since the "log" command isn't registered for user-mode
+ * apps (vcdbg for example, has its own log command).
  */
 VCOSPRE_ VCOS_STATUS_T VCOSPOST_ vcos_log_assert_cmd( VCOS_CMD_PARAM_T *param );
 VCOSPRE_ VCOS_STATUS_T VCOSPOST_ vcos_log_set_cmd( VCOS_CMD_PARAM_T *param );
@@ -320,5 +316,4 @@ VCOSPRE_ VCOS_STATUS_T VCOSPOST_ vcos_log_test_cmd( VCOS_CMD_PARAM_T *param );
 }
 #endif
 #endif /* VCOS_LOGGING_H */
-
 

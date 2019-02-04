@@ -37,7 +37,7 @@
 #pragma once
 #endif
 
-/* Forward Declarations */ 
+/* Forward Declarations */
 
 #ifndef __ID3D11On12Device_FWD_DEFINED__
 #define __ID3D11On12Device_FWD_DEFINED__
@@ -53,10 +53,10 @@ typedef interface ID3D11On12Device ID3D11On12Device;
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
+#endif
 
 /* interface __MIDL_itf_d3d11on12_0000_0000 */
-/* [local] */ 
+/* [local] */
 
 /*#include <winapifamily.h>*/
 /*#pragma region App Family*/
@@ -105,14 +105,14 @@ extern "C"{
 //      Pointer to returned feature level. May be NULL.
 //
 // Return Values
-//  Any of those documented for 
+//  Any of those documented for
 //          D3D11CreateDevice
 //
 ///////////////////////////////////////////////////////////////////////////
-typedef HRESULT (WINAPI* PFN_D3D11ON12_CREATE_DEVICE)( _In_ IUnknown*, UINT, 
-    _In_reads_opt_( FeatureLevels ) CONST D3D_FEATURE_LEVEL*, UINT FeatureLevels, 
-    _In_reads_opt_( NumQueues ) IUnknown* CONST*, UINT NumQueues, 
-    UINT, _COM_Outptr_opt_ ID3D11Device**, _COM_Outptr_opt_ ID3D11DeviceContext**, 
+typedef HRESULT (WINAPI* PFN_D3D11ON12_CREATE_DEVICE)( _In_ IUnknown*, UINT,
+    _In_reads_opt_( FeatureLevels ) CONST D3D_FEATURE_LEVEL*, UINT FeatureLevels,
+    _In_reads_opt_( NumQueues ) IUnknown* CONST*, UINT NumQueues,
+    UINT, _COM_Outptr_opt_ ID3D11Device**, _COM_Outptr_opt_ ID3D11DeviceContext**,
     _Out_opt_ D3D_FEATURE_LEVEL* );
 
 HRESULT WINAPI D3D11On12CreateDevice(
@@ -142,53 +142,52 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11on12_0000_0000_v0_0_s_ifspec;
 #define __ID3D11On12Device_INTERFACE_DEFINED__
 
 /* interface ID3D11On12Device */
-/* [unique][local][object][uuid] */ 
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D11On12Device;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("85611e73-70a9-490e-9614-a9e302777904")
     ID3D11On12Device : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE CreateWrappedResource( 
+        virtual HRESULT STDMETHODCALLTYPE CreateWrappedResource(
             _In_  IUnknown *pResource12,
             _In_  const D3D11_RESOURCE_FLAGS *pFlags11,
             D3D12_RESOURCE_STATES InState,
             D3D12_RESOURCE_STATES OutState,
             REFIID riid,
             _COM_Outptr_opt_  void **ppResource11) = 0;
-        
-        virtual void STDMETHODCALLTYPE ReleaseWrappedResources( 
+
+        virtual void STDMETHODCALLTYPE ReleaseWrappedResources(
             _In_reads_( NumResources )  ID3D11Resource *const *ppResources,
             UINT NumResources) = 0;
-        
-        virtual void STDMETHODCALLTYPE AcquireWrappedResources( 
+
+        virtual void STDMETHODCALLTYPE AcquireWrappedResources(
             _In_reads_( NumResources )  ID3D11Resource *const *ppResources,
             UINT NumResources) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D11On12DeviceVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D11On12Device * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D11On12Device * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D11On12Device * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *CreateWrappedResource )( 
+
+        HRESULT ( STDMETHODCALLTYPE *CreateWrappedResource )(
             ID3D11On12Device * This,
             _In_  IUnknown *pResource12,
             _In_  const D3D11_RESOURCE_FLAGS *pFlags11,
@@ -196,17 +195,17 @@ EXTERN_C const IID IID_ID3D11On12Device;
             D3D12_RESOURCE_STATES OutState,
             REFIID riid,
             _COM_Outptr_opt_  void **ppResource11);
-        
-        void ( STDMETHODCALLTYPE *ReleaseWrappedResources )( 
+
+        void ( STDMETHODCALLTYPE *ReleaseWrappedResources )(
             ID3D11On12Device * This,
             _In_reads_( NumResources )  ID3D11Resource *const *ppResources,
             UINT NumResources);
-        
-        void ( STDMETHODCALLTYPE *AcquireWrappedResources )( 
+
+        void ( STDMETHODCALLTYPE *AcquireWrappedResources )(
             ID3D11On12Device * This,
             _In_reads_( NumResources )  ID3D11Resource *const *ppResources,
             UINT NumResources);
-        
+
         END_INTERFACE
     } ID3D11On12DeviceVtbl;
 
@@ -215,27 +214,25 @@ EXTERN_C const IID IID_ID3D11On12Device;
         CONST_VTBL struct ID3D11On12DeviceVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
 #define ID3D11On12Device_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D11On12Device_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D11On12Device_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D11On12Device_CreateWrappedResource(This,pResource12,pFlags11,InState,OutState,riid,ppResource11)	\
-    ( (This)->lpVtbl -> CreateWrappedResource(This,pResource12,pFlags11,InState,OutState,riid,ppResource11) ) 
+    ( (This)->lpVtbl -> CreateWrappedResource(This,pResource12,pFlags11,InState,OutState,riid,ppResource11) )
 
 #define ID3D11On12Device_ReleaseWrappedResources(This,ppResources,NumResources)	\
-    ( (This)->lpVtbl -> ReleaseWrappedResources(This,ppResources,NumResources) ) 
+    ( (This)->lpVtbl -> ReleaseWrappedResources(This,ppResources,NumResources) )
 
 #define ID3D11On12Device_AcquireWrappedResources(This,ppResources,NumResources)	\
-    ( (This)->lpVtbl -> AcquireWrappedResources(This,ppResources,NumResources) ) 
+    ( (This)->lpVtbl -> AcquireWrappedResources(This,ppResources,NumResources) )
 
 #endif /* COBJMACROS */
 
@@ -244,7 +241,7 @@ EXTERN_C const IID IID_ID3D11On12Device;
 #endif 	/* __ID3D11On12Device_INTERFACE_DEFINED__ */
 
 /* interface __MIDL_itf_d3d11on12_0000_0001 */
-/* [local] */ 
+/* [local] */
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

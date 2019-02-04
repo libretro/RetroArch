@@ -48,7 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 
-
 /*
    surface_pool
 
@@ -767,7 +766,7 @@ EGLint egl_surface_set_attrib(EGL_SURFACE_T *surface, EGLint attrib, EGLint valu
    case EGL_MIPMAP_LEVEL:
       if (surface->type == PBUFFER) {
          RPC_CALL2(eglIntSelectMipmap_impl,
-                   thread, 
+                   thread,
                    EGLINTSELECTMIPMAP_ID,
                    RPC_UINT(surface->serverbuffer),
                    RPC_INT(value));
@@ -871,7 +870,6 @@ EGLint egl_surface_get_mapped_buffer_attrib(EGL_SURFACE_T *surface, EGLint attri
    }
 }
 #endif
-
 
 /*
    void egl_surface_maybe_free(EGL_SURFACE_T *surface)

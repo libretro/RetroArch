@@ -40,7 +40,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o
-		 
+
 OBJ += ctr/exec-3dsx/exec_cia.o \
 	ctr/exec-3dsx/exec_3dsx.o \
 	ctr/exec-3dsx/mini-hb-menu/launch.o \

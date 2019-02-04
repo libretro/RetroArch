@@ -115,7 +115,6 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
 
    sceSystemServiceHideSplashScreen();
 
-
 	uintptr_t intptr=0;
 	sscanf(argv[1],"%p",&intptr);
    argv[1] = NULL;

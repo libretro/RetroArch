@@ -21,10 +21,8 @@ typedef LONG NTSTATUS;
 // Just for documentation
 #define EXPORTNUM(x)
 
-
 // Needed for object structures and related things
 typedef CONST SHORT CSHORT;
-
 
 // String types
 typedef CHAR *PSZ;
@@ -41,7 +39,6 @@ typedef STRING *PSTRING;
 
 typedef STRING ANSI_STRING;
 typedef PSTRING PANSI_STRING;
-
 
 // IO Status Block type (UNVERIFIED)
 // Differences from NT: None.
@@ -63,7 +60,6 @@ VOID
     IN ULONG Reserved
     );
 
-
 // Header for dispatcher objects
 // Differences from NT: None.
 typedef struct _DISPATCHER_HEADER {
@@ -75,12 +71,10 @@ typedef struct _DISPATCHER_HEADER {
     LIST_ENTRY WaitListHead;
 } DISPATCHER_HEADER;
 
-
 // Object types
 #define NotificationTimerObject         8
 #define SynchronizationTimerObject      9
 #define DpcObject                       19
-
 
 // Object Attributes type
 // Differences from NT: There are no Length, SecurityDescriptor, or
@@ -141,7 +135,6 @@ typedef OBJECT_ATTRIBUTES *POBJECT_ATTRIBUTES;
 #define FILE_VALID_PIPE_OPTION_FLAGS            0x00000032
 #define FILE_VALID_MAILSLOT_OPTION_FLAGS        0x00000032
 #define FILE_VALID_SET_FLAGS                    0x00000036
-
 
 // NtQueryVolumeInformation / NtSetVolumeInformation stuff
 // Type of information to retrieve; FileFsSizeInformation and
@@ -317,7 +310,6 @@ extern POBJECT_TYPE ExSemaphoreObjectType;
 extern POBJECT_TYPE IoCompletionObjectType;
 extern POBJECT_TYPE IoDeviceObjectType;
 
-
 // *_OBJECT and related structures (mostly opaque since I'm lazy)
 typedef struct _DRIVER_OBJECT {
     CSHORT Type;
@@ -343,7 +335,6 @@ typedef struct _FILE_OBJECT {
 	// ...
 } FILE_OBJECT;
 typedef FILE_OBJECT *PFILE_OBJECT;
-
 
 /* Thread information structures */
 
@@ -433,7 +424,6 @@ typedef struct _KDPC {
 	PVOID SystemArgument2;
 	PULONG_PTR Lock;
 } KDPC, *PKDPC;
-
 
 // Timers
 typedef enum _TIMER_TYPE {
@@ -721,7 +711,6 @@ NtFreeVirtualMemory(
 	IN ULONG FreeType
 	);
 
-
 // Kernel-level routines
 
 // MmMapIoSpace:
@@ -821,7 +810,6 @@ NTAPI
 IoDeleteSymbolicLink(
 	IN PANSI_STRING SymbolicLinkName
 	);
-
 
 // ObReferenceObjectByHandle:
 // Turns a handle into a kernel object pointer.  The ObjectType parameter

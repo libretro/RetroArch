@@ -5007,8 +5007,6 @@ static void xmb_context_reset_textures(
          memcpy(item_color, coord_white, sizeof(item_color));
    }
 
-
-
 return;
 
 error:

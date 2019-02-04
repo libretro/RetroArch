@@ -46,8 +46,8 @@ Defines and constants.
 #define MPGA_XING_HAS_QUALITY  0x00000008
 
 #define MPGA_MAX_BAD_FRAMES    4096 /*< Maximum number of failed byte-wise syncs,
-                                        should be at least 2881+4 to cover the largest 
-                                        frame size (MPEG2.5 Layer 2, 160kbit/s 8kHz) 
+                                        should be at least 2881+4 to cover the largest
+                                        frame size (MPEG2.5 Layer 2, 160kbit/s 8kHz)
                                         + next frame header */
 
 static const unsigned int mpga_sample_rate_adts[16] =
@@ -60,7 +60,7 @@ static const GUID_T asf_guid_header =
 Type definitions
 ******************************************************************************/
 typedef struct VC_CONTAINER_MODULE_T
-{ 
+{
    VC_CONTAINER_TRACK_T *track;
    uint64_t data_offset;
    uint64_t data_size;
@@ -73,11 +73,11 @@ typedef struct VC_CONTAINER_MODULE_T
    /* MPEG audio header information */
    unsigned int version; /**< 1 for MPEG1, 2 for MPEG2, etc. */
    unsigned int layer;
-   
+
    /* VBR header information */
    uint8_t xing_toc[100];
    int xing_toc_valid;
-         
+
    /* Per-frame state (updated upon a read or a seek) */
    unsigned int frame_size;
    unsigned int frame_data_left;
@@ -109,12 +109,12 @@ static uint32_t PEEK_BYTES_AT( VC_CONTAINER_T *p_ctx, int64_t offset, uint8_t *b
    int64_t current_position = STREAM_POSITION(p_ctx);
    SEEK(p_ctx, current_position + offset);
    ret = PEEK_BYTES(p_ctx, buffer, size);
-   SEEK(p_ctx, current_position);   
+   SEEK(p_ctx, current_position);
    return ret;
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T mpga_check_frame_header( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T mpga_check_frame_header( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_MODULE_T *module, uint8_t frame_header[MPGA_HEADER_SIZE] )
 {
    VC_CONTAINER_PARAM_UNUSED(p_ctx);
@@ -199,7 +199,7 @@ static int64_t mpga_calculate_frame_time( VC_CONTAINER_T *p_ctx )
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
    int64_t time;
-   time = INT64_C(1000000) * module->frame_index * 
+   time = INT64_C(1000000) * module->frame_index *
       module->frame_size_samples / module->sample_rate;
    return time;
 }
@@ -216,15 +216,15 @@ static VC_CONTAINER_STATUS_T mpga_read_vbr_headers( VC_CONTAINER_T *p_ctx )
    /* Look for XING header (immediately after layer 3 side information) */
    offset = (module->version == 1) ? ((module->channels == 1) ?  INT64_C(21) :  INT64_C(36)) :
       ((module->channels == 1) ?  INT64_C(13) :  INT64_C(21));
-   
+
    if (PEEK_BYTES_AT(p_ctx, offset, (uint8_t*)peek_buf, 4) != 4)
       return VC_CONTAINER_ERROR_FORMAT_INVALID; /* File would be way too small */
 
-   if (peek_buf[0] == VC_FOURCC('X','i','n','g') || peek_buf[0] == VC_FOURCC('I','n','f','o')) 
+   if (peek_buf[0] == VC_FOURCC('X','i','n','g') || peek_buf[0] == VC_FOURCC('I','n','f','o'))
    {
       uint32_t flags = 0, num_frames = 0, data_size = 0;
 
-      /* If the first frame has a XING header then we know it's a valid (but empty) audio 
+      /* If the first frame has a XING header then we know it's a valid (but empty) audio
          frame so we safely parse the header whilst skipping to the next frame */
       SKIP_BYTES(p_ctx, offset); /* FIXME: we don't care about layer 3 side information? */
 
@@ -236,7 +236,7 @@ static VC_CONTAINER_STATUS_T mpga_read_vbr_headers( VC_CONTAINER_T *p_ctx )
 
       if (flags & MPGA_XING_HAS_BYTES)
          data_size = READ_U32(p_ctx, "XING bytes");
-   
+
       if (flags & MPGA_XING_HAS_TOC)
       {
          READ_BYTES(p_ctx, module->xing_toc, sizeof(module->xing_toc));
@@ -245,22 +245,22 @@ static VC_CONTAINER_STATUS_T mpga_read_vbr_headers( VC_CONTAINER_T *p_ctx )
          /* Ensure time zero points to first frame even if TOC is broken */
          module->xing_toc[0] = 0;
       }
-      
+
       if (flags & MPGA_XING_HAS_QUALITY)
          SKIP_U32(p_ctx, "XING quality");
 
       module->data_size = data_size;
       module->num_frames = num_frames;
-      
+
       if (module->num_frames && module->data_size)
       {
          /* We can calculate average bitrate */
          module->bitrate =
             module->data_size * module->sample_rate * 8 / (module->num_frames * module->frame_size_samples);
       }
-      
+
       p_ctx->duration = (module->num_frames * module->frame_size_samples * 1000000LL) / module->sample_rate;
-   
+
       /* Look for additional LAME header (follows XING) */
       if (PEEK_BYTES(p_ctx, (uint8_t*)peek_buf, 4) != 4)
          return VC_CONTAINER_ERROR_FORMAT_INVALID; /* File would still be way too small */
@@ -288,13 +288,13 @@ static VC_CONTAINER_STATUS_T mpga_read_vbr_headers( VC_CONTAINER_T *p_ctx )
          track->format->type->audio.gap_delay = (encoder_delay >> 12) + module->frame_size_samples;
          track->format->type->audio.gap_padding  = encoder_delay & 0xfff;
       }
-      
+
       SEEK(p_ctx, start);
       status = VC_CONTAINER_SUCCESS;
    }
-   
+
    /* FIXME: if not success, try to read 'VBRI' header */
-   
+
    return status;
 }
 
@@ -375,17 +375,17 @@ static VC_CONTAINER_STATUS_T mpga_reader_read( VC_CONTAINER_T *p_ctx,
       p_ctx->duration = MAX(p_ctx->duration, mpga_calculate_frame_time(p_ctx));
 #endif
    }
-   
+
    return status == VC_CONTAINER_SUCCESS ? STREAM_STATUS(p_ctx) : status;
-   
+
 error:
    return status;
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T mpga_reader_seek( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T mpga_reader_seek( VC_CONTAINER_T *p_ctx,
                                                int64_t *p_offset,
-                                               VC_CONTAINER_SEEK_MODE_T mode, 
+                                               VC_CONTAINER_SEEK_MODE_T mode,
                                                VC_CONTAINER_SEEK_FLAGS_T flags)
 {
    VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
@@ -405,17 +405,17 @@ static VC_CONTAINER_STATUS_T mpga_reader_seek( VC_CONTAINER_T *p_ctx,
       {
          int64_t ppm;
          int percent, lower, upper, delta;
-      
+
          ppm = (*p_offset * module->sample_rate) / (module->num_frames * module->frame_size_samples);
          ppm = MIN(ppm, INT64_C(999999));
-      
+
          percent = ppm / 10000;
          delta   = ppm % 10000;
-      
+
          lower = module->xing_toc[percent];
          upper = percent < 99 ? module->xing_toc[percent + 1] : 256;
-      
-         seekpos = module->data_offset + 
+
+         seekpos = module->data_offset +
             (((module->data_size * lower) + (module->data_size * (upper - lower) * delta) / 10000) >> 8);
       }
       else
@@ -431,12 +431,12 @@ static VC_CONTAINER_STATUS_T mpga_reader_seek( VC_CONTAINER_T *p_ctx,
 
    SEEK(p_ctx, seekpos);
    status = mpga_sync(p_ctx);
-   if (status && status != VC_CONTAINER_ERROR_EOS) 
+   if (status && status != VC_CONTAINER_ERROR_EOS)
       goto error;
-            
+
    module->frame_index = (*p_offset * module->num_frames + (p_ctx->duration >> 1)) / p_ctx->duration;
    module->frame_offset = STREAM_POSITION(p_ctx) - module->data_offset;
-     
+
    *p_offset = module->frame_time_pos = mpga_calculate_frame_time(p_ctx);
 
    return STREAM_STATUS(p_ctx);
@@ -456,7 +456,7 @@ static VC_CONTAINER_STATUS_T mpga_reader_close( VC_CONTAINER_T *p_ctx )
    p_ctx->tracks = NULL;
    p_ctx->tracks_num = 0;
    free(module);
-   p_ctx->priv->module = 0;  
+   p_ctx->priv->module = 0;
    return VC_CONTAINER_SUCCESS;
 }
 
@@ -491,19 +491,19 @@ VC_CONTAINER_STATUS_T mpga_reader_open( VC_CONTAINER_T *p_ctx )
    /* Allocate our context */
    if ((module = malloc(sizeof(*module))) == NULL)
    {
-      status = VC_CONTAINER_ERROR_OUT_OF_MEMORY; 
-      goto error; 
+      status = VC_CONTAINER_ERROR_OUT_OF_MEMORY;
+      goto error;
    }
 
    memset(module, 0, sizeof(*module));
    p_ctx->priv->module = module;
    p_ctx->tracks = &module->track;
-   
+
    p_ctx->tracks[0] = vc_container_allocate_track(p_ctx, 0);
    if(!p_ctx->tracks[0])
    {
-      status = VC_CONTAINER_ERROR_OUT_OF_MEMORY; 
-      goto error; 
+      status = VC_CONTAINER_ERROR_OUT_OF_MEMORY;
+      goto error;
    }
    p_ctx->tracks_num = 1;
 
@@ -546,8 +546,8 @@ VC_CONTAINER_STATUS_T mpga_reader_open( VC_CONTAINER_T *p_ctx )
    /* Look for VBR headers within the first frame */
    status = mpga_read_vbr_headers(p_ctx);
    if (status && status != VC_CONTAINER_ERROR_NOT_FOUND) goto error;
-   
-   /* If we couldn't get this information from VBR headers, try to determine 
+
+   /* If we couldn't get this information from VBR headers, try to determine
       file size, bitrate, number of frames and duration */
    if (!module->data_size)
       module->data_size = MAX(p_ctx->priv->io->size - module->data_offset, INT64_C(0));
@@ -556,10 +556,10 @@ VC_CONTAINER_STATUS_T mpga_reader_open( VC_CONTAINER_T *p_ctx )
    {
       if (STREAM_SEEKABLE(p_ctx))
       {
-         /* Scan past a few hundred frames (audio will often have 
+         /* Scan past a few hundred frames (audio will often have
             silence in the beginning so we need to see more than
             just a few frames) and estimate bitrate */
-         for (i = 0; i < 256; ++i) 
+         for (i = 0; i < 256; ++i)
             if (mpga_reader_read(p_ctx, NULL, VC_CONTAINER_READ_FLAG_SKIP)) break;
          /* Seek back to start of data */
          SEEK(p_ctx, module->data_offset);
@@ -575,7 +575,7 @@ VC_CONTAINER_STATUS_T mpga_reader_open( VC_CONTAINER_T *p_ctx )
    }
 
    track->format->bitrate = module->bitrate;
-  
+
    if (!module->num_frames)
    {
       module->num_frames = (module->data_size * module->sample_rate * 8LL) /
@@ -597,7 +597,7 @@ VC_CONTAINER_STATUS_T mpga_reader_open( VC_CONTAINER_T *p_ctx )
    return VC_CONTAINER_SUCCESS;
 
 error:
-   if(status == VC_CONTAINER_SUCCESS || status == VC_CONTAINER_ERROR_EOS) 
+   if(status == VC_CONTAINER_SUCCESS || status == VC_CONTAINER_ERROR_EOS)
       status = VC_CONTAINER_ERROR_FORMAT_INVALID;
    LOG_DEBUG(p_ctx, "error opening stream (%i)", status);
    if (p_ctx->tracks_num != 0)

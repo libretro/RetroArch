@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 VideoCore OS Abstraction Layer - initialization routines
 =============================================================================*/
 
-
 #include "interface/vcos/vcos_types.h"
 #include "vcos.h"
 
@@ -107,4 +106,3 @@ VCOSPRE_ void VCOSPOST_ vcos_platform_deinit(void);
 #ifdef __cplusplus
 }
 #endif
-

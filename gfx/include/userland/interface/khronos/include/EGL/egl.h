@@ -242,8 +242,6 @@ typedef void *EGLClientBuffer;
  * a bug in Khronos Bugzilla against task "Registry".
  */
 
-
-
 /* EGL Functions */
 
 EGLAPI EGLint EGLAPIENTRY eglGetError(void);
@@ -290,9 +288,7 @@ EGLAPI EGLBoolean EGLAPIENTRY eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surfac
 EGLAPI EGLBoolean EGLAPIENTRY eglBindTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
 EGLAPI EGLBoolean EGLAPIENTRY eglReleaseTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
 
-
 EGLAPI EGLBoolean EGLAPIENTRY eglSwapInterval(EGLDisplay dpy, EGLint interval);
-
 
 EGLAPI EGLContext EGLAPIENTRY eglCreateContext(EGLDisplay dpy, EGLConfig config,
 			    EGLContext share_context,

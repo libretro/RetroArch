@@ -136,8 +136,8 @@ static void d3d11_font_render_line(
    int                      x      = roundf(pos_x * width);
    int                      y      = roundf((1.0 - pos_y) * height);
 
-   if (  !d3d11                  || 
-         !d3d11->sprites.enabled || 
+   if (  !d3d11                  ||
+         !d3d11->sprites.enabled ||
          msg_len > (unsigned)d3d11->sprites.capacity)
       return;
 
@@ -306,7 +306,7 @@ static void d3d11_font_render_msg(
       g          = FONT_COLOR_GET_GREEN(params->color);
       b          = FONT_COLOR_GET_BLUE(params->color);
       alpha      = FONT_COLOR_GET_ALPHA(params->color);
-      
+
       color      = DXGI_COLOR_RGBA(r, g, b, alpha);
    }
    else

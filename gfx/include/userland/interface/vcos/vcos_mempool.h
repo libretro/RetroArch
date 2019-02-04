@@ -53,7 +53,6 @@ extern "C" {
   *
   */
 
-
 /** Initialize a memory pool. The control data is taken from the memory
   * supplied itself.
   *
@@ -104,6 +103,4 @@ void vcos_mempool_delete(VCOS_MEMPOOL_T *pool);
 }
 #endif
 #endif
-
-
 

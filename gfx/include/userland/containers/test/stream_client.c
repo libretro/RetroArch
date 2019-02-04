@@ -38,7 +38,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Time in milliseconds to yield when nothing is happening */
 #define YIELD_PERIOD_MS 33
 
-
 static vc_container_net_status_t local_net_control(VC_CONTAINER_NET_T *sock,
       vc_container_net_control_t operation, ...)
 {

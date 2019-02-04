@@ -149,7 +149,6 @@ typedef EGLNativeDisplayType NativeDisplayType;
 typedef EGLNativePixmapType  NativePixmapType;
 typedef EGLNativeWindowType  NativeWindowType;
 
-
 /* Define EGLint. This must be a signed integral type large enough to contain
  * all legal attribute names and values passed into and out of EGL, whether
  * their type is boolean, bitmask, enumerant (symbolic constant), integer,

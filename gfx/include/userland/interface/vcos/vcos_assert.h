@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 VideoCore OS Abstraction Layer - Assertion and error-handling macros.
 =============================================================================*/
 
-
 #ifndef VCOS_ASSERT_H
 #define VCOS_ASSERT_H
 
@@ -245,7 +244,6 @@ extern void logging_assert_dump(void);
 
 #endif /* VCOS_ASSERT_ENABLED */
 
-
 #if VCOS_DEMAND_ENABLED
 
 #ifndef vcos_demand
@@ -272,7 +270,6 @@ extern void logging_assert_dump(void);
 
 #endif /* VCOS_DEMAND_ENABLED */
 
-
 #if VCOS_VERIFY_ENABLED
 
 #ifndef vcos_verify
@@ -296,7 +293,6 @@ extern void logging_assert_dump(void);
 #endif
 
 #endif /* VCOS_VERIFY_ENABLED */
-
 
 #ifndef vcos_static_assert
 #if defined(__GNUC__)

@@ -65,4 +65,3 @@ int decodeImage(OPENMAX_JPEG_DECODER* decoder,
 void cleanup(OPENMAX_JPEG_DECODER* decoder);
 
 #endif
-

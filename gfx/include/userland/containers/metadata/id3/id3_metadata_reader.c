@@ -44,7 +44,7 @@ Defines
 ******************************************************************************/
 #define ID3_SYNC_SAFE(x) ((((x >> 24) & 0x7f) << 21) | (((x >> 16) & 0x7f) << 14) | \
                           (((x >>  8) & 0x7f) <<  7) | (((x >>  0) & 0x7f) <<  0))
-      
+
 /******************************************************************************
 Type definitions
 ******************************************************************************/
@@ -63,15 +63,15 @@ static VC_CONTAINER_METADATA_T *id3_metadata_append( VC_CONTAINER_T *p_ctx,
 {
    VC_CONTAINER_METADATA_T *meta, **p_meta;
    unsigned int i;
-   
+
    for (i = 0; i != p_ctx->meta_num; ++i)
    {
       if (key == p_ctx->meta[i]->key) break;
    }
-   
+
    /* Avoid duplicate entries for now */
    if (i < p_ctx->meta_num) return NULL;
-     
+
    /* Sanity check size, truncate if necessary */
    size = MIN(size, 512);
 
@@ -80,7 +80,7 @@ static VC_CONTAINER_METADATA_T *id3_metadata_append( VC_CONTAINER_T *p_ctx,
       return NULL;
 
    /* We need to grow the array holding the metadata entries somehow, ideally,
-      we'd like to use a linked structure of some sort but realloc is probably 
+      we'd like to use a linked structure of some sort but realloc is probably
       okay in this case */
    if((p_meta = realloc(p_ctx->meta, sizeof(VC_CONTAINER_METADATA_T *) * (p_ctx->meta_num + 1))) == NULL)
    {
@@ -95,21 +95,21 @@ static VC_CONTAINER_METADATA_T *id3_metadata_append( VC_CONTAINER_T *p_ctx,
    meta->value = (char *)&meta[1];
    meta->size = size;
    p_ctx->meta_num++;
-      
+
    return meta;
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_METADATA_T *id3_read_metadata_entry( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_METADATA_T *id3_read_metadata_entry( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_METADATA_KEY_T key, unsigned int len )
 {
    VC_CONTAINER_METADATA_T *meta;
-      
+
    if ((meta = id3_metadata_append(p_ctx, key, len + 1)) != NULL)
    {
       unsigned int size = meta->size - 1;
       READ_BYTES(p_ctx, meta->value, size);
-   
+
       if (len > size)
       {
          LOG_DEBUG(p_ctx, "metadata value truncated (%d characters lost)", len - size);
@@ -120,20 +120,20 @@ static VC_CONTAINER_METADATA_T *id3_read_metadata_entry( VC_CONTAINER_T *p_ctx,
    {
       SKIP_BYTES(p_ctx, len);
    }
-   
+
    return meta;
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_METADATA_T *id3_read_metadata_entry_ex( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_METADATA_T *id3_read_metadata_entry_ex( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_METADATA_KEY_T key, unsigned int len, const char *encoding )
 {
    VC_CONTAINER_METADATA_T *meta;
-      
+
    if ((meta = id3_metadata_append(p_ctx, key, encoding ? len + 2 : len + 1)) != NULL)
    {
       unsigned int size;
-      
+
       if (encoding)
       {
          size = meta->size - 2;
@@ -151,12 +151,12 @@ static VC_CONTAINER_METADATA_T *id3_read_metadata_entry_ex( VC_CONTAINER_T *p_ct
          SKIP_BYTES(p_ctx, len - size);
       }
    }
-   
+
    return meta;
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_METADATA_T *id3_add_metadata_entry( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_METADATA_T *id3_add_metadata_entry( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_METADATA_KEY_T key, const char *value )
 {
    VC_CONTAINER_METADATA_T *meta;
@@ -165,12 +165,12 @@ static VC_CONTAINER_METADATA_T *id3_add_metadata_entry( VC_CONTAINER_T *p_ctx,
    if ((meta = id3_metadata_append(p_ctx, key, len + 1)) != NULL)
    {
       unsigned int size = meta->size - 1;
-      
+
       if (len > size)
       {
          LOG_DEBUG(p_ctx, "metadata value truncated (%d characters lost)", len - size);
       }
-      
+
       strncpy(meta->value, value, size);
    }
 
@@ -178,7 +178,7 @@ static VC_CONTAINER_METADATA_T *id3_add_metadata_entry( VC_CONTAINER_T *p_ctx,
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T id3_read_id3v2_frame( VC_CONTAINER_T *p_ctx, 
+static VC_CONTAINER_STATUS_T id3_read_id3v2_frame( VC_CONTAINER_T *p_ctx,
    VC_CONTAINER_FOURCC_T frame_id, uint32_t frame_size )
 {
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;
@@ -250,7 +250,7 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
    uint8_t maj_version, flags;
    uint32_t tag_size, size = 0;
    uint8_t peek_buf[10];
-   
+
    SKIP_STRING(p_ctx, 3, "ID3v2 identifier");
    maj_version = READ_U8(p_ctx, "ID3v2 version (major)");
    SKIP_U8(p_ctx, "ID3v2 version (minor)");
@@ -284,16 +284,16 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
       SKIP_BYTES(p_ctx, MIN(tag_size, ext_hdr_size));
       size += ext_hdr_size;
    }
-   
+
    while (PEEK_BYTES(p_ctx, peek_buf, 10) == 10 && size < tag_size)
    {
       VC_CONTAINER_FOURCC_T frame_id;
       uint32_t frame_size;
       uint8_t format_flags;
-      
+
       frame_id = READ_FOURCC(p_ctx, "Frame ID");
       frame_size = READ_U32(p_ctx, "Frame Size");
-     
+
       if (maj_version >= 4)
       {
          frame_size = ID3_SYNC_SAFE(frame_size);
@@ -305,7 +305,7 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
 
       size += 10;
 
-      if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS || !frame_id) 
+      if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS || !frame_id)
          break;
 
       /* Early exit if we detect an invalid tag size */
@@ -314,7 +314,7 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
          status = VC_CONTAINER_ERROR_FORMAT_INVALID;
          break;
       }
-     
+
       /* We can't currently handle unsynchronised frames */
       if ((format_flags >> 1) & 1)
       {
@@ -322,7 +322,7 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
          SKIP_BYTES(p_ctx, frame_size);
          continue;
       }
-      
+
       if ((status = id3_read_id3v2_frame(p_ctx, frame_id, frame_size)) != VC_CONTAINER_SUCCESS)
       {
          LOG_DEBUG(p_ctx, "skipping unsupported frame");
@@ -334,7 +334,7 @@ static VC_CONTAINER_STATUS_T id3_read_id3v2_tag( VC_CONTAINER_T *p_ctx )
 
    /* Try to skip to end of tag in case we bailed out early */
    if (size < tag_size) SKIP_BYTES(p_ctx, tag_size - size);
-      
+
    return status;
 }
 
@@ -396,7 +396,7 @@ VC_CONTAINER_STATUS_T id3_metadata_reader_open( VC_CONTAINER_T *p_ctx )
 
    if (PEEK_BYTES(p_ctx, peek_buf, 10) != 10)
      return VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
-   
+
    /* Initial ID3v2 tag(s), variable size */
    while ((peek_buf[0] == 'I') && (peek_buf[1] == 'D') && (peek_buf[2] == '3'))
    {
@@ -415,7 +415,7 @@ VC_CONTAINER_STATUS_T id3_metadata_reader_open( VC_CONTAINER_T *p_ctx )
    {
       SEEK(p_ctx, p_ctx->priv->io->size - INT64_C(128));
       if (PEEK_BYTES(p_ctx, peek_buf, 3) != 3) goto end;
-        
+
       if ((peek_buf[0] == 'T') && (peek_buf[1] == 'A') && (peek_buf[2] == 'G'))
       {
          if ((status = id3_read_id3v1_tag(p_ctx)) != VC_CONTAINER_SUCCESS)
@@ -432,8 +432,8 @@ end:
 
    p_ctx->priv->pf_close = id3_metadata_reader_close;
 
-   if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) goto error;   
-   
+   if((status = STREAM_STATUS(p_ctx)) != VC_CONTAINER_SUCCESS) goto error;
+
    return VC_CONTAINER_SUCCESS;
 
 error:

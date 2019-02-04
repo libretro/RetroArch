@@ -125,7 +125,6 @@ if [ $SALAMANDER = "yes" ]; then
 make -C ../ -f Makefile.${platform}.salamander clean || exit 1
 fi
 
-
 # Cleanup existing core if it exists
 if [ $PLATFORM = "ode-ps3" ]; then
    make -C ../ -f Makefile.${platform}.cobra clean || exit 1

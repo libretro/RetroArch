@@ -183,7 +183,7 @@ void netplay_delayed_state_change(netplay_t *netplay)
    {
       uint32_t client_num                   = (uint32_t)(i + 1);
       struct netplay_connection *connection = &netplay->connections[i];
-       
+
       if ((connection->active || connection->mode == NETPLAY_CONNECTION_DELAYED_DISCONNECT) &&
           connection->delay_frame &&
           connection->delay_frame <= netplay->self_frame_count)
@@ -193,7 +193,7 @@ void netplay_delayed_state_change(netplay_t *netplay)
          payload[0]           = htonl(connection->delay_frame);
          payload[1]           = htonl(client_num);
          payload[2]           = htonl(0);
-          
+
          memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
          strncpy((char *) (payload + 7), connection->nick, NETPLAY_NICK_LEN);
 
@@ -303,7 +303,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
       {
          if (from_client == to_client)
             continue;
-          
+
          if ((netplay->connected_players & (1<<from_client)))
          {
             if (dframe->have_real[from_client])

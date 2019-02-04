@@ -33,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/khronos/common/khrn_client.h"
 #include "interface/khronos/common/khrn_client_rpc.h"
 
-
 #include <string.h>
 #include <stdio.h>
 
@@ -93,7 +92,7 @@ VCHIQ_STATUS_T khhn_callback(VCHIQ_REASON_T reason, VCHIQ_HEADER_T *header,
    case VCHIQ_SERVICE_CLOSED:
    case VCHIQ_BULK_TRANSMIT_ABORTED:
    case VCHIQ_BULK_RECEIVE_ABORTED:
-      UNREACHABLE(); /* not implemented */      
+      UNREACHABLE(); /* not implemented */
    }
 
    return VCHIQ_SUCCESS;
@@ -160,7 +159,7 @@ VCHIQ_STATUS_T khan_callback(VCHIQ_REASON_T reason, VCHIQ_HEADER_T *header,
    case VCHIQ_BULK_TRANSMIT_ABORTED:
    case VCHIQ_BULK_RECEIVE_ABORTED:
    default:
-      UNREACHABLE(); /* not implemented */      
+      UNREACHABLE(); /* not implemented */
    }
 
    return VCHIQ_SUCCESS;
@@ -171,11 +170,11 @@ void vc_vchi_khronos_init()
    VCOS_STATUS_T status = vcos_event_create(&bulk_event, NULL);
    UNUSED_NDEBUG(status);
    vcos_assert(status == VCOS_SUCCESS);
-   
+
    if (vchiq_initialise(&khrn_vchiq_instance) != VCHIQ_SUCCESS)
    {
       vcos_log_error("* failed to open vchiq device");
-      
+
       exit(1);
    }
 
@@ -184,7 +183,7 @@ void vc_vchi_khronos_init()
    if (vchiq_connect(khrn_vchiq_instance) != VCHIQ_SUCCESS)
    {
       vcos_log_error("* failed to connect");
-      
+
       exit(1);
    }
 
@@ -212,7 +211,7 @@ void vc_vchi_khronos_init()
        khhn_return != VCHIQ_SUCCESS)
    {
       vcos_log_error("* failed to add service - already in use?");
-      
+
       exit(1);
    }
    vchiu_queue_init(&khrn_queue, 64);
@@ -264,7 +263,7 @@ static void check_workspace(uint32_t size)
 static void merge_flush(CLIENT_THREAD_STATE_T *thread)
 {
    vcos_log_trace("merge_flush start");
-   
+
    vcos_assert(thread->merge_pos >= CLIENT_MAKE_CURRENT_SIZE);
 
    /*
@@ -275,14 +274,14 @@ static void merge_flush(CLIENT_THREAD_STATE_T *thread)
 
    if (thread->merge_pos > CLIENT_MAKE_CURRENT_SIZE) {
       VCHIQ_ELEMENT_T element;
-      
+
       rpc_begin(thread);
 
       element.data = thread->merge_buffer;
       element.size = thread->merge_pos;
 
       VCHIQ_STATUS_T success = vchiq_queue_message(get_handle(thread), &element, 1);
-      UNUSED_NDEBUG(success);      
+      UNUSED_NDEBUG(success);
       vcos_assert(success == VCHIQ_SUCCESS);
 
       thread->merge_pos = 0;
@@ -290,11 +289,11 @@ static void merge_flush(CLIENT_THREAD_STATE_T *thread)
       client_send_make_current(thread);
 
       vcos_assert(thread->merge_pos == CLIENT_MAKE_CURRENT_SIZE);
-      
+
       rpc_end(thread);
    }
    vcos_log_trace( "merge_flush end");
-   
+
 }
 
 void rpc_flush(CLIENT_THREAD_STATE_T *thread)
@@ -366,10 +365,10 @@ static void send_bulk(CLIENT_THREAD_STATE_T *thread, const void *in, uint32_t le
       vcos_assert(vchiq_status == VCHIQ_SUCCESS);
    } else {
       VCHIQ_STATUS_T vchiq_status = vchiq_queue_bulk_transmit(get_handle(thread), in, rpc_pad_bulk(len), NULL);
-      UNUSED_NDEBUG(vchiq_status);      
+      UNUSED_NDEBUG(vchiq_status);
       vcos_assert(vchiq_status == VCHIQ_SUCCESS);
       VCOS_STATUS_T vcos_status = vcos_event_wait(&bulk_event);
-      UNUSED_NDEBUG(vcos_status);      
+      UNUSED_NDEBUG(vcos_status);
       vcos_assert(vcos_status == VCOS_SUCCESS);
    }
 }
@@ -386,7 +385,7 @@ static void recv_bulk(CLIENT_THREAD_STATE_T *thread, void *out, uint32_t len)
       UNUSED_NDEBUG(vchiq_status);
       vcos_assert(vchiq_status == VCHIQ_SUCCESS);
       VCOS_STATUS_T vcos_status = vcos_event_wait(&bulk_event);
-      UNUSED_NDEBUG(vcos_status);      
+      UNUSED_NDEBUG(vcos_status);
       vcos_assert(vcos_status == VCOS_SUCCESS);
    }
 }
@@ -510,7 +509,7 @@ void rpc_call8_makecurrent(CLIENT_THREAD_STATE_T *thread, uint32_t id, uint32_t 
       vcos_log_trace("rpc_call8_makecurrent collapse onto previous makecurrent");
 
       thread->merge_pos = 0;
-      
+
       RPC_CALL8(eglIntMakeCurrent_impl, thread, EGLINTMAKECURRENT_ID, p0, p1, p2, p3, p4, p5, p6, p7);
       vcos_assert(thread->merge_pos == CLIENT_MAKE_CURRENT_SIZE);
 

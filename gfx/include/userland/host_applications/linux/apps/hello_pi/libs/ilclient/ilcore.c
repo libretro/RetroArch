@@ -71,7 +71,7 @@ OMX_ERRORTYPE OMX_APIENTRY OMX_Init(void)
    vcos_demand(status == VCOS_SUCCESS);
 
    vcos_mutex_lock(&lock);
-   
+
    if(coreInit == 0)
    {
       // we need to connect via an ILCS connection to VideoCore
@@ -119,10 +119,9 @@ OMX_ERRORTYPE OMX_APIENTRY OMX_Deinit(void)
    }
 
    vcos_mutex_unlock(&lock);
-   
+
    return OMX_ErrorNone;
 }
-
 
 /* OMX_ComponentNameEnum */
 OMX_ERRORTYPE OMX_APIENTRY OMX_ComponentNameEnum(
@@ -135,7 +134,6 @@ OMX_ERRORTYPE OMX_APIENTRY OMX_ComponentNameEnum(
 
    return vcil_out_component_name_enum(ilcs_get_common(ilcs_service), cComponentName, nNameLength, nIndex);
 }
-
 
 /* OMX_GetHandle */
 OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
@@ -179,7 +177,7 @@ OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
 
          if(eError != OMX_ErrorNone && pComp->ComponentDeInit)
             pComp->ComponentDeInit(hHandle);
-      }      
+      }
 
       if (eError == OMX_ErrorNone) {
          eError = pComp->SetCallbacks(hHandle,pCallBacks,pAppData);
@@ -193,7 +191,7 @@ OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
          *pHandle = NULL;
          free(pComp);
       }
-   } 
+   }
 
    if (eError == OMX_ErrorNone) {
       vcos_mutex_lock(&lock);
@@ -302,7 +300,4 @@ OMX_ERRORTYPE OMX_GetDebugInformation (
    return vcil_out_get_debug_information(ilcs_get_common(ilcs_service), debugInfo, pLen);
 }
 
-
-
 /* File EOF */
-

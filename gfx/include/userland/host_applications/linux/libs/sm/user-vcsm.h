@@ -154,7 +154,6 @@ typedef enum
 */
 int vcsm_init( void );
 
-
 /* Terminates the vcsm processing.
 **
 ** Must be called vcsm services are no longer needed, it will
@@ -162,7 +161,6 @@ int vcsm_init( void );
 ** control if deemed necessary.
 */
 void vcsm_exit( void );
-
 
 /* Queries the status of the the vcsm.
 **
@@ -172,7 +170,6 @@ void vcsm_exit( void );
 ** Pid is optional.
 */
 void vcsm_status( VCSM_STATUS_T status, int pid );
-
 
 /* Allocates a non-cached block of memory of size 'size' via the vcsm memory
 ** allocator.
@@ -184,13 +181,12 @@ void vcsm_status( VCSM_STATUS_T status, int pid );
 ** handle to gain access to the memory associated with the opaque handle.
 ** When finished using the memory, the user calls vcsm_unlock_xx (see those
 ** function definition for more details on the one that can be used).
-** 
+**
 ** A well behaved application should make every attempt to lock/unlock
 ** only for the duration it needs to access the memory data associated with
 ** the opaque handle.
 */
 unsigned int vcsm_malloc( unsigned int size, char *name );
-
 
 /* Allocates a cached block of memory of size 'size' via the vcsm memory
 ** allocator, the type of caching requested is passed as argument of the
@@ -203,13 +199,12 @@ unsigned int vcsm_malloc( unsigned int size, char *name );
 ** handle to gain access to the memory associated with the opaque handle.
 ** When finished using the memory, the user calls vcsm_unlock_xx (see those
 ** function definition for more details on the one that can be used).
-** 
+**
 ** A well behaved application should make every attempt to lock/unlock
 ** only for the duration it needs to access the memory data associated with
 ** the opaque handle.
 */
 unsigned int vcsm_malloc_cache( unsigned int size, VCSM_CACHE_TYPE_T cache, char *name );
-
 
 /* Shares an allocated block of memory via the vcsm memory allocator.
 **
@@ -227,7 +222,6 @@ unsigned int vcsm_malloc_cache( unsigned int size, VCSM_CACHE_TYPE_T cache, char
 */
 unsigned int vcsm_malloc_share( unsigned int handle );
 
-
 /* Resizes a block of memory allocated previously by vcsm_alloc.
 **
 ** Returns:        0 on success
@@ -242,7 +236,6 @@ unsigned int vcsm_malloc_share( unsigned int handle );
 */
 int vcsm_resize( unsigned int handle, unsigned int new_size );
 
-
 /* Frees a block of memory that was successfully allocated by
 ** a prior call the vcms_alloc.
 **
@@ -256,7 +249,6 @@ int vcsm_resize( unsigned int handle, unsigned int new_size );
 ** memory is guaranteed to be freed one way or another.
 */
 void vcsm_free( unsigned int handle );
-
 
 /* Retrieves a videocore opaque handle from a mapped user address
 ** pointer.  The videocore handle will correspond to the actual
@@ -274,7 +266,6 @@ void vcsm_free( unsigned int handle );
 */
 unsigned int vcsm_vc_hdl_from_ptr( void *usr_ptr );
 
-
 /* Retrieves a videocore opaque handle from a opaque handle
 ** pointer.  The videocore handle will correspond to the actual
 ** memory mapped in videocore.
@@ -291,7 +282,6 @@ unsigned int vcsm_vc_hdl_from_ptr( void *usr_ptr );
 */
 unsigned int vcsm_vc_hdl_from_hdl( unsigned int handle );
 
-
 /* Retrieves a videocore (bus) address from a opaque handle
 ** pointer.
 **
@@ -300,7 +290,6 @@ unsigned int vcsm_vc_hdl_from_hdl( unsigned int handle );
 */
 unsigned int vcsm_vc_addr_from_hdl( unsigned int handle );
 
-
 /* Retrieves a user opaque handle from a mapped user address
 ** pointer.
 **
@@ -308,7 +297,6 @@ unsigned int vcsm_vc_addr_from_hdl( unsigned int handle );
 **                 a non-zero opaque handle on success.
 */
 unsigned int vcsm_usr_handle( void *usr_ptr );
-
 
 /* Retrieves a mapped user address from an opaque user
 ** handle.
@@ -321,7 +309,6 @@ unsigned int vcsm_usr_handle( void *usr_ptr );
 ** call.
 */
 void *vcsm_usr_address( unsigned int handle );
-
 
 /* Locks the memory associated with this opaque handle.
 **
@@ -336,7 +323,6 @@ void *vcsm_usr_address( unsigned int handle );
 ** is invoked).
 */
 void *vcsm_lock( unsigned int handle );
-
 
 /* Locks the memory associated with this opaque handle.  The lock
 ** also gives a chance to update the *host* cache behavior of the
@@ -369,7 +355,6 @@ void *vcsm_lock_cache( unsigned int handle,
                        VCSM_CACHE_TYPE_T cache_update,
                        VCSM_CACHE_TYPE_T *cache_result );
 
-
 /* Unlocks the memory associated with this user mapped address.
 **
 ** Returns:        0 on success
@@ -379,7 +364,6 @@ void *vcsm_lock_cache( unsigned int handle,
 ** attempt to reference it.
 */
 int vcsm_unlock_ptr( void *usr_ptr );
-
 
 /* Unlocks the memory associated with this user mapped address.
 ** Apply special processing that would override the otherwise
@@ -397,7 +381,6 @@ int vcsm_unlock_ptr( void *usr_ptr );
 */
 int vcsm_unlock_ptr_sp( void *usr_ptr, int cache_no_flush );
 
-
 /* Unlocks the memory associated with this user opaque handle.
 **
 ** Returns:        0 on success
@@ -408,7 +391,6 @@ int vcsm_unlock_ptr_sp( void *usr_ptr, int cache_no_flush );
 ** with it.
 */
 int vcsm_unlock_hdl( unsigned int handle );
-
 
 /* Unlocks the memory associated with this user opaque handle.
 ** Apply special processing that would override the otherwise
@@ -469,4 +451,3 @@ unsigned int vcsm_import_dmabuf( int dmabuf, char *name );
 #endif
 
 #endif /* __USER_VCSM__H__INCLUDED__ */
-

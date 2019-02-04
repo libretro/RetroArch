@@ -56,27 +56,27 @@ static INLINE int pthread_create(pthread_t *thread,
 {
    s32 prio = 0;
    Thread new_ctr_thread;
-      
+
    if (!mutex_inited)
    {
 	   LightLock_Init(&safe_double_thread_launch);
 	   mutex_inited = true;
    }
-   
+
    /*Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
    while (LightLock_TryLock(&safe_double_thread_launch) != 0);
-   
+
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-   
+
    start_routine_jump = start_routine;
    new_ctr_thread     = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
-   
+
    if (!new_ctr_thread)
    {
 	   LightLock_Unlock(&safe_double_thread_launch);
 	   return EAGAIN;
    }
-   
+
    *thread = new_ctr_thread;
    return 0;
 }
@@ -150,14 +150,14 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
        struct timespec now = {0};
 	    /* Missing clock_gettime*/
        struct timeval tm;
-      
+
        gettimeofday(&tm, NULL);
        now.tv_sec = tm.tv_sec;
        now.tv_nsec = tm.tv_usec * 1000;
        if (LightEvent_TryWait(cond) != 0 || now.tv_sec > abstime->tv_sec || (now.tv_sec == abstime->tv_sec && now.tv_nsec > abstime->tv_nsec))
 		   break;
    }
-	
+
    return 0;
 }
 

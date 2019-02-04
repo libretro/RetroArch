@@ -31,14 +31,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    Constructed with FEATURES_PACK(red, green, blue, alpha, depth, stencil, multi, mask, lockable)
 
    Attributes are returned with
-      FEATURES_UNPACK_RED(c)     
-      FEATURES_UNPACK_GREEN(c)   
-      FEATURES_UNPACK_BLUE(c)    
-      FEATURES_UNPACK_ALPHA(c)   
-      FEATURES_UNPACK_DEPTH(c)   
-      FEATURES_UNPACK_STENCIL(c) 
-      FEATURES_UNPACK_MULTI(c)   
-      FEATURES_UNPACK_MASK(c)    
+      FEATURES_UNPACK_RED(c)
+      FEATURES_UNPACK_GREEN(c)
+      FEATURES_UNPACK_BLUE(c)
+      FEATURES_UNPACK_ALPHA(c)
+      FEATURES_UNPACK_DEPTH(c)
+      FEATURES_UNPACK_STENCIL(c)
+      FEATURES_UNPACK_MULTI(c)
+      FEATURES_UNPACK_MASK(c)
       FEATURES_UNPACK_LOCKABLE(c)
 
    Additionally,
@@ -56,7 +56,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       lockable in {0,1}
 
 */
-
 
 #define FEATURES_UNPACK_RED(c)        ((EGLint)((c) >> 28 & 0xf))
 #define FEATURES_UNPACK_GREEN(c)      ((EGLint)((c) >> 24 & 0xf))
@@ -87,7 +86,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    use_red, use_green, use_blue, use_alpha are valid pointers
    attrib_list is NULL or a pointer to an EGL_NONE-terminated list of attribute/value pairs
 
-   Postconditions:   
+   Postconditions:
 
    If list is valid then we return true and:
       use_red is set to true   iff attrib_list includes EGL_RED_SIZE and the corresponding value is not 0 or EGL_DONT_CARE
@@ -317,13 +316,12 @@ Applications may find this counterintuitive, and need to perform additional proc
 configs to find one best matching their requirements. For example, specifying RGBA depths of 5651
 could return a list whose first config has a depth of 8888.
 
-
    Preconditions:
 
    0 <= id0 < EGL_MAX_CONFIGS
    0 <= id1 < EGL_MAX_CONFIGS
 
-   Postconditions:   
+   Postconditions:
 
    -
 
@@ -398,7 +396,7 @@ static bool less_than(int id0, int id1, bool use_red, bool use_green, bool use_b
    ids is a pointer to EGL_MAX_CONFIGS elements
    0 <= ids[i] < EGL_MAX_CONFIG for 0 <= i < EGL_MAX_CONFIG
 
-   Postconditions:   
+   Postconditions:
 
    ids is a permutation of the original
 
@@ -442,7 +440,7 @@ void egl_config_sort(int *ids, bool use_red, bool use_green, bool use_blue, bool
    0 <= id < EGL_MAX_CONFIGS
    value is a valid pointer
 
-   Postconditions:   
+   Postconditions:
 
    If attrib is a valid attribute then true is returned and *value is set
    Else false is returned
@@ -617,7 +615,7 @@ bool egl_config_get_attrib(int id, EGLint attrib, EGLint *value)
    attrib_list is NULL or a pointer to an EGL_NONE-terminated list of valid attribute/value pairs
    0 <= id < EGL_MAX_CONFIGS
 
-   Postconditions:   
+   Postconditions:
 
    -
 
@@ -706,7 +704,7 @@ bool egl_config_filter(int id, const EGLint *attrib_list)
             EGLNativePixmapType pixmap = (EGLNativePixmapType)(intptr_t)value;
             KHRN_IMAGE_WRAP_T image;
             if (!platform_get_pixmap_info(pixmap, &image)) {
-               /* 
+               /*
                   Not actually unreachable in theory!
                   We should have detected this in egl_config_check_attribs
                   It's possible that the validity of pixmap has changed since then however...

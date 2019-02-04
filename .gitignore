@@ -87,7 +87,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/rpx
 /wiiu-devel.properties
 
-
 # 3ds
 /.lst
 *.3dsx

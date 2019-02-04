@@ -62,10 +62,10 @@ typedef struct VC_CONTAINER_TRACK_MODULE_T
 
    /** Sub-stream id (for private_stream_1 only) */
    uint32_t substream_id;
-      
+
    /** PES packet payload offset (for private_stream_1) */
    unsigned int payload_offset;
-   
+
    uint8_t extradata[PS_EXTRADATA_MAX];
 
 } VC_CONTAINER_TRACK_MODULE_T;
@@ -74,7 +74,7 @@ typedef struct VC_CONTAINER_MODULE_T
 {
    /** Logging indentation level */
    uint32_t level;
-   
+
    /** Track data */
    int tracks_num;
    VC_CONTAINER_TRACK_T *tracks[PS_TRACKS_MAX];
@@ -91,11 +91,11 @@ typedef struct VC_CONTAINER_MODULE_T
 
    /** The first system_clock_reference value we've seen, in (27MHz ticks) */
    int64_t scr_offset;
-   
+
    /** Most recent system_clock_reference value we've seen, in (27MHz ticks) */
    int64_t scr;
 
-   /** Global offset we add to PES timestamps to make them zero based and 
+   /** Global offset we add to PES timestamps to make them zero based and
        to work around discontinuity in the system_clock_reference */
    int64_t scr_bias;
 
@@ -104,10 +104,10 @@ typedef struct VC_CONTAINER_MODULE_T
 
    /** Offset to the most recent pack start code we've seen */
    uint64_t pack_offset;
-   
-   /** Program stream mux rate is often incorrect or fixed to 25200 (10.08 
+
+   /** Program stream mux rate is often incorrect or fixed to 25200 (10.08
        Mbit/s) which yields inaccurate duration estimate for most files. We
-       maintain a moving average data rate (in units of bytes/second) based 
+       maintain a moving average data rate (in units of bytes/second) based
        on the system_clock_reference to give better estimates. */
    int64_t data_rate;
 
@@ -117,7 +117,7 @@ typedef struct VC_CONTAINER_MODULE_T
    int64_t packet_pts;
    int64_t packet_dts;
    int packet_track;
-   
+
 } VC_CONTAINER_MODULE_T;
 
 /******************************************************************************
@@ -142,7 +142,7 @@ static VC_CONTAINER_TRACK_T *ps_find_track( VC_CONTAINER_T *ctx, uint32_t stream
    unsigned int i;
 
    for(i = 0; i < ctx->tracks_num; i++)
-      if(ctx->tracks[i]->priv->module->stream_id == stream_id && 
+      if(ctx->tracks[i]->priv->module->stream_id == stream_id &&
          ctx->tracks[i]->priv->module->substream_id == substream_id) break;
 
    if(i < ctx->tracks_num) /* We found it */
@@ -178,7 +178,7 @@ STATIC_INLINE VC_CONTAINER_STATUS_T ps_find_start_code( VC_CONTAINER_T *ctx, uin
       if(PEEK_BYTES(ctx, buffer, 4) < 4)
          return VC_CONTAINER_ERROR_EOS;
 
-      if(buffer[0] == 0x0 && buffer[1] == 0x0 && buffer[2] == 0x1 && buffer[3] >= 0xB9) 
+      if(buffer[0] == 0x0 && buffer[1] == 0x0 && buffer[2] == 0x1 && buffer[3] >= 0xB9)
          break;
 
       if (SKIP_BYTES(ctx, 1) != 1)
@@ -190,7 +190,7 @@ STATIC_INLINE VC_CONTAINER_STATUS_T ps_find_start_code( VC_CONTAINER_T *ctx, uin
 
    if (buffer[3] == 0xB9) /* MPEG_program_end_code */
       return VC_CONTAINER_ERROR_EOS;
-      
+
    return VC_CONTAINER_SUCCESS;
 }
 
@@ -250,7 +250,7 @@ static VC_CONTAINER_STATUS_T ps_read_pack_header( VC_CONTAINER_T *ctx )
 
    if(_READ_U32(ctx) != 0x1BA) return VC_CONTAINER_ERROR_CORRUPTED;
    LOG_FORMAT(ctx, "pack_header");
-   
+
    module->level++;
 
    if (PEEK_U8(ctx) & 0x40)  /* program stream */
@@ -292,7 +292,7 @@ static VC_CONTAINER_STATUS_T ps_read_pack_header( VC_CONTAINER_T *ctx )
    }
 
    if ((status = STREAM_STATUS(ctx)) != VC_CONTAINER_SUCCESS) return status;
-   
+
    module->level--;
 
    /* Set or update system_clock_reference, adjust bias if necessary */
@@ -339,7 +339,7 @@ static VC_CONTAINER_STATUS_T ps_read_pack_header( VC_CONTAINER_T *ctx )
 }
 
 /*****************************************************************************/
-static void ps_get_stream_coding( VC_CONTAINER_T *ctx, unsigned int stream_id, 
+static void ps_get_stream_coding( VC_CONTAINER_T *ctx, unsigned int stream_id,
    VC_CONTAINER_ES_TYPE_T *p_type, VC_CONTAINER_FOURCC_T *p_codec,
    VC_CONTAINER_FOURCC_T *p_variant)
 {
@@ -364,10 +364,10 @@ static void ps_get_stream_coding( VC_CONTAINER_T *ctx, unsigned int stream_id,
       type = VC_CONTAINER_ES_TYPE_AUDIO;
       codec = VC_CONTAINER_CODEC_MPGA;
       variant = VC_CONTAINER_VARIANT_MPGA_L2;
-   }   
+   }
 
    /* FIXME: PRIVATE_EVOB_PES_PACKET with stream_id 0xFD ? */
-   
+
    *p_type = type;
    *p_codec = codec;
    *p_variant = variant;
@@ -377,7 +377,7 @@ static void ps_get_stream_coding( VC_CONTAINER_T *ctx, unsigned int stream_id,
 static int64_t ps_pes_time_to_us( VC_CONTAINER_T *ctx, int64_t time )
 {
    VC_CONTAINER_MODULE_T *module = ctx->priv->module;
-   
+
    if (time == VC_CONTAINER_TIME_UNKNOWN)
       return VC_CONTAINER_TIME_UNKNOWN;
 
@@ -387,7 +387,7 @@ static int64_t ps_pes_time_to_us( VC_CONTAINER_T *ctx, int64_t time )
 
    /* Can't have valid bias without known system_clock_reference */
    vc_container_assert(module->scr != VC_CONTAINER_TIME_UNKNOWN);
-   
+
    /* 90kHz (PES) clock --> (zero based) 27MHz system clock --> microseconds */
    return (INT64_C(300) * time + module->scr_bias) / INT64_C(27);
 }
@@ -443,7 +443,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_time( VC_CONTAINER_T *ctx,
       if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
       pts |= BITS_READ_U32(ctx, &bits, 15, "PTS [14..0]");
       if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
-      
+
       /* DTS */
       if(BITS_READ_U32(ctx, &bits, 4, "'0001' marker bits") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
       dts = BITS_READ_U32(ctx, &bits, 3, "DTS [32..30]") << 30;
@@ -463,9 +463,9 @@ static VC_CONTAINER_STATUS_T ps_read_pes_time( VC_CONTAINER_T *ctx,
    {
       status = VC_CONTAINER_ERROR_NOT_FOUND;
    }
-   
+
    *p_length = *p_length - length;
-   
+
    return status;
 }
 
@@ -493,14 +493,14 @@ static VC_CONTAINER_STATUS_T ps_read_pes_extension( VC_CONTAINER_T *ctx,
    extension2 = BITS_READ_U32(ctx, &bits, 1, "PES_extension_flag_2");
    length -= 1;
 
-   if (pes_private_data) 
+   if (pes_private_data)
    {
       if(length < 16) return VC_CONTAINER_ERROR_CORRUPTED;
       SKIP_BYTES(ctx, 16); /* PES_private_data */
       length -= 16;
    }
 
-   if (pack_header) 
+   if (pack_header)
    {
       unsigned int pack_field_len;
       if(length < 1) return VC_CONTAINER_ERROR_CORRUPTED;
@@ -525,7 +525,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_extension( VC_CONTAINER_T *ctx,
       length -= 2;
    }
 
-   if (pstd_buffer) 
+   if (pstd_buffer)
    {
       if(length < 2) return VC_CONTAINER_ERROR_CORRUPTED;
       if(READ_BYTES(ctx, header, 2) != 2) return VC_CONTAINER_ERROR_EOS;
@@ -540,16 +540,16 @@ static VC_CONTAINER_STATUS_T ps_read_pes_extension( VC_CONTAINER_T *ctx,
    if (extension2)
    {
       uint8_t ext_field_len;
-      
+
       if(length < 1) return VC_CONTAINER_ERROR_CORRUPTED;
       if(READ_BYTES(ctx, &ext_field_len, 1) != 1) return VC_CONTAINER_ERROR_EOS;
       length -= 1;
 
       if((ext_field_len & 0x80) != 0x80) return VC_CONTAINER_ERROR_CORRUPTED; /* marker_bit */
-      ext_field_len &= ~0x80;  
+      ext_field_len &= ~0x80;
       LOG_FORMAT(ctx, "PES_extension_field_length %d", ext_field_len);
 
-      for (i = 0; i < ext_field_len; i++) 
+      for (i = 0; i < ext_field_len; i++)
       {
          SKIP_U8(ctx, "reserved");
          length--;
@@ -557,7 +557,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_extension( VC_CONTAINER_T *ctx,
    }
 
    ctx->priv->module->level--;
-   
+
    *p_length = *p_length - length; /* Number of bytes read from stream */
 
    return VC_CONTAINER_SUCCESS;
@@ -572,17 +572,17 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
    uint32_t size, length = *p_length;
    unsigned int pts_dts;
    uint8_t header[10];
-   
+
    if(length < 3) return VC_CONTAINER_ERROR_CORRUPTED;
-    
+
    if ((PEEK_U8(ctx) & 0xC0) == 0x80) /* program stream */
    {
       unsigned int escr, es_rate, dsm_trick_mode, additional_copy_info, pes_crc, pes_extension;
       unsigned int header_length;
-      
+
       if(READ_BYTES(ctx, header, 3) != 3) return VC_CONTAINER_ERROR_EOS;
       BITS_INIT(ctx, &bits, header, 3);
-     
+
       if (BITS_READ_U32(ctx, &bits, 2, "'10' marker bits") != 0x2) return VC_CONTAINER_ERROR_CORRUPTED;
       BITS_SKIP(ctx, &bits, 2, "PES_scrambling_control");
       BITS_SKIP(ctx, &bits, 1, "PES_priority");
@@ -609,12 +609,12 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
       {
          /* Elementary stream clock reference */
          int64_t escr;
-         
+
          ctx->priv->module->level++;
          if(length < 6) return VC_CONTAINER_ERROR_CORRUPTED;
          if(READ_BYTES(ctx, header, 6) != 6) return VC_CONTAINER_ERROR_EOS;
          BITS_INIT(ctx, &bits, header, 6);
-         
+
          BITS_SKIP(ctx, &bits, 2, "reserved_bits");
          escr = BITS_READ_U32(ctx, &bits, 3, "ESCR_base [32..30]") << 30;
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
@@ -624,35 +624,35 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
          BITS_READ_U32(ctx, &bits, 9, "ESCR_extension");
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
-            
+
          LOG_FORMAT(ctx, "ESCR_base %"PRId64, escr);
          length -= 6;
          header_length -= 6;
          ctx->priv->module->level--;
       }
-   
-      if (es_rate) 
+
+      if (es_rate)
       {
          /* Elementary stream rate */
          if(length < 3) return VC_CONTAINER_ERROR_CORRUPTED;
          if(READ_BYTES(ctx, header, 3) != 3) return VC_CONTAINER_ERROR_EOS;
          BITS_INIT(ctx, &bits, header, 3);
-   
+
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
          BITS_READ_U32(ctx, &bits, 22, "ES_rate");
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
          length -= 3;
          header_length -= 3;
       }
-      
+
       if (dsm_trick_mode)
       {
          unsigned int trick_mode;
-   
+
          if(length < 1) return VC_CONTAINER_ERROR_CORRUPTED;
          if(READ_BYTES(ctx, header, 1) != 1) return VC_CONTAINER_ERROR_EOS;
          BITS_INIT(ctx, &bits, header, 1);
-   
+
          trick_mode = BITS_READ_U32(ctx, &bits, 3, "trick_mode_control");
          if (trick_mode == 0x0 /* fast_forward */)
          {
@@ -660,7 +660,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
             BITS_SKIP(ctx, &bits, 1, "intra_slice_refresh");
             BITS_SKIP(ctx, &bits, 2, "frequency_truncation");
          }
-         else if (trick_mode == 0x1 /* slow_motion */) 
+         else if (trick_mode == 0x1 /* slow_motion */)
          {
             BITS_SKIP(ctx, &bits, 5, "rep_cntrl");
          }
@@ -679,31 +679,31 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
             BITS_SKIP(ctx, &bits, 5, "rep_cntrl");
          else
             BITS_SKIP(ctx, &bits, 5, "5 reserved_bits");
-            
+
          length -= 1;
          header_length -= 1;
       }
-      
+
       if (additional_copy_info)
       {
          if(length < 1) return VC_CONTAINER_ERROR_CORRUPTED;
          if(READ_BYTES(ctx, header, 1) != 1) return VC_CONTAINER_ERROR_EOS;
          BITS_INIT(ctx, &bits, header, 1);
-   
+
          if(BITS_READ_U32(ctx, &bits, 1, "marker_bit") != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
          BITS_SKIP(ctx, &bits, 7, "additional_copy_info");
-         
+
          length -= 1;
          header_length -= 1;
       }
-   
-      if (pes_crc) 
+
+      if (pes_crc)
       {
          SKIP_U16(ctx, "previous_PES_packet_CRC");
          length -= 2;
          header_length -= 2;
       }
-   
+
       if (pes_extension)
       {
          size = length;
@@ -711,7 +711,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
          length -= size;
          header_length -= size;
       }
-      
+
       if (header_length <= length)
       {
          SKIP_BYTES(ctx, header_length); /* header stuffing */
@@ -727,7 +727,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
          SKIP_U8(ctx, "stuffing");
          length--;
       }
-      
+
       if (length == 0) return VC_CONTAINER_ERROR_CORRUPTED;
 
       if ((PEEK_U8(ctx) & 0xC0) == 0x40)
@@ -741,7 +741,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet_header( VC_CONTAINER_T *ctx,
       pts_dts = (PEEK_U8(ctx) & 0x30) >> 4;
       size = length;
       status = ps_read_pes_time(ctx, &size, pts_dts, p_pts, p_dts);
-      if (status && status != VC_CONTAINER_ERROR_NOT_FOUND) 
+      if (status && status != VC_CONTAINER_ERROR_NOT_FOUND)
          return status;
       length -= size;
 
@@ -766,7 +766,7 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_coding( VC_CONTAINER_T *ct
    VC_CONTAINER_FOURCC_T codec = VC_CONTAINER_CODEC_UNKNOWN;
    uint32_t length;
    uint8_t id = 0;
-   
+
    length = *p_length;
 
    if(length < 1) return VC_CONTAINER_ERROR_CORRUPTED;
@@ -779,18 +779,18 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_coding( VC_CONTAINER_T *ct
    {
       type = VC_CONTAINER_ES_TYPE_SUBPICTURE;
       codec = VC_CONTAINER_CODEC_UNKNOWN;
-   } 
-   else if ((id >= 0x80 && id <= 0x87) || (id >= 0xC0 && id <= 0xCF)) 
+   }
+   else if ((id >= 0x80 && id <= 0x87) || (id >= 0xC0 && id <= 0xCF))
    {
       type = VC_CONTAINER_ES_TYPE_AUDIO;
       codec = VC_CONTAINER_CODEC_AC3;
-   } 
-   else if ((id >= 0x88 && id <= 0x8F) || (id >= 0x98 && id <= 0x9F)) 
+   }
+   else if ((id >= 0x88 && id <= 0x8F) || (id >= 0x98 && id <= 0x9F))
    {
       type = VC_CONTAINER_ES_TYPE_AUDIO;
       codec = VC_CONTAINER_CODEC_DTS;
-   } 
-   else if (id >= 0xA0 && id <= 0xBF) 
+   }
+   else if (id >= 0xA0 && id <= 0xBF)
    {
       type = VC_CONTAINER_ES_TYPE_AUDIO;
       codec = VC_CONTAINER_CODEC_PCM_SIGNED;
@@ -799,12 +799,12 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_coding( VC_CONTAINER_T *ct
    {
       LOG_FORMAT(ctx, "Unknown private_stream_1 byte: 0x%x (%u)", id, id);
    }
-   
+
    *substream_id = id;
    *p_type = type;
    *p_codec = codec;
    *p_length = length;
-   
+
    return VC_CONTAINER_SUCCESS;
 }
 
@@ -819,13 +819,13 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_format( VC_CONTAINER_T *ct
    {
       static const unsigned fs_tab[4] = { 48000, 96000, 44100, 32000 };
       static const unsigned bps_tab[] = {16, 20, 24, 0};
-      
+
       unsigned fs, bps, nchan;
-      
+
       if(*length < 6) return VC_CONTAINER_ERROR_CORRUPTED;
       if(READ_BYTES(ctx, header, 6) != 6) return VC_CONTAINER_ERROR_EOS;
       BITS_INIT(ctx, &bits, header, 6);
-   
+
       BITS_SKIP(ctx, &bits, 8, "???");
       BITS_SKIP(ctx, &bits, 8, "???");
       BITS_SKIP(ctx, &bits, 8, "???");
@@ -838,11 +838,11 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_format( VC_CONTAINER_T *ct
       BITS_SKIP(ctx, &bits, 1, "reserved");
       nchan = BITS_READ_U32(ctx, &bits, 3, "channels");
       *length -= 6;
-      
+
       format->type->audio.sample_rate = fs_tab[fs];
       format->type->audio.bits_per_sample = bps_tab[bps];
       format->type->audio.channels = nchan + 1;
-      format->type->audio.block_align = 
+      format->type->audio.block_align =
          (format->type->audio.channels * format->type->audio.bits_per_sample + 7 ) / 8;
    }
    else
@@ -853,7 +853,7 @@ static VC_CONTAINER_STATUS_T ps_read_private_stream_1_format( VC_CONTAINER_T *ct
       SKIP_U8(ctx, "start pos lo");
       *length -= 3;
    }
-   
+
    return STREAM_STATUS(ctx);
 }
 
@@ -869,7 +869,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet( VC_CONTAINER_T *ctx )
    VC_CONTAINER_FOURCC_T codec, variant = 0;
    VC_CONTAINER_TRACK_T *track;
    int64_t pts, dts;
-   
+
    if(_READ_U24(ctx) != 0x1) return VC_CONTAINER_ERROR_CORRUPTED;
    if(READ_BYTES(ctx, header, 3) != 3) return VC_CONTAINER_ERROR_EOS;
    LOG_FORMAT(ctx, "pes_packet_header");
@@ -888,7 +888,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet( VC_CONTAINER_T *ctx )
        goto skip;
 
    /* Parse PES packet header */
-   if ((status = ps_read_pes_packet_header(ctx, &length, &pts, &dts)) != VC_CONTAINER_SUCCESS) 
+   if ((status = ps_read_pes_packet_header(ctx, &length, &pts, &dts)) != VC_CONTAINER_SUCCESS)
       return status;
 
    /* For private_stream_1, encoding format is stored in the payload */
@@ -903,7 +903,7 @@ static VC_CONTAINER_STATUS_T ps_read_pes_packet( VC_CONTAINER_T *ctx )
    /* Check that we know what to do with this track */
    if(type == VC_CONTAINER_ES_TYPE_UNKNOWN || codec == VC_CONTAINER_CODEC_UNKNOWN)
       goto skip;
-   
+
    track = ps_find_track(ctx, stream_id, substream_id, module->searching_tracks);
    if(!track) goto skip;
 
@@ -1049,7 +1049,7 @@ error:
       ctx->priv->module->scr = VC_CONTAINER_TIME_UNKNOWN;
       ctx->priv->module->scr_bias = -module->scr_offset;
    }
-   
+
    return status;
 }
 
@@ -1061,7 +1061,7 @@ static VC_CONTAINER_STATUS_T ps_reader_seek( VC_CONTAINER_T *ctx,
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_SUCCESS;
    uint64_t seekpos, position;
    int64_t scr;
-   
+
    VC_CONTAINER_PARAM_UNUSED(flags);
 
    if (mode != VC_CONTAINER_SEEK_MODE_TIME || !STREAM_SEEKABLE(ctx))
@@ -1203,7 +1203,7 @@ resync:
          {
             if(ps_find_start_code(ctx, buffer) != VC_CONTAINER_SUCCESS)
                break;
-   
+
             if (buffer[3] == 0xBA)
             {
                if (ps_read_pack_header(ctx) == VC_CONTAINER_SUCCESS)
@@ -1221,11 +1221,11 @@ resync:
       }
 
       ctx->duration = (INT64_C(1000000) * module->data_size) / (module->data_rate);
-      
+
       if (module->scr > module->scr_offset)
       {
          int64_t delta = (module->scr - module->scr_offset) / INT64_C(27);
-      
+
          if (delta > ctx->duration)
             ctx->duration = delta;
       }

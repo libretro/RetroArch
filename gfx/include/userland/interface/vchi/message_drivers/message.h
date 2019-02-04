@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/vcos/vcos.h"
 #include "interface/vchi/vchi_common.h"
 
-
 typedef enum message_event_type {
    MESSAGE_EVENT_NONE,
    MESSAGE_EVENT_NOP,
@@ -107,7 +106,6 @@ typedef struct rx_bulk_slotinfo_t {
    VCHI_FLAGS_T flags;
 } RX_BULK_SLOTINFO_T;
 
-
 /* ----------------------------------------------------------------------
  * each connection driver will have a pool of the following struct.
  *
@@ -151,14 +149,12 @@ typedef struct {
 
 } MESSAGE_EVENT_T;
 
-
 // callbacks
 typedef void VCHI_MESSAGE_DRIVER_EVENT_CALLBACK_T( void *state );
 
 typedef struct {
    VCHI_MESSAGE_DRIVER_EVENT_CALLBACK_T *event_callback;
 } VCHI_MESSAGE_DRIVER_OPEN_T;
-
 
 // handle to this instance of message driver (as returned by ->open)
 typedef struct opaque_mhandle_t *VCHI_MDRIVER_HANDLE_T;
@@ -190,7 +186,6 @@ struct opaque_vchi_message_driver_t {
    void    (*form_bulk_aux)( VCHI_MDRIVER_HANDLE_T *handle, MESSAGE_TX_CHANNEL_T channel, const void *data, uint32_t len, uint32_t chunk_size, const void **aux_data, int32_t *aux_len );
    void    (*debug)( VCHI_MDRIVER_HANDLE_T *handle );
 };
-
 
 #endif // _VCHI_MESSAGE_H_
 

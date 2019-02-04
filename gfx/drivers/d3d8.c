@@ -1663,7 +1663,7 @@ static void d3d8_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (    !d3d->menu->tex            || 
+   if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {

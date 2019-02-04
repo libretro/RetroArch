@@ -16,4 +16,3 @@ add_library(writer_asf ${LIBRARY_TYPE} asf_writer.c)
 target_link_libraries(writer_asf containers)
 
 install(TARGETS writer_asf DESTINATION ${VMCS_PLUGIN_DIR})
-

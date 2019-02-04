@@ -212,7 +212,7 @@ default_title_copy_macro(action_get_title_cheevos_list,           MENU_ENUM_LABE
 default_title_copy_macro(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 default_title_copy_macro(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 default_title_macro(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
 #endif
 
@@ -892,7 +892,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
             break;
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
             break;
@@ -1194,7 +1194,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LIBRETRO_INFO_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
             break;
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
             break;
@@ -1252,7 +1252,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
-   
+
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
    {

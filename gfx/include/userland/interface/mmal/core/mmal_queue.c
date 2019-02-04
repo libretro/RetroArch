@@ -126,7 +126,6 @@ void mmal_queue_put_back(MMAL_QUEUE_T *queue, MMAL_BUFFER_HEADER_T *buffer)
    vcos_mutex_unlock(&queue->lock);
 }
 
-
 /** Get a MMAL_BUFFER_HEADER_T from a QUEUE. Semaphore already claimed */
 static MMAL_BUFFER_HEADER_T *mmal_queue_get_core(MMAL_QUEUE_T *queue)
 {

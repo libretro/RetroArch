@@ -104,7 +104,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             if (!str_list)
                return NULL;
-            
+
             ext_shaders[0]                   = '\0';
 
             attr.i = 0;

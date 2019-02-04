@@ -43,7 +43,7 @@ Defines.
 /******************************************************************************
 Type definitions
 ******************************************************************************/
-typedef struct { 
+typedef struct {
    unsigned int num_frames : 24;
    unsigned int constant_c5 : 8;
    int constant_4;
@@ -93,7 +93,7 @@ static VC_CONTAINER_STATUS_T rcv_read_header(VC_CONTAINER_T *p_ctx)
    header.num_frames = LI24(dummy);
    header.constant_c5 = dummy[3];
    header.constant_4 = LI32(dummy+4);
-   
+
    // extradata is just struct_c from the header
    memcpy(module->extradata, dummy+8, 4);
    module->track->format->extradata = module->extradata;
@@ -101,11 +101,11 @@ static VC_CONTAINER_STATUS_T rcv_read_header(VC_CONTAINER_T *p_ctx)
 
    module->track->format->type->video.height = LI32(dummy+12);
    module->track->format->type->video.width = LI32(dummy+16);
-   
+
    header.constant_c = LI32(dummy+20);
    memcpy(header.struct_b, dummy+24, 8);
    header.framerate = LI32(dummy+32);
- 
+
    if(header.constant_c5 != 0xc5 || header.constant_4 != 0x4 || header.constant_c != 0xc)
       return VC_CONTAINER_ERROR_FORMAT_NOT_SUPPORTED;
 
@@ -238,7 +238,7 @@ static VC_CONTAINER_STATUS_T rcv_reader_read( VC_CONTAINER_T *p_ctx,
       {
          module->frame_read = 0;
          module->mid_frame = 0;
-      }      
+      }
       return STREAM_STATUS(p_ctx);
    }
 
@@ -252,7 +252,7 @@ static VC_CONTAINER_STATUS_T rcv_reader_read( VC_CONTAINER_T *p_ctx,
       module->frame_read = 0;
       module->mid_frame = 0;
       packet->flags |= VC_CONTAINER_PACKET_FLAG_FRAME_END;
-   }      
+   }
    packet->size = size;
 
    return size ? VC_CONTAINER_SUCCESS : STREAM_STATUS(p_ctx);

@@ -305,7 +305,7 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   const char *ext = !string_is_empty(path) 
+   const char *ext = !string_is_empty(path)
       ? strrchr(path_basename(path), '.') : NULL;
    if (!ext)
       return "";
@@ -320,7 +320,7 @@ const char *path_get_extension(const char *path)
  * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: 
+ * Returns:
  * 1) If path has an extension, returns path with the
  *    extension removed.
  * 2) If there is no extension, returns NULL.
@@ -328,7 +328,7 @@ const char *path_get_extension(const char *path)
  */
 char *path_remove_extension(char *path)
 {
-   char *last = !string_is_empty(path) 
+   char *last = !string_is_empty(path)
       ? (char*)strrchr(path_basename(path), '.') : NULL;
    if (!last)
       return NULL;

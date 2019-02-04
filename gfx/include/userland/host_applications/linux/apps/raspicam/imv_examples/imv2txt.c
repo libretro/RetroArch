@@ -33,7 +33,7 @@ typedef struct
    signed char x_vector;
    signed char y_vector;
    short sad;
-} INLINE_MOTION_VECTOR; 
+} INLINE_MOTION_VECTOR;
 
 int main(int argc, const char **argv)
 {
@@ -44,7 +44,7 @@ int main(int argc, const char **argv)
    }
    int mbx=atoi(argv[2]);
    int mby=atoi(argv[3]);
- 
+
    ///////////////////////////////
    //  Read raw file to buffer  //
    ///////////////////////////////
@@ -54,9 +54,9 @@ int main(int argc, const char **argv)
    fseek(f, 0, SEEK_SET);
    char *buffer = malloc(fsize + 1);
    fread(buffer, fsize, 1, f);
-   fclose(f); 
+   fclose(f);
    buffer[fsize] = 0;
-   
+
    ///////////////////
    //  Fill struct  //
    ///////////////////
@@ -65,15 +65,15 @@ int main(int argc, const char **argv)
       printf("File to short!\n");
       return 0;
    }
-   INLINE_MOTION_VECTOR *imv; 
+   INLINE_MOTION_VECTOR *imv;
    imv = malloc((mbx+1)*mby*sizeof(INLINE_MOTION_VECTOR));
    memcpy ( &imv[0], &buffer[0], (mbx+1)*mby*sizeof(INLINE_MOTION_VECTOR) );
 
    //////////////////////////
    //  Export to txt data  //
-   //////////////////////////    
+   //////////////////////////
    FILE *out = fopen(argv[4], "w");
-   fprintf(out,"#x y u v sad\n");  
+   fprintf(out,"#x y u v sad\n");
    int i,j;
    for(j=0;j<mby; j++)
       for(i=0;i<mbx; i++)
@@ -82,5 +82,5 @@ int main(int argc, const char **argv)
    }
    fclose(out);
  return 0;
- 
+
 }

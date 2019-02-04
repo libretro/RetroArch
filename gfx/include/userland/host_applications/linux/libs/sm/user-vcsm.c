@@ -35,7 +35,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
-
 #include <vmcs_sm_ioctl.h>
 #include "user-vcsm.h"
 #include "interface/vcos/vcos.h"
@@ -89,7 +88,7 @@ static VCSM_CACHE_MUTEX_LKUP_T vcsm_cache_mutex_table[] =
 static VCSM_CACHE_TYPE_T vcsm_cache_table_lookup( VCSM_CACHE_TYPE_T current,
                                                   VCSM_CACHE_TYPE_T new )
 {
-   VCSM_CACHE_MUTEX_LKUP_T *p_map = vcsm_cache_mutex_table;   
+   VCSM_CACHE_MUTEX_LKUP_T *p_map = vcsm_cache_mutex_table;
 
    while ( !( (p_map->cur == VCSM_CACHE_TYPE_NONE) &&
               (p_map->new == VCSM_CACHE_TYPE_NONE) ) )
@@ -120,7 +119,6 @@ static void vcsm_init_once(void)
    vcos_log_register( "usrvcsm", &usrvcsm_log_category );
 }
 
-
 /* Initialize the vcsm processing.
 **
 ** Must be called once before attempting to do anything else.
@@ -143,7 +141,6 @@ int vcsm_init( void )
    vcsm_handle    = open( VCSM_DEVICE_NAME, O_RDWR, 0 );
    vcsm_page_size = getpagesize();
 
-
 out:
    if ( vcsm_handle != VCSM_INVALID_HANDLE )
    {
@@ -160,7 +157,6 @@ out:
    vcos_mutex_unlock( &vcsm_mutex );
    return result;
 }
-
 
 /* Terminates the vcsm processing.
 **
@@ -195,7 +191,6 @@ out:
    vcos_mutex_unlock( &vcsm_mutex );
 }
 
-
 /* Allocates a cached block of memory of size 'size' via the vcsm memory
 ** allocator, the type of caching requested is passed as argument of the
 ** function call.
@@ -207,7 +202,7 @@ out:
 ** handle to gain access to the memory associated with the opaque handle.
 ** When finished using the memory, the user calls vcsm_unlock_xx (see those
 ** function definition for more details on the one that can be used).
-** 
+**
 ** A well behaved application should make every attempt to lock/unlock
 ** only for the duration it needs to access the memory data associated with
 ** the opaque handle.
@@ -219,7 +214,7 @@ unsigned int vcsm_malloc_cache( unsigned int size, VCSM_CACHE_TYPE_T cache, char
    void *usr_ptr = NULL;
    int rc;
 
-   if ( (size == 0) || (vcsm_handle == VCSM_INVALID_HANDLE) ) 
+   if ( (size == 0) || (vcsm_handle == VCSM_INVALID_HANDLE) )
    {
       vcos_log_error( "[%s]: [%d] [%s]: NULL size or invalid device!",
                       __func__,
@@ -295,7 +290,6 @@ unsigned int vcsm_malloc_cache( unsigned int size, VCSM_CACHE_TYPE_T cache, char
    return 0;
 }
 
-
 /* Allocates a non-cached block of memory of size 'size' via the vcsm memory
 ** allocator.
 **
@@ -306,7 +300,7 @@ unsigned int vcsm_malloc_cache( unsigned int size, VCSM_CACHE_TYPE_T cache, char
 ** handle to gain access to the memory associated with the opaque handle.
 ** When finished using the memory, the user calls vcsm_unlock_xx (see those
 ** function definition for more details on the one that can be used).
-** 
+**
 ** A well behaved application should make every attempt to lock/unlock
 ** only for the duration it needs to access the memory data associated with
 ** the opaque handle.
@@ -420,7 +414,7 @@ void vcsm_free( unsigned int handle )
    struct vmcs_sm_ioctl_map map;
    void *usr_ptr = NULL;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or handle!",
                       __func__,
@@ -497,7 +491,6 @@ out:
    return;
 }
 
-
 /* Queries the status of the the vcsm.
 **
 ** Triggers dump of various kind of information, see the
@@ -509,7 +502,7 @@ void vcsm_status( VCSM_STATUS_T status, int pid )
 {
    struct vmcs_sm_ioctl_walk walk;
 
-   if ( vcsm_handle == VCSM_INVALID_HANDLE ) 
+   if ( vcsm_handle == VCSM_INVALID_HANDLE )
    {
       vcos_log_error( "[%s]: [%d]: invalid device!",
                       __func__,
@@ -568,7 +561,6 @@ void vcsm_status( VCSM_STATUS_T status, int pid )
       break;
    }
 }
-
 
 /* Retrieves a videocore opaque handle from a mapped user address
 ** pointer.  The videocore handle will correspond to the actual
@@ -631,7 +623,6 @@ unsigned int vcsm_vc_hdl_from_ptr( void *usr_ptr )
    }
 }
 
-
 /* Retrieves a videocore opaque handle from a opaque handle
 ** pointer.  The videocore handle will correspond to the actual
 ** memory mapped in videocore.
@@ -692,7 +683,6 @@ unsigned int vcsm_vc_hdl_from_hdl( unsigned int handle )
    }
 }
 
-
 /* Retrieves a videocore (bus) address from a opaque handle
 ** pointer.
 **
@@ -745,7 +735,6 @@ unsigned int vcsm_vc_addr_from_hdl( unsigned int handle )
    }
 }
 
-
 /* Retrieves a mapped user address from an opaque user
 ** handle.
 **
@@ -761,7 +750,7 @@ void *vcsm_usr_address( unsigned int handle )
    int rc;
    struct vmcs_sm_ioctl_map map;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or handle!",
                       __func__,
@@ -803,7 +792,6 @@ void *vcsm_usr_address( unsigned int handle )
    }
 }
 
-
 /* Retrieves a user opaque handle from a mapped user address
 ** pointer.
 **
@@ -815,7 +803,7 @@ unsigned int vcsm_usr_handle( void *usr_ptr )
    int rc;
    struct vmcs_sm_ioctl_map map;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (usr_ptr == NULL) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (usr_ptr == NULL) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or null usr-ptr!",
                       __func__,
@@ -825,7 +813,7 @@ unsigned int vcsm_usr_handle( void *usr_ptr )
    }
 
    memset( &map, 0, sizeof(map) );
-   
+
    map.pid = getpid();
    map.addr = (unsigned int) usr_ptr;
 
@@ -853,10 +841,9 @@ unsigned int vcsm_usr_handle( void *usr_ptr )
                       map.handle,
                       map.addr );
 
-      return map.handle;                                 
+      return map.handle;
    }
 }
-
 
 /* Locks the memory associated with this opaque handle.
 **
@@ -879,7 +866,7 @@ void *vcsm_lock( unsigned int handle )
    struct vmcs_sm_ioctl_cache cache;
    void *usr_ptr = NULL;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or invalid handle!",
                       __func__,
@@ -979,7 +966,6 @@ out:
    return usr_ptr;
 }
 
-
 /* Locks the memory associated with this opaque handle.  The lock
 ** also gives a chance to update the *host* cache behavior of the
 ** allocated buffer if so desired.  The *videocore* cache behavior
@@ -1020,7 +1006,7 @@ void *vcsm_lock_cache( unsigned int handle,
    void *usr_ptr = NULL;
    VCSM_CACHE_TYPE_T new_cache;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or invalid handle!",
                       __func__,
@@ -1091,7 +1077,7 @@ void *vcsm_lock_cache( unsigned int handle,
          *cache_result = (VCSM_CACHE_TYPE_T)chk.cache;
       }
       goto lock_default;
-   } 
+   }
 
    /* At this point we know we want to lock the buffer and apply a cache
    ** behavior change.  Start by cleaning out whatever is already setup.
@@ -1217,14 +1203,12 @@ void *vcsm_lock_cache( unsigned int handle,
    */
    goto out;
 
-
 lock_default:
    usr_ptr = vcsm_lock ( handle );
 
 out:
    return usr_ptr;
 }
-
 
 /* Unlocks the memory associated with this user mapped address.
 ** Apply special processing that would override the otherwise
@@ -1247,7 +1231,7 @@ int vcsm_unlock_ptr_sp( void *usr_ptr, int cache_no_flush )
    struct vmcs_sm_ioctl_map map;
    struct vmcs_sm_ioctl_cache cache;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (usr_ptr == NULL) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (usr_ptr == NULL) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or invalid user-ptr!",
                       __func__,
@@ -1336,7 +1320,6 @@ out:
    return rc;
 }
 
-
 /* Unlocks the memory associated with this user mapped address.
 **
 ** Returns:        0 on success
@@ -1349,7 +1332,6 @@ int vcsm_unlock_ptr( void *usr_ptr )
 {
    return vcsm_unlock_ptr_sp( usr_ptr, 0 );
 }
-
 
 /* Unlocks the memory associated with this user opaque handle.
 ** Apply special processing that would override the otherwise
@@ -1374,7 +1356,7 @@ int vcsm_unlock_hdl_sp( unsigned int handle, int cache_no_flush )
    struct vmcs_sm_ioctl_cache cache;
    struct vmcs_sm_ioctl_map map;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or invalid handle!",
                       __func__,
@@ -1462,7 +1444,6 @@ out:
    return rc;
 }
 
-
 /* Unlocks the memory associated with this user opaque handle.
 **
 ** Returns:        0 on success
@@ -1499,7 +1480,7 @@ int vcsm_resize( unsigned int handle, unsigned int new_size )
    unsigned int size_aligned = new_size;
    void *usr_ptr = NULL;
 
-   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) ) 
+   if ( (vcsm_handle == VCSM_INVALID_HANDLE) || (handle == 0) )
    {
       vcos_log_error( "[%s]: [%d]: invalid device or invalid handle!",
                       __func__,
@@ -1612,7 +1593,6 @@ int vcsm_resize( unsigned int handle, unsigned int new_size )
 out:
    return rc;
 }
-
 
 /* Flush or invalidate the memory associated with this user opaque handle
 **

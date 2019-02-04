@@ -10,4 +10,3 @@ add_library(reader_qsynth ${LIBRARY_TYPE} qsynth_reader.c)
 target_link_libraries(reader_qsynth containers)
 
 install(TARGETS reader_qsynth DESTINATION ${VMCS_PLUGIN_DIR})
-

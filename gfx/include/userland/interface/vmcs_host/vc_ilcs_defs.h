@@ -74,7 +74,6 @@ typedef enum {
    IL_FUNCTION_MAX = 0x7fffffff
 } IL_FUNCTION_T;
 
-
 // size of the largest structure passed by get/set
 // parameter/config
 // this should be calculated at compile time from IL headers
@@ -200,7 +199,7 @@ typedef enum {
 } IL_BUFFER_METHOD_T;
 
 #define IL_BUFFER_BULK_UNALIGNED_MAX (32) // This value needs to be the same on voth VC and HOST.
-                                          // Here, we just manually set it to the max of VCHI_BULK_ALIGN on VC and HOST. 
+                                          // Here, we just manually set it to the max of VCHI_BULK_ALIGN on VC and HOST.
 #if ( VCHI_BULK_ALIGN > IL_BUFFER_BULK_UNALIGNED_MAX )
    #error "VCHI_BULK_ALIGN > IL_BUFFER_BULK_UNALIGNED_MAX. Just set max higher on both VC and HOST so there's space to put the unaligned bytes."
 #endif

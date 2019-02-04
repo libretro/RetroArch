@@ -62,12 +62,10 @@ extern "C" {
 #elif defined (VCMODS_LCC)
 #include <limits.h>
 
-
 #elif !defined(__KERNEL__)
 #include <limits.h>
 
 #endif
-
 
 /*}}}*/
 
@@ -96,7 +94,6 @@ typedef enum bool_e
 /*}}}*/
 
 /*{{{ Common macros */
-
 
 /* Align a pointer/integer by rounding up/down */
 #define ALIGN_DOWN(p, n)   ((uintptr_t)(p) - ( (uintptr_t)(p) % (uintptr_t)(n) ))
@@ -137,4 +134,3 @@ typedef enum bool_e
  }
 #endif
 #endif /* __VCINCLUDE_COMMON_H__ */
-

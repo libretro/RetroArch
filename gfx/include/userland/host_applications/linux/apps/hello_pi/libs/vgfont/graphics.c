@@ -45,10 +45,10 @@ Local data
 static GX_DISPLAY_T display; /*< Our one and only EGL display. */
 
 /**
- * We create one eglContext for each of the possible graphics_x resource types 
+ * We create one eglContext for each of the possible graphics_x resource types
  * that are supported.
  ***********************************************************/
-static EGLContext gx_contexts[GRAPHICS_RESOURCE_HANDLE_TYPE_MAX]; 
+static EGLContext gx_contexts[GRAPHICS_RESOURCE_HANDLE_TYPE_MAX];
 
 /** Note: we have to share all our contexts, because otherwise it seems
  * to be not valid to blit from one image to another if the images
@@ -102,7 +102,7 @@ static int gx_egl_attrib_colours(EGLint *attribs, GRAPHICS_RESOURCE_TYPE_T res_t
 }
 
 /* Create an EGLContext for a given GRAPHICS_RESOURCE_TYPE */
-static VCOS_STATUS_T create_context(EGLDisplay disp, 
+static VCOS_STATUS_T create_context(EGLDisplay disp,
                                     GRAPHICS_RESOURCE_TYPE_T image_type,
                                     EGLContext *shared_with)
 {
@@ -135,7 +135,7 @@ static VCOS_STATUS_T create_context(EGLDisplay disp,
              image_type, eglGetError());
       return VCOS_ENOSPC;
    }
-   
+
    gx_contexts[image_type] = cxt;
    gx_configs[image_type] = configs[0];
    *shared_with = cxt;
@@ -232,21 +232,21 @@ void gx_priv_save(GX_CLIENT_STATE_T *state, GRAPHICS_RESOURCE_HANDLE res)
    state->res = res;
 
    vcos_assert(state->api); // should never be anything other than VG or GL
-   
+
    vcos_mutex_lock(&lock);
 
    egl_result = eglBindAPI(EGL_OPENVG_API);
    vcos_assert(egl_result);
-   
+
    if (res)
    {
-      GX_TRACE("gx_priv_save: eglMakeCurrent: %s, res %x surface %x, cxt %x", vcos_thread_get_name(vcos_thread_current()), 
+      GX_TRACE("gx_priv_save: eglMakeCurrent: %s, res %x surface %x, cxt %x", vcos_thread_get_name(vcos_thread_current()),
          (uint32_t)res, (uint32_t)res->surface, (uint32_t)res->context);
 
-      egl_result = eglMakeCurrent(display.disp, res->surface, 
+      egl_result = eglMakeCurrent(display.disp, res->surface,
                                   res->surface, res->context);
       vcos_assert(egl_result);
-      
+
       res->context_bound = 1;
    }
 }
@@ -272,7 +272,7 @@ void gx_priv_restore(GX_CLIENT_STATE_T *state)
    vcos_assert(egl_result);
 
    if (state->res) state->res->context_bound = 0;
-   
+
    vcos_mutex_unlock(&lock);
 }
 
@@ -337,7 +337,7 @@ VCOS_STATUS_T gx_create_window( uint32_t screen_id,
    }
 
    // now need to get the native window
-   rc = gx_priv_create_native_window(screen_id, 
+   rc = gx_priv_create_native_window(screen_id,
                                      width, height, image_type,
                                      &h->u.native_window,
                                      &cookie);
@@ -442,7 +442,7 @@ int32_t graphics_update_displayed_resource(GRAPHICS_RESOURCE_HANDLE res,
 {
    GX_CLIENT_STATE_T save;
    gx_priv_save(&save, res);
-      
+
    gx_priv_flush(res);
 
    gx_priv_restore(&save);
@@ -460,15 +460,15 @@ int32_t graphics_resource_fill(GRAPHICS_RESOURCE_HANDLE res,
 {
    GX_CLIENT_STATE_T save;
    gx_priv_save(&save, res);
-   
+
    VCOS_STATUS_T st = gx_priv_resource_fill(
-      res, 
-      x, res->height-y-height, 
-      width, height, 
+      res,
+      x, res->height-y-height,
+      width, height,
       fill_colour);
 
    gx_priv_restore(&save);
-      
+
    return st == VCOS_SUCCESS ? 0 : -1;
 }
 
@@ -491,7 +491,7 @@ int32_t graphics_resource_render_text_ext( GRAPHICS_RESOURCE_HANDLE res,
    * FIXME: much better caching (or any caching)
    */
    VCOS_STATUS_T rc = gx_priv_render_text(
-      &display, res, 
+      &display, res,
       x, res->height-y-text_size, width, height, fg_colour, bg_colour,
       text, text_length, text_size);
 
@@ -563,7 +563,7 @@ int32_t graphics_bitblt( const GRAPHICS_RESOURCE_HANDLE src,
    w = width == GRAPHICS_RESOURCE_WIDTH ? src->width : width;
    h = height == GRAPHICS_RESOURCE_HEIGHT ? src->height : height;
 
-   if (x==0 && y==0 && 
+   if (x==0 && y==0 &&
        w == src->width &&
        h == src->height)
    {
@@ -634,7 +634,6 @@ void gx_priv_flush(GRAPHICS_RESOURCE_HANDLE res)
    vcos_assert(result);
 }
 
-
 /** Map a colour, which the client will have supplied in RGB888.
  */
 
@@ -681,7 +680,7 @@ VCOS_STATUS_T gx_priv_get_pixels(const GRAPHICS_RESOURCE_HANDLE res, void **p_pi
    uint32_t width, height;
    int data_size, pitch;
    VGImageFormat image_format;
- 
+
    if (!p_pixels)
    {
       status = VCOS_EINVAL;
@@ -709,11 +708,11 @@ VCOS_STATUS_T gx_priv_get_pixels(const GRAPHICS_RESOURCE_HANDLE res, void **p_pi
          goto finish;
       }
    }
-   
+
    data_size = pitch * height;
 
-   /* NB: vgReadPixels requires that the data pointer is aligned, but does not 
-      require the stride to be aligned. Most implementations probably will 
+   /* NB: vgReadPixels requires that the data pointer is aligned, but does not
+      require the stride to be aligned. Most implementations probably will
       require that as well though... */
    pixels = vcos_malloc(data_size, "gx_get_pixels data");
    if (!pixels)
@@ -743,7 +742,7 @@ VCOS_STATUS_T gx_priv_get_pixels(const GRAPHICS_RESOURCE_HANDLE res, void **p_pi
          status = VCOS_EINVAL;
          goto finish;
       }
-   }   
+   }
 
    /* VG raster order is bottom-to-top */
    if (raster_order == GX_TOP_BOTTOM)
@@ -759,7 +758,7 @@ VCOS_STATUS_T gx_priv_get_pixels(const GRAPHICS_RESOURCE_HANDLE res, void **p_pi
    vgReadPixels(dest, pitch, image_format, 0, 0, width, height);
 
    vcos_assert(vgGetError() == 0);
-   
+
    *p_pixels = pixels;
 
 finish:
@@ -796,7 +795,6 @@ static VCOS_STATUS_T convert_image_type(GRAPHICS_RESOURCE_TYPE_T image_type,
 
    return VCOS_SUCCESS;
 }
-
 
 /*****************************************************************************/
 VCOS_STATUS_T gx_create_pbuffer( uint32_t width,
@@ -836,7 +834,7 @@ VCOS_STATUS_T gx_create_pbuffer( uint32_t width,
    GX_TRACE("Creating pbuffer surface");
 
    EGLint attribs[] = {EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE};
-   h->surface = eglCreatePbufferSurface(display.disp, h->config, 
+   h->surface = eglCreatePbufferSurface(display.disp, h->config,
                                         attribs);
    if (!h->surface)
    {
@@ -857,9 +855,9 @@ VCOS_STATUS_T gx_create_pbuffer( uint32_t width,
       status = VCOS_ENOMEM;
       goto finish;
    }
- 
+
    h->u.pixmap  = image;
- 
+
    // fill it with black
    status = gx_priv_resource_fill(h, 0, 0, width, height, GRAPHICS_RGBA32(0,0,0,0xff));
    vcos_assert(status == VCOS_SUCCESS);
@@ -922,7 +920,7 @@ VCOS_STATUS_T gx_fill_gradient(GRAPHICS_RESOURCE_HANDLE dest,
                                uint32_t radius,
                                GX_PAINT_T *p)
 {
-   /* Define start and end points of gradient, see OpenVG specification, 
+   /* Define start and end points of gradient, see OpenVG specification,
       section 9.3.3. */
    VGfloat gradient[4] = {0.0, 0.0, 0.0, 0.0};
    VGPaint paint = (VGPaint)p;
@@ -960,7 +958,7 @@ VCOS_STATUS_T gx_fill_gradient(GRAPHICS_RESOURCE_HANDLE dest,
    vgDestroyPath(path);
 
    vcos_assert(vgGetError() == 0);
-   
+
 finish:
    gx_priv_restore(&save);
 
@@ -972,15 +970,15 @@ VCOS_STATUS_T gx_graphics_init(const char *font_dir)
 {
    GX_CLIENT_STATE_T save;
    VCOS_STATUS_T rc;
-   
+
    gx_priv_save(&save, NULL);
-   
+
    rc = gx_priv_initialise();
    if (rc == VCOS_SUCCESS)
       rc = gx_priv_font_init(font_dir);
 
    gx_priv_restore(&save);
-   
+
    return rc;
 }
 
@@ -1006,7 +1004,7 @@ int32_t graphics_userblt(GRAPHICS_RESOURCE_TYPE_T src_type,
    VGImageFormat vg_src_type;
    int bytes_per_pixel;
    GX_CLIENT_STATE_T save;
-   
+
    status = convert_image_type(src_type, &vg_src_type, &bytes_per_pixel);
    if (status != VCOS_SUCCESS)
       return status;
@@ -1059,7 +1057,7 @@ int32_t graphics_resource_text_dimensions( GRAPHICS_RESOURCE_HANDLE resource_han
 
 /*****************************************************************************/
 VCOS_STATUS_T gx_render_arrowhead(GRAPHICS_RESOURCE_HANDLE res,
-                                  uint32_t tip_x, uint32_t tip_y, 
+                                  uint32_t tip_x, uint32_t tip_y,
                                   int32_t w, int32_t h,
                                   GX_PAINT_T *p)
 {
@@ -1138,25 +1136,25 @@ VCOS_STATUS_T gx_get_pixels(const GRAPHICS_RESOURCE_HANDLE res, void **pixels)
    VCOS_STATUS_T status = VCOS_SUCCESS;
    GX_CLIENT_STATE_T save;
    gx_priv_save(&save, res);
-   
+
    /* Default to top-top-bottom raster scan order */
    status = gx_priv_get_pixels(res, pixels, GX_TOP_BOTTOM);
-   
+
    gx_priv_restore(&save);
    return status;
 }
 
 /*****************************************************************************/
-VCOS_STATUS_T gx_get_pixels_in_raster_order(const GRAPHICS_RESOURCE_HANDLE res, 
-                                            void **pixels, 
+VCOS_STATUS_T gx_get_pixels_in_raster_order(const GRAPHICS_RESOURCE_HANDLE res,
+                                            void **pixels,
                                             GX_RASTER_ORDER_T raster_order)
 {
    VCOS_STATUS_T status = VCOS_SUCCESS;
    GX_CLIENT_STATE_T save;
    gx_priv_save(&save, res);
-   
+
    status = gx_priv_get_pixels(res, pixels, raster_order);
-   
+
    gx_priv_restore(&save);
    return status;
 }
@@ -1180,7 +1178,6 @@ void gx_unbind_vg(GX_CLIENT_STATE_T *restore)
    gx_priv_restore(restore);
 }
 
-
 GX_CLIENT_STATE_T *gx_alloc_context(void)
 {
    GX_CLIENT_STATE_T *ret = vcos_calloc(1,sizeof(*ret), "gx_client_state");
@@ -1196,7 +1193,6 @@ void gx_convert_colour(uint32_t colour, float *dest)
 {
    gx_priv_colour_to_paint(colour, dest);
 }
-
 
 #define MAX_DISPLAY_HANDLES  4
 
@@ -1233,7 +1229,6 @@ void gx_priv_destroy(void)
 {
    vcos_mutex_delete(&gx.lock);
 }
-
 
 static
 int32_t gx_priv_open_screen(uint32_t index, DISPMANX_DISPLAY_HANDLE_T *pscreen)
@@ -1280,9 +1275,6 @@ int32_t gx_priv_release_screen(uint32_t index)
    return 0;
 }
 
-
-
-
 int gx_priv_create_native_window(uint32_t screen_id,
                                  uint32_t w, uint32_t h,
                                  GRAPHICS_RESOURCE_TYPE_T type,
@@ -1309,14 +1301,14 @@ int gx_priv_create_native_window(uint32_t screen_id,
       GX_LOG("Could not start update on screen %d", screen_id);
       goto fail_update;
    }
-   
+
    src_rect.x = src_rect.y = 0;
    src_rect.width = w << 16;
    src_rect.height = h << 16;
 
    dst_rect.x = dst_rect.y = 0;
    dst_rect.width = dst_rect.height = 1;
-   
+
    win->egl_win.width = w;
    win->egl_win.height = h;
    VC_DISPMANX_ALPHA_T alpha;
@@ -1327,8 +1319,8 @@ int gx_priv_create_native_window(uint32_t screen_id,
    memset(&clamp, 0x0, sizeof(DISPMANX_CLAMP_T));
 
    win->egl_win.element = vc_dispmanx_element_add(current_update, dispmanx_display,
-      0 /* layer */, &dst_rect, 
-      0 /* src */, &src_rect, 
+      0 /* layer */, &dst_rect,
+      0 /* src */, &src_rect,
       DISPMANX_PROTECTION_NONE,
       &alpha /* alpha */,
       &clamp /* clamp */,
@@ -1374,7 +1366,6 @@ gx_priv_destroy_native_window(GRAPHICS_RESOURCE_HANDLE_TABLE_T *res)
 
    gx_priv_release_screen(res->screen_id);
 }
-
 
 /***********************************************************
  * Name: graphics_get_display_size
@@ -1561,7 +1552,6 @@ int32_t graphics_update_start(void)
    return success;
 }
 
-
 /***********************************************************
  * Name: graphics_update_end
  *
@@ -1605,4 +1595,3 @@ int32_t graphics_update_end( void )
 
    return success;
 }
-

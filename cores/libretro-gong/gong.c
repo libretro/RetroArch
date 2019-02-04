@@ -460,7 +460,7 @@ static void draw_number(Game_Offscreen_Buffer *buffer, unsigned number, unsigned
             draw_rect(buffer, color, at_x + 2.f, y, .5f, 4.5f);
             break;
          }
- 
+
          case 2:
          {
             draw_rect(buffer, color, at_x - 2.f, y - 2.f, .5f, 2.f);
@@ -470,7 +470,7 @@ static void draw_number(Game_Offscreen_Buffer *buffer, unsigned number, unsigned
             draw_rect(buffer, color, at_x, y - 4.f, 2.5f, .5f);
             break;
          }
- 
+
          case 3:
          {
             draw_rect(buffer, color, at_x + 2.f, y, .5f, 4.f);
@@ -565,7 +565,7 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
    {
       float speed = 80.f;
       player1_dpy = 0.f;
-      
+
       if (is_down(input->buttons[B_SPEED_UP]))
          speed = 150.f;
 

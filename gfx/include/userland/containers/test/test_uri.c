@@ -291,7 +291,6 @@ MERGE_URI_T test_merge_uris[] = {
    { "http:?q#f",            "./",        "http:" },
 };
 
-
 /** Dump a URI structure to the log.
  *
  * \param uri URI structure to be dumped. */

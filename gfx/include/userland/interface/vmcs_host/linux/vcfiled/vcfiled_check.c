@@ -76,7 +76,7 @@ int vcfiled_lock(const char *lockfile, VCFILED_LOGMSG_T logmsg)
          }
       }
    }
-   // at this point, we have opened the file, and can use discretionary locking, 
+   // at this point, we have opened the file, and can use discretionary locking,
    // which should work even over NFS
 
    struct flock flock;
@@ -126,7 +126,7 @@ finish:
 int vcfiled_is_running(const char *filename)
 {
    int ret;
-   
+
    int fd = open(filename, O_RDONLY);
    if (fd < 0)
    {
@@ -155,7 +155,7 @@ int vcfiled_is_running(const char *filename)
          /* file is unlocked, so filed not running */
          ret = 0;
       }
-      else 
+      else
       {
          /* file is locked, so filed is running */
          ret = 1;
@@ -164,6 +164,4 @@ int vcfiled_is_running(const char *filename)
    /* coverity[leaked_handle] - fd left open on purpose */
    return ret;
 }
-
-
 

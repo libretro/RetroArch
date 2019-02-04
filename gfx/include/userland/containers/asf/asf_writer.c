@@ -471,7 +471,7 @@ static VC_CONTAINER_STATUS_T asf_writer_add_track( VC_CONTAINER_T *p_ctx, VC_CON
 
    if(!(format->flags & VC_CONTAINER_ES_FORMAT_FLAG_FRAMED))
       return VC_CONTAINER_ERROR_UNSUPPORTED_OPERATION;
-   
+
    /* Allocate and initialise track data */
    if(p_ctx->tracks_num >= ASF_TRACKS_MAX) return VC_CONTAINER_ERROR_OUT_OF_RESOURCES;
    p_ctx->tracks[p_ctx->tracks_num] = track =

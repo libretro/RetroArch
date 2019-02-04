@@ -116,7 +116,7 @@ typedef struct
 #endif
 
    bool core_supports;
-   
+
    cheevos_rapatchdata_t patchdata;
    cheevos_cheevo_t* core;
    cheevos_cheevo_t* unofficial;
@@ -289,7 +289,7 @@ static int cheevos_parse(const char* json)
    cheevos_racheevo_t* rac  = NULL;
 
    cheevos_fixup_init(&cheevos_locals.fixups);
-   
+
    res = cheevos_get_patchdata(json, &cheevos_locals.patchdata);
 
    if (res != 0)
@@ -312,13 +312,13 @@ static int cheevos_parse(const char* json)
    /* Allocate memory. */
    cheevos_locals.core = (cheevos_cheevo_t*)
       calloc(cheevos_locals.patchdata.core_count, sizeof(cheevos_cheevo_t));
-   
+
    cheevos_locals.unofficial = (cheevos_cheevo_t*)
       calloc(cheevos_locals.patchdata.unofficial_count, sizeof(cheevos_cheevo_t));
 
    cheevos_locals.lboards = (cheevos_lboard_t*)
       calloc(cheevos_locals.patchdata.lboard_count, sizeof(cheevos_lboard_t));
-   
+
    if (   !cheevos_locals.core
        || !cheevos_locals.unofficial
        || !cheevos_locals.lboards)
@@ -726,7 +726,7 @@ void cheevos_populate_menu(void* data)
    cheevos_cheevo_t* cheevo      = NULL;
 
    if (   settings->bools.cheevos_enable
-       && settings->bools.cheevos_hardcore_mode_enable 
+       && settings->bools.cheevos_hardcore_mode_enable
        && cheevos_loaded)
    {
       if (!cheevos_hardcore_paused)
@@ -773,7 +773,7 @@ void cheevos_populate_menu(void* data)
             cheevo->info->description,
             MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
             MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-         
+
          set_badge_info(&badges_ctx, i, cheevo->info->badge,
             (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
       }
@@ -811,7 +811,7 @@ void cheevos_populate_menu(void* data)
                cheevo->info->description,
                MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            
+
             set_badge_info(&badges_ctx, i, cheevo->info->badge,
                (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
          }
@@ -979,7 +979,7 @@ void cheevos_test(void)
    {
       if (settings->bools.cheevos_test_unofficial)
          cheevos_test_cheevo_set(false);
-      
+
       if (settings->bools.cheevos_hardcore_mode_enable &&
           settings->bools.cheevos_leaderboards_enable  &&
           !cheevos_hardcore_paused)
@@ -1671,7 +1671,7 @@ found:
       {
          settings_t *settings = config_get_ptr();
          if (!(
-               string_is_equal(settings->arrays.menu_driver, "xmb") || 
+               string_is_equal(settings->arrays.menu_driver, "xmb") ||
                string_is_equal(settings->arrays.menu_driver, "ozone")
             ) ||
                !settings->bools.cheevos_badges_enable)

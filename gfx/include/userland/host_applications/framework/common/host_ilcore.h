@@ -76,4 +76,3 @@ OMX_ERRORTYPE OMX_GetDebugInformation (
 
 #endif // HOST_ILCORE_H
 
-

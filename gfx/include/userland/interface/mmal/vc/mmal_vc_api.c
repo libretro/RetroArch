@@ -127,7 +127,6 @@ MMAL_STATUS_T mmal_vc_get_stats(MMAL_VC_STATS_T *stats, int reset)
                                                    MMAL_WORKER_GET_STATS,
                                                    &msg, &len, MMAL_FALSE);
 
-
    if (status == MMAL_SUCCESS)
    {
       vcos_assert(len == sizeof(msg));
@@ -350,7 +349,6 @@ static MMAL_STATUS_T mmal_vc_port_flush_normal(MMAL_PORT_T *port)
    return status;
 }
 
-
 /** Flush a port using PORT_FLUSH - generates a dummy bulk transfer to keep it in sync
   * with buffers being passed using bulk transfer */
 static MMAL_STATUS_T mmal_vc_port_flush_sync(MMAL_PORT_T *port)
@@ -372,7 +370,6 @@ static MMAL_STATUS_T mmal_vc_port_flush_sync(MMAL_PORT_T *port)
    msg->drvbuf.component_handle = module->component_handle;
    msg->drvbuf.port_handle = module->port_handle;
    msg->drvbuf.magic = MMAL_MAGIC;
-
 
    status = mmal_vc_sendwait_message(mmal_vc_get_client(), &msg->header, sizeof(*msg),
                                      MMAL_WORKER_PORT_FLUSH, &reply, &replylen, MMAL_TRUE);
@@ -426,7 +423,6 @@ static MMAL_STATUS_T mmal_vc_port_flush(MMAL_PORT_T *port)
    else
       return mmal_vc_port_flush_normal(port);
 }
-
 
 /** Connect 2 ports together */
 static MMAL_STATUS_T mmal_vc_port_connect(MMAL_PORT_T *port, MMAL_PORT_T *other_port)
@@ -910,7 +906,7 @@ MMAL_STATUS_T mmal_vc_get_core_stats(MMAL_CORE_STATISTICS_T *stats,
    req.type = type;
    req.reset = reset;
    req.dir = dir;
-   
+
    status = mmal_vc_sendwait_message(mmal_vc_get_client(),
                                      &req.header, sizeof(req),
                                      MMAL_WORKER_GET_CORE_STATS_FOR_PORT,
@@ -926,7 +922,6 @@ MMAL_STATUS_T mmal_vc_get_core_stats(MMAL_CORE_STATISTICS_T *stats,
    }
    return status;
 }
-
 
 /** Get port context data. */
 static MMAL_STATUS_T mmal_vc_port_info_get(MMAL_PORT_T *port)
@@ -1189,7 +1184,7 @@ static MMAL_STATUS_T mmal_vc_port_parameter_get(MMAL_PORT_T *port, MMAL_PARAMETE
       status = reply.status;
       /* Reply must include the parameter header */
       vcos_assert(replylen >= MMAL_OFFSET(mmal_worker_port_param_get_reply, space));
-      
+
       /* If the call fails with MMAL_ENOSPC then reply.param.size is set to the size required for
        * the call to succeed, and that may be bigger than the buffers, so only check these asserts
        * if the call succeeded.
@@ -1209,7 +1204,7 @@ static MMAL_STATUS_T mmal_vc_port_parameter_get(MMAL_PORT_T *port, MMAL_PARAMETE
             param->id, param->size, mmal_status_to_string(status));
       return status;
    }
-   
+
    if (status == MMAL_ENOSPC)
    {
       /* Copy only as much as we have space for but report true size of parameter */
@@ -1502,4 +1497,3 @@ void mmal_register_component_videocore(void)
    mmal_vc_shm_init();
    mmal_component_supplier_register(VIDEOCORE_PREFIX, mmal_vc_component_create);
 }
-

@@ -65,4 +65,3 @@ void vcos_mutex_unlock(VCOS_MUTEX_T *latch) {
 }
 
 #endif /* VCOS_INLINE_BODIES */
-

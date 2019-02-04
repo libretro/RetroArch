@@ -189,7 +189,6 @@ void config_file_dump(config_file_t *conf, FILE *file, bool val);
 void config_file_dump_orbis(config_file_t *conf, int fd);
 #endif
 
-
 bool config_file_exists(const char *path);
 
 RETRO_END_DECLS

@@ -1,6 +1,6 @@
 ﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -135,25 +135,25 @@ static bool slang_process_reflection(
 
       if (!set_unique_map(
                 texture_semantic_map, name,
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
       if (!set_unique_map(
                 texture_semantic_uniform_map, name + "Size",
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
       if (!set_unique_map(
                 texture_semantic_map, name + "Feedback",
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
 
       if (!set_unique_map(
                 texture_semantic_uniform_map, name + "FeedbackSize",
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
    }
@@ -162,14 +162,14 @@ static bool slang_process_reflection(
    {
       if (!set_unique_map(
                 texture_semantic_map, shader_info->lut[i].id,
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_USER, i }))
          return false;
 
       if (!set_unique_map(
                 texture_semantic_uniform_map,
                 string(shader_info->lut[i].id) + "Size",
-                slang_texture_semantic_map{ 
+                slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_USER, i }))
          return false;
    }
@@ -212,7 +212,7 @@ static bool slang_process_reflection(
       if (src.push_constant || src.uniform)
       {
          uniform_sem_t uniform = { map->uniforms[semantic],
-                                   src.num_components 
+                                   src.num_components
                                       * (unsigned)sizeof(float) };
          string uniform_id     = get_semantic_name(
                sl_reflection, (slang_semantic)semantic, 0);
@@ -238,7 +238,7 @@ static bool slang_process_reflection(
 
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform = { 
+         uniform_sem_t uniform = {
             &shader_info->parameters[i].current, sizeof(float) };
 
          string uniform_id = get_semantic_name(
@@ -262,10 +262,10 @@ static bool slang_process_reflection(
    {
       unsigned index;
 
-      for (index = 0; index < 
+      for (index = 0; index <
             sl_reflection.semantic_textures[semantic].size(); index++)
       {
-         slang_texture_semantic_meta& src = 
+         slang_texture_semantic_meta& src =
             sl_reflection.semantic_textures[semantic][index];
 
          if (src.stage_mask)
@@ -304,7 +304,7 @@ static bool slang_process_reflection(
          if (src.push_constant || src.uniform)
          {
             uniform_sem_t uniform = {
-               (void*)((uintptr_t)map->textures[semantic].size 
+               (void*)((uintptr_t)map->textures[semantic].size
                      + index * map->textures[semantic].size_stride),
                4 * sizeof(float)
             };

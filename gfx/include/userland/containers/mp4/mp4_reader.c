@@ -1413,7 +1413,7 @@ static VC_CONTAINER_STATUS_T mp4_read_sample_header( VC_CONTAINER_T *p_ctx, uint
       state->status = VC_CONTAINER_SUCCESS; /* This isn't a critical error */
    }
 
-   state->keyframe = 
+   state->keyframe =
       track_module->sample_table[MP4_SAMPLE_TABLE_STSS].entries &&
       state->sample == state->next_sync_sample;
    if(state->keyframe)

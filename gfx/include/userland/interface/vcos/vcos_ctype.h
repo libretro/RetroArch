@@ -46,4 +46,3 @@ VideoCore OS Abstraction Layer - public header file
 #endif
 
 #endif
-

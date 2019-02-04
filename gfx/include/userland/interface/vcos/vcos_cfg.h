@@ -50,24 +50,24 @@ typedef void (*VCOS_CFG_PARSE_FPTR)( VCOS_CFG_BUF_T buf, void *data );
 /** Create a configuration directory.
   *
   * @param entry        Place to store the created config entry.
-  * @param parent       Parent entry (for directory like config 
+  * @param parent       Parent entry (for directory like config
   *                     options).
   * @param entryName    Name of the directory.
   */
 
 VCOS_STATUS_T vcos_cfg_mkdir( VCOS_CFG_ENTRY_T *entry,
                               VCOS_CFG_ENTRY_T *parent,
-                              const char *dirName );           
+                              const char *dirName );
 
 /** Create a configuration entry.
   *
   * @param entry        Place to store the created config entry.
-  * @param parent       Parent entry (for directory like config 
+  * @param parent       Parent entry (for directory like config
   *                     options).
   * @param entryName    Name of the configuration entry.
-  * @param showFunc     Function pointer to show configuration 
+  * @param showFunc     Function pointer to show configuration
   *                     data.
-  * @param parseFunc    Function pointer to parse new data. 
+  * @param parseFunc    Function pointer to parse new data.
   */
 
 VCOS_STATUS_T vcos_cfg_create_entry( VCOS_CFG_ENTRY_T *entry,
@@ -98,12 +98,11 @@ const char *vcos_cfg_get_entry_name( VCOS_CFG_ENTRY_T entry );
 
 VCOS_STATUS_T vcos_cfg_remove_entry( VCOS_CFG_ENTRY_T *entry );
 
-
 /** Writes data into a configuration buffer. Only valid inside
-  * the show function. 
+  * the show function.
   *
   * @param buf      Buffer to write data into.
-  * @param fmt      printf style format string. 
+  * @param fmt      printf style format string.
   */
 
 void vcos_cfg_buf_printf( VCOS_CFG_BUF_T buf, const char *fmt, ... );
@@ -112,7 +111,7 @@ void vcos_cfg_buf_printf( VCOS_CFG_BUF_T buf, const char *fmt, ... );
   * with the buffer. Only valid inside the parse function.
   *
   * @param buf      Buffer to get data from.
-  * @param fmt      printf style format string. 
+  * @param fmt      printf style format string.
   */
 
 char *vcos_cfg_buf_get_str( VCOS_CFG_BUF_T buf );
@@ -123,4 +122,3 @@ void *vcos_cfg_get_proc_entry( VCOS_CFG_ENTRY_T entry );
 }
 #endif
 #endif
-

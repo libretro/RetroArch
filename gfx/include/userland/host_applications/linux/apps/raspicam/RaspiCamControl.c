@@ -217,7 +217,6 @@ static COMMAND_LIST  cmdline_commands[] =
 
 static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
 
-
 #define parameter_reset -99999
 
 #define zoom_full_16P16 ((unsigned int)(65536 * 0.15))
@@ -249,7 +248,6 @@ static int update_cycle_parameter(int *option, int min, int max, int increment)
    else
       return 1;
 }
-
 
 /**
  * Test/Demo code to cycle through a bunch of camera settings
@@ -441,8 +439,6 @@ int raspicamcontrol_cycle_test(MMAL_COMPONENT_T *camera)
 
    return 1;
 }
-
-
 
 /**
  * Convert string to the MMAL parameter for exposure mode
@@ -908,7 +904,6 @@ void raspicamcontrol_display_help()
    fprintf(stdout, "\n");
 }
 
-
 /**
  * Dump contents of camera parameter structure to stderr for debugging/verbose logging
  *
@@ -930,8 +925,6 @@ void raspicamcontrol_dump_parameters(const RASPICAM_CAMERA_PARAMETERS *params)
    fprintf(stderr, "Rotation %d, hflip %s, vflip %s\n", params->rotation, params->hflip ? "Yes":"No",params->vflip ? "Yes":"No");
    fprintf(stderr, "ROI x %lf, y %f, w %f h %f\n", params->roi.x, params->roi.y, params->roi.w, params->roi.h);
 }
-
-
 
 /**
  * Give the supplied parameter block a set of default values
@@ -1209,7 +1202,6 @@ int raspicamcontrol_set_metering_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOS
    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &meter_mode.hdr));
 }
 
-
 /**
  * Set the video stabilisation flag. Only used in video mode
  * @param camera Pointer to camera component
@@ -1237,7 +1229,6 @@ int raspicamcontrol_set_exposure_compensation(MMAL_COMPONENT_T *camera, int exp_
 
    return mmal_status_to_int(mmal_port_parameter_set_int32(camera->control, MMAL_PARAMETER_EXPOSURE_COMP, exp_comp));
 }
-
 
 /**
  * Set exposure mode for images
@@ -1269,7 +1260,6 @@ int raspicamcontrol_set_exposure_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOS
    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
 }
 
-
 /**
  * Set flicker avoid mode for images
  * @param camera Pointer to camera component
@@ -1290,7 +1280,6 @@ int raspicamcontrol_set_flicker_avoid_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_
 
    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &fl_mode.hdr));
 }
-
 
 /**
  * Set the aWB (auto white balance) mode for images
@@ -1399,7 +1388,6 @@ int raspicamcontrol_set_colourFX(MMAL_COMPONENT_T *camera, const MMAL_PARAM_COLO
    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &colfx.hdr));
 
 }
-
 
 /**
  * Set the rotation of the image
@@ -1580,7 +1568,6 @@ int raspicamcontrol_set_stats_pass(MMAL_COMPONENT_T *camera, int stats_pass)
 
    return mmal_status_to_int(mmal_port_parameter_set_boolean(camera->control, MMAL_PARAMETER_CAPTURE_STATS_PASS, stats_pass));
 }
-
 
 /**
  * Set the annotate data
@@ -1783,7 +1770,6 @@ void raspicamcontrol_check_configuration(int min_gpu_mem)
    else
       vcos_log_error("Failed to run camera app. Please check for firmware updates\n");
 }
-
 
 /** Default camera callback function
  * Handles the --settings

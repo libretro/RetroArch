@@ -311,7 +311,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
       command_event(CMD_EVENT_RECORD_INIT, NULL);
    }
 
-   /* Hide mouse cursor in fullscreen after 
+   /* Hide mouse cursor in fullscreen after
     * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
    if (settings->bools.video_fullscreen)
       video_driver_hide_mouse();
@@ -459,7 +459,7 @@ void driver_uninit(int flags)
 
    if (flags & DRIVER_LED)
       led_driver_free();
-   
+
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_free();
 
@@ -471,7 +471,7 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
       input_driver_destroy_data();
-   
+
    if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
 

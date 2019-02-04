@@ -1849,7 +1849,7 @@ bool gl_load_luts(
       GLuint *textures_lut)
 {
    unsigned i;
-   const struct video_shader *shader = 
+   const struct video_shader *shader =
       (const struct video_shader*)shader_data;
    unsigned num_luts                 = MIN(shader->luts, GFX_MAX_TEXTURES);
 
@@ -1990,8 +1990,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
 #endif
-
-
 
 static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
@@ -2238,7 +2236,6 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
             width, height, false, true);
    }
 }
-
 
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,

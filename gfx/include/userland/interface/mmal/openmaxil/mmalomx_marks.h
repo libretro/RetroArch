@@ -33,4 +33,3 @@ void mmalomx_mark_process_incoming(MMALOMX_COMPONENT_T *component,
    MMALOMX_PORT_T *port, OMX_BUFFERHEADERTYPE *omx_buffer);
 void mmalomx_mark_process_outgoing(MMALOMX_COMPONENT_T *component,
    MMALOMX_PORT_T *port, OMX_BUFFERHEADERTYPE *omx_buffer);
-

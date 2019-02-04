@@ -179,7 +179,6 @@ unsigned int cube_map           : 1;
       unsigned short          info;  /* dummy, force size to min 16 bits */
    } VC_IMAGE_INFO_T;
 
-
    /**
     * Image handle object, which must be locked before image data becomes
     * accessible.
@@ -217,11 +216,10 @@ unsigned int cube_map           : 1;
       uint8_t                         linked_multichann_flag;/* Indicate the header has the linked-multichannel structure*/
       uint8_t                         is_channel_linked;     /* Track if the above structure is been used to link the header
                                                                 into a linked-mulitchannel image */
-      uint8_t                         channel_index;         /* index of the channel this header represents while  
+      uint8_t                         channel_index;         /* index of the channel this header represents while
                                                                 it is being linked. */
       uint8_t                         _dummy[3];      /* pad struct to 64 bytes */
    };
-
 
 # ifdef __COVERITY__
    /* Currently battling with the size of enums when running through static analysis stage */
@@ -243,4 +241,3 @@ extern DEBUG_WRITE_RULE_T vc_image_info_rule[];
 extern DEBUG_WRITE_RULE_T vc_image_rule[];
 
 #endif /* __VC_INCLUDE_IMAGE_TYPES_H__ */
-

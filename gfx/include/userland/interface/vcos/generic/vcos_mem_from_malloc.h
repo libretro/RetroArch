@@ -77,4 +77,3 @@ unsigned long VCOS_DEPRECATED("returns invalid result") vcos_get_free_mem(void) 
 
 #endif /* VCOS_INLINE_BODIES */
 
-

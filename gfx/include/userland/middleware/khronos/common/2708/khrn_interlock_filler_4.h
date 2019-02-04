@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef enum {
    KHRN_INTERLOCK_USER_NONE    = 0,
    KHRN_INTERLOCK_USER_INVALID = 1 << 29, /* <= 29 render states, so can use top 3 bits for temp/writing/inv */
-   KHRN_INTERLOCK_USER_TEMP    = 1 << 30, 
+   KHRN_INTERLOCK_USER_TEMP    = 1 << 30,
    KHRN_INTERLOCK_USER_WRITING = 1 << 31
 } KHRN_INTERLOCK_USER_T;
 static INLINE KHRN_INTERLOCK_USER_T khrn_interlock_user(uint32_t i) { return (KHRN_INTERLOCK_USER_T)(1 << i); }

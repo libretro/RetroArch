@@ -229,7 +229,6 @@ typedef struct {
 //Parameters: none
 //Reply: single value interpreted as latency in ms
 
-
 //TV_HDCP_SET_KEY
 //Parameters: key block buffer (fixed size HDCP_KEY_BLOCK_SIZE)
 //Reply: none, key validity result arrives via callback
@@ -318,7 +317,7 @@ typedef struct {
 
 //TV_SET_PROP
 //Parameters: HDMI_PROPERTY_PARAM_T
-//Reply: 0 = set successful, non-zero if error (int32_t) 
+//Reply: 0 = set successful, non-zero if error (int32_t)
 #define HDMI_PROPERTY_SIZE_IN_WORDS (sizeof(HDMI_PROPERTY_T)/sizeof(uint32_t))
 
 //TV_GET_PROP

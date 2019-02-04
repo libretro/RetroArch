@@ -109,7 +109,7 @@ typedef struct GRAPHICS_RESOURCE_HANDLE_TABLE_T
 } GRAPHICS_RESOURCE_HANDLE_TABLE_T;
 
 /**
- * Structure used to store an EGL client state. 
+ * Structure used to store an EGL client state.
  ***********************************************************/
 struct GX_CLIENT_STATE_T
 {
@@ -123,13 +123,13 @@ struct GX_CLIENT_STATE_T
 /**
  * \fixme add documentation
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_init(void);
 
 /**
  * \fixme add documentation
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_destroy(void);
 
 /**
@@ -139,32 +139,32 @@ void gx_priv_destroy(void);
  *
  * @param rgba OpenVG paint colour
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_colour_to_paint(uint32_t col, VGfloat *rgba);
 
-/** 
+/**
  * Save current EGL client state.
  *
  * @param state upon return, holds the saved EGL client state.
  *
  * @param res handle to the surface the EGL client state belongs to (may be <code>NULL</code>).
- * 
+ *
  */
 void gx_priv_save(GX_CLIENT_STATE_T *state, GRAPHICS_RESOURCE_HANDLE res);
 
-/** 
+/**
  * Restore current EGL client state.
  *
  * @param state the EGL client state to restore.
- * 
+ *
  */
 void gx_priv_restore(GX_CLIENT_STATE_T *state);
 
-/** 
+/**
  * Create a native window for a surface.
  *
  * @param screen_id \fixme
- * 
+ *
  * @param w width of the window
  *
  * @param h height of the window
@@ -183,19 +183,19 @@ int gx_priv_create_native_window(uint32_t screen_id,
                                  GX_NATIVE_WINDOW_T *win,
                                  void **cookie);
 
-/** 
+/**
  * Destroy native window bound to surface.
  *
  * @param res Handle to surface.
- * 
+ *
  */
 void gx_priv_destroy_native_window(GRAPHICS_RESOURCE_HANDLE_TABLE_T *res);
 
-/** 
+/**
  * Initialise font from the given directory.
  *
  * @param font_dir path to font
- * 
+ *
  * \fixme only supports Vera.tff at the moment?
  *
  * @return VCOS_SUCCESS on success, or error code.
@@ -205,7 +205,7 @@ VCOS_STATUS_T gx_priv_font_init(const char *font_dir);
 /**
  * \fixme add documentation
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_font_term(void);
 
 /**
@@ -214,7 +214,7 @@ void gx_priv_font_term(void);
  * @param res Handle to surface.
  *
  * @param x x-offset of area to fill
- * 
+ *
  * @param y y-offset of area to fill
  *
  * @param width width of area to fill
@@ -274,7 +274,7 @@ VCOS_STATUS_T gx_priv_render_text( GX_DISPLAY_T *disp,
  *
  * @param res Handle to surface.
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_flush(GRAPHICS_RESOURCE_HANDLE res);
 
 /**
@@ -285,19 +285,19 @@ void gx_priv_flush(GRAPHICS_RESOURCE_HANDLE res);
  *
  * @param cookie ???
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_priv_finish_native_window(GRAPHICS_RESOURCE_HANDLE_TABLE_T *res,
                                   void *cookie);
 
 /**
  * Flush font cache.
  *
- ***********************************************************/ 
+ ***********************************************************/
 void gx_font_cache_flush(void);
 
 /**
- * Read a bitmap (.BMP) image from the given file. 
- *  
+ * Read a bitmap (.BMP) image from the given file.
+ *
  * @param filename filename (must not be <code>NULL</code>).
  *
  * @param width holds the width of the image upon return.
@@ -313,15 +313,15 @@ void gx_font_cache_flush(void);
  * @param flags holds flags describing image properties upon return.
  *
  * @param image_data_size holds size of the image data upon return.
- * 
+ *
  * @param pimage_data holds the image data buffer upon return (must not be <code>NULL</code>),
  *                    the caller is responsible for releasing the buffer afterwards.
  *
  * @return 0 if success, non-zero otherwise (in which case the output parameters
  *           may be invalid).
  *
- ***********************************************************/ 
-int gx_priv_read_bmp(const char *file_name, 
+ ***********************************************************/
+int gx_priv_read_bmp(const char *file_name,
                      uint32_t *width, uint32_t *height, uint32_t *pitch_bytes,
                      GRAPHICS_RESOURCE_TYPE_T *restype,
                      VGImageFormat *vg_format,
@@ -330,8 +330,8 @@ int gx_priv_read_bmp(const char *file_name,
                      void **pimage_data);
 
 /**
- * Read a Targa (.TGA) image from the given file. 
- *  
+ * Read a Targa (.TGA) image from the given file.
+ *
  * @param filename filename (must not be <code>NULL</code>).
  *
  * @param width holds the width of the image upon return.
@@ -347,15 +347,15 @@ int gx_priv_read_bmp(const char *file_name,
  * @param flags holds flags describing image properties upon return.
  *
  * @param image_data_size holds size of the image data upon return.
- * 
+ *
  * @param pimage_data holds the image data buffer upon return (must not be <code>NULL</code>),
  *                    the caller is responsible for releasing the memory afterwards.
  *
  * @return 0 if success, non-zero otherwise (in which case the output parameters.
  *           may be invalid).
  *
- ***********************************************************/ 
-int gx_priv_read_tga(const char *file_name, 
+ ***********************************************************/
+int gx_priv_read_tga(const char *file_name,
                      uint32_t *width, uint32_t *height, uint32_t *pitch_bytes,
                      GRAPHICS_RESOURCE_TYPE_T *restype,
                      VGImageFormat *vg_format,

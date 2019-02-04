@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef GLXX_INT_CONFIG_H
 #define GLXX_INT_CONFIG_H
- 
+
 #define GLXX_CONFIG_MAX_VERTEX_ATTRIBS            10
 /* GL 2.0 exposes a maximum of 8 attributes */
 #define GL20_CONFIG_MAX_VERTEX_ATTRIBS             8

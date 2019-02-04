@@ -24,7 +24,7 @@
              }
          ]
       },
-      { 
+      {
          "name": "(gdb) Attach",
          "type": "cppdbg",
          "request": "attach",

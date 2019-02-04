@@ -794,6 +794,6 @@ GX2Shader bokeh_shader =
       .uniformBlockCount = countof(uniform_blocks), uniform_blocks,
       .uniformVarCount = countof(uniform_vars), uniform_vars,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

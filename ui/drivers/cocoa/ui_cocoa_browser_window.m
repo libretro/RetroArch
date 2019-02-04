@@ -29,7 +29,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
    NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
     NSArray *filetypes    = NULL;
-    
+
     if (!string_is_empty(state->filters))
         filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
    [panel setAllowedFileTypes:filetypes];
@@ -51,7 +51,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
     NSURL *url           = (NSURL*)panel.URL;
     const char *res_path = [url.path UTF8String];
     state->result        = strdup(res_path);
-                                   
+
    return true;
 }
 

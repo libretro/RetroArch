@@ -37,11 +37,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct DIR_tag DIR;
 #endif // ifndef _DIRENT_H
 
-typedef struct {   
-   int64_t  st_size;    /* total size, in bytes  (off_t)*/      
-   uint32_t st_modtime;   /* time of last modification (time_t)*/   
+typedef struct {
+   int64_t  st_size;    /* total size, in bytes  (off_t)*/
+   uint32_t st_modtime;   /* time of last modification (time_t)*/
 } FSTAT_T;
-
 
 VCHPRE_ int VCHPOST_  vc_vchi_filesys_init (VCHI_INSTANCE_T initialise_instance, VCHI_CONNECTION_T **connections, uint32_t num_connections );
 
@@ -66,7 +65,6 @@ VCHPRE_ int VCHPOST_ vc_filesys_write(int fildes, const void *buf, unsigned int 
 
 VCHPRE_ int VCHPOST_ vc_filesys_mount(const char *device, const char *mountpoint, const char *options);
 VCHPRE_ int VCHPOST_ vc_filesys_umount(const char *mountpoint);
-
 
 // Ends a directory listing iteration
 VCHPRE_ int VCHPOST_ vc_filesys_closedir(void *dhandle);
@@ -181,4 +179,3 @@ VCHPRE_ int VCHPOST_ vc_filesys_write_sector(const char *buf);
 VCHPRE_ int VCHPOST_ vc_filesys_write_sectors_end(uint32_t *sectors_written);
 
 #endif //VCFILESYS_H_
-

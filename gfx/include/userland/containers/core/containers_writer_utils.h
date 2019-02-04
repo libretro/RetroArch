@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Helper functions and macros for container writers
  */
 
-#include "containers/containers.h" 
+#include "containers/containers.h"
 #include "containers/containers_codecs.h"
 #include "containers/core/containers_io_helpers.h"
 

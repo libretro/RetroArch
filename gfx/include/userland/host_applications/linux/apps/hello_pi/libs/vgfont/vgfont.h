@@ -66,7 +66,6 @@ typedef enum
 
 } GRAPHICS_RESOURCE_TYPE_T;
 
-
 typedef struct GRAPHICS_RESOURCE_HANDLE_TABLE_T *GRAPHICS_RESOURCE_HANDLE;
 
 VCOS_STATUS_T gx_graphics_init(const char *font_dir);

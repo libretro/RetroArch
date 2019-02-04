@@ -30,16 +30,16 @@
 
 typedef NS_ENUM(NSUInteger, RPixelFormat)
 {
-   
+
    RPixelFormatInvalid,
-   
+
    /* 16-bit formats */
    RPixelFormatBGRA4Unorm,
    RPixelFormatB5G6R5Unorm,
-   
+
    RPixelFormatBGRA8Unorm,
    RPixelFormatBGRX8Unorm, // RetroArch XRGB
-   
+
    RPixelFormatCount,
 };
 
@@ -50,7 +50,7 @@ typedef NS_ENUM(NSUInteger, RTextureFilter)
 {
    RTextureFilterNearest,
    RTextureFilterLinear,
-   
+
    RTextureFilterCount,
 };
 

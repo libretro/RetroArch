@@ -177,7 +177,7 @@ VC_CONTAINER_STATUS_T vc_container_track_allocate_extradata( VC_CONTAINER_T *con
    VC_CONTAINER_TRACK_T *p_track, unsigned int extra_size );
 VC_CONTAINER_STATUS_T vc_container_track_allocate_drmdata( VC_CONTAINER_T *context,
    VC_CONTAINER_TRACK_T *p_track, unsigned int size );
-   
+
 /* @} */
 
 #endif /* VC_CONTAINERS_PRIVATE_H */

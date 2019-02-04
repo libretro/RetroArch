@@ -157,6 +157,6 @@ GX2Shader frame_shader =
       .program = (uint8_t*)&ps_program,
       .mode = GX2_SHADER_MODE_UNIFORM_BLOCK,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

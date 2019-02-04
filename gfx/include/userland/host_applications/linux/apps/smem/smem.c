@@ -25,7 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 // ---- Include Files -------------------------------------------------------
 
 #include <stdio.h>
@@ -127,7 +126,7 @@ static int get_status( VCSM_STATUS_T mode, int pid )
       case VCSM_STATUS_VC_WALK_ALLOC:
          vcsm_status( VCSM_STATUS_VC_WALK_ALLOC, -1 );
       break;
-      
+
       case VCSM_STATUS_HOST_WALK_MAP:
          if ( pid != -1 )
          {
@@ -147,7 +146,7 @@ static int get_status( VCSM_STATUS_T mode, int pid )
          vcsm_status( VCSM_STATUS_VC_WALK_ALLOC, -1 );
          vcsm_status( VCSM_STATUS_HOST_WALK_MAP, -1 );
       break;
-      
+
       default:
       break;
    }
@@ -408,7 +407,7 @@ int main( int argc, char **argv )
                      vcsm_unlock_hdl( usr_hdl_2 ) );
 
       // This checks that we can free a memory block even if it
-      // is locked, which could be the case if the application 
+      // is locked, which could be the case if the application
       // dies.
       //
       usr_ptr_2 = vcsm_lock( usr_hdl_2 );
@@ -425,14 +424,14 @@ int main( int argc, char **argv )
    {
       get_status( status_mode, opt_pid );
    }
-   
+
    // If we allocated something, wait for the signal to exit to give chance for the
    // user to poke around the allocation test.
    //
    if ( opt_alloc == 1 )
    {
       start_monitor();
-      
+
       vcos_event_wait( &quit_event );
       vcos_event_delete( &quit_event );
    }

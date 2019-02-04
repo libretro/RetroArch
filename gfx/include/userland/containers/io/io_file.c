@@ -91,7 +91,7 @@ static VC_CONTAINER_STATUS_T io_file_seek(VC_CONTAINER_IO_T *p_ctx, int64_t offs
       return VC_CONTAINER_ERROR_EOS;
    }
    ret = fseek(p_ctx->module->stream, (long)offset, SEEK_SET);
-#endif   
+#endif
    if(ret)
    {
       if( feof(p_ctx->module->stream) ) status = VC_CONTAINER_ERROR_EOS;

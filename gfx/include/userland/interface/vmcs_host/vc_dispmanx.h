@@ -84,7 +84,7 @@ VCHPRE_ DISPMANX_UPDATE_HANDLE_T VCHPOST_ vc_dispmanx_update_start( int32_t prio
 // Add an elment to a display as part of an update
 VCHPRE_ DISPMANX_ELEMENT_HANDLE_T VCHPOST_ vc_dispmanx_element_add ( DISPMANX_UPDATE_HANDLE_T update, DISPMANX_DISPLAY_HANDLE_T display,
                                                                      int32_t layer, const VC_RECT_T *dest_rect, DISPMANX_RESOURCE_HANDLE_T src,
-                                                                     const VC_RECT_T *src_rect, DISPMANX_PROTECTION_T protection, 
+                                                                     const VC_RECT_T *src_rect, DISPMANX_PROTECTION_T protection,
                                                                      VC_DISPMANX_ALPHA_T *alpha,
                                                                      DISPMANX_CLAMP_T *clamp, DISPMANX_TRANSFORM_T transform );
 // Change the source image of a display element
@@ -105,7 +105,7 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_update_submit_sync( DISPMANX_UPDATE_HANDLE_T up
 VCHPRE_ int VCHPOST_ vc_dispmanx_query_image_formats( uint32_t *supported_formats );
 
 //New function added to VCHI to change attributes, set_opacity does not work there.
-VCHPRE_ int VCHPOST_ vc_dispmanx_element_change_attributes( DISPMANX_UPDATE_HANDLE_T update, 
+VCHPRE_ int VCHPOST_ vc_dispmanx_element_change_attributes( DISPMANX_UPDATE_HANDLE_T update,
                                                             DISPMANX_ELEMENT_HANDLE_T element,
                                                             uint32_t change_flags,
                                                             int32_t layer,
@@ -124,12 +124,12 @@ VCHPRE_ void VCHPOST_ vc_vchi_dispmanx_init (VCHI_INSTANCE_T initialise_instance
 // Take a snapshot of a display in its current state.
 // This call may block for a time; when it completes, the snapshot is ready.
 // only transform=0 is supported
-VCHPRE_ int VCHPOST_ vc_dispmanx_snapshot( DISPMANX_DISPLAY_HANDLE_T display, 
-                                           DISPMANX_RESOURCE_HANDLE_T snapshot_resource, 
+VCHPRE_ int VCHPOST_ vc_dispmanx_snapshot( DISPMANX_DISPLAY_HANDLE_T display,
+                                           DISPMANX_RESOURCE_HANDLE_T snapshot_resource,
                                            DISPMANX_TRANSFORM_T transform );
 
 // Set the resource palette (for VC_IMAGE_4BPP and VC_IMAGE_8BPP)
-VCHPRE_ int VCHPOST_ vc_dispmanx_resource_set_palette( DISPMANX_RESOURCE_HANDLE_T handle, 
+VCHPRE_ int VCHPOST_ vc_dispmanx_resource_set_palette( DISPMANX_RESOURCE_HANDLE_T handle,
                                                       void * src_address, int offset, int size);
 
 // Start triggering callbacks synced to vsync

@@ -198,7 +198,6 @@ typedef struct
    WFC_STREAM_IMAGE_FLIP_T flip;       //< Flips to apply to the buffer for display
 } WFC_STREAM_IMAGE_T;
 
-
 //==============================================================================
 // VideoCore-specific definitions
 //==============================================================================
@@ -229,8 +228,6 @@ typedef enum
    WFC_PIXEL_FORMAT_YUV420PLANAR,
    WFC_PIXEL_FORMAT_FORCE_32BIT   = 0x7FFFFFFF
 } WFC_PIXEL_FORMAT_T;
-
-
 
 //------------------------------------------------------------------------------
 // Non-standard functions

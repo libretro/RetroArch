@@ -4,7 +4,7 @@ MSG_HASH(MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
 MSG_HASH(MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
       "switch_backlight_control")
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
       "switch_cpu_profile")
 #endif

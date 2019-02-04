@@ -51,7 +51,7 @@ struct ILCS_COMMON_T {
    VC_PRIVATE_COMPONENT_T *component_list;
    ILCS_SERVICE_T *ilcs;
 };
-   
+
 VCHPRE_ void VCHPOST_ vcilcs_config(ILCS_CONFIG_T *config);
 
 // functions that implement incoming functions calls

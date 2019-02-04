@@ -58,7 +58,6 @@ typedef struct wavefront_model_s {
    GLuint texture;
 } WAVEFRONT_MODEL_T;
 
-
 /******************************************************************************
 Static Data
 ******************************************************************************/
@@ -77,9 +76,8 @@ static void create_vbo(GLenum type, GLuint *vbo, int size, void *data)
    vc_assert(*vbo);
    glBindBuffer(type, *vbo);
    glBufferData(type, size, data, GL_STATIC_DRAW);
-   glBindBuffer(type, 0);     
+   glBindBuffer(type, 0);
 }
-
 
 static void destroy_vbo(GLuint *vbo)
 {
@@ -180,14 +178,14 @@ int draw_wavefront(MODEL_T m, GLuint texture)
          glBindBuffer(GL_ARRAY_BUFFER, mat->vbo[VBO_VERTEX]);
          glVertexPointer(3, GL_FLOAT, 0, NULL);
       }
-      if (mat->vbo[VBO_NORMAL]) {   
+      if (mat->vbo[VBO_NORMAL]) {
          glEnableClientState(GL_NORMAL_ARRAY);
          glBindBuffer(GL_ARRAY_BUFFER, mat->vbo[VBO_NORMAL]);
          glNormalPointer(GL_FLOAT, 0, NULL);
       } else {
          glDisableClientState(GL_NORMAL_ARRAY);
       }
-      if (mat->vbo[VBO_TEXTURE]) {   
+      if (mat->vbo[VBO_TEXTURE]) {
          glEnableClientState(GL_TEXTURE_COORD_ARRAY);
          glBindBuffer(GL_ARRAY_BUFFER, mat->vbo[VBO_TEXTURE]);
          glTexCoordPointer(2, GL_FLOAT, 0, NULL);
@@ -229,7 +227,7 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
 
    while (valid > 0) {
       char *s, *end = line;
-      
+
       while((end-line < valid) && *end != '\n' && *end != '\r')
          end++;
       *end++ = 0;
@@ -245,7 +243,7 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
       case '\r': case '\n': case '\0': break; // blank line
       case 'm': vc_assert(strncmp(s, "mtllib", sizeof "mtllib"-1)==0); break;
       case 'o': break;
-      case 'u': 
+      case 'u':
          if (sscanf(s, "usemtl %s", /*MAX_MATERIAL_NAME-1, */model->material[m->num_materials].name) == 1) {
             if (m->num_materials < MAX_MATERIALS) {
                if (m->num_materials > 0 && ((pf-qf)/3 == m->material_index[m->num_materials-1] || strcmp(model->material[m->num_materials-1].name, model->material[m->num_materials].name)==0)) {
@@ -269,8 +267,8 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
          } else if (i = sscanf(s, "f"" %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu"
                                      " %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu"
                                      " %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu//%hu %hu",
-               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11, 
-               pp+12, pp+13, pp+14, pp+15, pp+16, pp+17, pp+18, pp+19, pp+20, pp+21, pp+22, pp+23, 
+               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11,
+               pp+12, pp+13, pp+14, pp+15, pp+16, pp+17, pp+18, pp+19, pp+20, pp+21, pp+22, pp+23,
                pp+24, pp+25, pp+26, pp+27, pp+28, pp+29, pp+30, pp+32, pp+32, pp+33, pp+34, pp+35, pp+36), i >= 6) {
             int poly = i/2;
             //vc_assert(i < countof(pp)); // may need to increment poly count and pp array
@@ -282,8 +280,8 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
          } else if (i = sscanf(s, "f"" %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu"
                                      " %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu"
                                      " %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu/%hu %hu",
-               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11, 
-               pp+12, pp+13, pp+14, pp+15, pp+16, pp+17, pp+18, pp+19, pp+20, pp+21, pp+22, pp+23, 
+               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11,
+               pp+12, pp+13, pp+14, pp+15, pp+16, pp+17, pp+18, pp+19, pp+20, pp+21, pp+22, pp+23,
                pp+24, pp+25, pp+26, pp+27, pp+28, pp+29, pp+30, pp+32, pp+32, pp+33, pp+34, pp+35, pp+36), i >= 6) {
             int poly = i/2;
             //vc_assert(i < countof(pp); // may need to increment poly count and pp array
@@ -295,8 +293,8 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
          } else if (i = sscanf(s, "f"" %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu"
                                      " %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu"
                                      " %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu %hu",
-               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11, pp+12, pp+13, pp+14, pp+15, pp+16, pp+17, 
-               pp+18, pp+19, pp+20, pp+21, pp+22, pp+23, pp+24, pp+25, pp+26, pp+27, pp+28, pp+29, pp+30, pp+32, pp+32, pp+33, pp+34, pp+35, 
+               pp+ 0, pp+ 1, pp+ 2, pp+ 3, pp+ 4, pp+ 5, pp+ 6, pp+ 7, pp+ 8, pp+ 9, pp+10, pp+11, pp+12, pp+13, pp+14, pp+15, pp+16, pp+17,
+               pp+18, pp+19, pp+20, pp+21, pp+22, pp+23, pp+24, pp+25, pp+26, pp+27, pp+28, pp+29, pp+30, pp+32, pp+32, pp+33, pp+34, pp+35,
                pp+36, pp+37, pp+38, pp+39, pp+40, pp+41, pp+42, pp+43, pp+44, pp+45, pp+46, pp+47, pp+48, pp+49, pp+50, pp+51, pp+52, pp+53, pp+54), i >= 9) {
             int poly = i/3;
             //vc_assert(i < countof(pp); // may need to increment poly count and pp array
@@ -307,7 +305,7 @@ static int load_wavefront_obj(const char *modelname, WAVEFRONT_MODEL_T *model, s
             }
          } else { printf("%s", s); vc_assert(0); }
          break;
-      default: 
+      default:
          printf("%02x %02x %s", s[0], s[1], s); vc_assert(0); break;
       }
 
@@ -345,7 +343,7 @@ static int load_wavefront_dat(const char *modelname, WAVEFRONT_MODEL_T *model, s
 {
    FILE *fp;
    int s;
-   const int size = sizeof *m + 
+   const int size = sizeof *m +
       sizeof(float)*(3+2+3)*MAX_VERTICES +   // 3 vertices + 2 textures + 3 normals
       sizeof(unsigned short)*3*MAX_VERTICES; //each face has 9 vertices
 
@@ -371,7 +369,7 @@ MODEL_T load_wavefront(const char *modelname, const char *texturename)
    if (!model || !modelname) return NULL;
    memset (model, 0, sizeof *model);
    model->texture = 0; //load_texture(texturename);
-   m = allocbuffer(sizeof *m + 
+   m = allocbuffer(sizeof *m +
       sizeof(float)*(3+2+3)*MAX_VERTICES +    // 3 vertices + 2 textures + 3 normals
       sizeof(unsigned short)*3*MAX_VERTICES); //each face has 9 vertices
    if (!m) return 0;
@@ -391,7 +389,7 @@ MODEL_T load_wavefront(const char *modelname, const char *texturename)
       #ifdef DUMP_OBJ_DAT
       strcpy(modelname_obj, modelname);
       strcat(modelname_obj, ".dat");
-      size = sizeof *m + 
+      size = sizeof *m +
          sizeof(float)*(3*m->numv+2*m->numt+3*m->numn) +  // 3 vertices + 2 textures + 3 normals
          sizeof(unsigned short)*3*m->numf;                //each face has 9 vertices
       fp = host_file_open(modelname_obj, "w");
@@ -418,10 +416,10 @@ MODEL_T load_wavefront(const char *modelname, const char *texturename)
       // vertex, texture, normal
       deindex(temp, qv, qf+3*offset+0, 3, mat->numverts);
       create_vbo(GL_ARRAY_BUFFER, mat->vbo+VBO_VERTEX, 3 * mat->numverts * sizeof *qv, temp); // 3
-   
+
       deindex(temp, qt, qf+3*offset+1, 2, mat->numverts);
       create_vbo(GL_ARRAY_BUFFER, mat->vbo+VBO_TEXTURE, 2 * mat->numverts * sizeof *qt, temp); // 2
-   
+
       deindex(temp, qn, qf+3*offset+2, 3, mat->numverts);
       create_vbo(GL_ARRAY_BUFFER, mat->vbo+VBO_NORMAL, 3 * mat->numverts * sizeof *qn, temp); // 3
       offset += mat->numverts;
@@ -449,7 +447,7 @@ void unload_wavefront(MODEL_T m)
    }
 }
 
-// create a cube model that looks like a wavefront model, 
+// create a cube model that looks like a wavefront model,
 MODEL_T cube_wavefront(void)
 {
    static const float qv[] = {
@@ -462,7 +460,7 @@ MODEL_T cube_wavefront(void)
      0.5f,  0.5f, -0.5f,
     -0.5f,  0.5f, -0.5f,
    };
-   
+
    static const float qn[] = {
      0.0f, -1.0f, -0.0f,
      0.0f,  1.0f, -0.0f,
@@ -471,14 +469,14 @@ MODEL_T cube_wavefront(void)
      0.0f,  0.0f, -1.0f,
     -1.0f,  0.0f, -0.0f,
    };
-   
+
    static const float qt[] = {
     1.0f, 0.0f,
     1.0f, 1.0f,
     0.0f, 1.0f,
     0.0f, 0.0f,
    };
-   
+
    static const unsigned short qf[] = {
     1,1,1, 2,2,1, 3,3,1,
     3,3,1, 4,4,1, 1,1,1,
@@ -517,5 +515,4 @@ MODEL_T cube_wavefront(void)
    }
    return (MODEL_T)model;
 }
-
 

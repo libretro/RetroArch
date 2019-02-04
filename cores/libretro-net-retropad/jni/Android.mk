@@ -21,5 +21,4 @@ endif
 LOCAL_SRC_FILES    += ../libretro-test.c
 LOCAL_CFLAGS += -O3 -std=gnu99 -ffast-math -funroll-loops
 
-
 include $(BUILD_SHARED_LIBRARY)

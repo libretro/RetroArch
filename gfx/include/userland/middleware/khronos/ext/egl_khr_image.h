@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "middleware/imageconv/imageconv.h"
 #include "vcinclude/vc_image_types.h"
 
-
 typedef struct EGL_IMAGE_T {
    uint64_t pid;
 

@@ -121,7 +121,7 @@ static bool d3d9_init_imports(d3d9_video_t *d3d)
       tracker_info.script_class   = d3d->shader.script_class;
 #endif
 
-   state_tracker                  = 
+   state_tracker                  =
       state_tracker_init(&tracker_info);
 
    if (!state_tracker)
@@ -690,7 +690,7 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ? 
+   bool gamma_enable              = global ?
       global->console.screen.gamma_correction : false;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
@@ -1113,7 +1113,7 @@ static bool d3d9_alive(void *data)
 
    ret = !quit;
 
-   if (  temp_width  != 0 && 
+   if (  temp_width  != 0 &&
          temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
@@ -1830,7 +1830,7 @@ static void d3d9_set_menu_texture_frame(void *data,
    if (!d3d || !d3d->menu)
       return;
 
-   if (    !d3d->menu->tex            || 
+   if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {

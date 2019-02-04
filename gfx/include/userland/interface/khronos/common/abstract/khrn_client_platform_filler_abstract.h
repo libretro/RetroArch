@@ -44,7 +44,6 @@ typedef struct PLATFORM_MUTEX_T
 #endif
 } PLATFORM_MUTEX_T;
 
-
 VCOS_STATIC_INLINE
 VCOS_STATUS_T platform_mutex_create(PLATFORM_MUTEX_T *mutex) {
    UNUSED(mutex);
@@ -109,5 +108,4 @@ extern void* platform_tls_get_check(PLATFORM_TLS_T tls);
 extern void platform_tls_remove(PLATFORM_TLS_T tls);
 
 #endif
-
 

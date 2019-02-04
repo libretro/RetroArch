@@ -162,7 +162,7 @@ portSettingsChanged(OPENMAX_JPEG_DECODER * decoder)
 		    decoder->imageResizer->outPort, NULL);
 
     // allocate the buffer
-    // void* outputBuffer = 0; 
+    // void* outputBuffer = 0;
     // if (posix_memalign(&outputBuffer, portdef.nBufferAlignment,
     // portdef.nBufferSize) != 0)
     // {
@@ -368,7 +368,7 @@ startupImageDecoder(OPENMAX_JPEG_DECODER * decoder)
 	    return OMXJPEG_ERROR_MEMORY;
 	}
     }
-    // wait for port enable to complete - which it should once buffers are 
+    // wait for port enable to complete - which it should once buffers are
     // assigned
     int             ret =
 	ilclient_wait_for_event(decoder->imageDecoder->component,
@@ -380,7 +380,7 @@ startupImageDecoder(OPENMAX_JPEG_DECODER * decoder)
 	fprintf(stderr, "Did not get port enable %d\n", ret);
 	return OMXJPEG_ERROR_EXECUTING;
     }
-    // start executing the decoder 
+    // start executing the decoder
     ret = OMX_SendCommand(decoder->imageDecoder->handle,
 			  OMX_CommandStateSet, OMX_StateExecuting, NULL);
     if (ret != 0) {
@@ -541,7 +541,7 @@ decodeImage(OPENMAX_JPEG_DECODER * decoder, char *sourceImage,
 
     // wait for buffer to fill
     /*
-     * while(pBufHeader->nFilledLen == 0) { sleep(5); } 
+     * while(pBufHeader->nFilledLen == 0) { sleep(5); }
      */
 
     // wait for end of stream events

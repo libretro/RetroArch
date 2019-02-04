@@ -1005,7 +1005,6 @@ MMAL_STATUS_T mmal_port_connect(MMAL_PORT_T *port, MMAL_PORT_T *other_port)
    core->core_owns_connection = 1;
    other_core->core_owns_connection = 1;
 
-
 finish:
    UNLOCK_CONNECTION(other_port);
    UNLOCK_CONNECTION(port);

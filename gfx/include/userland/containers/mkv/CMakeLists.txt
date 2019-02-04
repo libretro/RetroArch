@@ -10,4 +10,3 @@ add_library(reader_mkv ${LIBRARY_TYPE} matroska_reader.c)
 target_link_libraries(reader_mkv containers)
 
 install(TARGETS reader_mkv DESTINATION ${VMCS_PLUGIN_DIR})
-

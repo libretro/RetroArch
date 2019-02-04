@@ -68,8 +68,8 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
-static const int crt_switch_resolution_super = 2560; 
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
+static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;

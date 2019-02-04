@@ -110,7 +110,6 @@ The boolean \code{bEnabled} value determines whether the component uses
 the standard IJG quality tables when encoding images.
 */
 
-
 /* OMX_IndexConfigTimeInvalidStartTime: Invalid Start Times */
 /*
 This allows clock clients to supply a start time notification to the
@@ -211,7 +210,7 @@ an audio rendering component has received but have not been played.
 /* OMX_IndexConfigBrcmPoolMemAllocSize: Pool memory usage values */
 /*
 This config allows the client to query how much memory is being used by
-the component for any image pools. 
+the component for any image pools.
 */
 
 /* OMX_IndexConfigDisplayRegion: Display Region */
@@ -331,8 +330,6 @@ default to being square.
 Set the \code{layer} that the image will appear on with the
 \code{layer} field.
 */
-
-
 
 /* OMX_IndexParamSource: Source Image Configuration */
 typedef enum OMX_SOURCETYPE {
@@ -497,13 +494,13 @@ typedef struct OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS {
    OMX_U32 coeff[16];
 } OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS;
 /*
-This config sets the platform-specific audio downmixing coefficients for the 
+This config sets the platform-specific audio downmixing coefficients for the
 audio mixer component. The coefficients are 16.16 fixed point.
-The even coefficients contribute to the left channel. 
-The odd coefficients contribute to the right channel. 
-L' = coeff[0] * sample[N] + coeff[2] * sample[N+1] + coeff[4] * sample[N+2] + coeff[6] * sample[N+3] 
+The even coefficients contribute to the left channel.
+The odd coefficients contribute to the right channel.
+L' = coeff[0] * sample[N] + coeff[2] * sample[N+1] + coeff[4] * sample[N+2] + coeff[6] * sample[N+3]
    + coeff[8] * sample[N+4] + coeff[10] * sample[N+5] + coeff[12] * sample[N+6] + coeff[14] * sample[N+7]
-R' = coeff[1] * sample[N] + coeff[3] * sample[N+1] + coeff[5] * sample[N+2] + coeff[7] * sample[N+3] 
+R' = coeff[1] * sample[N] + coeff[3] * sample[N+1] + coeff[5] * sample[N+2] + coeff[7] * sample[N+3]
    + coeff[9] * sample[N+4] + coeff[11] * sample[N+5] + coeff[13] * sample[N+6] + coeff[15] * sample[N+7]
 
 \code{coeff} describes the downmixing coefficients
@@ -517,7 +514,7 @@ typedef struct OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS8x8 {
    OMX_U32 coeff[64];
 } OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS8x8;
 /*
-This config sets the platform-specific audio downmixing coefficients for the 
+This config sets the platform-specific audio downmixing coefficients for the
 audio mixer component. The coefficients are 16.16 fixed point.
 The coefficients are a 8*8 mixing matrix from 8 input channels to 8 outputs channels
 
@@ -533,9 +530,9 @@ typedef struct OMX_CONFIG_BRCMAUDIOMAXSAMPLE {
    OMX_TICKS nTimeStamp;
 } OMX_CONFIG_BRCMAUDIOMAXSAMPLE;
 /*
-This gets the largest sample produced (after downmixing with OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS8x8) 
-since this config was last read. The nTimestamp is the earliest timestamp processed. 
-This can be used for DRC schemes 
+This gets the largest sample produced (after downmixing with OMX_CONFIG_BRCMAUDIODOWNMIXCOEFFICIENTS8x8)
+since this config was last read. The nTimestamp is the earliest timestamp processed.
+This can be used for DRC schemes
 
 \code{coeff} maximum sample seen in current block
 */
@@ -686,7 +683,6 @@ Default is \code{"272"}.
 </table>
 */
 
-
 /* OMX_IndexConfigTransitionControl: Transition Control */
 typedef struct OMX_CONFIG_TRANSITIONCONTROLTYPE {
    OMX_U32 nSize;
@@ -722,12 +718,10 @@ is \code{nPosStart}. The last frame position generated is
 increment by \code{nFrameIncrement}.
 */
 
-
 /*
 This parameter is used to provide a callback function pointer for
 release events. It is used for internal clients on VideoCore.
 */
-
 
 /* OMX_IndexConfigAudioMonoTrackControl: Dual Mono Control */
 typedef enum OMX_AUDIOMONOTRACKOPERATIONSTYPE {
@@ -827,7 +821,6 @@ can be reset by setting this parameter with all three fields set to
 zero.
 */
 
-
 /* OMX_IndexParamImagePoolExternal: Client Allocated Image Pools */
 struct opaque_vc_pool_s;
 typedef struct opaque_vc_pool_s OMX_BRCM_POOL_T;
@@ -845,7 +838,6 @@ typedef struct OMX_PARAM_IMAGEPOOLEXTERNALTYPE {
 This config allows the client to pass in handles to pre-allocated
 image pools for use within the component.
 */
-
 
 struct _IL_FIFO_T;
 typedef struct OMX_PARAM_RUTILFIFOINFOTYPE {
@@ -1002,7 +994,6 @@ typedef struct OMX_CONFIG_BRCMCAMERASTATSTYPE {
 // for backward compatibility
 typedef struct OMX_CONFIG_BRCMCAMERASTATSTYPE OMX_CONFIG_BRCMCAMERASTATS;
 
-
 #define OMX_BRCM_MAXIOPERFBANDS 10
 typedef struct {
    OMX_U32 count[OMX_BRCM_MAXIOPERFBANDS];
@@ -1075,7 +1066,6 @@ typedef struct OMX_CONFIG_REDEYEREMOVALTYPE {
    The OMX_RedEyeRemovalSimple mode requests that the algorithm uses a
    reduced complexity algorithm to reduce the processing time.
 */
-
 
 typedef enum OMX_FACEDETECTIONCONTROLTYPE {
    OMX_FaceDetectionControlNone,                           /**< Disables face detection */
@@ -1290,7 +1280,6 @@ must be requested at least every 200ms if the indicator is to remain
 on.
 */
 
-
 /* OMX_IndexParamCameraFlashType: Select flash type */
 typedef enum OMX_CAMERAFLASHTYPE {
    OMX_CameraFlashDefault,
@@ -1365,7 +1354,6 @@ typedef struct OMX_CONFIG_BRCMAUDIOTRACKGAPLESSPLAYBACKTYPE {
 /*
 This config allows communication between components to facilitate gapless playback.
 */
-
 
 /* OMX_IndexConfigBrcmAudioTrackChangeControl: Configure gapless/crossfaded audio track change. */
 typedef struct OMX_CONFIG_BRCMAUDIOTRACKCHANGECONTROLTYPE {
@@ -1524,7 +1512,6 @@ typedef struct OMX_PARAM_BRCMDISABLEPROPRIETARYTUNNELSTYPE {
 Tell a source component to refuse to support proprietary tunnelling. Buffers will be used instead.
 */
 
-
 //
 // Control for memory allocation and component-internal buffering
 //
@@ -1592,7 +1579,6 @@ typedef struct OMX_CONFIG_CAMERAINFOTYPE
    OMX_U32 xFocalLength;
 } OMX_CONFIG_CAMERAINFOTYPE;
 
-
 typedef enum OMX_CONFIG_CAMERAFEATURESSHUTTER {
    OMX_CameraFeaturesShutterUnknown,
    OMX_CameraFeaturesShutterNotPresent,
@@ -1609,7 +1595,6 @@ typedef struct OMX_CONFIG_CAMERAFEATURESTYPE
    OMX_CONFIG_CAMERAFEATURESSHUTTER eHasMechanicalShutter;
    OMX_BOOL bHasLens;
 } OMX_CONFIG_CAMERAFEATURESTYPE;
-
 
 //Should be added to the spec as part of IL416c
 /* OMX_IndexConfigRequestCallback: Enable config change notifications. */
@@ -1892,7 +1877,6 @@ for the buffers).
 .
 */
 
-
 /* OMX_IndexParamBrcmThreadAffinity: Control the CPU affinity of component thread(s) */
 typedef enum OMX_BRCMTHREADAFFINITYTYPE {
    OMX_BrcmThreadAffinityCPU0,
@@ -2080,7 +2064,6 @@ typedef struct OMX_PARAM_BRCMDRMENCRYPTIONTYPE
 Query/set the DRM encryption scheme used by a port writing out data.
 */
 
-
 /* OMX_IndexConfigBufferStall: Advertise buffer stall state */
 typedef struct OMX_CONFIG_BUFFERSTALLTYPE
 {
@@ -2166,7 +2149,7 @@ typedef struct OMX_BRCMVEGLIMAGETYPE
    OMX_U32 nFlipped;    /* Non-zero -> vertically flipped image */
 } OMX_BRCMVEGLIMAGETYPE;
 
-/* Provides field of view 
+/* Provides field of view
  */
 typedef struct OMX_CONFIG_BRCMFOVTYPE
 {
@@ -2191,7 +2174,7 @@ act as a clock reference source or act as a slave.
 
 /* OMX_IndexConfigEncLevelExtension: AVC Override encode capabilities */
 typedef struct OMX_VIDEO_CONFIG_LEVEL_EXTEND {
-   OMX_U32 nSize; 
+   OMX_U32 nSize;
    OMX_VERSIONTYPE nVersion;
    OMX_U32 nPortIndex;
    OMX_U32 nCustomMaxMBPS;     /**< Specifies maximum macro-blocks per second */
@@ -2278,7 +2261,7 @@ to minimise fragmentation of output buffers.
 
 /* OMX_IndexConfigBrcmBufferFlagFilter: Filter buffers based on flags */
 /*
-This control can be set to request that buffers are conditionally forwarded on 
+This control can be set to request that buffers are conditionally forwarded on
 output ports based on matching flags set on that buffer.
 */
 
@@ -2604,7 +2587,6 @@ typedef struct OMX_PARAM_CAMERARXTIMING_TYPE {
    OMX_U32 nCpiTiming1;
    OMX_U32 nCpiTiming2;
 } OMX_PARAM_CAMERARXTIMING_TYPE;
-
 
 /* OMX_IndexParamBrcmBayerOrder: Bayer order */
 typedef enum OMX_BAYERORDERTYPE {

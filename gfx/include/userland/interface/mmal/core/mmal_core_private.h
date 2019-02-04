@@ -37,4 +37,3 @@ void mmal_logging_init(void);
 void mmal_logging_deinit(void);
 
 #endif /* MMAL_CORE_PRIVATE_H */
-

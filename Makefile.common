@@ -510,7 +510,6 @@ endif
 
 # Audio
 
-
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
 	HAVE_COREAUDIO_LIBS = 1
@@ -681,7 +680,7 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
-   
+
    ifeq ($(HAVE_STRIPES),)
       HAVE_STRIPES = 0
    endif
@@ -1535,8 +1534,6 @@ ifeq ($(HAVE_CHD), 1)
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-	
-
 
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
    ifeq ($(HAVE_FLAC),1)

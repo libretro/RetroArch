@@ -31,4 +31,3 @@ make -C hello_videocube
 make -C hello_teapot
 make -C hello_fft
 make -C hello_mmal_encode
-

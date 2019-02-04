@@ -88,7 +88,7 @@ typedef struct vchiq_header_struct {
    int msgid;
 
    /* Size of message data. */
-   unsigned int size;      
+   unsigned int size;
 
    char data[0];           /* message */
 } VCHIQ_HEADER_T;

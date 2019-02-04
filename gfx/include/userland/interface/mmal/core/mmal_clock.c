@@ -37,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # define USE_RTOS_TIMER
 #endif
 
-
 /*****************************************************************************/
 #ifdef USE_RTOS_TIMER
 # define MIN_TIMER_DELAY  1     /* microseconds */
@@ -81,7 +80,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Macros used to make clock access thread-safe */
 #define LOCK(p)    vcos_mutex_lock(&(p)->lock);
 #define UNLOCK(p)  vcos_mutex_unlock(&(p)->lock);
-
 
 /*****************************************************************************/
 #ifdef USE_RTOS_TIMER
@@ -158,7 +156,6 @@ typedef struct MMAL_CLOCK_PRIVATE_T
 
 } MMAL_CLOCK_PRIVATE_T;
 
-
 /*****************************************************************************/
 static void mmal_clock_wake_thread(MMAL_CLOCK_PRIVATE_T *private);
 
@@ -221,7 +218,6 @@ static inline void mmal_clock_timer_cancel(MMAL_TIMER_T *timer)
    vcos_timer_cancel(timer);
 #endif
 }
-
 
 /*****************************************************************************
  * Clock module private functions

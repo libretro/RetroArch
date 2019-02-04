@@ -2084,7 +2084,7 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
-   if (      vk->context->swap_interval > 1 
+   if (      vk->context->swap_interval > 1
          && !vk->context->swap_interval_emulation_lock)
    {
       unsigned i;

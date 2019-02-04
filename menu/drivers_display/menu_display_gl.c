@@ -144,7 +144,7 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 {
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
-   gl_t             *gl             = video_info ? 
+   gl_t             *gl             = video_info ?
       (gl_t*)video_info->userdata : NULL;
    static float t                   = 0;
    video_coord_array_t *ca          = menu_display_get_coords_array();

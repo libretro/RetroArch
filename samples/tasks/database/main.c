@@ -16,7 +16,7 @@ static void main_msg_queue_push(const char *msg,
    fprintf(stderr, "MSGQ: %s\n", msg);
 }
 
-/* 
+/*
  * return codes -
  * graceful exit: 1
  * normal   exit: 0

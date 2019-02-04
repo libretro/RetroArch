@@ -106,7 +106,6 @@ VCHPRE_ void VCHPOST_ vc_host_interrupts(int on);
 
 VCHPRE_ void VCHPOST_ vc_error(void);
 
-
 /*---------------------------------------------------------------------------*/
 /* Event (interrupt) related functions */
 /*---------------------------------------------------------------------------*/
