@@ -1428,7 +1428,7 @@ void audio_driver_load_menu_sounds(void)
    const char *path_bgm = NULL;
    struct string_list *list = NULL;
    struct string_list *list_fallback = NULL;
-   int i = 0;
+   unsigned i = 0;
 
    sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
