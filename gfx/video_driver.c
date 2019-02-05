@@ -2727,17 +2727,6 @@ bool video_driver_texture_unload(uintptr_t *id)
    return true;
 }
 
-static bool video_driver_cb_set_coords(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   video_shader_ctx_coords_t ctx_coords;
-   ctx_coords.handle_data = handle_data;
-   ctx_coords.data        = coords;
-
-   video_driver_set_coords(&ctx_coords);
-   return true;
-}
-
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    bool is_perfcnt_enable            = false;
@@ -3478,13 +3467,6 @@ static bool video_driver_cb_set_mvp(void *data,
    return true;
 }
 
-static void video_shader_driver_scale_null(void *data,
-      unsigned idx, struct gfx_fbo_scale *scale)
-{
-   (void)idx;
-   (void)scale;
-}
-
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader)
@@ -3497,11 +3479,6 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->set_mvp           = video_driver_cb_set_mvp;
       video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
    }
-   if (!current_shader->set_coords)
-      current_shader->set_coords        = video_driver_cb_set_coords;
-
-   if (!current_shader->shader_scale)
-      current_shader->shader_scale      = video_shader_driver_scale_null;
 }
 
 /* Finds first suitable shader context driver. */
