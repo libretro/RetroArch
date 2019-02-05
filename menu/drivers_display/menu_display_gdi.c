@@ -50,7 +50,7 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 {
    struct gdi_texture *texture = NULL;
    gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
-   BITMAPINFO info = {0};
+   BITMAPINFO info = {{0}};
 
    if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
       return;

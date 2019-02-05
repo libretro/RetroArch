@@ -632,7 +632,7 @@ d3d10_gfx_init(const video_info_t* video,
 
    {
       UINT                 flags = 0;
-      DXGI_SWAP_CHAIN_DESC desc  = {0};
+      DXGI_SWAP_CHAIN_DESC desc  = {{0}};
 
       desc.BufferCount           = 1;
       desc.BufferDesc.Width      = d3d10->vp.full_width;
