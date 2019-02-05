@@ -311,11 +311,6 @@ typedef struct video_shader_ctx
    struct video_shader *data;
 } video_shader_ctx_t;
 
-typedef struct video_shader_ctx_ident
-{
-   const char *ident;
-} video_shader_ctx_ident_t;
-
 typedef struct video_shader_ctx_texture
 {
    unsigned id;
@@ -1180,21 +1175,15 @@ enum gfx_ctx_api video_context_driver_get_api(void);
 
 void video_context_driver_free(void);
 
-bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
-
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-bool video_shader_driver_init_first(void);
+bool video_shader_driver_init_first(const void *data);
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords);
-
-bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
-
-bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
@@ -1267,7 +1256,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;
-extern const shader_backend_t shader_null_backend;
 
 RETRO_END_DECLS
 

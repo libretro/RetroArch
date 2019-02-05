@@ -425,16 +425,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const shader_backend_t *shader_ctx_drivers[] = {
-#ifdef HAVE_GLSL
-   &gl_glsl_backend,
-#endif
-#ifdef HAVE_CG
-   &gl_cg_backend,
-#endif
-   &shader_null_backend,
-   NULL
-};
 
 bool video_driver_started_fullscreen(void)
 {
@@ -3458,14 +3448,6 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
-{
-   if (!ident || !current_shader)
-      return false;
-   ident->ident = current_shader->ident;
-   return true;
-}
-
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    void *video_driver                       = video_driver_get_ptr(true);
@@ -3529,9 +3511,12 @@ static void video_shader_driver_reset_to_defaults(void)
 }
 
 /* Finds first suitable shader context driver. */
-bool video_shader_driver_init_first(void)
+bool video_shader_driver_init_first(const void *data)
 {
-   current_shader = (shader_backend_t*)shader_ctx_drivers[0];
+   shader_backend_t *ptr = (shader_backend_t*)data;
+   if (!ptr)
+      return false;
+   current_shader = ptr;
    video_shader_driver_reset_to_defaults();
    return true;
 }
@@ -3568,28 +3553,6 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
    current_shader         = (shader_backend_t*)init->shader;
    video_shader_driver_reset_to_defaults();
-
-   return true;
-}
-
-bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
-{
-   if (!scaler || !scaler->scale)
-      return false;
-
-   scaler->scale->valid = false;
-
-   current_shader->shader_scale(current_shader_data,
-         scaler->idx, scaler->scale);
-   return true;
-}
-
-bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
-{
-   if (!shader_info)
-      return false;
-
-   shader_info->num = current_shader->num_shaders(current_shader_data);
 
    return true;
 }

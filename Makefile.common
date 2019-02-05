@@ -235,7 +235,6 @@ OBJ += frontend/frontend.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
-       gfx/drivers_shader/shader_null.o \
        gfx/video_shader_parse.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \

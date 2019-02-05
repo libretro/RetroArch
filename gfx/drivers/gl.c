@@ -82,6 +82,16 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
+static const shader_backend_t *shader_ctx_drivers[] = {
+#ifdef HAVE_GLSL
+   &gl_glsl_backend,
+#endif
+#ifdef HAVE_CG
+   &gl_cg_backend,
+#endif
+   NULL
+};
+
 static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -229,6 +239,37 @@ void cocoagl_bind_game_view_fbo(void);
 #else
 #define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
 #endif
+
+static bool gl_shader_info(gl_t *gl,
+      video_shader_ctx_info_t *shader_info)
+{
+   if (!shader_info)
+      return false;
+
+   shader_info->num = gl->shader->num_shaders(gl->shader_data);
+
+   return true;
+}
+
+static bool gl_shader_scale(gl_t *gl,
+      video_shader_ctx_scale_t *scaler)
+{
+   if (!scaler || !scaler->scale)
+      return false;
+
+   scaler->scale->valid = false;
+
+   gl->shader->shader_scale(gl->shader_data,
+         scaler->idx, scaler->scale);
+   return true;
+}
+
+static const char *gl_shader_get_ident(gl_t *gl)
+{
+   if (!gl || !gl->shader)
+      return "N/A";
+   return gl->shader->ident;
+}
 
 static void gl2_renderchain_convert_geometry(
       struct video_fbo_rect *fbo_rect,
@@ -1091,7 +1132,7 @@ static void gl2_renderchain_init(
    video_shader_ctx_info_t shader_info;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!video_shader_driver_info(&shader_info))
+   if (!gl_shader_info(gl, &shader_info))
       return;
 
    if (!gl || shader_info.num == 0)
@@ -1102,12 +1143,12 @@ static void gl2_renderchain_init(
    scaler.idx   = 1;
    scaler.scale = &scale;
 
-   video_shader_driver_scale(&scaler);
+   gl_shader_scale(gl, &scaler);
 
    scaler.idx   = shader_info.num;
    scaler.scale = &scale_last;
 
-   video_shader_driver_scale(&scaler);
+   gl_shader_scale(gl, &scaler);
 
    /* we always want FBO to be at least initialized on startup for consoles */
    if (shader_info.num == 1 && !scale.valid)
@@ -1138,7 +1179,7 @@ static void gl2_renderchain_init(
       scaler.idx   = i + 1;
       scaler.scale = &chain->fbo_scale[i];
 
-      video_shader_driver_scale(&scaler);
+      gl_shader_scale(gl, &scaler);
 
       if (!chain->fbo_scale[i].valid)
       {
@@ -3231,7 +3272,6 @@ static void *gl_init(const video_info_t *video,
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    video_shader_ctx_info_t shader_info;
-   video_shader_ctx_ident_t ident_info;
    settings_t *settings                 = config_get_ptr();
    int interval                         = 0;
    unsigned mip_level                   = 0;
@@ -3404,15 +3444,17 @@ static void *gl_init(const video_info_t *video,
 
    gl->white_color_ptr = white_color;
 
-   if (!video_shader_driver_init_first())
+   gl->shader          = (shader_backend_t*)shader_ctx_drivers[0];
+
+   if (!video_shader_driver_init_first(gl->shader))
    {
       RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
       goto error;
    }
 
-   video_shader_driver_get_ident(&ident_info);
+   gl_shader_get_ident(gl);
 
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n", ident_info.ident);
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl_shader_get_ident(gl));
 
    if (!gl_shader_init(gl, ctx_driver, hwr))
    {
@@ -3426,7 +3468,7 @@ static void *gl_init(const video_info_t *video,
       gl->textures             = MAX(minimum + 1, gl->textures);
    }
 
-   if (!video_shader_driver_info(&shader_info))
+   if (!gl_shader_info(gl, &shader_info))
    {
       RARCH_ERR("[GL]: Shader driver info check failed.\n");
       goto error;
