@@ -2864,6 +2864,9 @@ static void gl_free(void *data)
       gl2_renderchain_fence_free(gl, gl->renderchain_data);
 
    font_driver_free_osd();
+
+   if (gl->shader->deinit)
+      gl->shader->deinit(gl->shader_data);
    video_shader_driver_deinit();
 
    glDeleteTextures(gl->textures, gl->texture);
@@ -3675,6 +3678,8 @@ static bool gl_set_shader(void *data,
    if (type == RARCH_SHADER_NONE)
       return false;
 
+   if (gl->shader->deinit)
+      gl->shader->deinit(gl->shader_data);
    video_shader_driver_deinit();
 
    switch (type)

@@ -3462,12 +3462,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 
 bool video_shader_driver_deinit(void)
 {
-   if (!current_shader)
-      return false;
-
-   if (current_shader->deinit)
-      current_shader->deinit(current_shader_data);
-
    current_shader_data    = NULL;
    current_shader         = NULL;
    return true;
