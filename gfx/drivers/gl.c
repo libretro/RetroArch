@@ -672,8 +672,8 @@ static void gl2_renderchain_render(
 
       video_driver_set_coords(&coords);
 
-      video_info->cb_set_mvp(gl,
-            video_info->shader_data, &gl->mvp);
+      gl->shader->set_mvp(gl, gl->shader_data,
+            &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -748,8 +748,8 @@ static void gl2_renderchain_render(
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp);
+   gl->shader->set_mvp(gl, gl->shader_data,
+         &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -2013,8 +2013,8 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl, gl->shader_data,
+         &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -2397,8 +2397,8 @@ static void gl_render_osd_background(
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl, gl->shader_data,
+         &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -2504,8 +2504,8 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_set_mvp(gl,
-         video_info->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl, gl->shader_data,
+         &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -2707,7 +2707,8 @@ static bool gl_frame(void *data, const void *frame,
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
+   gl->shader->set_mvp(gl, gl->shader_data,
+         &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -4115,22 +4116,12 @@ static void gl_unload_texture(void *data, uintptr_t id)
    glDeleteTextures(1, &glid);
 }
 
-static void gl_set_coords(void *handle_data, void *shader_data,
-      const struct video_coords *coords)
-{
-}
-
 static float gl_get_refresh_rate(void *data)
 {
    float refresh_rate = 0.0f;
    if (video_context_driver_get_refresh_rate(&refresh_rate))
       return refresh_rate;
    return 0.0f;
-}
-
-static void gl_set_mvp(void *data, void *shader_data,
-      const void *mat_data)
-{
 }
 
 static uint32_t gl_get_flags(void *data)
@@ -4146,8 +4137,8 @@ static uint32_t gl_get_flags(void *data)
 
 static const video_poke_interface_t gl_poke_interface = {
    gl_get_flags,
-   gl_set_coords,
-   gl_set_mvp,
+   NULL, /* set_coords */
+   NULL, /* set_mvp    */
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
