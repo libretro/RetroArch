@@ -26,7 +26,7 @@ if(ANDROID)
     set(ANDROID_LIBS $ENV{ANDROID_LIBS} CACHE INTERNAL "" FORCE)
     set(ANDROID_BIONIC $ENV{ANDROID_BIONIC} CACHE INTERNAL "" FORCE)
     set(ANDROID_LDSCRIPTS $ENV{ANDROID_LDSCRIPTS} CACHE INTERNAL "" FORCE)
-      
+
     if("${ANDROID_NDK_ROOT}" STREQUAL "")
         find_program(ANDROID_COMPILER arm-eabi-gcc)
         get_filename_component(ANDROID_BIN ${ANDROID_COMPILER} PATH CACHE)
@@ -63,9 +63,9 @@ if(ANDROID)
     if("${ANDROID_LDSCRIPTS}" STREQUAL "")
         message(FATAL_ERROR "Cannot find Android LD scripts directory")
     endif()
-    
+
     set(CMAKE_SYSTEM_PREFIX_PATH "${ANDROID_NDK_ROOT}/android-ndk-r${ANDROID_NDK_RELEASE}/platforms/android-${ANDROID_NDK_PLATFORM}/arch-${CMAKE_SYSTEM_PROCESSOR}/usr")
-    
+
     if("${ANDROID_LIBS}" STREQUAL "")
         set(ANDROID_LIBS "${CMAKE_SYSTEM_PREFIX_PATH}/lib"
             CACHE INTERNAL "" FORCE)
@@ -83,7 +83,6 @@ if(ANDROID)
     include_directories("${ANDROID_BIONIC}/libm/include" BEFORE SYSTEM)
     include_directories("${ANDROID_BIONIC}/libm/include/arch/arm" BEFORE SYSTEM)
     include_directories("${ANDROID_BIONIC}/libstdc++/include" BEFORE SYSTEM)
-    
 
     #
     # Pull in Android link options manually
@@ -93,25 +92,24 @@ if(ANDROID)
     set(CMAKE_SHARED_LINKER_FLAGS "-nostdlib ${ANDROID_CRTBEGIN} -Wl,-Bdynamic -Wl,-T${ANDROID_LDSCRIPTS}/armelf.x")
 
     link_directories(${ANDROID_LIBS})
-    set(CMAKE_EXE_LINKER_FLAGS "-nostdlib ${ANDROID_CRTBEGIN} -nostdlib -Wl,-z,noexecstack") 
+    set(CMAKE_EXE_LINKER_FLAGS "-nostdlib ${ANDROID_CRTBEGIN} -nostdlib -Wl,-z,noexecstack")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dynamic-linker,/system/bin/linker -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/lib")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-T${ANDROID_LDSCRIPTS}/armelf.x -Wl,--gc-sections")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,nocopyreloc -Wl,-z,noexecstack -Wl,--fix-cortex-a8 -Wl,--no-undefined")
 
     set(CMAKE_C_STANDARD_LIBRARIES "-llog -lc -lgcc ${ANDROID_CRTEND}" CACHE INTERNAL "" FORCE)
-    
+
     set(SHARED "")
 else()
     set(SHARED "SHARED")
 endif()
-
 
 # All linux systems have sbrk()
 add_definitions(-D_HAVE_SBRK)
 
 # pull in declarations of lseek64 and friends
 add_definitions(-D_LARGEFILE64_SOURCE)
-	
+
 # test for glibc malloc debugging extensions
 try_compile(HAVE_MTRACE
             ${CMAKE_BINARY_DIR}
@@ -127,4 +125,3 @@ configure_file (
     "makefiles/cmake/cmake_config.h.in"
     "${PROJECT_BINARY_DIR}/cmake_config.h"
     )
- 

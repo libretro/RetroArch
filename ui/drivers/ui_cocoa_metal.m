@@ -86,7 +86,7 @@ static void app_terminate(void)
 
 - (void)sendEvent:(NSEvent *)event {
    [super sendEvent:event];
-   
+
    cocoa_input_data_t *apple = NULL;
    NSEventType event_type = event.type;
 
@@ -205,20 +205,19 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 
-
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
    apple_platform   = self;
 
    self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-   
+
    _listener = [WindowListener new];
-   
+
    [self.window setAcceptsMouseMovedEvents: YES];
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
-   
+
    [[self.window contentView] setAutoresizesSubviews:YES];
 
     for (i = 0; i < waiting_argc; i++)
@@ -234,10 +233,10 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
-   
+
    [self.window makeMainWindow];
    [self.window makeKeyWindow];
-   
+
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
@@ -247,9 +246,9 @@ static char** waiting_argv;
    if (vt == _vt) {
       return;
    }
-   
+
    RARCH_LOG("[Cocoa]: change view type: %d → %d\n", _vt, vt);
-   
+
    _vt = vt;
    if (_renderView != nil)
    {
@@ -259,7 +258,7 @@ static char** waiting_argv;
       self.window.contentView = nil;
       _renderView = nil;
    }
-   
+
    switch (vt) {
       case APPLE_VIEW_TYPE_VULKAN:
       case APPLE_VIEW_TYPE_METAL:
@@ -270,21 +269,21 @@ static char** waiting_argv;
          _renderView = v;
       }
       break;
-      
+
       case APPLE_VIEW_TYPE_OPENGL:
       {
          _renderView = [CocoaView get];
          break;
       }
-      
+
       case APPLE_VIEW_TYPE_NONE:
       default:
          return;
    }
-   
+
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    [_renderView setFrame: [[self.window contentView] bounds]];
-   
+
    self.window.contentView = _renderView;
    self.window.contentView.nextResponder = _listener;
 }
@@ -308,12 +307,12 @@ static char** waiting_argv;
       [self.window toggleFullScreen:self];
       return;
    }
-   
+
    if (!mode.fullscreen && isFullScreen)
    {
       [self.window toggleFullScreen:self];
    }
-   
+
    if (mode.width > 0)
    {
       // HACK(sgc): ensure MTKView posts a drawable resize event
@@ -342,7 +341,6 @@ static char** waiting_argv;
    }
    return YES;
 }
-
 
 - (void) rarch_main
 {
@@ -402,7 +400,6 @@ static char** waiting_argv;
 
    return reply;
 }
-
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {

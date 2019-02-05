@@ -19,7 +19,7 @@ C = mailbox.c gpu_fft.c gpu_fft_base.c gpu_fft_twiddles.c gpu_fft_shaders.c
 C1D = $(C) hello_fft.c
 C2D = $(C) hello_fft_2d.c gpu_fft_trans.c
 
-H1D = gpu_fft.h mailbox.h 
+H1D = gpu_fft.h mailbox.h
 H2D = gpu_fft.h mailbox.h gpu_fft_trans.h hello_fft_2d_bitmap.h
 
 F = -lrt -lm -ldl

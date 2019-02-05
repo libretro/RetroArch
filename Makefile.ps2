@@ -77,7 +77,7 @@ EE_LDFLAGS = $(LDFLAGS)
 EE_LIBS = $(LIBS)
 EE_ASFLAGS = $(ASFLAGS)
 EE_INCS = $(INCDIR)
-EE_IRX_OBJ = $(IRX_OBJ) 
+EE_IRX_OBJ = $(IRX_OBJ)
 EE_BIN = $(TARGET)
 EE_GPVAL = $(GPVAL)
 
@@ -105,7 +105,7 @@ $(EE_IRX_OBJ):
 	$(EE_BIN2O) $(EE_GPVAL) $(IRX_DIR)/$(@:.o=.irx) $@ $(@:.o=_irx)
 
 #Include preferences
-include $(PS2SDK)/samples/Makefile.pref 
+include $(PS2SDK)/samples/Makefile.pref
 include $(PS2SDK)/samples/Makefile.eeglobal
 
 #Linking with C++

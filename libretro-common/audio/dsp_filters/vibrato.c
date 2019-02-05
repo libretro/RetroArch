@@ -79,7 +79,7 @@ static void vibratocore_init(struct vibrato_core *core,float depth,int samplerat
 	core->freq = freq;
 	core->depth = depth;
 	core->phase = 0;
-	core->writeindex = 0;		
+	core->writeindex = 0;
 }
 
 float vibratocore_core(struct vibrato_core *core,float in)

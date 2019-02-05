@@ -44,7 +44,7 @@ extern "C" {
   * This provides event flags (as per Nucleus Event Groups) based on a
   * mutex, a semaphore (per waiting thread) and a timer (per waiting
   * thread).
-  * 
+  *
   * The data structure is a 32 bit unsigned int (the current set of
   * flags) and a linked list of clients waiting to be 'satisfied'.
   *
@@ -124,4 +124,3 @@ VCOS_STATUS_T vcos_event_flags_get(VCOS_EVENT_FLAGS_T *flags,
 }
 #endif
 #endif
-

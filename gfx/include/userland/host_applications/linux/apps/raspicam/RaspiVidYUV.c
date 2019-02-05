@@ -100,7 +100,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// Interval at which we check for an failure abort during capture
 const int ABORT_INTERVAL = 100; // ms
 
-
 /// Capture/Pause switch method
 enum
 {
@@ -205,7 +204,6 @@ static COMMAND_LIST cmdline_commands[] =
 
 static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
 
-
 static struct
 {
    char *description;
@@ -220,8 +218,6 @@ static struct
 };
 
 static int wait_method_description_size = sizeof(wait_method_description) / sizeof(wait_method_description[0]);
-
-
 
 /**
  * Assign a default set of parameters to the state passed in
@@ -260,7 +256,6 @@ static void default_status(RASPIVIDYUV_STATE *state)
    // Set up the camera_parameters to default
    raspicamcontrol_set_defaults(&state->camera_parameters);
 }
-
 
 /**
  * Dump image state parameters to stderr.
@@ -817,7 +812,6 @@ static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buff
    }
 }
 
-
 /**
  * Create the camera component, set up its ports
  *
@@ -1113,7 +1107,6 @@ static int pause_and_test_abort(RASPIVIDYUV_STATE *state, int pause)
 
    return 0;
 }
-
 
 /**
  * Function to wait in various ways (depending on settings)
@@ -1504,5 +1497,4 @@ error:
 
    return exit_code;
 }
-
 

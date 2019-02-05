@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct CLIENT_PROCESS_STATE CLIENT_PROCESS_STATE_T;
 typedef struct CLIENT_THREAD_STATE CLIENT_THREAD_STATE_T;
 
-
 #include "interface/khronos/common/khrn_client_platform.h"
 
 #include "interface/khronos/egl/egl_client_context.h"
@@ -45,7 +44,6 @@ typedef struct CLIENT_THREAD_STATE CLIENT_THREAD_STATE_T;
 #elif defined(RPC_DIRECT_MULTI)
 #include "middleware/khronos/common/khrn_misc.h"
 #endif
-
 
 /* must be after EGL/eglext.h */
 #if EGL_BRCM_global_image && EGL_KHR_image
@@ -235,14 +233,13 @@ struct CLIENT_PROCESS_STATE {
       surfaces[id].is_destroyed == false
    */
    KHRN_POINTER_MAP_T surfaces;
-   
-   
+
    /*
     * some platforms (e.g. Android) need to maintain a list of
     * known windows
     */
    KHRN_POINTER_MAP_T windows;
-   
+
 #if EGL_KHR_sync
 
    /*
@@ -255,7 +252,6 @@ struct CLIENT_PROCESS_STATE {
 #if EGL_BRCM_global_image && EGL_KHR_image
    KHRN_GLOBAL_IMAGE_MAP_T global_image_egl_images;
 #endif
-
 
    /*
       next_surface
@@ -330,7 +326,7 @@ extern void *platform_tls_get_process(PLATFORM_TLS_T tls);
 static INLINE CLIENT_PROCESS_STATE_T *CLIENT_GET_PROCESS_STATE(void)
 {
 #ifdef CLIENT_THREAD_IS_PROCESS
-	//each thread has its own client_process_state	
+	//each thread has its own client_process_state
 	return (CLIENT_PROCESS_STATE_T *)platform_tls_get_process(client_tls_process);
 #else
    return &client_process_state;

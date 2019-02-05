@@ -51,7 +51,7 @@ EGLAPI EGLBoolean EGLAPIENTRY eglInitDriverMonitorBRCM(EGLDisplay dpy, EGLint hw
    {
       CLIENT_PROCESS_STATE_T *process = client_egl_get_process_state(thread, dpy, EGL_TRUE);
 
-      if (process) 
+      if (process)
       {
          if (!process->driver_monitor_inited)
             process->driver_monitor_inited = RPC_BOOLEAN_RES(RPC_CALL2_RES(eglInitDriverMonitorBRCM_impl,
@@ -59,17 +59,17 @@ EGLAPI EGLBoolean EGLAPIENTRY eglInitDriverMonitorBRCM(EGLDisplay dpy, EGLint hw
                                                          EGLINITDRIVERMONITORBRCM_ID,
                                                          hw_bank, l3c_bank));
 
-         if (process->driver_monitor_inited) 
+         if (process->driver_monitor_inited)
          {
             thread->error = EGL_SUCCESS;
             result = EGL_TRUE;
-         } 
-         else 
+         }
+         else
          {
             thread->error = EGL_BAD_ALLOC;
             result = EGL_FALSE;
          }
-      } 
+      }
       else
          result = EGL_FALSE;
    }
@@ -83,10 +83,10 @@ void egl_driver_monitor_term(CLIENT_PROCESS_STATE_T *process)
 {
    CLIENT_THREAD_STATE_T *thread = CLIENT_GET_THREAD_STATE();
 
-   if (process->driver_monitor_inited) 
+   if (process->driver_monitor_inited)
    {
       RPC_CALL0(eglTermDriverMonitorBRCM_impl,
-                thread,  
+                thread,
                 EGLTERMDRIVERMONITORBRCM_ID);
 
       process->driver_monitor_inited = false;
@@ -102,7 +102,7 @@ EGLAPI void EGLAPIENTRY eglGetDriverMonitorXMLBRCM(EGLDisplay dpy, EGLint bufSiz
    {
       CLIENT_PROCESS_STATE_T *process = client_egl_get_process_state(thread, dpy, EGL_TRUE);
 
-      if (process) 
+      if (process)
       {
          if (process->driver_monitor_inited && xmlStats != NULL)
          {
@@ -129,13 +129,13 @@ EGLAPI EGLBoolean EGLAPIENTRY eglTermDriverMonitorBRCM(EGLDisplay dpy)
    {
       CLIENT_PROCESS_STATE_T *process = client_egl_get_process_state(thread, dpy, EGL_TRUE);
 
-      if (process) 
+      if (process)
       {
          egl_driver_monitor_term(process);
 
          thread->error = EGL_SUCCESS;
          result = EGL_TRUE;
-      } 
+      }
       else
          result = EGL_FALSE;
    }

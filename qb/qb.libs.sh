@@ -158,7 +158,7 @@ check_pkgconf()
 			break
 		fi
 	done
-	
+
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
@@ -359,7 +359,7 @@ create_config_make()
 				;;
 				'no') printf %s\\n "HAVE_$1 = 0";;
 			esac
-			
+
 			case "$PKG_CONF_USED" in
 				*$1*)
 					FLAG="$(eval "printf %s \"\$$1_CFLAGS\"")"

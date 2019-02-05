@@ -3,4 +3,3 @@ BIN=raspicam.bin
 LDFLAGS+=-lmmal -lmmal_core -lmmal_util -lm -ldl
 
 include ../Makefile.include
-

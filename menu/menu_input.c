@@ -176,7 +176,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
    bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool input_swap_override                = 
+   bool input_swap_override                =
       input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                    = (!input_swap_override &&
       swap_ok_cancel_btns) ?
@@ -247,14 +247,14 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (menu_event_get_osk_ptr() < 33)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   + OSK_CHARS_PER_LINE);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   - OSK_CHARS_PER_LINE);
       }
 

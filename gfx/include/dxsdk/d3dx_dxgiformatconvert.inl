@@ -16,22 +16,22 @@
 // D3D11's Unordered Access View (UAV) of a Texture1D/2D/3D resource
 // allows random access reads and writes to memory from a Compute Shader
 // or Pixel Shader.  However, the only texture format that supports this
-// is DXGI_FORMAT_R32_UINT.  e.g. Other more interesting formats like 
-// DXGI_FORMAT_R8G8B8A8_UNORM do not support simultaneous read and 
-// write.  You can use such formats for random access writing only 
+// is DXGI_FORMAT_R32_UINT.  e.g. Other more interesting formats like
+// DXGI_FORMAT_R8G8B8A8_UNORM do not support simultaneous read and
+// write.  You can use such formats for random access writing only
 // using a UAV, or reading only using a Shader Resource View (SRV).
 // But for simultaneous read+write, the format conversion hardware is
 // not available.
 //
 // There is a workaround to this limitation, involving casting the texture
 // to R32_UINT when creating a UAV, as long as the original format of the
-// resource supports it (most 32 bit per element formats). This allows 
-// simultaneous read+write as long as the shader does manual format 
+// resource supports it (most 32 bit per element formats). This allows
+// simultaneous read+write as long as the shader does manual format
 // unpacking on read and packing on write.
-// 
+//
 // The benefit is that later on, other views such as RenderTarget Views
-// or ShaderResource Views on the same texture can be used with the 
-// proper format (e.g. DXGI_FORMAT_R16G16_FLOAT) so the hardware can 
+// or ShaderResource Views on the same texture can be used with the
+// proper format (e.g. DXGI_FORMAT_R16G16_FLOAT) so the hardware can
 // do the usual automatic format unpack/pack and do texture filtering etc.
 // where there are no hardware limitations.
 //
@@ -39,7 +39,7 @@
 //
 // Suppose you want to make a texture than you can use a Pixel Shader
 // or Compute Shader to perform in-place editing, and that the format
-// you want the data to be stored in happens to be a descendent 
+// you want the data to be stored in happens to be a descendent
 // of of one of these formats:
 //
 //    DXGI_FORMAT_R10G10B10A2_TYPELESS
@@ -48,36 +48,36 @@
 //    DXGI_FORMAT_B8G8R8X8_TYPELESS
 //    DXGI_FORMAT_R16G16_TYPELESS
 //
-// e.g. DXGI_FORMAT_R10G10B10A2_UNORM is a descendent of 
+// e.g. DXGI_FORMAT_R10G10B10A2_UNORM is a descendent of
 //      DXGI_FORMAT_R10G10B10A2_TYPELESS, so it supports the
 //      usage pattern described here.
-// 
-// (Formats descending from DXGI_FORMAT_R32_TYPELESS, such as 
-//  DXGI_FORMAT_R32_FLOAT, are trivially supported without 
+//
+// (Formats descending from DXGI_FORMAT_R32_TYPELESS, such as
+//  DXGI_FORMAT_R32_FLOAT, are trivially supported without
 //  needing any of the format conversion help provided here.)
-// 
+//
 // Steps:
-// 
+//
 // (1) Create a texture with the appropriate _TYPELESS format above
-//     along with the needed bind flags, such as 
+//     along with the needed bind flags, such as
 //     D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE.
-// 
+//
 // (2) For in-place image editing, create a UAV with the format
 //     DXGI_FORMAT_R32_UINT.  D3D normally doesn't allow casting
-//     between different format "families", but the API makes 
+//     between different format "families", but the API makes
 //     an exception here.
-// 
+//
 // (3) In the Compute Shader or Pixel Shader, use the appropriate
 //     format pack/unpack routines provided in this file.
 //     For example if the DXGI_FORMAT_R32_UINT UAV really holds
-//     DXGI_FORMAT_R10G10B10A2_UNORM data, then, after reading a 
+//     DXGI_FORMAT_R10G10B10A2_UNORM data, then, after reading a
 //     uint from the UAV into the shader, unpack by calling:
-// 
+//
 //          XMFLOAT4 D3DX_R10G10B10A2_UNORM_to_FLOAT4(UINT packedInput)
-// 
+//
 //     Then to write to the UAV in the same shader, call the following
 //     to pack shader data into a uint that can be written out:
-// 
+//
 //          UINT D3DX_FLOAT4_to_R10G10B10A2_UNORM(hlsl_precise XMFLOAT4 unpackedInput)
 //
 // (4) Other views, such as SRVs, can be created with the desired format;
@@ -86,26 +86,26 @@
 //     shader, the hardware can do automatic type conversion as usual.
 //
 // Note, again, that if the shader only needs to write to a UAV, or read
-// as an SRV, then none of this is needed - fully typed UAV or SRVs can 
-// be used.  Only if simultaneous reading and writing to a UAV of a texture 
-// is needed are the format conversion routines provided here potentially 
+// as an SRV, then none of this is needed - fully typed UAV or SRVs can
+// be used.  Only if simultaneous reading and writing to a UAV of a texture
+// is needed are the format conversion routines provided here potentially
 // useful.
 //
-// The following is the list of format conversion routines included in this 
-// file, categorized by the DXGI_FORMAT they unpack/pack.  Each of the 
+// The following is the list of format conversion routines included in this
+// file, categorized by the DXGI_FORMAT they unpack/pack.  Each of the
 // formats supported descends from one of the TYPELESS formats listed
 // above, and supports casting to DXGI_FORMAT_R32_UINT as a UAV.
 //
 // DXGI_FORMAT_R10G10B10A2_UNORM:
-// 
+//
 //      XMFLOAT4 D3DX_R10G10B10A2_UNORM_to_FLOAT4(UINT packedInput)
 //      UINT     D3DX_FLOAT4_to_R10G10B10A2_UNORM(hlsl_precise XMFLOAT4 unpackedInput)
-// 
+//
 // DXGI_FORMAT_R10G10B10A2_UINT:
 //
 //      XMUINT4 D3DX_R10G10B10A2_UINT_to_UINT4(UINT packedInput)
 //      UINT    D3DX_UINT4_to_R10G10B10A2_UINT(XMUINT4 unpackedInput)
-// 
+//
 // DXGI_FORMAT_R8G8B8A8_UNORM:
 //
 //      XMFLOAT4 D3DX_R8G8B8A8_UNORM_to_FLOAT4(UINT packedInput)
@@ -116,13 +116,13 @@
 //      XMFLOAT4 D3DX_R8G8B8A8_UNORM_SRGB_to_FLOAT4_inexact(UINT packedInput) *
 //      XMFLOAT4 D3DX_R8G8B8A8_UNORM_SRGB_to_FLOAT4(UINT packedInput)
 //      UINT     D3DX_FLOAT4_to_R8G8B8A8_UNORM_SRGB(hlsl_precise XMFLOAT4 unpackedInput)
-// 
+//
 //      * The "_inexact" function above uses shader instructions that don't
 //      have high enough precision to give the exact answer, albeit close.
 //      The alternative function uses a lookup table stored in the shader
 //      to give an exact SRGB->float conversion.
 //
-// DXGI_FORMAT_R8G8B8A8_UINT: 
+// DXGI_FORMAT_R8G8B8A8_UINT:
 //
 //      XMUINT4 D3DX_R8G8B8A8_UINT_to_UINT4(UINT packedInput)
 //      XMUINT  D3DX_UINT4_to_R8G8B8A8_UINT(XMUINT4 unpackedInput)
@@ -131,7 +131,7 @@
 //
 //      XMFLOAT4 D3DX_R8G8B8A8_SNORM_to_FLOAT4(UINT packedInput)
 //      UINT     D3DX_FLOAT4_to_R8G8B8A8_SNORM(hlsl_precise XMFLOAT4 unpackedInput)
-// 
+//
 // DXGI_FORMAT_R8G8B8A8_SINT:
 //
 //      XMINT4 D3DX_R8G8B8A8_SINT_to_INT4(UINT packedInput)
@@ -143,7 +143,7 @@
 //      UINT     D3DX_FLOAT4_to_B8G8R8A8_UNORM(hlsl_precise XMFLOAT4 unpackedInput)
 //
 // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-// 
+//
 //      XMFLOAT4 D3DX_B8G8R8A8_UNORM_SRGB_to_FLOAT4_inexact(UINT packedInput) *
 //      XMFLOAT4 D3DX_B8G8R8A8_UNORM_SRGB_to_FLOAT4(UINT packedInput)
 //      UINT     D3DX_FLOAT4_to_R8G8B8A8_UNORM_SRGB(hlsl_precise XMFLOAT4 unpackedInput)
@@ -159,7 +159,7 @@
 //      UINT     D3DX_FLOAT3_to_B8G8R8X8_UNORM(hlsl_precise XMFLOAT3 unpackedInput)
 //
 // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-// 
+//
 //      XMFLOAT3 D3DX_B8G8R8X8_UNORM_SRGB_to_FLOAT3_inexact(UINT packedInput) *
 //      XMFLOAT3 D3DX_B8G8R8X8_UNORM_SRGB_to_FLOAT3(UINT packedInput)
 //      UINT     D3DX_FLOAT3_to_B8G8R8X8_UNORM_SRGB(hlsl_precise XMFLOAT3 unpackedInput)
@@ -175,10 +175,10 @@
 //      UINT     D3DX_FLOAT2_to_R16G16_FLOAT(hlsl_precise XMFLOAT2 unpackedInput)
 //
 // DXGI_FORMAT_R16G16_UNORM:
-// 
+//
 //      XMFLOAT2 D3DX_R16G16_UNORM_to_FLOAT2(UINT packedInput)
 //      UINT     D3DX_FLOAT2_to_R16G16_UNORM(hlsl_precise FLOAT2 unpackedInput)
-// 
+//
 // DXGI_FORMAT_R16G16_UINT:
 //
 //      XMUINT2 D3DX_R16G16_UINT_to_UINT2(UINT packedInput)
@@ -282,7 +282,7 @@ typedef struct _XMUINT4
 // SRGB Helper Functions Called By Conversions Further Below.
 //=============================================================================
 // SRGB_to_FLOAT_inexact is imprecise due to precision of pow implementations.
-// If exact SRGB->float conversion is needed, a table lookup is provided 
+// If exact SRGB->float conversion is needed, a table lookup is provided
 // further below.
 D3DX11INLINE FLOAT D3DX_SRGB_to_FLOAT_inexact(hlsl_precise FLOAT val)
 {
@@ -293,7 +293,7 @@ D3DX11INLINE FLOAT D3DX_SRGB_to_FLOAT_inexact(hlsl_precise FLOAT val)
     return val;
 }
 
-static const UINT D3DX_SRGBTable[] = 
+static const UINT D3DX_SRGBTable[] =
 {
     0x00000000,0x399f22b4,0x3a1f22b4,0x3a6eb40e,0x3a9f22b4,0x3ac6eb61,0x3aeeb40e,0x3b0b3e5d,
     0x3b1f22b4,0x3b33070b,0x3b46eb61,0x3b5b518d,0x3b70f18d,0x3b83e1c6,0x3b8fe616,0x3b9c87fd,
@@ -339,7 +339,7 @@ D3DX11INLINE FLOAT D3DX_SRGB_to_FLOAT(UINT val)
 }
 
 D3DX11INLINE FLOAT D3DX_FLOAT_to_SRGB(hlsl_precise FLOAT val)
-{ 
+{
     if( val < 0.0031308f )
         val *= 12.92f;
     else
@@ -353,7 +353,7 @@ D3DX11INLINE FLOAT D3DX_SaturateSigned_FLOAT(FLOAT _V)
     {
         return 0;
     }
-    
+
     return min(max(_V, -1), 1);
 }
 

@@ -989,7 +989,6 @@ int fdt_address_cells(const void *fdt, int nodeoffset);
  */
 int fdt_size_cells(const void *fdt, int nodeoffset);
 
-
 /**********************************************************************/
 /* Write-in-place functions                                           */
 /**********************************************************************/

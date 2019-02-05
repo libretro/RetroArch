@@ -86,11 +86,11 @@ time_t ps2_time(time_t *t) {
 
 	if(t)
 		*t = tim;
-		
+
 	return tim;
 }
 
-/* Protected methods in libc */ 
+/* Protected methods in libc */
 void _ps2sdk_time_init(void)
 {
    SDL_Init(SDL_INIT_TIMER);

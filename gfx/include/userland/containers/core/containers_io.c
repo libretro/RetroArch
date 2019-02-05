@@ -186,7 +186,7 @@ static VC_CONTAINER_IO_T *vc_container_io_open_core( const char *uri, VC_CONTAIN
       cache->io = p_ctx;
       cache->mem = malloc(p_ctx->priv->caches.mem_size);
       if(cache->mem)
-      {      
+      {
          cache->buffer = cache->mem;
          cache->buffer_end = cache->mem + cache->mem_size;
          p_ctx->priv->caches_num = 1;
@@ -195,7 +195,6 @@ static VC_CONTAINER_IO_T *vc_container_io_open_core( const char *uri, VC_CONTAIN
 
    if(p_ctx->priv->caches_num)
       p_ctx->priv->cache = &p_ctx->priv->caches;
-
 
    /* Try to start an asynchronous io if we're in write mode and we've got at least 2 cache memory areas */
    if(mode == VC_CONTAINER_IO_MODE_WRITE && p_ctx->priv->cache && num_areas >= 2)
@@ -241,7 +240,7 @@ VC_CONTAINER_STATUS_T vc_container_io_close( VC_CONTAINER_IO_T *p_ctx )
             if(p_ctx->priv->caches.dirty)
                vc_container_io_cache_flush( p_ctx, &p_ctx->priv->caches, 1 );
          }
-         
+
          if(p_ctx->priv->async_io)
             async_io_stop( p_ctx->priv->async_io );
          else if(p_ctx->priv->caches_num)
@@ -249,7 +248,7 @@ VC_CONTAINER_STATUS_T vc_container_io_close( VC_CONTAINER_IO_T *p_ctx )
 
          for(i = 0; i < p_ctx->priv->cached_areas_num; i++)
             free(p_ctx->priv->cached_areas[i].mem);
-         
+
          if(p_ctx->pf_close)
             p_ctx->pf_close(p_ctx);
       }
@@ -769,7 +768,7 @@ static void stats_add_value(VC_CONTAINER_STATS_T *st, uint32_t count, uint32_t n
    uint32_t numpc;
    int i, j;
 
-   if(count == 0) 
+   if(count == 0)
       return;
 
    numpc = NUMPC(count, num, st->shift);
@@ -958,7 +957,7 @@ static VC_CONTAINER_STATUS_T async_io_wait_complete( struct VC_CONTAINER_IO_ASYN
       vcos_semaphore_wait(&ctx->spare_sema);
       vcos_semaphore_post(&ctx->spare_sema);
    }
-   
+
    if(ctx->stats_enable)
       stats_add_value(&ctx->stats.flush, 1, vcos_getmicrosecs() - time);
 
@@ -1083,6 +1082,5 @@ static void async_io_stats_get( struct VC_CONTAINER_IO_ASYNC_T *ctx, VC_CONTAINE
    VC_CONTAINER_PARAM_UNUSED(ctx);
    VC_CONTAINER_PARAM_UNUSED(stats);
 }
-
 
 #endif

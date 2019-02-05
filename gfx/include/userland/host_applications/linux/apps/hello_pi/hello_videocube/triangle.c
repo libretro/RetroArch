@@ -46,7 +46,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "triangle.h"
 #include <pthread.h>
 
-
 #define PATH "./"
 
 #define IMAGE_SIZE_WIDTH 1920
@@ -55,7 +54,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef M_PI
    #define M_PI 3.141592654
 #endif
-  
 
 typedef struct
 {
@@ -94,7 +92,6 @@ static CUBE_STATE_T _state, *state=&_state;
 static void* eglImage = 0;
 static pthread_t thread1;
 
-
 /***********************************************************
  * Name: init_ogl
  *
@@ -131,7 +128,7 @@ static void init_ogl(CUBE_STATE_T *state)
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_NONE
    };
-   
+
    EGLConfig config;
 
    // get an EGL display connection
@@ -159,24 +156,24 @@ static void init_ogl(CUBE_STATE_T *state)
    dst_rect.y = 0;
    dst_rect.width = state->screen_width;
    dst_rect.height = state->screen_height;
-      
+
    src_rect.x = 0;
    src_rect.y = 0;
    src_rect.width = state->screen_width << 16;
-   src_rect.height = state->screen_height << 16;        
+   src_rect.height = state->screen_height << 16;
 
    dispman_display = vc_dispmanx_display_open( 0 /* LCD */);
    dispman_update = vc_dispmanx_update_start( 0 );
-         
+
    dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
       0/*layer*/, &dst_rect, 0/*src*/,
       &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, 0/*transform*/);
-      
+
    nativewindow.element = dispman_element;
    nativewindow.width = state->screen_width;
    nativewindow.height = state->screen_height;
    vc_dispmanx_update_submit_sync( dispman_update );
-      
+
    state->surface = eglCreateWindowSurface( state->display, config, &nativewindow, NULL );
    assert(state->surface != EGL_NO_SURFACE);
 
@@ -214,7 +211,7 @@ static void init_model_proj(CUBE_STATE_T *state)
    glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
    glViewport(0, 0, (GLsizei)state->screen_width, (GLsizei)state->screen_height);
-      
+
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
 
@@ -222,7 +219,7 @@ static void init_model_proj(CUBE_STATE_T *state)
    hwd = hht * (float)state->screen_width / (float)state->screen_height;
 
    glFrustumf(-hwd, hwd, -hht, hht, nearp, farp);
-   
+
    glEnableClientState( GL_VERTEX_ARRAY );
    glVertexPointer( 3, GL_BYTE, 0, quadx );
 
@@ -400,7 +397,6 @@ static void init_textures(CUBE_STATE_T *state)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-
    /* Create EGL Image */
    eglImage = eglCreateImageKHR(
                 state->display,
@@ -408,7 +404,7 @@ static void init_textures(CUBE_STATE_T *state)
                 EGL_GL_TEXTURE_2D_KHR,
                 (EGLClientBuffer)state->tex,
                 0);
-    
+
    if (eglImage == EGL_NO_IMAGE_KHR)
    {
       printf("eglCreateImageKHR failed.\n");
@@ -460,7 +456,7 @@ int main ()
 
    // Clear application state
    memset( state, 0, sizeof( *state ) );
-      
+
    // Start OGLES
    init_ogl(state);
 
@@ -478,4 +474,3 @@ int main ()
    exit_func();
    return 0;
 }
-

@@ -36,7 +36,7 @@ typedef struct ps2_video
    GSTEXTURE *coreTexture;
    bool clearVRAM;
    struct retro_hw_render_interface_gskit_ps2 iface; /* Palette in the cores */
-   
+
    bool menuVisible;
    bool fullscreen;
 
@@ -58,14 +58,14 @@ static GSGLOBAL *init_GSGlobal(void)
    gsGlobal->Field = GS_FIELD;
    gsGlobal->Width = NTSC_WIDTH;
    gsGlobal->Height = NTSC_HEIGHT;
-   
+
    gsGlobal->PSM = GS_PSM_CT16;
    gsGlobal->PSMZ = GS_PSMZ_16;
    gsGlobal->DoubleBuffering = GS_SETTING_OFF;
    gsGlobal->ZBuffering = GS_SETTING_OFF;
    gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
-   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC, 
+   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
                D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
 
    /* Initialize the DMAC */
@@ -109,7 +109,7 @@ static bool texture_need_prepare(GSTEXTURE *texture, int width, int height, int 
    return texture->Width != width || texture->Height != height || texture->PSM != PSM;
 }
 
-static void transfer_texture(GSTEXTURE *texture, const void *frame, 
+static void transfer_texture(GSTEXTURE *texture, const void *frame,
       int width, int height, int PSM, int filter, bool color_correction)
 {
    texture->Width = width;
@@ -143,7 +143,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
       float delta = MIN(width_proportion, height_proportion);
       float newWidth = texture->Width * delta;
       float newHeight = texture->Height * delta;
-      
+
       x1 = (gsGlobal->Width - newWidth) / 2.0f;
       y1 = (gsGlobal->Height - newHeight) / 2.0f;
       x2 = newWidth + x1;
@@ -251,7 +251,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       if(ps2->clearVRAM) {
          vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       }
-      gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture); 
+      gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture);
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect);
    }
 
@@ -386,11 +386,11 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
-   
+
    bool color_correction = false;
    int PSM = (rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    bool texture_changed = texture_need_prepare(ps2->menuTexture, width, height, PSM);
-   
+
    transfer_texture(ps2->menuTexture, frame, width, height, PSM, ps2->menu_filter, color_correction);
    ps2->clearVRAM = ps2->clearVRAM || texture_changed;
 }
@@ -414,7 +414,7 @@ static void ps2_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, params);
 }
 
-static bool ps2_get_hw_render_interface(void* data, 
+static bool ps2_get_hw_render_interface(void* data,
       const struct retro_hw_render_interface** iface)
 {
    ps2_video_t* ps2 = (ps2_video_t*)data;

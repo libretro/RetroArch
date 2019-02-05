@@ -1574,4 +1574,3 @@ static void *mmalomx_cmd_thread_func(void *arg)
 
    return 0;
 }
-

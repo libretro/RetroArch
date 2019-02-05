@@ -795,4 +795,3 @@ GL_API void GL_APIENTRY glPointSizePointerOES (GLenum type, GLsizei stride, cons
 #endif
 
 #endif /* __gl_h_ */
-

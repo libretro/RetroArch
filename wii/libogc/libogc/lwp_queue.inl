@@ -68,7 +68,7 @@ static __inline__ void __lwp_queue_extractI(lwp_node *node)
 static __inline__ void __lwp_queue_insertI(lwp_node *after,lwp_node *node)
 {
 	lwp_node *before;
-	
+
 	node->prev = after;
 	before = after->next;
 	after->next = node;

@@ -84,5 +84,3 @@ int vcos_reentrant_mutex_is_locked(VCOS_REENTRANT_MUTEX_T *m) {
 #endif
 #endif
 
-
-

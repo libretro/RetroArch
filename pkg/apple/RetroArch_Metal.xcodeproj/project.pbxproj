@@ -202,9 +202,7 @@
 		05A8C53A20DB72F000FF7857 /* nk_menu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nk_menu.h; sourceTree = "<group>"; };
 		05A8C53B20DB72F000FF7857 /* xui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xui.cpp; sourceTree = "<group>"; };
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
-		05A8C53D20DB72F000FF7857 /* nuklear.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nuklear.c; sourceTree = "<group>"; };
 		05A8C53E20DB72F000FF7857 /* null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null.c; sourceTree = "<group>"; };
-		05A8C53F20DB72F000FF7857 /* zarch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = zarch.c; sourceTree = "<group>"; };
 		05A8C54020DB72F000FF7857 /* materialui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = materialui.c; sourceTree = "<group>"; };
 		05A8C54120DB72F000FF7857 /* menu_cbs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs.c; sourceTree = "<group>"; };
 		05A8C54220DB72F000FF7857 /* menu_networking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_networking.h; sourceTree = "<group>"; };
@@ -318,11 +316,8 @@
 		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C60C20DB72F000FF7857 /* opaque.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.cg.h; sourceTree = "<group>"; };
-		05A8C60D20DB72F000FF7857 /* pipeline_nuklear.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_nuklear.cg.h; sourceTree = "<group>"; };
-		05A8C60E20DB72F000FF7857 /* pipeline_nuklear.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_nuklear.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C61120DB72F000FF7857 /* pipeline_nuklear.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_nuklear.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C61220DB72F000FF7857 /* modern_pipeline_snow.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_pipeline_snow.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snowflake.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C61420DB72F000FF7857 /* modern_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_pipeline_xmb_ribbon.glsl.vert.h; sourceTree = "<group>"; };
@@ -828,32 +823,17 @@
 		05A8C53120DB72F000FF7857 /* drivers */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C53520DB72F000FF7857 /* nuklear */,
 				05132C6521A74D5100379846 /* ozone */,
 				05A8C54020DB72F000FF7857 /* materialui.c */,
 				05A8C53420DB72F000FF7857 /* menu_generic.c */,
 				05A8C53320DB72F000FF7857 /* menu_generic.h */,
-				05A8C53D20DB72F000FF7857 /* nuklear.c */,
 				05A8C53E20DB72F000FF7857 /* null.c */,
 				05A8C53C20DB72F000FF7857 /* rgui.c */,
 				05EFAFC22191D64200D27059 /* stripes.c */,
 				05A8C53220DB72F000FF7857 /* xmb.c */,
 				05A8C53B20DB72F000FF7857 /* xui.cpp */,
-				05A8C53F20DB72F000FF7857 /* zarch.c */,
 			);
 			path = drivers;
-			sourceTree = "<group>";
-		};
-		05A8C53520DB72F000FF7857 /* nuklear */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C53620DB72F000FF7857 /* nk_common.h */,
-				05A8C53720DB72F000FF7857 /* nk_menu.c */,
-				05A8C53820DB72F000FF7857 /* nk_wnd_debug.c */,
-				05A8C53920DB72F000FF7857 /* nk_common.c */,
-				05A8C53A20DB72F000FF7857 /* nk_menu.h */,
-			);
-			path = nuklear;
 			sourceTree = "<group>";
 		};
 		05A8C55220DB72F000FF7857 /* widgets */ = {
@@ -1079,11 +1059,8 @@
 				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
 				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
 				05A8C60C20DB72F000FF7857 /* opaque.cg.h */,
-				05A8C60D20DB72F000FF7857 /* pipeline_nuklear.cg.h */,
-				05A8C60E20DB72F000FF7857 /* pipeline_nuklear.glsl.vert.h */,
 				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
 				05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */,
-				05A8C61120DB72F000FF7857 /* pipeline_nuklear.glsl.frag.h */,
 				05A8C61220DB72F000FF7857 /* modern_pipeline_snow.glsl.vert.h */,
 				05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */,
 				05A8C61420DB72F000FF7857 /* modern_pipeline_xmb_ribbon.glsl.vert.h */,

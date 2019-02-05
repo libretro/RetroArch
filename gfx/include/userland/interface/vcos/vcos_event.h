@@ -39,7 +39,7 @@ extern "C" {
 #include "interface/vcos/vcos_types.h"
 #include "vcos.h"
 
-/** 
+/**
   * \file
   *
   * An event is akin to the Win32 auto-reset event.
@@ -48,7 +48,7 @@ extern "C" {
   * Signalling an event will wake up one waiting thread only. Once one
   * thread has been woken the event atomically returns to the unsignalled
   * state.
-  * 
+  *
   * If no threads are waiting on the event when it is signalled it remains
   * signalled.
   *
@@ -113,5 +113,4 @@ void vcos_event_delete(VCOS_EVENT_T *event);
 #endif
 
 #endif
-
 

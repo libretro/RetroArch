@@ -67,7 +67,6 @@ typedef enum {
    BUFMAN_TRANSFORM_MIRROR_ROT270  = BUFMAN_TRANSFORM_TRANSPOSE|BUFMAN_TRANSFORM_HFLIP|BUFMAN_TRANSFORM_VFLIP,
 } BUFMAN_TRANSFORM_T;
 
-
 // we use an opaque type here as the internals shouldn't be used externally, but allocation of the size of the block is required by the caller.
 #define BUFMANX_HANDLE_T_SIZE 1024
 typedef struct {

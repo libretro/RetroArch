@@ -205,7 +205,7 @@ int main(int argc, char *const *argv)
                                               vchi_mphi_message_driver_func_table());
 
    vchi_connect(&global_connection, 1, global_initialise_instance);
-  
+
    vc_vchi_filesys_init (global_initialise_instance, &global_connection, 1);
 
    for (;;)
@@ -217,4 +217,3 @@ int main(int argc, char *const *argv)
 
    return 0;
 }
-

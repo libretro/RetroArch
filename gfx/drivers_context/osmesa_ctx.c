@@ -30,6 +30,7 @@
 #include <GL/osmesa.h>
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../common/gl_common.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002

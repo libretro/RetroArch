@@ -158,4 +158,3 @@ uint32_t khrn_hashword(const uint32_t *key, int length, uint32_t initval);
 uint32_t khrn_hashlittle(const void *key, int length, uint32_t initval);
 
 #endif
-

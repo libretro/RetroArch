@@ -916,7 +916,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_switch_backlight_control);
    }
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_CPU_PROFILE)))
    {

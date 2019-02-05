@@ -564,7 +564,7 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
 }
 
 static void *resampler_sinc_new(const struct resampler_config *config,
-      double bandwidth_mod, enum resampler_quality quality, 
+      double bandwidth_mod, enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {
    double cutoff                  = 0.0;

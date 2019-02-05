@@ -881,7 +881,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
       stripes_node_t *node = (stripes_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (!string_is_empty(node->fullpath) && 
+      if (!string_is_empty(node->fullpath) &&
          (pos == 'R' || (pos == 'L' && string_is_equal(stripes_thumbnails_ident('R'),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))))
       {
@@ -1700,7 +1700,7 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    stripes_list_switch_horizontal_list(stripes);
 
    anim_entry.duration     = STRIPES_DELAY;
-   anim_entry.target_value = stripes->categories_passive_width 
+   anim_entry.target_value = stripes->categories_passive_width
       * -(float)stripes->categories_selection_ptr;
    anim_entry.subject      = &stripes->categories_x_pos;
    anim_entry.easing_enum  = EASING_OUT_QUAD;
@@ -1879,7 +1879,7 @@ static void stripes_context_reset_horizontal_list(
    size_t list_size                =
       stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL);
 
-   stripes->categories_x_pos           = 
+   stripes->categories_x_pos           =
       stripes->categories_passive_width *
       -(float)stripes->categories_selection_ptr;
 
@@ -2292,7 +2292,7 @@ static void stripes_calculate_visible_range(const stripes_handle_t *stripes,
    {
       for (j = current; j-- > 0; )
       {
-         float bottom = stripes_item_y(stripes, j, current) 
+         float bottom = stripes_item_y(stripes, j, current)
             + base_y + stripes->icon_size;
 
          if (bottom < 0)
@@ -2827,7 +2827,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
       return;
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
-   pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4; 
+   pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4;
 
    stripes->frame_count++;
 
@@ -2960,7 +2960,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 //             stripes->selection_buf_old,
 //             stripes->selection_ptr_old,
 //             (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
-//             ? stripes->categories_selection_ptr : 
+//             ? stripes->categories_selection_ptr :
 //             stripes->categories_selection_ptr_old,
 //             &stripes_item_color[0],
 //             width,
@@ -3123,7 +3123,7 @@ static void stripes_layout_psp(stripes_handle_t *stripes, int width)
    float scale_factor            =
       ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
 #ifdef _3DS
-   scale_factor                  = 
+   scale_factor                  =
       settings->uints.menu_xmb_scale_factor / 400.0;
 #endif
 

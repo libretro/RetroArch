@@ -13,7 +13,6 @@
 // 3DS includes
 #include <3ds.h>
 
-
 #define ENTRY_ARGBUFSIZE   0x400
 #define NUM_SERVICESTHATMATTER 5
 
@@ -49,7 +48,6 @@ typedef enum
 
 	StrId_Max,
 } StrId;
-
 
 typedef struct
 {
@@ -90,6 +88,5 @@ typedef struct
 } memmap_t;
 
 #define memmapSize(m) (sizeof(memmap_header_t) + sizeof(memmap_entry_t)*(m)->header.num)
-
 
 #include "launch.h"

@@ -40,7 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
-
 #ifndef _VC_CECSERVICE_DEFS_H_
 #define _VC_CECSERVICE_DEFS_H_
 #include "vcinclude/common.h"
@@ -77,8 +76,8 @@ typedef enum {
    VC_CEC_GET_PHYSICAL_ADDR,
    VC_CEC_GET_VENDOR_ID,
 
-   //The following 3 commands are used when CEC middleware is 
-   //running in passive mode (i.e. it does not allocate 
+   //The following 3 commands are used when CEC middleware is
+   //running in passive mode (i.e. it does not allocate
    //logical address automatically)
    VC_CEC_POLL_ADDR,
    VC_CEC_SET_LOGICAL_ADDR,
@@ -149,10 +148,10 @@ typedef struct {
 //Only available if CEC is compiled in passive mode and while the host
 //is testing the availability of a logical address
 //Parameter: logical address
-//Reply: 
+//Reply:
 
 //SET_LOGICAL_ADDR [(only for passive mode) This will be changed when we support multiple logical addresses]
-//Set the logical address used 
+//Set the logical address used
 //Only available if CEC is compiled in passive mode
 //Parameter: logical address, device type, vendor ID
 //Reply: (int32_t - zero means success, non-zero otherwise)
@@ -162,7 +161,7 @@ typedef struct {
    uint32_t device_type;
    uint32_t vendor_id;
 } CEC_SET_LOGICAL_ADDR_PARAM_T;
-   
+
 //ADD_DEVICE (only for passive mode)
 //Only available if CEC is compiled in passive mode
 //Parameter: logical address, physical address, device type, last device?

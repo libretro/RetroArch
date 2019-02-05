@@ -532,4 +532,3 @@ static inline void mmal_vc_msg_to_buffer_header(MMAL_BUFFER_HEADER_T *header,
 }
 
 #endif
-

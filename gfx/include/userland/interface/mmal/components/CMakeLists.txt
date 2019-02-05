@@ -31,4 +31,3 @@ target_link_libraries(mmal_components ${container_libs} mmal_util)
 target_link_libraries(mmal_components mmal_core)
 
 install(TARGETS mmal_components DESTINATION lib)
-

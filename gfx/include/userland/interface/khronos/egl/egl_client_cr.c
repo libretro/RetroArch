@@ -176,7 +176,6 @@ EGLAPI EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
    return khrn_platform_set_display_id(display_id);
 }
 
-
 //eglInitialize
 //eglTerminate
 //eglQueryString
@@ -354,7 +353,6 @@ EGL_TRANSPARENT_RED_VALUE  EGL_DONT_CARE  Exact    None
 EGL_TRANSPARENT_GREEN_VALUE EGL_DONT_CARE Exact    None
 EGL_TRANSPARENT_BLUE_VALUE EGL_DONT_CARE  Exact    None
 Table 3.4: Default values and match criteria for EGLConfig attributes.
-
 
 2 The special match criteria for EGL MATCH NATIVE PIXMAP was introduced due to the
 difficulty of determining an EGLConfig equivalent to a native pixmap using only color component

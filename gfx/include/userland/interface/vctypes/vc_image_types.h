@@ -110,12 +110,12 @@ typedef enum
    VC_IMAGE_BGRX8888,    /* 32bpp, corresponding to BGRA with unused alpha */
 
    VC_IMAGE_YUV420SP,    /* Y as a plane, then UV byte interleaved in plane with with same pitch, half height */
-   
+
    VC_IMAGE_YUV444PLANAR,  /* Y, U, & V planes separately 4:4:4 */
 
    VC_IMAGE_TF_U8,   /* T-format 8-bit U - same as TF_Y8 buf from U plane */
    VC_IMAGE_TF_V8,   /* T-format 8-bit U - same as TF_Y8 buf from V plane */
-   
+
    VC_IMAGE_YUV420_16,  /* YUV4:2:0 planar, 16bit values */
    VC_IMAGE_YUV_UV_16,  /* YUV4:2:0 codec format, 16bit values */
    VC_IMAGE_YUV420_S,   /* YUV4:2:0 with U,V in side-by-side format */
@@ -166,9 +166,8 @@ typedef enum
    VC_IMAGE_BAYER_RAW10L   = 11,
    VC_IMAGE_BAYER_RAW12L   = 12,
    VC_IMAGE_BAYER_RAW14L   = 13,
-   VC_IMAGE_BAYER_RAW16_BIG_ENDIAN = 14, 
+   VC_IMAGE_BAYER_RAW16_BIG_ENDIAN = 14,
    VC_IMAGE_BAYER_RAW4    = 15,
 } VC_IMAGE_BAYER_FORMAT_T;
 
 #endif /* __VC_INCLUDE_IMAGE_TYPES_H__ */
-

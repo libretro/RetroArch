@@ -139,7 +139,7 @@ RETURNS
 void vc_hostfs_init(void)
 {
    // This hostfs module is not thread safe - it allocaes a block
-   // of memory and uses it without any kind of locking. 
+   // of memory and uses it without any kind of locking.
    //
    // It offers no advantage of stdio, and so most clients should
    // not use it. Arguably FILESYS should use it in order to get
@@ -221,7 +221,6 @@ long vc_hostfs_lseek(int fildes, long offset, int whence)
    return (long) vc_hostfs_lseek64( fildes, (int64_t) offset, whence);
 }
 
-
 /******************************************************************************
 NAME
    vc_hostfs_lseek64
@@ -287,9 +286,6 @@ int64_t vc_hostfs_lseek64(int fildes, int64_t offset, int whence)
       return read_offset;
    }
 }
-
-
-
 
 /******************************************************************************
 NAME
@@ -572,10 +568,6 @@ int vc_hostfs_freespace(const char *inPath)
    return ret;
 }
 
-
-
-
-
 /******************************************************************************
 NAME
    vc_hostfs_freespace
@@ -617,7 +609,6 @@ int64_t vc_hostfs_freespace64(const char *inPath)
    return ret;
 }
 
-
 /******************************************************************************
 NAME
    vc_hostfs_get_attr
@@ -638,7 +629,6 @@ int vc_hostfs_get_attr(const char *path, fattributes_t *attr)
     struct stat sb;
 
     DEBUG_MINOR("vc_hostfs_get_attr: '%s'", path );
-
 
     *attr = 0;
 
@@ -976,7 +966,6 @@ int vc_hostfs_setend(int filedes)
    return -1;
 }
 
-
 /******************************************************************************
 NAME
    vc_hostfs_totalspace64
@@ -1022,7 +1011,6 @@ int64_t vc_hostfs_totalspace64(const char *inPath)
       free( path );
    return ret;
 }
-
 
 /******************************************************************************
 NAME
@@ -1105,7 +1093,6 @@ void vc_hostfs_scandisk(const char *path)
    // not yet implemented
 }
 
-
 /******************************************************************************
 NAME
    vc_hostfs_chkdsk
@@ -1128,4 +1115,3 @@ int vc_hostfs_chkdsk(const char *path, int fix_errors)
    (void)fix_errors;
    return 0;
 }
-

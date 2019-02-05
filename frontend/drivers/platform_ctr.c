@@ -191,7 +191,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 
    DEBUG_VAR(path);
    DEBUG_STR(path);
-   
+
    arg_data[0] = NULL;
 
    arg_data[args] = elf_path_cst;
@@ -233,7 +233,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          }
       }
 #endif
-	  
+
       if (envIsHomebrew())
       {
          exec_3dsx_no_path_in_args(path, arg_data);
@@ -428,7 +428,6 @@ static void frontend_ctr_init(void* data)
    mcuHwcInit();
 #endif
 }
-
 
 static int frontend_ctr_get_rating(void)
 {

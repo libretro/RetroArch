@@ -102,4 +102,3 @@ VCOS_STATUS_T vcos_queue_receive(VCOS_QUEUE_T *queue, void *dst, VCOS_UNSIGNED w
 }
 #endif
 #endif
-

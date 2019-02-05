@@ -32,4 +32,3 @@ target_link_libraries(vchostif vchiq_arm vcos vcfiled_check)
 
 add_subdirectory(linux/vcfiled)
 install(TARGETS vchostif vcilcs DESTINATION lib)
-

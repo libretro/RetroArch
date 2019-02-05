@@ -187,7 +187,7 @@ static void menu_display_d3d11_draw(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   d3d11_video_t*           d3d11 = video_info ? 
+   d3d11_video_t*           d3d11 = video_info ?
       (d3d11_video_t*)video_info->userdata : NULL;
 
    if (!d3d11 || !draw)
@@ -247,7 +247,7 @@ static void menu_display_d3d11_clear_color(
       menu_display_ctx_clearcolor_t* clearcolor,
       video_frame_info_t *video_info)
 {
-   d3d11_video_t *d3d11 = video_info ? 
+   d3d11_video_t *d3d11 = video_info ?
       (d3d11_video_t*)video_info->userdata : NULL;
 
    if (!d3d11 || !clearcolor)

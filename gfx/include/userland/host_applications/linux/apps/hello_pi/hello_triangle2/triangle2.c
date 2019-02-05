@@ -61,7 +61,7 @@ typedef struct
    GLuint tex;
    GLuint buf;
 // julia attribs
-   GLuint unif_color, attr_vertex, unif_scale, unif_offset, unif_tex, unif_centre; 
+   GLuint unif_color, attr_vertex, unif_scale, unif_offset, unif_tex, unif_centre;
 // mandelbrot attribs
    GLuint attr_vertex2, unif_scale2, unif_offset2, unif_centre2;
 } CUBE_STATE_T;
@@ -85,7 +85,7 @@ static void showprogramlog(GLint shader)
    glGetProgramInfoLog(shader,sizeof log,NULL,log);
    printf("%d:program:\n%s\n", shader, log);
 }
-    
+
 /***********************************************************
  * Name: init_ogl
  *
@@ -120,8 +120,8 @@ static void init_ogl(CUBE_STATE_T *state)
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_NONE
    };
-   
-   static const EGLint context_attributes[] = 
+
+   static const EGLint context_attributes[] =
    {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
@@ -161,24 +161,24 @@ static void init_ogl(CUBE_STATE_T *state)
    dst_rect.y = 0;
    dst_rect.width = state->screen_width;
    dst_rect.height = state->screen_height;
-      
+
    src_rect.x = 0;
    src_rect.y = 0;
    src_rect.width = state->screen_width << 16;
-   src_rect.height = state->screen_height << 16;        
+   src_rect.height = state->screen_height << 16;
 
    dispman_display = vc_dispmanx_display_open( 0 /* LCD */);
    dispman_update = vc_dispmanx_update_start( 0 );
-         
+
    dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
       0/*layer*/, &dst_rect, 0/*src*/,
       &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, 0/*transform*/);
-      
+
    nativewindow.element = dispman_element;
    nativewindow.width = state->screen_width;
    nativewindow.height = state->screen_height;
    vc_dispmanx_update_submit_sync( dispman_update );
-      
+
    check();
 
    state->surface = eglCreateWindowSurface( state->display, config, &nativewindow, NULL );
@@ -197,7 +197,6 @@ static void init_ogl(CUBE_STATE_T *state)
    check();
 }
 
-
 static void init_shaders(CUBE_STATE_T *state)
 {
    static const GLfloat vertex_data[] = {
@@ -214,7 +213,7 @@ static void init_shaders(CUBE_STATE_T *state)
               " gl_Position = pos;"
               " tcoord = vertex.xy*0.5+0.5;"
               "}";
-      
+
    //Mandelbrot
    const GLchar *mandelbrot_fshader_source =
 "uniform vec4 color;"
@@ -296,7 +295,7 @@ static void init_shaders(CUBE_STATE_T *state)
 
         if (state->verbose)
             showlog(state->vshader);
-            
+
         state->fshader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(state->fshader, 1, &julia_fshader_source, 0);
         glCompileShader(state->fshader);
@@ -313,7 +312,7 @@ static void init_shaders(CUBE_STATE_T *state)
         if (state->verbose)
             showlog(state->mshader);
 
-        // julia 
+        // julia
         state->program = glCreateProgram();
         glAttachShader(state->program, state->vshader);
         glAttachShader(state->program, state->fshader);
@@ -322,12 +321,12 @@ static void init_shaders(CUBE_STATE_T *state)
 
         if (state->verbose)
             showprogramlog(state->program);
-            
+
         state->attr_vertex = glGetAttribLocation(state->program, "vertex");
         state->unif_color  = glGetUniformLocation(state->program, "color");
         state->unif_scale  = glGetUniformLocation(state->program, "scale");
         state->unif_offset = glGetUniformLocation(state->program, "offset");
-        state->unif_tex    = glGetUniformLocation(state->program, "tex");       
+        state->unif_tex    = glGetUniformLocation(state->program, "tex");
         state->unif_centre = glGetUniformLocation(state->program, "centre");
 
         // mandelbrot
@@ -339,15 +338,15 @@ static void init_shaders(CUBE_STATE_T *state)
 
         if (state->verbose)
             showprogramlog(state->program2);
-            
+
         state->attr_vertex2 = glGetAttribLocation(state->program2, "vertex");
         state->unif_scale2  = glGetUniformLocation(state->program2, "scale");
         state->unif_offset2 = glGetUniformLocation(state->program2, "offset");
         state->unif_centre2 = glGetUniformLocation(state->program2, "centre");
         check();
-   
+
         glClearColor ( 0.0, 1.0, 1.0, 1.0 );
-        
+
         glGenBuffers(1, &state->buf);
 
         check();
@@ -375,7 +374,7 @@ static void init_shaders(CUBE_STATE_T *state)
         // Prepare viewport
         glViewport ( 0, 0, state->screen_width, state->screen_height );
         check();
-        
+
         // Upload vertex data to a buffer
         glBindBuffer(GL_ARRAY_BUFFER, state->buf);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data),
@@ -388,14 +387,13 @@ static void init_shaders(CUBE_STATE_T *state)
         check();
 }
 
-
 static void draw_mandelbrot_to_texture(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat scale)
 {
         // Draw the mandelbrot to a texture
         glBindFramebuffer(GL_FRAMEBUFFER,state->tex_fb);
         check();
         glBindBuffer(GL_ARRAY_BUFFER, state->buf);
-        
+
         glUseProgram ( state->program2 );
         check();
 
@@ -404,12 +402,12 @@ static void draw_mandelbrot_to_texture(CUBE_STATE_T *state, GLfloat cx, GLfloat 
         check();
         glDrawArrays ( GL_TRIANGLE_FAN, 0, 4 );
         check();
-               
+
         glFlush();
         glFinish();
         check();
 }
-        
+
 static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat scale, GLfloat x, GLfloat y)
 {
         // Now render to the main frame buffer
@@ -417,7 +415,7 @@ static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat 
         // Clear the background (not really necessary I suppose)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         check();
-        
+
         glBindBuffer(GL_ARRAY_BUFFER, state->buf);
         check();
         glUseProgram ( state->program );
@@ -430,7 +428,7 @@ static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat 
         glUniform2f(state->unif_centre, cx, cy);
         glUniform1i(state->unif_tex, 0); // I don't really understand this part, perhaps it relates to active texture?
         check();
-        
+
         glDrawArrays ( GL_TRIANGLE_FAN, 0, 4 );
         check();
 
@@ -439,7 +437,7 @@ static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat 
         glFlush();
         glFinish();
         check();
-        
+
         eglSwapBuffers(state->display, state->surface);
         check();
 }
@@ -480,8 +478,8 @@ _exit:
    if (outx) *outx = x;
    if (outy) *outy = y;
    return 0;
-}       
- 
+}
+
 //==============================================================================
 
 int main ()
@@ -492,7 +490,7 @@ int main ()
 
    // Clear application state
    memset( state, 0, sizeof( *state ) );
-      
+
    // Start OGLES
    init_ogl(state);
    init_shaders(state);
@@ -509,4 +507,3 @@ int main ()
    }
    return 0;
 }
-

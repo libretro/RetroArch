@@ -48,7 +48,7 @@ typedef struct {
 #endif
 
    //on the server side
-   //we store a KHRN_INTERLOCK_T in the 
+   //we store a KHRN_INTERLOCK_T in the
    //same space as this struct
    uint8_t pad_for_interlock[24];
 
@@ -89,4 +89,3 @@ extern int khrn_cache_lookup(CLIENT_THREAD_STATE_T *thread, KHRN_CACHE_T *cache,
 extern int khrn_cache_get_entries(KHRN_CACHE_T *cache);
 
 #endif
-

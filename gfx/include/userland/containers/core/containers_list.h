@@ -49,7 +49,6 @@ typedef struct vc_containers_list_tag
 /** Macro to generate a static, read-only list from an array and comparator */
 #define VC_CONTAINERS_STATIC_LIST(L, A, C)  static VC_CONTAINERS_LIST_T L = { countof(A), 0, sizeof(*(A)), (VC_CONTAINERS_LIST_COMPARATOR_T)(C), A }
 
-
 /** Create an empty list.
  * The list is created based on the details provided, minimum capacity one entry.
  *

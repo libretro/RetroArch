@@ -46,7 +46,6 @@ extern "C" {
   *
   */
 
-
 /** Allocate memory
   *
   * @param size Size of memory to allocate
@@ -97,5 +96,4 @@ unsigned long vcos_get_free_mem(void);
 #endif
 
 #endif
-
 

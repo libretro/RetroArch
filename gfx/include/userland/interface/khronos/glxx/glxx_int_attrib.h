@@ -50,7 +50,6 @@ typedef struct {
    GLfloat value[4];
 } GLXX_ATTRIB_T;
 
-
 /* GL 1.1 specific For indexing into arrays of handles/pointers */
 #define GL11_IX_COLOR 1//0
 #define GL11_IX_NORMAL 2//1

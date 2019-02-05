@@ -119,4 +119,3 @@ extern void* platform_tls_get_check(PLATFORM_TLS_T tls);
 #define platform_tls_remove(tls) vcos_tls_set(tls,NULL)
 
 #endif
-

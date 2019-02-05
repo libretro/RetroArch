@@ -245,7 +245,7 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
          case SCALER_FMT_ABGR8888:
             ctx->out_pixconv = conv_argb8888_abgr8888;
             break;
-            
+
          default:
             return false;
       }

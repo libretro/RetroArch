@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MMAL_VC_OPAQUE_ALLOC_H
 #define MMAL_VC_OPAQUE_ALLOC_H
 
-
 #include <stdint.h>
 #include "interface/mmal/mmal.h"
 
@@ -63,11 +62,8 @@ MMAL_STATUS_T mmal_vc_opaque_release(MMAL_OPAQUE_IMAGE_HANDLE_T h);
  */
 MMAL_STATUS_T mmal_vc_opaque_acquire(MMAL_OPAQUE_IMAGE_HANDLE_T h);
 
-
 #ifdef __cplusplus
 }
 #endif
 
-
 #endif
-

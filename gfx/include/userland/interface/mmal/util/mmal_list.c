@@ -28,14 +28,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/vcos/vcos.h"
 #include "interface/mmal/util/mmal_list.h"
 
-
 /* Private list context */
 typedef struct MMAL_LIST_PRIVATE_T
 {
    MMAL_LIST_T list;    /* must be first */
    VCOS_MUTEX_T lock;
 } MMAL_LIST_PRIVATE_T;
-
 
 /* Lock the list. */
 static inline void mmal_list_lock(MMAL_LIST_T *list)

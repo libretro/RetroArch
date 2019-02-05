@@ -78,7 +78,6 @@
 #      d23: (temp)               #      d31: buffer[6]
 #           (temp)               #           buffer[7]
 
-
 resampler_CC_downsample_neon:
 _resampler_CC_downsample_neon:
 
@@ -88,7 +87,6 @@ vpush {q4,q5,q6,q7}
 push {r4}
 
 mov r4, r0
-
 
 veor q0, q0, q0
 vmov.f32 s1, #1.0
@@ -102,17 +100,14 @@ vmov.f32 q5, #1.0
 vmov.f32 q6, #3.0
 vmov.f32 q7, #0.25
 
-
 vldr s5, [r2, #32]
 vdiv.f32 s6, s20, s4
 vadd.f32 s7, s6, s8
 vdup.f32 q4, d2[0]
 vmin.f32 q4, q4, q5
 
-
 lsl r3, #3
 add r3, r3, r1
-
 
 cmp r3, r1
 beq 3f
@@ -199,7 +194,6 @@ vpop {q4,q5,q6,q7}
 
 bx lr
 
-
 .align 4
 .globl resampler_CC_upsample_neon
 #ifndef __MACH__
@@ -256,7 +250,6 @@ bx lr
 #      d23: (temp)               #      d31: buffer[6]
 #           (temp)               #           buffer[7]
 
-
 resampler_CC_upsample_neon:
 _resampler_CC_upsample_neon:
 
@@ -266,7 +259,6 @@ vpush {q4,q5,q6,q7}
 push {r4}
 
 mov r4, r0
-
 
 veor q0, q0, q0
 vmov.f32 s0, #1.0
@@ -280,17 +272,14 @@ vmov.f32 q5, #1.0
 vmov.f32 q6, #3.0
 vmov.f32 q7, #0.25
 
-
 vldr s5, [r2, #32]
 vdiv.f32 s6, s20, s4
 vadd.f32 s7, s6, s8
 vdup.f32 q4, d2[0]
 vmin.f32 q4, q4, q5
 
-
 lsl r3, #3
 add r3, r3, r1
-
 
 cmp r3, r1
 beq 4f
@@ -356,7 +345,6 @@ vst1.f32 d20, [r4, :64]!
 
 vadd.f32 s5, s5, s6
 
-
 vcmpe.f32	s5, s20
 vmrs	APSR_nzcv, fpscr
 blt 2b
@@ -367,7 +355,6 @@ vsub.f32 s5, s5, s20
 
 cmp r3, r1
 bne 1b
-
 
 4:
 vst1.f32 {q14-q15}, [r2, :256]

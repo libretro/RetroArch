@@ -272,5 +272,4 @@ typedef struct {
 #define TRANSFORM_VFLIP     (1<<1)
 #define TRANSFORM_TRANSPOSE (1<<2)
 
-
 #endif   //VC_DISPSERVICEX_DEFS_H

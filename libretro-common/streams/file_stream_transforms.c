@@ -37,7 +37,7 @@ RFILE* rfopen(const char *path, const char *mode)
       retro_mode = RETRO_VFS_FILE_ACCESS_READ;
       if (strstr(mode, "+"))
       {
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE |
             RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       }
    }
@@ -49,12 +49,12 @@ RFILE* rfopen(const char *path, const char *mode)
    }
    else if (strstr(mode, "a"))
    {
-      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE | 
+      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE |
          RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       position_to_end = true;
       if (strstr(mode, "+"))
       {
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE |
             RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       }
    }

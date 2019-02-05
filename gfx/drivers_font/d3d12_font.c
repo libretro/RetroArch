@@ -142,8 +142,8 @@ static void d3d12_font_render_line(
    int             y          = roundf((1.0 - pos_y) * height);
    D3D12_RANGE     range      = { 0, 0 };
 
-   if (  !d3d12                  || 
-         !d3d12->sprites.enabled || 
+   if (  !d3d12                  ||
+         !d3d12->sprites.enabled ||
          msg_len > (unsigned)d3d12->sprites.capacity)
       return;
 
@@ -263,7 +263,7 @@ static void d3d12_font_render_message(
       return;
    }
 
-   line_height = font->font_driver->get_line_height(font->font_data) 
+   line_height = font->font_driver->get_line_height(font->font_data)
       * scale / video_info->height;
 
    for (;;)

@@ -44,17 +44,16 @@ extern "C" {
    extern const char *dlerror(void);
    extern void dldone(void *handle);
    extern int  dlcheck(const char *pathName);
-   extern void *dlshared_vll_load(const char *vll_name, 
-                        const char **symbols, 
-                        void *(*pmm_alloc)(void *, unsigned int, unsigned int, const char *, unsigned int), 
-                        void (*pmm_free)(void *, void *), 
+   extern void *dlshared_vll_load(const char *vll_name,
+                        const char **symbols,
+                        void *(*pmm_alloc)(void *, unsigned int, unsigned int, const char *, unsigned int),
+                        void (*pmm_free)(void *, void *),
                         void *pmm_priv,
                         int *vll_init_required);
    extern void dlshared_vll_init_done(void *vll);
    extern void (*dlshared_get_vll_symbol(void *vll, const char *symbol))();
    extern int dlshared_vll_closing(void *vll);
    extern int dlshared_vll_unload(void *vll);
-
 
    /*
     * Valid values for mode argument to dlopen.

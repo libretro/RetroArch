@@ -2813,7 +2813,7 @@ static enum runloop_state runloop_check_state(
    {
       enum menu_action action;
       static input_bits_t old_input = {{0}};
-      static enum menu_action 
+      static enum menu_action
          old_action              = MENU_ACTION_CANCEL;
       bool focused               = false;
       input_bits_t trigger_input = current_input;
@@ -2976,7 +2976,7 @@ static enum runloop_state runloop_check_state(
       {
          if (menu_driver_is_alive())
          {
-            if (rarch_is_initialized && 
+            if (rarch_is_initialized &&
                   (current_core_type != CORE_TYPE_DUMMY))
             {
                rarch_menu_running_finished();
@@ -2990,7 +2990,7 @@ static enum runloop_state runloop_check_state(
       {
          if (menu_driver_is_alive())
          {
-            if (rarch_is_initialized && 
+            if (rarch_is_initialized &&
                   (current_core_type != CORE_TYPE_DUMMY))
                rarch_menu_running_finished();
          }
@@ -3780,7 +3780,7 @@ void rarch_force_video_driver_fallback(const char *driver)
 
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
    /* UI companion driver is not inited yet, just call into it directly */
    msg_window = &ui_msg_window_win32;
 #endif

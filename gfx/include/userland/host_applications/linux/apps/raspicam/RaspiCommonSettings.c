@@ -69,7 +69,6 @@ enum
    CommandGpsd,
 };
 
-
 static COMMAND_LIST cmdline_commands[] =
 {
    { CommandHelp,    "-help",       "?",  "This help information", 0 },
@@ -83,7 +82,6 @@ static COMMAND_LIST cmdline_commands[] =
 };
 
 static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
-
 
 void raspicommonsettings_set_defaults(RASPICOMMONSETTINGS_PARAMETERS *state)
 {
@@ -121,7 +119,6 @@ void raspicommonsettings_display_help()
    fprintf(stdout, "\nCommon Settings commands\n\n");
    raspicli_display_help(cmdline_commands, cmdline_commands_size);
 }
-
 
 /**
  * Parse a possible command pair - command and parameter

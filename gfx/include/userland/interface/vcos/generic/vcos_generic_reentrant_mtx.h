@@ -92,4 +92,3 @@ void vcos_reentrant_mutex_unlock(VCOS_REENTRANT_MUTEX_T *m) {
 #endif
 #endif
 
-

@@ -12,7 +12,6 @@ then by entering each test app directory and run make. E.g.
 
 Running ./rebuild.sh will rebuild the all libs and and apps.
 
-
 Building on a different PC
 ++++++++++++++++++++++++++
 

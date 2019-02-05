@@ -47,7 +47,7 @@
 
 #include "../../verbosity.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 /* Forward declaration */
@@ -99,7 +99,7 @@ static int16_t input_wl_lightgun_state(input_ctx_wayland_data_t *wl, unsigned id
 }
 
 /* forward declaration */
-bool wayland_context_gettouchpos(void *data, unsigned id, 
+bool wayland_context_gettouchpos(void *data, unsigned id,
       unsigned* touch_x, unsigned* touch_y);
 
 static void input_wl_touch_pool(void *data)
@@ -108,7 +108,7 @@ static void input_wl_touch_pool(void *data)
    unsigned touch_x             = 0;
    unsigned touch_y             = 0;
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   
+
    if (!wl)
       return;
 

@@ -44,7 +44,7 @@ struct  VC_CONTAINER_INDEX_T {
    int count;                         // number of calls to index_add since last entry added
    int max_count;                     // log2 of the number of calls to discard between each entry added
    int64_t max_time;                  // time of the latest entry
-   VC_CONTAINER_INDEX_POS_T entry[0]; // array of position/time pairs   
+   VC_CONTAINER_INDEX_POS_T entry[0]; // array of position/time pairs
 };
 
 // We have a fixed length list, and when it is full we want to discard half the entries.
@@ -58,7 +58,7 @@ struct  VC_CONTAINER_INDEX_T {
 // when this is full we change to mgap=2, gap=1, so we iterate this way:
 // |o|S|S|  [0 2 4 6] [1 3 5 7]
 // when this is full we change to mgap=1, gap=2
-// |o|o|S|  [0 4] [1 5] [2 6] [3 7]  
+// |o|o|S|  [0 4] [1 5] [2 6] [3 7]
 // when this is full we change to this, which is equivalent to where we started
 // |o|o|o|  [0] [1] [2] [3] [4] [5] [6] [7]
 
@@ -77,7 +77,7 @@ VC_CONTAINER_STATUS_T vc_container_index_create( VC_CONTAINER_INDEX_T **index, i
 
    id = malloc(sizeof(VC_CONTAINER_INDEX_T) + (sizeof(VC_CONTAINER_INDEX_POS_T)<<len));
    if(id == NULL) { goto error; }
-   
+
    memset(id, 0, sizeof(VC_CONTAINER_INDEX_T));
 
    id->len = id->mgap = len;
@@ -189,4 +189,3 @@ VC_CONTAINER_STATUS_T vc_container_index_get( VC_CONTAINER_INDEX_T *index, int l
 
    return VC_CONTAINER_SUCCESS;
 }
-

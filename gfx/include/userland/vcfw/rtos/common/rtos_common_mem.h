@@ -159,7 +159,6 @@ typedef enum { /* enum to get stricter type checking on msvc */
    MEM_INVALID_HANDLE = MEM_HANDLE_INVALID
 } MEM_HANDLE_T;
 
-
 /*
    Flags are set once in mem_alloc -- they do not change over the lifetime of
    the MEM_HANDLE_T.
@@ -289,7 +288,6 @@ typedef enum {
 */
 
 typedef void (*MEM_TERM_T)(void *, uint32_t);
-
 
 /*
    A common way of storing a MEM_HANDLE_T together with an offset into it.
@@ -598,7 +596,6 @@ extern void mem_set_desc_printf(
    if term is not NULL, its postcondition must be at least as strong as the following:
        Frees any references to resources that are referred to by the object of type X
 
-
    Postconditions:
 
    -
@@ -895,7 +892,6 @@ extern void *mem_alloc_legacy_ex(MEM_FLAG_T flags);
 
 #define mem_alloc_legacy() mem_alloc_legacy_ex(MEM_FLAG_NORMAL)
 
-
 /*
    Free a previously-allocated fixed-size block.
 
@@ -909,7 +905,6 @@ extern void *mem_alloc_legacy_ex(MEM_FLAG_T flags);
 */
 
 extern void mem_free_legacy(void *ptr);
-
 
 /*
    If count_max is positive then it sets a maximum number of legacy blocks which
@@ -931,7 +926,6 @@ extern void mem_free_legacy(void *ptr);
 
 extern int mem_init_legacy(uint32_t size, uint32_t align, int count_max);
 
-
 /*
    Preconditions:
 
@@ -944,7 +938,6 @@ extern int mem_init_legacy(uint32_t size, uint32_t align, int count_max);
 
 extern uint32_t mem_get_legacy_size(void);
 
-
 /*
    Preconditions:
 
@@ -956,7 +949,6 @@ extern uint32_t mem_get_legacy_size(void);
 */
 
 extern uint32_t mem_get_legacy_align(void);
-
 
 /******************************************************************************
 Offline chunks API
@@ -997,7 +989,6 @@ extern void *mem_offline(uint32_t size, MEM_FLAG_T flags,
 extern int mem_offline_chunks(uint32_t num_chunks, MEM_FLAG_T flags,
    mem_compact_mode_t mode);
 
-
 /*
    Free a previously-allocated fixed-size block. Note that it is legal
    to take a large chunk offline and then bring a portion of it back
@@ -1027,7 +1018,6 @@ extern void mem_online_chunks(int chunk, int num_chunks);
 extern void mem_get_chunk_stats(uint32_t *total,
    uint32_t *legacy_used, uint32_t *legacy_available, uint32_t *legacy_total,
    uint32_t *offline_used, uint32_t *offline_available, uint32_t *offline_total);
-
 
 /******************************************************************************
 Long-term lock owners' API
@@ -1067,7 +1057,6 @@ extern int mem_register_callback(mem_callback_func_t func, uintptr_t context);
 extern void mem_set_low_mem_threshold(uint32_t threshold);
 
 extern void mem_unregister_callback(mem_callback_func_t func, uintptr_t context);
-
 
 /******************************************************************************
 Compaction notification API
@@ -1311,7 +1300,6 @@ extern void mem_assign_null_multiple(
    MEM_HANDLE_OFFSET_T *handles,
    uint32_t n);
 
-
 struct MEM_MANAGER_STATS_T;
 extern void mem_get_internal_stats(struct MEM_MANAGER_STATS_T *stats);
 
@@ -1355,6 +1343,5 @@ void mem_set_accessctrl(MEM_ACCESSCTRL_BLOCK *blocks, uint32_t n);
 #define MEM_CLR_ACCESSCTRL()				((void)0)
 #define MEM_SET_ACCESSCTRL(BLOCKS, NUM)		((void)0)
 #endif //#ifdef MEM_ACCESS_CTRL
-
 
 #endif

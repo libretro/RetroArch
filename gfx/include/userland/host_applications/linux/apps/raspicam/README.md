@@ -11,17 +11,15 @@ The applications use up to four OpenMAX(mmal) components - camera, preview,  enc
 The preview display is optional, but can be used full screen or directed to a specific rectangular area on the display. If preview is disabled, the null_sink component is used to 'absorb' the preview frames. It is necessary for the camera to produce preview frames even if not required for display, as they are used for calculating exposure and white balance settings.
 
 In addition it is possible to omit the filename option, in which case the preview is displayed but no file is written, or to redirect all output to stdout.
-     
+
 Command line help is available by typing just the application name in on the command line.
 
-
 ## Setting up the Camera hardware
-
 
 **Warning.** Cameras are static sensitive. Earth yourself prior to handling the PCB, a sink tap/faucet or similar should suffice if you don't have an earthing strap.
 The camera board attaches to the Raspberry Pi via a 15 way ribbon cable. There are only two connections to make, the ribbon cable need to be attached to the camera PCB and the Raspberry Pi itself. You need to get it the right way round or the camera will not work. On the camera PCB, the blue backing on the cable should be away from the PCB, and on the Raspberry Pi it should be towards the Ethernet connection (or where the Ethernet connector would be if you are using a model A).
 
-Although the connectors on the PCB and the Pi are different, they work in a similar way. On the Raspberry Pi, pull up the tabs on each end of the connector. It should slide up easily, and be able to pivot around slightly. Fully insert the ribbon cable into the slot, ensuring it is straight, then gently press down the tabs to clip it into place. The camera PCB itself also requires you to pull the tabs away from the board, gently insert the cable, then push the tabs back. The PCB connector is a little more awkward than the one on the Pi itself. 
+Although the connectors on the PCB and the Pi are different, they work in a similar way. On the Raspberry Pi, pull up the tabs on each end of the connector. It should slide up easily, and be able to pivot around slightly. Fully insert the ribbon cable into the slot, ensuring it is straight, then gently press down the tabs to clip it into place. The camera PCB itself also requires you to pull the tabs away from the board, gently insert the cable, then push the tabs back. The PCB connector is a little more awkward than the one on the Pi itself.
 
 ## Setting up the Camera software
 
@@ -34,9 +32,9 @@ Now you need to enable camera support using the raspi-config program you will ha
 
 	sudo raspi-config
 
-Use the cursor keys to move to the camera option and select enable. On exiting raspi-config it will ask to reboot. The enable option will ensure that on reboot the correct GPU firmware will be running (with the camera driver and tuning), and the GPU memory split is sufficient to allow the camera to acquire enough memory to run correctly. 
+Use the cursor keys to move to the camera option and select enable. On exiting raspi-config it will ask to reboot. The enable option will ensure that on reboot the correct GPU firmware will be running (with the camera driver and tuning), and the GPU memory split is sufficient to allow the camera to acquire enough memory to run correctly.
 
-To test that the system is installed and working, try the following command : 
+To test that the system is installed and working, try the following command :
 
 	raspistill -v -o test.jpg
 
@@ -44,7 +42,7 @@ The display should show a 5 second preview from the camera and then take a pictu
 
 ## Troubleshooting
 
-If the camera is not working correctly, there are number of things to try. 
+If the camera is not working correctly, there are number of things to try.
 Are the ribbon connectors all firmly seated and the right way round? They must be straight in their sockets.
 Is the camera module connector firmly attached to the camera PCB? This is the connection from the smaller black camera module itself to the camera PCB. Sometimes this connection can come loose. Using a fingernail, flip up the connector on the PCB, then reseat it with gentle pressure, it engages with a very slight click.
 Have sudo apt-get update, sudo apt-get upgrade been run?
@@ -55,7 +53,7 @@ So, if things are still not working, try the following:
 
 Error : raspistill/raspivid not found. This probably means your update/upgrade failed in some way. Try it again.
 
-Error : ENOMEM displayed. Camera is not starting up. Check all connections again. 
+Error : ENOMEM displayed. Camera is not starting up. Check all connections again.
 
 Error : ENOSPC displayed. Camera is probably running out of GPU memory. Check config.txt in the /boot/ folder. The gpu_mem option should be at least 128.
 
@@ -63,7 +61,6 @@ If after all the above, the camera is still not working, it may be defective. Tr
 
 ## Common Command line Options
 Preview Window
-
 
 	--preview,	-p   	Preview window settings <'x,y,w,h'>
 
@@ -82,7 +79,6 @@ Disables the preview window completely. Note that even though the preview is dis
 Sets the opacity of the preview windows. 0 = invisible, 255 = fully opaque.
 
 ### Camera Control Options
-
 
 	--sharpness, 	-sh 	Set image sharpness (-100 to 100)
 
@@ -111,15 +107,15 @@ In video mode only, turn on video stabilisation.
 
 Set the EV compensation of the image. Range is -10 to +10, default is 0.
 
-	--exposure,  	-ex 	Set exposure mode 
+	--exposure,  	-ex 	Set exposure mode
 
-Possible options are: 
+Possible options are:
 
 auto 		Use automatic exposure mode
 night 		Select setting for night shooting
 nightpreview
 backlight 	Select setting for back lit subject
-spotlight		
+spotlight
 sports		Select setting for sports (fast shutter etc)
 snow		Select setting optimised for snowy scenery
 beach		Select setting optimised for beach
@@ -138,7 +134,7 @@ sun         	Sunny mode
 cloud       	Cloudy mode
 shade       	Shaded mode
 tungsten	Tungsten lighting mode
-fluorescent	Fluorescent	lighting mode	
+fluorescent	Fluorescent	lighting mode
 incandescent   	Incandescent lighting mode
 flash   		Flash mode
 horizon		Horizon mode
@@ -148,7 +144,7 @@ horizon		Horizon mode
 Set an effect to be applied to the image
 
 none		NO effect (default)
-negative	Negate the image   	
+negative	Negate the image
 solarise	Solarise the image
 posterize	Posterise the image
 whiteboard	Whiteboard effect
@@ -158,7 +154,7 @@ denoise	Denoise the image
 emboss	Emboss the image
 oilpaint		Apply an oil paint style effect
 hatch		Hatch sketch style
-gpen	
+gpen
 pastel		A pastel style effect
 watercolour	A watercolour style effect
 film		Film grain style effect
@@ -188,7 +184,6 @@ matrix		Matrix metering
 
 Sets the rotation of the image in viewfinder and resulting image. This can take any value from 0 upwards, but due to hardware constraints only 0, 90, 180 and 270 degree rotations are supported.
 
-
 	--hflip,  		-hf 	Set horizontal flip
 
 Flips the preview and saved image horizontally.
@@ -197,7 +192,7 @@ Flips the preview and saved image horizontally.
 
 Flips the preview and saved image vertically.
 
-	--roi,		-roi	Set sensor region of interest 
+	--roi,		-roi	Set sensor region of interest
 
 Allows the specification of the area of the sensor to be used as the source for the preview and capture. This is defined as x,y for the top left corner, and a width and height, all values in normalised coordinates (0.0-1.0). So to set a ROI at half way across and down the sensor, and an width and height of a quarter of the sensor use :
 
@@ -239,7 +234,7 @@ Outputs debugging/information messages during the program run.
 
 	--timeout,	-t		Time before takes picture and shuts down.
 
-The program will run for this length of time, then take the capture (if output is specified). If not specified, this is set to 5 seconds. 
+The program will run for this length of time, then take the capture (if output is specified). If not specified, this is set to 5 seconds.
 
 	--timelapse,	-tl		Timelapse mode.
 
@@ -254,7 +249,7 @@ You can also name the files with timestamp (-ts) or datetime(-dt)
 
 will produce a capture every 2 seconds, over a total period of 30s, named image1.jpg, image0002.jpg..image0015.jpg. Note that the %04d indicates a 4 digit number with leading zero's added to pad to the required number of digits. So, for example,  %08d would result in an 8 digit number.
 
-If a timelapse value of 0 is entered, the application will take pictures as fast as possible. Note there is an minimum enforced pause of 30ms between captures to ensure that exposure calculations can be made. 
+If a timelapse value of 0 is entered, the application will take pictures as fast as possible. Note there is an minimum enforced pause of 30ms between captures to ensure that exposure calculations can be made.
 
 	--thumb,	-th		Set thumbnail parameters (x:y:quality)
 
@@ -276,13 +271,13 @@ Allows the insertion of specific exif tags in to the JPEG image. You can have up
 
 would set the Longitude to 5degs, 10 minutes, 15 seconds. See exif documentation for more details on the range of tags available; the supported tags are as follows.
 
-IFD0.<   or 
+IFD0.<   or
 IFD1.<
 ImageWidth, ImageLength, BitsPerSample, Compression, PhotometricInterpretation, ImageDescription, Make, Model, StripOffsets, Orientation, SamplesPerPixel, RowsPerString, StripByteCounts, Xresolution, Yresolution, PlanarConfiguration, ResolutionUnit, TransferFunction, Software, DateTime, Artist, WhitePoint, PrimaryChromaticities, JPEGInterchangeFormat, JPEGInterchangeFormatLength, YcbCrCoefficients, YcbCrSubSampling, YcbCrPositioning, ReferenceBlackWhite, Copyright>
 
 EXIF.<
 ExposureTime, FNumber, ExposureProgram, SpectralSensitivity,          a
-ISOSpeedRatings, OECF, ExifVersion, DateTimeOriginal, DateTimeDigitized, ComponentsConfiguration, CompressedBitsPerPixel, ShutterSpeedValue, ApertureValue, BrightnessValue, ExposureBiasValue, MaxApertureValue, SubjectDistance, MeteringMode, LightSource, Flash, FocalLength, SubjectArea, MakerNote, UserComment, SubSecTime, SubSecTimeOriginal, SubSecTimeDigitized, FlashpixVersion, ColorSpace, PixelXDimension, PixelYDimension, RelatedSoundFile, FlashEnergy, SpacialFrequencyResponse, FocalPlaneXResolution, FocalPlaneYResolution, FocalPlaneResolutionUnit, SubjectLocation, ExposureIndex, SensingMethod, FileSource, SceneType, CFAPattern, CustomRendered, ExposureMode,                 
+ISOSpeedRatings, OECF, ExifVersion, DateTimeOriginal, DateTimeDigitized, ComponentsConfiguration, CompressedBitsPerPixel, ShutterSpeedValue, ApertureValue, BrightnessValue, ExposureBiasValue, MaxApertureValue, SubjectDistance, MeteringMode, LightSource, Flash, FocalLength, SubjectArea, MakerNote, UserComment, SubSecTime, SubSecTimeOriginal, SubSecTimeDigitized, FlashpixVersion, ColorSpace, PixelXDimension, PixelYDimension, RelatedSoundFile, FlashEnergy, SpacialFrequencyResponse, FocalPlaneXResolution, FocalPlaneYResolution, FocalPlaneResolutionUnit, SubjectLocation, ExposureIndex, SensingMethod, FileSource, SceneType, CFAPattern, CustomRendered, ExposureMode,
 WhiteBalance, DigitalZoomRatio, FocalLengthIn35mmFilm, SceneCaptureType, GainControl, Contrast, Saturation, Sharpness, DeviceSettingDescription, SubjectDistanceRange, ImageUniqueID>
 
 GPS.<
@@ -312,7 +307,6 @@ The camera is run for the requested time (-t), and a captures can be initiated t
 
 ### raspistillyuv
 
-
 Many of the options for raspistillyuv are the same as those for raspistill. This section shows the differences.
 
 Unsupported Options:
@@ -322,13 +316,11 @@ Extra Options :
 
 	--rgb,		-rgb	Save uncompressed data as RGB888
 
-This option forces the image to be saved as RGB data with 8 bits per channel, rather than YUV420. 
+This option forces the image to be saved as RGB data with 8 bits per channel, rather than YUV420.
 
 Note that the image buffers saved in raspistillyuv are padded to a horizontal size divisible by 16 (so there may be unused bytes at the end of each line to made the width divisible by 16). Buffers are also padded vertically to be divisible by 16, and in the YUV mode, each plane of Y,U,V is padded in this way.
 
-
 ### raspivid
-
 
 	--width,		-w	Set image width <size>
 
@@ -338,7 +330,7 @@ Width of resulting video. This should be between 64 and 1920.
 
 Height of resulting video. This should be between 64 and 1080.
 
-	--bitrate,	-b	Set bitrate. 
+	--bitrate,	-b	Set bitrate.
 
 Use bits per second, so 10MBits/s would be -b 10000000. For H264, 1080p a high quality bitrate would be 15Mbits/s or more.
 
@@ -400,9 +392,9 @@ Disable preview entirely
 
 	raspistill -t 2000 -o image.jpg -n
 
-Save the image as a png file (lossless compression, but slower than JPEG). Note that the filename suffix is ignored when choosing the image encoding. 
+Save the image as a png file (lossless compression, but slower than JPEG). Note that the filename suffix is ignored when choosing the image encoding.
 
-	raspistill -t 2000 -o image.png -e png 
+	raspistill -t 2000 -o image.png -e png
 
 Add some EXIF information to the JPEG. This sets the Artist tag name to Boris, and the GPS altitude to 123.5m. Note that if setting GPS tags you should set as a minimum GPSLatitude, GPSLatitudeRef, GPSLongitude, GPSLongitudeRef, GPSAltitude and GPSAltitudeRef.
 
@@ -418,7 +410,7 @@ Set the U and V channels of the YUV image to specific values (128:128 produces a
 
 Run preview ONLY for 2s, no saved image.
 
-	raspistill -t 2000 
+	raspistill -t 2000
 
 Take timelapse picture, one every 10 seconds for 10 minutes (10 minutes = 600000ms), named image_num_001_today.jpg, image_num_002_today.jpg onwards, with the latest picture also available under the name latest.jpg.
 
@@ -426,7 +418,7 @@ Take timelapse picture, one every 10 seconds for 10 minutes (10 minutes = 600000
 
 Take a picture and send image data to stdout
 
-	raspistill -t 2000 -o - 
+	raspistill -t 2000 -o -
 
 Take a picture and send image data to file
 
@@ -434,7 +426,7 @@ Take a picture and send image data to file
 
 Run camera forever, taking a picture when Enter is pressed
 
-	raspistill -t 0 -k -o my_pics%02d.jpg 
+	raspistill -t 0 -k -o my_pics%02d.jpg
 Video Captures
 
 Image size and preview settings are the same as for stills capture. Default size for video recording is 1080p (1920x1080)
@@ -453,25 +445,18 @@ Record a 5s clip at a specified framerate (5fps)
 
 Encode a 5s camera stream and send image data to stdout
 
-	raspivid -t 5000 -o - 
+	raspivid -t 5000 -o -
 
 Encode a 5s camera stream and send image data to file
 
 	raspivid -t 5000 -o - > my_file.h264
 
-
-
 Shell Error Codes
 
-The applications described here will return a standard error code to the shell on completion. Possible error codes are : 
+The applications described here will return a standard error code to the shell on completion. Possible error codes are :
 
 ER_OK			0	Application ran successfully.
 EX_USAGE		64	Bad command line parameter
 ER_SOFTWARE		70	Software or camera error
 			130	Application terminated by ctrl-C.
-
-
-
-
-
 

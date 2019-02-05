@@ -99,4 +99,3 @@ VCOS_STATUS_T vcos_mutex_trylock(VCOS_MUTEX_T *m) {
 }
 #endif
 #endif /* VCOS_MUTEX_FROM_FUTEX_H */
-

@@ -87,4 +87,3 @@ void vcos_int_restore(VCOS_UNSIGNED previous);
 }
 #endif
 #endif
-

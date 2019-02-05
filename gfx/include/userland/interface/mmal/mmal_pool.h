@@ -75,7 +75,7 @@ typedef void (*mmal_pool_allocator_free_t)(void *context, void *mem);
  * necessary by MMAL.
  *
  * @param headers      Number of buffer headers to be allocated with the pool.
- * @param payload_size Size of the payload buffer that will be allocated in 
+ * @param payload_size Size of the payload buffer that will be allocated in
  *                     each of the buffer headers.
  * @return Pointer to the newly created pool or NULL on failure.
  */

@@ -209,17 +209,17 @@ bool input_remapping_save_file(const char *path)
                key_strings[j], '_', sizeof(btn_ident[j]));
 
             /* only save values that have been modified */
-            if(settings->uints.input_remap_ids[i][j] != j && 
+            if(settings->uints.input_remap_ids[i][j] != j &&
                settings->uints.input_remap_ids[i][j] != RARCH_UNMAPPED)
                config_set_int(conf, btn_ident[j], settings->uints.input_remap_ids[i][j]);
-            else if (settings->uints.input_remap_ids[i][j] != j && 
+            else if (settings->uints.input_remap_ids[i][j] != j &&
                      settings->uints.input_remap_ids[i][j] == RARCH_UNMAPPED)
                config_set_int(conf, btn_ident[j], -1);
             else
                config_unset(conf,btn_ident[j]);
 
             if (settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
-               config_set_int(conf, key_ident[j], 
+               config_set_int(conf, key_ident[j],
                   settings->uints.input_keymapper_ids[i][j]);
          }
          else
@@ -227,13 +227,13 @@ bool input_remapping_save_file(const char *path)
             k = j - RARCH_FIRST_CUSTOM_BIND;
             fill_pathname_join_delim(stk_ident[k], s3,
                key_strings[j], '_', sizeof(stk_ident[k]));
-            if(settings->uints.input_remap_ids[i][j] != j && 
+            if(settings->uints.input_remap_ids[i][j] != j &&
                settings->uints.input_remap_ids[i][j] != RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident[k], 
+               config_set_int(conf, stk_ident[k],
                   settings->uints.input_remap_ids[i][j]);
-            else if(settings->uints.input_remap_ids[i][j] != j && 
+            else if(settings->uints.input_remap_ids[i][j] != j &&
                settings->uints.input_remap_ids[i][j] == RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident[k], 
+               config_set_int(conf, stk_ident[k],
                   -1);
             else
                config_unset(conf, stk_ident[k]);

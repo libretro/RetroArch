@@ -95,7 +95,7 @@ static bool egl_init_vcsm()
            vcsm_vc_hdl_from_hdl = dlsym(dl, "vcsm_vc_hdl_from_hdl");
            vcsm_free = dlsym(dl, "vcsm_free");
 
-           if (vcsm_malloc_cache && vcsm_vc_hdl_from_hdl && vcsm_free) 
+           if (vcsm_malloc_cache && vcsm_vc_hdl_from_hdl && vcsm_free)
            {
               success = true;
            }
@@ -178,16 +178,16 @@ EGLAPI EGLImageKHR EGLAPIENTRY eglCreateImageKHR (EGLDisplay dpy, EGLContext ctx
                   KHRN_IMAGE_WRAP_T image;
                   if (platform_get_pixmap_info((EGLNativePixmapType)buffer, &image))
                   {
-//meego hack          
+//meego hack
                      if(image.aux!=0)
                      {
-                        //image.aux refers to a server side EGL surface 
+                        //image.aux refers to a server side EGL surface
                         //that already contains the data we're interested in
                         buf[0] = (uint32_t)image.aux;
                         target = EGL_IMAGE_FROM_SURFACE_BRCM;
-                        khrn_platform_release_pixmap_info((EGLNativePixmapType)buffer, &image);                        
+                        khrn_platform_release_pixmap_info((EGLNativePixmapType)buffer, &image);
                      }
-//                                         
+//
                      else
                      {
                         buf[0] = image.width | image.height << 16;
@@ -456,7 +456,7 @@ EGLAPI EGLBoolean EGLAPIENTRY eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR im
    EGLBoolean result;
 
    vcos_log_trace("eglDestroyImageKHR image=%d.\n", (int)image);
-   
+
    CLIENT_LOCK();
 
    {
@@ -474,7 +474,7 @@ EGLAPI EGLBoolean EGLAPIENTRY eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR im
          } else
 #endif
          {
-            vcos_log_trace("%s: process %p image %p calling eglDestroyImageKHR_impl", 
+            vcos_log_trace("%s: process %p image %p calling eglDestroyImageKHR_impl",
                   __FUNCTION__, process, image);
             result = RPC_BOOLEAN_RES(RPC_CALL1_RES(eglDestroyImageKHR_impl,
                thread,

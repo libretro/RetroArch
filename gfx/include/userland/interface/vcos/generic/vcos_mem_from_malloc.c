@@ -44,7 +44,6 @@ typedef struct malloc_header_s {
    void *ptr;
 } MALLOC_HEADER_T;
 
-
 #define MIN_ALIGN sizeof(MALLOC_HEADER_T)
 
 #define GUARDWORDHEAP  0xa55a5aa5
@@ -95,4 +94,3 @@ void vcos_generic_mem_free(void *ptr)
    vcos_assert(h->guardword == GUARDWORDHEAP);
    _vcos_platform_free(h->ptr);
 }
-

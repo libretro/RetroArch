@@ -3029,7 +3029,7 @@ VG_API_CALL void VG_API_ENTRY vgAppendPathData(
             coords_count += get_segment_coords_count(segments[i] & ~VG_RELATIVE);
          }
 
-         RPC_CALL6(vgAppendPathData_impl, thread, no_id, 
+         RPC_CALL6(vgAppendPathData_impl, thread, no_id,
             vg_handle,
             datatype,
             segments_count, segments,
@@ -3135,7 +3135,7 @@ VG_API_CALL void VG_API_ENTRY vgModifyPathCoords(
    platform_mutex_release(&state->shared_state->mutex);
 
    #ifdef RPC_DIRECT
-      RPC_CALL5(vgModifyPathCoords_impl, thread, no_id, 
+      RPC_CALL5(vgModifyPathCoords_impl, thread, no_id,
          vg_handle,
          datatype,
          coords_offset, coords_size, coords);
@@ -3830,11 +3830,11 @@ VG_API_CALL void VG_API_ENTRY vgImageSubData(
    if (width <= 0 || height <= 0) {
       return;
    }
-   
+
    data = (const VGubyte *)data + (src_y * data_stride);
 
    #ifdef RPC_DIRECT
-      RPC_CALL11(vgImageSubData_impl, thread, no_id, 
+      RPC_CALL11(vgImageSubData_impl, thread, no_id,
          vg_handle,
          dst_width, dst_height,
          data, data_stride,
@@ -3940,11 +3940,11 @@ VG_API_CALL void VG_API_ENTRY vgGetImageSubData(
    if (width <= 0 || height <= 0) {
       return;
    }
-   
+
    data = (VGubyte *)data + (dst_y * data_stride);
 
    #ifdef RPC_DIRECT
-      RPC_CALL11(vgGetImageSubData_impl, thread, no_id, 
+      RPC_CALL11(vgGetImageSubData_impl, thread, no_id,
          vg_handle,
          src_width, src_height,
          data, data_stride,
@@ -4214,14 +4214,14 @@ VG_API_CALL void VG_API_ENTRY vgWritePixels(
    if (width <= 0 || height <= 0) {
       return;
    }
-   
+
    data = (const VGubyte *)data + (src_y * data_stride);
 
    if (state->render_callback)
       state->render_callback();
 
    #ifdef RPC_DIRECT
-      RPC_CALL8(vgWritePixels_impl, thread, no_id, 
+      RPC_CALL8(vgWritePixels_impl, thread, no_id,
          data, data_stride,
          data_format,
          src_x,
@@ -4325,11 +4325,11 @@ VG_API_CALL void VG_API_ENTRY vgReadPixels(
    if (width <= 0 || height <= 0) {
       return;
    }
-   
+
    data = (VGubyte *)data + (dst_y * data_stride);
 
    #ifdef RPC_DIRECT
-      RPC_CALL8(vgReadPixels_impl, thread, no_id, 
+      RPC_CALL8(vgReadPixels_impl, thread, no_id,
          data, data_stride,
          data_format,
          dst_x,
@@ -4686,7 +4686,7 @@ VG_API_CALL void VG_API_ENTRY vgDrawGlyphs(
       state->render_callback();
 
    #ifdef RPC_DIRECT
-      RPC_CALL7(vgDrawGlyphs_impl, thread, no_id, 
+      RPC_CALL7(vgDrawGlyphs_impl, thread, no_id,
          vg_handle,
          glyphs_count, glyph_ids,
          adjustments_x, adjustments_y,
@@ -4826,7 +4826,7 @@ VG_API_CALL void VG_API_ENTRY vgSeparableConvolve(
    }
 
    #ifdef RPC_DIRECT
-      RPC_CALL11(vgSeparableConvolve_impl, thread, no_id, 
+      RPC_CALL11(vgSeparableConvolve_impl, thread, no_id,
          dst_vg_handle, src_vg_handle,
          kernel_width, kernel_height,
          shift_x, shift_y,
@@ -4896,7 +4896,7 @@ VG_API_CALL void VG_API_ENTRY vgLookup(
    }
 
    #ifdef RPC_DIRECT
-      RPC_CALL8(vgLookup_impl, thread, no_id, 
+      RPC_CALL8(vgLookup_impl, thread, no_id,
          dst_vg_handle, src_vg_handle,
          red_lut, green_lut, blue_lut, alpha_lut,
          clean_boolean(output_linear),
@@ -5088,7 +5088,7 @@ VGU_API_CALL VGUErrorCode VGU_API_ENTRY vguPolygon(
    platform_mutex_release(&state->shared_state->mutex);
 
    #ifdef RPC_DIRECT
-      RPC_CALL5(vguPolygon_impl, thread, no_id, 
+      RPC_CALL5(vguPolygon_impl, thread, no_id,
          vg_handle,
          ps, ps_count,
          true, clean_boolean(close));
@@ -5114,7 +5114,7 @@ VGU_API_CALL VGUErrorCode VGU_API_ENTRY vguPolygon(
 
             #undef MESSAGE_SIZE
 
-            rpc_send_ctrl_begin(thread, 
+            rpc_send_ctrl_begin(thread,
                sizeof(message) +
                (chunk_ps_count * 2 * sizeof(VGfloat)));
             rpc_send_ctrl_write(thread, message, sizeof(message));

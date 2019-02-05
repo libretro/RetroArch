@@ -329,4 +329,3 @@ int teapot_open(RASPITEX_STATE *raspitex_state)
    raspitex_state->ops.update_texture = raspitexutil_update_texture;
    return 0;
 }
-

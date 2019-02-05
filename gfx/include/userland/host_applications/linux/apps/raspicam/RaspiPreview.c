@@ -159,7 +159,6 @@ error:
    return status;
 }
 
-
 /**
  * Destroy the preview component
  *

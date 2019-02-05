@@ -108,7 +108,7 @@ const char *path_get_extension(const char *path);
  * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: 
+ * Returns:
  * 1) If path has an extension, returns path with the
  *    extension removed.
  * 2) If there is no extension, returns NULL.

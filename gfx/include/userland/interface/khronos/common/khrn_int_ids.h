@@ -135,7 +135,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLINTATTRIB_ID                           0x7118
 #define GLINTATTRIBENABLE_ID                     0x7119
 
-
 /*
    OpenGL ES 1.1 specific dispatch ids
 */

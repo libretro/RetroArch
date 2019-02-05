@@ -272,7 +272,6 @@ int run_cmd(const char *fmt, ...)
     return ret;
 }
 
-
 /* Not thread safe */
 void free_string(const char *string)
 {

@@ -17,4 +17,3 @@ add_executable(vcsmem smem.c)
 target_link_libraries(vcsmem vcos vcsm vchostif)
 
 install(TARGETS vcsmem RUNTIME DESTINATION bin)
-

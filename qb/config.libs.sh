@@ -495,9 +495,7 @@ if [ "$HAVE_MENU" != 'no' ]; then
          HAVE_MATERIALUI=no
          HAVE_OZONE=no
          HAVE_XMB=no
-         HAVE_NUKLEAR=no
          HAVE_STRIPES=no
-         HAVE_ZARCH=no
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi

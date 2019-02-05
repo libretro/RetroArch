@@ -240,7 +240,7 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    ozone->selection_old           = ozone->selection;
    ozone->cursor_in_sidebar_old   = ozone->cursor_in_sidebar;
    ozone->cursor_in_sidebar       = true;
-   
+
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
@@ -265,7 +265,7 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
    ozone->cursor_in_sidebar_old     = ozone->cursor_in_sidebar;
    ozone->cursor_in_sidebar         = false;
-   
+
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;
 
@@ -370,8 +370,8 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    }
 }
 
-void ozone_change_tab(ozone_handle_t *ozone, 
-      enum msg_hash_enums tab, 
+void ozone_change_tab(ozone_handle_t *ozone,
+      enum msg_hash_enums tab,
       enum menu_settings_type type)
 {
    file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
@@ -391,7 +391,7 @@ void ozone_change_tab(ozone_handle_t *ozone,
    if (menu_stack->list[stack_size - 1].label)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
-   
+
    menu_stack->list[stack_size - 1].label =
       strdup(msg_hash_to_str(tab));
    menu_stack->list[stack_size - 1].type =

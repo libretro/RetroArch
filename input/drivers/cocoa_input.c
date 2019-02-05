@@ -33,7 +33,7 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 /* Forward declarations */

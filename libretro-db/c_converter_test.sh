@@ -45,7 +45,6 @@ echo
 matches=0
 failed=0
 
-
 for lua_rdb_file in $lua_RDB_outdir/*.rdb ; do
    name=`echo "$lua_rdb_file" | sed "s/${lua_RDB_outdir}\/*//"`
    name=`echo "$name" | sed "s/\.rdb//"`

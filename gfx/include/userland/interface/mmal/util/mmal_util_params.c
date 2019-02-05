@@ -202,7 +202,7 @@ MMAL_STATUS_T mmal_util_camera_use_stc_timestamp(MMAL_PORT_T *port, MMAL_CAMERA_
    return mmal_port_parameter_set(port, &param.hdr);
 }
 
-MMAL_STATUS_T mmal_util_get_core_port_stats(MMAL_PORT_T *port, 
+MMAL_STATUS_T mmal_util_get_core_port_stats(MMAL_PORT_T *port,
                                             MMAL_CORE_STATS_DIR dir,
                                             MMAL_BOOL_T reset,
                                             MMAL_CORE_STATISTICS_T *stats)

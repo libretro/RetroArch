@@ -46,7 +46,7 @@ extern "C" {
  *
  */
 
-/** 
+/**
   * \brief Create a named semaphore.
   *
   * Semaphores are not re-entrant.
@@ -56,7 +56,7 @@ extern "C" {
   * @param count The initial count for the semaphore.
   *
   * @return VCOS_SUCCESS if the semaphore was created.
-  * 
+  *
   */
 VCOS_INLINE_DECL
 VCOS_STATUS_T vcos_named_semaphore_create(VCOS_NAMED_SEMAPHORE_T *sem, const char *name, VCOS_UNSIGNED count);
@@ -105,9 +105,7 @@ void vcos_named_semaphore_post(VCOS_NAMED_SEMAPHORE_T *sem);
   */
 void vcos_named_semaphore_delete(VCOS_NAMED_SEMAPHORE_T *sem);
 
-
 #ifdef __cplusplus
 }
 #endif
 #endif
-

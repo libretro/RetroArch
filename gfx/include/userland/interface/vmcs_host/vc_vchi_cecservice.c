@@ -124,7 +124,7 @@ static const uint32_t max_notify_strings = sizeof(cecservice_notify_strings)/siz
 
 //Device type strings
 static char* cecservice_devicetype_strings[] = {
-   "TV", 
+   "TV",
    "Rec",
    "Reserved",
    "Tuner",
@@ -153,7 +153,7 @@ static __inline int lock_obtain (void) {
          return VCOS_EAGAIN;
       }
    }
-   vc_cec_log_error("CEC service failed to obtain lock, initialised:%d, lock status:%d", 
+   vc_cec_log_error("CEC service failed to obtain lock, initialised:%d, lock status:%d",
                     cecservice_client.initialised, status);
    return status;
 }
@@ -237,7 +237,7 @@ VCHPRE_ void VCHPOST_ vc_vchi_cec_init(VCHI_INSTANCE_T initialise_instance, VCHI
    vcos_assert(cecservice_client.topology);
 
    for (i=0; i < cecservice_client.num_connections; i++) {
-   
+
       // Create a 'Client' service on the each of the connections
       SERVICE_CREATION_T cecservice_parameters = { VCHI_VERSION(VC_CECSERVICE_VER),
                                                    CECSERVICE_CLIENT_NAME,     // 4cc service code
@@ -263,7 +263,7 @@ VCHPRE_ void VCHPOST_ vc_vchi_cec_init(VCHI_INSTANCE_T initialise_instance, VCHI
                                                     VC_FALSE,                  // want_crc
       };
 
-      //Create the client to normal CEC service 
+      //Create the client to normal CEC service
       success = vchi_service_open( initialise_instance, &cecservice_parameters, &cecservice_client.client_handle[i] );
       vcos_assert( success == 0 );
       if(success)
@@ -435,7 +435,7 @@ static int32_t cecservice_wait_for_reply(void *response, uint32_t max_length) {
       vc_cec_log_warn("CEC service wait for reply failed, error: %s",
                       vchi2service_status_string(success));
    }
-   
+
    return success;
 }
 
@@ -450,7 +450,7 @@ static int32_t cecservice_wait_for_reply(void *response, uint32_t max_length) {
  *
  ***********************************************************/
 static int32_t cecservice_wait_for_bulk_receive(void *buffer, uint32_t max_length) {
-   if(!vcos_verify(buffer)) { 
+   if(!vcos_verify(buffer)) {
       vc_cec_log_error("CEC: NULL buffer passed to wait_for_bulk_receive");
       return -1;
    }
@@ -478,8 +478,8 @@ static int32_t cecservice_send_command(  uint32_t command, const void *buffer, u
                                   {buffer, length} };
    int32_t success = 0;
    int32_t response = -1;
-   vc_cec_log_info("CEC sending command %s length %d %s", 
-                   cecservice_command_strings[command], length, 
+   vc_cec_log_info("CEC sending command %s length %d %s",
+                   cecservice_command_strings[command], length,
                    (has_reply)? "has reply" : " no reply");
    if(lock_obtain() == 0)
    {
@@ -497,7 +497,7 @@ static int32_t cecservice_send_command(  uint32_t command, const void *buffer, u
       } else {
          if(success != VC_SERVICE_VCHI_SUCCESS)
             vc_cec_log_error("CEC failed to send command %s length %d, error: %s",
-                             cecservice_command_strings[command], length, 
+                             cecservice_command_strings[command], length,
                              vchi2service_status_string(success));
          //No reply expected or failed to send, send the success code back instead
          response = success;
@@ -523,8 +523,8 @@ static int32_t cecservice_send_command_reply(  uint32_t command, void *buffer, u
                                   {buffer, length} };
    int32_t success = VC_SERVICE_VCHI_VCHIQ_ERROR, ret = 0;
 
-   vc_cec_log_info("CEC sending command (with reply) %s length %d", 
-                   cecservice_command_strings[command], length); 
+   vc_cec_log_info("CEC sending command (with reply) %s length %d",
+                   cecservice_command_strings[command], length);
    if(lock_obtain() == 0)
    {
       if((ret = vchi_msg_queuev( cecservice_client.client_handle[0],
@@ -586,7 +586,7 @@ static void *cecservice_notify_func(void *arg) {
             state->logical_address = (CEC_DEVICE_TYPE_T) param1;
             state->physical_address = (uint16_t) (param2 & 0xFFFF);
          }
-         
+
          switch(CEC_CB_REASON(reason)) {
          case VC_CEC_NOTIFY_NONE:
             cb_reason_str_idx = 0; break;
@@ -647,7 +647,6 @@ static void cecservice_logging_init() {
       cecservice_log_initialised = 1;
    }
 }
-
 
 /***********************************************************
  Actual CEC service API starts here
@@ -727,7 +726,7 @@ VCHPRE_ int VCHPOST_ vc_cec_send_message(const uint32_t follower,
                                          const uint8_t *payload,
                                          uint32_t length,
                                          vcos_bool_t is_reply) {
-   int success = -1;  
+   int success = -1;
    CEC_SEND_MSG_PARAM_T param;
    if(!vcos_verify(length <= CEC_MAX_XMIT_LENGTH))
       return -1;
@@ -770,7 +769,7 @@ VCHPRE_ int VCHPOST_ vc_cec_send_message(const uint32_t follower,
  ***********************************************************/
 VCHPRE_ int VCHPOST_ vc_cec_get_logical_address(CEC_AllDevices_T *logical_address) {
    uint32_t response;
-   int32_t success = cecservice_send_command_reply( VC_CEC_GET_LOGICAL_ADDR, NULL, 0, 
+   int32_t success = cecservice_send_command_reply( VC_CEC_GET_LOGICAL_ADDR, NULL, 0,
                                                     &response, sizeof(response));
    if(success == 0) {
       *logical_address = (CEC_AllDevices_T)(VC_VTOH32(response) & 0xF);
@@ -791,7 +790,7 @@ VCHPRE_ int VCHPOST_ vc_cec_get_logical_address(CEC_AllDevices_T *logical_addres
  *       (logical address being 0xF and physical address is NOT 0xFFFF
  *        from VC_CEC_LOGICAL_ADDR notification), or if the host explicitly
  *       released its logical address.
- * 
+ *
  * Returns: if the command is successful (zero) or not (non-zero)
  *         If successful, there will be a callback notification
  *         VC_CEC_LOGICAL_ADDR. The host should wait for this before
@@ -810,7 +809,7 @@ VCHPRE_ int VCHPOST_ vc_cec_alloc_logical_address( void ) {
  * Description
  *       Release our logical address. This effectively disables CEC.
  *       The host will need to allocate a new logical address before
- *       doing any CEC calls (send/receive message, get topology, etc.). 
+ *       doing any CEC calls (send/receive message, get topology, etc.).
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *         The host should get a callback VC_CEC_LOGICAL_ADDR with
@@ -843,7 +842,7 @@ VCHPRE_ int VCOS_DEPRECATED("returns invalid result") VCHPOST_ vc_cec_get_topolo
       cecservice_client.topology->active_mask = VC_VTOH16(cecservice_client.topology->active_mask);
       cecservice_client.topology->num_devices = VC_VTOH16(cecservice_client.topology->num_devices);
       vc_cec_log_info("CEC topology: mask=0x%x; #device=%d",
-                      cecservice_client.topology->active_mask, 
+                      cecservice_client.topology->active_mask,
                       cecservice_client.topology->num_devices);
       for(i = 0; i < 15; i++) {
          cecservice_client.topology->device_attr[i] = VC_VTOH32(cecservice_client.topology->device_attr[i]);
@@ -883,7 +882,7 @@ VCHPRE_ int VCHPOST_ vc_cec_set_vendor_id( uint32_t id ) {
  ***********************************************************/
 VCHPRE_ int VCHPOST_ vc_cec_set_osd_name( const char* name ) {
    vc_cec_log_info("CEC setting OSD name to %s", name);
-   return cecservice_send_command( VC_CEC_SET_OSD_NAME, name, OSD_NAME_LENGTH, 0); 
+   return cecservice_send_command( VC_CEC_SET_OSD_NAME, name, OSD_NAME_LENGTH, 0);
 }
 
 /***********************************************************
@@ -901,7 +900,7 @@ VCHPRE_ int VCHPOST_ vc_cec_set_osd_name( const char* name ) {
  ***********************************************************/
 VCHPRE_ int VCHPOST_ vc_cec_get_physical_address(uint16_t *physical_address) {
    uint32_t response;
-   int32_t success = cecservice_send_command_reply( VC_CEC_GET_PHYSICAL_ADDR, NULL, 0, 
+   int32_t success = cecservice_send_command_reply( VC_CEC_GET_PHYSICAL_ADDR, NULL, 0,
                                                     &response, sizeof(response));
    if(success == 0) {
       *physical_address = (uint16_t)(VC_VTOH32(response) & 0xFFFF);
@@ -911,7 +910,6 @@ VCHPRE_ int VCHPOST_ vc_cec_get_physical_address(uint16_t *physical_address) {
    }
    return success;
 }
-
 
 /***********************************************************
  * Name: vc_cec_get_vendor_id
@@ -927,12 +925,12 @@ VCHPRE_ int VCHPOST_ vc_cec_get_physical_address(uint16_t *physical_address) {
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *          vendor ID is set to zero if unknown or 0xFFFFFF if
- *          device does not exist. 
+ *          device does not exist.
  ***********************************************************/
 VCHPRE_ int VCHPOST_ vc_cec_get_vendor_id( const CEC_AllDevices_T logical_address, uint32_t *vendor_id) {
    uint32_t log_addr = VC_HTOV32(logical_address);
    uint32_t response;
-   int32_t success = cecservice_send_command_reply( VC_CEC_GET_VENDOR_ID, &log_addr, sizeof(log_addr), 
+   int32_t success = cecservice_send_command_reply( VC_CEC_GET_VENDOR_ID, &log_addr, sizeof(log_addr),
                                                     &response, sizeof(response));
    if(success == 0) {
       vcos_assert(vendor_id);
@@ -954,7 +952,7 @@ VCHPRE_ int VCHPOST_ vc_cec_get_vendor_id( const CEC_AllDevices_T logical_addres
  * Returns: For logical addresses 0-11 the default
  *          device type of that address will be returned
  *          logical address 12-14 will return "reserved" type.
- *          
+ *
  ***********************************************************/
 VCHPRE_ CEC_DEVICE_TYPE_T VCHPOST_ vc_cec_device_type(const CEC_AllDevices_T logical_address) {
    CEC_DEVICE_TYPE_T device_type = CEC_DeviceType_Invalid;
@@ -994,7 +992,7 @@ VCHPRE_ CEC_DEVICE_TYPE_T VCHPOST_ vc_cec_device_type(const CEC_AllDevices_T log
 }
 
 /***********************************************************
- * Name: vc_cec_send_message2 
+ * Name: vc_cec_send_message2
  *
  * Arguments:
  *       pointer to encapsulated message
@@ -1011,7 +1009,7 @@ VCHPRE_ CEC_DEVICE_TYPE_T VCHPOST_ vc_cec_device_type(const CEC_AllDevices_T log
 VCHPRE_ int VCHPOST_ vc_cec_send_message2(const VC_CEC_MESSAGE_T *message) {
    if(vcos_verify(message)) {
       return vc_cec_send_message(message->follower,
-                                 (message->length)? 
+                                 (message->length)?
                                  message->payload : NULL,
                                  message->length,
                                  VC_FALSE);
@@ -1034,10 +1032,10 @@ VCHPRE_ int VCHPOST_ vc_cec_send_message2(const VC_CEC_MESSAGE_T *message) {
  * Returns: zero normally
  *          non-zero if something has gone wrong
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_param2message( const uint32_t reason, const uint32_t param1, 
+VCHPRE_ int VCHPOST_ vc_cec_param2message( const uint32_t reason, const uint32_t param1,
                                            const uint32_t param2, const uint32_t param3,
                                            const uint32_t param4, VC_CEC_MESSAGE_T *message) {
-   if(vcos_verify(message && 
+   if(vcos_verify(message &&
                   CEC_CB_REASON(reason) != VC_CEC_LOGICAL_ADDR &&
                   CEC_CB_REASON(reason) != VC_CEC_TOPOLOGY)) {
       message->length = CEC_CB_MSG_LENGTH(reason) - 1; //Length is without the header byte
@@ -1068,8 +1066,8 @@ VCHPRE_ int VCHPOST_ vc_cec_param2message( const uint32_t reason, const uint32_t
  *
  * Description
  *       Sets and polls a particular address to find out
- *       its availability in the CEC network. Only available 
- *       when CEC is running in passive mode. The host can 
+ *       its availability in the CEC network. Only available
+ *       when CEC is running in passive mode. The host can
  *       only call this function during logical address allocation stage.
  *
  * Returns: 0 if poll is successful (address is occupied)
@@ -1081,7 +1079,7 @@ VCHPRE_ int VCHPOST_ vc_cec_poll_address(const CEC_AllDevices_T logical_address)
    int32_t response =  VC_CEC_ERROR_INVALID_ARGUMENT;
    int32_t success = -1;
    vc_cec_log_info("CEC polling address %d", logical_address);
-   success = cecservice_send_command_reply( VC_CEC_POLL_ADDR, &log_addr, sizeof(log_addr), 
+   success = cecservice_send_command_reply( VC_CEC_POLL_ADDR, &log_addr, sizeof(log_addr),
                                                     &response, sizeof(response));
    return (success == 0)? response : success;
 }
@@ -1093,8 +1091,8 @@ VCHPRE_ int VCHPOST_ vc_cec_poll_address(const CEC_AllDevices_T logical_address)
  *       logical address, device type, vendor id
  *
  * Description
- *       sets the logical address, device type and vendor ID to be in use. 
- *       Only available when CEC is running in passive mode. It is the 
+ *       sets the logical address, device type and vendor ID to be in use.
+ *       Only available when CEC is running in passive mode. It is the
  *       responsibility of the host to make sure the logical address
  *       is actually free (see vc_cec_poll_address). Physical address used
  *       will be what is read from EDID and cannot be set.
@@ -1112,10 +1110,10 @@ VCHPRE_ int VCHPOST_ vc_cec_set_logical_address(const CEC_AllDevices_T logical_a
    if(vcos_verify(logical_address <= CEC_AllDevices_eUnRegistered &&
                   (device_type <= CEC_DeviceType_VidProc ||
                    device_type == CEC_DeviceType_Invalid))) {
-      vc_cec_log_info("CEC setting logical address to %d; device type %s; vendor 0x%X", 
+      vc_cec_log_info("CEC setting logical address to %d; device type %s; vendor 0x%X",
                       logical_address,
                       cecservice_devicetype_strings[device_type], vendor_id );
-      success = cecservice_send_command_reply( VC_CEC_SET_LOGICAL_ADDR, &param, sizeof(param), 
+      success = cecservice_send_command_reply( VC_CEC_SET_LOGICAL_ADDR, &param, sizeof(param),
                                                &response, sizeof(response));
    } else {
       vc_cec_log_error("CEC invalid arguments for set_logical_address");
@@ -1145,10 +1143,10 @@ VCHPRE_ int  VCOS_DEPRECATED("has no effect") VCHPOST_ vc_cec_add_device(const C
    if(vcos_verify(logical_address <= CEC_AllDevices_eUnRegistered &&
                   (device_type <= CEC_DeviceType_VidProc ||
                    device_type == CEC_DeviceType_Invalid))) {
-      vc_cec_log_info("CEC adding device %d (0x%X); device type %s", 
+      vc_cec_log_info("CEC adding device %d (0x%X); device type %s",
                       logical_address, physical_address,
                       cecservice_devicetype_strings[device_type]);
-      success = cecservice_send_command_reply( VC_CEC_ADD_DEVICE, &param, sizeof(param), 
+      success = cecservice_send_command_reply( VC_CEC_ADD_DEVICE, &param, sizeof(param),
                                                &response, sizeof(response));
    } else {
       vc_cec_log_error("CEC invalid arguments for add_device");
@@ -1170,13 +1168,13 @@ VCHPRE_ int  VCOS_DEPRECATED("has no effect") VCHPOST_ vc_cec_add_device(const C
 VCHPRE_ int VCHPOST_ vc_cec_set_passive(vcos_bool_t enabled) {
    uint32_t param = VC_HTOV32(enabled);
    int32_t response;
-   int32_t success = cecservice_send_command_reply( VC_CEC_SET_PASSIVE, &param, sizeof(param), 
+   int32_t success = cecservice_send_command_reply( VC_CEC_SET_PASSIVE, &param, sizeof(param),
                                                     &response, sizeof(response));
    return (success == 0)? response : success;
 }
 
 /***********************************************************
- API for some common CEC messages, uses the API above to 
+ API for some common CEC messages, uses the API above to
  actually send the message
 ***********************************************************/
 
@@ -1192,9 +1190,9 @@ VCHPRE_ int VCHPOST_ vc_cec_set_passive(vcos_bool_t enabled) {
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_FeatureAbort(uint32_t follower, 
-                                              CEC_OPCODE_T opcode, 
-                                              CEC_ABORT_REASON_T reason) { 
+VCHPRE_ int VCHPOST_ vc_cec_send_FeatureAbort(uint32_t follower,
+                                              CEC_OPCODE_T opcode,
+                                              CEC_ABORT_REASON_T reason) {
    uint8_t tx_buf[3];
    tx_buf[0] = CEC_Opcode_FeatureAbort;    // <Feature Abort>
    tx_buf[1] = opcode;
@@ -1212,12 +1210,12 @@ VCHPRE_ int VCHPOST_ vc_cec_send_FeatureAbort(uint32_t follower,
  *       physical address, reply or not
  *
  * Description
- *       send <Active Source> 
+ *       send <Active Source>
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_ActiveSource(uint16_t physical_address, 
+VCHPRE_ int VCHPOST_ vc_cec_send_ActiveSource(uint16_t physical_address,
                                               vcos_bool_t is_reply) {
    uint8_t tx_buf[3];
    tx_buf[0] = CEC_Opcode_ActiveSource;    // <Active Source>
@@ -1235,12 +1233,12 @@ VCHPRE_ int VCHPOST_ vc_cec_send_ActiveSource(uint16_t physical_address,
  * Arguments:
  *       follower, reply or not
  * Description
- *       send <Image View On> 
+ *       send <Image View On>
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_ImageViewOn(uint32_t follower, 
+VCHPRE_ int VCHPOST_ vc_cec_send_ImageViewOn(uint32_t follower,
                                              vcos_bool_t is_reply) {
    uint8_t tx_buf[1];
    tx_buf[0] = CEC_Opcode_ImageViewOn;      // <Image View On> no param required
@@ -1257,13 +1255,13 @@ VCHPRE_ int VCHPOST_ vc_cec_send_ImageViewOn(uint32_t follower,
  *       follower, display control, string (char[13]), reply or not
  *
  * Description
- *       send <Image View On> 
+ *       send <Image View On>
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_SetOSDString(uint32_t follower, 
-                                              CEC_DISPLAY_CONTROL_T disp_ctrl,                               
+VCHPRE_ int VCHPOST_ vc_cec_send_SetOSDString(uint32_t follower,
+                                              CEC_DISPLAY_CONTROL_T disp_ctrl,
                                               const char* string,
                                               vcos_bool_t is_reply) {
    uint8_t tx_buf[CEC_MAX_XMIT_LENGTH];
@@ -1284,7 +1282,7 @@ VCHPRE_ int VCHPOST_ vc_cec_send_SetOSDString(uint32_t follower,
  *       follower, reply or not
  *
  * Description
- *       send <Standby>. Turn other devices to standby 
+ *       send <Standby>. Turn other devices to standby
  *
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
@@ -1311,8 +1309,8 @@ VCHPRE_ int VCHPOST_ vc_cec_send_Standby(uint32_t follower, vcos_bool_t is_reply
  * Returns: if the command is successful (zero) or not (non-zero)
  *          Tx callback if successful
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_MenuStatus(uint32_t follower, 
-                                            CEC_MENU_STATE_T menu_state, 
+VCHPRE_ int VCHPOST_ vc_cec_send_MenuStatus(uint32_t follower,
+                                            CEC_MENU_STATE_T menu_state,
                                             vcos_bool_t is_reply) {
    uint8_t tx_buf[2];
    if(!vcos_verify(menu_state < CEC_MENU_STATE_QUERY))
@@ -1333,7 +1331,7 @@ VCHPRE_ int VCHPOST_ vc_cec_send_MenuStatus(uint32_t follower,
  *       physical address, device type, reply or not
  *
  * Description
- *       send <Report Physical Address> (first command to be 
+ *       send <Report Physical Address> (first command to be
  *       sent after a successful logical address allocation
  *       device type should be the appropriate one for
  *       the allocated logical address
@@ -1342,7 +1340,7 @@ VCHPRE_ int VCHPOST_ vc_cec_send_MenuStatus(uint32_t follower,
  *          Tx callback if successful. We also get a failure
  *          if we do not currently have a valid physical address
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_cec_send_ReportPhysicalAddress(uint16_t physical_address, 
+VCHPRE_ int VCHPOST_ vc_cec_send_ReportPhysicalAddress(uint16_t physical_address,
                                                        CEC_DEVICE_TYPE_T device_type,
                                                        vcos_bool_t is_reply) {
    uint8_t tx_buf[4];
@@ -1358,8 +1356,8 @@ VCHPRE_ int VCHPOST_ vc_cec_send_ReportPhysicalAddress(uint16_t physical_address
                                  is_reply);
    } else {
       //Current we do not allow sending a random physical address
-      vc_cec_log_error("CEC cannot send physical address 0x%X, does not match internal 0x%X", 
+      vc_cec_log_error("CEC cannot send physical address 0x%X, does not match internal 0x%X",
                        physical_address, cecservice_client.physical_address);
-      return VC_CEC_ERROR_NO_PA; 
+      return VC_CEC_ERROR_NO_PA;
    }
 }

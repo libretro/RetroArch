@@ -334,7 +334,6 @@ static void disable_port(MMAL_PORT_T *port)
       mmal_port_disable(port);
 }
 
-
 static int parse_vformat(const char* vformat, uint32_t *out_width,
       uint32_t *out_height, uint32_t *out_encoding)
 {
@@ -485,7 +484,7 @@ int test_mmal_start_camcorder(volatile int *stop, MMALCAM_BEHAVIOUR_T *behaviour
          fprintf(stderr, "Error (%i) opening container: %s\n", status, behaviour->uri);
       }
 #else
-      
+
       output = fopen(behaviour->uri, "wb");
       if(!output)
       {
@@ -1135,14 +1134,13 @@ static MMAL_BOOL_T mmalcam_next_colour_param(MMAL_COMPONENT_T *camera, uint32_t 
    }
    if (memcmp(&param, &param_check, sizeof(param)) != 0)
    {
-      LOG_ERROR("%s set (%d/%d) was not retrieved (%d/%d)", param_name, 
-                  param.value.num, param.value.den, 
+      LOG_ERROR("%s set (%d/%d) was not retrieved (%d/%d)", param_name,
+                  param.value.num, param.value.den,
                   param_check.value.num, param_check.value.den);
       return MMAL_FALSE;
    }
    return MMAL_TRUE;
 }
-
 
 /*****************************************************************************/
 static MMAL_COMPONENT_T *test_video_render_create(MMALCAM_BEHAVIOUR_T *behaviour, MMAL_STATUS_T *status)
@@ -1351,7 +1349,7 @@ static VC_CONTAINER_T *test_container_open(const char *uri, MMAL_ES_FORMAT_T *fo
 
    switch (format->type)
    {
-      case MMAL_ES_TYPE_VIDEO: 
+      case MMAL_ES_TYPE_VIDEO:
          container_format->es_type = VC_CONTAINER_ES_TYPE_VIDEO;
          break;
       default:

@@ -295,7 +295,6 @@ void egl_context_set_callbacks(EGL_CONTEXT_T *context,
    }
 }
 
-
 /*
    void egl_context_maybe_free(EGL_CONTEXT_T *context)
 

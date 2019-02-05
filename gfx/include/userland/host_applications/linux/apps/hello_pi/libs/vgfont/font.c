@@ -257,7 +257,6 @@ finish:
    return status;
 }
 
-
 /** Find a font in our cache, or create a new entry in the cache.
   *
   * Very primitive at present.
@@ -342,7 +341,6 @@ int32_t graphics_resource_text_dimensions_ext(GRAPHICS_RESOURCE_HANDLE res,
    if (!font)
       goto finish;
 
-
    vgft_get_text_extents(font, text, text_length, 0.0, 0.0, &w, &h);
    *width = w;
    *height = h;
@@ -352,4 +350,3 @@ finish:
    gx_priv_restore(&save);
    return ret;
 }
-

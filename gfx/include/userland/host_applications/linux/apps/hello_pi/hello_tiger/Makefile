@@ -5,4 +5,3 @@ BIN=hello_tiger.bin
 CFLAGS+=-D__RASPBERRYPI__
 
 include ../Makefile.include
-

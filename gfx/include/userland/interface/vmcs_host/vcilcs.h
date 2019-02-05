@@ -78,7 +78,6 @@ VCHPRE_ OMX_BUFFERHEADERTYPE * VCHPOST_ ilcs_receive_buffer(ILCS_SERVICE_T *ilcs
 #define ILCS_ROUND_DOWN(x) (((unsigned long)(x)) & ~(ILCS_ALIGN-1))
 #define ILCS_ALIGNED(x) (((unsigned long)(x) & (ILCS_ALIGN-1)) == 0)
 
-
 #ifdef _VIDEOCORE
 #include "vcfw/logging/logging.h"
 
@@ -100,4 +99,3 @@ extern void dummy_logging_message(int level, const char *format, ...);
 #endif // _VIDEOCORE
 
 #endif // ILCS_H
-

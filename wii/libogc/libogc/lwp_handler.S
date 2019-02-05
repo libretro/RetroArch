@@ -284,7 +284,7 @@ _cpu_context_switch:
 
 	stmw		r13,GP_13(r3)
 	lmw		r13,GP_13(r4)
-	
+
 	mfspr	r5,912
 	stw		r5,GQ_0(r3)
 	lwz		r6,GQ_0(r4)

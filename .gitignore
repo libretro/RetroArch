@@ -55,7 +55,6 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
-menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
@@ -87,7 +86,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx
 /wiiu-devel.properties
-
 
 # 3ds
 /.lst

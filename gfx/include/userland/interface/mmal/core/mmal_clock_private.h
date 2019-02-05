@@ -35,7 +35,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-
 /** Handle to a clock. */
 typedef struct MMAL_CLOCK_T
 {

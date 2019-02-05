@@ -82,8 +82,6 @@ VCOS_STATUS_T vcos_timer_create(VCOS_TIMER_T *timer,
                                 void (*expiration_routine)(void *context),
                                 void *context);
 
-
-
 /** Start a timer running.
   *
   * Timer must be stopped.

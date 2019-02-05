@@ -77,7 +77,7 @@ typedef interface ID2D1Geometry ID2D1Geometry;
 typedef interface ID2D1Brush ID2D1Brush;
 
 #endif
-        
+
 #define D2D1_INVALID_TAG ULONGLONG_MAX
 #define D2D1_DEFAULT_FLATTENING_TOLERANCE (0.25f)
 
@@ -85,7 +85,7 @@ typedef interface ID2D1Brush ID2D1Brush;
 /// This defines the superset of interpolation mode supported by D2D APIs
 /// and built-in effects
 /// </summary>
-enum 
+enum
 {
     D2D1_INTERPOLATION_MODE_DEFINITION_NEAREST_NEIGHBOR = 0,
     D2D1_INTERPOLATION_MODE_DEFINITION_LINEAR = 1,
@@ -103,12 +103,12 @@ enum
 /// </summary>
 typedef enum D2D1_GAMMA
 {
-    
+
     /// <summary>
     /// Colors are manipulated in 2.2 gamma color space.
     /// </summary>
     D2D1_GAMMA_2_2 = 0,
-    
+
     /// <summary>
     /// Colors are manipulated in 1.0 gamma color space.
     /// </summary>
@@ -122,17 +122,17 @@ typedef enum D2D1_GAMMA
 /// </summary>
 typedef enum D2D1_OPACITY_MASK_CONTENT
 {
-    
+
     /// <summary>
     /// The mask contains geometries or bitmaps.
     /// </summary>
     D2D1_OPACITY_MASK_CONTENT_GRAPHICS = 0,
-    
+
     /// <summary>
     /// The mask contains text rendered using one of the natural text modes.
     /// </summary>
     D2D1_OPACITY_MASK_CONTENT_TEXT_NATURAL = 1,
-    
+
     /// <summary>
     /// The mask contains text rendered using one of the GDI compatible text modes.
     /// </summary>
@@ -146,19 +146,19 @@ typedef enum D2D1_OPACITY_MASK_CONTENT
 /// </summary>
 typedef enum D2D1_EXTEND_MODE
 {
-    
+
     /// <summary>
     /// Extend the edges of the source out by clamping sample points outside the source
     /// to the edges.
     /// </summary>
     D2D1_EXTEND_MODE_CLAMP = 0,
-    
+
     /// <summary>
     /// The base tile is drawn untransformed and the remainder are filled by repeating
     /// the base tile.
     /// </summary>
     D2D1_EXTEND_MODE_WRAP = 1,
-    
+
     /// <summary>
     /// The same as wrap, but alternate tiles are flipped  The base tile is drawn
     /// untransformed.
@@ -173,12 +173,12 @@ typedef enum D2D1_EXTEND_MODE
 /// </summary>
 typedef enum D2D1_ANTIALIAS_MODE
 {
-    
+
     /// <summary>
     /// The edges of each primitive are antialiased sequentially.
     /// </summary>
     D2D1_ANTIALIAS_MODE_PER_PRIMITIVE = 0,
-    
+
     /// <summary>
     /// Each pixel is rendered if its pixel center is contained by the geometry.
     /// </summary>
@@ -192,22 +192,22 @@ typedef enum D2D1_ANTIALIAS_MODE
 /// </summary>
 typedef enum D2D1_TEXT_ANTIALIAS_MODE
 {
-    
+
     /// <summary>
     /// Render text using the current system setting.
     /// </summary>
     D2D1_TEXT_ANTIALIAS_MODE_DEFAULT = 0,
-    
+
     /// <summary>
     /// Render text using ClearType.
     /// </summary>
     D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE = 1,
-    
+
     /// <summary>
     /// Render text using gray-scale.
     /// </summary>
     D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE = 2,
-    
+
     /// <summary>
     /// Render text aliased.
     /// </summary>
@@ -223,13 +223,13 @@ typedef enum D2D1_TEXT_ANTIALIAS_MODE
 /// </summary>
 typedef enum D2D1_BITMAP_INTERPOLATION_MODE
 {
-    
+
     /// <summary>
     /// Nearest Neighbor filtering. Also known as nearest pixel or nearest point
     /// sampling.
     /// </summary>
     D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR = D2D1_INTERPOLATION_MODE_DEFINITION_NEAREST_NEIGHBOR,
-    
+
     /// <summary>
     /// Linear filtering.
     /// </summary>
@@ -244,22 +244,22 @@ typedef enum D2D1_BITMAP_INTERPOLATION_MODE
 /// </summary>
 typedef enum D2D1_DRAW_TEXT_OPTIONS
 {
-    
+
     /// <summary>
     /// Do not snap the baseline of the text vertically.
     /// </summary>
     D2D1_DRAW_TEXT_OPTIONS_NO_SNAP = 0x00000001,
-    
+
     /// <summary>
     /// Clip the text to the content bounds.
     /// </summary>
     D2D1_DRAW_TEXT_OPTIONS_CLIP = 0x00000002,
-    
+
     /// <summary>
     /// Render color versions of glyphs if defined by the font.
     /// </summary>
     D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT = 0x00000004,
-    
+
     /// <summary>
     /// Bitmap origins of color glyph bitmaps are not snapped.
     /// </summary>
@@ -364,22 +364,22 @@ typedef enum D2D1_ARC_SIZE
 /// </summary>
 typedef enum D2D1_CAP_STYLE
 {
-    
+
     /// <summary>
     /// Flat line cap.
     /// </summary>
     D2D1_CAP_STYLE_FLAT = 0,
-    
+
     /// <summary>
     /// Square line cap.
     /// </summary>
     D2D1_CAP_STYLE_SQUARE = 1,
-    
+
     /// <summary>
     /// Round line cap.
     /// </summary>
     D2D1_CAP_STYLE_ROUND = 2,
-    
+
     /// <summary>
     /// Triangle line cap.
     /// </summary>
@@ -408,22 +408,22 @@ typedef enum D2D1_DASH_STYLE
 /// </summary>
 typedef enum D2D1_LINE_JOIN
 {
-    
+
     /// <summary>
     /// Miter join.
     /// </summary>
     D2D1_LINE_JOIN_MITER = 0,
-    
+
     /// <summary>
     /// Bevel join.
     /// </summary>
     D2D1_LINE_JOIN_BEVEL = 1,
-    
+
     /// <summary>
     /// Round join.
     /// </summary>
     D2D1_LINE_JOIN_ROUND = 2,
-    
+
     /// <summary>
     /// Miter/Bevel join.
     /// </summary>
@@ -437,25 +437,25 @@ typedef enum D2D1_LINE_JOIN
 /// </summary>
 typedef enum D2D1_COMBINE_MODE
 {
-    
+
     /// <summary>
     /// Produce a geometry representing the set of points contained in either the first
     /// or the second geometry.
     /// </summary>
     D2D1_COMBINE_MODE_UNION = 0,
-    
+
     /// <summary>
     /// Produce a geometry representing the set of points common to the first and the
     /// second geometries.
     /// </summary>
     D2D1_COMBINE_MODE_INTERSECT = 1,
-    
+
     /// <summary>
     /// Produce a geometry representing the set of points contained in the first
     /// geometry or the second geometry, but not both.
     /// </summary>
     D2D1_COMBINE_MODE_XOR = 2,
-    
+
     /// <summary>
     /// Produce a geometry representing the set of points contained in the first
     /// geometry but not the second geometry.
@@ -471,28 +471,28 @@ typedef enum D2D1_COMBINE_MODE
 /// </summary>
 typedef enum D2D1_GEOMETRY_RELATION
 {
-    
+
     /// <summary>
     /// The relation between the geometries couldn't be determined. This value is never
     /// returned by any D2D method.
     /// </summary>
     D2D1_GEOMETRY_RELATION_UNKNOWN = 0,
-    
+
     /// <summary>
     /// The two geometries do not intersect at all.
     /// </summary>
     D2D1_GEOMETRY_RELATION_DISJOINT = 1,
-    
+
     /// <summary>
     /// The passed in geometry is entirely contained by the object.
     /// </summary>
     D2D1_GEOMETRY_RELATION_IS_CONTAINED = 2,
-    
+
     /// <summary>
     /// The object entirely contains the passed in geometry.
     /// </summary>
     D2D1_GEOMETRY_RELATION_CONTAINS = 3,
-    
+
     /// <summary>
     /// The two geometries overlap but neither completely contains the other.
     /// </summary>
@@ -661,7 +661,7 @@ typedef struct D2D1_STROKE_STYLE_PROPERTIES
 typedef enum D2D1_LAYER_OPTIONS
 {
     D2D1_LAYER_OPTIONS_NONE = 0x00000000,
-    
+
     /// <summary>
     /// The layer will render correctly for ClearType text. If the render target was set
     /// to ClearType previously, the layer will continue to render ClearType. If the
@@ -683,43 +683,43 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_LAYER_OPTIONS);
 /// </summary>
 typedef struct D2D1_LAYER_PARAMETERS
 {
-    
+
     /// <summary>
     /// The rectangular clip that will be applied to the layer. The clip is affected by
     /// the world transform. Content outside of the content bounds will not render.
     /// </summary>
     D2D1_RECT_F contentBounds;
-    
+
     /// <summary>
     /// A general mask that can be optionally applied to the content. Content not inside
     /// the fill of the mask will not be rendered.
     /// </summary>
     _Field_size_opt_(1) ID2D1Geometry *geometricMask;
-    
+
     /// <summary>
     /// Specifies whether the mask should be aliased or antialiased.
     /// </summary>
     D2D1_ANTIALIAS_MODE maskAntialiasMode;
-    
+
     /// <summary>
     /// An additional transform that may be applied to the mask in addition to the
     /// current world transform.
     /// </summary>
     D2D1_MATRIX_3X2_F maskTransform;
-    
+
     /// <summary>
     /// The opacity with which all of the content in the layer will be blended back to
     /// the target when the layer is popped.
     /// </summary>
     FLOAT opacity;
-    
+
     /// <summary>
     /// An additional brush that can be applied to the layer. Only the opacity channel
     /// is sampled from this brush and multiplied both with the layer content and the
     /// over-all layer opacity.
     /// </summary>
     _Field_size_opt_(1) ID2D1Brush *opacityBrush;
-    
+
     /// <summary>
     /// Specifies if ClearType will be rendered into the layer.
     /// </summary>
@@ -746,17 +746,17 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_WINDOW_STATE);
 /// </summary>
 typedef enum D2D1_RENDER_TARGET_TYPE
 {
-    
+
     /// <summary>
     /// D2D is free to choose the render target type for the caller.
     /// </summary>
     D2D1_RENDER_TARGET_TYPE_DEFAULT = 0,
-    
+
     /// <summary>
     /// The render target will render using the CPU.
     /// </summary>
     D2D1_RENDER_TARGET_TYPE_SOFTWARE = 1,
-    
+
     /// <summary>
     /// The render target will render using the GPU.
     /// </summary>
@@ -771,17 +771,17 @@ typedef enum D2D1_RENDER_TARGET_TYPE
 /// </summary>
 typedef enum D2D1_FEATURE_LEVEL
 {
-    
+
     /// <summary>
     /// The caller does not require a particular underlying D3D device level.
     /// </summary>
     D2D1_FEATURE_LEVEL_DEFAULT = 0,
-    
+
     /// <summary>
     /// The D3D device level is DX9 compatible.
     /// </summary>
     D2D1_FEATURE_LEVEL_9 = D3D_FEATURE_LEVEL_9_1,
-    
+
     /// <summary>
     /// The D3D device level is DX10 compatible.
     /// </summary>
@@ -798,13 +798,13 @@ typedef enum D2D1_FEATURE_LEVEL
 typedef enum D2D1_RENDER_TARGET_USAGE
 {
     D2D1_RENDER_TARGET_USAGE_NONE = 0x00000000,
-    
+
     /// <summary>
     /// Rendering will occur locally, if a terminal-services session is established, the
     /// bitmap updates will be sent to the terminal services client.
     /// </summary>
     D2D1_RENDER_TARGET_USAGE_FORCE_BITMAP_REMOTING = 0x00000001,
-    
+
     /// <summary>
     /// The render target will allow a call to GetDC on the ID2D1GdiInteropRenderTarget
     /// interface. Rendering will also occur locally.
@@ -822,12 +822,12 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_RENDER_TARGET_USAGE);
 typedef enum D2D1_PRESENT_OPTIONS
 {
     D2D1_PRESENT_OPTIONS_NONE = 0x00000000,
-    
+
     /// <summary>
     /// Keep the target contents intact through present.
     /// </summary>
     D2D1_PRESENT_OPTIONS_RETAIN_CONTENTS = 0x00000001,
-    
+
     /// <summary>
     /// Do not wait for display refresh to commit changes to display.
     /// </summary>
@@ -873,7 +873,7 @@ typedef struct D2D1_HWND_RENDER_TARGET_PROPERTIES
 typedef enum D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS
 {
     D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE = 0x00000000,
-    
+
     /// <summary>
     /// The compatible render target will allow a call to GetDC on the
     /// ID2D1GdiInteropRenderTarget interface. This can be specified even if the parent
@@ -906,12 +906,12 @@ typedef struct D2D1_DRAWING_STATE_DESCRIPTION
 /// </summary>
 typedef enum D2D1_DC_INITIALIZE_MODE
 {
-    
+
     /// <summary>
     /// The contents of the D2D render target will be copied to the DC.
     /// </summary>
     D2D1_DC_INITIALIZE_MODE_COPY = 0,
-    
+
     /// <summary>
     /// The contents of the DC will be cleared.
     /// </summary>
@@ -939,14 +939,14 @@ typedef enum D2D1_DEBUG_LEVEL
 /// </summary>
 typedef enum D2D1_FACTORY_TYPE
 {
-    
+
     /// <summary>
     /// The resulting factory and derived resources may only be invoked serially.
     /// Reference counts on resources are interlocked, however, resource and render
     /// target state is not protected from multi-threaded access.
     /// </summary>
     D2D1_FACTORY_TYPE_SINGLE_THREADED = 0,
-    
+
     /// <summary>
     /// The resulting factory may be invoked from multiple threads. Returned resources
     /// use interlocked reference counting and their state is protected.
@@ -961,7 +961,7 @@ typedef enum D2D1_FACTORY_TYPE
 /// </summary>
 typedef struct D2D1_FACTORY_OPTIONS
 {
-    
+
     /// <summary>
     /// Requests a certain level of debugging information from the debug layer. This
     /// parameter is ignored if the debug layer DLL is not present.
@@ -1026,12 +1026,12 @@ EXTERN_C CONST IID IID_ID2D1GdiInteropRenderTarget;
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd90691-12e2-11dc-9fed-001143a055f9") ID2D1Resource  : public IUnknown
 {
-    
+
     /// <summary>
     /// Retrieve the factory associated with this resource.
     /// </summary>
     STDMETHOD_(void, GetFactory)(
-        _Outptr_ ID2D1Factory **factory 
+        _Outptr_ ID2D1Factory **factory
         ) CONST PURE;
 }; // interface ID2D1Resource
 
@@ -1047,49 +1047,49 @@ interface DX_DECLARE_INTERFACE("65019f75-8da2-497c-b32c-dfa34e48ede6") ID2D1Imag
 /// </summary>
 interface DX_DECLARE_INTERFACE("a2296057-ea42-4099-983b-539fb6505426") ID2D1Bitmap  : public ID2D1Image
 {
-    
+
     /// <summary>
     /// Returns the size of the bitmap in resolution independent units.
     /// </summary>
     STDMETHOD_(D2D1_SIZE_F, GetSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns the size of the bitmap in resolution dependent units, (pixels).
     /// </summary>
     STDMETHOD_(D2D1_SIZE_U, GetPixelSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieve the format of the bitmap.
     /// </summary>
     STDMETHOD_(D2D1_PIXEL_FORMAT, GetPixelFormat)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Return the DPI of the bitmap.
     /// </summary>
     STDMETHOD_(void, GetDpi)(
         _Out_ FLOAT *dpiX,
-        _Out_ FLOAT *dpiY 
+        _Out_ FLOAT *dpiY
         ) CONST PURE;
-    
+
     STDMETHOD(CopyFromBitmap)(
         _In_opt_ CONST D2D1_POINT_2U *destPoint,
         _In_ ID2D1Bitmap *bitmap,
-        _In_opt_ CONST D2D1_RECT_U *srcRect 
+        _In_opt_ CONST D2D1_RECT_U *srcRect
         ) PURE;
-    
+
     STDMETHOD(CopyFromRenderTarget)(
         _In_opt_ CONST D2D1_POINT_2U *destPoint,
         _In_ ID2D1RenderTarget *renderTarget,
-        _In_opt_ CONST D2D1_RECT_U *srcRect 
+        _In_opt_ CONST D2D1_RECT_U *srcRect
         ) PURE;
-    
+
     STDMETHOD(CopyFromMemory)(
         _In_opt_ CONST D2D1_RECT_U *dstRect,
         _In_ CONST void *srcData,
-        UINT32 pitch 
+        UINT32 pitch
         ) PURE;
 }; // interface ID2D1Bitmap
 
@@ -1099,28 +1099,28 @@ interface DX_DECLARE_INTERFACE("a2296057-ea42-4099-983b-539fb6505426") ID2D1Bitm
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a7-12e2-11dc-9fed-001143a055f9") ID2D1GradientStopCollection  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Returns the number of stops in the gradient.
     /// </summary>
     STDMETHOD_(UINT32, GetGradientStopCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Copies the gradient stops from the collection into the caller's interface.  The
     /// returned colors have straight alpha.
     /// </summary>
     STDMETHOD_(void, GetGradientStops)(
         _Out_writes_to_(gradientStopsCount, _Inexpressible_("Retrieved through GetGradientStopCount()") ) D2D1_GRADIENT_STOP *gradientStops,
-        UINT32 gradientStopsCount 
+        UINT32 gradientStopsCount
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns whether the interpolation occurs with 1.0 or 2.2 gamma.
     /// </summary>
     STDMETHOD_(D2D1_GAMMA, GetColorInterpolationGamma)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendMode)(
         ) CONST PURE;
 }; // interface ID2D1GradientStopCollection
@@ -1130,33 +1130,33 @@ interface DX_DECLARE_INTERFACE("2cd906a7-12e2-11dc-9fed-001143a055f9") ID2D1Grad
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a8-12e2-11dc-9fed-001143a055f9") ID2D1Brush  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Sets the opacity for when the brush is drawn over the entire fill of the brush.
     /// </summary>
     STDMETHOD_(void, SetOpacity)(
-        FLOAT opacity 
+        FLOAT opacity
         ) PURE;
-    
+
     /// <summary>
     /// Sets the transform that applies to everything drawn by the brush.
     /// </summary>
     STDMETHOD_(void, SetTransform)(
-        _In_ CONST D2D1_MATRIX_3X2_F *transform 
+        _In_ CONST D2D1_MATRIX_3X2_F *transform
         ) PURE;
-    
+
     STDMETHOD_(FLOAT, GetOpacity)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetTransform)(
-        _Out_ D2D1_MATRIX_3X2_F *transform 
+        _Out_ D2D1_MATRIX_3X2_F *transform
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     void
     SetTransform(
-        CONST D2D1_MATRIX_3X2_F &transform 
-        )  
+        CONST D2D1_MATRIX_3X2_F &transform
+        )
     {
         SetTransform(&transform);
     }
@@ -1167,48 +1167,48 @@ interface DX_DECLARE_INTERFACE("2cd906a8-12e2-11dc-9fed-001143a055f9") ID2D1Brus
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906aa-12e2-11dc-9fed-001143a055f9") ID2D1BitmapBrush  : public ID2D1Brush
 {
-    
+
     /// <summary>
     /// Sets how the bitmap is to be treated outside of its natural extent on the X
     /// axis.
     /// </summary>
     STDMETHOD_(void, SetExtendModeX)(
-        D2D1_EXTEND_MODE extendModeX 
+        D2D1_EXTEND_MODE extendModeX
         ) PURE;
-    
+
     /// <summary>
     /// Sets how the bitmap is to be treated outside of its natural extent on the X
     /// axis.
     /// </summary>
     STDMETHOD_(void, SetExtendModeY)(
-        D2D1_EXTEND_MODE extendModeY 
+        D2D1_EXTEND_MODE extendModeY
         ) PURE;
-    
+
     /// <summary>
     /// Sets the interpolation mode used when this brush is used.
     /// </summary>
     STDMETHOD_(void, SetInterpolationMode)(
-        D2D1_BITMAP_INTERPOLATION_MODE interpolationMode 
+        D2D1_BITMAP_INTERPOLATION_MODE interpolationMode
         ) PURE;
-    
+
     /// <summary>
     /// Sets the bitmap associated as the source of this brush.
     /// </summary>
     STDMETHOD_(void, SetBitmap)(
-        _In_opt_ ID2D1Bitmap *bitmap 
+        _In_opt_ ID2D1Bitmap *bitmap
         ) PURE;
-    
+
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendModeX)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendModeY)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_BITMAP_INTERPOLATION_MODE, GetInterpolationMode)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetBitmap)(
-        _Outptr_result_maybenull_ ID2D1Bitmap **bitmap 
+        _Outptr_result_maybenull_ ID2D1Bitmap **bitmap
         ) CONST PURE;
 }; // interface ID2D1BitmapBrush
 
@@ -1217,19 +1217,19 @@ interface DX_DECLARE_INTERFACE("2cd906aa-12e2-11dc-9fed-001143a055f9") ID2D1Bitm
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a9-12e2-11dc-9fed-001143a055f9") ID2D1SolidColorBrush  : public ID2D1Brush
 {
-    
+
     STDMETHOD_(void, SetColor)(
-        _In_ CONST D2D1_COLOR_F *color 
+        _In_ CONST D2D1_COLOR_F *color
         ) PURE;
-    
+
     STDMETHOD_(D2D1_COLOR_F, GetColor)(
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     void
     SetColor(
-        CONST D2D1_COLOR_F &color 
-        )  
+        CONST D2D1_COLOR_F &color
+        )
     {
         SetColor(&color);
     }
@@ -1240,27 +1240,27 @@ interface DX_DECLARE_INTERFACE("2cd906a9-12e2-11dc-9fed-001143a055f9") ID2D1Soli
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906ab-12e2-11dc-9fed-001143a055f9") ID2D1LinearGradientBrush  : public ID2D1Brush
 {
-    
+
     STDMETHOD_(void, SetStartPoint)(
-        D2D1_POINT_2F startPoint 
+        D2D1_POINT_2F startPoint
         ) PURE;
-    
+
     /// <summary>
     /// Sets the end point of the gradient in local coordinate space. This is not
     /// influenced by the geometry being filled.
     /// </summary>
     STDMETHOD_(void, SetEndPoint)(
-        D2D1_POINT_2F endPoint 
+        D2D1_POINT_2F endPoint
         ) PURE;
-    
+
     STDMETHOD_(D2D1_POINT_2F, GetStartPoint)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_POINT_2F, GetEndPoint)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetGradientStopCollection)(
-        _Outptr_ ID2D1GradientStopCollection **gradientStopCollection 
+        _Outptr_ ID2D1GradientStopCollection **gradientStopCollection
         ) CONST PURE;
 }; // interface ID2D1LinearGradientBrush
 
@@ -1269,44 +1269,44 @@ interface DX_DECLARE_INTERFACE("2cd906ab-12e2-11dc-9fed-001143a055f9") ID2D1Line
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906ac-12e2-11dc-9fed-001143a055f9") ID2D1RadialGradientBrush  : public ID2D1Brush
 {
-    
+
     /// <summary>
     /// Sets the center of the radial gradient. This will be in local coordinates and
     /// will not depend on the geometry being filled.
     /// </summary>
     STDMETHOD_(void, SetCenter)(
-        D2D1_POINT_2F center 
+        D2D1_POINT_2F center
         ) PURE;
-    
+
     /// <summary>
     /// Sets offset of the origin relative to the radial gradient center.
     /// </summary>
     STDMETHOD_(void, SetGradientOriginOffset)(
-        D2D1_POINT_2F gradientOriginOffset 
+        D2D1_POINT_2F gradientOriginOffset
         ) PURE;
-    
+
     STDMETHOD_(void, SetRadiusX)(
-        FLOAT radiusX 
+        FLOAT radiusX
         ) PURE;
-    
+
     STDMETHOD_(void, SetRadiusY)(
-        FLOAT radiusY 
+        FLOAT radiusY
         ) PURE;
-    
+
     STDMETHOD_(D2D1_POINT_2F, GetCenter)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_POINT_2F, GetGradientOriginOffset)(
         ) CONST PURE;
-    
+
     STDMETHOD_(FLOAT, GetRadiusX)(
         ) CONST PURE;
-    
+
     STDMETHOD_(FLOAT, GetRadiusY)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetGradientStopCollection)(
-        _Outptr_ ID2D1GradientStopCollection **gradientStopCollection 
+        _Outptr_ ID2D1GradientStopCollection **gradientStopCollection
         ) CONST PURE;
 }; // interface ID2D1RadialGradientBrush
 
@@ -1315,38 +1315,38 @@ interface DX_DECLARE_INTERFACE("2cd906ac-12e2-11dc-9fed-001143a055f9") ID2D1Radi
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd9069d-12e2-11dc-9fed-001143a055f9") ID2D1StrokeStyle  : public ID2D1Resource
 {
-    
+
     STDMETHOD_(D2D1_CAP_STYLE, GetStartCap)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_CAP_STYLE, GetEndCap)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_CAP_STYLE, GetDashCap)(
         ) CONST PURE;
-    
+
     STDMETHOD_(FLOAT, GetMiterLimit)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_LINE_JOIN, GetLineJoin)(
         ) CONST PURE;
-    
+
     STDMETHOD_(FLOAT, GetDashOffset)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_DASH_STYLE, GetDashStyle)(
         ) CONST PURE;
-    
+
     STDMETHOD_(UINT32, GetDashesCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns the dashes from the object into a user allocated array. The user must
     /// call GetDashesCount to retrieve the required size.
     /// </summary>
     STDMETHOD_(void, GetDashes)(
         _Out_writes_(dashesCount) FLOAT *dashes,
-        UINT32 dashesCount 
+        UINT32 dashesCount
         ) CONST PURE;
 }; // interface ID2D1StrokeStyle
 
@@ -1357,15 +1357,15 @@ interface DX_DECLARE_INTERFACE("2cd9069d-12e2-11dc-9fed-001143a055f9") ID2D1Stro
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geometry  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Retrieve the bounds of the geometry, with an optional applied transform.
     /// </summary>
     STDMETHOD(GetBounds)(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ D2D1_RECT_F *bounds 
+        _Out_ D2D1_RECT_F *bounds
         ) CONST PURE;
-    
+
     /// <summary>
     /// Get the bounds of the corresponding geometry after it has been widened or have
     /// an optional pen style applied.
@@ -1375,9 +1375,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ D2D1_RECT_F *bounds 
+        _Out_ D2D1_RECT_F *bounds
         ) CONST PURE;
-    
+
     /// <summary>
     /// Checks to see whether the corresponding penned and widened geometry contains the
     /// given point.
@@ -1388,9 +1388,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ BOOL *contains 
+        _Out_ BOOL *contains
         ) CONST PURE;
-    
+
     /// <summary>
     /// Test whether the given fill of this geometry would contain this point.
     /// </summary>
@@ -1398,9 +1398,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         D2D1_POINT_2F point,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ BOOL *contains 
+        _Out_ BOOL *contains
         ) CONST PURE;
-    
+
     /// <summary>
     /// Compare how one geometry intersects or contains another geometry.
     /// </summary>
@@ -1408,9 +1408,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_ ID2D1Geometry *inputGeometry,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *inputGeometryTransform,
         FLOAT flatteningTolerance,
-        _Out_ D2D1_GEOMETRY_RELATION *relation 
+        _Out_ D2D1_GEOMETRY_RELATION *relation
         ) CONST PURE;
-    
+
     /// <summary>
     /// Converts a geometry to a simplified geometry that has arcs and quadratic beziers
     /// removed.
@@ -1419,18 +1419,18 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         D2D1_GEOMETRY_SIMPLIFICATION_OPTION simplificationOption,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Tessellates a geometry into triangles.
     /// </summary>
     STDMETHOD(Tessellate)(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1TessellationSink *tessellationSink 
+        _In_ ID2D1TessellationSink *tessellationSink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Performs a combine operation between the two geometries to produce a resulting
     /// geometry.
@@ -1440,9 +1440,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         D2D1_COMBINE_MODE combineMode,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *inputGeometryTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Computes the outline of the geometry. The result is written back into a
     /// simplified geometry sink.
@@ -1450,27 +1450,27 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     STDMETHOD(Outline)(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Computes the area of the geometry.
     /// </summary>
     STDMETHOD(ComputeArea)(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ FLOAT *area 
+        _Out_ FLOAT *area
         ) CONST PURE;
-    
+
     /// <summary>
     /// Computes the length of the geometry.
     /// </summary>
     STDMETHOD(ComputeLength)(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ FLOAT *length 
+        _Out_ FLOAT *length
         ) CONST PURE;
-    
+
     /// <summary>
     /// Computes the point and tangent a given distance along the path.
     /// </summary>
@@ -1479,9 +1479,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
         _Out_opt_ D2D1_POINT_2F *point,
-        _Out_opt_ D2D1_POINT_2F *unitTangentVector 
+        _Out_opt_ D2D1_POINT_2F *unitTangentVector
         ) CONST PURE;
-    
+
     /// <summary>
     /// Get the geometry and widen it as well as apply an optional pen style.
     /// </summary>
@@ -1490,9 +1490,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieve the bounds of the geometry, with an optional applied transform.
     /// </summary>
@@ -1500,12 +1500,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     GetBounds(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ D2D1_RECT_F *bounds 
-        ) CONST  
+        _Out_ D2D1_RECT_F *bounds
+        ) CONST
     {
         return GetBounds(&worldTransform, bounds);
     }
-    
+
     /// <summary>
     /// Get the bounds of the corresponding geometry after it has been widened or have
     /// an optional pen style applied.
@@ -1517,12 +1517,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ D2D1_RECT_F *bounds 
-        ) CONST  
+        _Out_ D2D1_RECT_F *bounds
+        ) CONST
     {
         return GetWidenedBounds(strokeWidth, strokeStyle, &worldTransform, flatteningTolerance, bounds);
     }
-    
+
     /// <summary>
     /// Get the bounds of the corresponding geometry after it has been widened or have
     /// an optional pen style applied.
@@ -1533,12 +1533,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ D2D1_RECT_F *bounds 
-        ) CONST  
+        _Out_ D2D1_RECT_F *bounds
+        ) CONST
     {
         return GetWidenedBounds(strokeWidth, strokeStyle, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, bounds);
     }
-    
+
     /// <summary>
     /// Get the bounds of the corresponding geometry after it has been widened or have
     /// an optional pen style applied.
@@ -1549,12 +1549,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ D2D1_RECT_F *bounds 
-        ) CONST  
+        _Out_ D2D1_RECT_F *bounds
+        ) CONST
     {
         return GetWidenedBounds(strokeWidth, strokeStyle, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, bounds);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     StrokeContainsPoint(
@@ -1563,12 +1563,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return StrokeContainsPoint(point, strokeWidth, strokeStyle, &worldTransform, flatteningTolerance, contains);
     }
-    
+
     /// <summary>
     /// Checks to see whether the corresponding penned and widened geometry contains the
     /// given point.
@@ -1580,12 +1580,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return StrokeContainsPoint(point, strokeWidth, strokeStyle, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, contains);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     StrokeContainsPoint(
@@ -1593,24 +1593,24 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return StrokeContainsPoint(point, strokeWidth, strokeStyle, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, contains);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     FillContainsPoint(
         D2D1_POINT_2F point,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return FillContainsPoint(point, &worldTransform, flatteningTolerance, contains);
     }
-    
+
     /// <summary>
     /// Test whether the given fill of this geometry would contain this point.
     /// </summary>
@@ -1619,23 +1619,23 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     FillContainsPoint(
         D2D1_POINT_2F point,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return FillContainsPoint(point, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, contains);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     FillContainsPoint(
         D2D1_POINT_2F point,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ BOOL *contains 
-        ) CONST  
+        _Out_ BOOL *contains
+        ) CONST
     {
         return FillContainsPoint(point, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, contains);
     }
-    
+
     /// <summary>
     /// Compare how one geometry intersects or contains another geometry.
     /// </summary>
@@ -1645,12 +1645,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_ ID2D1Geometry *inputGeometry,
         CONST D2D1_MATRIX_3X2_F &inputGeometryTransform,
         FLOAT flatteningTolerance,
-        _Out_ D2D1_GEOMETRY_RELATION *relation 
-        ) CONST  
+        _Out_ D2D1_GEOMETRY_RELATION *relation
+        ) CONST
     {
         return CompareWithGeometry(inputGeometry, &inputGeometryTransform, flatteningTolerance, relation);
     }
-    
+
     /// <summary>
     /// Compare how one geometry intersects or contains another geometry.
     /// </summary>
@@ -1659,12 +1659,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     CompareWithGeometry(
         _In_ ID2D1Geometry *inputGeometry,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *inputGeometryTransform,
-        _Out_ D2D1_GEOMETRY_RELATION *relation 
-        ) CONST  
+        _Out_ D2D1_GEOMETRY_RELATION *relation
+        ) CONST
     {
         return CompareWithGeometry(inputGeometry, inputGeometryTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, relation);
     }
-    
+
     /// <summary>
     /// Compare how one geometry intersects or contains another geometry.
     /// </summary>
@@ -1673,12 +1673,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     CompareWithGeometry(
         _In_ ID2D1Geometry *inputGeometry,
         CONST D2D1_MATRIX_3X2_F &inputGeometryTransform,
-        _Out_ D2D1_GEOMETRY_RELATION *relation 
-        ) CONST  
+        _Out_ D2D1_GEOMETRY_RELATION *relation
+        ) CONST
     {
         return CompareWithGeometry(inputGeometry, &inputGeometryTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, relation);
     }
-    
+
     /// <summary>
     /// Converts a geometry to a simplified geometry that has arcs and quadratic beziers
     /// removed.
@@ -1689,12 +1689,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         D2D1_GEOMETRY_SIMPLIFICATION_OPTION simplificationOption,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Simplify(simplificationOption, &worldTransform, flatteningTolerance, geometrySink);
     }
-    
+
     /// <summary>
     /// Converts a geometry to a simplified geometry that has arcs and quadratic beziers
     /// removed.
@@ -1704,12 +1704,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     Simplify(
         D2D1_GEOMETRY_SIMPLIFICATION_OPTION simplificationOption,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Simplify(simplificationOption, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Converts a geometry to a simplified geometry that has arcs and quadratic beziers
     /// removed.
@@ -1719,12 +1719,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     Simplify(
         D2D1_GEOMETRY_SIMPLIFICATION_OPTION simplificationOption,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Simplify(simplificationOption, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Tessellates a geometry into triangles.
     /// </summary>
@@ -1733,12 +1733,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     Tessellate(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1TessellationSink *tessellationSink 
-        ) CONST  
+        _In_ ID2D1TessellationSink *tessellationSink
+        ) CONST
     {
         return Tessellate(&worldTransform, flatteningTolerance, tessellationSink);
     }
-    
+
     /// <summary>
     /// Tessellates a geometry into triangles.
     /// </summary>
@@ -1746,12 +1746,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     Tessellate(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _In_ ID2D1TessellationSink *tessellationSink 
-        ) CONST  
+        _In_ ID2D1TessellationSink *tessellationSink
+        ) CONST
     {
         return Tessellate(worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, tessellationSink);
     }
-    
+
     /// <summary>
     /// Tessellates a geometry into triangles.
     /// </summary>
@@ -1759,12 +1759,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     Tessellate(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _In_ ID2D1TessellationSink *tessellationSink 
-        ) CONST  
+        _In_ ID2D1TessellationSink *tessellationSink
+        ) CONST
     {
         return Tessellate(&worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, tessellationSink);
     }
-    
+
     /// <summary>
     /// Performs a combine operation between the two geometries to produce a resulting
     /// geometry.
@@ -1776,12 +1776,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         D2D1_COMBINE_MODE combineMode,
         CONST D2D1_MATRIX_3X2_F &inputGeometryTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return CombineWithGeometry(inputGeometry, combineMode, &inputGeometryTransform, flatteningTolerance, geometrySink);
     }
-    
+
     /// <summary>
     /// Performs a combine operation between the two geometries to produce a resulting
     /// geometry.
@@ -1792,12 +1792,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_ ID2D1Geometry *inputGeometry,
         D2D1_COMBINE_MODE combineMode,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *inputGeometryTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Performs a combine operation between the two geometries to produce a resulting
     /// geometry.
@@ -1808,12 +1808,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_ ID2D1Geometry *inputGeometry,
         D2D1_COMBINE_MODE combineMode,
         CONST D2D1_MATRIX_3X2_F &inputGeometryTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return CombineWithGeometry(inputGeometry, combineMode, &inputGeometryTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Computes the outline of the geometry. The result is written back into a
     /// simplified geometry sink.
@@ -1823,12 +1823,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     Outline(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Outline(&worldTransform, flatteningTolerance, geometrySink);
     }
-    
+
     /// <summary>
     /// Computes the outline of the geometry. The result is written back into a
     /// simplified geometry sink.
@@ -1837,12 +1837,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     Outline(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Outline(worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Computes the outline of the geometry. The result is written back into a
     /// simplified geometry sink.
@@ -1851,12 +1851,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     Outline(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Outline(&worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Computes the area of the geometry.
     /// </summary>
@@ -1865,12 +1865,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     ComputeArea(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ FLOAT *area 
-        ) CONST  
+        _Out_ FLOAT *area
+        ) CONST
     {
         return ComputeArea(&worldTransform, flatteningTolerance, area);
     }
-    
+
     /// <summary>
     /// Computes the area of the geometry.
     /// </summary>
@@ -1878,12 +1878,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     ComputeArea(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ FLOAT *area 
-        ) CONST  
+        _Out_ FLOAT *area
+        ) CONST
     {
         return ComputeArea(worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, area);
     }
-    
+
     /// <summary>
     /// Computes the area of the geometry.
     /// </summary>
@@ -1891,12 +1891,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     ComputeArea(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ FLOAT *area 
-        ) CONST  
+        _Out_ FLOAT *area
+        ) CONST
     {
         return ComputeArea(&worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, area);
     }
-    
+
     /// <summary>
     /// Computes the length of the geometry.
     /// </summary>
@@ -1905,12 +1905,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     ComputeLength(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _Out_ FLOAT *length 
-        ) CONST  
+        _Out_ FLOAT *length
+        ) CONST
     {
         return ComputeLength(&worldTransform, flatteningTolerance, length);
     }
-    
+
     /// <summary>
     /// Computes the length of the geometry.
     /// </summary>
@@ -1918,12 +1918,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     ComputeLength(
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ FLOAT *length 
-        ) CONST  
+        _Out_ FLOAT *length
+        ) CONST
     {
         return ComputeLength(worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, length);
     }
-    
+
     /// <summary>
     /// Computes the length of the geometry.
     /// </summary>
@@ -1931,12 +1931,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
     HRESULT
     ComputeLength(
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _Out_ FLOAT *length 
-        ) CONST  
+        _Out_ FLOAT *length
+        ) CONST
     {
         return ComputeLength(&worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, length);
     }
-    
+
     /// <summary>
     /// Computes the point and tangent a given distance along the path.
     /// </summary>
@@ -1947,12 +1947,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
         _Out_opt_ D2D1_POINT_2F *point,
-        _Out_opt_ D2D1_POINT_2F *unitTangentVector 
-        ) CONST  
+        _Out_opt_ D2D1_POINT_2F *unitTangentVector
+        ) CONST
     {
         return ComputePointAtLength(length, &worldTransform, flatteningTolerance, point, unitTangentVector);
     }
-    
+
     /// <summary>
     /// Computes the point and tangent a given distance along the path.
     /// </summary>
@@ -1962,12 +1962,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT length,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         _Out_opt_ D2D1_POINT_2F *point,
-        _Out_opt_ D2D1_POINT_2F *unitTangentVector 
-        ) CONST  
+        _Out_opt_ D2D1_POINT_2F *unitTangentVector
+        ) CONST
     {
         return ComputePointAtLength(length, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, point, unitTangentVector);
     }
-    
+
     /// <summary>
     /// Computes the point and tangent a given distance along the path.
     /// </summary>
@@ -1977,12 +1977,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT length,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         _Out_opt_ D2D1_POINT_2F *point,
-        _Out_opt_ D2D1_POINT_2F *unitTangentVector 
-        ) CONST  
+        _Out_opt_ D2D1_POINT_2F *unitTangentVector
+        ) CONST
     {
         return ComputePointAtLength(length, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, point, unitTangentVector);
     }
-    
+
     /// <summary>
     /// Get the geometry and widen it as well as apply an optional pen style.
     /// </summary>
@@ -1993,12 +1993,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Widen(strokeWidth, strokeStyle, &worldTransform, flatteningTolerance, geometrySink);
     }
-    
+
     /// <summary>
     /// Get the geometry and widen it as well as apply an optional pen style.
     /// </summary>
@@ -2008,12 +2008,12 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Widen(strokeWidth, strokeStyle, worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Get the geometry and widen it as well as apply an optional pen style.
     /// </summary>
@@ -2023,8 +2023,8 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
         FLOAT strokeWidth,
         _In_opt_ ID2D1StrokeStyle *strokeStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return Widen(strokeWidth, strokeStyle, &worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
@@ -2035,9 +2035,9 @@ interface DX_DECLARE_INTERFACE("2cd906a1-12e2-11dc-9fed-001143a055f9") ID2D1Geom
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a2-12e2-11dc-9fed-001143a055f9") ID2D1RectangleGeometry  : public ID2D1Geometry
 {
-    
+
     STDMETHOD_(void, GetRect)(
-        _Out_ D2D1_RECT_F *rect 
+        _Out_ D2D1_RECT_F *rect
         ) CONST PURE;
 }; // interface ID2D1RectangleGeometry
 
@@ -2046,9 +2046,9 @@ interface DX_DECLARE_INTERFACE("2cd906a2-12e2-11dc-9fed-001143a055f9") ID2D1Rect
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a3-12e2-11dc-9fed-001143a055f9") ID2D1RoundedRectangleGeometry  : public ID2D1Geometry
 {
-    
+
     STDMETHOD_(void, GetRoundedRect)(
-        _Out_ D2D1_ROUNDED_RECT *roundedRect 
+        _Out_ D2D1_ROUNDED_RECT *roundedRect
         ) CONST PURE;
 }; // interface ID2D1RoundedRectangleGeometry
 
@@ -2057,9 +2057,9 @@ interface DX_DECLARE_INTERFACE("2cd906a3-12e2-11dc-9fed-001143a055f9") ID2D1Roun
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a4-12e2-11dc-9fed-001143a055f9") ID2D1EllipseGeometry  : public ID2D1Geometry
 {
-    
+
     STDMETHOD_(void, GetEllipse)(
-        _Out_ D2D1_ELLIPSE *ellipse 
+        _Out_ D2D1_ELLIPSE *ellipse
         ) CONST PURE;
 }; // interface ID2D1EllipseGeometry
 
@@ -2068,16 +2068,16 @@ interface DX_DECLARE_INTERFACE("2cd906a4-12e2-11dc-9fed-001143a055f9") ID2D1Elli
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a6-12e2-11dc-9fed-001143a055f9") ID2D1GeometryGroup  : public ID2D1Geometry
 {
-    
+
     STDMETHOD_(D2D1_FILL_MODE, GetFillMode)(
         ) CONST PURE;
-    
+
     STDMETHOD_(UINT32, GetSourceGeometryCount)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetSourceGeometries)(
         _Out_writes_(geometriesCount) ID2D1Geometry **geometries,
-        UINT32 geometriesCount 
+        UINT32 geometriesCount
         ) CONST PURE;
 }; // interface ID2D1GeometryGroup
 
@@ -2086,13 +2086,13 @@ interface DX_DECLARE_INTERFACE("2cd906a6-12e2-11dc-9fed-001143a055f9") ID2D1Geom
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906bb-12e2-11dc-9fed-001143a055f9") ID2D1TransformedGeometry  : public ID2D1Geometry
 {
-    
+
     STDMETHOD_(void, GetSourceGeometry)(
-        _Outptr_ ID2D1Geometry **sourceGeometry 
+        _Outptr_ ID2D1Geometry **sourceGeometry
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetTransform)(
-        _Out_ D2D1_MATRIX_3X2_F *transform 
+        _Out_ D2D1_MATRIX_3X2_F *transform
         ) CONST PURE;
 }; // interface ID2D1TransformedGeometry
 
@@ -2102,34 +2102,34 @@ interface DX_DECLARE_INTERFACE("2cd906bb-12e2-11dc-9fed-001143a055f9") ID2D1Tran
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd9069e-12e2-11dc-9fed-001143a055f9") ID2D1SimplifiedGeometrySink  : public IUnknown
 {
-    
+
     STDMETHOD_(void, SetFillMode)(
-        D2D1_FILL_MODE fillMode 
+        D2D1_FILL_MODE fillMode
         ) PURE;
-    
+
     STDMETHOD_(void, SetSegmentFlags)(
-        D2D1_PATH_SEGMENT vertexFlags 
+        D2D1_PATH_SEGMENT vertexFlags
         ) PURE;
-    
+
     STDMETHOD_(void, BeginFigure)(
         D2D1_POINT_2F startPoint,
-        D2D1_FIGURE_BEGIN figureBegin 
+        D2D1_FIGURE_BEGIN figureBegin
         ) PURE;
-    
+
     STDMETHOD_(void, AddLines)(
         _In_reads_(pointsCount) CONST D2D1_POINT_2F *points,
-        UINT32 pointsCount 
+        UINT32 pointsCount
         ) PURE;
-    
+
     STDMETHOD_(void, AddBeziers)(
         _In_reads_(beziersCount) CONST D2D1_BEZIER_SEGMENT *beziers,
-        UINT32 beziersCount 
+        UINT32 beziersCount
         ) PURE;
-    
+
     STDMETHOD_(void, EndFigure)(
-        D2D1_FIGURE_END figureEnd 
+        D2D1_FIGURE_END figureEnd
         ) PURE;
-    
+
     STDMETHOD(Close)(
         ) PURE;
 }; // interface ID2D1SimplifiedGeometrySink
@@ -2140,51 +2140,51 @@ interface DX_DECLARE_INTERFACE("2cd9069e-12e2-11dc-9fed-001143a055f9") ID2D1Simp
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd9069f-12e2-11dc-9fed-001143a055f9") ID2D1GeometrySink  : public ID2D1SimplifiedGeometrySink
 {
-    
+
     STDMETHOD_(void, AddLine)(
-        D2D1_POINT_2F point 
+        D2D1_POINT_2F point
         ) PURE;
-    
+
     STDMETHOD_(void, AddBezier)(
-        _In_ CONST D2D1_BEZIER_SEGMENT *bezier 
+        _In_ CONST D2D1_BEZIER_SEGMENT *bezier
         ) PURE;
-    
+
     STDMETHOD_(void, AddQuadraticBezier)(
-        _In_ CONST D2D1_QUADRATIC_BEZIER_SEGMENT *bezier 
+        _In_ CONST D2D1_QUADRATIC_BEZIER_SEGMENT *bezier
         ) PURE;
-    
+
     STDMETHOD_(void, AddQuadraticBeziers)(
         _In_reads_(beziersCount) CONST D2D1_QUADRATIC_BEZIER_SEGMENT *beziers,
-        UINT32 beziersCount 
+        UINT32 beziersCount
         ) PURE;
-    
+
     STDMETHOD_(void, AddArc)(
-        _In_ CONST D2D1_ARC_SEGMENT *arc 
+        _In_ CONST D2D1_ARC_SEGMENT *arc
         ) PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     void
     AddBezier(
-        CONST D2D1_BEZIER_SEGMENT &bezier 
-        )  
+        CONST D2D1_BEZIER_SEGMENT &bezier
+        )
     {
         AddBezier(&bezier);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     AddQuadraticBezier(
-        CONST D2D1_QUADRATIC_BEZIER_SEGMENT &bezier 
-        )  
+        CONST D2D1_QUADRATIC_BEZIER_SEGMENT &bezier
+        )
     {
         AddQuadraticBezier(&bezier);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     AddArc(
-        CONST D2D1_ARC_SEGMENT &arc 
-        )  
+        CONST D2D1_ARC_SEGMENT &arc
+        )
     {
         AddArc(&arc);
     }
@@ -2195,12 +2195,12 @@ interface DX_DECLARE_INTERFACE("2cd9069f-12e2-11dc-9fed-001143a055f9") ID2D1Geom
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906c1-12e2-11dc-9fed-001143a055f9") ID2D1TessellationSink  : public IUnknown
 {
-    
+
     STDMETHOD_(void, AddTriangles)(
         _In_reads_(trianglesCount) CONST D2D1_TRIANGLE *triangles,
-        UINT32 trianglesCount 
+        UINT32 trianglesCount
         ) PURE;
-    
+
     STDMETHOD(Close)(
         ) PURE;
 }; // interface ID2D1TessellationSink
@@ -2210,28 +2210,28 @@ interface DX_DECLARE_INTERFACE("2cd906c1-12e2-11dc-9fed-001143a055f9") ID2D1Tess
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906a5-12e2-11dc-9fed-001143a055f9") ID2D1PathGeometry  : public ID2D1Geometry
 {
-    
+
     /// <summary>
     /// Opens a geometry sink that will be used to create this path geometry.
     /// </summary>
     STDMETHOD(Open)(
-        _COM_Outptr_ ID2D1GeometrySink **geometrySink 
+        _COM_Outptr_ ID2D1GeometrySink **geometrySink
         ) PURE;
-    
+
     /// <summary>
     /// Retrieve the contents of this geometry. The caller passes an implementation of a
     /// ID2D1GeometrySink interface to receive the data.
     /// </summary>
     STDMETHOD(Stream)(
-        _In_ ID2D1GeometrySink *geometrySink 
+        _In_ ID2D1GeometrySink *geometrySink
         ) CONST PURE;
-    
+
     STDMETHOD(GetSegmentCount)(
-        _Out_ UINT32 *count 
+        _Out_ UINT32 *count
         ) CONST PURE;
-    
+
     STDMETHOD(GetFigureCount)(
-        _Out_ UINT32 *count 
+        _Out_ UINT32 *count
         ) CONST PURE;
 }; // interface ID2D1PathGeometry
 
@@ -2240,12 +2240,12 @@ interface DX_DECLARE_INTERFACE("2cd906a5-12e2-11dc-9fed-001143a055f9") ID2D1Path
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd906c2-12e2-11dc-9fed-001143a055f9") ID2D1Mesh  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Opens the mesh for population.
     /// </summary>
     STDMETHOD(Open)(
-        _COM_Outptr_ ID2D1TessellationSink **tessellationSink 
+        _COM_Outptr_ ID2D1TessellationSink **tessellationSink
         ) PURE;
 }; // interface ID2D1Mesh
 
@@ -2254,7 +2254,7 @@ interface DX_DECLARE_INTERFACE("2cd906c2-12e2-11dc-9fed-001143a055f9") ID2D1Mesh
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd9069b-12e2-11dc-9fed-001143a055f9") ID2D1Layer  : public ID2D1Resource
 {
-    
+
     STDMETHOD_(D2D1_SIZE_F, GetSize)(
         ) CONST PURE;
 }; // interface ID2D1Layer
@@ -2265,42 +2265,42 @@ interface DX_DECLARE_INTERFACE("2cd9069b-12e2-11dc-9fed-001143a055f9") ID2D1Laye
 /// </summary>
 interface DX_DECLARE_INTERFACE("28506e39-ebf6-46a1-bb47-fd85565ab957") ID2D1DrawingStateBlock  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Retrieves the state currently contained within this state block resource.
     /// </summary>
     STDMETHOD_(void, GetDescription)(
-        _Out_ D2D1_DRAWING_STATE_DESCRIPTION *stateDescription 
+        _Out_ D2D1_DRAWING_STATE_DESCRIPTION *stateDescription
         ) CONST PURE;
-    
+
     /// <summary>
     /// Sets the state description of this state block resource.
     /// </summary>
     STDMETHOD_(void, SetDescription)(
-        _In_ CONST D2D1_DRAWING_STATE_DESCRIPTION *stateDescription 
+        _In_ CONST D2D1_DRAWING_STATE_DESCRIPTION *stateDescription
         ) PURE;
-    
+
     /// <summary>
     /// Sets the text rendering parameters of this state block resource.
     /// </summary>
     STDMETHOD_(void, SetTextRenderingParams)(
-        _In_opt_ IDWriteRenderingParams *textRenderingParams = NULL 
+        _In_opt_ IDWriteRenderingParams *textRenderingParams = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves the text rendering parameters contained within this state block
     /// resource. If a NULL text rendering parameter was specified, NULL will be
     /// returned.
     /// </summary>
     STDMETHOD_(void, GetTextRenderingParams)(
-        _Outptr_result_maybenull_ IDWriteRenderingParams **textRenderingParams 
+        _Outptr_result_maybenull_ IDWriteRenderingParams **textRenderingParams
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     void
     SetDescription(
-        CONST D2D1_DRAWING_STATE_DESCRIPTION &stateDescription 
-        )  
+        CONST D2D1_DRAWING_STATE_DESCRIPTION &stateDescription
+        )
     {
         SetDescription(&stateDescription);
     }
@@ -2313,7 +2313,7 @@ interface DX_DECLARE_INTERFACE("28506e39-ebf6-46a1-bb47-fd85565ab957") ID2D1Draw
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1RenderTarget  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Create a D2D bitmap by copying from memory, or create uninitialized.
     /// </summary>
@@ -2322,18 +2322,18 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_opt_ CONST void *srcData,
         UINT32 pitch,
         _In_ CONST D2D1_BITMAP_PROPERTIES *bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
+        _COM_Outptr_ ID2D1Bitmap **bitmap
         ) PURE;
-    
+
     /// <summary>
     /// Create a D2D bitmap by copying a WIC bitmap.
     /// </summary>
     STDMETHOD(CreateBitmapFromWicBitmap)(
         _In_ IWICBitmapSource *wicBitmapSource,
         _In_opt_ CONST D2D1_BITMAP_PROPERTIES *bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
+        _COM_Outptr_ ID2D1Bitmap **bitmap
         ) PURE;
-    
+
     /// <summary>
     /// Create a D2D bitmap by sharing bits from another resource. The bitmap must be
     /// compatible with the render target for the call to succeed. For example, an
@@ -2344,9 +2344,9 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_ REFIID riid,
         _Inout_ void *data,
         _In_opt_ CONST D2D1_BITMAP_PROPERTIES *bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
+        _COM_Outptr_ ID2D1Bitmap **bitmap
         ) PURE;
-    
+
     /// <summary>
     /// Creates a bitmap brush. The bitmap is scaled, rotated, skewed or tiled to fill
     /// or pen a geometry.
@@ -2355,15 +2355,15 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_opt_ ID2D1Bitmap *bitmap,
         _In_opt_ CONST D2D1_BITMAP_BRUSH_PROPERTIES *bitmapBrushProperties,
         _In_opt_ CONST D2D1_BRUSH_PROPERTIES *brushProperties,
-        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush 
+        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush
         ) PURE;
-    
+
     STDMETHOD(CreateSolidColorBrush)(
         _In_ CONST D2D1_COLOR_F *color,
         _In_opt_ CONST D2D1_BRUSH_PROPERTIES *brushProperties,
-        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush 
+        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush
         ) PURE;
-    
+
     /// <summary>
     /// A gradient stop collection represents a set of stops in an ideal unit length.
     /// This is the source resource for a linear gradient and radial gradient brush.
@@ -2377,23 +2377,23 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_range_(>=,1) UINT32 gradientStopsCount,
         D2D1_GAMMA colorInterpolationGamma,
         D2D1_EXTEND_MODE extendMode,
-        _COM_Outptr_ ID2D1GradientStopCollection **gradientStopCollection 
+        _COM_Outptr_ ID2D1GradientStopCollection **gradientStopCollection
         ) PURE;
-    
+
     STDMETHOD(CreateLinearGradientBrush)(
         _In_ CONST D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES *linearGradientBrushProperties,
         _In_opt_ CONST D2D1_BRUSH_PROPERTIES *brushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush 
+        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush
         ) PURE;
-    
+
     STDMETHOD(CreateRadialGradientBrush)(
         _In_ CONST D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES *radialGradientBrushProperties,
         _In_opt_ CONST D2D1_BRUSH_PROPERTIES *brushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush 
+        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush
         ) PURE;
-    
+
     /// <summary>
     /// Creates a bitmap render target whose bitmap can be used as a source for
     /// rendering in the API.
@@ -2417,9 +2417,9 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_opt_ CONST D2D1_SIZE_U *desiredPixelSize,
         _In_opt_ CONST D2D1_PIXEL_FORMAT *desiredFormat,
         D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS options,
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
         ) PURE;
-    
+
     /// <summary>
     /// Creates a layer resource that can be used on any target and which will resize
     /// under the covers if necessary.
@@ -2432,67 +2432,67 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     /// content when the layer is pushed.</param>
     STDMETHOD(CreateLayer)(
         _In_opt_ CONST D2D1_SIZE_F *size,
-        _COM_Outptr_ ID2D1Layer **layer 
+        _COM_Outptr_ ID2D1Layer **layer
         ) PURE;
-    
+
     /// <summary>
     /// Create a D2D mesh.
     /// </summary>
     STDMETHOD(CreateMesh)(
-        _COM_Outptr_ ID2D1Mesh **mesh 
+        _COM_Outptr_ ID2D1Mesh **mesh
         ) PURE;
-    
+
     STDMETHOD_(void, DrawLine)(
         D2D1_POINT_2F point0,
         D2D1_POINT_2F point1,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
         ) PURE;
-    
+
     STDMETHOD_(void, DrawRectangle)(
         _In_ CONST D2D1_RECT_F *rect,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
         ) PURE;
-    
+
     STDMETHOD_(void, FillRectangle)(
         _In_ CONST D2D1_RECT_F *rect,
-        _In_ ID2D1Brush *brush 
+        _In_ ID2D1Brush *brush
         ) PURE;
-    
+
     STDMETHOD_(void, DrawRoundedRectangle)(
         _In_ CONST D2D1_ROUNDED_RECT *roundedRect,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
         ) PURE;
-    
+
     STDMETHOD_(void, FillRoundedRectangle)(
         _In_ CONST D2D1_ROUNDED_RECT *roundedRect,
-        _In_ ID2D1Brush *brush 
+        _In_ ID2D1Brush *brush
         ) PURE;
-    
+
     STDMETHOD_(void, DrawEllipse)(
         _In_ CONST D2D1_ELLIPSE *ellipse,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
         ) PURE;
-    
+
     STDMETHOD_(void, FillEllipse)(
         _In_ CONST D2D1_ELLIPSE *ellipse,
-        _In_ ID2D1Brush *brush 
+        _In_ ID2D1Brush *brush
         ) PURE;
-    
+
     STDMETHOD_(void, DrawGeometry)(
         _In_ ID2D1Geometry *geometry,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
         ) PURE;
-    
+
     /// <param name="opacityBrush">An optionally specified opacity brush. Only the alpha
     /// channel of the corresponding brush will be sampled and will be applied to the
     /// entire fill of the geometry. If this brush is specified, the fill brush must be
@@ -2500,18 +2500,18 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     STDMETHOD_(void, FillGeometry)(
         _In_ ID2D1Geometry *geometry,
         _In_ ID2D1Brush *brush,
-        _In_opt_ ID2D1Brush *opacityBrush = NULL 
+        _In_opt_ ID2D1Brush *opacityBrush = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Fill a mesh. Since meshes can only render aliased content, the render target
     /// antialiasing mode must be set to aliased.
     /// </summary>
     STDMETHOD_(void, FillMesh)(
         _In_ ID2D1Mesh *mesh,
-        _In_ ID2D1Brush *brush 
+        _In_ ID2D1Brush *brush
         ) PURE;
-    
+
     /// <summary>
     /// Fill using the alpha channel of the supplied opacity mask bitmap. The brush
     /// opacity will be modulated by the mask. The render target antialiasing mode must
@@ -2522,17 +2522,17 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_ ID2D1Brush *brush,
         D2D1_OPACITY_MASK_CONTENT content,
         _In_opt_ CONST D2D1_RECT_F *destinationRectangle = NULL,
-        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL 
+        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL
         ) PURE;
-    
+
     STDMETHOD_(void, DrawBitmap)(
         _In_ ID2D1Bitmap *bitmap,
         _In_opt_ CONST D2D1_RECT_F *destinationRectangle = NULL,
         FLOAT opacity = 1.0f,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL 
+        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Draws the text within the given layout rectangle and by default also performs
     /// baseline snapping.
@@ -2544,9 +2544,9 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_ CONST D2D1_RECT_F *layoutRect,
         _In_ ID2D1Brush *defaultFillBrush,
         D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_NONE,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
         ) PURE;
-    
+
     /// <summary>
     /// Draw a text layout object. If the layout is not subsequently changed, this can
     /// be more efficient than DrawText when drawing the same layout repeatedly.
@@ -2559,68 +2559,68 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         D2D1_POINT_2F origin,
         _In_ IDWriteTextLayout *textLayout,
         _In_ ID2D1Brush *defaultFillBrush,
-        D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_NONE 
+        D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_NONE
         ) PURE;
-    
+
     STDMETHOD_(void, DrawGlyphRun)(
         D2D1_POINT_2F baselineOrigin,
         _In_ CONST DWRITE_GLYPH_RUN *glyphRun,
         _In_ ID2D1Brush *foregroundBrush,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
         ) PURE;
-    
+
     STDMETHOD_(void, SetTransform)(
-        _In_ CONST D2D1_MATRIX_3X2_F *transform 
+        _In_ CONST D2D1_MATRIX_3X2_F *transform
         ) PURE;
-    
+
     STDMETHOD_(void, GetTransform)(
-        _Out_ D2D1_MATRIX_3X2_F *transform 
+        _Out_ D2D1_MATRIX_3X2_F *transform
         ) CONST PURE;
-    
+
     STDMETHOD_(void, SetAntialiasMode)(
-        D2D1_ANTIALIAS_MODE antialiasMode 
+        D2D1_ANTIALIAS_MODE antialiasMode
         ) PURE;
-    
+
     STDMETHOD_(D2D1_ANTIALIAS_MODE, GetAntialiasMode)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, SetTextAntialiasMode)(
-        D2D1_TEXT_ANTIALIAS_MODE textAntialiasMode 
+        D2D1_TEXT_ANTIALIAS_MODE textAntialiasMode
         ) PURE;
-    
+
     STDMETHOD_(D2D1_TEXT_ANTIALIAS_MODE, GetTextAntialiasMode)(
         ) CONST PURE;
-    
+
     STDMETHOD_(void, SetTextRenderingParams)(
-        _In_opt_ IDWriteRenderingParams *textRenderingParams = NULL 
+        _In_opt_ IDWriteRenderingParams *textRenderingParams = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Retrieve the text render parameters. NOTE: If NULL is specified to
     /// SetTextRenderingParameters, NULL will be returned.
     /// </summary>
     STDMETHOD_(void, GetTextRenderingParams)(
-        _Outptr_result_maybenull_ IDWriteRenderingParams **textRenderingParams 
+        _Outptr_result_maybenull_ IDWriteRenderingParams **textRenderingParams
         ) CONST PURE;
-    
+
     /// <summary>
     /// Set a tag to correspond to the succeeding primitives. If an error occurs
     /// rendering a primitive, the tags can be returned from the Flush or EndDraw call.
     /// </summary>
     STDMETHOD_(void, SetTags)(
         D2D1_TAG tag1,
-        D2D1_TAG tag2 
+        D2D1_TAG tag2
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves the currently set tags. This does not retrieve the tags corresponding
     /// to any primitive that is in error.
     /// </summary>
     STDMETHOD_(void, GetTags)(
         _Out_opt_ D2D1_TAG *tag1 = NULL,
-        _Out_opt_ D2D1_TAG *tag2 = NULL 
+        _Out_opt_ D2D1_TAG *tag2 = NULL
         ) CONST PURE;
-    
+
     /// <summary>
     /// Start a layer of drawing calls. The way in which the layer must be resolved is
     /// specified first as well as the logical resource that stores the layer
@@ -2630,35 +2630,35 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     /// </summary>
     STDMETHOD_(void, PushLayer)(
         _In_ CONST D2D1_LAYER_PARAMETERS *layerParameters,
-        _In_opt_ ID2D1Layer *layer 
+        _In_opt_ ID2D1Layer *layer
         ) PURE;
-    
+
     /// <summary>
     /// Ends a layer that was defined with particular layer resources.
     /// </summary>
     STDMETHOD_(void, PopLayer)(
         ) PURE;
-    
+
     STDMETHOD(Flush)(
         _Out_opt_ D2D1_TAG *tag1 = NULL,
-        _Out_opt_ D2D1_TAG *tag2 = NULL 
+        _Out_opt_ D2D1_TAG *tag2 = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Gets the current drawing state and saves it into the supplied
     /// IDrawingStatckBlock.
     /// </summary>
     STDMETHOD_(void, SaveDrawingState)(
-        _Inout_ ID2D1DrawingStateBlock *drawingStateBlock 
+        _Inout_ ID2D1DrawingStateBlock *drawingStateBlock
         ) CONST PURE;
-    
+
     /// <summary>
     /// Copies the state stored in the block interface.
     /// </summary>
     STDMETHOD_(void, RestoreDrawingState)(
-        _In_ ID2D1DrawingStateBlock *drawingStateBlock 
+        _In_ ID2D1DrawingStateBlock *drawingStateBlock
         ) PURE;
-    
+
     /// <summary>
     /// Pushes a clip. The clip can be antialiased. The clip must be axis aligned. If
     /// the current world transform is not axis preserving, then the bounding box of the
@@ -2667,35 +2667,35 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     /// </summary>
     STDMETHOD_(void, PushAxisAlignedClip)(
         _In_ CONST D2D1_RECT_F *clipRect,
-        D2D1_ANTIALIAS_MODE antialiasMode 
+        D2D1_ANTIALIAS_MODE antialiasMode
         ) PURE;
-    
+
     STDMETHOD_(void, PopAxisAlignedClip)(
         ) PURE;
-    
+
     STDMETHOD_(void, Clear)(
-        _In_opt_ CONST D2D1_COLOR_F *clearColor = NULL 
+        _In_opt_ CONST D2D1_COLOR_F *clearColor = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Start drawing on this render target. Draw calls can only be issued between a
     /// BeginDraw and EndDraw call.
     /// </summary>
     STDMETHOD_(void, BeginDraw)(
         ) PURE;
-    
+
     /// <summary>
     /// Ends drawing on the render target, error results can be retrieved at this time,
     /// or when calling flush.
     /// </summary>
     STDMETHOD(EndDraw)(
         _Out_opt_ D2D1_TAG *tag1 = NULL,
-        _Out_opt_ D2D1_TAG *tag2 = NULL 
+        _Out_opt_ D2D1_TAG *tag2 = NULL
         ) PURE;
-    
+
     STDMETHOD_(D2D1_PIXEL_FORMAT, GetPixelFormat)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Sets the DPI on the render target. This results in the render target being
     /// interpreted to a different scale. Neither DPI can be negative. If zero is
@@ -2704,36 +2704,36 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     /// </summary>
     STDMETHOD_(void, SetDpi)(
         FLOAT dpiX,
-        FLOAT dpiY 
+        FLOAT dpiY
         ) PURE;
-    
+
     /// <summary>
     /// Return the current DPI from the target.
     /// </summary>
     STDMETHOD_(void, GetDpi)(
         _Out_ FLOAT *dpiX,
-        _Out_ FLOAT *dpiY 
+        _Out_ FLOAT *dpiY
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns the size of the render target in DIPs.
     /// </summary>
     STDMETHOD_(D2D1_SIZE_F, GetSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns the size of the render target in pixels.
     /// </summary>
     STDMETHOD_(D2D1_SIZE_U, GetPixelSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns the maximum bitmap and render target size that is guaranteed to be
     /// supported by the render target.
     /// </summary>
     STDMETHOD_(UINT32, GetMaximumBitmapSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Returns true if the given properties are supported by this render target. The
     /// DPI is ignored. NOTE: If the render target type is software, then neither
@@ -2741,9 +2741,9 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     /// supported.
     /// </summary>
     STDMETHOD_(BOOL, IsSupported)(
-        _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties 
+        _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateBitmap(
@@ -2751,23 +2751,23 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_opt_ CONST void *srcData,
         UINT32 pitch,
         CONST D2D1_BITMAP_PROPERTIES &bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
-        )  
+        _COM_Outptr_ ID2D1Bitmap **bitmap
+        )
     {
         return CreateBitmap(size, srcData, pitch, &bitmapProperties, bitmap);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateBitmap(
         D2D1_SIZE_U size,
         CONST D2D1_BITMAP_PROPERTIES &bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
-        )  
+        _COM_Outptr_ ID2D1Bitmap **bitmap
+        )
     {
         return CreateBitmap(size, NULL, 0, &bitmapProperties, bitmap);
     }
-    
+
     /// <summary>
     /// Create a D2D bitmap by copying a WIC bitmap.
     /// </summary>
@@ -2776,12 +2776,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     CreateBitmapFromWicBitmap(
         _In_ IWICBitmapSource *wicBitmapSource,
         CONST D2D1_BITMAP_PROPERTIES &bitmapProperties,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
-        )  
+        _COM_Outptr_ ID2D1Bitmap **bitmap
+        )
     {
         return CreateBitmapFromWicBitmap(wicBitmapSource, &bitmapProperties, bitmap);
     }
-    
+
     /// <summary>
     /// Create a D2D bitmap by copying a WIC bitmap.
     /// </summary>
@@ -2789,12 +2789,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     HRESULT
     CreateBitmapFromWicBitmap(
         _In_ IWICBitmapSource *wicBitmapSource,
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
-        )  
+        _COM_Outptr_ ID2D1Bitmap **bitmap
+        )
     {
         return CreateBitmapFromWicBitmap(wicBitmapSource, NULL, bitmap);
     }
-    
+
     /// <summary>
     /// Creates a bitmap brush. The bitmap is scaled, rotated, skewed or tiled to fill
     /// or pen a geometry.
@@ -2803,12 +2803,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     HRESULT
     CreateBitmapBrush(
         _In_opt_ ID2D1Bitmap *bitmap,
-        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush 
-        )  
+        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush
+        )
     {
         return CreateBitmapBrush(bitmap, NULL, NULL, bitmapBrush);
     }
-    
+
     /// <summary>
     /// Creates a bitmap brush. The bitmap is scaled, rotated, skewed or tiled to fill
     /// or pen a geometry.
@@ -2818,12 +2818,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
     CreateBitmapBrush(
         _In_opt_ ID2D1Bitmap *bitmap,
         CONST D2D1_BITMAP_BRUSH_PROPERTIES &bitmapBrushProperties,
-        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush 
-        )  
+        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush
+        )
     {
         return CreateBitmapBrush(bitmap, &bitmapBrushProperties, NULL, bitmapBrush);
     }
-    
+
     /// <summary>
     /// Creates a bitmap brush. The bitmap is scaled, rotated, skewed or tiled to fill
     /// or pen a geometry.
@@ -2834,132 +2834,132 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_opt_ ID2D1Bitmap *bitmap,
         CONST D2D1_BITMAP_BRUSH_PROPERTIES &bitmapBrushProperties,
         CONST D2D1_BRUSH_PROPERTIES &brushProperties,
-        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush 
-        )  
+        _COM_Outptr_ ID2D1BitmapBrush **bitmapBrush
+        )
     {
         return CreateBitmapBrush(bitmap, &bitmapBrushProperties, &brushProperties, bitmapBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateSolidColorBrush(
         CONST D2D1_COLOR_F &color,
-        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush 
-        )  
+        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush
+        )
     {
         return CreateSolidColorBrush(&color, NULL, solidColorBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateSolidColorBrush(
         CONST D2D1_COLOR_F &color,
         CONST D2D1_BRUSH_PROPERTIES &brushProperties,
-        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush 
-        )  
+        _COM_Outptr_ ID2D1SolidColorBrush **solidColorBrush
+        )
     {
         return CreateSolidColorBrush(&color, &brushProperties, solidColorBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateGradientStopCollection(
         _In_reads_(gradientStopsCount) CONST D2D1_GRADIENT_STOP *gradientStops,
         UINT32 gradientStopsCount,
-        _COM_Outptr_ ID2D1GradientStopCollection **gradientStopCollection 
-        )  
+        _COM_Outptr_ ID2D1GradientStopCollection **gradientStopCollection
+        )
     {
         return CreateGradientStopCollection(gradientStops, gradientStopsCount, D2D1_GAMMA_2_2, D2D1_EXTEND_MODE_CLAMP, gradientStopCollection);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateLinearGradientBrush(
         CONST D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES &linearGradientBrushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush 
-        )  
+        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush
+        )
     {
         return CreateLinearGradientBrush(&linearGradientBrushProperties, NULL, gradientStopCollection, linearGradientBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateLinearGradientBrush(
         CONST D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES &linearGradientBrushProperties,
         CONST D2D1_BRUSH_PROPERTIES &brushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush 
-        )  
+        _COM_Outptr_ ID2D1LinearGradientBrush **linearGradientBrush
+        )
     {
         return CreateLinearGradientBrush(&linearGradientBrushProperties, &brushProperties, gradientStopCollection, linearGradientBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateRadialGradientBrush(
         CONST D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES &radialGradientBrushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush 
-        )  
+        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush
+        )
     {
         return CreateRadialGradientBrush(&radialGradientBrushProperties, NULL, gradientStopCollection, radialGradientBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateRadialGradientBrush(
         CONST D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES &radialGradientBrushProperties,
         CONST D2D1_BRUSH_PROPERTIES &brushProperties,
         _In_ ID2D1GradientStopCollection *gradientStopCollection,
-        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush 
-        )  
+        _COM_Outptr_ ID2D1RadialGradientBrush **radialGradientBrush
+        )
     {
         return CreateRadialGradientBrush(&radialGradientBrushProperties, &brushProperties, gradientStopCollection, radialGradientBrush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateCompatibleRenderTarget(
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
+        )
     {
         return CreateCompatibleRenderTarget(NULL, NULL, NULL, D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE, bitmapRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateCompatibleRenderTarget(
         D2D1_SIZE_F desiredSize,
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
+        )
     {
         return CreateCompatibleRenderTarget(&desiredSize, NULL, NULL, D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE, bitmapRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateCompatibleRenderTarget(
         D2D1_SIZE_F desiredSize,
         D2D1_SIZE_U desiredPixelSize,
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
+        )
     {
         return CreateCompatibleRenderTarget(&desiredSize, &desiredPixelSize, NULL, D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE, bitmapRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateCompatibleRenderTarget(
         D2D1_SIZE_F desiredSize,
         D2D1_SIZE_U desiredPixelSize,
         D2D1_PIXEL_FORMAT desiredFormat,
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
+        )
     {
         return CreateCompatibleRenderTarget(&desiredSize, &desiredPixelSize, &desiredFormat, D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE, bitmapRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateCompatibleRenderTarget(
@@ -2967,97 +2967,97 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         D2D1_SIZE_U desiredPixelSize,
         D2D1_PIXEL_FORMAT desiredFormat,
         D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS options,
-        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1BitmapRenderTarget **bitmapRenderTarget
+        )
     {
         return CreateCompatibleRenderTarget(&desiredSize, &desiredPixelSize, &desiredFormat, options, bitmapRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateLayer(
         D2D1_SIZE_F size,
-        _COM_Outptr_ ID2D1Layer **layer 
-        )  
+        _COM_Outptr_ ID2D1Layer **layer
+        )
     {
         return CreateLayer(&size, layer);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateLayer(
-        _COM_Outptr_ ID2D1Layer **layer 
-        )  
+        _COM_Outptr_ ID2D1Layer **layer
+        )
     {
         return CreateLayer(NULL, layer);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     DrawRectangle(
         CONST D2D1_RECT_F &rect,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
-        )  
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
+        )
     {
         DrawRectangle(&rect, brush, strokeWidth, strokeStyle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     FillRectangle(
         CONST D2D1_RECT_F &rect,
-        _In_ ID2D1Brush *brush 
-        )  
+        _In_ ID2D1Brush *brush
+        )
     {
         FillRectangle(&rect, brush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     DrawRoundedRectangle(
         CONST D2D1_ROUNDED_RECT &roundedRect,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
-        )  
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
+        )
     {
         DrawRoundedRectangle(&roundedRect, brush, strokeWidth, strokeStyle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     FillRoundedRectangle(
         CONST D2D1_ROUNDED_RECT &roundedRect,
-        _In_ ID2D1Brush *brush 
-        )  
+        _In_ ID2D1Brush *brush
+        )
     {
         FillRoundedRectangle(&roundedRect, brush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     DrawEllipse(
         CONST D2D1_ELLIPSE &ellipse,
         _In_ ID2D1Brush *brush,
         FLOAT strokeWidth = 1.0f,
-        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL 
-        )  
+        _In_opt_ ID2D1StrokeStyle *strokeStyle = NULL
+        )
     {
         DrawEllipse(&ellipse, brush, strokeWidth, strokeStyle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     FillEllipse(
         CONST D2D1_ELLIPSE &ellipse,
-        _In_ ID2D1Brush *brush 
-        )  
+        _In_ ID2D1Brush *brush
+        )
     {
         FillEllipse(&ellipse, brush);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     FillOpacityMask(
@@ -3065,12 +3065,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         _In_ ID2D1Brush *brush,
         D2D1_OPACITY_MASK_CONTENT content,
         CONST D2D1_RECT_F &destinationRectangle,
-        CONST D2D1_RECT_F &sourceRectangle 
-        )  
+        CONST D2D1_RECT_F &sourceRectangle
+        )
     {
         FillOpacityMask(opacityMask, brush, content, &destinationRectangle, &sourceRectangle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     DrawBitmap(
@@ -3078,12 +3078,12 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         CONST D2D1_RECT_F &destinationRectangle,
         FLOAT opacity = 1.0f,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL 
-        )  
+        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL
+        )
     {
         DrawBitmap(bitmap, &destinationRectangle, opacity, interpolationMode, sourceRectangle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     DrawBitmap(
@@ -3091,50 +3091,50 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         CONST D2D1_RECT_F &destinationRectangle,
         FLOAT opacity,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode,
-        CONST D2D1_RECT_F &sourceRectangle 
-        )  
+        CONST D2D1_RECT_F &sourceRectangle
+        )
     {
         DrawBitmap(bitmap, &destinationRectangle, opacity, interpolationMode, &sourceRectangle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     SetTransform(
-        CONST D2D1_MATRIX_3X2_F &transform 
-        )  
+        CONST D2D1_MATRIX_3X2_F &transform
+        )
     {
         SetTransform(&transform);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     PushLayer(
         CONST D2D1_LAYER_PARAMETERS &layerParameters,
-        _In_opt_ ID2D1Layer *layer 
-        )  
+        _In_opt_ ID2D1Layer *layer
+        )
     {
         PushLayer(&layerParameters, layer);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     PushAxisAlignedClip(
         CONST D2D1_RECT_F &clipRect,
-        D2D1_ANTIALIAS_MODE antialiasMode 
-        )  
+        D2D1_ANTIALIAS_MODE antialiasMode
+        )
     {
         return PushAxisAlignedClip(&clipRect, antialiasMode);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     void
     Clear(
-        CONST D2D1_COLOR_F &clearColor 
-        )  
+        CONST D2D1_COLOR_F &clearColor
+        )
     {
         return Clear(&clearColor);
     }
-    
+
     /// <summary>
     /// Draws the text within the given layout rectangle and by default also performs
     /// baseline snapping.
@@ -3148,17 +3148,17 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
         CONST D2D1_RECT_F &layoutRect,
         _In_ ID2D1Brush *defaultFillBrush,
         D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_NONE,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
-        )  
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
+        )
     {
         return DrawText(string, stringLength, textFormat, &layoutRect, defaultFillBrush, options, measuringMode);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     BOOL
     IsSupported(
-        CONST D2D1_RENDER_TARGET_PROPERTIES &renderTargetProperties 
-        ) CONST  
+        CONST D2D1_RENDER_TARGET_PROPERTIES &renderTargetProperties
+        ) CONST
     {
         return IsSupported(&renderTargetProperties);
     }
@@ -3170,9 +3170,9 @@ interface DX_DECLARE_INTERFACE("2cd90694-12e2-11dc-9fed-001143a055f9") ID2D1Rend
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd90695-12e2-11dc-9fed-001143a055f9") ID2D1BitmapRenderTarget  : public ID2D1RenderTarget
 {
-    
+
     STDMETHOD(GetBitmap)(
-        _COM_Outptr_ ID2D1Bitmap **bitmap 
+        _COM_Outptr_ ID2D1Bitmap **bitmap
         ) PURE;
 }; // interface ID2D1BitmapRenderTarget
 
@@ -3181,10 +3181,10 @@ interface DX_DECLARE_INTERFACE("2cd90695-12e2-11dc-9fed-001143a055f9") ID2D1Bitm
 /// </summary>
 interface DX_DECLARE_INTERFACE("2cd90698-12e2-11dc-9fed-001143a055f9") ID2D1HwndRenderTarget  : public ID2D1RenderTarget
 {
-    
+
     STDMETHOD_(D2D1_WINDOW_STATE, CheckWindowState)(
         ) PURE;
-    
+
     /// <summary>
     /// Resize the buffer underlying the render target. This operation might fail if
     /// there is insufficient video memory or system memory, or if the render target is
@@ -3194,17 +3194,17 @@ interface DX_DECLARE_INTERFACE("2cd90698-12e2-11dc-9fed-001143a055f9") ID2D1Hwnd
     /// be returned from Resize.
     /// </summary>
     STDMETHOD(Resize)(
-        _In_ CONST D2D1_SIZE_U *pixelSize 
+        _In_ CONST D2D1_SIZE_U *pixelSize
         ) PURE;
-    
+
     STDMETHOD_(HWND, GetHwnd)(
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     Resize(
-        CONST D2D1_SIZE_U &pixelSize 
-        )  
+        CONST D2D1_SIZE_U &pixelSize
+        )
     {
         return Resize(&pixelSize);
     }
@@ -3221,14 +3221,14 @@ interface DX_DECLARE_INTERFACE("2cd90698-12e2-11dc-9fed-001143a055f9") ID2D1Hwnd
 /// </summary>
 interface DX_DECLARE_INTERFACE("e0db51c3-6f77-4bae-b3d5-e47509b35838") ID2D1GdiInteropRenderTarget  : public IUnknown
 {
-    
+
     STDMETHOD(GetDC)(
         D2D1_DC_INITIALIZE_MODE mode,
-        _Out_ HDC *hdc 
+        _Out_ HDC *hdc
         ) PURE;
-    
+
     STDMETHOD(ReleaseDC)(
-        _In_opt_ CONST RECT *update 
+        _In_opt_ CONST RECT *update
         ) PURE;
 }; // interface ID2D1GdiInteropRenderTarget
 
@@ -3243,10 +3243,10 @@ interface DX_DECLARE_INTERFACE("e0db51c3-6f77-4bae-b3d5-e47509b35838") ID2D1GdiI
 /// </summary>
 interface DX_DECLARE_INTERFACE("1c51bc64-de61-46fd-9899-63a5d8f03950") ID2D1DCRenderTarget  : public ID2D1RenderTarget
 {
-    
+
     STDMETHOD(BindDC)(
         _In_ CONST HDC hDC,
-        _In_ CONST RECT *pSubRect 
+        _In_ CONST RECT *pSubRect
         ) PURE;
 }; // interface ID2D1DCRenderTarget
 
@@ -3255,37 +3255,37 @@ interface DX_DECLARE_INTERFACE("1c51bc64-de61-46fd-9899-63a5d8f03950") ID2D1DCRe
 /// </summary>
 interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Factory  : public IUnknown
 {
-    
+
     /// <summary>
     /// Cause the factory to refresh any system metrics that it might have been snapped
     /// on factory creation.
     /// </summary>
     STDMETHOD(ReloadSystemMetrics)(
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves the current desktop DPI. To refresh this, call ReloadSystemMetrics.
     /// </summary>
     STDMETHOD_(void, GetDesktopDpi)(
         _Out_ FLOAT *dpiX,
-        _Out_ FLOAT *dpiY 
+        _Out_ FLOAT *dpiY
         ) PURE;
-    
+
     STDMETHOD(CreateRectangleGeometry)(
         _In_ CONST D2D1_RECT_F *rectangle,
-        _COM_Outptr_ ID2D1RectangleGeometry **rectangleGeometry 
+        _COM_Outptr_ ID2D1RectangleGeometry **rectangleGeometry
         ) PURE;
-    
+
     STDMETHOD(CreateRoundedRectangleGeometry)(
         _In_ CONST D2D1_ROUNDED_RECT *roundedRectangle,
-        _COM_Outptr_ ID2D1RoundedRectangleGeometry **roundedRectangleGeometry 
+        _COM_Outptr_ ID2D1RoundedRectangleGeometry **roundedRectangleGeometry
         ) PURE;
-    
+
     STDMETHOD(CreateEllipseGeometry)(
         _In_ CONST D2D1_ELLIPSE *ellipse,
-        _COM_Outptr_ ID2D1EllipseGeometry **ellipseGeometry 
+        _COM_Outptr_ ID2D1EllipseGeometry **ellipseGeometry
         ) PURE;
-    
+
     /// <summary>
     /// Create a geometry which holds other geometries.
     /// </summary>
@@ -3293,23 +3293,23 @@ interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Fact
         D2D1_FILL_MODE fillMode,
         _In_reads_(geometriesCount) ID2D1Geometry **geometries,
         UINT32 geometriesCount,
-        _COM_Outptr_ ID2D1GeometryGroup **geometryGroup 
+        _COM_Outptr_ ID2D1GeometryGroup **geometryGroup
         ) PURE;
-    
+
     STDMETHOD(CreateTransformedGeometry)(
         _In_ ID2D1Geometry *sourceGeometry,
         _In_ CONST D2D1_MATRIX_3X2_F *transform,
-        _COM_Outptr_ ID2D1TransformedGeometry **transformedGeometry 
+        _COM_Outptr_ ID2D1TransformedGeometry **transformedGeometry
         ) PURE;
-    
+
     /// <summary>
     /// Returns an initially empty path geometry interface. A geometry sink is created
     /// off the interface to populate it.
     /// </summary>
     STDMETHOD(CreatePathGeometry)(
-        _COM_Outptr_ ID2D1PathGeometry **pathGeometry 
+        _COM_Outptr_ ID2D1PathGeometry **pathGeometry
         ) PURE;
-    
+
     /// <summary>
     /// Allows a non-default stroke style to be specified for a given geometry at draw
     /// time.
@@ -3318,9 +3318,9 @@ interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Fact
         _In_ CONST D2D1_STROKE_STYLE_PROPERTIES *strokeStyleProperties,
         _In_reads_opt_(dashesCount) CONST FLOAT *dashes,
         UINT32 dashesCount,
-        _COM_Outptr_ ID2D1StrokeStyle **strokeStyle 
+        _COM_Outptr_ ID2D1StrokeStyle **strokeStyle
         ) PURE;
-    
+
     /// <summary>
     /// Creates a new drawing state block, this can be used in subsequent
     /// SaveDrawingState and RestoreDrawingState operations on the render target.
@@ -3328,27 +3328,27 @@ interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Fact
     STDMETHOD(CreateDrawingStateBlock)(
         _In_opt_ CONST D2D1_DRAWING_STATE_DESCRIPTION *drawingStateDescription,
         _In_opt_ IDWriteRenderingParams *textRenderingParams,
-        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock 
+        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock
         ) PURE;
-    
+
     /// <summary>
     /// Creates a render target which is a source of bitmaps.
     /// </summary>
     STDMETHOD(CreateWicBitmapRenderTarget)(
         _In_ IWICBitmap *target,
         _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties,
-        _COM_Outptr_ ID2D1RenderTarget **renderTarget 
+        _COM_Outptr_ ID2D1RenderTarget **renderTarget
         ) PURE;
-    
+
     /// <summary>
     /// Creates a render target that appears on the display.
     /// </summary>
     STDMETHOD(CreateHwndRenderTarget)(
         _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties,
         _In_ CONST D2D1_HWND_RENDER_TARGET_PROPERTIES *hwndRenderTargetProperties,
-        _COM_Outptr_ ID2D1HwndRenderTarget **hwndRenderTarget 
+        _COM_Outptr_ ID2D1HwndRenderTarget **hwndRenderTarget
         ) PURE;
-    
+
     /// <summary>
     /// Creates a render target that draws to a DXGI Surface. The device that owns the
     /// surface is used for rendering.
@@ -3356,118 +3356,118 @@ interface DX_DECLARE_INTERFACE("06152247-6f50-465a-9245-118bfd3b6007") ID2D1Fact
     STDMETHOD(CreateDxgiSurfaceRenderTarget)(
         _In_ IDXGISurface *dxgiSurface,
         _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties,
-        _COM_Outptr_ ID2D1RenderTarget **renderTarget 
+        _COM_Outptr_ ID2D1RenderTarget **renderTarget
         ) PURE;
-    
+
     /// <summary>
     /// Creates a render target that draws to a GDI device context.
     /// </summary>
     STDMETHOD(CreateDCRenderTarget)(
         _In_ CONST D2D1_RENDER_TARGET_PROPERTIES *renderTargetProperties,
-        _COM_Outptr_ ID2D1DCRenderTarget **dcRenderTarget 
+        _COM_Outptr_ ID2D1DCRenderTarget **dcRenderTarget
         ) PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateRectangleGeometry(
         CONST D2D1_RECT_F &rectangle,
-        _COM_Outptr_ ID2D1RectangleGeometry **rectangleGeometry 
-        )  
+        _COM_Outptr_ ID2D1RectangleGeometry **rectangleGeometry
+        )
     {
         return CreateRectangleGeometry(&rectangle, rectangleGeometry);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateRoundedRectangleGeometry(
         CONST D2D1_ROUNDED_RECT &roundedRectangle,
-        _COM_Outptr_ ID2D1RoundedRectangleGeometry **roundedRectangleGeometry 
-        )  
+        _COM_Outptr_ ID2D1RoundedRectangleGeometry **roundedRectangleGeometry
+        )
     {
         return CreateRoundedRectangleGeometry(&roundedRectangle, roundedRectangleGeometry);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateEllipseGeometry(
         CONST D2D1_ELLIPSE &ellipse,
-        _COM_Outptr_ ID2D1EllipseGeometry **ellipseGeometry 
-        )  
+        _COM_Outptr_ ID2D1EllipseGeometry **ellipseGeometry
+        )
     {
         return CreateEllipseGeometry(&ellipse, ellipseGeometry);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateTransformedGeometry(
         _In_ ID2D1Geometry *sourceGeometry,
         CONST D2D1_MATRIX_3X2_F &transform,
-        _COM_Outptr_ ID2D1TransformedGeometry **transformedGeometry 
-        )  
+        _COM_Outptr_ ID2D1TransformedGeometry **transformedGeometry
+        )
     {
         return CreateTransformedGeometry(sourceGeometry, &transform, transformedGeometry);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateStrokeStyle(
         CONST D2D1_STROKE_STYLE_PROPERTIES &strokeStyleProperties,
         _In_reads_opt_(dashesCount) CONST FLOAT *dashes,
         UINT32 dashesCount,
-        _COM_Outptr_ ID2D1StrokeStyle **strokeStyle 
-        )  
+        _COM_Outptr_ ID2D1StrokeStyle **strokeStyle
+        )
     {
         return CreateStrokeStyle(&strokeStyleProperties, dashes, dashesCount, strokeStyle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateDrawingStateBlock(
         CONST D2D1_DRAWING_STATE_DESCRIPTION &drawingStateDescription,
-        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock 
-        )  
+        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock
+        )
     {
         return CreateDrawingStateBlock(&drawingStateDescription, NULL, drawingStateBlock);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateDrawingStateBlock(
-        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock 
-        )  
+        _COM_Outptr_ ID2D1DrawingStateBlock **drawingStateBlock
+        )
     {
         return CreateDrawingStateBlock(NULL, NULL, drawingStateBlock);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateWicBitmapRenderTarget(
         _In_ IWICBitmap *target,
         CONST D2D1_RENDER_TARGET_PROPERTIES &renderTargetProperties,
-        _COM_Outptr_ ID2D1RenderTarget **renderTarget 
-        )  
+        _COM_Outptr_ ID2D1RenderTarget **renderTarget
+        )
     {
         return CreateWicBitmapRenderTarget(target, &renderTargetProperties, renderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateHwndRenderTarget(
         CONST D2D1_RENDER_TARGET_PROPERTIES &renderTargetProperties,
         CONST D2D1_HWND_RENDER_TARGET_PROPERTIES &hwndRenderTargetProperties,
-        _COM_Outptr_ ID2D1HwndRenderTarget **hwndRenderTarget 
-        )  
+        _COM_Outptr_ ID2D1HwndRenderTarget **hwndRenderTarget
+        )
     {
         return CreateHwndRenderTarget(&renderTargetProperties, &hwndRenderTargetProperties, hwndRenderTarget);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateDxgiSurfaceRenderTarget(
         _In_ IDXGISurface *dxgiSurface,
         CONST D2D1_RENDER_TARGET_PROPERTIES &renderTargetProperties,
-        _COM_Outptr_ ID2D1RenderTarget **renderTarget 
-        )  
+        _COM_Outptr_ ID2D1RenderTarget **renderTarget
+        )
     {
         return CreateDxgiSurfaceRenderTarget(dxgiSurface, &renderTargetProperties, renderTarget);
     }
@@ -3560,7 +3560,7 @@ typedef interface ID2D1Factory ID2D1Factory;
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-           
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -3611,7 +3611,6 @@ extern "C"
 #define D2D1FORCEINLINE FORCEINLINE
 #endif // #ifndef D2D1FORCEINLINE
 
-        
 #include <d2d1helper.h>
 
 #ifndef D2D_USE_C_DEFINITIONS

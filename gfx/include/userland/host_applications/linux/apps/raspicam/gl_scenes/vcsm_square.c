@@ -117,7 +117,6 @@ static EGLImageKHR eglFbImage;
 static GLuint fb_tex_name;
 static GLuint fb_name;
 
-
 // VCSM buffer dimensions must be a power of two. Use glViewPort to draw NPOT
 // rectangles within the VCSM buffer.
 static int fb_width = 1024;

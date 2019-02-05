@@ -89,7 +89,6 @@ typedef struct {
 
 static FILESYS_SERVICE_T vc_filesys_client;
 
-
 /******************************************************************************
 Static functions.
 ******************************************************************************/
@@ -122,8 +121,6 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes );
 static void *filesys_task_func(void *arg);
 
 static void filesys_callback( void *callback_param, VCHI_CALLBACK_REASON_T reason, void *msg_handle );
-
-
 
 #ifdef PRINTF
 #ifdef WIN32
@@ -241,7 +238,6 @@ static void *filesys_task_func(void *arg)
    return 0;
 }
 
-
 /******************************************************************************
 NAME
    filesys_callback
@@ -344,7 +340,7 @@ static int vc_filesys_single_param(uint32_t param, uint32_t fn)
       vc_filesys_client.fileserv_msg.params[0] = param;
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, fn, 4) == FILESERV_RESP_OK)
          success = 0;
-      
+
       lock_release();
    }
 
@@ -374,7 +370,7 @@ static int vc_filesys_single_string(uint32_t param, const char *str, uint32_t fn
       vc_filesys_client.fileserv_msg.params[0] = param;
       /* coverity[buffer_size_warning] - the length of str has already been checked */
       strncpy((char*)vc_filesys_client.fileserv_msg.data, str, FILESERV_MAX_DATA);
-    
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, fn, len+1+16) == FILESERV_RESP_OK)
       {
          if(return_param)
@@ -410,7 +406,6 @@ int vc_filesys_close(int fildes)
    return vc_filesys_single_param((uint32_t) fildes, VC_FILESYS_CLOSE);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_lseek
@@ -435,10 +430,10 @@ long vc_filesys_lseek(int fildes, long offset, int whence)
       vc_filesys_client.fileserv_msg.params[0] = (uint32_t) fildes;
       vc_filesys_client.fileserv_msg.params[1] = (uint32_t) offset;
       vc_filesys_client.fileserv_msg.params[2] = (uint32_t) whence;
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_LSEEK, 12) == FILESERV_RESP_OK)
          set = (long) vc_filesys_client.fileserv_msg.params[0];
-      
+
       lock_release();
    }
 
@@ -470,13 +465,13 @@ int64_t vc_filesys_lseek64(int fildes, int64_t offset, int whence)
       vc_filesys_client.fileserv_msg.params[1] = (uint32_t) offset;        // LSB
       vc_filesys_client.fileserv_msg.params[2] = (uint32_t)(offset >> 32); // MSB
       vc_filesys_client.fileserv_msg.params[3] = (uint32_t) whence;
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_LSEEK64, 16) == FILESERV_RESP_OK)
       {
          set = vc_filesys_client.fileserv_msg.params[0];
          set += (int64_t)vc_filesys_client.fileserv_msg.params[1] << 32;
       }
-      
+
       lock_release();
    }
 
@@ -516,7 +511,7 @@ int vc_filesys_mount(const char *device, const char *mountpoint, const char *opt
       str[a+b+c+2] = 0;
       len = a + b + c + 3 + (int)(((FILESERV_MSG_T *)0)->data);
       len = ((len + (VCHI_BULK_GRANULARITY-1)) & ~(VCHI_BULK_GRANULARITY-1)) + VCHI_BULK_GRANULARITY;
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_MOUNT, len) == FILESERV_RESP_OK)
          set = (int) vc_filesys_client.fileserv_msg.params[0];
 
@@ -566,7 +561,6 @@ int vc_filesys_open(const char *path, int vc_oflag)
    return vc_filesys_single_string((uint32_t) vc_oflag, path, VC_FILESYS_OPEN, 1);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_read
@@ -586,7 +580,6 @@ RETURNS
 /******************************************************************************
 
 FUNCTION
-
 
 RETURNS
    Successful completion: the number of bytes received
@@ -684,7 +677,6 @@ static int vc_vchi_msg_bulk_read(FILESERV_MSG_T* msg, uint16_t cmd_id, uint32_t 
    return (int) num_bytes_read;
 }
 
-
 int vc_filesys_read(int fildes, void *buf, unsigned int nbyte)
 {
    int bulk_bytes = 0;
@@ -700,13 +692,13 @@ int vc_filesys_read(int fildes, void *buf, unsigned int nbyte)
    {
       do {
          bulk_bytes = nbyte > FILESERV_MAX_BULK ? FILESERV_MAX_BULK : nbyte;
-         
+
          //we overwrite the response here so fill in data again
          vc_filesys_client.fileserv_msg.params[0] = (uint32_t)fildes;
          vc_filesys_client.fileserv_msg.params[1] = 0xffffffffU;        // offset: use -1 to indicate no offset
-         
+
          actual_read = vc_vchi_msg_bulk_read(&vc_filesys_client.fileserv_msg , VC_FILESYS_READ, (uint32_t)bulk_bytes, (uint8_t*)ptr);
-         
+
          if(bulk_bytes != actual_read) {
             if(actual_read < 0)
                total_byte = -1;
@@ -746,7 +738,6 @@ RETURNS
 /******************************************************************************
 
 FUNCTION
-
 
 RETURNS
    Successful completion: the number of bytes received
@@ -845,7 +836,6 @@ static int vc_vchi_msg_bulk_write(FILESERV_MSG_T* msg, uint16_t cmd_id, uint32_t
    return num_bytes_written;
 }
 
-
 int vc_filesys_write(int fildes, const void *buf, unsigned int nbyte)
 {
    int num_wrt = 0;
@@ -863,13 +853,13 @@ int vc_filesys_write(int fildes, const void *buf, unsigned int nbyte)
       //we will make this more dynamic later
       do {
          bulk_bytes = nbyte > FILESERV_MAX_BULK ? FILESERV_MAX_BULK : nbyte;
-         
+
          //we overwrite the response here so fill in data again
          vc_filesys_client.fileserv_msg.params[0] = (uint32_t)fildes;
          vc_filesys_client.fileserv_msg.params[1] = 0xffffffffU;        // offset: use -1 to indicate no offset
-         
+
          actual_written = vc_vchi_msg_bulk_write(&vc_filesys_client.fileserv_msg , VC_FILESYS_WRITE, (uint32_t)bulk_bytes, (uint8_t*)ptr);
-         
+
          if(bulk_bytes != actual_written) {
             if(actual_written < 0)
                num_wrt = -1;
@@ -877,7 +867,7 @@ int vc_filesys_write(int fildes, const void *buf, unsigned int nbyte)
                num_wrt += actual_written;
             break;
          }
-         
+
          ptr+=bulk_bytes;
          nbyte -= actual_written;
          num_wrt += actual_written;
@@ -888,7 +878,6 @@ int vc_filesys_write(int fildes, const void *buf, unsigned int nbyte)
 
    return num_wrt;
 }
-
 
 /* Directory management functions */
 
@@ -912,7 +901,6 @@ int vc_filesys_closedir(void *dhandle)
    return vc_filesys_single_param((uint32_t)dhandle, VC_FILESYS_CLOSEDIR);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_format
@@ -932,7 +920,6 @@ int vc_filesys_format(const char *path)
 {
    return vc_filesys_single_string(0, path, VC_FILESYS_FORMAT, 0);
 }
-
 
 /******************************************************************************
 NAME
@@ -954,7 +941,6 @@ int vc_filesys_freespace(const char *path)
 {
    return vc_filesys_single_string(0, path, VC_FILESYS_FREESPACE, 1);
 }
-
 
 /******************************************************************************
 NAME
@@ -979,7 +965,7 @@ int64_t vc_filesys_freespace64(const char *path)
    if(lock_obtain() == 0)
    {
       strncpy((char *)vc_filesys_client.fileserv_msg.data, path, FS_MAX_PATH);
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_FREESPACE64,
                         (int)(16+strlen((char *)vc_filesys_client.fileserv_msg.data)+1)) == FILESERV_RESP_OK)
       {
@@ -992,7 +978,6 @@ int64_t vc_filesys_freespace64(const char *path)
 
    return freespace;
 }
-
 
 /******************************************************************************
 NAME
@@ -1016,7 +1001,7 @@ int vc_filesys_get_attr(const char *path, fattributes_t *attr)
    if(lock_obtain() == 0)
    {
       strncpy((char *)vc_filesys_client.fileserv_msg.data, path, FS_MAX_PATH);
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_GET_ATTR,
                         (int)(16+strlen((char *)vc_filesys_client.fileserv_msg.data)+1)) == FILESERV_RESP_OK)
       {
@@ -1029,7 +1014,6 @@ int vc_filesys_get_attr(const char *path, fattributes_t *attr)
 
    return success;
 }
-
 
 /******************************************************************************
 NAME
@@ -1069,7 +1053,6 @@ int vc_filesys_fstat(int fildes, FSTAT_T *buf)
    return success;
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_mkdir
@@ -1090,7 +1073,6 @@ int vc_filesys_mkdir(const char *path)
    return vc_filesys_single_string(0, path, VC_FILESYS_MKDIR, 0);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_opendir
@@ -1110,7 +1092,6 @@ void *vc_filesys_opendir(const char *dirname)
 {
    return (void *) vc_filesys_single_string(0, dirname, VC_FILESYS_OPENDIR, 1);
 }
-
 
 /******************************************************************************
 NAME
@@ -1134,14 +1115,14 @@ int64_t vc_filesys_dirsize(const char *path, uint32_t *num_files, uint32_t *num_
    if(lock_obtain() == 0)
    {
       strncpy((char *)vc_filesys_client.fileserv_msg.data, path, FS_MAX_PATH);
-      
+
       // FIXME: Should probably use a non-blocking call here since it may take a
       // long time to do the operation...
       if ( vchi_msg_stub(&vc_filesys_client.fileserv_msg,
                          VC_FILESYS_DIRSIZE,
                          (int)(16+strlen((char *)vc_filesys_client.fileserv_msg.data)+1)) == FILESERV_RESP_OK )
       {
-         ret = vc_filesys_client.fileserv_msg.params[0]; 
+         ret = vc_filesys_client.fileserv_msg.params[0];
          ret += (int64_t)vc_filesys_client.fileserv_msg.params[1] << 32;
          if (num_files)
             *num_files = vc_filesys_client.fileserv_msg.params[2];
@@ -1154,7 +1135,6 @@ int64_t vc_filesys_dirsize(const char *path, uint32_t *num_files, uint32_t *num_
 
    return ret;
 }
-
 
 /******************************************************************************
 NAME
@@ -1192,7 +1172,6 @@ struct dirent *vc_filesys_readdir_r(void *dhandle, struct dirent *result)
    return ret;
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_remove
@@ -1213,7 +1192,6 @@ int vc_filesys_remove(const char *path)
 {
    return vc_filesys_single_string(0, path, VC_FILESYS_REMOVE, 0);
 }
-
 
 /******************************************************************************
 NAME
@@ -1240,7 +1218,7 @@ int vc_filesys_rename(const char *oldfile, const char *newfile)
    {
       strncpy((char *)vc_filesys_client.fileserv_msg.data, oldfile, FS_MAX_PATH);
       strncpy((char *)&vc_filesys_client.fileserv_msg.data[a+1], newfile, FS_MAX_PATH);
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_RENAME, 16+a+1+b+1) == FILESERV_RESP_OK)
          success = 0;
 
@@ -1249,7 +1227,6 @@ int vc_filesys_rename(const char *oldfile, const char *newfile)
 
    return success;
 }
-
 
 /******************************************************************************
 NAME
@@ -1271,7 +1248,6 @@ int vc_filesys_reset()
    return vc_filesys_single_param(0, VC_FILESYS_RESET);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_set_attr
@@ -1292,7 +1268,6 @@ int vc_filesys_set_attr(const char *path, fattributes_t attr)
    return vc_filesys_single_string((uint32_t) attr, path, VC_FILESYS_SET_ATTR, 0);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_setend
@@ -1312,8 +1287,6 @@ int vc_filesys_setend(int fildes)
 {
    return vc_filesys_single_param((uint32_t) fildes, VC_FILESYS_SETEND);
 }
-
-
 
 /******************************************************************************
 NAME
@@ -1403,7 +1376,6 @@ int vc_filesys_totalspace(const char *path)
    return vc_filesys_single_string(0, path, VC_FILESYS_TOTALSPACE, 1);
 }
 
-
 /******************************************************************************
 NAME
    vc_filesys_totalspace64
@@ -1427,7 +1399,7 @@ int64_t vc_filesys_totalspace64(const char *path)
    if(lock_obtain() == 0)
    {
       strncpy((char *)vc_filesys_client.fileserv_msg.data, path, FS_MAX_PATH);
-      
+
       if (vchi_msg_stub(&vc_filesys_client.fileserv_msg, VC_FILESYS_TOTALSPACE64,
                         (int)(16+strlen((char *)vc_filesys_client.fileserv_msg.data)+1)) == FILESERV_RESP_OK)
       {
@@ -1440,7 +1412,6 @@ int64_t vc_filesys_totalspace64(const char *path)
 
    return totalspace;
 }
-
 
 /******************************************************************************
 NAME
@@ -1521,7 +1492,6 @@ int vc_filesys_close_disk_raw(const char *path)
 {
    return vc_filesys_single_string(0, path, VC_FILESYS_CLOSE_DISK_RAW, 1);
 }
-
 
 /******************************************************************************
 NAME
@@ -1618,7 +1588,7 @@ int vc_filesys_read_sectors(const char *path, uint32_t sector_num, char *sectors
 #endif
       //note for read we are currently doing memcpy on host to tell 2727 align is 0
       vc_filesys_client.fileserv_msg.params[2] = 0;
-      
+
       //we send read request
       if (vchi_msg_stub_noblock(&vc_filesys_client.fileserv_msg, VC_FILESYS_READ_SECTORS, 16+len+1) == 0)
       {
@@ -1690,14 +1660,14 @@ int vc_filesys_write_sectors(const char *path, uint32_t sector_num, char *sector
    {
       vc_filesys_client.fileserv_msg.params[0] = sector_num;
       vc_filesys_client.fileserv_msg.params[1] = num_sectors;
-      
+
       //required to make buffer aligned for bulk
       align_bytes = ((unsigned long)sectors & (VCHI_BULK_ALIGN-1));
       vc_filesys_client.fileserv_msg.params[2] = align_bytes;
-      
+
       //copy path at end of any alignbytes
       strncpy(((char *)vc_filesys_client.fileserv_msg.data), path, FS_MAX_PATH);
-      
+
       //we send write request
       if (vchi_msg_stub_noblock(&vc_filesys_client.fileserv_msg, VC_FILESYS_WRITE_SECTORS, 16+len+1) == 0)
       {
@@ -1705,7 +1675,7 @@ int vc_filesys_write_sectors(const char *path, uint32_t sector_num, char *sector
             //note we are cheating and going backward to make addr aligned and sending more data...
             bulk_addr -= align_bytes;
          }
-         
+
          while(num_sectors) {
             uint32_t bulk_sectors = (num_sectors > FILESERV_MAX_BULK_SECTOR) ? (uint32_t)FILESERV_MAX_BULK_SECTOR : num_sectors;
             //we send some extra data at the start
@@ -1713,12 +1683,12 @@ int vc_filesys_write_sectors(const char *path, uint32_t sector_num, char *sector
                                          VCHI_BULK_ROUND_UP((bulk_sectors*FILESERV_SECTOR_LENGTH)+align_bytes),
                                          VCHI_FLAGS_BLOCK_UNTIL_DATA_READ, NULL) != 0)
                break;
-            
+
             //go to next ALIGNED address
             bulk_addr += FILESERV_MAX_BULK;
             num_sectors -= bulk_sectors;
          }
-         
+
          // now wait to receive resp from original msg...
          if(vcos_event_wait(&vc_filesys_client.response_event) == VCOS_SUCCESS && vc_filesys_client.fileserv_msg.cmd_code == FILESERV_RESP_OK)
          {
@@ -1758,7 +1728,6 @@ int vc_filesys_errno(void)
    return (int) vc_filesys_client.err_no;
 }
 
-
 /* File Service Message FIFO functions */
 
 /******************************************************************************
@@ -1781,7 +1750,7 @@ static int vchi_msg_stub(FILESERV_MSG_T* msg, uint16_t cmd_id, int msg_len )
 {
    int ret = -1;
    vchi_msg_stub_noblock(msg, cmd_id, msg_len);
-    
+
    // wait to receive response
    if(vcos_event_wait(&vc_filesys_client.response_event) == VCOS_SUCCESS)
       ret = (int) msg->cmd_code;
@@ -1812,7 +1781,7 @@ static int vchi_msg_stub_noblock(FILESERV_MSG_T* msg, uint16_t cmd_id, int msg_l
 
    //we always have cmd_id, xid
    msg_len += 8;
-    
+
    //return response code
    return (int) vchi_msg_queue( vc_filesys_client.open_handle, msg, (uint32_t)msg_len, VCHI_FLAGS_BLOCK_UNTIL_QUEUED, NULL );
 }
@@ -2058,7 +2027,6 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes )
                   break;
                }
             }
-
 
             //put it all in one msg
             if(total_bytes <= FILESERV_MAX_DATA) {
@@ -2308,10 +2276,8 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes )
 
                //calculate bytes that wil lbe sent by bulk
                bulk_bytes = (uint32_t)((total_bytes)&(~(VCHI_BULK_ALIGN-1)));
-            
+
                end_bytes = total_bytes-bulk_bytes;
-
-
 
                if(vchi_bulk_queue_receive(vc_filesys_client.open_handle,
                                           vc_filesys_client.bulk_buffer,
@@ -2326,23 +2292,23 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes )
                   msg->params[0] = 0;
                   break;
                }
-            
+
                total_bytes_written += i;
-            
+
                if(end_bytes) {
                   i = vc_hostfs_write( (int)fd,
                                        msg->data+nalign_bytes,
                                        (unsigned int)end_bytes);
-               
+
                   total_bytes_written += i;
                }
-            
+
                if(i < 0) {
                   retval = FILESERV_RESP_ERROR;
                   msg->params[0] = 0;
                   break;
                }
-            
+
                msg->params[0] = total_bytes_written;
 
             }
@@ -2368,7 +2334,6 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes )
 
    return rr;
 }
-
 
 /******************************************************************************
 NAME
@@ -2402,7 +2367,6 @@ static void showmsg(VC_MSGFIFO_CMD_HEADER_T const * head,
    printf("\n");
 }
 #endif
-
 
 /******************************************************************************
 NAME
@@ -2453,7 +2417,6 @@ static int fs_host_direntbytestream_create(struct dirent *d, void *buffer)
    return (int)(buf-(char *)buffer);
 }
 
-
 /******************************************************************************
 NAME
    fs_host_direntbytestream_interp
@@ -2500,8 +2463,6 @@ static void fs_host_direntbytestream_interp(struct dirent *d, void *buffer)
 
    return;
 }
-
-
 
 void vc_filesys_sendreset(void)
 {

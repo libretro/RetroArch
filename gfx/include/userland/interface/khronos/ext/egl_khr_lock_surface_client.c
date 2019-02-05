@@ -187,4 +187,3 @@ EGLAPI EGLBoolean EGLAPIENTRY eglUnlockSurfaceKHR (EGLDisplay dpy, EGLSurface su
    CLIENT_UNLOCK();
    return result;
 }
-

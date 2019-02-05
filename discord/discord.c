@@ -76,12 +76,16 @@ DiscordRichPresence discord_presence;
 
 char* discord_get_own_username(void)
 {
-   return user_name;
+   if (discord_is_ready())
+      return user_name;
+   return NULL;
 }
 
 char* discord_get_own_avatar(void)
 {
-   return user_avatar;
+   if (discord_is_ready())
+      return user_avatar;
+   return NULL;
 }
 
 bool discord_avatar_is_ready(void)
@@ -323,7 +327,7 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *system_id        = core_info->system_id 
+            const char *system_id        = core_info->system_id
                ? core_info->system_id : "core";
             char *label                  = NULL;
             playlist_t *current_playlist = playlist_get_cached();

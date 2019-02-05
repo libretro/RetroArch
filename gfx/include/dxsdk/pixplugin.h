@@ -9,7 +9,7 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 {
 #endif
 
@@ -50,7 +50,7 @@ struct PIXPLUGININFO
 };
 
 //==================================================================================================
-// PIXCOUNTERINFO - This structure is filled out by PIXGetCounterInfo and passed back to PIX 
+// PIXCOUNTERINFO - This structure is filled out by PIXGetCounterInfo and passed back to PIX
 //                  to allow PIX to determine information about the counters in the plugin.
 //==================================================================================================
 struct PIXCOUNTERINFO
@@ -66,7 +66,7 @@ struct PIXCOUNTERINFO
 BOOL WINAPI PIXGetPluginInfo( PIXPLUGININFO* pPIXPluginInfo );
 
 //==================================================================================================
-// PIXGetCounterInfo - This returns an array of PIXCOUNTERINFO structs to PIX.  
+// PIXGetCounterInfo - This returns an array of PIXCOUNTERINFO structs to PIX.
 //                     These PIXCOUNTERINFOs allow PIX to enumerate the counters contained
 //                     in this plugin.
 //==================================================================================================
@@ -86,8 +86,8 @@ BOOL WINAPI PIXBeginExperiment( PIXCOUNTERID id, const WCHAR* pstrApplication );
 // PIXEndFrame - This is called by PIX once per counter at the end of each frame to gather the
 //               counter value for that frame.  Note that the pointer to the return data must
 //               continue to point to valid counter data until the next call to PIXEndFrame (or
-//               PIXEndExperiment) for the same counter.  So do not set *ppReturnData to the same 
-//               pointer for multiple counters, or point to a local variable that will go out of 
+//               PIXEndExperiment) for the same counter.  So do not set *ppReturnData to the same
+//               pointer for multiple counters, or point to a local variable that will go out of
 //               scope.  See the sample PIX plugin for an example of how to structure a plugin
 //               properly.
 //==================================================================================================

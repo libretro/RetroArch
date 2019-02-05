@@ -123,7 +123,6 @@ VCOSPRE_ void VCOSPOST_ vcos_thread_exit(void *data);
 VCOSPRE_ void VCOSPOST_ vcos_thread_join(VCOS_THREAD_T *thread,
                              void **pData);
 
-
 /**
   * \brief Create a thread using an API similar to the one "traditionally"
   * used under Nucleus.

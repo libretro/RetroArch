@@ -19,6 +19,7 @@
 
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

@@ -48,7 +48,6 @@ typedef enum
    DATAGRAM_RECEIVER    /**< UDP receiver */
 } vc_container_net_type_t;
 
-
 /** Perform implementation-specific per-socket initialization.
  *
  * \return VC_CONTAINER_NET_SUCCESS or one of the error codes on failure. */

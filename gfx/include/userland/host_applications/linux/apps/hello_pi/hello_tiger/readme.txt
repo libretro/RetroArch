@@ -22,12 +22,10 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE MATERIALS OR
 THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-
 Version
 -------
 Official RI for OpenVG 1.1
 Released: May 13, 2008
-
 
 Release Notes
 -------------
@@ -39,7 +37,6 @@ provided for MSVC 6.
 
 This archive contains sources for OpenVG RI, VGU and EGL. There's
 also a precompiled libOpenVG.dll that contains OpenVG and EGL implementations.
-
 
 Package Structure
 -----------------
@@ -72,7 +69,6 @@ samples
 readme.txt
 license.txt
 
-
 Samples
 -------
 
@@ -83,7 +79,6 @@ tiger. Note that the sample doesn't start immediately, since it takes
 a few seconds to render the image. Resizing the window rerenders the
 image in the new resolution.
 
-
 Known Issues
 ------------
 
@@ -91,7 +86,6 @@ Known Issues
  attribs may not be processed, etc.)
 -When opening samples.dsw, MSVC may complain about missing Perforce connection. Just
  ignore that.
-
 
 Changes
 -------

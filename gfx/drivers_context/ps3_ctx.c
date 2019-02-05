@@ -31,6 +31,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_driver.h"

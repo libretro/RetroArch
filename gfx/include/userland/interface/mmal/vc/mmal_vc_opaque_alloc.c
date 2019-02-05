@@ -84,4 +84,3 @@ MMAL_STATUS_T mmal_vc_opaque_release(unsigned int handle)
       ret = msg.status;
    return ret;
 }
-

@@ -586,10 +586,10 @@ bool netplay_handshake_sync(netplay_t *netplay,
          + mem_info.size);
    cmd[2]     = htonl(netplay->self_frame_count);
    client_num = (uint32_t)(connection - netplay->connections + 1);
-    
+
    if (netplay->local_paused || netplay->remote_paused)
       client_num |= NETPLAY_CMD_SYNC_BIT_PAUSED;
-    
+
    cmd[3]     = htonl(client_num);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,

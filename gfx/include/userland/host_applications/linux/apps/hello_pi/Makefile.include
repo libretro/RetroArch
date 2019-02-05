@@ -8,11 +8,11 @@ INCLUDES+=-I$(SDKSTAGE)/opt/vc/include/ -I$(SDKSTAGE)/opt/vc/include/interface/v
 all: $(BIN) $(LIB)
 
 %.o: %.c
-	@rm -f $@ 
+	@rm -f $@
 	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@ -Wno-deprecated-declarations
 
 %.o: %.cpp
-	@rm -f $@ 
+	@rm -f $@
 	$(CXX) $(CFLAGS) $(INCLUDES) -g -c $< -o $@ -Wno-deprecated-declarations
 
 %.bin: $(OBJS)
@@ -24,5 +24,4 @@ all: $(BIN) $(LIB)
 clean:
 	for i in $(OBJS); do (if test -e "$$i"; then ( rm $$i ); fi ); done
 	@rm -f $(BIN) $(LIB)
-
 

@@ -78,9 +78,7 @@ VCOS_INLINE_DECL
 void vcos_reentrant_mutex_unlock(VCOS_REENTRANT_MUTEX_T *m);
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif
 #endif
-

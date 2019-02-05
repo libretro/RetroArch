@@ -94,7 +94,6 @@ void vcos_quickslow_mutex_lock_quick(VCOS_QUICKSLOW_MUTEX_T *m);
 VCOS_INLINE_DECL
 void vcos_quickslow_mutex_unlock_quick(VCOS_QUICKSLOW_MUTEX_T *m);
 
-
 #ifdef __cplusplus
 }
 #endif

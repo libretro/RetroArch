@@ -54,7 +54,6 @@ typedef enum
 
 } DRIVER_FLAGS_T;
 
-
 /******************************************************************************
  Function defines
  *****************************************************************************/
@@ -68,7 +67,6 @@ typedef int32_t (*DRIVER_INIT_T)( void );
 //Routine to shutdown a driver
 typedef int32_t (*DRIVER_EXIT_T)( void );
 
-
 //Routine to return a drivers info (name, version etc..)
 typedef int32_t (*DRIVER_INFO_T)(const char **driver_name,
                                  uint32_t *version_major,
@@ -81,7 +79,6 @@ typedef int32_t (*DRIVER_OPEN_T)(const void *params,
 
 //Routine to close a driver
 typedef int32_t (*DRIVER_CLOSE_T)( const DRIVER_HANDLE_T handle );
-
 
 //Test routine to open a test driver
 typedef int32_t (*DRIVER_TEST_INIT_T)( DRIVER_HANDLE_T *handle );
@@ -114,14 +111,12 @@ typedef int32_t (*DRIVER_TEST_EXIT_T)( const DRIVER_HANDLE_T handle );
    /*Returns success code*/ \
    DRIVER_CLOSE_T   close;
 
-
 typedef struct
 {
    //just include the basic driver api
    COMMON_DRIVER_API(void const *unused)
 
 } DRIVER_T;
-
 
 /******************************************************************************
  Test Driver struct definition
@@ -137,7 +132,6 @@ typedef struct
    /*Function used to tell a driver if a power domain is about to change*/ \
    /*Returns success code (0 if its ok to change the power domains)*/ \
    DRIVER_TEST_EXIT_T   test_exit;
-
 
 typedef struct
 {

@@ -119,7 +119,7 @@ typedef enum {
       some IMAGE_FORMAT_Ts
 
       Components are listed with the most significant bits first.
-      
+
       On little-endian systems, it is as if a pixel was loaded as a little-endian
       integer. This means they are in the *opposite* order to how they appear in memory (e.g. in ABGR_8888
       format, the first byte would be the red component of the first pixel).

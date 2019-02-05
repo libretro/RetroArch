@@ -68,7 +68,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/util/mmal_default_components.h"
 #include "interface/mmal/util/mmal_connection.h"
 
-
 #include "RaspiCamControl.h"
 #include "RaspiPreview.h"
 #include "RaspiCLI.h"
@@ -82,7 +81,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MMAL_CAMERA_PREVIEW_PORT 0
 #define MMAL_CAMERA_VIDEO_PORT 1
 #define MMAL_CAMERA_CAPTURE_PORT 2
-
 
 // Stills format information
 // 0 implies variable
@@ -130,7 +128,6 @@ typedef struct
    MMAL_CONNECTION_T *preview_connection; /// Pointer to the connection from camera to preview
    MMAL_POOL_T *camera_pool;              /// Pointer to the pool of buffers used by camera stills port
 } RASPISTILLYUV_STATE;
-
 
 /** Struct used to pass information in camera still port userdata to callback
  */
@@ -437,7 +434,6 @@ static int parse_cmdline(int argc, const char **argv, RASPISTILLYUV_STATE *state
          if (!parms_used)
             parms_used = raspipreview_parse_cmdline(&state->preview_parameters, &argv[i][1], second_arg);
 
-
          // If no parms were used, this must be a bad parameters
          if (!parms_used)
             valid = 0;
@@ -458,7 +454,6 @@ static int parse_cmdline(int argc, const char **argv, RASPISTILLYUV_STATE *state
    return 0;
 }
 
-
 /**
  *  buffer header callback function for camera output port
  *
@@ -471,7 +466,6 @@ static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buff
 {
    int complete = 0;
    // We pass our file handle and other stuff in via the userdata field.
-
 
    PORT_USERDATA *pData = (PORT_USERDATA *)port->userdata;
 
@@ -532,7 +526,6 @@ static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buff
       vcos_semaphore_post(&(pData->complete_semaphore));
    }
 }
-
 
 /**
  * Create the camera component, set up its ports
@@ -1091,7 +1084,6 @@ int main(int argc, const char **argv)
       if (raspi_gps_setup(state.common_settings.verbose))
          state.common_settings.gps = false;
 
-
    // Setup for sensor specific parameters
    get_sensor_defaults(state.common_settings.cameraNum, state.common_settings.camera_name,
                        &state.common_settings.width, &state.common_settings.height);
@@ -1165,7 +1157,6 @@ int main(int argc, const char **argv)
          if (state.common_settings.verbose)
             fprintf(stderr, "Starting video preview\n");
 
-
          int frame, keep_looping = 1;
          FILE *output_file = NULL;
          char *use_filename = NULL;      // Temporary filename while image being written
@@ -1220,7 +1211,6 @@ int main(int argc, const char **argv)
                // There is a possibility that shutter needs to be set each loop.
                if (mmal_status_to_int(mmal_port_parameter_set_uint32(state.camera_component->control, MMAL_PARAMETER_SHUTTER_SPEED, state.camera_parameters.shutter_speed) != MMAL_SUCCESS))
                   vcos_log_error("Unable to set shutter speed");
-
 
                // Send all the buffers to the camera output port
                num = mmal_queue_length(state.camera_pool->queue);
@@ -1357,7 +1347,4 @@ error:
 
    return exit_code;
 }
-
-
-
 

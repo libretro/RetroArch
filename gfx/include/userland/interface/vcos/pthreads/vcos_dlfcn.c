@@ -66,6 +66,3 @@ int vcos_dlerror(int *err, char *buf, size_t buflen)
    return 0;
 }
 
-
-
-

@@ -166,7 +166,6 @@ private:
    void loadImage(const QModelIndex &index, const QString &path);
 };
 
-
 class ThumbnailWidget : public QStackedWidget
 {
    Q_OBJECT

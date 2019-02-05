@@ -501,7 +501,6 @@ void *vcos_generic_blockpool_elem_from_handle(
    uint32_t index;
    void *ret = NULL;
 
-
    ASSERT_POOL(pool);
    vcos_mutex_lock(&pool->mutex);
    subpool_id = VCOS_BLOCKPOOL_HANDLE_GET_SUBPOOL(handle);

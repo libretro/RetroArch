@@ -29,7 +29,8 @@
 #endif
 
 #if defined(HAVE_VIDEOCORE)
-#include "../include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+static void crt_rpi_switch(int width, int height, float hz);
 #endif
 
 static unsigned ra_core_width     = 0;
@@ -180,7 +181,7 @@ void crt_switch_res_core(unsigned width, unsigned height,
 {
    /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
-	
+
    ra_core_width  = width;
    ra_core_height = height;
    ra_core_hz     = hz;
@@ -227,13 +228,13 @@ void crt_video_restore(void)
 #if defined(HAVE_VIDEOCORE)
 static void crt_rpi_switch(int width, int height, float hz)
 {
+   char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
    VCHI_CONNECTION_T *vchi_connection = NULL;
-   char buffer[1024];
-   static char output[250]         = {0};   
-   static char output1[250]         = {0}; 
-   static char output2[250]         = {0}; 
-   static char set_hdmi[250]       ={0};
+   static char output[250]             = {0};
+   static char output1[250]            = {0};
+   static char output2[250]            = {0};
+   static char set_hdmi[250]           = {0};
    static char set_hdmi_timing[250]    = {0};
    int i              = 0;
    int hfp            = 0;
@@ -241,7 +242,7 @@ static void crt_rpi_switch(int width, int height, float hz)
    int hbp            = 0;
    int vfp            = 0;
    int vsp            = 0;
-   int vbp            = 0; 
+   int vbp            = 0;
    int hmax           = 0;
    int vmax           = 0;
    int pdefault       = 8;
@@ -276,7 +277,6 @@ static void crt_rpi_switch(int width, int height, float hz)
    hsp = width * 0.1433-hfp;
 
    hbp = width * 0.3-hsp-hfp;
-
 
    if (height < 241)
       vmax = 261;
@@ -326,15 +326,15 @@ static void crt_rpi_switch(int width, int height, float hz)
 
    if (height > 300)
    {
-      pixel_clock = (hmax * vmax * (hz/2)) /2 ; 
+      pixel_clock = (hmax * vmax * (hz/2)) /2 ;
       ip_flag     = 1;
    }
    /* above code is the modeline generator */
 
-   snprintf(set_hdmi_timing, sizeof(set_hdmi_timings),
+   snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
          "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
          width, hfp, hsp, hbp, height, vfp,vsp, vbp,
-         hz, ip_flag, pixel_clock); 
+         hz, ip_flag, pixel_clock);
 
    vcos_init ();
 
@@ -343,7 +343,6 @@ static void crt_rpi_switch(int width, int height, float hz)
    vchi_connect (NULL, 0, vchi_instance);
 
    vc_vchi_gencmd_init (vchi_instance, &vchi_connection, 1);
-
 
    vc_gencmd (buffer, sizeof (buffer), set_hdmi_timing);
 
@@ -360,4 +359,3 @@ static void crt_rpi_switch(int width, int height, float hz)
    system(output2);
 }
 #endif
-

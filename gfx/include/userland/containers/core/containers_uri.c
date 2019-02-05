@@ -459,7 +459,7 @@ static bool parse_query( VC_URI_PARTS_T *p_uri, const char *str, uint32_t str_le
       /* Take first '=' as break between name and value */
       if (c == '=' && !equals_ptr)
          equals_ptr = str;
-      
+
       /* If at the end of the name or name/value pair */
       if (c == '&' || c ==';')
       {

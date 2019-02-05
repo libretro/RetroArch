@@ -55,7 +55,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debug_sym.h"
 #include "vc_debug_sym.h"
 
-
 // ---- Public Variables ----------------------------------------------------
 // ---- Private Constants and Types -----------------------------------------
 
@@ -675,7 +674,6 @@ static int AccessVideoCoreMemory( VC_MEM_ACCESS_HANDLE_T vcHandle,
     return 1;
 }
 
-
 /****************************************************************************
 *
 *   Reads 'numBytes' from the videocore memory starting at 'vcMemAddr'. The
@@ -831,4 +829,3 @@ VC_MEM_ADDR_T GetVideoCoreMemoryPhysicalAddress( VC_MEM_ACCESS_HANDLE_T vcHandle
 {
     return vcHandle->vcMemPhys;
 }
-

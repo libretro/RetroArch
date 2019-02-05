@@ -31,8 +31,6 @@
  * \brief	VG extensions
  *//*-------------------------------------------------------------------*/
 
-
-
 #ifndef _VGEXT_H
 #define _VGEXT_H
 
@@ -78,7 +76,6 @@ typedef VGImage (VG_API_ENTRYP PFNVGCREATEEGLIMAGETARGETKHRPROC) (VGeglImageKHR 
 
 #endif
 
-
 #ifndef VG_KHR_iterative_average_blur
 #define VG_KHR_iterative_average_blur 1
 
@@ -88,7 +85,6 @@ VG_API_CALL void vgIterativeAverageBlurKHR(VGImage dst,VGImage src,VGfloat dimX,
 typedef void (VG_API_ENTRYP PFNVGITERATIVEAVERAGEBLURKHRPROC) (VGImage dst,VGImage src,VGfloat dimX,VGfloat dimY,VGuint iterative,VGTilingMode tilingMode);
 
 #endif
-
 
 #ifndef VG_KHR_advanced_blending
 #define VG_KHR_advanced_blending 1
@@ -157,7 +153,6 @@ typedef VGUErrorCode (VGU_API_ENTRYP PFNVGUGRADIENTBEVELKHRPROC) (VGImage dst,VG
 
 #endif
 
-
 /*-------------------------------------------------------------------------------
  * NDS extensions
  *------------------------------------------------------------------------------*/
@@ -179,7 +174,6 @@ typedef enum {
   VG_IMAGE_MODE_NDS_FORCE_SIZE              = VG_MAX_ENUM
 } VGImageModeNds;
 #endif
-
 
 #ifndef VG_NDS_projective_geometry
 #define VG_NDS_projective_geometry 1

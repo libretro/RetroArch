@@ -177,14 +177,14 @@ VC_CONTAINER_STATUS_T vc_container_load_reader(VC_CONTAINER_T *p_ctx, const char
    VC_CONTAINER_STATUS_T status;
    unsigned int i;
    int64_t offset;
-   
+
    vc_container_assert(p_ctx && !p_ctx->priv->module_handle);
 
    /* FIXME: the missing part here is code that reads a configuration or
       searches the filesystem for container libraries. Instead, we currently
       rely on static arrays i.e. 'readers', 'writers', etc. */
 
-   /* Before trying proper container readers, iterate through metadata 
+   /* Before trying proper container readers, iterate through metadata
       readers to parse tags concatenated to start/end of stream */
    for(i = 0; metadata_readers[i]; i++)
    {
@@ -203,7 +203,7 @@ VC_CONTAINER_STATUS_T vc_container_load_reader(VC_CONTAINER_T *p_ctx, const char
       at the start, and the IO layer can cope with the seek */
    offset = p_ctx->priv->io->offset;
 
-   /* Now move to containers, try to find a readers using the file extension to name 
+   /* Now move to containers, try to find a readers using the file extension to name
       mapping first */
    if (fileext && (name = container_for_fileext(fileext)) != NULL && (func = load_reader(&handle, name)) != NULL)
    {
@@ -248,9 +248,9 @@ VC_CONTAINER_STATUS_T vc_container_load_writer(VC_CONTAINER_T *p_ctx, const char
    VC_CONTAINER_WRITER_OPEN_FUNC_T func;
    VC_CONTAINER_STATUS_T status = VC_CONTAINER_ERROR_FAILED;
    unsigned int i;
-   
+
    vc_container_assert(p_ctx && !p_ctx->priv->module_handle);
-     
+
    /* Do we have a container mapping for this file extension? */
    if ((name = container_for_fileext(fileext)) != NULL && (func = load_writer(&handle, name)) != NULL)
    {
@@ -296,7 +296,7 @@ Local Functions
 static void reset_context(VC_CONTAINER_T *p_ctx)
 {
    vc_container_assert(p_ctx);
-   
+
    p_ctx->capabilities = 0;
    p_ctx->tracks = NULL;
    p_ctx->tracks_num = 0;
@@ -342,9 +342,9 @@ static VC_CONTAINER_READER_OPEN_FUNC_T load_library(void **handle, const char *n
    void *dl_handle;
    VC_CONTAINER_READER_OPEN_FUNC_T func = NULL;
    unsigned dl_size, ep_size, name_len = strlen(name) + (ext ? strlen(ext) : 0);
-   
+
    vc_container_assert(read == 0 || read == 1);
-   
+
    dl_size = strlen(DL_PATH_PREFIX) + MAX(strlen(DL_PREFIX_RD), strlen(DL_PREFIX_WR)) + name_len + strlen(DL_SUFFIX) + 1;
    if ((dl_name = malloc(dl_size)) == NULL)
       return NULL;
@@ -358,7 +358,7 @@ static VC_CONTAINER_READER_OPEN_FUNC_T load_library(void **handle, const char *n
 
    snprintf(dl_name, dl_size, "%s%s%s%s%s", DL_PATH_PREFIX, read ? DL_PREFIX_RD : DL_PREFIX_WR, ext ? ext : "", name, DL_SUFFIX);
    snprintf(entrypt_name, ep_size, "%s_%s%s", name, ext ? ext : "", read ? entrypt_read : entrypt_write);
-      
+
    if ( (dl_handle = vcos_dlopen(dl_name, VCOS_DL_NOW)) != NULL )
    {
       /* Try generic entrypoint name before the mangled, full name */
@@ -372,9 +372,9 @@ static VC_CONTAINER_READER_OPEN_FUNC_T load_library(void **handle, const char *n
       else
          vcos_dlclose(dl_handle);
    }
-  
+
    free(entrypt_name);
-   free(dl_name);  
+   free(dl_name);
    return func;
 }
 
@@ -398,7 +398,7 @@ static VC_CONTAINER_READER_OPEN_FUNC_T load_library(void **handle, const char *n
       for (i = 0; reader_entry_points[i].name; i++)
          if (!strcasecmp(reader_entry_points[i].name, name))
             return reader_entry_points[i].func;
-      
+
       for (i = 0; metadata_reader_entry_points[i].name; i++)
          if (!strcasecmp(metadata_reader_entry_points[i].name, name))
             return metadata_reader_entry_points[i].func;

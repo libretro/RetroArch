@@ -69,8 +69,3 @@ void vcos_generic_reentrant_mutex_unlock(VCOS_REENTRANT_MUTEX_T *m)
    }
 }
 
-
-
-
-
-

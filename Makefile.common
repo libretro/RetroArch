@@ -235,7 +235,6 @@ OBJ += frontend/frontend.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
-       gfx/drivers_shader/shader_null.o \
        gfx/video_shader_parse.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \
@@ -510,7 +509,6 @@ endif
 
 # Audio
 
-
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
 	HAVE_COREAUDIO_LIBS = 1
@@ -670,10 +668,6 @@ endif
 
 # XMB and MaterialUI are always enabled if supported and not explicitly disabled
 ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
-   ifeq ($(HAVE_ZARCH),)
-      HAVE_ZARCH = 0
-   endif
-
    ifeq ($(HAVE_RGUI),)
       HAVE_RGUI = 1
    endif
@@ -682,14 +676,10 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_MATERIALUI = 1
    endif
 
-   ifeq ($(HAVE_NUKLEAR),)
-      HAVE_NUKLEAR = 0
-   endif
-
    ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
-   
+
    ifeq ($(HAVE_STRIPES),)
       HAVE_STRIPES = 0
    endif
@@ -698,10 +688,8 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_OZONE = 1
    endif
 else
-   HAVE_ZARCH       ?= 0
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
-   HAVE_NUKLEAR     ?= 0
    HAVE_XMB         ?= 0
    HAVE_STRIPES     ?= 0
    HAVE_OZONE       ?= 0
@@ -719,21 +707,6 @@ ifeq ($(HAVE_MENU), 1)
    ifeq ($(HAVE_MATERIALUI), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
-      HAVE_ASSETS = 1
-   endif
-
-   ifeq ($(HAVE_NUKLEAR), 1)
-      OBJ += menu/drivers/nuklear/nk_common.o \
-             menu/drivers/nuklear/nk_menu.o \
-             menu/drivers/nuklear/nk_wnd_debug.o \
-             menu/drivers/nuklear.o
-      DEFINES += -DHAVE_NUKLEAR
-      HAVE_ASSETS = 1
-   endif
-
-   ifeq ($(HAVE_ZARCH), 1)
-      OBJ += menu/drivers/zarch.o
-      DEFINES += -DHAVE_ZARCH
       HAVE_ASSETS = 1
    endif
 
@@ -1080,9 +1053,7 @@ endif
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-          gfx/drivers_renderchain/gl2_renderchain.o \
           $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-          gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
           $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
@@ -1554,8 +1525,6 @@ ifeq ($(HAVE_ZLIB), 1)
    else
       LIBS += $(ZLIB_LIBS)
    endif
-endif
-
 ifeq ($(HAVE_CHD), 1)
    DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
@@ -1564,19 +1533,16 @@ ifeq ($(HAVE_CHD), 1)
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-	
-   ifeq ($(HAVE_FLAC), 1)
+
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+   ifeq ($(HAVE_FLAC),1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
    endif
-
    ifeq ($(HAVE_7ZIP), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
    endif
-
-   ifeq ($(HAVE_ZLIB), 1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
-   endif
+endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)

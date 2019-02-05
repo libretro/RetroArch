@@ -46,7 +46,7 @@ struct ozone_handle
 {
    uint64_t frame_count;
 
-   struct 
+   struct
    {
       font_data_t *footer;
       font_data_t *title;
@@ -177,8 +177,8 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
 
 void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info);
 
-void ozone_change_tab(ozone_handle_t *ozone, 
-      enum msg_hash_enums tab, 
+void ozone_change_tab(ozone_handle_t *ozone,
+      enum msg_hash_enums tab,
       enum menu_settings_type type);
 
 void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection);

@@ -405,6 +405,3 @@ bool egl_config_is_lockable(int id)
 
 #endif
 
-
-
-

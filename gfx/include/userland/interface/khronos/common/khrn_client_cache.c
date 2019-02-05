@@ -163,7 +163,7 @@ void khrn_cache_term(KHRN_CACHE_T *cache)
 static void send_create(CLIENT_THREAD_STATE_T *thread, int base)
 {
    RPC_CALL1(glintCacheCreate_impl,
-             thread, 
+             thread,
              GLINTCACHECREATE_ID,
              RPC_UINT(base));
 }
@@ -171,7 +171,7 @@ static void send_create(CLIENT_THREAD_STATE_T *thread, int base)
 static void send_delete(CLIENT_THREAD_STATE_T *thread, int base)
 {
    RPC_CALL1(glintCacheDelete_impl,
-             thread, 
+             thread,
              GLINTCACHEDELETE_ID,
              RPC_UINT(base));
 }
@@ -179,7 +179,7 @@ static void send_delete(CLIENT_THREAD_STATE_T *thread, int base)
 static int send_grow(CLIENT_THREAD_STATE_T *thread)
 {
    return RPC_BOOLEAN_RES(RPC_CALL0_RES(glintCacheGrow_impl,
-                                        thread, 
+                                        thread,
                                         GLINTCACHEGROW_ID));
 }
 
@@ -191,7 +191,7 @@ static void send_data(CLIENT_THREAD_STATE_T *thread, int base, const void *data,
       int chunk = _min(len, MERGE_BUFFER_SIZE-CLIENT_MAKE_CURRENT_SIZE-12-8);
 
       RPC_CALL3_IN_CTRL(glintCacheData_impl,
-                        thread, 
+                        thread,
                         GLINTCACHEDATA_ID,
                         RPC_UINT(base + off),
                         RPC_SIZEI(chunk),

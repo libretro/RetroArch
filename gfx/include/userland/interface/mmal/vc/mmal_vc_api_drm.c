@@ -39,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/core/mmal_buffer_private.h"
 #include "interface/vcos/vcos.h"
 
-
 int mmal_vc_drm_get_time(unsigned int * time)
 {
    MMAL_STATUS_T status;
@@ -56,7 +55,6 @@ int mmal_vc_drm_get_time(unsigned int * time)
    mmal_vc_deinit();
    return status;
 }
-
 
 int mmal_vc_drm_get_lhs32(unsigned char * into)
 {

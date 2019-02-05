@@ -186,7 +186,6 @@ static int32_t tvservice_send_command_reply( uint32_t command, void *buffer, uin
 
 static void *tvservice_notify_func(void *arg);
 
-
 /******************************************************************************
 TV service API
 ******************************************************************************/
@@ -368,7 +367,6 @@ VCHPRE_ void VCHPOST_ vc_vchi_tv_stop( void ) {
       vcos_event_delete(&tvservice_notify_available_event);
    }
 }
-
 
 /***********************************************************
  * Name: vc_tv_register_callback
@@ -567,7 +565,7 @@ static int32_t tvservice_wait_for_bulk_receive(void *buffer, uint32_t max_length
    /*if(!vcos_verify(((uint32_t) buffer & 0xf) == 0)) //should be 16 byte aligned
       return -1;*/
    vcos_log_trace("[%s]", VCOS_FUNCTION);
-   if(!vcos_verify(buffer)) { 
+   if(!vcos_verify(buffer)) {
       vcos_log_error("TV service: NULL buffer passed to wait_for_bulk_receive");
       return -1;
    }
@@ -599,7 +597,7 @@ static int32_t tvservice_send_command(  uint32_t command, void *buffer, uint32_t
 
    if(vcos_verify(command < VC_TV_END_OF_LIST)) {
       vcos_log_trace("[%s] command:%s param length %d %s", VCOS_FUNCTION,
-                     tvservice_command_strings[command], length, 
+                     tvservice_command_strings[command], length,
                      (has_reply)? "has reply" : " no reply");
    } else {
       vcos_log_error("[%s] not sending invalid command %d", VCOS_FUNCTION, command);
@@ -656,7 +654,7 @@ static int32_t tvservice_send_command_reply(  uint32_t command, void *buffer, ui
       else
          vcos_log_error("TV service failed to send command %s param length %d, error code %d",
                         tvservice_command_strings[command], length, success);
-      
+
       tvservice_lock_release();
    }
 
@@ -860,7 +858,7 @@ static void *tvservice_notify_func(void *arg) {
          }
       } while(success == 0 && state->notify_length >= sizeof(uint32_t)*3); //read the next message if any
    } //while (1)
-   
+
    if(state->to_exit)
       vcos_log_trace("TV service async thread exiting");
 
@@ -1060,7 +1058,6 @@ VCHPRE_ int VCHPOST_ vc_tv_sdtv_power_on(SDTV_MODE_T mode, SDTV_OPTIONS_T *optio
    success = tvservice_send_command( VC_TV_SDTV_ON, &param, sizeof(TV_SDTV_ON_PARAM_T), 1);
    return success;
 }
-
 
 /***********************************************************
  * Name: vc_tv_power_off
@@ -1636,4 +1633,3 @@ VCHPRE_ int VCHPOST_ vc_tv_hdmi_power_on_explicit(HDMI_MODE_T mode, HDMI_RES_GRO
    }
    return vc_tv_hdmi_power_on_explicit_new(mode, group, code);
 }
-

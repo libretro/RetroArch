@@ -129,7 +129,6 @@ static uint32_t dispmanx_get_handle(  uint32_t command, void *buffer, uint32_t l
 
 static void *dispmanx_notify_func( void *arg );
 
-
 /******************************************************************************
 NAME
    vc_vchi_gencmd_init
@@ -250,7 +249,7 @@ VCHPRE_ void VCHPOST_ vc_dispmanx_stop( void ) {
    lock_release();
    dispmanx_client.initialised = 0;
 
-   vcos_event_signal(&dispmanx_notify_available_event); 
+   vcos_event_signal(&dispmanx_notify_available_event);
    vcos_thread_join(&dispmanx_notify_task, &dummy);
    vcos_mutex_delete(&dispmanx_client.lock);
    vcos_event_delete(&dispmanx_message_available_event);
@@ -696,7 +695,6 @@ VCHPRE_ DISPMANX_UPDATE_HANDLE_T VCHPOST_ vc_dispmanx_update_start( int32_t prio
    return (DISPMANX_UPDATE_HANDLE_T) handle;
 }
 
-
 /***********************************************************
  * Name: vc_dispmanx_update_submit
  *
@@ -750,7 +748,6 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_update_submit_sync( DISPMANX_UPDATE_HANDLE_T up
                                           &update, sizeof(update));
    return success;
 }
-
 
 /***********************************************************
  * Name: vc_dispmanx_element_add
@@ -976,12 +973,10 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_element_change_attributes( DISPMANX_UPDATE_HAND
       param_length += 4*sizeof(uint32_t);
    }
 
-
    success = (int) dispmanx_send_command( EDispmanElementChangeAttributes | DISPMANX_NO_REPLY_MASK,
                                             element_param, param_length);
    return success;
 }
-
 
 /***********************************************************
  * Name: vc_dispmanx_snapshot
@@ -1026,7 +1021,7 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_snapshot( DISPMANX_DISPLAY_HANDLE_T display,
  * Returns: 0 or failure
  *
  ***********************************************************/
-VCHPRE_ int VCHPOST_ vc_dispmanx_resource_set_palette( DISPMANX_RESOURCE_HANDLE_T handle, 
+VCHPRE_ int VCHPOST_ vc_dispmanx_resource_set_palette( DISPMANX_RESOURCE_HANDLE_T handle,
                                                       void * src_address, int offset, int size) {
    //Note that x coordinate of the rect is NOT used
    //Address of data in host
@@ -1049,7 +1044,6 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_resource_set_palette( DISPMANX_RESOURCE_HANDLE_
    }
    return (int) success;
 }
-
 
 /***********************************************************
  * Name: vc_dispmanx_vsync_callback
@@ -1095,7 +1089,6 @@ VCHPRE_ int VCHPOST_ vc_dispmanx_vsync_callback( DISPMANX_DISPLAY_HANDLE_T displ
    return (int) success;
 }
 
-
 /*********************************************************************************
  *
  *  Static functions definitions
@@ -1123,7 +1116,7 @@ static void dispmanx_client_callback( void *callback_param,
 
    if ( event == NULL )
       return;
-   
+
    vcos_event_signal(event);
 }
 

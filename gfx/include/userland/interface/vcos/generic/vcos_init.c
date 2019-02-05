@@ -30,7 +30,7 @@ The following header is included in order to provide one instance of the symbol 
 Any other inclusions of this header (or "vcos_deprecated_code.inc" for assembly language) will cause the linker to warn
 about multiple definitions of vcos_deprecated_code.
 The idea is to include this header file for the source files which are deprecated.
-Therefore the above warnning in a build indicates that the build is using deprecated code! 
+Therefore the above warnning in a build indicates that the build is using deprecated code!
 Contact the person named in the accompanying comment for advice - do not remove the inclusion.
 */
 #include "vcos_deprecated.h"

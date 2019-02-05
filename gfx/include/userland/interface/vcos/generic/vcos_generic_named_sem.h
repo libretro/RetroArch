@@ -90,12 +90,10 @@ void vcos_named_semaphore_post(VCOS_NAMED_SEMAPHORE_T *sem) {
    vcos_semaphore_post(sem->sem);
 }
 
-
 #endif
 
 #ifdef __cplusplus
 }
 #endif
 #endif
-
 

@@ -386,7 +386,7 @@ OMX_ERRORTYPE mmalomx_command_port_disable(
 
 /*****************************************************************************/
 OMX_ERRORTYPE mmalomx_command_queue(
-   MMALOMX_COMPONENT_T *component, 
+   MMALOMX_COMPONENT_T *component,
    OMX_U32 arg1, OMX_U32 arg2)
 {
    MMAL_BUFFER_HEADER_T *cmd = mmal_queue_get(component->cmd_pool->queue);
@@ -459,4 +459,3 @@ void mmalomx_commands_actions_next(MMALOMX_COMPONENT_T *component)
             mmalomx_command_port_disable((OMX_HANDLETYPE)&component->omx, i);
    }
 }
-

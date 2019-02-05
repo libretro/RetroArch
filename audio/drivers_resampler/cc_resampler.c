@@ -149,7 +149,7 @@ done:
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, 
+      double bandwidth_mod,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {
@@ -488,7 +488,7 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, 
+      double bandwidth_mod,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {

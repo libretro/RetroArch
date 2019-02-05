@@ -97,4 +97,3 @@ static const GLfloat texCoords[6 * 4 * 2] = {
    0.f,  1.f,
    1.f,  1.f,
 };
-

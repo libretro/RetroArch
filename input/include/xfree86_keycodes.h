@@ -23,7 +23,7 @@ enum xfvk_key
 {
    XFVK_UNKNOWN        = 0,
    XFVK_FIRST          = 0,
-   
+
    XFVK_ESC            = 9,
    XFVK_FK01           = 67,
    XFVK_FK02           = 68,
@@ -103,7 +103,7 @@ enum xfvk_key
    XFVK_SPCE           = 65,
    XFVK_RCTL           = 105,
    XFVK_RALT           = 108,
-	
+
    XFVK_PRSC           = 107,
 	// SYRQ            = 107,
    XFVK_SCLK           = 78,
@@ -145,7 +145,6 @@ enum xfvk_key
    XFVK_KPDL           = 91,
    XFVK_KPEQ           = 125,
 
-
    // Microsoft keyboard extra keys
    XFVK_LWIN           = 133,
    XFVK_RWIN           = 134,
@@ -171,6 +170,5 @@ enum xfvk_key
    XFVK_LAST,
    XFVK_DUMMY          = 255
 };
-	
-#endif /* __XFREE86_KEYCODES__H */
 
+#endif /* __XFREE86_KEYCODES__H */

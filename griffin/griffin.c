@@ -289,7 +289,6 @@ VIDEO CONTEXT
 VIDEO SHADERS
 ============================================================ */
 #include "../gfx/video_shader_parse.c"
-#include "../gfx/drivers_shader/shader_null.c"
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
@@ -411,10 +410,8 @@ VIDEO DRIVER
 #include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
-#include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers_renderchain/gl2_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -1309,17 +1306,6 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_NUKLEAR
-#include "../menu/drivers/nuklear/nk_common.c"
-#include "../menu/drivers/nuklear/nk_menu.c"
-#include "../menu/drivers/nuklear/nk_wnd_debug.c"
-#include "../menu/drivers/nuklear.c"
-#endif
-
-#ifdef HAVE_ZARCH
-#include "../menu/drivers/zarch.c"
-#endif
-
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1382,7 +1368,10 @@ DEPENDENCIES
 #include "../deps/libFLAC/stream_decoder.c"
 #endif
 
+#ifdef HAVE_ZLIB
+
 #ifdef HAVE_CHD
+#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
@@ -1392,10 +1381,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif
 
-#ifdef HAVE_ZLIB
-#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
-#endif
-
 #ifdef HAVE_7ZIP
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
 #endif
@@ -1403,6 +1388,7 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #include "../libretro-common/streams/chd_stream.c"
+#endif
 #endif
 
 #ifdef HAVE_7ZIP

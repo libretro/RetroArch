@@ -46,6 +46,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
+#include "../../verbosity.h"
 
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../common/wayland/idle-inhibit-unstable-v1.h"
@@ -657,7 +658,7 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 		wl->width = width;
 		wl->height = height;
 	}
-   
+
 	if (wl->win)
 		wl_egl_window_resize(wl->win, width, height, 0, 0);
 	else
@@ -726,7 +727,7 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 		wl->width = width;
 		wl->height = height;
 	}
-	
+
 	if (wl->win)
 		wl_egl_window_resize(wl->win, width, height, 0, 0);
 	else
@@ -1628,7 +1629,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
 	   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
    }
-
 
    switch (wl_api)
    {

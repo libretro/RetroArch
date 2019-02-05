@@ -82,4 +82,3 @@ OMX_ERRORTYPE mmalomx_command_dequeue(
 void mmalomx_commands_actions_check(MMALOMX_COMPONENT_T *component);
 void mmalomx_commands_actions_signal(MMALOMX_COMPONENT_T *component);
 void mmalomx_commands_actions_next(MMALOMX_COMPONENT_T *component);
-

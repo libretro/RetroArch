@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* GL_OES_draw_texture */
 
-GL_API void GL_APIENTRY glDrawTexsOES (GLshort x, GLshort y, GLshort z, GLshort width, GLshort height) 
+GL_API void GL_APIENTRY glDrawTexsOES (GLshort x, GLshort y, GLshort z, GLshort width, GLshort height)
 {
    glDrawTexfOES((GLfloat)x,(GLfloat)y,(GLfloat)x, (GLfloat)width,(GLfloat)height);
 }

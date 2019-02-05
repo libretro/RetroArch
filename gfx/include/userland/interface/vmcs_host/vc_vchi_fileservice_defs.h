@@ -67,9 +67,6 @@ typedef enum
 
 } FILESERV_RESP_CODE_T;
 
-
 /* Protocol (not used by API) version 1.2 */
-
-
 
 #endif

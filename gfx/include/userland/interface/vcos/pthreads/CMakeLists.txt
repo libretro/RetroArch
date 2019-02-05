@@ -41,6 +41,5 @@ else ()
    target_link_libraries (vcos pthread rt)
 endif ()
 
-
 #install(FILES ${HEADERS} DESTINATION include)
 install(TARGETS vcos DESTINATION lib)

@@ -110,7 +110,6 @@ typedef const char *          VCOS_LLTHREAD_T_NAME;
  * Simulated TLS support
  */
 
-
 /** Thread structure.
   *
   * \warning Do not access the members of this structure directly!

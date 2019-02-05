@@ -52,7 +52,7 @@ typedef struct {
       (EGL_CONTEXT_IS_CURRENT)
       Iff true, the context is current to some thread.
    */
-   bool is_current;   
+   bool is_current;
    /*
       is_destroyed
 

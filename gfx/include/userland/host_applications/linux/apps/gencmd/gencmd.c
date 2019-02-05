@@ -25,7 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 /* ---- Include Files ---------------------------------------------------- */
 
 #include <stdio.h>
@@ -144,4 +143,3 @@ int main( int argc, char **argv )
 
    return 0;
 }
-

@@ -232,4 +232,3 @@ OMX_ERRORTYPE mmalomx_buffer_return(
 
    return OMX_ErrorNone;
 }
-

@@ -115,7 +115,7 @@ static MMAL_STATUS_T mmal_sdl_create_surface(MMAL_COMPONENT_MODULE_T *module)
       LOG_ERROR("no SDL video mode available");
       return MMAL_ENOSYS;
    }
-   module->sdl_surface = SDL_SetVideoMode(w, h, bpp, flags); 
+   module->sdl_surface = SDL_SetVideoMode(w, h, bpp, flags);
    if(!module->sdl_surface)
    {
       LOG_ERROR("cannot create SDL surface");
@@ -123,7 +123,6 @@ static MMAL_STATUS_T mmal_sdl_create_surface(MMAL_COMPONENT_MODULE_T *module)
    }
    return MMAL_SUCCESS;
 }
-
 
 /** Set format on a port */
 static MMAL_STATUS_T sdl_port_set_format(MMAL_PORT_T *port)

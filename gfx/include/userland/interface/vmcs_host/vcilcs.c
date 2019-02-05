@@ -160,11 +160,11 @@ ILCS_SERVICE_T *ilcs_init(VCHIQ_STATE_T *state, void **connection, ILCS_CONFIG_T
    if(vcos_mutex_create(&st->wait_mtx, "ILCS") != VCOS_SUCCESS)
       goto fail_all;
 
-   // create smaphore for control+bulk protection   
+   // create smaphore for control+bulk protection
    if(vcos_semaphore_create(&st->send_sem, "ILCS", 1) != VCOS_SUCCESS)
       goto fail_send_sem;
 
-   // create event group for signalling when a waiting slot becomes free   
+   // create event group for signalling when a waiting slot becomes free
    if(vcos_event_create(&st->wait_event, "ILCS") != VCOS_SUCCESS)
       goto fail_wait_event;
 
@@ -278,10 +278,10 @@ static void ilcs_send_quit(ILCS_SERVICE_T *st)
    header->size = 8;
    msg = header->data;
    msg[0] = IL_SERVICE_QUIT & 0xff;
-   msg[1] = (IL_SERVICE_QUIT >> 8) & 0xff; 
+   msg[1] = (IL_SERVICE_QUIT >> 8) & 0xff;
    msg[2] = (IL_SERVICE_QUIT >> 16) & 0xff;
    msg[3] = IL_SERVICE_QUIT >> 24;
-         
+
    vchiu_queue_push(&st->queue, header);
 
    // force all currently waiting clients to wake up
@@ -477,7 +477,7 @@ static int ilcs_process_message(ILCS_SERVICE_T *st, int block)
    unsigned char *msg;
    VCHIQ_HEADER_T *header;
    uint32_t i, msg_len, cmd, xid;
- 
+
    if(!block && vchiu_queue_is_empty(&st->queue))
       return 0; // no more messages
 
@@ -520,9 +520,9 @@ static int ilcs_process_message(ILCS_SERVICE_T *st, int block)
       i = 0;
       while(st->msg_inuse & (1<<i))
          i++;
-      
+
       st->msg_inuse |= (1<<i);
-      
+
       memcpy(st->msg[i], msg, msg_len);
 #ifdef USE_VCHIQ_ARM
       vchiq_release_message(st->service, header);
@@ -530,7 +530,7 @@ static int ilcs_process_message(ILCS_SERVICE_T *st, int block)
       vchiq_release_message(st->vchiq, header);
 #endif
       ilcs_command(st, cmd, xid, st->msg[i], msg_len);
-      
+
       // mark the message copy as free
       st->msg_inuse &= ~(1<<i);
    }
@@ -629,7 +629,7 @@ ilcs_command(ILCS_SERVICE_T *st, uint32_t cmd, uint32_t xid, unsigned char *msg,
       return;
    }
 
-   // for one method we allow the response to go in the same slot as the 
+   // for one method we allow the response to go in the same slot as the
    // msg, since it wants to return quite a big amount of debug information
    // and we know this is safe.
    if(cmd == IL_GET_DEBUG_INFORMATION)
@@ -645,7 +645,7 @@ ilcs_command(ILCS_SERVICE_T *st, uint32_t cmd, uint32_t xid, unsigned char *msg,
    // at this point we are executing in ILCS task context
    // NOTE: this can cause ilcs_execute_function() calls from within guts of openmaxil!
    fn(st->ilcs_common, msg, len, rbuf, &rlen);
-   
+
    // make sure rlen has been initialised by the function
    vcos_assert(rlen != -1);
 
@@ -670,11 +670,11 @@ ilcs_command(ILCS_SERVICE_T *st, uint32_t cmd, uint32_t xid, unsigned char *msg,
  * @param bulk_mem_handle Mem handle sent using VCHI bulk transfer
  * @param bulk_offset     Offset within memory handle
  * @param bulk_len        Length of bulk transfer
- * 
+ *
  * -------------------------------------------------------------------- */
 
 static int ilcs_execute_function_ex(ILCS_SERVICE_T *st, IL_FUNCTION_T func,
-                                    void *data, int len, 
+                                    void *data, int len,
                                     void *data2, int len2,
                                     VCHI_MEM_HANDLE_T bulk_mem_handle, void *bulk_offset, int bulk_len,
                                     void *resp, int *rlen)
@@ -712,13 +712,13 @@ static int ilcs_execute_function_ex(ILCS_SERVICE_T *st, IL_FUNCTION_T func,
 
       for (i=0; i<ILCS_WAIT_TIMEOUT; i++) {
          num = 0;
-         
+
          while(num < ILCS_MAX_WAITING && st->wait[num].resp != NULL)
             num++;
-         
+
          if(num < ILCS_MAX_WAITING || i == ILCS_WAIT_TIMEOUT-1)
             break;
-         
+
          // the previous time round this loop, we woke up because the timer
          // expired, so restart it
          if (st->timer_expired)
@@ -768,19 +768,19 @@ static int ilcs_execute_function_ex(ILCS_SERVICE_T *st, IL_FUNCTION_T func,
       }
 
       wait = &st->wait[num];
-      
+
       wait->resp = resp;
       wait->rlen = rlen;
       xid = wait->xid = st->next_xid++;
    }
 
    vcos_mutex_unlock(&st->wait_mtx);
-   
+
    if(bulk_len != 0)
       vcos_semaphore_wait(&st->send_sem);
 
    ilcs_transmit(st, func, xid, data, len, data2, len2);
-      
+
    if(bulk_len != 0)
    {
 #ifdef USE_VCHIQ_ARM
@@ -838,7 +838,7 @@ int ilcs_execute_function(ILCS_SERVICE_T *st, IL_FUNCTION_T func, void *data, in
  * -------------------------------------------------------------------- */
 
 OMX_ERRORTYPE ilcs_pass_buffer(ILCS_SERVICE_T *st, IL_FUNCTION_T func, void *reference,
-                               OMX_BUFFERHEADERTYPE *pBuffer)                       
+                               OMX_BUFFERHEADERTYPE *pBuffer)
 {
    IL_PASS_BUFFER_EXECUTE_T exe;
    IL_BUFFER_BULK_T fixup;
@@ -922,7 +922,7 @@ OMX_ERRORTYPE ilcs_pass_buffer(ILCS_SERVICE_T *st, IL_FUNCTION_T func, void *ref
       }
       else
       {
-         // Pass the misaligned area at the start at end inline within the 
+         // Pass the misaligned area at the start at end inline within the
          // message, and the bulk of the message using a separate bulk
          // transfer
          const uint8_t *start = ptr;
@@ -952,7 +952,7 @@ OMX_ERRORTYPE ilcs_pass_buffer(ILCS_SERVICE_T *st, IL_FUNCTION_T func, void *ref
          len2 = sizeof(fixup);
       }
    }
-   else 
+   else
    {
       exe.method = IL_BUFFER_NONE;
    }
@@ -974,7 +974,6 @@ OMX_ERRORTYPE ilcs_pass_buffer(ILCS_SERVICE_T *st, IL_FUNCTION_T func, void *ref
 
    return ret ? resp.err : OMX_ErrorNone;
 }
-
 
 /* ----------------------------------------------------------------------
  * receive a buffer via the IL component service.
@@ -1012,7 +1011,7 @@ OMX_BUFFERHEADERTYPE *ilcs_receive_buffer(ILCS_SERVICE_T *st, void *call, int cl
       VCHI_MEM_HANDLE_T mem_handle = VCHI_MEM_HANDLE_INVALID;
       void *bulk_offset;
       int32_t bulk_len = exe->bufferLen - fixup->headerlen - fixup->trailerlen;
-      
+
       vcos_assert(clen == sizeof(IL_PASS_BUFFER_EXECUTE_T) + sizeof(IL_BUFFER_BULK_T));
 
       if(st->use_memmgr)
@@ -1043,7 +1042,7 @@ OMX_BUFFERHEADERTYPE *ilcs_receive_buffer(ILCS_SERVICE_T *st, void *call, int cl
       else if(fixup->headerlen || fixup->trailerlen)
       {
          uint8_t *end = dest + exe->bufferLen;
-         
+
          if(fixup->headerlen)
             memcpy(dest, fixup->header, fixup->headerlen);
          if(fixup->trailerlen)

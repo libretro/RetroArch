@@ -27,6 +27,7 @@
 #endif
 
 #include "../video_driver.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"

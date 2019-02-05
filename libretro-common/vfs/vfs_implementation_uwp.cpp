@@ -106,7 +106,6 @@ namespace
 		}
 	}
 
-
 	void windowsize_path(wchar_t* path)
 	{
 		/* UWP deals with paths containing / instead of \ way worse than normal Windows */

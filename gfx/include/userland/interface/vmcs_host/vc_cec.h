@@ -368,7 +368,7 @@ typedef enum {
  * bit 11-8 index to upstream device
  * bit 15-12 number of downstream device
  * bit 31-16 index of first 4 downstream devices
- * 
+ *
  * To keep life simple we only show the first 4 connected downstream devices
  *
  */
@@ -405,11 +405,10 @@ typedef enum {
    VC_CEC_LOGICAL_ADDR_LOST = (1 << 15) /**<Only for passive mode, if the logical address is lost for whatever reason, this will be triggered */
 } VC_CEC_NOTIFY_T;
 
-
 /**
  * Callback reason and arguments (for sending back to host) All parameters are uint32_t
  * For the reason parameter
- * Bit 15-0 of reason is the reason code, 
+ * Bit 15-0 of reason is the reason code,
  * Bit 23-16 is length of valid bytes which follows in the 4 32-bit parameters (0 < length <= 16)
  * Bit 31-24 is any return code (if required for this callback)
  *
@@ -419,15 +418,15 @@ typedef enum {
  * Length of valid bytes for logical address will always be 6 (first parameter + 16-bit physical address)
  *
  * Length of valid bytes for topology callback will always be 2 (16-bit mask)
- * 
- * Many CEC callback messages are of variable length so not all bytes 0-15 are available 
+ *
+ * Many CEC callback messages are of variable length so not all bytes 0-15 are available
  *
  * Reason                  param1          param2       param3      param4           remark
- * VC_CEC_TX               bytes 0-3       bytes 4-7    bytes 8-11  bytes 12-15      A message has been transmitted 
- *                                                                                   Only a message sent from the host will 
+ * VC_CEC_TX               bytes 0-3       bytes 4-7    bytes 8-11  bytes 12-15      A message has been transmitted
+ *                                                                                   Only a message sent from the host will
                                                                                      generate this callback
                                                                                      (non-zero return code means failure)
-                                                     
+
  * VC_CEC_RX               bytes 0-3       bytes 4-7    bytes 8-11  bytes 12-15      By definition only successful message will be forwarded
  *
  * VC_CEC_BUTTON_PRESSED   bytes 0-3       bytes 4-7     -           -               User Control pressed (byte 2 will be actual user control code)
@@ -437,20 +436,20 @@ typedef enum {
  * VC_CEC_REMOTE_RELEASE   bytes 0-3       bytes 4-7    bytes 8-11  bytes 12-15      Vendor remote button up
 
  * VC_CEC_LOGICAL_ADDR     Log addr        Phy addr      -           -               Logical address allocated or failure
- * VC_CEC_TOPOLOGY         topology bit 
+ * VC_CEC_TOPOLOGY         topology bit
  *                         mask                                                      New topology is avaiable
  *
  *VC_CEC_LOGICAL_ADDR_LOST Last log addr   Phy addr                                  "Last log addr" is no longer available
  *
- * Notes: 
+ * Notes:
  * VC_CEC_BUTTON_RELEASE and VC_CEC_REMOTE_RELEASE (<User Control Release> and <Vendor Remote Button Up> messages respectively)
  * returns the code from the most recent <User Control pressed> <Vendor Remote button up> respectively.
  * The host application will need to find out the vendor ID of the initiator
  * separately in the case if <Vendor Remote Button Up>/<Vendor Remote Button Down> commands were received.
  * <User Control Pressed> will not be longer than 6 bytes (including header)
  *
- * VC_CEC_LOGICAL_ADDR returns 0xF in param1 whenever no logical address is in used. If physical address is 0xFFFF, 
- * this means CEC is being disabled. Otherwise physical address is the one read from EDID (and no suitable logical address 
+ * VC_CEC_LOGICAL_ADDR returns 0xF in param1 whenever no logical address is in used. If physical address is 0xFFFF,
+ * this means CEC is being disabled. Otherwise physical address is the one read from EDID (and no suitable logical address
  * is avaiable to be allocated). Host application should only attempt to send message if both param1 is not 0xF AND param2
  * is not 0xFFFF.
  *
@@ -459,7 +458,7 @@ typedef enum {
  * own logical address.
  *
  * If CEC is running in passive mode, the host will get a VC_CEC_LOGICAL_ADDR_LOST callback if the logical address is
- * lost (e.g. HDMI mode change). In this case the host should try a new logical address. The physical address returned may 
+ * lost (e.g. HDMI mode change). In this case the host should try a new logical address. The physical address returned may
  * also change, so the host should check this.
  */
 
@@ -483,7 +482,7 @@ typedef enum {
 typedef void (*CEC_CALLBACK_T)(void *client_p, uint32_t reason, uint32_t param1, uint32_t param2, uint32_t param3, uint32_t param4);
 
 /**
- * Some macros to get some fields from the callback parameters in CEC callback 
+ * Some macros to get some fields from the callback parameters in CEC callback
  */
 //Marcos operating on reason
 #define CEC_CB_REASON(x) ((x) & 0xFFFF) /** Get callback reason */

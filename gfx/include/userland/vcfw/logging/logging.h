@@ -117,7 +117,6 @@ typedef struct {
    unsigned char *data;
 } logging_array_log_t;
 
-
 // The header at the start of the log may be one of a number of different types,
 // but they all start with a common portion:
 
@@ -207,7 +206,6 @@ void logging_assert_dump(void);
 void logging_message(int level, const char *format, ...);
 void vlogging_message (int level, const char *format, va_list args);
 
-
 /* Log a simple string */
 void logging_string(int level, const char *string);
 /* The log for recording the current tasks. */
@@ -218,7 +216,7 @@ void logging_set_notify_callback( logging_notify_callback_fn fn );
 /* Dump log to sdcard, discarding any logging that happens during the file write */
 int logging_dump_log(char* filename);
 
-/* Dump log to sdcard. If a sufficiently large temporary buffer is not provided, 
+/* Dump log to sdcard. If a sufficiently large temporary buffer is not provided,
 logging messages will be discarded during the file write. */
 int logging_dump_log_buffered(char* filename, void *buffer, int buffer_size);
 
@@ -347,4 +345,3 @@ static __inline void logging_message (int level, const char *format, ...) { }
 #endif  // LOGGING
 
 #endif // LOGGING_LOGGING_H
-

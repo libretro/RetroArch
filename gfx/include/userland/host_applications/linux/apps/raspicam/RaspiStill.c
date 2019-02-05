@@ -237,7 +237,6 @@ static struct
 
 static int encoding_xref_size = sizeof(encoding_xref) / sizeof(encoding_xref[0]);
 
-
 static struct
 {
    char *description;
@@ -253,7 +252,6 @@ static struct
 };
 
 static int next_frame_description_size = sizeof(next_frame_description) / sizeof(next_frame_description[0]);
-
 
 /**
  * Assign a default set of parameters to the state passed in
@@ -692,7 +690,6 @@ static int parse_cmdline(int argc, const char **argv, RASPISTILL_STATE *state)
 
    return 0;
 }
-
 
 /**
  *  buffer header callback function for encoder
@@ -1163,7 +1160,6 @@ static void destroy_encoder_component(RASPISTILL_STATE *state)
    }
 }
 
-
 /**
  * Add an exif tag to the capture
  *
@@ -1236,7 +1232,6 @@ static void add_exif_tags(RASPISTILL_STATE *state, struct gps_data_t *gpsdata)
 
    snprintf(exif_buf, sizeof(exif_buf), "IFD0.DateTime=%s", time_buf);
    add_exif_tag(state, exif_buf);
-
 
    // Add GPS tags
    if (state->common_settings.gps)
@@ -1628,7 +1623,6 @@ static void rename_file(RASPISTILL_STATE *state, FILE *output_file,
       if (final_link) free(final_link);
    }
 }
-
 
 /**
  * main
@@ -2059,5 +2053,4 @@ error:
 
    return exit_code;
 }
-
 

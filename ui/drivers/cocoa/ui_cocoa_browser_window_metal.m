@@ -28,12 +28,12 @@
 static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
    NSOpenPanel *panel = [NSOpenPanel openPanel];
-   
+
    if (!string_is_empty(state->filters))
    {
       [panel setAllowedFileTypes:@[BOXSTRING(state->filters), BOXSTRING(state->filters_title)]];
    }
-   
+
    panel.title = NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"));
    panel.directoryURL = [NSURL fileURLWithPath:BOXSTRING(state->startdir)];
    panel.canChooseDirectories = NO;
@@ -45,7 +45,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
        return false;
    const char *res_path = [panel.URL.path UTF8String];
    state->result = strdup(res_path);
-   
+
    return true;
 }
 

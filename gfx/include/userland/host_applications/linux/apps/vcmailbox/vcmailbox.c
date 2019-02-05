@@ -55,7 +55,6 @@ static int mbox_property(int file_desc, void *buf)
    return ret_val;
 }
 
-
 static int mbox_open()
 {
    int file_desc;
@@ -73,7 +72,6 @@ static int mbox_open()
 static void mbox_close(int file_desc) {
   close(file_desc);
 }
-
 
 #define MAX_WORDS 256
 

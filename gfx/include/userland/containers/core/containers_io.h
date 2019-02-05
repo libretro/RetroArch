@@ -118,7 +118,7 @@ struct VC_CONTAINER_IO_T
 
    /** \private
     * Function pointer to perform a control operation on a container io module */
-   VC_CONTAINER_STATUS_T (*pf_control)(struct VC_CONTAINER_IO_T *io, 
+   VC_CONTAINER_STATUS_T (*pf_control)(struct VC_CONTAINER_IO_T *io,
                                        VC_CONTAINER_CONTROL_T operation, va_list args);
 
 };
@@ -200,7 +200,7 @@ VC_CONTAINER_STATUS_T vc_container_io_seek(VC_CONTAINER_IO_T *context, int64_t o
  * \param  args        Additional arguments for the operation
  * \return             Status of the operation
  */
-VC_CONTAINER_STATUS_T vc_container_io_control_list(VC_CONTAINER_IO_T *context, 
+VC_CONTAINER_STATUS_T vc_container_io_control_list(VC_CONTAINER_IO_T *context,
                                                    VC_CONTAINER_CONTROL_T operation, va_list args);
 
 /** Perform control operation on an i/o stream (varargs).
@@ -209,7 +209,7 @@ VC_CONTAINER_STATUS_T vc_container_io_control_list(VC_CONTAINER_IO_T *context,
  * \param  ...         Additional arguments for the operation
  * \return             Status of the operation
  */
-VC_CONTAINER_STATUS_T vc_container_io_control(VC_CONTAINER_IO_T *context, 
+VC_CONTAINER_STATUS_T vc_container_io_control(VC_CONTAINER_IO_T *context,
                                                 VC_CONTAINER_CONTROL_T operation, ...);
 
 /** Cache the pointed region of the i/o stream (from current position).

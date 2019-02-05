@@ -28,11 +28,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VC_CONTAINERS_LOADER_H
 #define VC_CONTAINERS_LOADER_H
 
-/** Find and attempt to load & open reader, 'fileext' is a hint that can be used 
+/** Find and attempt to load & open reader, 'fileext' is a hint that can be used
     to speed up loading. */
 VC_CONTAINER_STATUS_T vc_container_load_reader(VC_CONTAINER_T *p_ctx, const char *fileext);
 
-/** Find and attempt to load & open writer, 'fileext' is a hint used to help in 
+/** Find and attempt to load & open writer, 'fileext' is a hint used to help in
     selecting the appropriate container format. */
 VC_CONTAINER_STATUS_T vc_container_load_writer(VC_CONTAINER_T *p_ctx, const char *fileext);
 

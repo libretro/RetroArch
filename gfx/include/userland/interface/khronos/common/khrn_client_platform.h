@@ -59,7 +59,6 @@ extern "C" {
  * semaphores.
  */
 
-
 /*
    workaround for broken platforms which don't detect threads exiting
 */

@@ -497,7 +497,7 @@ default_sublabel_macro(action_bind_sublabel_show_wimp,                          
 #endif
 default_sublabel_macro(action_bind_sublabel_discord_allow,                         MENU_ENUM_SUBLABEL_DISCORD_ALLOW)
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 default_sublabel_macro(action_bind_sublabel_switch_cpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE)
 #endif
 
@@ -676,13 +676,13 @@ static int action_bind_sublabel_remap_sublabel(
    unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
-   snprintf(s, len, "%s #%d: %s", 
+   snprintf(s, len, "%s #%d: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
          offset + 1,
          input_config_get_device_display_name(offset) ?
          input_config_get_device_display_name(offset) :
          (input_config_get_device_name(offset) ?
-          input_config_get_device_name(offset) : 
+          input_config_get_device_name(offset) :
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
@@ -2188,7 +2188,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_cpu_profile);
             break;

@@ -68,7 +68,6 @@ typedef void (*VCOS_LLTHREAD_ENTRY_FN_T)(void *);
   */
 typedef void *(*VCOS_THREAD_ENTRY_FN_T)(void*);
 
-
 /* Error return codes - chosen to be similar to errno values */
 typedef enum
 {

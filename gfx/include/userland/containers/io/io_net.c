@@ -269,7 +269,7 @@ static size_t io_net_write(VC_CONTAINER_IO_T *p_ctx, const void *buffer, size_t 
 }
 
 /*****************************************************************************/
-static VC_CONTAINER_STATUS_T io_net_control(struct VC_CONTAINER_IO_T *p_ctx, 
+static VC_CONTAINER_STATUS_T io_net_control(struct VC_CONTAINER_IO_T *p_ctx,
       VC_CONTAINER_CONTROL_T operation,
       va_list args)
 {

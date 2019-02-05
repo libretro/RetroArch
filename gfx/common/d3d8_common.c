@@ -15,7 +15,7 @@
 
 #define CINTERFACE
 
-/* For Xbox we will just link statically 
+/* For Xbox we will just link statically
  * to Direct3D libraries instead. */
 
 #if !defined(_XBOX) && defined(HAVE_DYLIB)
@@ -113,7 +113,7 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
    if (!g_d3d8_dll)
       return false;
 #endif
-   
+
    SDKVersion               = 220;
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");

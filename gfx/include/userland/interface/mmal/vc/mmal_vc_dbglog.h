@@ -46,7 +46,6 @@ typedef enum {
    MMAL_DBG_BULK_RX,
 } MMAL_DBG_EVENT_TYPE_T;
 
-
 /** Debug log data. */
 typedef union
 {
@@ -155,6 +154,5 @@ void mmal_vc_dbglog_deinit(void);
    entry->u.bulk.len = len; \
    mmal_log_unlock_event(); \
 }
-
 
 #endif

@@ -68,8 +68,8 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
-static const int crt_switch_resolution_super = 2560; 
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
+static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;
@@ -372,8 +372,9 @@ static unsigned menu_shader_pipeline = 1;
 static unsigned menu_shader_pipeline = 2;
 #endif
 
-static bool show_advanced_settings            = false;
-static unsigned rgui_color_theme = RGUI_THEME_CLASSIC_GREEN;
+static bool show_advanced_settings        = false;
+static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #else
 static bool default_block_config_read = false;
@@ -395,7 +396,7 @@ static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
-#elif defined(PS2)
+#elif defined(PS2) || defined(PSP)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
@@ -753,8 +754,6 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
-
-static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;

@@ -55,7 +55,6 @@ extern "C" {
 #   error VGU_API_EXIT must be defined
 #endif
 
-
 typedef enum {
   VGU_NO_ERROR                                 = 0,
   VGU_BAD_HANDLE_ERROR                         = 0xF000,
