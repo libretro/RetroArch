@@ -662,6 +662,8 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    if (!re->main_buffer)
       goto error;
 
+   memset(re->main_buffer, 0, sizeof(float) * elems);
+
    re->phase_table = re->main_buffer;
    re->buffer_l    = re->main_buffer + phase_elems;
    re->buffer_r    = re->buffer_l + 2 * re->taps;
