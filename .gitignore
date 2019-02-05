@@ -76,6 +76,7 @@ run.sh
 convert_rumble.awk
 *~
 assets
+info
 
 # Wii U
 *.depend
