@@ -15,7 +15,7 @@ cd ~/dist
 
 echo "Copying binary into dist folder..."
 
-cp -rv ~/libretro-super/retroarch/pkg/apple/build/Release/RetroArch.app .
+cp -rv  ${TRAVIS_BUILD_DIR}/pkg/apple/build/Release/RetroArch.app .
 
 echo "Downloading assets..."
 
