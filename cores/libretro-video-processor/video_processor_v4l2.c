@@ -503,7 +503,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
    if (strcmp(videodev.value, "dummy") == 0) {
       info->geometry.aspect_ratio = 4.0/3.0;
       info->geometry.base_width  = info->geometry.max_width = video_cap_width;
-      info->geometry.base_height = video_cap_height; /* uut? */
+      info->geometry.base_height = video_cap_height; /* out? */
       info->geometry.max_height  = video_out_height;
       info->timing.fps           = 60;
       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
