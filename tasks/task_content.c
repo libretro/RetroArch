@@ -39,6 +39,10 @@
 #endif
 #endif
 
+#ifdef __WINRT__
+#include <uwp/uwp_func.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -69,6 +73,7 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#include "task_content.h"
 #include "tasks_internal.h"
 
 #include "../command.h"
@@ -555,8 +560,12 @@ static bool content_file_load(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
-   size_t msg_size = 1024 * sizeof(char);
-   char *msg       = (char*)malloc(msg_size);
+   size_t msg_size             = 1024 * sizeof(char);
+   char *msg                   = (char*)malloc(msg_size);
+   bool used_vfs_fallback_copy = false;
+#ifdef __WINRT__
+   rarch_system_info_t *system = runloop_get_system_info();
+#endif
 
    msg[0]          = '\0';
 
@@ -605,7 +614,6 @@ static bool content_file_load(
       }
       else
       {
-
 #ifdef HAVE_COMPRESSION
          if (     !content_ctx->block_extract
                && need_fullpath
@@ -618,10 +626,83 @@ static bool content_file_load(
             goto error;
 #endif
 
-/* It adds up to 5 seconds when loading large roms. 
+#ifdef __WINRT__
+         /* TODO: When support for the 'actual' VFS is added, there will need to be some more logic here */
+         if (!system->supports_vfs && !uwp_is_path_accessible_using_standard_io(path))
+         {
+            /* Fallback to a file copy into an accessible directory */
+            char* buf;
+            int64_t len;
+            union string_list_elem_attr attributes;
+            size_t new_basedir_size = PATH_MAX_LENGTH * sizeof(char);
+            size_t new_path_size    = PATH_MAX_LENGTH * sizeof(char);
+            char *new_basedir       = (char*)malloc(new_basedir_size);
+            char *new_path          = (char*)malloc(new_path_size);
+
+            new_path[0] = '\0';
+            new_basedir[0] = '\0';
+            attributes.i = 0;
+
+            RARCH_LOG("Core does not support VFS - copying to cache directory\n");
+
+            if (!string_is_empty(content_ctx->directory_cache))
+               strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
+            if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !uwp_is_path_accessible_using_standard_io(new_basedir))
+            {
+               RARCH_WARN("Tried copying to cache directory, but "
+                  "cache directory was not set or found. "
+                  "Setting cache directory to root of "
+                  "writable app directory...\n");
+               strlcpy(new_basedir, uwp_dir_data, new_basedir_size);
+            }
+
+            fill_pathname_join(new_path, new_basedir,
+               path_basename(path), new_path_size);
+
+            /* TODO: This may fail on very large files...
+             * but copying large files is not a good idea anyway */
+            if (!filestream_read_file(path, &buf, &len))
+            {
+               snprintf(msg,
+                  msg_size,
+                  "%s \"%s\". (during copy read)\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
+               *error_string = strdup(msg);
+               goto error;
+            }
+            if (!filestream_write_file(new_path, buf, len))
+            {
+               free(buf);
+               snprintf(msg,
+                  msg_size,
+                  "%s \"%s\". (during copy write)\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
+               *error_string = strdup(msg);
+               goto error;
+            }
+            free(buf);
+
+            string_list_append(additional_path_allocs, new_path, attributes);
+            info[i].path =
+               additional_path_allocs->elems[additional_path_allocs->size - 1].data;
+
+            string_list_append(content_ctx->temporary_content,
+               new_path, attributes);
+
+            free(new_basedir);
+            free(new_path);
+
+            used_vfs_fallback_copy = true;
+         }
+#endif
+
+/* It adds up to 10 seconds when loading large roms.
  * It's mainly used for network play which isn't available for these platforms. */
 #if !defined(GEKKO)
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+         RARCH_LOG("%s\n", msg_hash_to_str(
+                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
 #endif
@@ -635,9 +716,17 @@ static bool content_file_load(
 
    if (!core_load_game(&load_info))
    {
-      snprintf(msg,
+      /* This is probably going to fail on multifile ROMs etc.
+       * so give a visible explanation of what is likely wrong */
+      if (used_vfs_fallback_copy)
+         snprintf(msg,
+            msg_size,
+            "%s.", msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
+      else
+         snprintf(msg,
             msg_size,
             "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+
       *error_string = strdup(msg);
       goto error;
    }
@@ -1426,6 +1515,8 @@ bool task_push_load_content_with_new_core_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+
+      global->name.label[0]                   = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))
@@ -1596,10 +1687,13 @@ end:
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
 {
+   global_t *global = global_get_ptr();
+
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -1610,6 +1704,14 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 #endif
 
    _launched_from_cli = false;
+
+   if (global)
+   {
+      if (label)
+         strlcpy(global->name.label, label, sizeof(global->name.label));
+      else
+         global->name.label[0] = '\0';
+   }
 
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
@@ -1689,7 +1791,6 @@ bool task_push_load_content_with_current_core_from_companion_ui(
    return true;
 }
 
-#ifdef HAVE_MENU
 bool task_push_load_content_with_core_from_menu(
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -1707,9 +1808,11 @@ bool task_push_load_content_with_core_from_menu(
       return false;
    }
 
+#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 
    return true;
 }
@@ -1731,14 +1834,14 @@ bool task_push_load_subsystem_with_core_from_menu(
       return false;
    }
 
+#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 
    return true;
 }
-
-#endif
 
 void content_get_status(
       bool *contentless,
@@ -1803,6 +1906,32 @@ void content_set_subsystem(unsigned idx)
 
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
+}
+
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name)
+{
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+   unsigned i = 0;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data;
+
+   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   {
+      if (string_is_equal(subsystem_name, subsystem->ident))
+      {
+         content_set_subsystem(i);
+         return true;
+      }
+   }
+
+   return false;
 }
 
 /* Add a rom to the subsystem rom buffer */

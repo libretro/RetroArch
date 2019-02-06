@@ -168,4 +168,3 @@ struct video_shader *vulkan_filter_chain_get_preset(
 RETRO_END_DECLS
 
 #endif
-

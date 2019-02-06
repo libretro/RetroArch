@@ -688,7 +688,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    if (preset <= RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)
    {
       if (!settings->bools.video_gpu_record)
-         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
             settings->uints.video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
@@ -697,7 +697,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
    {
       if (!settings->bools.video_gpu_record)
-         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
             settings->uints.video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
@@ -706,7 +706,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
       if (!settings->bools.video_gpu_record)
-         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
             settings->uints.video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
@@ -715,7 +715,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
    {
       if (!settings->bools.video_gpu_record)
-         params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
+         params->scale_factor = settings->uints.video_stream_scale_factor > 0 ?
             settings->uints.video_stream_scale_factor : 1;
       else
          params->scale_factor = 1;

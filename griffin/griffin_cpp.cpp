@@ -36,6 +36,9 @@ UI
 #ifndef __APPLE__
 #define HAVE_MAIN /* also requires defining in frontend.c */
 #endif
+
+#undef mkdir
+
 #include "../ui/drivers/ui_qt.cpp"
 
 #include "../ui/drivers/qt/ui_qt_window.cpp"
@@ -50,7 +53,7 @@ UI
 #include "../ui/drivers/qt/coreinfodialog.cpp"
 #include "../ui/drivers/qt/playlistentrydialog.cpp"
 #include "../ui/drivers/qt/viewoptionsdialog.cpp"
-#include "../ui/drivers/qt/playlist.cpp"
+#include "../ui/drivers/qt/qt_playlist.cpp"
 #include "../ui/drivers/qt/updateretroarch.cpp"
 #include "../ui/drivers/qt/thumbnaildownload.cpp"
 #include "../ui/drivers/qt/thumbnailpackdownload.cpp"

@@ -9,7 +9,6 @@ Version <- '#'_'version' Space+ <Int> <(!EndOfLine .)*> EndOfLine
 Stage <- '#'_'pragma' Space+ 'stage' Space? <(!EndOfLine .)*> EndOfLine
 #.*Include <- '#'_'include' _ '"' <(!'"' .)*> '"' _ EndOfLine
 
-
 Declaration <- Layout? _ Qualifier Space _ Type Space _ Name _ ArraySize? _ EndOfStatement
 ConstArray <- Type Space _ Name _ ArraySize? _ '=' _ Array  _ EndOfStatement
 UniformBlock <- Layout? _ 'uniform' _ StructName? _ '{' Member* '}' _ Name? _ EndOfStatement
@@ -39,9 +38,7 @@ Set <- 'set' _ '=' _ <Int>
 PushConstant <- 'push_constant'
 Std <- 'std' <Int>
 
-
 #.*Block <- '{' (Directive/ Statement / Block _)* '}'
-
 
 Float <- $< '-'? [0-9]+ '.' ([0-9]+ ('e-'[0-9]+)? )? 'f'? >
 Int <- < '-'? [0-9]+ >
@@ -52,4 +49,3 @@ End <- EndOfLine / EndOfFile
 ~_  <-  [ \t\r\n]*
 Indent  <-  [ \t]
 ~Space  <-  [ \t]
-

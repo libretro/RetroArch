@@ -16,7 +16,7 @@ MSG_HASH(
     "Ajusta el brillo de la pantalla"
     )
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"
@@ -836,14 +836,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
     "Activar logros"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Color de resaltado del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Color normal del menú"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
@@ -2989,26 +2981,6 @@ MSG_HASH(
  MSG_HASH(
      MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
      "HH:MM:SS (AM/PM)"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Color de títulos del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
-    "Color oscuro del fondo del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
-    "Color claro del fondo del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
-    "Color oscuro del borde del menú"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
-    "Color claro del borde del menú"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
@@ -7706,7 +7678,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
     "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla.\n"
-    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."                                                                                                       
+    "Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -7911,4 +7883,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Mantener Start (2 segundos)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

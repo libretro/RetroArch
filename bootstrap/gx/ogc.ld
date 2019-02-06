@@ -86,7 +86,7 @@ SECTIONS
 		KEEP (*(.fini))
 		. = ALIGN(32);   /* REQUIRED. LD is flaky without it. */
 	} = 0
-	
+
 	PROVIDE (__etext = .);
 	PROVIDE (_etext = .);
 	PROVIDE (etext = .);
@@ -167,7 +167,6 @@ SECTIONS
 	.jcr            : { KEEP (*(.jcr)) }
 	.got		  : { *(.got.plt) *(.got) }
 
-
 	/*	We want the small data sections together, so single-instruction offsets
 		can access them all, and initialized data all before uninitialized, so
 		we can shorten the on-disk segment size.  */
@@ -182,7 +181,7 @@ SECTIONS
 
 	_edata = .;
 	PROVIDE (edata = .);
-	
+
 	.sbss      :
 	{
 		__sbss_start = .;

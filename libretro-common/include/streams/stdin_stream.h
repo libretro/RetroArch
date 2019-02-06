@@ -37,4 +37,3 @@ size_t read_stdin(char *buf, size_t size);
 RETRO_END_DECLS
 
 #endif
-

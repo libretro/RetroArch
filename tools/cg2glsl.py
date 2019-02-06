@@ -15,15 +15,12 @@ if sys.version_info < (3, 0, 0):
     sys.stderr.write("You need python 3.0 or later to run this script\n")
     exit(1)
 
-
 batch_mode = False
-
 
 def log(*arg):
     if not batch_mode:
         # FIXME: This causes a syntax error in python2, preventing the version warning from displaying.
         print(*arg)
-
 
 def keep_line_if(func, lines):
     ret = []
@@ -31,15 +28,12 @@ def keep_line_if(func, lines):
         ret.append(line)
     return ret
 
-
 def remove_comments(source_lines):
     lines_without_comments = [line.split('//')[0] for line in source_lines]
     return keep_line_if(lambda line: line, lines_without_comments)
 
-
 def defines_var(line):
     return ('//var' in line) or ('#var' in line)
-
 
 def replace_by_table(source, table):
     for orig, new in table:
@@ -47,7 +41,6 @@ def replace_by_table(source, table):
             source = source.replace(orig, new)
 
     return source
-
 
 def replace_global_in(source):
     replace_table = [
@@ -68,7 +61,6 @@ def replace_global_in(source):
     log('Replace globals:', replace_table)
 
     return replace_by_table(source, replace_table)
-
 
 def replace_global_vertex(source):
     source = replace_global_in(source)
@@ -96,7 +88,6 @@ def replace_global_vertex(source):
 
     return replace_by_table(source, replace_table)
 
-
 def translate_varyings(varyings, source, direction):
     dictionary = {}
     for varying in varyings:
@@ -107,7 +98,6 @@ def translate_varyings(varyings, source, direction):
                 break
 
     return dictionary
-
 
 def no_uniform(elem):
     banned = [
@@ -127,7 +117,6 @@ def no_uniform(elem):
             return False
 
     return True
-
 
 def destructify_varyings(source, direction):
     # We have to change varying structs that Cg support to single varyings for GL.
@@ -232,13 +221,11 @@ def destructify_varyings(source, direction):
 
     return source
 
-
 def translate(cg, translations):
     if cg in translations:
         return translations[cg]
     else:
         return cg
-
 
 def translate_varying(cg):
     translations = {
@@ -272,7 +259,6 @@ def translate_varying(cg):
     }
 
     return translate(cg, translations)
-
 
 def translate_texture_size(cg):
     translations = {
@@ -328,7 +314,6 @@ def translate_texture_size(cg):
 
     return translate(cg, translations)
 
-
 def replace_varyings(source):
     ret = []
     translations = []
@@ -366,7 +351,6 @@ def replace_varyings(source):
         ret.append(line)
 
     return ret
-
 
 def fix_samplers(log_prefix, ref_index, source):
     translations = []
@@ -414,7 +398,6 @@ def fix_samplers(log_prefix, ref_index, source):
 
     return source
 
-
 def hack_source_vertex(source):
     ref_index = 0
     for index, line in enumerate(source):
@@ -436,7 +419,6 @@ def hack_source_vertex(source):
 
     return source
 
-
 def replace_global_fragment(source):
     source = replace_global_in(source)
 
@@ -451,7 +433,6 @@ def replace_global_fragment(source):
     ]
 
     return replace_by_table(source, replace_table)
-
 
 def translate_texture(cg):
     translations = {
@@ -483,7 +464,6 @@ def translate_texture(cg):
 
     return translate(cg, translations)
 
-
 def hack_source_fragment(source):
     ref_index = 0
     for index, line in enumerate(source):
@@ -501,7 +481,6 @@ def hack_source_fragment(source):
 
     return source
 
-
 def validate_shader(source, target):
     log('Shader:')
     log('===')
@@ -516,7 +495,6 @@ def validate_shader(source, target):
 
     return p.returncode == 0
 
-
 def preprocess_vertex(source_data):
     input_data = source_data.splitlines()
     ret = []
@@ -528,7 +506,6 @@ def preprocess_vertex(source_data):
         else:
             ret.append(line)
     return '\n'.join(ret)
-
 
 def convert(source, dest):
     # Have to preprocess first to resolve #includes so we can hack potential vertex shaders.
@@ -650,7 +627,6 @@ precision mediump float;
         f.write('#endif\n')
     return 0
 
-
 def convert_cgp(source, dest):
     string = ''
     with open(source, 'r') as f:
@@ -658,16 +634,13 @@ def convert_cgp(source, dest):
 
     open(dest, 'w').write(string)
 
-
 def path_ext(path):
     _, ext = os.path.splitext(path)
     return ext
 
-
 def convert_path(source, source_dir, dest_dir, conv):
     index = 0 if source_dir[-1] == '/' else 1
     return os.path.join(dest_dir, source.replace(source_dir, '')[index:]).replace(conv[0], conv[1])
-
 
 def main():
     if len(sys.argv) != 3:
@@ -748,7 +721,6 @@ def main():
             sys.exit(convert_cgp(source, dest))
         else:
             sys.exit(convert(source, dest))
-
 
 if __name__ == '__main__':
     sys.exit(main())

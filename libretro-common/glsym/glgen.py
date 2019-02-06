@@ -2,7 +2,7 @@
 
 """
    License statement applies to this file (glgen.py) only.
-""" 
+"""
 
 """
    Permission is hereby granted, free of charge,
@@ -155,4 +155,3 @@ if __name__ == '__main__':
       f.write('    { NULL, NULL },\n')
       f.write('};\n')
       dump(f, declarations)
-

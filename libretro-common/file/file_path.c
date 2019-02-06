@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.c).
@@ -32,7 +32,10 @@
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#define VFS_FRONTEND
+#include <vfs/vfs_implementation.h>
 
+/* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -116,118 +119,37 @@
 
 #endif
 
-enum stat_mode
+static retro_vfs_stat_t path_stat_cb = NULL;
+static retro_vfs_mkdir_t path_mkdir_cb = NULL;
+
+void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-   IS_DIRECTORY = 0,
-   IS_CHARACTER_SPECIAL,
-   IS_VALID
-};
+   const struct retro_vfs_interface* vfs_iface;
 
-static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
+   path_stat_cb           = NULL;
+   path_mkdir_cb          = NULL;
+
+   vfs_iface              = vfs_info->iface;
+
+   if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
+      return;
+
+   path_stat_cb           = vfs_iface->stat;
+   path_mkdir_cb          = vfs_iface->mkdir;
+}
+
+static int path_stat(const char *path, int32_t *size)
 {
-#if defined(ORBIS)
-   return false; /* for now */
-#endif
-#if defined(VITA) || defined(PSP)
-   SceIoStat buf;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
-   if (tmp[len-1] == '/')
-      tmp[len-1] = '\0';
+   if (path_stat_cb != NULL)
+      return path_stat_cb(path, size);
+   return retro_vfs_stat_impl(path, size);
+}
 
-   if (sceIoGetstat(tmp, &buf) < 0)
-   {
-      free(tmp);
-      return false;
-   }
-   free(tmp);
-#elif defined(PS2)
-   iox_stat_t buf;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
-   if (tmp[len-1] == '/')
-      tmp[len-1] = '\0';
-
-   if (fileXioGetStat(tmp, &buf) < 0)
-   {
-      free(tmp);
-      return false;
-   }
-   free(tmp);
-#elif defined(__CELLOS_LV2__)
-    CellFsStat buf;
-    if (cellFsStat(path, &buf) < 0)
-       return false;
-#elif defined(_WIN32)
-   DWORD file_info;
-   struct _stat buf;
-   char *path_local   = NULL;
-   wchar_t *path_wide = NULL;
-
-   if (!path || !*path)
-      return false;
-
-   (void)path_wide;
-   (void)path_local;
-   (void)file_info;
-
-#if defined(LEGACY_WIN32)
-   path_local = utf8_to_local_string_alloc(path);
-   file_info  = GetFileAttributes(path_local);
-
-   _stat(path_local, &buf);
-
-   if (path_local)
-     free(path_local);
-#else
-   path_wide = utf8_to_utf16_string_alloc(path);
-   file_info = GetFileAttributesW(path_wide);
-
-   _wstat(path_wide, &buf);
-
-   if (path_wide)
-      free(path_wide);
-#endif
-
-   if (file_info == INVALID_FILE_ATTRIBUTES)
-      return false;
-#else
-   struct stat buf;
-   if (stat(path, &buf) < 0)
-      return false;
-#endif
-
-   if (size)
-#if defined(PS2)
-      *size = (int32_t)buf.size;
-#else
-      *size = (int32_t)buf.st_size;
-#endif
-   switch (mode)
-   {
-      case IS_DIRECTORY:
-#if defined(VITA) || defined(PSP)
-         return FIO_S_ISDIR(buf.st_mode);
-#elif defined(PS2)
-         return FIO_S_ISDIR(buf.mode);
-#elif defined(__CELLOS_LV2__)
-         return ((buf.st_mode & S_IFMT) == S_IFDIR);
-#elif defined(_WIN32)
-         return (file_info & FILE_ATTRIBUTE_DIRECTORY);
-#else
-         return S_ISDIR(buf.st_mode);
-#endif
-      case IS_CHARACTER_SPECIAL:
-#if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
-         return false;
-#else
-         return S_ISCHR(buf.st_mode);
-#endif
-      case IS_VALID:
-         return true;
-   }
-
-   return false;
+static int path_mkdir_norecurse(const char *dir)
+{
+   if (path_mkdir_cb != NULL)
+      return path_mkdir_cb(dir);
+   return retro_vfs_mkdir_impl(dir);
 }
 
 /**
@@ -241,6 +163,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 bool path_is_directory(const char *path)
 {
 #ifdef ORBIS
+   /* TODO: This should be moved to the VFS module */
    int dfd;
    if (!path)
       return false;
@@ -250,38 +173,27 @@ bool path_is_directory(const char *path)
    orbisDclose(dfd);
    return true;
 #else
-   return path_stat(path, IS_DIRECTORY, NULL);
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
 #endif
 }
 
 bool path_is_character_special(const char *path)
 {
-   return path_stat(path, IS_CHARACTER_SPECIAL, NULL);
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
 }
 
 bool path_is_valid(const char *path)
 {
-   return path_stat(path, IS_VALID, NULL);
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
 int32_t path_get_size(const char *path)
 {
    int32_t filesize = 0;
-   if (path_stat(path, IS_VALID, &filesize))
+   if (path_stat(path, &filesize) != 0)
       return filesize;
 
    return -1;
-}
-
-static bool path_mkdir_error(int ret)
-{
-#if defined(VITA)
-   return (ret == SCE_ERROR_ERRNO_EEXIST);
-#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(ORBIS)
-   return (ret == -1);
-#else
-   return (ret < 0 && errno == EEXIST);
-#endif
 }
 
 /**
@@ -329,35 +241,10 @@ bool path_mkdir(const char *dir)
 
    if (norecurse)
    {
-#if defined(_WIN32)
-#ifdef LEGACY_WIN32
-      int ret = _mkdir(dir);
-#else
-      wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
-      int ret = -1;
-
-      if (dirW)
-      {
-         ret = _wmkdir(dirW);
-         free(dirW);
-      }
-#endif
-#elif defined(IOS)
-      int ret = mkdir(dir, 0755);
-#elif defined(VITA) || defined(PSP)
-      int ret = sceIoMkdir(dir, 0777);
-#elif defined(PS2)
-      int ret =fileXioMkdir(dir, 0777);
-#elif defined(ORBIS)
-      int ret =orbisMkdir(dir, 0755);
-#elif defined(__QNX__)
-      int ret = mkdir(dir, 0777);
-#else
-      int ret = mkdir(dir, 0750);
-#endif
+      int ret = path_mkdir_norecurse(dir);
 
       /* Don't treat this as an error. */
-      if (path_mkdir_error(ret) && path_is_directory(dir))
+      if (ret == -2 && path_is_directory(dir))
          ret = 0;
 
       if (ret < 0)
@@ -418,7 +305,7 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   const char *ext = !string_is_empty(path) 
+   const char *ext = !string_is_empty(path)
       ? strrchr(path_basename(path), '.') : NULL;
    if (!ext)
       return "";
@@ -433,7 +320,7 @@ const char *path_get_extension(const char *path)
  * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: 
+ * Returns:
  * 1) If path has an extension, returns path with the
  *    extension removed.
  * 2) If there is no extension, returns NULL.
@@ -441,7 +328,7 @@ const char *path_get_extension(const char *path)
  */
 char *path_remove_extension(char *path)
 {
-   char *last = !string_is_empty(path) 
+   char *last = !string_is_empty(path)
       ? (char*)strrchr(path_basename(path), '.') : NULL;
    if (!last)
       return NULL;
@@ -693,6 +580,7 @@ bool fill_pathname_parent_dir_name(char *out_dir,
  *
  * Copies parent directory of @in_dir into @out_dir.
  * Assumes @in_dir is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, @out_dir will be an empty string.
  **/
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
@@ -779,12 +667,26 @@ void path_basedir(char *path)
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, returns empty string
  **/
 void path_parent_dir(char *path)
 {
+   bool path_was_absolute = path_is_absolute(path);
    size_t len = strlen(path);
    if (len && path_char_is_slash(path[len - 1]))
+   {
       path[len - 1] = '\0';
+      if (path_was_absolute && find_last_slash(path) == NULL)
+      {
+         /* We removed the only slash from what used to be an absolute path.
+          * On Linux, this goes from "/" to an empty string and everything works fine,
+          * but on Windows, we went from C:\ to C:, which is not a valid path and that later
+          * gets errornously treated as a relative one by path_basedir and returns "./".
+          * What we really wanted is an empty string. */
+         path[0] = '\0';
+         return;
+      }
+   }
    path_basedir(path);
 }
 

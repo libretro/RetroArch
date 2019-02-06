@@ -19,7 +19,10 @@
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -29,7 +32,10 @@ extern "C" {
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
 #include "../../../menu/menu_shader.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 enum
 {

@@ -102,7 +102,7 @@ static unsigned to_menu_pipeline(
 static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata 
+   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata
       : NULL;
 
    if (!vk || !draw)
@@ -125,7 +125,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
    static struct video_coords blank_coords;
    float output_size[2];
    video_coord_array_t *ca       = NULL;
-   vk_t *vk                      = video_info ? 
+   vk_t *vk                      = video_info ?
       (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
@@ -188,7 +188,7 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
-   vk_t *vk                      = video_info ? 
+   vk_t *vk                      = video_info ?
       (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
@@ -332,11 +332,11 @@ static void menu_display_vk_blend_end(video_frame_info_t *video_info)
 
 static bool menu_display_vk_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
-      float font_size, bool is_threaded)
+      float menu_font_size, bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    *handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, menu_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_VULKAN_API);
 
@@ -349,21 +349,21 @@ static bool menu_display_vk_font_init_first(
 static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
 
-   vk->tracker.use_scissor = true;
-   vk->tracker.scissor.offset.x = x;
-   vk->tracker.scissor.offset.y = y;
-   vk->tracker.scissor.extent.width = width;
+   vk->tracker.use_scissor           = true;
+   vk->tracker.scissor.offset.x      = x;
+   vk->tracker.scissor.offset.y      = y;
+   vk->tracker.scissor.extent.width  = width;
    vk->tracker.scissor.extent.height = height;
-   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
-   vk->tracker.use_scissor = false;
-   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk_t *vk = (vk_t*)video_info->userdata;
+   vk->tracker.use_scissor  = false;
+   vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

@@ -64,4 +64,3 @@ typedef struct input_ctx_wayland_data
 } input_ctx_wayland_data_t;
 
 #endif
-

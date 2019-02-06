@@ -91,7 +91,7 @@ static void *lzma_fast_alloc(void *p, size_t size)
 	addr = (uint32_t *)malloc(sizeof(uint32_t) * (size + sizeof(uint32_t)));
 	if (!addr)
 		return NULL;
-    
+
 	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
 	{
 		if (codec->allocptr[scan] == NULL)
@@ -134,7 +134,6 @@ static void lzma_fast_free(void *p, void *address)
 	}
 }
 
-
 /*-------------------------------------------------
  *  lzma_allocator_init
  *-------------------------------------------------
@@ -167,8 +166,6 @@ void lzma_allocator_free(void* p )
 			free(codec->allocptr[i]);
 	}
 }
-
-
 
 /***************************************************************************
  *  LZMA DECOMPRESSOR
@@ -352,4 +349,3 @@ chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	}
 	return CHDERR_NONE;
 }
-

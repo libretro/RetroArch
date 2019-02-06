@@ -44,4 +44,3 @@ void rglgen_resolve_symbols_custom(rglgen_proc_address_t proc,
 RETRO_END_DECLS
 
 #endif
-

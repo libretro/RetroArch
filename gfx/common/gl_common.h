@@ -29,13 +29,11 @@
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
+#include <glsym/glsym.h>
 #include <formats/image.h>
 
-#include "../../verbosity.h"
-#include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_driver.h"
-#include <glsym/glsym.h>
 
 RETRO_BEGIN_DECLS
 
@@ -92,7 +90,9 @@ RETRO_BEGIN_DECLS
 #endif
 
 #if defined(__APPLE__) || defined(HAVE_PSGL)
+#ifndef GL_RGBA32F
 #define GL_RGBA32F GL_RGBA32F_ARB
+#endif
 #endif
 
 #if defined(HAVE_PSGL)
@@ -156,82 +156,6 @@ RETRO_BEGIN_DECLS
 #endif
 
 typedef struct gl gl_t;
-typedef struct gl_renderchain_driver gl_renderchain_driver_t;
-
-struct gl_renderchain_driver
-{
-   void (*set_coords)(void *handle_data,
-         void *chain_data,
-         void *shader_data, const struct video_coords *coords);
-   void (*set_mvp)(void *data,
-         void *chain_data,
-         void *shader_data,
-         const void *mat_data);
-   void (*init_texture_reference)(
-         gl_t *gl, void *chain_data, unsigned i,
-         unsigned internal_fmt, unsigned texture_fmt,
-         unsigned texture_type);
-   void (*fence_iterate)(void *data, void *chain_data,
-         unsigned hard_sync_frames);
-   void (*fence_free)(void *data, void *chain_data);
-   void (*readback)(gl_t *gl,
-         void *chain_data,
-         unsigned alignment,
-         unsigned fmt, unsigned type,
-         void *src);
-   void (*init_pbo)(unsigned size, const void *data);
-   void (*bind_pbo)(unsigned idx);
-   void (*unbind_pbo)(void *data, void *chain_data);
-   void (*copy_frame)(
-      gl_t *gl,
-      void *chain_data,
-      video_frame_info_t *video_info,
-      const void *frame,
-      unsigned width, unsigned height, unsigned pitch);
-   void (*restore_default_state)(gl_t *gl, void *chain_data);
-   void (*new_vao)(void *data, void *chain_data);
-   void (*free_vao)(void *data, void *chain_data);
-   void (*bind_vao)(void *data, void *chain_data);
-   void (*unbind_vao)(void *data, void *chain_data);
-   void (*disable_client_arrays)(void *data, void *chain_data);
-   void (*ff_vertex)(const void *data);
-   void (*ff_matrix)(const void *data);
-   void (*bind_backbuffer)(void *data, void *chain_data);
-   void (*deinit_fbo)(gl_t *gl, void *chain_data);
-   bool (*read_viewport)(
-         gl_t *gl, void *chain_data, uint8_t *buffer, bool is_idle);
-   void (*bind_prev_texture)(
-         gl_t *gl,
-         void *chain_data,
-         const struct video_tex_info *tex_info);
-   void (*chain_free)(void *data, void *chain_data);
-   void *(*chain_new)(void);
-   void (*init)(gl_t *gl, void *chain_data,
-         unsigned fbo_width, unsigned fbo_height);
-   bool (*init_hw_render)(gl_t *gl, void *chain_data,
-         unsigned width, unsigned height);
-   void (*free)(gl_t *gl, void *chain_data);
-   void (*deinit_hw_render)(gl_t *gl, void *chain_data);
-   void (*start_render)(gl_t *gl, void *chain_data,
-         video_frame_info_t *video_info);
-   void (*check_fbo_dimensions)(gl_t *gl, void *chain_data);
-   void (*recompute_pass_sizes)(gl_t *gl,
-         void *chain_data,
-         unsigned width, unsigned height,
-         unsigned vp_width, unsigned vp_height);
-   void (*renderchain_render)(gl_t *gl,
-         void *chain_data,
-         video_frame_info_t *video_info,
-         uint64_t frame_count,
-         const struct video_tex_info *tex_info,
-         const struct video_tex_info *feedback_info);
-   void (*resolve_extensions)(
-         gl_t *gl,
-         void *chain_data,
-         const char *context_ident,
-         const video_info_t *video);
-   const char *ident;
-};
 
 struct gl
 {
@@ -315,7 +239,8 @@ struct gl
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
 
-   const gl_renderchain_driver_t *renderchain_driver;
+   const shader_backend_t *shader;
+   void *shader_data;
    void *renderchain_data;
    void *ctx_data;
    const gfx_ctx_driver_t *ctx_driver;
@@ -329,64 +254,6 @@ static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-}
-
-static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
-{
-   switch (type)
-   {
-#ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
-         return GL_CLAMP_TO_BORDER;
-#else
-      case RARCH_WRAP_BORDER:
-#endif
-      case RARCH_WRAP_EDGE:
-         return GL_CLAMP_TO_EDGE;
-      case RARCH_WRAP_REPEAT:
-         return GL_REPEAT;
-      case RARCH_WRAP_MIRRORED_REPEAT:
-         return GL_MIRRORED_REPEAT;
-      default:
-	 break;
-   }
-
-   return 0;
-}
-
-bool gl_query_core_context_in_use(void);
-
-void gl_load_texture_image(GLenum target,
-      GLint level,
-      GLint internalFormat,
-      GLsizei width,
-      GLsizei height,
-      GLint border,
-      GLenum format,
-      GLenum type,
-      const GLvoid * data);
-
-void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size);
-
-static INLINE GLenum gl_min_filter_to_mag(GLenum type)
-{
-   switch (type)
-   {
-      case GL_LINEAR_MIPMAP_LINEAR:
-         return GL_LINEAR;
-      case GL_NEAREST_MIPMAP_NEAREST:
-         return GL_NEAREST;
-      default:
-         break;
-   }
-
-   return type;
 }
 
 static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
@@ -405,6 +272,12 @@ static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
 
    return true;
 }
+
+bool gl_query_core_context_in_use(void);
+
+bool gl_load_luts(
+      const void *shader_data,
+      GLuint *textures_lut);
 
 RETRO_END_DECLS
 

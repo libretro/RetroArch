@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2018 - Krzysztof Haładyn
+ *  Copyright (C) 2018-2019 - Krzysztof Haładyn
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -43,38 +43,6 @@ static void uwp_input_poll(void *data)
       uwp->joypad->poll();
 
    uwp_input_next_frame();
-}
-
-static int16_t uwp_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
-      const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned index, unsigned id)
-{
-   uwp_input_t *uwp           = (uwp_input_t*)data;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(uwp->joypad, joypad_info, port, binds[port], id);
-      case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(uwp->joypad, joypad_info, port, index, id, binds[port]);
-         break;
-
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
-
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         return uwp_mouse_state(port, id, device == RARCH_DEVICE_MOUSE_SCREEN);
-
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         return uwp_pointer_state(index, id, device == RARCH_DEVICE_POINTER_SCREEN);
-   }
-
-   return 0;
 }
 
 static void uwp_input_free_input(void *data)
@@ -153,6 +121,93 @@ static void uwp_keyboard_mapping_set_block(void *data, bool value)
    if (!uwp)
       return;
    uwp->blocked = value;
+}
+
+static bool uwp_pressed_joypad(uwp_input_t *uwp,
+   rarch_joypad_info_t joypad_info,
+   const struct retro_keybind *binds,
+   unsigned port, unsigned id)
+{
+   const struct retro_keybind *bind = &binds[id];
+
+   /* First, process the keyboard bindings */
+   if ((bind->key < RETROK_LAST) && uwp_keyboard_pressed(bind->key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !uwp->blocked)
+         return true;
+
+   /* Then, process the joypad bindings */
+   if (binds && binds[id].valid)
+   {
+      if (uwp_mouse_state(port, bind->mbutton, false))
+         return true;
+      if (input_joypad_pressed(uwp->joypad, joypad_info, port, binds, id))
+         return true;
+   }
+
+   return false;
+}
+
+static int16_t uwp_pressed_analog(uwp_input_t *uwp,
+   rarch_joypad_info_t joypad_info,
+   const struct retro_keybind *binds,
+   unsigned port, unsigned idx, unsigned id)
+{
+   const struct retro_keybind *bind_minus, *bind_plus;
+   int16_t pressed_minus = 0, pressed_plus = 0, pressed_keyboard;
+   unsigned id_minus = 0, id_plus = 0;
+
+   /* First, process the keyboard bindings */
+   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+
+   bind_minus = &binds[id_minus];
+   bind_plus = &binds[id_plus];
+
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   if ((bind_minus->key < RETROK_LAST) && uwp_keyboard_pressed(bind_minus->key))
+      pressed_minus = -0x7fff;
+   if ((bind_plus->key < RETROK_LAST) && uwp_keyboard_pressed(bind_plus->key))
+      pressed_plus = 0x7fff;
+
+   pressed_keyboard = pressed_plus + pressed_minus;
+   if (pressed_keyboard != 0)
+      return pressed_keyboard;
+
+   /* Then, process the joypad bindings */
+   return input_joypad_analog(uwp->joypad, joypad_info, port, idx, id, binds);
+}
+
+static int16_t uwp_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
+      unsigned port, unsigned device,
+      unsigned index, unsigned id)
+{
+   uwp_input_t *uwp           = (uwp_input_t*)data;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         if (id < RARCH_BIND_LIST_END)
+            return uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id);
+      case RETRO_DEVICE_ANALOG:
+         if (binds[port])
+            return uwp_pressed_analog(uwp, joypad_info, binds[port], port, index, id);
+
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
+
+      case RETRO_DEVICE_MOUSE:
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return uwp_mouse_state(port, id, device == RARCH_DEVICE_MOUSE_SCREEN);
+
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return uwp_pointer_state(index, id, device == RARCH_DEVICE_POINTER_SCREEN);
+   }
+
+   return 0;
 }
 
 input_driver_t input_uwp = {

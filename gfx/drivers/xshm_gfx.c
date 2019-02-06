@@ -267,4 +267,3 @@ video_driver_t video_xshm = {
 #endif
     xshm_gfx_poke_interface
 };
-

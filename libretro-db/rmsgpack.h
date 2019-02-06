@@ -58,4 +58,3 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value );
 int rmsgpack_read(RFILE *fd, struct rmsgpack_read_callbacks *callbacks, void *data);
 
 #endif
-

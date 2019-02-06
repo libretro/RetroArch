@@ -125,8 +125,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static void (*video_driver_cb_shader_use)(void *data,
-      void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data,
       void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
@@ -261,7 +259,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
-   &video_gl,
+   &video_gl2,
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
@@ -427,16 +425,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const shader_backend_t *shader_ctx_drivers[] = {
-#ifdef HAVE_GLSL
-   &gl_glsl_backend,
-#endif
-#ifdef HAVE_CG
-   &gl_cg_backend,
-#endif
-   &shader_null_backend,
-   NULL
-};
 
 bool video_driver_started_fullscreen(void)
 {
@@ -1422,6 +1410,8 @@ bool video_driver_cached_frame(void)
 {
    void *recording  = recording_driver_get_data_ptr();
 
+   recording_driver_lock();
+
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
@@ -1432,6 +1422,8 @@ bool video_driver_cached_frame(void)
          frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
+
+   recording_driver_unlock();
 
    return true;
 }
@@ -1959,7 +1951,7 @@ bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-         current_video = &video_gl;
+         current_video = &video_gl2;
       }
 #endif
 
@@ -2054,8 +2046,13 @@ void video_driver_load_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
+#else
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.gamma_correction, "gamma_correction");
+#endif
 
    if (config_get_bool(conf, "flicker_filter_enable",
          &tmp_bool))
@@ -2082,8 +2079,13 @@ void video_driver_save_settings(config_file_t *conf)
    if (!conf)
       return;
 
+#ifdef _XBOX
    config_set_bool(conf, "gamma_correction",
          global->console.screen.gamma_correction);
+#else
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+#endif
    config_set_bool(conf, "flicker_filter_enable",
          global->console.flickerfilter_enable);
    config_set_bool(conf, "soft_filter_enable",
@@ -2658,12 +2660,17 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust);
+      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;
 
    /* trigger set resolution*/
+}
+
+void crt_switch_driver_reinit(void)
+{
+   video_driver_reinit();
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2717,25 +2724,6 @@ bool video_driver_texture_unload(uintptr_t *id)
 
    video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
-   return true;
-}
-
-static void video_shader_driver_use_null(void *data,
-      void *shader_data, unsigned idx, bool set_active)
-{
-   (void)data;
-   (void)idx;
-   (void)set_active;
-}
-
-static bool video_driver_cb_set_coords(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   video_shader_ctx_coords_t ctx_coords;
-   ctx_coords.handle_data = handle_data;
-   ctx_coords.data        = coords;
-
-   video_driver_set_coords(&ctx_coords);
    return true;
 }
 
@@ -3213,24 +3201,24 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 bool video_context_driver_get_refresh_rate(float *refresh_rate)
 {
    float refresh_holder      = 0;
-   
+
    if (!current_video_context.get_refresh_rate || !refresh_rate)
       return false;
    if (!video_context_data)
       return false;
-   
+
    if (!video_driver_crt_switching_active)
       if (refresh_rate)
-         *refresh_rate =  
+         *refresh_rate =
              current_video_context.get_refresh_rate(video_context_data);
-   
+
    if (video_driver_crt_switching_active)
    {
       if (refresh_rate)
-         refresh_holder  =  
+         refresh_holder  =
              current_video_context.get_refresh_rate(video_context_data);
       if (refresh_holder != video_driver_core_hz) /* Fix for incorrect interlace detsction -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
-         *refresh_rate = video_driver_core_hz; 
+         *refresh_rate = video_driver_core_hz;
    }
 
    return true;
@@ -3449,44 +3437,6 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-void video_shader_driver_use(video_shader_ctx_info_t *shader_info)
-{
-   if (current_shader && current_shader->use)
-      current_shader->use(shader_info->data, current_shader_data,
-            shader_info->idx, shader_info->set_active);
-}
-
-void video_shader_driver_set_parameter(struct uniform_info *param)
-{
-   if (current_shader && current_shader->set_uniform_parameter)
-      current_shader->set_uniform_parameter(current_shader_data,
-            param, NULL);
-}
-
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params)
-{
-   if (current_shader && current_shader->set_params)
-      current_shader->set_params(params, current_shader_data);
-}
-
-bool video_shader_driver_get_prev_textures(
-      video_shader_ctx_texture_t *texture)
-{
-   if (!texture || !current_shader)
-      return false;
-   texture->id = current_shader->get_prev_textures(current_shader_data);
-
-   return true;
-}
-
-bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
-{
-   if (!ident || !current_shader)
-      return false;
-   ident->ident = current_shader->ident;
-   return true;
-}
-
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    void *video_driver                       = video_driver_get_ptr(true);
@@ -3499,34 +3449,11 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
    return true;
 }
 
-bool video_shader_driver_direct_get_current_shader(
-      video_shader_ctx_t *shader)
-{
-   if (!current_shader)
-      return false;
-
-   shader->data = current_shader->get_current_shader(current_shader_data);
-
-   return true;
-}
-
 bool video_shader_driver_deinit(void)
 {
-   if (!current_shader)
-      return false;
-
-   if (current_shader->deinit)
-      current_shader->deinit(current_shader_data);
-
    current_shader_data    = NULL;
    current_shader         = NULL;
    return true;
-}
-
-static enum gfx_wrap_type video_shader_driver_wrap_type_null(
-      void *data, unsigned index)
-{
-   return RARCH_WRAP_BORDER;
 }
 
 static bool video_driver_cb_set_mvp(void *data,
@@ -3540,58 +3467,11 @@ static bool video_driver_cb_set_mvp(void *data,
    return true;
 }
 
-static struct video_shader *
-video_shader_driver_get_current_shader_null(void *data)
-{
-   return NULL;
-}
-
-static void video_shader_driver_set_params_null(
-      void *data, void *shader_data)
-{
-}
-
-static void video_shader_driver_scale_null(void *data,
-      unsigned idx, struct gfx_fbo_scale *scale)
-{
-   (void)idx;
-   (void)scale;
-}
-
-static bool video_shader_driver_mipmap_input_null(
-      void *data, unsigned idx)
-{
-   (void)idx;
-   return false;
-}
-
-static bool video_shader_driver_filter_type_null(
-      void *data, unsigned idx, bool *smooth)
-{
-   (void)idx;
-   (void)smooth;
-   return false;
-}
-
-static unsigned video_shader_driver_num_null(void *data)
-{
-   return 0;
-}
-
-static bool video_shader_driver_get_feedback_pass_null(
-      void *data, unsigned *idx)
-{
-   (void)idx;
-   return false;
-}
-
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader)
       return;
 
-   if (!current_shader->wrap_type)
-      current_shader->wrap_type         = video_shader_driver_wrap_type_null;
    if (current_shader->set_mvp)
       video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
    else
@@ -3599,36 +3479,15 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->set_mvp           = video_driver_cb_set_mvp;
       video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
    }
-   if (!current_shader->set_coords)
-      current_shader->set_coords        = video_driver_cb_set_coords;
-
-   if (current_shader->use)
-      video_driver_cb_shader_use        = current_shader->use;
-   else
-   {
-      current_shader->use               = video_shader_driver_use_null;
-      video_driver_cb_shader_use        = video_shader_driver_use_null;
-   }
-   if (!current_shader->set_params)
-      current_shader->set_params        = video_shader_driver_set_params_null;
-   if (!current_shader->shader_scale)
-      current_shader->shader_scale      = video_shader_driver_scale_null;
-   if (!current_shader->mipmap_input)
-      current_shader->mipmap_input      = video_shader_driver_mipmap_input_null;
-   if (!current_shader->filter_type)
-      current_shader->filter_type       = video_shader_driver_filter_type_null;
-   if (!current_shader->num_shaders)
-      current_shader->num_shaders       = video_shader_driver_num_null;
-   if (!current_shader->get_current_shader)
-      current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
-   if (!current_shader->get_feedback_pass)
-      current_shader->get_feedback_pass = video_shader_driver_get_feedback_pass_null;
 }
 
 /* Finds first suitable shader context driver. */
-bool video_shader_driver_init_first(void)
+bool video_shader_driver_init_first(const void *data)
 {
-   current_shader = (shader_backend_t*)shader_ctx_drivers[0];
+   shader_backend_t *ptr = (shader_backend_t*)data;
+   if (!ptr)
+      return false;
+   current_shader = ptr;
    video_shader_driver_reset_to_defaults();
    return true;
 }
@@ -3658,6 +3517,7 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
       init->shader->init_menu_shaders(tmp);
    }
 
+   init->shader_data      = tmp;
    current_shader_data    = tmp;
 
    RARCH_LOG("Resetting shader to defaults ... \n");
@@ -3665,62 +3525,6 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    current_shader         = (shader_backend_t*)init->shader;
    video_shader_driver_reset_to_defaults();
 
-   return true;
-}
-
-bool video_shader_driver_get_feedback_pass(unsigned *data)
-{
-   return current_shader->get_feedback_pass(current_shader_data, data);
-}
-
-bool video_shader_driver_mipmap_input(unsigned *index)
-{
-   return current_shader->mipmap_input(current_shader_data, *index);
-}
-
-bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
-{
-   if (!scaler || !scaler->scale)
-      return false;
-
-   scaler->scale->valid = false;
-
-   current_shader->shader_scale(current_shader_data,
-         scaler->idx, scaler->scale);
-   return true;
-}
-
-bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
-{
-   if (!shader_info)
-      return false;
-
-   shader_info->num = current_shader->num_shaders(current_shader_data);
-
-   return true;
-}
-
-bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
-{
-   if (filter)
-      return current_shader->filter_type(current_shader_data,
-            filter->index, filter->smooth);
-   return false;
-}
-
-bool video_shader_driver_compile_program(
-      struct shader_program_info *program_info)
-{
-   if (program_info)
-      return current_shader->compile_program(program_info->data,
-            program_info->idx, NULL, program_info);
-   return false;
-}
-
-bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
-{
-   wrap->type = current_shader->wrap_type(
-         current_shader_data, wrap->idx);
    return true;
 }
 

@@ -297,4 +297,3 @@ ethernetif_init(struct netif *netif)
 
   sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
 }
-

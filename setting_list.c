@@ -53,11 +53,15 @@ bool settings_list_append(rarch_setting_t **list,
 
    if (list_info->index == list_info->size)
    {
+      rarch_setting_t *list_settings = NULL;
+
       list_info->size *= 2;
-      *list = (rarch_setting_t*)
+      list_settings = (rarch_setting_t*)
          realloc(*list, sizeof(rarch_setting_t) * list_info->size);
-      if (!*list)
+
+      if (!list_settings)
          return false;
+      *list = list_settings;
    }
 
    return true;

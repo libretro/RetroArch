@@ -37,7 +37,7 @@
  * You can #define your own allocators, assertion and the amount of runtime
  * checking of indexes, see CONFIGURATION section in the code for more information.
  *
- * 
+ *
  * This is heavily inspired by Sean Barrett's stretchy_buffer.h
  * ( see: https://github.com/nothings/stb/blob/master/stretchy_buffer.h )
  * However I wanted to have a struct that holds the array pointer and the length
@@ -52,7 +52,7 @@
  * Microsoft Visual Studio 6 and 2010 (32bit) and 2013 (32bit and 64bit).
  * I guess it works with all (recentish) C++ compilers and C compilers supporting
  * C99 or even C89 + C++ comments (otherwise converting the comments should help).
- * 
+ *
  * (C) 2016 Daniel Gibson
  *
  * LICENSE
@@ -69,9 +69,9 @@
 #if 0 /* Usage Example: */
  #define DG_DYNARR_IMPLEMENTATION /* this define is only needed in *one* .c/.cpp file! */
  #include "DG_dynarr.h"
- 
+
  DA_TYPEDEF(int, MyIntArrType); /* creates MyIntArrType - a dynamic array for ints */
- 
+
  void printIntArr(MyIntArrType* arr, const char* name)
  {
      /* note that arr is a pointer here, so use *arr in the da_*() functions. */
@@ -121,7 +121,7 @@
      int x=da_pop(a1);
      printf("x = %d\n", x);  /* "x = 3" */
      printIntArr(&a1, "a1"); /* "a1 = { 42, 5, 6, 7 }" */
-     
+
      da_free(a1); /* make sure not to leak memory! */
      da_free(a2);
  }
@@ -269,12 +269,12 @@
 
 /* insert n elements into a at idx, initialize them from array vals
  * doesn't return anything
- * ! vals (and all other args) is evaluated multiple times ! 
+ * ! vals (and all other args) is evaluated multiple times !
  */
 #define da_insertn(a, idx, vals, n) \
 	dg_dynarr_insertn(a, idx, vals, n)
 
-/* insert n elements into a at idx and zeroe them with memset() 
+/* insert n elements into a at idx and zeroe them with memset()
  * returns pointer to first inserted element or NULL if out of memory
  */
 #define da_insertn_zeroed(a, idx, n) \
@@ -292,7 +292,7 @@
 
 /* overwrite n elements of a, starting at idx, with values from array vals
  * doesn't return anything
- * ! vals (and all other args) is evaluated multiple times ! 
+ * ! vals (and all other args) is evaluated multiple times !
  */
 #define da_setn(a, idx, vals, n) \
 	dg_dynarr_setn(a, idx, vals, n)
@@ -477,7 +477,7 @@
 
 /* insert n elements into a at idx, initialize them from array vals
  * doesn't return anything
- * ! vals (and all other args) is evaluated multiple times ! 
+ * ! vals (and all other args) is evaluated multiple times !
  */
 #define dg_dynarr_insertn(a, idx, vals, n) do { \
 	DG_DYNARR_ASSERT((vals)!=NULL, "Don't pass NULL as vals to dg_dynarr_insertn!"); \
@@ -487,7 +487,7 @@
 		while(i_ < e_)  (a).p[i_++] = (vals)[v_++]; \
 	}} DG__DYNARR_WHILE0
 
-/* insert n elements into a at idx and zeroe them with memset() 
+/* insert n elements into a at idx and zeroe them with memset()
  * returns pointer to first inserted element or NULL if out of memory
  */
 #define dg_dynarr_insertn_zeroed(a, idx, n) \
@@ -510,7 +510,7 @@
 
 /* overwrite n elements of a, starting at idx, with values from array vals
  * doesn't return anything
- * ! vals (and all other args) is evaluated multiple times ! 
+ * ! vals (and all other args) is evaluated multiple times !
  */
 #define dg_dynarr_setn(a, idx, vals, n) do { \
 	DG_DYNARR_ASSERT((vals)!=NULL, "Don't pass NULL as vals to dg_dynarr_setn!"); \
@@ -690,7 +690,7 @@ static const size_t DG__DYNARR_SIZE_T_ALL_BUT_MSB = (((size_t)1) << (sizeof(size
 	(void**)&(a).p, &(a).md, sizeof((a).p[0])
 
 /* MSVC warns about "conditional expression is constant" when using the
- * do { ... } while(0) idiom in macros.. 
+ * do { ... } while(0) idiom in macros..
  */
 #ifdef _MSC_VER
   #if _MSC_VER >= 1400 // MSVC 2005 and newer
@@ -891,7 +891,7 @@ dg__dynarr_deletefast(void** arr, dg__dynarr_md* md, size_t itemsize, size_t idx
 /* by default, C's malloc(), realloc() and free() is used to allocate/free heap memory.
  * you can #define DG_DYNARR_MALLOC, DG_DYNARR_REALLOC and DG_DYNARR_FREE
  * to provide alternative implementations like Win32 Heap(Re)Alloc/HeapFree
- */ 
+ */
 #ifndef DG_DYNARR_MALLOC
 	#define DG_DYNARR_MALLOC(elemSize, numElems)  malloc(elemSize*numElems)
 
@@ -963,9 +963,9 @@ dg__dynarr_grow(void** arr, dg__dynarr_md* md, size_t itemsize, size_t min_neede
 		{
 			md->cap = 0;
 			md->cnt = 0;
-			
+
 			DG_DYNARR_OUT_OF_MEMORY ;
-			
+
 			return 0;
 		}
 		return 1;

@@ -240,12 +240,20 @@ static int zip_file_read(
       const char *needle, void **buf,
       const char *optional_outfile)
 {
-   file_archive_transfer_t zlib             = {ARCHIVE_TRANSFER_NONE, 0, NULL, NULL, NULL, NULL, NULL, NULL };
+   file_archive_transfer_t zlib;
    struct archive_extract_userdata userdata = {{0}};
    bool returnerr                           = true;
    int ret                                  = 0;
 
    zlib.type                                = ARCHIVE_TRANSFER_INIT;
+   zlib.archive_size                        = 0;
+   zlib.start_delta                         = 0;
+   zlib.handle                              = NULL;
+   zlib.stream                              = NULL;
+   zlib.footer                              = NULL;
+   zlib.directory                           = NULL;
+   zlib.data                                = NULL;
+   zlib.backend                             = NULL;
 
    userdata.decomp_state.needle             = NULL;
    userdata.decomp_state.opt_file           = NULL;

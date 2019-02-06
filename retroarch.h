@@ -28,7 +28,7 @@
 #include "core.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_input.h"
+#include "menu/menu_defines.h"
 #endif
 
 RETRO_BEGIN_DECLS
@@ -404,9 +404,7 @@ void runloop_msg_queue_lock(void);
 void runloop_msg_queue_unlock(void);
 #endif
 
-#ifdef HAVE_DYNAMIC
-bool retroarch_core_set_on_cmdline(void);
-#endif
+void rarch_force_video_driver_fallback(const char *driver);
 
 RETRO_END_DECLS
 

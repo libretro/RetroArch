@@ -29,6 +29,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

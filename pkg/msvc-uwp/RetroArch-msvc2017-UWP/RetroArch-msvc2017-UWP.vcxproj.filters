@@ -10,6 +10,9 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{c3155604-6d38-494a-bfe0-861cef871cb2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libretro-common-uwp">
+      <UniqueIdentifier>{d41660c5-7f5b-442c-b5d7-03e6e9af8172}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -39,6 +42,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation_uwp.cpp">
+      <Filter>libretro-common-uwp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

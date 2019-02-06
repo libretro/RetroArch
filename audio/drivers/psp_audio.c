@@ -186,7 +186,7 @@ static void psp_audio_free(void *data)
             psp->running = false;
             sthread_join(psp->worker_thread);
       }
-      
+
       if (psp->cond)
             scond_free(psp->cond);
       if (psp->fifo_lock)
@@ -205,7 +205,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    psp_audio_t* psp = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
-   
+
    if (!psp->running)
       return -1;
 
@@ -241,7 +241,6 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    slock_unlock(psp->fifo_lock);
    return size;
 
-   
 }
 
 static bool psp_audio_alive(void *data)

@@ -48,6 +48,7 @@
 #include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
+#include "../../verbosity.h"
 #include "../../managers/state_manager.h"
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
@@ -308,7 +309,7 @@ static void gl_cg_set_texture_info(
 static void gl_cg_set_params(void *dat, void *shader_data)
 {
    unsigned i;
-   video_shader_ctx_params_t          *params = 
+   video_shader_ctx_params_t          *params =
       (video_shader_ctx_params_t*)dat;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
@@ -761,72 +762,6 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    return true;
 }
 
-static bool gl_cg_add_lut(
-      const struct video_shader *shader,
-      unsigned i, void *textures_data)
-{
-   struct texture_image img;
-   GLuint *textures_lut                 = (GLuint*)textures_data;
-   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-   img.width         = 0;
-   img.height        = 0;
-   img.pixels        = NULL;
-   img.supports_rgba = video_driver_supports_rgba();
-
-   if (!image_texture_load(&img, shader->lut[i].path))
-   {
-      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
-            shader->lut[i].path);
-      return false;
-   }
-
-   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
-   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-      filter_type = TEXTURE_FILTER_NEAREST;
-
-   if (shader->lut[i].mipmap)
-   {
-      if (filter_type == TEXTURE_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-      else
-         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-   }
-
-   gl_load_texture_data(textures_lut[i],
-         shader->lut[i].wrap,
-         filter_type, 4,
-         img.width, img.height,
-         img.pixels, sizeof(uint32_t));
-   image_texture_free(&img);
-
-   return true;
-}
-
-static bool gl_cg_load_luts(
-      const struct video_shader *shader,
-      GLuint *textures_lut)
-{
-   unsigned i;
-   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
-
-   if (!shader->luts)
-      return true;
-
-   glGenTextures(num_luts, textures_lut);
-
-   for (i = 0; i < num_luts; i++)
-   {
-      if (!gl_cg_add_lut(shader, i, textures_lut))
-         return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
-}
-
 static bool gl_cg_load_preset(void *data, const char *path)
 {
    unsigned i;
@@ -887,7 +822,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       }
    }
 
-   if (!gl_cg_load_luts(cg->shader, cg->lut_textures))
+   if (!gl_load_luts(cg->shader, cg->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;
@@ -1297,4 +1232,3 @@ const shader_backend_t gl_cg_backend = {
    RARCH_SHADER_CG,
    "gl_cg"
 };
-

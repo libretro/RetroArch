@@ -60,7 +60,6 @@ static void *nbio_orbis_open(const char * filename, unsigned int mode)
       return NULL;
    handle                = (struct nbio_orbis_t*)malloc(sizeof(struct nbio_orbis_t));
 
-
    if (!handle)
       goto error;
 
@@ -163,7 +162,6 @@ static bool nbio_orbis_iterate(void *data)
             amount = handle->len;
             RARCH_LOG("[NBIO_ORBIS] iterate BIO_READ  fd=%d readbytes=%d\n", handle->fd, orbisRead(handle->fd, (char*)handle->data, amount));
 
-            
          }
          else
          {
@@ -190,7 +188,6 @@ static bool nbio_orbis_iterate(void *data)
          {
             RARCH_LOG("[NBIO_ORBIS] iterate write  fd=%d writebytes=%d\n", handle->fd, orbisWrite(handle->fd, (char*)handle->data + handle->progress, amount));
 
-            
          }
          break;
    }
@@ -280,17 +277,5 @@ nbio_intf_t nbio_orbis = {
    nbio_orbis_cancel,
    nbio_orbis_free,
    "nbio_orbis",
-};
-#else
-nbio_intf_t nbio_orbis = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   "nbio_orbis", 
 };
 #endif

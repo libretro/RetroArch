@@ -60,6 +60,7 @@
 #include "../../playlist.h"
 #include "../../retroarch.h"
 
+#include "../../tasks/task_powerstate.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"
@@ -479,8 +480,10 @@ const char* xmb_theme_ident(void)
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME_INVERTED:
-         return "monochrome-inverted";
+         return "monochrome";
       case XMB_ICON_THEME_AUTOMATIC:
+         return "automatic";
+      case XMB_ICON_THEME_AUTOMATIC_INVERTED:
          return "automatic";
       case XMB_ICON_THEME_MONOCHROME:
       default:
@@ -495,9 +498,12 @@ static xmb_node_t *xmb_alloc_node(void)
 {
    xmb_node_t *node = (xmb_node_t*)malloc(sizeof(*node));
 
-   node->alpha = node->label_alpha  = 0;
-   node->zoom  = node->x = node->y  = 0;
-   node->icon  = node->content_icon = 0;
+   if (!node)
+      return NULL;
+
+   node->alpha    = node->label_alpha  = 0;
+   node->zoom     = node->x = node->y  = 0;
+   node->icon     = node->content_icon = 0;
    node->fullpath = NULL;
 
    return node;
@@ -545,6 +551,9 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
 {
    xmb_node_t *new_node = (xmb_node_t*)malloc(sizeof(*new_node));
+
+   if (!new_node)
+      return NULL;
 
    *new_node            = *old_node;
    new_node->fullpath   = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
@@ -968,7 +977,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (!string_is_empty(node->fullpath) &&
+      if (node && !string_is_empty(node->fullpath) &&
             (pos == 'R' || (pos == 'L' && string_is_equal(xmb_thumbnails_ident('R'),
                                                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))))
       {
@@ -2955,7 +2964,10 @@ static int xmb_draw_item(
 
    if (!string_is_empty(entry->value))
    {
-      ticker.str   = entry->value;
+      char entry_value[255];
+      menu_entry_get_value(entry, entry_value, sizeof(entry_value));
+      ticker.str   = entry_value;
+
       menu_animation_ticker(&ticker);
    }
 
@@ -3744,7 +3756,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Clock image */
-   menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
+   menu_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
 
    if (video_info->battery_level_enable)
    {
@@ -3784,7 +3796,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   0,
                   1,
-                  &coord_white[0],
+                  &item_color[0],
                   xmb->shadow_offset);
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
@@ -3824,7 +3836,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                0,
                1,
-               &coord_white[0],
+               &item_color[0],
                xmb->shadow_offset);
       }
 
@@ -3846,7 +3858,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(coord_white,
+   menu_display_set_alpha(item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
@@ -3865,7 +3877,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->textures_arrow_alpha,
             0,
             1,
-            &coord_white[0],
+            &item_color[0],
             xmb->shadow_offset);
 
    menu_display_blend_begin(video_info);
@@ -4968,6 +4980,33 @@ static void xmb_context_reset_textures(
    xmb->netplay_tab_node.zoom   = xmb->categories_active_zoom;
 #endif
 
+   /* Recolor */
+   if (
+         (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED) ||
+         (settings->uints.menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED)
+      )
+      memcpy(item_color, coord_black, sizeof(item_color));
+   else
+   {
+      if (
+            (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME) ||
+            (settings->uints.menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC)
+         )
+      {
+         for (i=0;i<16;i++)
+            {
+               if ((i==3) || (i==7) || (i==11) || (i==15))
+                  {
+                     item_color[i] = 1;
+                     continue;
+                  }
+               item_color[i] = 0.95;
+            }
+      }
+      else
+         memcpy(item_color, coord_white, sizeof(item_color));
+   }
+
 return;
 
 error:
@@ -5469,7 +5508,6 @@ static int xmb_list_push(void *data, void *userdata,
 {
    menu_displaylist_ctx_parse_entry_t entry;
    int ret                = -1;
-   unsigned i             = 0;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
    const struct retro_subsystem_info* subsystem;

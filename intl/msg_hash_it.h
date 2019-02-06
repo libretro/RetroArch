@@ -8,7 +8,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NATIVE,
-      "Native"
+      "Nativo"
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -108,7 +108,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-      "Enable horizontal animation for the menu. This will have a performance hit."
+      "Abilita l'animazione orizzontale per il menu. Questo avrà un impatto sulle prestazioni."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -140,7 +140,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
-      "Connessione al host del netplay"
+      "Connessione all'host del netplay"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_PORT,
@@ -564,17 +564,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Rimuovi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
-      "Avvia da directory")
+      "Avvia da cartella")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-      "<Contenuto della directory>")
+      "<Contenuto della cartella>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
       "<Default>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
       "<Nessuno>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-      "Directory non trovata.")
+      "Cartella non trovata.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-      "Directory")
+      "Cartella")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
       "Stato del ciclo nel vassoio del disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -607,10 +607,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "Sfondi dinamici")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Abilita Achievements")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Colore al passaggio del mouse")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Voce di Menu con colore normale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "Falso")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -1574,8 +1570,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "Title Screens")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "Visualizza data / ora")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-      "Colore titolo del Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "Vero")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -3613,3 +3607,11 @@ MSG_HASH(
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
       "Ricorda la dimensione e posizione della finestra")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "Supporto CoreAudio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "Supporto per il CoreAudio V3"
+    )

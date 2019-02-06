@@ -550,7 +550,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data 
+         if (db->list->elems[i].data
                && string_is_equal(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by gdi: %s\n", path);
@@ -1310,7 +1310,7 @@ bool task_push_dbscan(
       const char *content_database,
       const char *fullpath,
       bool directory,
-      bool show_hidden_files,
+      bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
    retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
@@ -1324,7 +1324,7 @@ bool task_push_dbscan(
    t->callback               = cb;
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
-   db->show_hidden_files     = show_hidden_files;
+   db->show_hidden_files     = db_dir_show_hidden_files;
    db->is_directory          = directory;
    db->playlist_directory    = NULL;
    db->fullpath              = strdup(fullpath);

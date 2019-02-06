@@ -81,6 +81,18 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
 }
 
+static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
+{
+   D3D11_RECT scissor_rect = {0};
+
+   scissor_rect.left = 0;
+   scissor_rect.top = 0;
+   scissor_rect.right = video_info->width;
+   scissor_rect.bottom = video_info->height;
+
+   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
+}
+
 static void d3d11_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
@@ -627,8 +639,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    {
       UINT                 flags              = 0;
-      D3D_FEATURE_LEVEL    
-         requested_feature_levels[]           = 
+      D3D_FEATURE_LEVEL
+         requested_feature_levels[]           =
          {
             D3D_FEATURE_LEVEL_11_0,
             D3D_FEATURE_LEVEL_10_1,
@@ -637,9 +649,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          };
 #ifdef __WINRT__
       /* UWP requires the use of newer version of the factory which requires newer version of this struct */
-      DXGI_SWAP_CHAIN_DESC1 desc              = { 0 };
+      DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
 #else
-      DXGI_SWAP_CHAIN_DESC desc               = { 0 };
+      DXGI_SWAP_CHAIN_DESC desc               = {{0}};
 #endif
       UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
 
@@ -741,7 +753,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
    d3d11->vsync           = video->vsync;
-   d3d11->format          = video->rgb32 ? 
+   d3d11->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
    d3d11->frame.texture[0].desc.Format = d3d11->format;
@@ -827,7 +839,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
-      D3D11_SUBRESOURCE_DATA 
+      D3D11_SUBRESOURCE_DATA
          vertexData             = { vertices };
 
       desc.ByteWidth            = sizeof(vertices);
@@ -993,6 +1005,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;
+      desc.ScissorEnable = TRUE;
 
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
@@ -1194,7 +1207,9 @@ static bool d3d11_gfx_frame(
    D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 #endif
 
+#if 0
    PERF_START();
+#endif
 
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
@@ -1378,6 +1393,8 @@ static bool d3d11_gfx_frame(
    D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
+   d3d11_clear_scissor(d3d11, video_info);
+
    D3D11Draw(context, 4, 0);
 
    D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
@@ -1456,7 +1473,9 @@ static bool d3d11_gfx_frame(
    }
    d3d11->sprites.enabled = false;
 
+#if 0
    PERF_STOP();
+#endif
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
 
    return true;
@@ -1530,11 +1549,11 @@ static void d3d11_set_menu_texture_frame(
 {
    d3d11_video_t* d3d11    = (d3d11_video_t*)data;
    settings_t*    settings = config_get_ptr();
-   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : 
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d11->menu.texture.desc.Width  != width || 
+         d3d11->menu.texture.desc.Width  != width ||
          d3d11->menu.texture.desc.Height != height)
    {
       d3d11->menu.texture.desc.Format = format;

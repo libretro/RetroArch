@@ -333,6 +333,29 @@ void menu_animation_free(void)
    da_free(anim.pending);
 }
 
+static void menu_delayed_animation_cb(void *userdata)
+{
+   menu_delayed_animation_t *delayed_animation = (menu_delayed_animation_t*) userdata;
+
+   menu_animation_push(&delayed_animation->entry);
+
+   free(delayed_animation);
+}
+
+void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry)
+{
+   menu_timer_ctx_entry_t timer_entry;
+   menu_delayed_animation_t *delayed_animation  = (menu_delayed_animation_t*) malloc(sizeof(menu_delayed_animation_t));
+
+   memcpy(&delayed_animation->entry, entry, sizeof(menu_animation_ctx_entry_t));
+
+   timer_entry.cb       = menu_delayed_animation_cb;
+   timer_entry.duration = delay;
+   timer_entry.userdata = delayed_animation;
+
+   menu_timer_start(&delayed_animation->timer, &timer_entry);
+}
+
 bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 {
    struct tween t;
@@ -464,7 +487,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    /* ignore born dead tweens */
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
-   
+
    if (anim.in_update)
       da_push(anim.pending, t);
    else
@@ -473,17 +496,17 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-bool menu_animation_update(float delta_time)
+bool menu_animation_update(float anim_delta_time)
 {
    unsigned i;
-   
+
    anim.in_update       = true;
    anim.pending_deletes = false;
 
    for(i = 0; i < da_count(anim.list); i++)
    {
-      struct tween *tween = da_getptr(anim.list, i);
-      tween->running_since += delta_time;
+      struct tween *tween   = da_getptr(anim.list, i);
+      tween->running_since += anim_delta_time;
 
       *tween->subject = tween->easing(
             tween->running_since,
@@ -497,12 +520,12 @@ bool menu_animation_update(float delta_time)
 
          if (tween->cb)
             tween->cb(tween->userdata);
-         
+
          da_delete(anim.list, i);
          i--;
       }
    }
-   
+
    if (anim.pending_deletes)
    {
       for(i = 0; i < da_count(anim.list); i++)
@@ -516,14 +539,14 @@ bool menu_animation_update(float delta_time)
       }
       anim.pending_deletes = false;
    }
-   
+
    if (da_count(anim.pending) > 0)
    {
       da_addn(anim.list, anim.pending.p, da_count(anim.pending));
       da_clear(anim.pending);
    }
 
-   anim.in_update = false;
+   anim.in_update      = false;
    animation_is_active = da_count(anim.list) > 0;
 
    return animation_is_active;
@@ -615,7 +638,7 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
       struct tween *t = da_getptr(anim.list, i);
       if (t->tag != *tag)
          continue;
-   
+
       if (anim.in_update)
       {
          t->deleted = true;
@@ -644,7 +667,7 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
       {
          if (t->subject != sub[j])
             continue;
-         
+
          if (anim.in_update)
          {
             t->deleted = true;

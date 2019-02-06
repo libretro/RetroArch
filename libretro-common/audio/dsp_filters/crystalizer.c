@@ -88,4 +88,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-

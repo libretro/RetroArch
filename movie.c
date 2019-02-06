@@ -21,7 +21,6 @@
 #include <rhash.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
-#include <streams/interface_stream.h>
 
 #include "configuration.h"
 #include "movie.h"
@@ -34,42 +33,8 @@
 #include "command.h"
 #include "file_path_special.h"
 
-struct bsv_movie
-{
-   intfstream_t *file;
-
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-
-   size_t min_file_pos;
-
-   size_t state_size;
-   uint8_t *state;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-
-struct bsv_state
-{
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-};
-
-static bsv_movie_t     *bsv_movie_state_handle = NULL;
-static struct bsv_state bsv_movie_state;
+bsv_movie_t     *bsv_movie_state_handle = NULL;
+struct bsv_state bsv_movie_state;
 
 static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
@@ -259,28 +224,6 @@ error:
    return NULL;
 }
 
-/* Used for rewinding while playback/record. */
-void bsv_movie_set_frame_start(void)
-{
-   if (bsv_movie_state_handle)
-      bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr]
-         = intfstream_tell(bsv_movie_state_handle->file);
-}
-
-void bsv_movie_set_frame_end(void)
-{
-   if (!bsv_movie_state_handle)
-      return;
-
-   bsv_movie_state_handle->frame_ptr    =
-      (bsv_movie_state_handle->frame_ptr + 1)
-      & bsv_movie_state_handle->frame_mask;
-
-   bsv_movie_state_handle->first_rewind =
-      !bsv_movie_state_handle->did_rewind;
-   bsv_movie_state_handle->did_rewind   = false;
-}
-
 static void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
    handle->did_rewind = true;
@@ -411,11 +354,6 @@ bool bsv_movie_is_playback_on(void)
 bool bsv_movie_is_playback_off(void)
 {
    return bsv_movie_state_handle && !bsv_movie_state.movie_playback;
-}
-
-bool bsv_movie_is_end_of_file(void)
-{
-   return bsv_movie_state.movie_end && bsv_movie_state.eof_exit;
 }
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)

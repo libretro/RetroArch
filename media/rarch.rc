@@ -74,8 +74,6 @@ IDR_MENU MENU
     }
 }
 
-
-
 //
 // Dialog resources
 //
@@ -91,15 +89,11 @@ FONT 8, "Ms Shell Dlg"
     LTEXT           "Please select a core to use for the content loaded.\nOtherwise, press 'Cancel' to cancel loading.", 0, 9, 12, 160, 17, SS_LEFT, WS_EX_LEFT
 }
 
-
-
 //
 // Icon resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 1                  ICON           "retroarch.ico"
-
-
 
 //
 // Manifest resources

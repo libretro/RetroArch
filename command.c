@@ -42,7 +42,7 @@
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #ifdef HAVE_NEW_CHEEVOS
-#include "cheevos/fixup.h"
+#include "cheevos-new/fixup.h"
 #else
 #include "cheevos/var.h"
 #endif
@@ -89,7 +89,9 @@
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "ui/ui_companion_driver.h"
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
+#include "gfx/video_driver.h"
 #include "list_special.h"
 
 #include "core.h"
@@ -174,7 +176,7 @@ static bool command_version(const char* arg)
 {
    char reply[256] = {0};
 
-   sprintf(reply, "%s\n", PACKAGE_VERSION);
+   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
 #if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
    command_reply(reply, strlen(reply));
 #endif
@@ -291,7 +293,7 @@ static bool command_read_ram(const char *arg)
 
    if (data)
    {
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
@@ -303,7 +305,7 @@ static bool command_read_ram(const char *arg)
    }
    free(reply);
 #else
-      cheevos_var_t var;
+   cheevos_var_t var;
    unsigned i;
    char reply[256]      = {0};
    const uint8_t * data = NULL;
@@ -323,7 +325,7 @@ static bool command_read_ram(const char *arg)
    {
       unsigned nbytes = strtol(reply_at, NULL, 10);
 
-      for (i=0;i<nbytes;i++)
+      for (i = 0; i < nbytes; i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
@@ -1766,56 +1768,6 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name)
-{
-   if (!playlist)
-      return;
-
-   if (playlist_push(
-         playlist,
-         path,
-         label,
-         core_path,
-         core_name,
-         NULL,
-         NULL
-         ))
-      playlist_write_file(playlist);
-}
-
-void command_playlist_update_write(
-      playlist_t *plist,
-      size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name)
-{
-   playlist_t *playlist = plist ? plist : playlist_get_cached();
-
-   if (!playlist)
-      return;
-
-   playlist_update(
-         playlist,
-         idx,
-         path,
-         label,
-         core_path,
-         core_display_name,
-         crc32,
-         db_name);
-
-   playlist_write_file(playlist);
-}
-
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -2020,9 +1972,6 @@ bool command_event(enum event_command cmd, void *data)
             path_clear(RARCH_PATH_CORE);
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
 #endif
-            core_unload_game();
-            if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               core_unload();
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {

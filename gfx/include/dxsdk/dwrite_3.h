@@ -113,34 +113,34 @@ enum DWRITE_FONT_PROPERTY_ID
     ///
     /// As another example, a font designed for Chinese may be capable of displaying
     /// Japanese text, but would likely look incorrect to Japanese users.
-    /// 
+    ///
     /// The valid values for this property are "ScriptLangTag" values. These are adapted
     /// from the IETF BCP 47 specification, "Tags for Identifying Languages" (see
     /// http://tools.ietf.org/html/bcp47). In a BCP 47 language tag, a language subtag
     /// element is mandatory and other subtags are optional. In a ScriptLangTag, a
     /// script subtag is mandatory and other subtags are option. The following
     /// augmented BNF syntax, adapted from BCP 47, is used:
-    /// 
+    ///
     ///     ScriptLangTag = [language "-"]
     ///                     script
     ///                     ["-" region]
     ///                     *("-" variant)
     ///                     *("-" extension)
     ///                     ["-" privateuse]
-    /// 
+    ///
     /// The expansion of the elements and the intended semantics associated with each
     /// are as defined in BCP 47. Script subtags are taken from ISO 15924. At present,
     /// no extensions are defined, and any extension should be ignored. Private use
     /// subtags are defined by private agreement between the source and recipient and
     /// may be ignored.
-    /// 
+    ///
     /// Subtags must be valid for use in BCP 47 and contained in the Language Subtag
     /// Registry maintained by IANA. (See
     /// http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
     /// and section 3 of BCP 47 for details.
-    /// 
+    ///
     /// Any ScriptLangTag value not conforming to these specifications is ignored.
-    /// 
+    ///
     /// Examples:
     ///   "Latn" denotes Latin script (and any language or writing system using Latin)
     ///   "Cyrl" denotes Cyrillic script
@@ -234,7 +234,7 @@ struct DWRITE_FONT_PROPERTY
     _Field_z_ WCHAR const* propertyValue;
 
     /// <summary>
-    /// Specifies the language / locale to use, such as "en-US". 
+    /// Specifies the language / locale to use, such as "en-US".
     /// </summary>
     /// <remarks>
     /// When passing property information to AddFontFaceReference, localeName indicates
@@ -283,14 +283,14 @@ enum DWRITE_RENDERING_MODE1
     DWRITE_RENDERING_MODE1_DEFAULT = DWRITE_RENDERING_MODE_DEFAULT,
 
     /// <summary>
-    /// Specifies that no antialiasing is performed. Each pixel is either set to the foreground 
+    /// Specifies that no antialiasing is performed. Each pixel is either set to the foreground
     /// color of the text or retains the color of the background.
     /// </summary>
     DWRITE_RENDERING_MODE1_ALIASED = DWRITE_RENDERING_MODE_ALIASED,
 
     /// <summary>
     /// Specifies that antialiasing is performed in the horizontal direction and the appearance
-    /// of glyphs is layout-compatible with GDI using CLEARTYPE_QUALITY. Use DWRITE_MEASURING_MODE_GDI_CLASSIC 
+    /// of glyphs is layout-compatible with GDI using CLEARTYPE_QUALITY. Use DWRITE_MEASURING_MODE_GDI_CLASSIC
     /// to get glyph advances. The antialiasing may be either ClearType or grayscale depending on
     /// the text antialiasing mode.
     /// </summary>
@@ -322,7 +322,7 @@ enum DWRITE_RENDERING_MODE1
     DWRITE_RENDERING_MODE1_NATURAL_SYMMETRIC = DWRITE_RENDERING_MODE_NATURAL_SYMMETRIC,
 
     /// <summary>
-    /// Specifies that rendering should bypass the rasterizer and use the outlines directly. 
+    /// Specifies that rendering should bypass the rasterizer and use the outlines directly.
     /// This is typically used at very large sizes.
     /// </summary>
     DWRITE_RENDERING_MODE1_OUTLINE = DWRITE_RENDERING_MODE_OUTLINE,
@@ -496,7 +496,7 @@ interface DWRITE_DECLARE_INTERFACE("9A1B41C3-D3BB-466A-87FC-FE67556A3B65") IDWri
     /// <param name="includeDownloadableFonts">Include cloud fonts or only locally installed ones.</param>
     /// <param name="fontCollection">Receives a pointer to the newly created font collection object, or nullptr in
     ///     case of failure.</param>
-    /// <param name="checkForUpdates">If this parameter is nonzero, the function performs an immediate check for changes 
+    /// <param name="checkForUpdates">If this parameter is nonzero, the function performs an immediate check for changes
     ///     to the set of system fonts. If this parameter is FALSE, the function will still detect changes if the font
     ///     cache service is running, but there may be some latency. For example, an application might specify TRUE if
     ///     it has itself just installed a font and wants to be sure the font collection contains that font.</param>
@@ -840,7 +840,7 @@ interface DWRITE_DECLARE_INTERFACE("DA20D8EF-812A-4C43-9802-62EC4ABD7ADF") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     STDMETHOD(GetFont)(
-        UINT32 listIndex, 
+        UINT32 listIndex,
         _COM_Outptr_ IDWriteFont3** font
         ) PURE;
 
@@ -891,7 +891,7 @@ interface DWRITE_DECLARE_INTERFACE("DA20D8EF-812A-4C43-9802-62EC4ABD7ADE") IDWri
     /// Standard HRESULT error code. The function returns DWRITE_E_REMOTEFONT if it could not construct a remote font.
     /// </returns>
     STDMETHOD(GetFont)(
-        UINT32 listIndex, 
+        UINT32 listIndex,
         _COM_Outptr_ IDWriteFont3** font
         ) PURE;
 
@@ -977,13 +977,13 @@ interface DWRITE_DECLARE_INTERFACE("5E7FA7CA-DDE3-424C-89F0-9FCD6FED58CD") IDWri
     /// <summary>
     /// Get the local size of the font face in bytes.
     /// </summary>
-    /// <remarks> 
+    /// <remarks>
     /// The value returned by GetLocalFileSize will always be less than or
-    /// equal to the value returned by GetFullSize. If the locality is remote, 
-    /// the GetLocalFileSize value is zero. If the locality is local, this 
-    /// value will equal the value returned by GetFileSize. If the locality is 
-    /// partial, this value will equal the size of the portions of the font 
-    /// data that have been downloaded, which will be greater than zero and 
+    /// equal to the value returned by GetFullSize. If the locality is remote,
+    /// the GetLocalFileSize value is zero. If the locality is local, this
+    /// value will equal the value returned by GetFileSize. If the locality is
+    /// partial, this value will equal the size of the portions of the font
+    /// data that have been downloaded, which will be greater than zero and
     /// less than or equal to the GetFileSize value.
     /// </remarks>
     STDMETHOD_(UINT64, GetLocalFileSize)() PURE;
@@ -1208,7 +1208,7 @@ interface DWRITE_DECLARE_INTERFACE("D37D7598-09BE-4222-A236-2081341CC1F2") IDWri
     /// <param name="informationalStrings">Receives a pointer to the newly created localized strings object.</param>
     /// <param name="exists">Receives the value TRUE if the font contains the specified string ID or FALSE if not.</param>
     /// <returns>
-    /// Standard HRESULT error code. If the font does not contain the specified string, the return value is S_OK but 
+    /// Standard HRESULT error code. If the font does not contain the specified string, the return value is S_OK but
     /// informationalStrings receives a NULL pointer and exists receives the value FALSE.
     /// </returns>
     STDMETHOD(GetInformationalStrings)(
@@ -1239,14 +1239,14 @@ interface DWRITE_DECLARE_INTERFACE("D37D7598-09BE-4222-A236-2081341CC1F2") IDWri
     /// <param name="outlineThreshold">Specifies the quality of the graphics system's outline rendering,
     /// affects the size threshold above which outline rendering is used.</param>
     /// <param name="measuringMode">Specifies the method used to measure during text layout. For proper
-    /// glyph spacing, the function returns a rendering mode that is compatible with the specified 
+    /// glyph spacing, the function returns a rendering mode that is compatible with the specified
     /// measuring mode.</param>
-    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters 
+    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters
     /// object overrides the rendering mode.</param>
     /// <param name="renderingMode">Receives the recommended rendering mode.</param>
     /// <param name="gridFitMode">Receives the recommended grid-fit mode.</param>
     /// <remarks>
-    /// This method should be used to determine the actual rendering mode in cases where the rendering 
+    /// This method should be used to determine the actual rendering mode in cases where the rendering
     /// mode of the rendering params object is DWRITE_RENDERING_MODE_DEFAULT, and the actual grid-fit
     /// mode when the rendering params object is DWRITE_GRID_FIT_MODE_DEFAULT.
     /// </remarks>
@@ -1406,7 +1406,7 @@ interface DWRITE_DECLARE_INTERFACE("CFEE3140-1157-47CA-8B85-31BFCF3F2D0E") IDWri
 };
 
 /// <summary>
-/// Application-defined callback interface that receives notifications from the font 
+/// Application-defined callback interface that receives notifications from the font
 /// download queue (IDWriteFontDownloadQueue interface). Callbacks will occur on the
 /// downloading thread, and objects must be prepared to handle calls on their methods
 /// from other threads at any time.
@@ -1485,12 +1485,12 @@ interface DWRITE_DECLARE_INTERFACE("B71E6052-5AEA-4FA3-832E-F60D431F7E91") IDWri
     /// Begins an asynchronous download operation. The download operation executes
     /// in the background until it completes or is cancelled by a CancelDownload call.
     /// </summary>
-    /// <param name="context">Optional context object that is passed back to the 
+    /// <param name="context">Optional context object that is passed back to the
     /// download notification handler's DownloadCompleted method. If the context object
     /// implements IDWriteFontDownloadListener, its DownloadCompleted will be called
     /// when done.</param>
     /// <returns>
-    /// Returns S_OK if a download was successfully begun, S_FALSE if the queue was 
+    /// Returns S_OK if a download was successfully begun, S_FALSE if the queue was
     /// empty, or a standard HRESULT error code.
     /// </returns>
     /// <remarks>
@@ -1620,7 +1620,7 @@ struct DWRITE_LINE_METRICS1 : DWRITE_LINE_METRICS
 };
 
 /// <summary>
-/// Specify whether DWRITE_FONT_METRICS::lineGap value should be part of the line metrics. 
+/// Specify whether DWRITE_FONT_METRICS::lineGap value should be part of the line metrics.
 /// </summary>
 enum DWRITE_FONT_LINE_GAP_USAGE
 {
@@ -1655,17 +1655,17 @@ struct DWRITE_LINE_SPACING
     /// The interpretation of this parameter depends upon the line spacing method, as follows:
     /// - default line spacing: ignored
     /// - uniform line spacing: explicit distance in DIPs between lines
-    /// - proportional line spacing: a scaling factor to be applied to the computed line height; 
+    /// - proportional line spacing: a scaling factor to be applied to the computed line height;
     ///   for each line, the height of the line is computed as for default line spacing, and the scaling factor is applied to that value.
     /// </summary>
     FLOAT height;
 
     /// <summary>
-    /// Distance from top of line to baseline. 
+    /// Distance from top of line to baseline.
     /// The interpretation of this parameter depends upon the line spacing method, as follows:
     /// - default line spacing: ignored
     /// - uniform line spacing: explicit distance in DIPs from the top of the line to the baseline
-    /// - proportional line spacing: a scaling factor applied to the computed baseline; for each line, 
+    /// - proportional line spacing: a scaling factor applied to the computed baseline; for each line,
     ///   the baseline distance is computed as for default line spacing, and the scaling factor is applied to that value.
     /// </summary>
     FLOAT baseline;
@@ -1750,7 +1750,7 @@ interface DWRITE_DECLARE_INTERFACE("07DDCD52-020E-4DE8-AC33-6C953D83F92D") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     /// <remarks>
-    /// If maxLineCount is not large enough E_NOT_SUFFICIENT_BUFFER, 
+    /// If maxLineCount is not large enough E_NOT_SUFFICIENT_BUFFER,
     /// which is equivalent to HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER),
     /// is returned and *actualLineCount is set to the number of lines
     /// needed.
@@ -1915,7 +1915,7 @@ interface DWRITE_DECLARE_INTERFACE("27F2A904-4EB8-441D-9678-0563F53E3E2F") IDWri
     /// The function only returns SVG or raster data - requesting TrueType/CFF/COLR data returns
     /// DWRITE_E_INVALIDARG. Those must be drawn via DrawGlyphRun or queried using GetGlyphOutline instead.
     /// Exactly one format may be requested or else the function returns DWRITE_E_INVALIDARG.
-    /// If the glyph does not have that format, the call is not an error, but the function returns empty data. 
+    /// If the glyph does not have that format, the call is not an error, but the function returns empty data.
     /// </remarks>
     STDMETHOD(GetGlyphImageData)(
         _In_ UINT16 glyphId,
@@ -1961,7 +1961,7 @@ interface DWRITE_DECLARE_INTERFACE("4B0B5BD3-0797-4549-8AC5-FE915CC53856") IDWri
     /// <returns>
     /// Returns DWRITE_E_NOCOLOR if the font has no color information, the glyph run
     /// does not contain any color glyphs, or the specified color palette index
-    /// is out of range. In this case, the client should render the original glyph 
+    /// is out of range. In this case, the client should render the original glyph
     /// run. Otherwise, returns a standard HRESULT error code.
     /// </returns>
     /// <remarks>
@@ -2040,7 +2040,7 @@ interface DWRITE_DECLARE_INTERFACE("3FF7715F-3CDC-4DC6-9B72-EC5621DCCAFD") IDWri
 interface DWRITE_DECLARE_INTERFACE("CE25F8FD-863B-4D13-9651-C1F88DC73FE2") IDWriteAsyncResult : public IUnknown
 {
     /// <summary>
-    /// The GetWaitHandleMethod method returns a handle that can be used to wait 
+    /// The GetWaitHandleMethod method returns a handle that can be used to wait
     /// for the asynchronous operation to complete. The handle remains valid
     /// until the interface is released.
     /// </summary>
@@ -2070,9 +2070,9 @@ struct DWRITE_FILE_FRAGMENT
 };
 
 /// <summary>
-/// IDWriteRemoteFontFileStream represents a font file stream parts of which may be 
-/// non-local. Non-local data must be downloaded before it can be accessed using 
-/// ReadFragment. The interface exposes methods to download font data and query the 
+/// IDWriteRemoteFontFileStream represents a font file stream parts of which may be
+/// non-local. Non-local data must be downloaded before it can be accessed using
+/// ReadFragment. The interface exposes methods to download font data and query the
 /// locality of font data.
 /// </summary>
 /// <remarks>
@@ -2130,7 +2130,7 @@ interface DWRITE_DECLARE_INTERFACE("4DB3757A-2C72-4ED9-B2B6-1ABABE1AFF9C") IDWri
     /// <param name="fragmentCount">Number of elements in the fileFragments array.
     /// This can be zero to just download file information, such as the size.</param>
     /// <param name="asyncResult">Receives an object that can be used to wait for
-    /// the asynchronous download to complete and to get the download result upon 
+    /// the asynchronous download to complete and to get the download result upon
     /// completion. The result may be NULL if the download completes synchronously.
     /// For example, this can happen if method determines that the requested data
     /// is already local.</param>
@@ -2158,14 +2158,14 @@ enum DWRITE_CONTAINER_TYPE
 };
 
 /// <summary>
-/// The IDWriteRemoteFontFileLoader interface represents a font file loader that can access 
+/// The IDWriteRemoteFontFileLoader interface represents a font file loader that can access
 /// remote (i.e., downloadable) fonts. The IDWriteFactory5::CreateHttpFontFileLoader method
 /// returns an instance of this interface, or a client can create its own implementation.
 /// </summary>
 /// <remarks>
 /// Calls to a remote file loader or stream should never block waiting for network operations.
 /// Any call that cannot succeeded immediately using local (e.g., cached) must should return
-/// DWRITE_E_REMOTEFONT. This error signifies to DWrite that it should add requests to the 
+/// DWRITE_E_REMOTEFONT. This error signifies to DWrite that it should add requests to the
 /// font download queue.
 /// </remarks>
 interface DWRITE_DECLARE_INTERFACE("68648C83-6EDE-46C0-AB46-20083A887FDE") IDWriteRemoteFontFileLoader : public IDWriteFontFileLoader
@@ -2182,9 +2182,9 @@ interface DWRITE_DECLARE_INTERFACE("68648C83-6EDE-46C0-AB46-20083A887FDE") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     /// <remarks>
-    /// Unlike CreateStreamFromKey, this method can be used to create a stream for a remote file. If the file is 
-    /// remote, the returned stream's BeginDownload method can be used to download all or part of the font file. 
-    /// However, the stream cannot be used to get the file size or access font data unless the file is at least 
+    /// Unlike CreateStreamFromKey, this method can be used to create a stream for a remote file. If the file is
+    /// remote, the returned stream's BeginDownload method can be used to download all or part of the font file.
+    /// However, the stream cannot be used to get the file size or access font data unless the file is at least
     /// partially local.
     /// </remarks>
     STDMETHOD(CreateRemoteStreamFromKey)(
@@ -2231,10 +2231,10 @@ interface DWRITE_DECLARE_INTERFACE("68648C83-6EDE-46C0-AB46-20083A887FDE") IDWri
 
 /// <summary>
 /// The IDWriteInMemoryFontFileLoader interface enables clients to reference
-/// in-memory fonts without having to implement a custom loader. The 
+/// in-memory fonts without having to implement a custom loader. The
 /// IDWriteFactory5::CreateInMemoryFontFileLoader method returns an instance
 /// of this interface, which the client is responsible for registering and
-/// unregistering using IDWriteFactory::RegisterFontFileLoader and 
+/// unregistering using IDWriteFactory::RegisterFontFileLoader and
 /// IDWriteFactory::UnregisterFontFileLoader.
 /// </summary>
 interface DWRITE_DECLARE_INTERFACE("DC102F47-A12D-4B1C-822D-9E117E33043F") IDWriteInMemoryFontFileLoader : public IDWriteFontFileLoader
@@ -2295,7 +2295,7 @@ interface DWRITE_DECLARE_INTERFACE("958DB99A-BE2A-4F09-AF7D-65189803D1D3") IDWri
 
     /// <summary>
     /// The CreateInMemoryFontFileLoader method creates a loader object that can
-    /// be used to create font file references to in-memory fonts. The caller is 
+    /// be used to create font file references to in-memory fonts. The caller is
     /// responsible for registering and unregistering the loader.
     /// </summary>
     /// <param name="newLoader">Receives a pointer to the newly-created loader object.</param>
@@ -2307,14 +2307,14 @@ interface DWRITE_DECLARE_INTERFACE("958DB99A-BE2A-4F09-AF7D-65189803D1D3") IDWri
         ) PURE;
 
     /// <summary>
-    /// The CreateHttpFontFileLoader function creates a remote font file loader 
+    /// The CreateHttpFontFileLoader function creates a remote font file loader
     /// that can create font file references from HTTP or HTTPS URLs. The caller
     /// is responsible for registering and unregistering the loader.
     /// </summary>
     /// <param name="referrerUrl">Optional referrer URL for HTTP requests.</param>
-    /// <param name="extraHeaders">Optional additional header fields to include 
+    /// <param name="extraHeaders">Optional additional header fields to include
     /// in HTTP requests. Each header field consists of a name followed by a colon
-    /// (":") and the field value, as specified by RFC 2616. Multiple header fields 
+    /// (":") and the field value, as specified by RFC 2616. Multiple header fields
     /// may be separated by newlines.</param>
     /// <param name="newLoader">Receives a pointer to the newly-created loader object.</param>
     /// <returns>

@@ -393,4 +393,3 @@ typedef struct math_matrix_4x4
 RETRO_END_DECLS
 
 #endif
-

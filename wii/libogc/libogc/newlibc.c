@@ -68,4 +68,3 @@ void __libc_wrapup()
 		_REENT = &libc_globl_reent;
 	}
 }
-

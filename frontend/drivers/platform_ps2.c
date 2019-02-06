@@ -34,7 +34,7 @@ enum BootDeviceIDs{
     BOOT_DEVICE_MASS,
     BOOT_DEVICE_HDD,
     BOOT_DEVICE_HOST,
-    
+
     BOOT_DEVICE_COUNT,
 };
 
@@ -84,9 +84,9 @@ char user_path[512];
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 
-/* Only paths residing on "basic" devices 
- * (devices that don't require mounting) 
- * can be specified here, since this system 
+/* Only paths residing on "basic" devices
+ * (devices that don't require mounting)
+ * can be specified here, since this system
  * doesn't perform mounting based on the path.
  */
 #define DEFAULT_PATH    "mass:"
@@ -111,8 +111,8 @@ static int getBootDeviceID(char *path)
    return BOOT_DEVICE_HOST;
 }
 
-/* HACK! If booting from a USB device, keep trying to 
- * open this program again until it succeeds. 
+/* HACK! If booting from a USB device, keep trying to
+ * open this program again until it succeeds.
  *
  * This will ensure that the emulator will be able to load its files.
  */
@@ -123,7 +123,7 @@ static void waitUntilDeviceIsReady(const char *path)
 
    while((file=fopen(path, "rb"))==NULL)
    {
-      /* Wait for a while first, or the IOP 
+      /* Wait for a while first, or the IOP
        * will get swamped by requests from the EE. */
       nopdelay();
       nopdelay();
@@ -351,7 +351,7 @@ static void frontend_ps2_init(void *data)
    /* Memory Card */
    SifExecModuleBuffer(mcman_irx_start, mcman_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(mcserv_irx_start, mcserv_irx_size, 0, NULL, NULL);
-   
+
    /* USB */
    SifExecModuleBuffer(usbd_irx_start, usbd_irx_size, 0, NULL, NULL);
    SifExecModuleBuffer(usbhdfsd_irx_start, usbhdfsd_irx_size, 0, NULL, NULL);
@@ -365,7 +365,7 @@ static void frontend_ps2_init(void *data)
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad library 
+   /* Initializes pad library
       Must be init with 0 as parameter*/
    if (padInit(0) != 1) {
       RARCH_ERR("padInit library not initalizated\n");
@@ -507,6 +507,11 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "mass:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         "cdfs:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);

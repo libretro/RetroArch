@@ -387,4 +387,3 @@ unsigned int _FAT_fat_freeClusterCount (PARTITION* partition) {
 
 	return count;
 }
-

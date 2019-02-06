@@ -2571,10 +2571,12 @@ enum
 
 static int cheevos_iterate(coro_t *coro)
 {
-   ssize_t num_read = 0;
-   size_t to_read   = 4096;
-   uint8_t *buffer  = NULL;
-   const char *end  = NULL;
+   const int snes_header_len = 0x200;
+   const int lynx_header_len = 0x40;
+   ssize_t num_read          = 0;
+   size_t to_read            = 4096;
+   uint8_t *buffer           = NULL;
+   const char *end           = NULL;
 
    static const uint32_t genesis_exts[] =
    {
@@ -2614,7 +2616,7 @@ static int cheevos_iterate(coro_t *coro)
    {
       {SNES_MD5,    "SNES (discards header)",            snes_exts},
       {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
-      {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
+      {LYNX_MD5,    "Atari Lynx (discards header)",      lynx_exts},
       {NES_MD5,     "NES (discards header)",             NULL},
       {GENERIC_MD5, "Generic (plain content)",           NULL},
       {FILENAME_MD5, "Generic (filename)",               NULL}
@@ -2903,9 +2905,7 @@ found:
       /* Checks for the existence of a headered SNES file.
          Unheadered files fall back to GENERIC_MD5. */
 
-      const int SNES_HEADER_LEN = 0x200;
-
-      if (coro->len < 0x2000 || coro->len % 0x2000 != SNES_HEADER_LEN)
+      if (coro->len < 0x2000 || coro->len % 0x2000 != snes_header_len)
       {
           coro->gameid = 0;
           CORO_RET();
@@ -2956,16 +2956,19 @@ found:
          *************************************************************************/
    CORO_SUB(LYNX_MD5)
 
-      if (coro->len < 0x0240)
+      /* Checks for the existence of a headered Lynx file.
+         Unheadered files fall back to GENERIC_MD5. */
+
+      if (coro->len <= (unsigned)lynx_header_len ||
+        memcmp("LYNX", (void *)coro->data, 5) != 0)
       {
          coro->gameid = 0;
          CORO_RET();
       }
 
       MD5_Init(&coro->md5);
-
-      coro->offset       = 0x0040;
-      coro->count        = 0x0200;
+      coro->offset = lynx_header_len;
+      coro->count  = coro->len - lynx_header_len;
       CORO_GOSUB(EVAL_MD5);
 
       MD5_Final(coro->hash, &coro->md5);

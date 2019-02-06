@@ -59,4 +59,3 @@ typedef float vec4_t[4];
 RETRO_END_DECLS
 
 #endif
-

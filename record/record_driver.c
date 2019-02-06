@@ -37,6 +37,10 @@
 #include "../list_special.h"
 #include "../paths.h"
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
@@ -54,6 +58,51 @@ static bool streaming_enable                   = false;
 
 static const record_driver_t *recording_driver = NULL;
 void *recording_data                           = NULL;
+
+#ifdef HAVE_THREADS
+static slock_t *s_recording_driver_lock        = NULL;
+#endif
+
+bool recording_driver_lock_inited(void)
+{
+#ifdef HAVE_THREADS
+   return s_recording_driver_lock != NULL;
+#else
+   return false;
+#endif
+}
+
+void recording_driver_lock_init(void)
+{
+#ifdef HAVE_THREADS
+   s_recording_driver_lock = slock_new();
+#endif
+}
+
+void recording_driver_lock_free(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_free(s_recording_driver_lock);
+   s_recording_driver_lock = NULL;
+#endif
+}
+
+void recording_driver_lock(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_lock(s_recording_driver_lock);
+#endif
+}
+
+void recording_driver_unlock(void)
+{
+#ifdef HAVE_THREADS
+   if (s_recording_driver_lock)
+      slock_unlock(s_recording_driver_lock);
+#endif
+}
 
 /**
  * record_driver_find_ident:
@@ -405,12 +454,14 @@ bool recording_init(void)
       if (streaming_is_enabled())
       {
          params.config = settings->paths.path_stream_config;
-         params.preset = settings->uints.video_stream_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_stream_quality;
       }
       else
       {
          params.config = settings->paths.path_record_config;
-         params.preset = settings->uints.video_record_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_record_quality;
       }
    }
 

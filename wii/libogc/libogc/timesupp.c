@@ -317,4 +317,3 @@ int __libogc_gettod_r(struct _reent *ptr, struct timeval *tp, struct timezone *t
 	}
 	return 0;
 }
-

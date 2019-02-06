@@ -32,10 +32,10 @@ ELF_TARGET := retroarch-salamander_wii.elf
 
 INCLUDE := -I. -Ilibretro-common/include -Ideps/libz
 ifeq ($(EXTERNAL_LIBOGC), 1)
-INCLUDE += -I$(DEVKITPRO)/libogc/include 
+INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 else
-INCLUDE += -Iwii/libogc/include 
+INCLUDE += -Iwii/libogc/include
 LIBDIRS := -Lwii/libogc/libs/wii -L.
 endif
 

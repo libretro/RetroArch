@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <asm.h>
 
 #define EXCEPTION_PROLOG			\
@@ -57,7 +56,7 @@ distribution.
 	stw      r13,GPR13_OFFSET(sp);	\
 	stw      r14,GPR14_OFFSET(sp);	\
 	stw      r15,GPR15_OFFSET(sp)
-		
+
 #define EXCEPTION_EPILOG			\
 	lwz		r4,GQR0_OFFSET(sp);		\
 	mtspr	912,r4;					\
@@ -101,7 +100,7 @@ irq_exceptionhandler:
 
 	addi	r14,sp,0
 	lis		r15,_thread_dispatch_disable_level@ha
-	
+
 	mfspr	r3,SPRG0
 	cmpwi	r3,0
 	bne		nested
@@ -116,7 +115,7 @@ nested:
 
 	addi	r3,r14,0x08
 	bl		c_irqdispatcher
-	
+
 	mfspr	r4,SPRG0
 	lwz		r3,_thread_dispatch_disable_level@l(r15)
 	addi	r4,r4,-1

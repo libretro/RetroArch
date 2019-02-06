@@ -16,7 +16,7 @@ MSG_HASH(
     "Aumentar ou diminuir o brilho da tela do Switch"
     )
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "Overclock da CPU"
@@ -844,14 +844,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
     "Habilitar Conquistas"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Cor do item de menu ao passar o cursor"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Cor normal do item de menu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
@@ -2993,26 +2985,6 @@ MSG_HASH(
  MSG_HASH(
      MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
      "HH:MM:SS (AM/PM)"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Cor de título do menu personalizado"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
-    "Cor escura do fundo do menu personalizado"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
-    "Cor clara do fundo do menu personalizado"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
-    "Cor escura da borda do menu personalizado"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
-    "Cor clara da borda do menu personalizado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -8063,4 +8035,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Segurar Start (2 segundos)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

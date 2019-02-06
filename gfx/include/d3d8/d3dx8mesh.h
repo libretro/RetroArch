@@ -744,4 +744,3 @@ D3DXConvertMeshSubsetToStrips
 #endif /* __cplusplus */
 
 #endif /* __D3DX8MESH_H__ */
-

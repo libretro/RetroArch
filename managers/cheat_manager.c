@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -51,6 +52,8 @@
 #include "../verbosity.h"
 #include "../input/input_driver.h"
 #include "../configuration.h"
+
+cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_buf_size(void)
 {
@@ -460,7 +463,7 @@ error:
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 {
    unsigned i;
-   unsigned orig_size;
+   unsigned orig_size = 0;
 
    if (!cheat_manager_state.cheats)
    {
@@ -470,6 +473,7 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    }
    else
    {
+      struct item_cheat *val = NULL;
       orig_size = cheat_manager_state.size;
 
       /* if size is decreasing, free the items that will be lost */
@@ -481,8 +485,11 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
             free(cheat_manager_state.cheats[i].desc);
       }
 
-      cheat_manager_state.cheats = (struct item_cheat*)
-         realloc(cheat_manager_state.cheats, new_size * sizeof(struct item_cheat));
+      val = (struct item_cheat*)
+         realloc(cheat_manager_state.cheats,
+               new_size * sizeof(struct item_cheat));
+
+      cheat_manager_state.cheats = val ? val : NULL;
    }
 
    if (!cheat_manager_state.cheats)
@@ -659,7 +666,7 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
    game_name                  = path_basename(global->name.cheatfile);
 
    if (string_is_empty(settings->paths.path_cheat_database)  ||
-       string_is_empty(core_name)                            || 
+       string_is_empty(core_name)                            ||
        string_is_empty(game_name))
       return false;
 
@@ -750,7 +757,15 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             if (!cheat_manager_state.memory_size_list)
                cheat_manager_state.memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
             else
-               cheat_manager_state.memory_size_list = (unsigned*)realloc(cheat_manager_state.memory_size_list, sizeof(unsigned) * cheat_manager_state.num_memory_buffers);
+            {
+               unsigned *val = (unsigned*)realloc(
+                     cheat_manager_state.memory_size_list,
+                     sizeof(unsigned) *
+                     cheat_manager_state.num_memory_buffers);
+
+               if (val)
+                  cheat_manager_state.memory_size_list = val;
+            }
 
             cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers-1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
             cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers-1] = system->mmaps.descriptors[i].core.len;
@@ -1228,7 +1243,7 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
 
    cheat->rumble_prev_value = curr_value;
 
-   /* Give the emulator enough time 
+   /* Give the emulator enough time
     * to initialize, load state, etc */
    if (cheat->rumble_initialized > 300)
    {
@@ -1294,7 +1309,7 @@ void cheat_manager_apply_retro_cheats(void)
       if (!cheat_manager_state.memory_initialized)
          cheat_manager_initialize_memory(NULL, false);
 
-      /* If we're still not initialized, something 
+      /* If we're still not initialized, something
        * must have gone wrong - just bail */
       if (!cheat_manager_state.memory_initialized)
          return;
@@ -1305,7 +1320,7 @@ void cheat_manager_apply_retro_cheats(void)
          continue;
       }
       cheat_manager_setup_search_meta(cheat_manager_state.cheats[i].memory_search_size, &bytes_per_item, &mask, &bits);
-      
+
       curr = cheat_manager_state.curr_memory_buf;
       idx  = cheat_manager_state.cheats[i].address;
 

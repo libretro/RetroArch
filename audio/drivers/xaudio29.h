@@ -66,7 +66,6 @@
 #define XAUDIO2D_DLL XAUDIO2D_DLL_A
 #endif
 
-
 /**************************************************************************
  *
  * XAudio2 COM object class and interface IDs.
@@ -103,7 +102,6 @@ DEFINE_IID_X(IXAudio2, 60d8dac8, 5aa1, 4e8e, b5, 97, 2f, 5e, 28, 83, d4, 84);
 
 #endif
 
-
 // Ignore the rest of this header if only the GUID definitions were requested
 #ifndef GUID_DEFS_ONLY
 
@@ -114,7 +112,6 @@ DEFINE_IID_X(IXAudio2, 60d8dac8, 5aa1, 4e8e, b5, 97, 2f, 5e, 28, 83, d4, 84);
 
 // All structures defined in this file use tight field packing
 #pragma pack(push, 1)
-
 
 /**************************************************************************
  *
@@ -204,7 +201,6 @@ FWD_DECLARE(IXAudio2SubmixVoice);
 FWD_DECLARE(IXAudio2MasteringVoice);
 FWD_DECLARE(IXAudio2EngineCallback);
 FWD_DECLARE(IXAudio2VoiceCallback);
-
 
 /**************************************************************************
  *
@@ -420,7 +416,6 @@ typedef struct XAUDIO2_DEBUG_CONFIGURATION
 #define XAUDIO2_LOG_MEMORY     0x0100   // Memory heap usage information.
 #define XAUDIO2_LOG_STREAMING  0x1000   // Audio streaming information.
 
-
 /**************************************************************************
  *
  * IXAudio2: Top-level XAudio2 COM interface.
@@ -512,7 +507,6 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
       _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList X2DEFAULT(NULL),
       _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL)) PURE;
 
-
    // NAME: IXAudio2::CreateMasteringVoice
    // DESCRIPTION: Creates and configures a mastering voice.
    //
@@ -569,7 +563,6 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
    STDMETHOD_(void, SetDebugConfiguration) (THIS_ _In_opt_ const XAUDIO2_DEBUG_CONFIGURATION* pDebugConfiguration,
       _Reserved_ void* pReserved X2DEFAULT(NULL)) PURE;
 };
-
 
 /**************************************************************************
  *
@@ -794,7 +787,6 @@ DECLARE_INTERFACE(IXAudio2Voice)
    Declare_IXAudio2Voice_Methods();
 };
 
-
 /**************************************************************************
  *
  * IXAudio2SourceVoice: Source voice management interface.
@@ -895,7 +887,6 @@ DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
    STDMETHOD(SetSourceSampleRate) (THIS_ UINT32 NewSourceSampleRate) PURE;
 };
 
-
 /**************************************************************************
  *
  * IXAudio2SubmixVoice: Submixing voice management interface.
@@ -911,7 +902,6 @@ DECLARE_INTERFACE_(IXAudio2SubmixVoice, IXAudio2Voice)
 
    // There are currently no methods specific to submix voices.
 };
-
 
 /**************************************************************************
  *
@@ -935,7 +925,6 @@ DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
    //
    STDMETHOD(GetChannelMask) (THIS_ _Out_ DWORD* pChannelmask) PURE;
 };
-
 
 /**************************************************************************
  *
@@ -963,7 +952,6 @@ DECLARE_INTERFACE(IXAudio2EngineCallback)
    // to be closed down and restarted.  The error code is given in Error.
    STDMETHOD_(void, OnCriticalError) (THIS_ HRESULT Error) PURE;
 };
-
 
 /**************************************************************************
  *
@@ -1007,7 +995,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
    // processed when the error occurred, and its HRESULT code.
    STDMETHOD_(void, OnVoiceError) (THIS_ void* pBufferContext, HRESULT Error) PURE;
 };
-
 
 /**************************************************************************
  *
@@ -1127,7 +1114,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
 
 #endif /* #ifndef __cplusplus */
 
-
 /**************************************************************************
  *
  * Utility functions used to convert from pitch in semitones and volume
@@ -1205,9 +1191,7 @@ static INLINE float XAudio2CutoffFrequencyToOnePoleCoefficient(float CutoffFrequ
    return (1.0f - powf(1.0f - 2.0f * CutoffFrequency / SampleRate, 2.0f));
 }
 
-
 #endif // #ifdef XAUDIO2_HELPER_FUNCTIONS
-
 
 /**************************************************************************
  *

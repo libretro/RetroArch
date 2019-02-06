@@ -554,7 +554,7 @@ static bool ctr_font_init_first(
 }
 #endif
 
-#ifdef HAVE_LIBNX 
+#ifdef HAVE_LIBNX
 static const font_renderer_t *switch_font_backends[] = {
    &switch_font,
    NULL
@@ -802,7 +802,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
       unsigned      result         = 0;
       bool          prev_connected = false;
       bool          next_connected = false;
-      unsigned char id             = (src[0] << 6) | (src[1] & 0x3F);
+      unsigned char id             = ((unsigned char)src[0] << 6) | ((unsigned char)src[1] & 0x3F);
       const char*   prev1          = src - 2;
       const char*   prev2          = src - 4;
 
@@ -821,7 +821,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
          unsigned char prev1_id = 0;
 
          if (prev1)
-            prev1_id = (prev1[0] << 6) | (prev1[1] & 0x3F);
+            prev1_id = ((unsigned char)prev1[0] << 6) | ((unsigned char)prev1[1] & 0x3F);
 
          if (prev1_id == 0x44)
          {
@@ -851,7 +851,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
 
       if ((src[2] & 0xFC) == 0xD8)
       {
-         unsigned char next_id = (src[2] << 6) | (src[3] & 0x3F);
+         unsigned char next_id = ((unsigned char)src[2] << 6) | ((unsigned char)src[3] & 0x3F);
 
          if (next_id > 0x20 || next_id < 0x50)
             next_connected = true;
@@ -882,7 +882,12 @@ static char* font_driver_reshape_msg(const char* msg)
       {
          src--;
          while (IS_MBCONT(src))
+         {
             src--;
+
+            if (src == (const unsigned char*)msg)
+               goto end;
+         }
 
          if (IS_RTL(src) || IS_DIR_NEUTRAL(src))
          {
@@ -945,7 +950,7 @@ static char* font_driver_reshape_msg(const char* msg)
             *dst++ = *src++;
       }
    }
-
+end:
    *dst = '\0';
 
    return (char*)buffer;
@@ -958,7 +963,7 @@ void font_driver_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   font_data_t *font = (font_data_t*)(font_data 
+   font_data_t *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
 
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)

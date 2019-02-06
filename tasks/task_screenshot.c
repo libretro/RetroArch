@@ -237,12 +237,20 @@ static bool screenshot_dump(
       {
          if (settings->bools.auto_screenshot_filename)
          {
+            const char *screenshot_name = NULL;
+
             if (path_is_empty(RARCH_PATH_CONTENT))
-               fill_str_dated_filename(shotname, system_info.library_name,
-                     IMG_EXT, sizeof(shotname));
+            {
+               if (string_is_empty(system_info.library_name))
+                  screenshot_name = "RetroArch";
+               else
+                  screenshot_name = system_info.library_name;
+            }
             else
-               fill_str_dated_filename(shotname, path_basename(name_base),
-                     IMG_EXT, sizeof(shotname));
+               screenshot_name = path_basename(name_base);
+
+            fill_str_dated_filename(shotname, screenshot_name,
+                  IMG_EXT, sizeof(shotname));
          }
          else
             snprintf(shotname, sizeof(shotname),

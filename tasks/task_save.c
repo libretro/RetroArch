@@ -44,6 +44,7 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+#include "../content.h"
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
@@ -762,6 +763,10 @@ static void task_load_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+
+   if (!task_data)
+      return;
+
    memcpy(task_data, state, sizeof(*task_data));
 
    task_set_data(task, task_data);

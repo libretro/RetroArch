@@ -47,7 +47,6 @@ extern "C" {
 #define VK_HEADER_VERSION 73
 
 #define VK_NULL_HANDLE 0
-        
 
 #define VK_DEFINE_HANDLE(object) typedef struct object##_T* object;
 
@@ -58,7 +57,6 @@ extern "C" {
         #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef uint64_t object;
 #endif
 #endif
-        
 
 typedef uint32_t VkFlags;
 typedef uint32_t VkBool32;

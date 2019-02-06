@@ -53,22 +53,22 @@ typedef interface ID2D1TransformNode ID2D1TransformNode;
 /// </summary>
 typedef enum D2D1_CHANGE_TYPE
 {
-    
+
     /// <summary>
     /// Nothing has changed.
     /// </summary>
     D2D1_CHANGE_TYPE_NONE = 0,
-    
+
     /// <summary>
     /// The effect's properties have changed.
     /// </summary>
     D2D1_CHANGE_TYPE_PROPERTIES = 1,
-    
+
     /// <summary>
     /// The internal context has changed and should be inspected.
     /// </summary>
     D2D1_CHANGE_TYPE_CONTEXT = 2,
-    
+
     /// <summary>
     /// A new graph has been set due to a change in the input count.
     /// </summary>
@@ -84,12 +84,12 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_CHANGE_TYPE);
 /// </summary>
 typedef enum D2D1_PIXEL_OPTIONS
 {
-    
+
     /// <summary>
     /// Default pixel processing.
     /// </summary>
     D2D1_PIXEL_OPTIONS_NONE = 0,
-    
+
     /// <summary>
     /// Indicates that the shader samples its inputs only at exactly the same scene
     /// coordinate as the output pixel, and that it returns transparent black whenever
@@ -107,25 +107,25 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_PIXEL_OPTIONS);
 /// </summary>
 typedef enum D2D1_VERTEX_OPTIONS
 {
-    
+
     /// <summary>
     /// Default vertex processing.
     /// </summary>
     D2D1_VERTEX_OPTIONS_NONE = 0,
-    
+
     /// <summary>
     /// Indicates that the output rectangle does not need to be cleared before drawing
     /// custom vertices. This must only be used by transforms whose custom vertices
     /// completely cover their output rectangle.
     /// </summary>
     D2D1_VERTEX_OPTIONS_DO_NOT_CLEAR = 1,
-    
+
     /// <summary>
     /// Causes a depth buffer to be used while drawing custom vertices. This impacts
     /// drawing behavior when primitives overlap one another.
     /// </summary>
     D2D1_VERTEX_OPTIONS_USE_DEPTH_BUFFER = 2,
-    
+
     /// <summary>
     /// Indicates that custom vertices do not form primitives which overlap one another.
     /// </summary>
@@ -141,12 +141,12 @@ DEFINE_ENUM_FLAG_OPERATORS(D2D1_VERTEX_OPTIONS);
 /// </summary>
 typedef enum D2D1_VERTEX_USAGE
 {
-    
+
     /// <summary>
     /// The vertex buffer content do not change frequently from frame to frame.
     /// </summary>
     D2D1_VERTEX_USAGE_STATIC = 0,
-    
+
     /// <summary>
     /// The vertex buffer is intended to be updated frequently.
     /// </summary>
@@ -240,17 +240,17 @@ typedef enum D2D1_FEATURE
 /// </summary>
 typedef struct D2D1_PROPERTY_BINDING
 {
-    
+
     /// <summary>
     /// The name of the property.
     /// </summary>
     PCWSTR propertyName;
-    
+
     /// <summary>
     /// The function that will receive the data to set.
     /// </summary>
     PD2D1_PROPERTY_SET_FUNCTION setFunction;
-    
+
     /// <summary>
     /// The function that will be asked to write the output data.
     /// </summary>
@@ -285,8 +285,8 @@ typedef struct D2D1_INPUT_ELEMENT_DESC
 
 } D2D1_INPUT_ELEMENT_DESC;
 
-// 
-// Set to alignedByteOffset within D2D1_INPUT_ELEMENT_DESC for elements that 
+//
+// Set to alignedByteOffset within D2D1_INPUT_ELEMENT_DESC for elements that
 // immediately follow preceding elements in memory
 //
 #define D2D1_APPEND_ALIGNED_ELEMENT ( 0xffffffff )
@@ -400,19 +400,19 @@ EXTERN_C CONST IID IID_ID2D1EffectContext;
 /// </summary>
 interface DX_DECLARE_INTERFACE("9b8b1336-00a5-4668-92b7-ced5d8bf9b7b") ID2D1VertexBuffer  : public IUnknown
 {
-    
+
     STDMETHOD(Map)(
         _Outptr_result_bytebuffer_(bufferSize) BYTE **data,
-        UINT32 bufferSize 
+        UINT32 bufferSize
         ) PURE;
-    
+
     STDMETHOD(Unmap)(
         ) PURE;
 }; // interface ID2D1VertexBuffer
 
 interface DX_DECLARE_INTERFACE("688d15c3-02b0-438d-b13a-d1b44c32c39a") ID2D1ResourceTexture  : public IUnknown
 {
-    
+
     /// <summary>
     /// Update the vertex text.
     /// </summary>
@@ -422,7 +422,7 @@ interface DX_DECLARE_INTERFACE("688d15c3-02b0-438d-b13a-d1b44c32c39a") ID2D1Reso
         _In_reads_opt_(dimensions - 1) CONST UINT32 *strides,
         UINT32 dimensions,
         _In_reads_(dataCount) CONST BYTE *data,
-        UINT32 dataCount 
+        UINT32 dataCount
         ) PURE;
 }; // interface ID2D1ResourceTexture
 
@@ -432,37 +432,37 @@ interface DX_DECLARE_INTERFACE("688d15c3-02b0-438d-b13a-d1b44c32c39a") ID2D1Reso
 /// </summary>
 interface DX_DECLARE_INTERFACE("519ae1bd-d19a-420d-b849-364f594776b7") ID2D1RenderInfo  : public IUnknown
 {
-    
+
     /// <summary>
     /// Sets options for sampling the specified image input
     /// </summary>
     STDMETHOD(SetInputDescription)(
         UINT32 inputIndex,
-        D2D1_INPUT_DESCRIPTION inputDescription 
+        D2D1_INPUT_DESCRIPTION inputDescription
         ) PURE;
-    
+
     /// <summary>
     /// Controls the output precision and channel-depth for the associated transform.
     /// </summary>
     STDMETHOD(SetOutputBuffer)(
         D2D1_BUFFER_PRECISION bufferPrecision,
-        D2D1_CHANNEL_DEPTH channelDepth 
+        D2D1_CHANNEL_DEPTH channelDepth
         ) PURE;
-    
+
     /// <summary>
     /// Controls whether the output of the associated transform is cached.
     /// </summary>
     STDMETHOD_(void, SetCached)(
-        BOOL isCached 
+        BOOL isCached
         ) PURE;
-    
+
     /// <summary>
     /// Provides a hint of the approximate shader instruction count per pixel.  If
     /// provided, it may improve performance when processing large images.  Instructions
     /// should be counted multiple times if occurring within loops.
     /// </summary>
     STDMETHOD_(void, SetInstructionCountHint)(
-        UINT32 instructionCount 
+        UINT32 instructionCount
         ) PURE;
 }; // interface ID2D1RenderInfo
 
@@ -472,39 +472,39 @@ interface DX_DECLARE_INTERFACE("519ae1bd-d19a-420d-b849-364f594776b7") ID2D1Rend
 /// </summary>
 interface DX_DECLARE_INTERFACE("693ce632-7f2f-45de-93fe-18d88b37aa21") ID2D1DrawInfo  : public ID2D1RenderInfo
 {
-    
+
     /// <summary>
     /// Set the constant buffer for this transform's pixel shader.
     /// </summary>
     STDMETHOD(SetPixelShaderConstantBuffer)(
         _In_reads_(bufferCount) CONST BYTE *buffer,
-        UINT32 bufferCount 
+        UINT32 bufferCount
         ) PURE;
-    
+
     /// <summary>
     /// Sets the resource texture corresponding to the given shader texture index.
     /// </summary>
     STDMETHOD(SetResourceTexture)(
         UINT32 textureIndex,
-        _In_ ID2D1ResourceTexture *resourceTexture 
+        _In_ ID2D1ResourceTexture *resourceTexture
         ) PURE;
-    
+
     /// <summary>
     /// Set the constant buffer for this transform's vertex shader.
     /// </summary>
     STDMETHOD(SetVertexShaderConstantBuffer)(
         _In_reads_(bufferCount) CONST BYTE *buffer,
-        UINT32 bufferCount 
+        UINT32 bufferCount
         ) PURE;
-    
+
     /// <summary>
     /// Set the shader instructions for this transform.
     /// </summary>
     STDMETHOD(SetPixelShader)(
         _In_ REFGUID shaderId,
-        D2D1_PIXEL_OPTIONS pixelOptions = D2D1_PIXEL_OPTIONS_NONE 
+        D2D1_PIXEL_OPTIONS pixelOptions = D2D1_PIXEL_OPTIONS_NONE
         ) PURE;
-    
+
     /// <summary>
     /// Set custom vertices for the associated transform.  A blend mode if
     /// foreground-over will be used if blendDescription is NULL.
@@ -514,7 +514,7 @@ interface DX_DECLARE_INTERFACE("693ce632-7f2f-45de-93fe-18d88b37aa21") ID2D1Draw
         D2D1_VERTEX_OPTIONS vertexOptions,
         _In_opt_ CONST D2D1_BLEND_DESCRIPTION *blendDescription = NULL,
         _In_opt_ CONST D2D1_VERTEX_RANGE *vertexRange = NULL,
-        _In_opt_ CONST GUID *vertexShader = NULL 
+        _In_opt_ CONST GUID *vertexShader = NULL
         ) PURE;
 }; // interface ID2D1DrawInfo
 
@@ -524,28 +524,28 @@ interface DX_DECLARE_INTERFACE("693ce632-7f2f-45de-93fe-18d88b37aa21") ID2D1Draw
 /// </summary>
 interface DX_DECLARE_INTERFACE("5598b14b-9fd7-48b7-9bdb-8f0964eb38bc") ID2D1ComputeInfo  : public ID2D1RenderInfo
 {
-    
+
     /// <summary>
     /// Set the constant buffer for this transform.
     /// </summary>
     STDMETHOD(SetComputeShaderConstantBuffer)(
         _In_reads_(bufferCount) CONST BYTE *buffer,
-        UINT32 bufferCount 
+        UINT32 bufferCount
         ) PURE;
-    
+
     /// <summary>
     /// Set the shader instructions for this transform.
     /// </summary>
     STDMETHOD(SetComputeShader)(
-        _In_ REFGUID shaderId 
+        _In_ REFGUID shaderId
         ) PURE;
-    
+
     /// <summary>
     /// Sets the resource texture corresponding to the given shader texture index.
     /// </summary>
     STDMETHOD(SetResourceTexture)(
         UINT32 textureIndex,
-        _In_ ID2D1ResourceTexture *resourceTexture 
+        _In_ ID2D1ResourceTexture *resourceTexture
         ) PURE;
 }; // interface ID2D1ComputeInfo
 
@@ -554,7 +554,7 @@ interface DX_DECLARE_INTERFACE("5598b14b-9fd7-48b7-9bdb-8f0964eb38bc") ID2D1Comp
 /// </summary>
 interface DX_DECLARE_INTERFACE("b2efe1e7-729f-4102-949f-505fa21bf666") ID2D1TransformNode  : public IUnknown
 {
-    
+
     /// <summary>
     /// Return the number of input this node has.
     /// </summary>
@@ -567,52 +567,52 @@ interface DX_DECLARE_INTERFACE("b2efe1e7-729f-4102-949f-505fa21bf666") ID2D1Tran
 /// </summary>
 interface DX_DECLARE_INTERFACE("13d29038-c3e6-4034-9081-13b53a417992") ID2D1TransformGraph  : public IUnknown
 {
-    
+
     /// <summary>
     /// Return the number of input this graph has.
     /// </summary>
     STDMETHOD_(UINT32, GetInputCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Sets the graph to contain a single transform whose inputs map 1:1 with effect
     /// inputs.
     /// </summary>
     STDMETHOD(SetSingleTransformNode)(
-        _In_ ID2D1TransformNode *node 
+        _In_ ID2D1TransformNode *node
         ) PURE;
-    
+
     /// <summary>
     /// Adds the given transform node to the graph.
     /// </summary>
     STDMETHOD(AddNode)(
-        _In_ ID2D1TransformNode *node 
+        _In_ ID2D1TransformNode *node
         ) PURE;
-    
+
     /// <summary>
     /// Removes the given transform node from the graph.
     /// </summary>
     STDMETHOD(RemoveNode)(
-        _In_ ID2D1TransformNode *node 
+        _In_ ID2D1TransformNode *node
         ) PURE;
-    
+
     /// <summary>
     /// Indicates that the given transform node should be considered to be the output
     /// node of the graph.
     /// </summary>
     STDMETHOD(SetOutputNode)(
-        _In_ ID2D1TransformNode *node 
+        _In_ ID2D1TransformNode *node
         ) PURE;
-    
+
     /// <summary>
     /// Connects one node to another node inside the graph.
     /// </summary>
     STDMETHOD(ConnectNode)(
         _In_ ID2D1TransformNode *fromNode,
         _In_ ID2D1TransformNode *toNode,
-        UINT32 toNodeInputIndex 
+        UINT32 toNodeInputIndex
         ) PURE;
-    
+
     /// <summary>
     /// Connects a transform node inside the graph to the corresponding input of the
     /// encapsulating effect.
@@ -620,20 +620,20 @@ interface DX_DECLARE_INTERFACE("13d29038-c3e6-4034-9081-13b53a417992") ID2D1Tran
     STDMETHOD(ConnectToEffectInput)(
         UINT32 toEffectInputIndex,
         _In_ ID2D1TransformNode *node,
-        UINT32 toNodeInputIndex 
+        UINT32 toNodeInputIndex
         ) PURE;
-    
+
     /// <summary>
     /// Clears all nodes and connections from the transform graph.
     /// </summary>
     STDMETHOD_(void, Clear)(
         ) PURE;
-    
+
     /// <summary>
     /// Uses the specified input as the effect output.
     /// </summary>
     STDMETHOD(SetPassthroughGraph)(
-        UINT32 effectInputIndex 
+        UINT32 effectInputIndex
         ) PURE;
 }; // interface ID2D1TransformGraph
 
@@ -642,25 +642,25 @@ interface DX_DECLARE_INTERFACE("13d29038-c3e6-4034-9081-13b53a417992") ID2D1Tran
 /// </summary>
 interface DX_DECLARE_INTERFACE("ef1a287d-342a-4f76-8fdb-da0d6ea9f92b") ID2D1Transform  : public ID2D1TransformNode
 {
-    
+
     STDMETHOD(MapOutputRectToInputRects)(
         _In_ CONST D2D1_RECT_L *outputRect,
         _Out_writes_(inputRectsCount) D2D1_RECT_L *inputRects,
-        UINT32 inputRectsCount 
+        UINT32 inputRectsCount
         ) CONST PURE;
-    
+
     STDMETHOD(MapInputRectsToOutputRect)(
         _In_reads_(inputRectCount) CONST D2D1_RECT_L *inputRects,
         _In_reads_(inputRectCount) CONST D2D1_RECT_L *inputOpaqueSubRects,
         UINT32 inputRectCount,
         _Out_ D2D1_RECT_L *outputRect,
-        _Out_ D2D1_RECT_L *outputOpaqueSubRect 
+        _Out_ D2D1_RECT_L *outputOpaqueSubRect
         ) PURE;
-    
+
     STDMETHOD(MapInvalidRect)(
         UINT32 inputIndex,
         D2D1_RECT_L invalidInputRect,
-        _Out_ D2D1_RECT_L *invalidOutputRect 
+        _Out_ D2D1_RECT_L *invalidOutputRect
         ) CONST PURE;
 }; // interface ID2D1Transform
 
@@ -669,9 +669,9 @@ interface DX_DECLARE_INTERFACE("ef1a287d-342a-4f76-8fdb-da0d6ea9f92b") ID2D1Tran
 /// </summary>
 interface DX_DECLARE_INTERFACE("36bfdcb6-9739-435d-a30d-a653beff6a6f") ID2D1DrawTransform  : public ID2D1Transform
 {
-    
+
     STDMETHOD(SetDrawInfo)(
-        _In_ ID2D1DrawInfo *drawInfo 
+        _In_ ID2D1DrawInfo *drawInfo
         ) PURE;
 }; // interface ID2D1DrawTransform
 
@@ -681,16 +681,16 @@ interface DX_DECLARE_INTERFACE("36bfdcb6-9739-435d-a30d-a653beff6a6f") ID2D1Draw
 /// </summary>
 interface DX_DECLARE_INTERFACE("0d85573c-01e3-4f7d-bfd9-0d60608bf3c3") ID2D1ComputeTransform  : public ID2D1Transform
 {
-    
+
     STDMETHOD(SetComputeInfo)(
-        _In_ ID2D1ComputeInfo *computeInfo 
+        _In_ ID2D1ComputeInfo *computeInfo
         ) PURE;
-    
+
     STDMETHOD(CalculateThreadgroups)(
         _In_ CONST D2D1_RECT_L *outputRect,
         _Out_ UINT32 *dimensionX,
         _Out_ UINT32 *dimensionY,
-        _Out_ UINT32 *dimensionZ 
+        _Out_ UINT32 *dimensionZ
         ) PURE;
 }; // interface ID2D1ComputeTransform
 
@@ -700,10 +700,10 @@ interface DX_DECLARE_INTERFACE("0d85573c-01e3-4f7d-bfd9-0d60608bf3c3") ID2D1Comp
 /// </summary>
 interface DX_DECLARE_INTERFACE("0359dc30-95e6-4568-9055-27720d130e93") ID2D1AnalysisTransform  : public IUnknown
 {
-    
+
     STDMETHOD(ProcessAnalysisResults)(
         _In_reads_(analysisDataCount) CONST BYTE *analysisData,
-        UINT32 analysisDataCount 
+        UINT32 analysisDataCount
         ) PURE;
 }; // interface ID2D1AnalysisTransform
 
@@ -713,15 +713,15 @@ interface DX_DECLARE_INTERFACE("0359dc30-95e6-4568-9055-27720d130e93") ID2D1Anal
 /// </summary>
 interface DX_DECLARE_INTERFACE("db1800dd-0c34-4cf9-be90-31cc0a5653e1") ID2D1SourceTransform  : public ID2D1Transform
 {
-    
+
     STDMETHOD(SetRenderInfo)(
-        _In_ ID2D1RenderInfo *renderInfo 
+        _In_ ID2D1RenderInfo *renderInfo
         ) PURE;
-    
+
     STDMETHOD(Draw)(
         _In_ ID2D1Bitmap1 *target,
         _In_ CONST D2D1_RECT_L *drawRect,
-        D2D1_POINT_2U targetOrigin 
+        D2D1_POINT_2U targetOrigin
         ) PURE;
 }; // interface ID2D1SourceTransform
 
@@ -731,20 +731,20 @@ interface DX_DECLARE_INTERFACE("db1800dd-0c34-4cf9-be90-31cc0a5653e1") ID2D1Sour
 /// </summary>
 interface DX_DECLARE_INTERFACE("1a799d8a-69f7-4e4c-9fed-437ccc6684cc") ID2D1ConcreteTransform  : public ID2D1TransformNode
 {
-    
+
     /// <summary>
     /// Controls the output precision and channel-depth for this transform.
     /// </summary>
     STDMETHOD(SetOutputBuffer)(
         D2D1_BUFFER_PRECISION bufferPrecision,
-        D2D1_CHANNEL_DEPTH channelDepth 
+        D2D1_CHANNEL_DEPTH channelDepth
         ) PURE;
-    
+
     /// <summary>
     /// Controls whether the output of this transform is cached.
     /// </summary>
     STDMETHOD_(void, SetCached)(
-        BOOL isCached 
+        BOOL isCached
         ) PURE;
 }; // interface ID2D1ConcreteTransform
 
@@ -753,13 +753,13 @@ interface DX_DECLARE_INTERFACE("1a799d8a-69f7-4e4c-9fed-437ccc6684cc") ID2D1Conc
 /// </summary>
 interface DX_DECLARE_INTERFACE("63ac0b32-ba44-450f-8806-7f4ca1ff2f1b") ID2D1BlendTransform  : public ID2D1ConcreteTransform
 {
-    
+
     STDMETHOD_(void, SetDescription)(
-        _In_ CONST D2D1_BLEND_DESCRIPTION *description 
+        _In_ CONST D2D1_BLEND_DESCRIPTION *description
         ) PURE;
-    
+
     STDMETHOD_(void, GetDescription)(
-        _Out_ D2D1_BLEND_DESCRIPTION *description 
+        _Out_ D2D1_BLEND_DESCRIPTION *description
         ) CONST PURE;
 }; // interface ID2D1BlendTransform
 
@@ -768,18 +768,18 @@ interface DX_DECLARE_INTERFACE("63ac0b32-ba44-450f-8806-7f4ca1ff2f1b") ID2D1Blen
 /// </summary>
 interface DX_DECLARE_INTERFACE("4998735c-3a19-473c-9781-656847e3a347") ID2D1BorderTransform  : public ID2D1ConcreteTransform
 {
-    
+
     STDMETHOD_(void, SetExtendModeX)(
-        D2D1_EXTEND_MODE extendMode 
+        D2D1_EXTEND_MODE extendMode
         ) PURE;
-    
+
     STDMETHOD_(void, SetExtendModeY)(
-        D2D1_EXTEND_MODE extendMode 
+        D2D1_EXTEND_MODE extendMode
         ) PURE;
-    
+
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendModeX)(
         ) CONST PURE;
-    
+
     STDMETHOD_(D2D1_EXTEND_MODE, GetExtendModeY)(
         ) CONST PURE;
 }; // interface ID2D1BorderTransform
@@ -790,11 +790,11 @@ interface DX_DECLARE_INTERFACE("4998735c-3a19-473c-9781-656847e3a347") ID2D1Bord
 /// </summary>
 interface DX_DECLARE_INTERFACE("3fe6adea-7643-4f53-bd14-a0ce63f24042") ID2D1OffsetTransform  : public ID2D1TransformNode
 {
-    
+
     STDMETHOD_(void, SetOffset)(
-        D2D1_POINT_2L offset 
+        D2D1_POINT_2L offset
         ) PURE;
-    
+
     STDMETHOD_(D2D1_POINT_2L, GetOffset)(
         ) CONST PURE;
 }; // interface ID2D1OffsetTransform
@@ -804,13 +804,13 @@ interface DX_DECLARE_INTERFACE("3fe6adea-7643-4f53-bd14-a0ce63f24042") ID2D1Offs
 /// </summary>
 interface DX_DECLARE_INTERFACE("90f732e2-5092-4606-a819-8651970baccd") ID2D1BoundsAdjustmentTransform  : public ID2D1TransformNode
 {
-    
+
     STDMETHOD_(void, SetOutputBounds)(
-        _In_ CONST D2D1_RECT_L *outputBounds 
+        _In_ CONST D2D1_RECT_L *outputBounds
         ) PURE;
-    
+
     STDMETHOD_(void, GetOutputBounds)(
-        _Out_ D2D1_RECT_L *outputBounds 
+        _Out_ D2D1_RECT_L *outputBounds
         ) CONST PURE;
 }; // interface ID2D1BoundsAdjustmentTransform
 
@@ -820,30 +820,30 @@ interface DX_DECLARE_INTERFACE("90f732e2-5092-4606-a819-8651970baccd") ID2D1Boun
 /// </summary>
 interface DX_DECLARE_INTERFACE("a248fd3f-3e6c-4e63-9f03-7f68ecc91db9") ID2D1EffectImpl  : public IUnknown
 {
-    
+
     /// <summary>
     /// Initialize the effect with a context and a transform graph. The effect must
     /// populate the transform graph with a topology and can update it later.
     /// </summary>
     STDMETHOD(Initialize)(
         _In_ ID2D1EffectContext *effectContext,
-        _In_ ID2D1TransformGraph *transformGraph 
+        _In_ ID2D1TransformGraph *transformGraph
         ) PURE;
-    
+
     /// <summary>
     /// Initialize the effect with a context and a transform graph. The effect must
     /// populate the transform graph with a topology and can update it later.
     /// </summary>
     STDMETHOD(PrepareForRender)(
-        D2D1_CHANGE_TYPE changeType 
+        D2D1_CHANGE_TYPE changeType
         ) PURE;
-    
+
     /// <summary>
     /// Sets a new transform graph to the effect.  This happens when the number of
     /// inputs to the effect changes, if the effect support a variable number of inputs.
     /// </summary>
     STDMETHOD(SetGraph)(
-        _In_ ID2D1TransformGraph *transformGraph 
+        _In_ ID2D1TransformGraph *transformGraph
         ) PURE;
 }; // interface ID2D1EffectImpl
 
@@ -854,105 +854,105 @@ interface DX_DECLARE_INTERFACE("a248fd3f-3e6c-4e63-9f03-7f68ecc91db9") ID2D1Effe
 /// </summary>
 interface DX_DECLARE_INTERFACE("3d9f916b-27dc-4ad7-b4f1-64945340f563") ID2D1EffectContext  : public IUnknown
 {
-    
+
     STDMETHOD_(void, GetDpi)(
         _Out_ FLOAT *dpiX,
-        _Out_ FLOAT *dpiY 
+        _Out_ FLOAT *dpiY
         ) CONST PURE;
-    
+
     /// <summary>
     /// Create a new effect, the effect must either be built in or previously registered
     /// through ID2D1Factory1::RegisterEffect.
     /// </summary>
     STDMETHOD(CreateEffect)(
         _In_ REFCLSID effectId,
-        _COM_Outptr_ ID2D1Effect **effect 
+        _COM_Outptr_ ID2D1Effect **effect
         ) PURE;
-    
+
     STDMETHOD(GetMaximumSupportedFeatureLevel)(
         _In_reads_(featureLevelsCount) CONST D3D_FEATURE_LEVEL *featureLevels,
         UINT32 featureLevelsCount,
-        _Out_ D3D_FEATURE_LEVEL *maximumSupportedFeatureLevel 
+        _Out_ D3D_FEATURE_LEVEL *maximumSupportedFeatureLevel
         ) CONST PURE;
-    
+
     /// <summary>
     /// Create a transform node from the passed in effect.
     /// </summary>
     STDMETHOD(CreateTransformNodeFromEffect)(
         _In_ ID2D1Effect *effect,
-        _COM_Outptr_ ID2D1TransformNode **transformNode 
+        _COM_Outptr_ ID2D1TransformNode **transformNode
         ) PURE;
-    
+
     STDMETHOD(CreateBlendTransform)(
         UINT32 numInputs,
         _In_ CONST D2D1_BLEND_DESCRIPTION *blendDescription,
-        _COM_Outptr_ ID2D1BlendTransform **transform 
+        _COM_Outptr_ ID2D1BlendTransform **transform
         ) PURE;
-    
+
     STDMETHOD(CreateBorderTransform)(
         D2D1_EXTEND_MODE extendModeX,
         D2D1_EXTEND_MODE extendModeY,
-        _COM_Outptr_ ID2D1BorderTransform **transform 
+        _COM_Outptr_ ID2D1BorderTransform **transform
         ) PURE;
-    
+
     STDMETHOD(CreateOffsetTransform)(
         D2D1_POINT_2L offset,
-        _COM_Outptr_ ID2D1OffsetTransform **transform 
+        _COM_Outptr_ ID2D1OffsetTransform **transform
         ) PURE;
-    
+
     STDMETHOD(CreateBoundsAdjustmentTransform)(
         _In_ CONST D2D1_RECT_L *outputRectangle,
-        _COM_Outptr_ ID2D1BoundsAdjustmentTransform **transform 
+        _COM_Outptr_ ID2D1BoundsAdjustmentTransform **transform
         ) PURE;
-    
+
     STDMETHOD(LoadPixelShader)(
         REFGUID shaderId,
         _In_reads_(shaderBufferCount) CONST BYTE *shaderBuffer,
-        UINT32 shaderBufferCount 
+        UINT32 shaderBufferCount
         ) PURE;
-    
+
     STDMETHOD(LoadVertexShader)(
         REFGUID resourceId,
         _In_reads_(shaderBufferCount) CONST BYTE *shaderBuffer,
-        UINT32 shaderBufferCount 
+        UINT32 shaderBufferCount
         ) PURE;
-    
+
     STDMETHOD(LoadComputeShader)(
         REFGUID resourceId,
         _In_reads_(shaderBufferCount) CONST BYTE *shaderBuffer,
-        UINT32 shaderBufferCount 
+        UINT32 shaderBufferCount
         ) PURE;
-    
+
     STDMETHOD_(BOOL, IsShaderLoaded)(
-        REFGUID shaderId 
+        REFGUID shaderId
         ) PURE;
-    
+
     STDMETHOD(CreateResourceTexture)(
         _In_opt_ CONST GUID *resourceId,
         _In_ CONST D2D1_RESOURCE_TEXTURE_PROPERTIES *resourceTextureProperties,
         _In_reads_opt_(dataSize) CONST BYTE *data,
         _In_reads_opt_(resourceTextureProperties->dimensions - 1) CONST UINT32 *strides,
         UINT32 dataSize,
-        _COM_Outptr_ ID2D1ResourceTexture **resourceTexture 
+        _COM_Outptr_ ID2D1ResourceTexture **resourceTexture
         ) PURE;
-    
+
     STDMETHOD(FindResourceTexture)(
         _In_ CONST GUID *resourceId,
-        _COM_Outptr_ ID2D1ResourceTexture **resourceTexture 
+        _COM_Outptr_ ID2D1ResourceTexture **resourceTexture
         ) PURE;
-    
+
     STDMETHOD(CreateVertexBuffer)(
         _In_ CONST D2D1_VERTEX_BUFFER_PROPERTIES *vertexBufferProperties,
         _In_opt_ CONST GUID *resourceId,
         _In_opt_ CONST D2D1_CUSTOM_VERTEX_BUFFER_PROPERTIES *customVertexBufferProperties,
-        _COM_Outptr_ ID2D1VertexBuffer **buffer 
+        _COM_Outptr_ ID2D1VertexBuffer **buffer
         ) PURE;
-    
+
     STDMETHOD(FindVertexBuffer)(
         _In_ CONST GUID *resourceId,
-        _COM_Outptr_ ID2D1VertexBuffer **buffer 
+        _COM_Outptr_ ID2D1VertexBuffer **buffer
         ) PURE;
-    
+
     /// <summary>
     /// Creates a color context from a color space.  If the space is Custom, the context
     /// is initialized from the profile/profileSize arguments.  Otherwise the context is
@@ -963,30 +963,30 @@ interface DX_DECLARE_INTERFACE("3d9f916b-27dc-4ad7-b4f1-64945340f563") ID2D1Effe
         D2D1_COLOR_SPACE space,
         _In_reads_opt_(profileSize) CONST BYTE *profile,
         UINT32 profileSize,
-        _COM_Outptr_ ID2D1ColorContext **colorContext 
+        _COM_Outptr_ ID2D1ColorContext **colorContext
         ) PURE;
-    
+
     STDMETHOD(CreateColorContextFromFilename)(
         _In_ PCWSTR filename,
-        _COM_Outptr_ ID2D1ColorContext **colorContext 
+        _COM_Outptr_ ID2D1ColorContext **colorContext
         ) PURE;
-    
+
     STDMETHOD(CreateColorContextFromWicColorContext)(
         _In_ IWICColorContext *wicColorContext,
-        _COM_Outptr_ ID2D1ColorContext **colorContext 
+        _COM_Outptr_ ID2D1ColorContext **colorContext
         ) PURE;
-    
+
     STDMETHOD(CheckFeatureSupport)(
         D2D1_FEATURE feature,
         _Out_writes_bytes_(featureSupportDataSize) void *featureSupportData,
-        UINT32 featureSupportDataSize 
+        UINT32 featureSupportDataSize
         ) CONST PURE;
-    
+
     /// <summary>
     /// Indicates whether the buffer precision is supported by D2D.
     /// </summary>
     STDMETHOD_(BOOL, IsBufferPrecisionSupported)(
-        D2D1_BUFFER_PRECISION bufferPrecision 
+        D2D1_BUFFER_PRECISION bufferPrecision
         ) CONST PURE;
 }; // interface ID2D1EffectContext
 

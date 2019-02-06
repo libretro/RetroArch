@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -68,8 +68,8 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
-static const int crt_switch_resolution_super = 2560; 
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
+static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;
@@ -372,15 +372,9 @@ static unsigned menu_shader_pipeline = 1;
 static unsigned menu_shader_pipeline = 2;
 #endif
 
-static bool show_advanced_settings            = false;
-static const uint32_t menu_entry_normal_color = 0xffffffff;
-static const uint32_t menu_entry_hover_color  = 0xff64ff64;
-static const uint32_t menu_title_color        = 0xff64ff64;
-static const uint32_t menu_bg_dark_color      = 0xc0202020;
-static const uint32_t menu_bg_light_color     = 0xc0404040;
-static const uint32_t menu_border_dark_color  = 0xc0204020;
-static const uint32_t menu_border_light_color = 0xc0408040;
-static unsigned rgui_color_theme = RGUI_THEME_CUSTOM;
+static bool show_advanced_settings        = false;
+static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 #else
 static bool default_block_config_read = false;
@@ -402,12 +396,14 @@ static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
-#elif defined(PS2)
+#elif defined(PS2) || defined(PSP)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
 #elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+#elif TARGET_OS_TV
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
 #else
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
@@ -507,6 +503,13 @@ static const bool video_3ds_lcd_bottom = true;
 
 /* Will enable audio or not. */
 static const bool audio_enable = true;
+
+/* Enable menu audio sounds. */
+static const bool audio_enable_menu = false;
+static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu_cancel = false;
+static const bool audio_enable_menu_notice = false;
+static const bool audio_enable_menu_bgm = false;
 
 /* Output samplerate. */
 #ifdef GEKKO
@@ -688,6 +691,9 @@ static const bool stdin_cmd_enable = false;
 static const uint16_t network_remote_base_port = 55400;
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
+
+/* File format to use when writing playlists to disk */
+static const bool playlist_use_old_format = false;
 
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;

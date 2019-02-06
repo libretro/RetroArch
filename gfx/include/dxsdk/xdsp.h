@@ -713,4 +713,3 @@ inline void IFFTDeinterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) 
 #pragma warning(pop)
 }; // namespace XDSP
 //---------------------------------<-EOF->----------------------------------//
-

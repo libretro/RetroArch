@@ -2,7 +2,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2017 - Andrés Suárez
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1091,6 +1091,24 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT),
+         _coreaudio_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT),
+         _coreaudio3_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT),
          _dsound_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
@@ -1290,6 +1308,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    unsigned i;
    size_t selection = menu_navigation_get_selection();
    size_t list_size = playlist_size(playlist);
+   settings_t *settings = config_get_ptr();
 
    if (list_size == 0)
       goto error;
@@ -1330,7 +1349,11 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (core_name)
          strlcpy(fill_buf, core_name, path_size);
 
-      if (!is_history && i == selection && !string_is_empty(label))
+      /* Note: this function is never called when using RGUI,
+       * but if it ever were then we must ensure that thumbnail
+       * updates are omitted (since this functionality is
+       * handled elsewhere) */
+      if (!is_history && i == selection && !string_is_empty(label) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
          char *content_basename = strdup(label);
 
@@ -1659,16 +1682,24 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
-      if (!string_is_empty(db_info_entry->name))
-         strlcpy(thumbnail_content, db_info_entry->name,
-               sizeof(thumbnail_content));
+      /* It is unclear why parsing a database should trigger a
+       * thumbnail update, but I guess this is here for a reason...
+       * Regardless, thumbnail updates must be disabled when using
+       * RGUI, since this functionality is handled elsewhere
+       * (and doing it here creates harmful conflicts) */
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      {
+         if (!string_is_empty(db_info_entry->name))
+            strlcpy(thumbnail_content, db_info_entry->name,
+                  sizeof(thumbnail_content));
 
-      if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content,
-               sizeof(thumbnail_content));
+         if (!string_is_empty(thumbnail_content))
+            menu_driver_set_thumbnail_content(thumbnail_content,
+                  sizeof(thumbnail_content));
 
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      }
 
       if (playlist)
       {
@@ -4194,7 +4225,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
    if (info->push_builtin_cores)
    {
-#if defined(HAVE_VIDEO_PROCESSOR)
+#if defined(HAVE_VIDEOPROCESSOR)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
             msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
@@ -4333,7 +4364,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
    switch (type)
    {
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
          unsigned i;
@@ -4343,15 +4374,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
          runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
-         
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-      
+
 #ifdef HAVE_LAKKA_SWITCH
-         profile = popen("cpu-profile get", "r");          
-         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         profile = popen("cpu-profile get", "r");
+         fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
-   
-         
+
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
@@ -4363,7 +4393,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             "",
             0,
             MENU_INFO_MESSAGE, 0, 0);
-         
+
          for (i = 0; i < profiles_count; i++)
          {
             char* profile               = SWITCH_CPU_PROFILES[i];
@@ -4373,17 +4403,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
                   0, MENU_SET_SWITCH_CPU_PROFILE, 0, i);
 
-         } 
-            
+         }
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
-      
+
          break;
       }
 #if defined(HAVE_LAKKA_SWITCH)
@@ -4397,12 +4427,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
 
-         profile = popen("gpu-profile get", "r");          
-         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         profile = popen("gpu-profile get", "r");
+         fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
-         
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
+
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 
          menu_entries_append_enum(info->list,
@@ -4410,8 +4440,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             "",
             0,
             MENU_INFO_MESSAGE, 0, 0);
-         
-                     
+
          for (i = 0; i < profiles_count; i++)
          {
             char* profile               = SWITCH_GPU_PROFILES[i];
@@ -4420,16 +4449,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
-                  0, MENU_SET_SWITCH_GPU_PROFILE, 0, i); 
-         }        
-               
+                  0, MENU_SET_SWITCH_GPU_PROFILE, 0, i);
+         }
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
-         
+
          break;
       }
       case DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL:
@@ -4445,7 +4474,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
 
-            menu_entries_append_enum(info->list, 
+            menu_entries_append_enum(info->list,
                   title,
                   "",
                   0, MENU_SET_SWITCH_BRIGHTNESS, 0, i);
@@ -5245,6 +5274,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
+               PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_playlist_associations(info);
          info->need_push    = true;
@@ -5988,32 +6020,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_TITLE_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BG_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_DARK_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_BORDER_LIGHT_COLOR,
-                  PARSE_ONLY_HEX, false) == 0)
+                  MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
+                  PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
@@ -6103,6 +6111,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -6119,6 +6131,44 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_MENU_SOUNDS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_OK,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_CANCEL,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_NOTICE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_SOUND_BGM,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
 
@@ -6626,10 +6676,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (!string_is_equal(video_display_server_get_ident(), "null"))
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
-                  PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+               PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -6800,7 +6849,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             unsigned i;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if 1
+            /* TODO - for developers -
+             * turn this into #if 0 if you want to be able to see
+             * the system streams as well. */
             for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+#else
+            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+#endif
             {
                char msg[128];
                char msg_lbl[128];
@@ -6820,16 +6876,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,   PARSE_ACTION, false) == 0)
+               MENU_ENUM_LABEL_MIDI_SETTINGS,          PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,   PARSE_ACTION, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SOUNDS,            PARSE_ACTION, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_MUTE,
@@ -8054,6 +8110,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             free(info->exts);
          info->exts         = strdup("cfg");
          break;
+      case DISPLAYLIST_RGUI_THEME_PRESETS:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         filebrowser_clear_type();
+         info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
+         load_content       = false;
+         use_filebrowser    = true;
+         if (!string_is_empty(info->exts))
+            free(info->exts);
+         info->exts         = strdup("cfg");
+         break;
       case DISPLAYLIST_REMAP_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
@@ -8113,6 +8179,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_DEFAULT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         load_content    = false;
          use_filebrowser = true;
          break;
       case DISPLAYLIST_CORES_DETECTED:
@@ -8445,7 +8512,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             unsigned i, size                  = 0;
-            struct video_display_config *list = video_display_server_get_resolution_list(&size);
+            struct video_display_config *list = (struct video_display_config*)
+               video_display_server_get_resolution_list(&size);
 
             if (list)
             {

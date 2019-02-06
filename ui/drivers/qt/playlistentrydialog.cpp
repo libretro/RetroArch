@@ -13,10 +13,16 @@
 #include "playlistentrydialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../core_info.h"
 #include "../../../file_path_special.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 inline static bool comp_string_lower(const QString &lhs, const QString &rhs)
 {
@@ -289,4 +295,3 @@ void PlaylistEntryDialog::hideDialog()
 {
    reject();
 }
-

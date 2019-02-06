@@ -35,7 +35,6 @@
 #include <QDropEvent>
 #include <QtConcurrentRun>
 #include <QtNetwork>
-#include <cmath>
 
 #include "../ui_qt.h"
 #include "invader_png.h"
@@ -49,7 +48,10 @@
 #include "playlistentrydialog.h"
 #include "viewoptionsdialog.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../version.h"
 #include "../../../verbosity.h"
 #include "../../../retroarch.h"
@@ -65,18 +67,21 @@ extern "C" {
 #include "../../../menu/menu_driver.h"
 #endif
 #include "../../../config.def.h"
+#include "../../../tasks/task_content.h"
 #include "../../../tasks/tasks_internal.h"
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
-#include <math.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include "../../../AUTHORS.h"
 
@@ -247,6 +252,27 @@ void LogTextEdit::appendMessage(const QString& text)
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
+/* only accept indexes from current path. https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together */
+bool FileSystemProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+{
+   QModelIndex rootIndex;
+
+   QFileSystemModel *sm = qobject_cast<QFileSystemModel*>(sourceModel());
+   rootIndex = sm->index(sm->rootPath());
+
+   if (sourceParent == rootIndex)
+   {
+      return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
+   }
+   return true;
+}
+
+void FileSystemProxyModel::sort(int column, Qt::SortOrder order)
+{
+   /* sort the source (QFileSystemModel to keep directories before files) */
+   sourceModel()->sort(column, order);
+}
+
 MainWindow::MainWindow(QWidget *parent) :
    QMainWindow(parent)
    ,m_loadCoreWindow(new LoadCoreWindow(this))
@@ -256,8 +282,12 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusLabel(new QLabel(this))
    ,m_dirTree(new TreeView(this))
    ,m_dirModel(new QFileSystemModel(m_dirTree))
+   ,m_fileModel(new QFileSystemModel(this))
    ,m_listWidget(new ListWidget(this))
+   ,m_centralWidget(new QStackedWidget(this))
    ,m_tableView(new TableView(this))
+   ,m_fileTableView(new QTableView(this))
+   ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
    ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), this))
@@ -272,7 +302,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailPixmap(NULL)
    ,m_thumbnailPixmap2(NULL)
    ,m_thumbnailPixmap3(NULL)
-   ,m_fileSanitizerRegex("[&*/:`<>?\\|]")
    ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -283,15 +312,13 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_coreInfoLabel(new CoreInfoLabel(QString(), this))
    ,m_coreInfoWidget(new CoreInfoWidget(m_coreInfoLabel, this))
    ,m_logDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG), this))
-   ,m_logWidget(new QWidget(this))
+   ,m_logWidget(new QFrame(this))
    ,m_logTextEdit(new LogTextEdit(m_logWidget))
    ,m_historyPlaylistsItem(NULL)
    ,m_folderIcon()
    ,m_customThemeString()
    ,m_gridView(new GridView(this))
-   ,m_gridWidget(new QWidget(this))
-   ,m_gridScrollArea(new QScrollArea(m_gridWidget))
-   ,m_gridLayoutWidget(new FileDropWidget())
+   ,m_playlistViewsAndFooter(new QWidget(this))
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
    ,m_viewType(VIEW_TYPE_LIST)
@@ -299,7 +326,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_gridProgressBar(NULL)
    ,m_gridProgressWidget(NULL)
    ,m_currentGridHash()
-   ,m_lastViewType(m_viewType)
    ,m_currentGridWidget(NULL)
    ,m_allPlaylistsListMaxCount(0)
    ,m_allPlaylistsGridMaxCount(0)
@@ -328,15 +354,19 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_pendingDirScrollPath()
    ,m_thumbnailTimer(new QTimer(this))
    ,m_gridItem(this)
+   ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
+   ,m_searchRegExp()
+   ,m_zoomWidget(new QWidget(this))
+   ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
+   ,m_itemsCountLabel(new QLabel(this))
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
-   QWidget *zoomWidget = new QWidget();
    QHBoxLayout *zoomLayout = new QHBoxLayout();
-   QLabel *zoomLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), zoomWidget);
-   QPushButton *viewTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), zoomWidget);
+   QLabel *zoomLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), m_zoomWidget);
+   QPushButton *viewTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
    QMenu *viewTypeMenu = new QMenu(viewTypePushButton);
    QAction *viewTypeIconsAction = NULL;
    QAction *viewTypeListAction = NULL;
@@ -372,7 +402,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    zoomLabel->setObjectName("zoomLabel");
 
-   m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
+   m_zoomSlider = new QSlider(Qt::Horizontal, m_zoomWidget);
 
    m_zoomSlider->setMinimum(0);
    m_zoomSlider->setMaximum(100);
@@ -381,14 +411,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_lastZoomSliderValue = m_zoomSlider->value();
 
-   m_gridWidget->setLayout(new QVBoxLayout());
+   m_playlistViewsAndFooter->setLayout(new QVBoxLayout());
 
    m_gridView->setSelectionMode(QAbstractItemView::SingleSelection);
    m_gridView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-   m_gridWidget->layout()->addWidget(m_gridView);
-   m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
-   m_gridWidget->layout()->setContentsMargins(0, 0, 0, 0);
+   m_playlistViews->addWidget(m_gridView);
+   m_playlistViews->addWidget(m_tableView);
+   m_centralWidget->setObjectName("centralWidget");
+
+   m_playlistViewsAndFooter->layout()->addWidget(m_playlistViews);
+   m_playlistViewsAndFooter->layout()->setAlignment(Qt::AlignCenter);
+   m_playlistViewsAndFooter->layout()->setContentsMargins(0, 0, 0, 0);
 
    m_gridProgressWidget->setLayout(gridProgressLayout);
    gridProgressLayout->setContentsMargins(0, 0, 0, 0);
@@ -396,20 +430,23 @@ MainWindow::MainWindow(QWidget *parent) :
    gridProgressLayout->addWidget(gridProgressLabel);
    gridProgressLayout->addWidget(m_gridProgressBar);
 
-   m_gridWidget->layout()->addWidget(m_gridProgressWidget);
+   m_playlistViewsAndFooter->layout()->addWidget(m_gridProgressWidget);
 
-   zoomWidget->setLayout(zoomLayout);
+   m_zoomWidget->setLayout(zoomLayout);
    zoomLayout->setContentsMargins(0, 0, 0, 0);
    zoomLayout->addWidget(zoomLabel);
    zoomLayout->addWidget(m_zoomSlider);
-   zoomLayout->addWidget(viewTypePushButton);
+
+   m_itemsCountLabel->setObjectName("itemsCountLabel");
 
    gridFooterLayout = new QHBoxLayout();
+   gridFooterLayout->addWidget(m_itemsCountLabel);
    gridFooterLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    gridFooterLayout->addWidget(m_gridProgressWidget);
-   gridFooterLayout->addWidget(zoomWidget);
+   gridFooterLayout->addWidget(m_zoomWidget);
+   gridFooterLayout->addWidget(viewTypePushButton);
 
-   static_cast<QVBoxLayout*>(m_gridWidget->layout())->addLayout(gridFooterLayout);
+   static_cast<QVBoxLayout*>(m_playlistViewsAndFooter->layout())->addLayout(gridFooterLayout);
 
    m_gridProgressWidget->hide();
 
@@ -418,13 +455,37 @@ MainWindow::MainWindow(QWidget *parent) :
    m_proxyModel->setSourceModel(m_playlistModel);
    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
 
+   m_proxyFileModel = new FileSystemProxyModel();
+   m_proxyFileModel->setSourceModel(m_fileModel);
+   m_proxyFileModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+
    m_tableView->setAlternatingRowColors(true);
    m_tableView->setModel(m_proxyModel);
    m_tableView->setSortingEnabled(true);
    m_tableView->verticalHeader()->setVisible(false);
+   m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_tableView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
+   m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+   m_tableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+   m_tableView->horizontalHeader()->setStretchLastSection(true);
+   m_tableView->setWordWrap(false);
+
+   m_fileTableView->setModel(m_fileModel);
+   m_fileTableView->sortByColumn(0, Qt::AscendingOrder);
+   m_fileTableView->setSortingEnabled(true);
+   m_fileTableView->setAlternatingRowColors(true);
+   m_fileTableView->verticalHeader()->setVisible(false);
+   m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_fileTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_fileTableView->horizontalHeader()->setStretchLastSection(true);
+   m_fileTableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+   m_fileTableView->setWordWrap(false);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
+
+   m_gridView->setSelectionModel(m_tableView->selectionModel());
 
    m_logWidget->setObjectName("logWidget");
 
@@ -462,14 +523,23 @@ MainWindow::MainWindow(QWidget *parent) :
                          QDir::Drives |
                          (m_settings->value("show_hidden_files", true).toBool() ? (QDir::Hidden | QDir::System) : static_cast<QDir::Filter>(0)));
 
+   m_fileModel->setFilter(QDir::NoDot |
+                          QDir::AllEntries |
+                          (m_settings->value("show_hidden_files", true).toBool() ? (QDir::Hidden | QDir::System) : static_cast<QDir::Filter>(0)));
+
 #if defined(Q_OS_WIN)
    m_dirModel->setRootPath("");
+   m_fileModel->setRootPath("");
 #else
    m_dirModel->setRootPath("/");
+   m_fileModel->setRootPath("/");
 #endif
 
    m_dirTree->setModel(m_dirModel);
    m_dirTree->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_dirTree->header()->setVisible(false);
+
+   m_fileTableView->setModel(m_proxyFileModel);
 
    if (m_dirModel->columnCount() > 3)
    {
@@ -481,10 +551,6 @@ MainWindow::MainWindow(QWidget *parent) :
       m_dirTree->hideColumn(3);
    }
 
-   m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
-   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
-   m_dirTree->expand(m_dirTree->currentIndex());
-
    reloadPlaylists();
 
    m_searchWidget->setLayout(new QHBoxLayout());
@@ -495,6 +561,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_searchDock->setProperty("default_area", Qt::LeftDockWidgetArea);
    m_searchDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
    m_searchDock->setWidget(m_searchWidget);
+   m_searchDock->setFixedHeight(m_searchDock->minimumSizeHint().height());
 
    addDockWidget(static_cast<Qt::DockWidgetArea>(m_searchDock->property("default_area").toInt()), m_searchDock);
 
@@ -512,6 +579,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_logWidget->setLayout(new QVBoxLayout());
    m_logWidget->layout()->addWidget(m_logTextEdit);
+   m_logWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    m_logDock->setObjectName("logDock");
    m_logDock->setProperty("default_area", Qt::BottomDockWidgetArea);
@@ -529,7 +597,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_dirTree->setContextMenuPolicy(Qt::CustomContextMenu);
    m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-   m_gridLayoutWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    connect(m_searchLineEdit, SIGNAL(returnPressed()), this, SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this, SLOT(onSearchLineEditEdited(const QString&)));
@@ -548,9 +615,12 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
-   connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
-   connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
+   connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileBrowserTableDirLoaded(const QString&)));
+
+   m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
+   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
+   m_dirTree->expand(m_dirTree->currentIndex());
 
    /* must use queued connection */
    connect(this, SIGNAL(scrollToDownloads(QString)), this, SLOT(onDownloadScroll(QString)), Qt::QueuedConnection);
@@ -575,14 +645,12 @@ MainWindow::MainWindow(QWidget *parent) :
    /* TODO: Handle scroll and resize differently. */
    connect(m_gridView, SIGNAL(visibleItemsChangedMaybe()), this, SLOT(startTimer()));
 
-   connect(m_gridView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
-   connect(m_tableView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
-
-   connect(m_gridView->selectionModel(), SIGNAL(currentChanged(const QModelIndex& , const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
-   connect(m_tableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
+   connect(m_tableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onCurrentItemChanged(const QModelIndex&)));
+   connect(m_fileTableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onCurrentFileChanged(const QModelIndex&)));
 
    connect(m_gridView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
    connect(m_tableView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
+   connect(m_fileTableView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onFileDoubleClicked(const QModelIndex&)));
 
    connect(m_playlistModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)), this, SLOT(onCurrentTableItemDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
 
@@ -659,7 +727,7 @@ void MainWindow::startTimer() {
 }
 
 void MainWindow::updateVisibleItems() {
-   if (m_viewType == VIEW_TYPE_ICONS)
+   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS && m_viewType == VIEW_TYPE_ICONS)
    {
       QVector<QModelIndex> indexes = m_gridView->visibleIndexes();
       int i;
@@ -689,6 +757,15 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 
       emit scrollToDownloads(path);
    }
+}
+
+/* workaround for columns being resized */
+void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
+{
+   if (path.isEmpty())
+      return;
+
+   m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
@@ -722,7 +799,7 @@ void MainWindow::onItemChanged()
 {
    QModelIndex index = getCurrentContentIndex();
    m_playlistModel->reloadThumbnail(index);
-   currentItemChanged(index);
+   onCurrentItemChanged(index);
 }
 
 QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)
@@ -736,20 +813,24 @@ QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)
    }
 }
 
-double MainWindow::lerp(double x, double y, double a, double b, double d) {
-  return a + (b - a) * ((double)(d - x) / (double)(y - x));
+double MainWindow::lerp(double x, double y, double a, double b, double d)
+{
+   return a + (b - a) * ((double)(d - x) / (double)(y - x));
 }
 
 void MainWindow::onIconViewClicked()
 {
    setCurrentViewType(VIEW_TYPE_ICONS);
-   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
 }
 
 void MainWindow::onListViewClicked()
 {
    setCurrentViewType(VIEW_TYPE_LIST);
-   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
+}
+
+void MainWindow::setIconViewZoom(int zoomValue)
+{
+   m_zoomSlider->setValue(zoomValue);
 }
 
 void MainWindow::onZoomValueChanged(int zoomValue)
@@ -982,8 +1063,8 @@ void MainWindow::onGotStatusMessage(QString msg, unsigned priority, unsigned dur
 
    Q_UNUSED(priority)
 
-   if (msg.isEmpty())
-      return;
+      if (msg.isEmpty())
+         return;
 
    if (!status)
       return;
@@ -1181,6 +1262,108 @@ void MainWindow::changeThumbnailType(ThumbnailType type)
    m_playlistModel->setThumbnailType(type);
    updateVisibleItems();
    m_gridView->viewport()->update();
+}
+
+QString MainWindow::changeThumbnail(const QImage &image, QString type)
+{
+   QHash<QString, QString> hash = getCurrentContentHash();
+   QString dirString = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]) + "/" + type;
+   QString thumbPath = dirString + "/" + m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+   QByteArray dirArray = QDir::toNativeSeparators(dirString).toUtf8();
+   const char *dirData = dirArray.constData();
+   QByteArray thumbArray = QDir::toNativeSeparators(thumbPath).toUtf8();
+   const char *thumbData = thumbArray.constData();
+   QDir dir(dirString);
+   int quality = -1;
+   QImage scaledImage(image);
+
+   if (!dir.exists())
+   {
+      if (dir.mkpath("."))
+         RARCH_LOG("[Qt]: Created directory: %s\n", dirData);
+      else
+      {
+         RARCH_ERR("[Qt]: Could not create directory: %s\n", dirData);
+         return QString();
+      }
+   }
+
+   if (m_settings->contains("thumbnail_max_size"))
+   {
+      int size = m_settings->value("thumbnail_max_size", 512).toInt();
+
+      if (size != 0)
+         scaledImage = image.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+   }
+
+   if (m_settings->contains("thumbnail_quality"))
+      quality = m_settings->value("thumbnail_quality", -1).toInt();
+
+   if (scaledImage.save(thumbPath, "png", quality))
+   {
+      RARCH_LOG("[Qt]: Saved image: %s\n", thumbData);
+      m_playlistModel->reloadThumbnailPath(thumbPath);
+      updateVisibleItems();
+
+      return thumbPath;
+   }
+
+   RARCH_ERR("[Qt]: Could not save image: %s\n", thumbData);
+   return QString();
+}
+
+void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnailType)
+{
+   switch (thumbnailType)
+   {
+      case THUMBNAIL_TYPE_BOXART:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_BOXART);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap)
+            delete m_thumbnailPixmap;
+
+         m_thumbnailPixmap = new QPixmap(path);
+
+         onResizeThumbnailOne(*m_thumbnailPixmap, true);
+         break;
+      }
+
+      case THUMBNAIL_TYPE_TITLE_SCREEN:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_TITLE);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap2)
+            delete m_thumbnailPixmap2;
+
+         m_thumbnailPixmap2 = new QPixmap(path);
+
+         onResizeThumbnailTwo(*m_thumbnailPixmap2, true);
+         break;
+      }
+
+      case THUMBNAIL_TYPE_SCREENSHOT:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_SCREENSHOT);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap3)
+            delete m_thumbnailPixmap3;
+
+         m_thumbnailPixmap3 = new QPixmap(path);
+
+         onResizeThumbnailThree(*m_thumbnailPixmap3, true);
+         break;
+      }
+   }
 }
 
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
@@ -1489,9 +1672,37 @@ void MainWindow::onTreeViewItemsSelected(QModelIndexList selectedIndexes)
    selectBrowserDir(dir);
 }
 
+void MainWindow::onFileDoubleClicked(const QModelIndex &proxyIndex)
+{
+   const QModelIndex index = m_proxyFileModel->mapToSource(proxyIndex);
+
+   if (m_fileModel->isDir(index))
+      m_dirTree->setCurrentIndex(m_dirModel->index(m_fileModel->filePath(index)));
+   else
+      loadContent(getFileContentHash(index));
+}
+
 void MainWindow::selectBrowserDir(QString path)
 {
-   m_playlistModel->addDir(path, m_settings->value("show_hidden_files", true).toBool() ? (QDir::Hidden | QDir::System) : static_cast<QDir::Filter>(0));
+   if (!path.isEmpty())
+   {
+      QModelIndex sourceIndex = m_fileModel->setRootPath(path);
+      QModelIndex proxyIndex = m_proxyFileModel->mapFromSource(sourceIndex);
+      m_fileTableHeaderState = m_fileTableView->horizontalHeader()->saveState();
+
+      if (proxyIndex.isValid())
+      {
+         m_fileTableView->setRootIndex(proxyIndex);
+      }
+      else
+      {
+         /* the directory is filtered out. Remove the filter for a moment. FIXME find a way to not have to do this (not filtering dirs is one). */
+         m_proxyFileModel->setFilterRegExp(QRegExp());
+         m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
+         m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+      }
+   }
+   setCoreActions();
 }
 
 QTabWidget* MainWindow::browserAndPlaylistTabWidget()
@@ -1528,6 +1739,19 @@ QModelIndex MainWindow::getCurrentContentIndex()
 QHash<QString, QString> MainWindow::getCurrentContentHash()
 {
    return getCurrentContentIndex().data(PlaylistModel::HASH).value<QHash<QString, QString> >();
+}
+
+QHash<QString, QString> MainWindow::getFileContentHash(const QModelIndex &index)
+{
+   QFileInfo fileInfo = m_fileModel->fileInfo(index);
+   QHash<QString, QString> hash;
+
+   hash["path"] = m_fileModel->filePath(index);;
+   hash["label"] = hash["path"];
+   hash["label_noext"] = fileInfo.completeBaseName();
+   hash["db_name"] = fileInfo.dir().dirName();
+
+   return hash;
 }
 
 void MainWindow::onContentItemDoubleClicked(const QModelIndex &index)
@@ -1748,7 +1972,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
-         corePath, contentPath, &content_info,
+         corePath, contentPath, contentLabel, &content_info,
          NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
@@ -1762,7 +1986,17 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 
 void MainWindow::onRunClicked()
 {
-   QHash<QString, QString> contentHash = getCurrentContentHash();
+   QHash<QString, QString> contentHash;
+
+   switch (m_currentBrowser)
+   {
+      case BROWSER_TYPE_FILES:
+         contentHash = getFileContentHash(m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
+         break;
+      case BROWSER_TYPE_PLAYLISTS:
+         contentHash = getCurrentContentHash();
+         break;
+   }
 
    if (contentHash.isEmpty())
       return;
@@ -1800,6 +2034,7 @@ void MainWindow::setCoreActions()
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
    ViewType viewType = getCurrentViewType();
    QHash<QString, QString> hash = getCurrentContentHash();
+   QString currentPlaylistFileName = QString();
 
    m_launchWithComboBox->clear();
 
@@ -1817,7 +2052,7 @@ void MainWindow::setCoreActions()
       m_launchWithComboBox->addItem(m_currentCore, QVariant::fromValue(comboBoxMap));
    }
 
-   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
+   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
    {
       if (!hash.isEmpty())
       {
@@ -1863,7 +2098,17 @@ void MainWindow::setCoreActions()
       }
    }
 
-   if (!hash["db_name"].isEmpty())
+   switch(m_currentBrowser)
+   {
+   case BROWSER_TYPE_PLAYLISTS:
+      currentPlaylistFileName = hash["db_name"];
+      break;
+   case BROWSER_TYPE_FILES:
+      currentPlaylistFileName = m_fileModel->rootDirectory().dirName();
+      break;
+   }
+
+   if (!currentPlaylistFileName.isEmpty())
    {
       QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
       int i = 0;
@@ -1898,7 +2143,6 @@ void MainWindow::setCoreActions()
             {
                QString playlist = defaultCores.at(i)["playlist_filename"];
                QString core = defaultCores.at(i)["core_path"];
-               QString currentPlaylistFileName = hash["db_name"];
 
                playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
 
@@ -1966,34 +2210,24 @@ void MainWindow::setCoreActions()
 
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
-   Q_UNUSED(index)
-
-   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
+   if (m_browserAndPlaylistTabWidget->tabText(index) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
    {
-      QModelIndex index = m_dirTree->currentIndex();
+      m_currentBrowser = BROWSER_TYPE_FILES;
 
-      /* force list view for file browser, will set it back to whatever the user had when switching back to playlist tab */
-      setCurrentViewType(VIEW_TYPE_LIST);
+      m_centralWidget->setCurrentWidget(m_fileTableView);
 
-      if (index.isValid())
-      {
-         m_dirTree->clearSelection();
-         m_dirTree->setCurrentIndex(index);
-      }
+      onCurrentFileChanged(m_fileTableView->currentIndex());
    }
-   else if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
+   else if (m_browserAndPlaylistTabWidget->tabText(index) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
-      QListWidgetItem *item = m_listWidget->currentItem();
+      m_currentBrowser = BROWSER_TYPE_PLAYLISTS;
 
-      if (m_lastViewType != getCurrentViewType())
-         setCurrentViewType(m_lastViewType);
+      m_centralWidget->setCurrentWidget(m_playlistViewsAndFooter);
 
-      if (item)
-      {
-         m_listWidget->setCurrentItem(NULL);
-         m_listWidget->setCurrentItem(item);
-      }
+      onCurrentItemChanged(m_tableView->currentIndex());
    }
+
+   applySearch();
 
    setCoreActions();
 }
@@ -2024,7 +2258,6 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
    QVector<unsigned> textUnicode = text.toUcs4();
    QVector<unsigned> textHiraToKata;
    QVector<unsigned> textKataToHira;
-   ViewType viewType = getCurrentViewType();
    bool foundHira = false;
    bool foundKata = false;
 
@@ -2051,19 +2284,41 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
 
    if (!foundHira && !foundKata)
    {
-      m_proxyModel->setFilterRegExp(QRegExp(text, Qt::CaseInsensitive));
+      m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
    }
    else if (foundHira && !foundKata)
    {
-      m_proxyModel->setFilterRegExp(QRegExp(text + "|" + QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::CaseInsensitive));
+      m_searchRegExp = QRegExp(text + "|" + QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::CaseInsensitive);
    }
    else if (!foundHira && foundKata)
    {
-      m_proxyModel->setFilterRegExp(QRegExp(text + "|" + QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive));
+      m_searchRegExp = QRegExp(text + "|" + QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive);
    }
    else
    {
-      m_proxyModel->setFilterRegExp(QRegExp(text + "|" + QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()) + "|" + QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive));
+      m_searchRegExp = QRegExp(text + "|" + QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()) + "|" + QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive);
+   }
+
+   applySearch();
+}
+
+void MainWindow::applySearch()
+{
+   switch (m_currentBrowser)
+   {
+   case BROWSER_TYPE_PLAYLISTS:
+      if (m_proxyModel->filterRegExp() != m_searchRegExp)
+      {
+         m_proxyModel->setFilterRegExp(m_searchRegExp);
+         updateItemsCount();
+      }
+      break;
+   case BROWSER_TYPE_FILES:
+      if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
+      {
+         m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+      }
+      break;
    }
 }
 
@@ -2153,7 +2408,7 @@ void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft, const
 
    updateCurrentPlaylistEntry(hash);
 
-   currentItemChanged(topLeft);
+   onCurrentItemChanged(topLeft);
 }
 
 void MainWindow::onCurrentListItemDataChanged(QListWidgetItem *item)
@@ -2228,33 +2483,20 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
-void MainWindow::currentItemChanged(const QModelIndex &index)
+void MainWindow::onCurrentItemChanged(const QModelIndex &index)
 {
-   settings_t *settings = config_get_ptr();
-   QString label;
-   QString playlist_name;
-   QByteArray extension;
-   QString extensionStr;
-   int lastIndex = -1;
+   onCurrentItemChanged(index.data(PlaylistModel::HASH).value<QHash<QString, QString>>());
+}
 
-   const QHash<QString, QString> &hash = index.data(PlaylistModel::HASH).value<QHash<QString, QString>>();
+void MainWindow::onCurrentFileChanged(const QModelIndex &index)
+{
+   onCurrentItemChanged(getFileContentHash(m_proxyFileModel->mapToSource(index)));
+}
 
-   label = hash["label_noext"];
-   label.replace(m_fileSanitizerRegex, "_");
-
-   lastIndex = hash["path"].lastIndexOf('.');
-
-   if (lastIndex >= 0)
-   {
-      extensionStr = hash["path"].mid(lastIndex + 1);
-
-      if (!extensionStr.isEmpty())
-      {
-         extension = extensionStr.toLower().toUtf8();
-      }
-   }
-
-   playlist_name = hash["db_name"];
+void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
+{
+   QString path = hash["path"];
+   bool acceptDrop = false;
 
    if (m_thumbnailPixmap)
       delete m_thumbnailPixmap;
@@ -2263,116 +2505,73 @@ void MainWindow::currentItemChanged(const QModelIndex &index)
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
 
-   if (!extension.isEmpty() && m_imageFormats.contains(extension))
+   if (m_playlistModel->isSupportedImage(path))
    {
       /* use thumbnail widgets to show regular image files */
-      m_thumbnailPixmap = new QPixmap(hash["path"]);
+      m_thumbnailPixmap = new QPixmap(path);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
    }
    else
    {
-      m_thumbnailPixmap = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_BOXART + "/" + label + ".png");
-      m_thumbnailPixmap2 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_TITLE + "/" + label + ".png");
-      m_thumbnailPixmap3 = new QPixmap(QString(settings->paths.directory_thumbnails) + "/" + playlist_name + "/" + THUMBNAIL_SCREENSHOT + "/" + label + ".png");
+      QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]);
+      QString thumbnailName = m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+
+      m_thumbnailPixmap = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_BOXART + "/" + thumbnailName);
+      m_thumbnailPixmap2 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
+      m_thumbnailPixmap3 = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
+
+      if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS && !currentPlaylistIsSpecial())
+         acceptDrop = true;
    }
 
-   resizeThumbnails(true, true, true);
+   onResizeThumbnailOne(*m_thumbnailPixmap, acceptDrop);
+   onResizeThumbnailTwo(*m_thumbnailPixmap2, acceptDrop);
+   onResizeThumbnailThree(*m_thumbnailPixmap3, acceptDrop);
 
    setCoreActions();
 }
 
-void MainWindow::onResizeThumbnailOne()
+void MainWindow::setThumbnail(QString widgetName, QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(true, false, false);
+   ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>(widgetName);
+
+   if (thumbnail)
+      thumbnail->setPixmap(pixmap, acceptDrop);
 }
 
-void MainWindow::onResizeThumbnailTwo()
+void MainWindow::onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(false, true, false);
+   setThumbnail("thumbnail", pixmap, acceptDrop);
 }
 
-void MainWindow::onResizeThumbnailThree()
+void MainWindow::onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop)
 {
-   resizeThumbnails(false, false, true);
+   setThumbnail("thumbnail2", pixmap, acceptDrop);
 }
 
-void MainWindow::resizeThumbnails(bool one, bool two, bool three)
+void MainWindow::onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop)
 {
-   QPixmap pixmap;
-   QPixmap pixmap2;
-   QPixmap pixmap3;
-   ThumbnailLabel *thumbnail = NULL;
-   ThumbnailLabel *thumbnail2 = NULL;
-   ThumbnailLabel *thumbnail3 = NULL;
-
-   if (m_thumbnailPixmap)
-      pixmap = *m_thumbnailPixmap;
-   if (m_thumbnailPixmap2)
-      pixmap2 = *m_thumbnailPixmap2;
-   if (m_thumbnailPixmap3)
-      pixmap3 = *m_thumbnailPixmap3;
-
-   thumbnail = findChild<ThumbnailLabel*>("thumbnail");
-   thumbnail2 = findChild<ThumbnailLabel*>("thumbnail2");
-   thumbnail3 = findChild<ThumbnailLabel*>("thumbnail3");
-
-   if (thumbnail && one)
-   {
-      if (pixmap.isNull())
-         thumbnail->hide();
-      else
-      {
-         thumbnail->show();
-         emit thumbnailChanged(pixmap);
-         thumbnail->update();
-      }
-   }
-
-   if (thumbnail2 && two)
-   {
-      if (pixmap2.isNull())
-         thumbnail2->hide();
-      else
-      {
-         thumbnail2->show();
-         emit thumbnail2Changed(pixmap2);
-         thumbnail2->update();
-      }
-   }
-
-   if (thumbnail3 && three)
-   {
-      if (pixmap3.isNull())
-         thumbnail3->hide();
-      else
-      {
-         thumbnail3->show();
-         emit thumbnail3Changed(pixmap3);
-         thumbnail3->update();
-      }
-   }
+   setThumbnail("thumbnail3", pixmap, acceptDrop);
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)
 {
-   m_lastViewType = m_viewType;
    m_viewType = viewType;
 
    switch (viewType)
    {
       case VIEW_TYPE_ICONS:
       {
-         m_tableView->hide();
-         m_gridWidget->show();
+         m_playlistViews->setCurrentWidget(m_gridView);
+         m_zoomWidget->show();
          break;
       }
       case VIEW_TYPE_LIST:
       default:
       {
-         m_viewType = VIEW_TYPE_LIST;
-         m_gridWidget->hide();
-         m_tableView->show();
+         m_playlistViews->setCurrentWidget(m_tableView);
+         m_zoomWidget->hide();
          break;
       }
    }
@@ -2380,7 +2579,6 @@ void MainWindow::setCurrentViewType(ViewType viewType)
 
 void MainWindow::setCurrentThumbnailType(ThumbnailType thumbnailType)
 {
-   m_lastThumbnailType = m_thumbnailType;
    m_thumbnailType = thumbnailType;
 
    m_playlistModel->setThumbnailType(thumbnailType);
@@ -2403,9 +2601,6 @@ void MainWindow::onCurrentListItemChanged(QListWidgetItem *current, QListWidgetI
    Q_UNUSED(current)
    Q_UNUSED(previous)
 
-   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
-      return;
-
    initContentTableWidget();
 
    setCoreActions();
@@ -2416,9 +2611,24 @@ TableView* MainWindow::contentTableView()
    return m_tableView;
 }
 
-QWidget* MainWindow::contentGridWidget()
+QTableView* MainWindow::fileTableView()
 {
-   return m_gridWidget;
+   return m_fileTableView;
+}
+
+QStackedWidget* MainWindow::centralWidget()
+{
+   return m_centralWidget;
+}
+
+FileDropWidget* MainWindow::playlistViews()
+{
+   return m_playlistViews;
+}
+
+QWidget* MainWindow::playlistViewsAndFooter()
+{
+   return m_playlistViewsAndFooter;
 }
 
 GridView* MainWindow::contentGridView()
@@ -2635,9 +2845,7 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
 void MainWindow::initContentTableWidget()
 {
    QListWidgetItem *item = m_listWidget->currentItem();
-   QStringList horizontal_header_labels;
    QString path;
-   QModelIndex index;
    int i = 0;
 
    if (!item)
@@ -2653,12 +2861,6 @@ void MainWindow::initContentTableWidget()
    }
 
    m_currentGridWidget = NULL;
-
-   m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-   m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
-   m_tableView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
-   m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-   m_tableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
 
    path = item->data(Qt::UserRole).toString();
 
@@ -2685,13 +2887,15 @@ void MainWindow::initContentTableWidget()
    else
       m_proxyModel->sort(-1);
 
-   m_tableView->resizeColumnsToContents();
+   updateItemsCount();
 
-   index = m_proxyModel->index(0, 0);
    m_gridView->scrollToTop();
-   m_gridView->setCurrentIndex(index);
-   m_tableView->setCurrentIndex(index);
-   currentItemChanged(index);
+   m_gridView->setCurrentIndex(m_proxyModel->index(0, 0));
+}
+
+void MainWindow::updateItemsCount()
+{
+   m_itemsCountLabel->setText(m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -2775,6 +2979,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
       m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
 
    m_settings->setValue("view_type", getCurrentViewTypeString());
+   m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
+   m_settings->setValue("icon_view_zoom", m_lastZoomSliderValue);
 
    QMainWindow::closeEvent(event);
 }

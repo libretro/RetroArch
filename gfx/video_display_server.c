@@ -90,10 +90,10 @@ bool video_display_server_set_window_decorations(bool on)
 }
 
 bool video_display_server_set_resolution(unsigned width, unsigned height,
-      int int_hz, float hz, int center)
+      int int_hz, float hz, int center, int monitor_index)
 {
    if (current_display_server && current_display_server->set_resolution)
-      return current_display_server->set_resolution(current_display_server_data, width, height, int_hz, hz, center);
+      return current_display_server->set_resolution(current_display_server_data, width, height, int_hz, hz, center, monitor_index);
    return false;
 }
 

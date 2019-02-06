@@ -11,6 +11,8 @@
 .tmp
 .tmp.c
 .tmp.cxx
+.moc.h
+.moc.cpp
 config.log
 /.project
 /.externalToolBuilders/
@@ -53,7 +55,6 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
-menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
@@ -74,6 +75,8 @@ libretro-super
 run.sh
 convert_rumble.awk
 *~
+assets
+info
 
 # Wii U
 *.depend
@@ -84,7 +87,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx
 /wiiu-devel.properties
-
 
 # 3ds
 /.lst
@@ -119,7 +121,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/libretrodb/
 
 pkg/apple/iOS/build/
-pkg/apple/iOS/modules/
 pkg/apple/build/
 ui/drivers/qt/moc_*
 ui/drivers/moc_*

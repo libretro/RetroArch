@@ -86,7 +86,7 @@ static float ozone_sidebar_background_dark[16] = {
 
 static float ozone_sidebar_gradient_top_dark[16] = {
       0.2, 0.2, 0.2, 1.00,
-      0.2, 0.2, 0.2, 1.00,      
+      0.2, 0.2, 0.2, 1.00,
       0.18, 0.18, 0.18, 1.00,
       0.18, 0.18, 0.18, 1.00,
 };
@@ -144,7 +144,7 @@ typedef struct ozone_theme
    float *sidebar_top_gradient;
    float *sidebar_bottom_gradient;
 
-   /* 
+   /*
       Fancy cursor colors
    */
    float *cursor_border_0;

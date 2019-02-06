@@ -28,15 +28,13 @@
 #endif
 
 #include "vulkan_common.h"
-#include "../../libretro-common/include/retro_timers.h"
+#include <retro_timers.h>
 #include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/retro_assert.h"
+#include <retro_assert.h>
 #include "vksym.h"
-#include "../../libretro-common/include/dynamic/dylib.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
-#include "../../libretro-common/include/retro_math.h"
-#include "../../libretro-common/include/string/stdstring.h"
+#include <libretro_vulkan.h>
+#include <retro_math.h>
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
@@ -2448,7 +2446,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;
@@ -2469,7 +2467,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;

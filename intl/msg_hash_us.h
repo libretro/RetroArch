@@ -16,7 +16,7 @@ MSG_HASH(
     "Increase or decrease the Switch screen brightness"
     )
 #endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX) 
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
     "CPU Overclock"
@@ -299,19 +299,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-    "Audio Device"
+    "Device"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-    "Audio Driver"
+    "Audio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-    "Audio DSP Plugin"
+    "DSP Plugin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-    "Audio Enable"
+    "Audio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
@@ -327,15 +327,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-    "Audio Maximum Timing Skew"
+    "Maximum Timing Skew"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-    "Audio Mute"
+    "Mute"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-    "Audio Output Rate (Hz)"
+    "Output Rate (Hz)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -343,7 +343,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-    "Audio Resampler Driver"
+    "Audio Resampler"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -351,11 +351,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-    "Audio Sync"
+    "Synchronization"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-    "Audio Volume Level (dB)"
+    "Volume Gain (dB)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -459,7 +459,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-    "Bluetooth Enable"
+    "Bluetooth"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -475,7 +475,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-    "Camera Driver"
+    "Camera"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -815,7 +815,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "DPI Override Enable"
+    "DPI Override"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
@@ -823,7 +823,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-    "Driver"
+    "Drivers"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -843,15 +843,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-    "Enable Achievements"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Custom menu entry hover color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Custom menu entry normal color"
+    "Achievements"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
@@ -935,7 +927,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-    "History List Enable"
+    "History List"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -1059,7 +1051,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-    "Autoconfig Enable"
+    "Autoconfig"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
@@ -1107,7 +1099,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-    "Input Driver"
+    "Input"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -1115,11 +1107,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-    "Input Hotkey Binds"
+    "Hotkey Binds"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-    "Keyboard Gamepad Mapping Enable"
+    "Keyboard Gamepad Mapping"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
@@ -1263,7 +1255,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-    "Enable hotkeys"
+    "Hotkeys"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
@@ -1438,7 +1430,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-    "Remap Binds Enable"
+    "Remap Binds for this core"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
@@ -1450,15 +1442,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-    "Small Keyboard Enable"
+    "Small Keyboard"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-    "Touch Enable"
+    "Touch"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-    "Turbo enable"
+    "Turbo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -1466,7 +1458,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-    "Input User %u Binds"
+    "User %u Binds"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1482,7 +1474,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-    "Joypad Driver"
+    "Joypad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -1602,7 +1594,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-    "Location Driver"
+    "Location"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1662,7 +1654,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-    "Menu Driver"
+    "Menu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -1754,7 +1746,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-    "Netplay Enable"
+    "Netplay"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
@@ -1778,7 +1770,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-    "Netplay Client Enable"
+    "Netplay Client"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
@@ -1854,7 +1846,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-    "Netplay Spectator Enable"
+    "Netplay Spectator"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
@@ -2044,6 +2036,22 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
     "Parent directory"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Enable external file access"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Open Windows file access permissions settings"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+    "Open..."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+    "Open another directory using the system file picker"
+)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
     "Pause when menu activated"
@@ -2244,15 +2252,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-    "Record Driver"
+    "Record"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
-    "MIDI Driver"
+    "MIDI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-    "Enable Recording"
+    "Recording Support"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_PATH,
@@ -2332,7 +2340,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-    "Rewind Enable"
+    "Rewind Support"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
@@ -2408,7 +2416,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
-    "SAMBA Enable"
+    "SAMBA"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
@@ -2584,7 +2592,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
-    "SSH Enable"
+    "SSH"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_START_CORE,
@@ -2620,7 +2628,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
-    "System BGM Enable"
+    "System BGM"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
@@ -2935,6 +2943,22 @@ MSG_HASH(
     "Thumbnails Vertical Disposition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Thumbnail Downscaling Method"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+    "Nearest Neighbour (Fast)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+    "Bilinear"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+    "Sinc/Lanczos3 (Slow)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Thumbnails"
     )
@@ -2999,28 +3023,12 @@ MSG_HASH(
      "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Custom menu title color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_DARK_COLOR,
-    "Custom menu background dark color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BG_LIGHT_COLOR,
-    "Custom menu background light color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_DARK_COLOR,
-    "Custom menu border dark color"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BORDER_LIGHT_COLOR,
-    "Custom menu border light color"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
     "Menu Color Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+    "Custom Menu Theme Preset"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -3160,7 +3168,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-    "UI Companion Enable"
+    "UI Companion"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
@@ -3172,7 +3180,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-    "Enable desktop menu (restart)"
+    "Desktop menu (restart)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -3304,7 +3312,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-    "Video Driver"
+    "Video"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -3320,7 +3328,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-    "Enable Onscreen Notifications"
+    "Onscreen Notifications"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -3356,7 +3364,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-    "GPU Screenshot Enable"
+    "GPU Screenshot"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -3452,7 +3460,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-    "Enable Hardware Shared Context"
+    "Hardware Shared Context"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3460,7 +3468,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-    "Soft Filter Enable"
+    "Soft Filter"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -3524,7 +3532,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-    "Wi-Fi Driver"
+    "Wi-Fi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -3595,6 +3603,10 @@ MSG_HASH(
     "Automatic"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+    "Automatic Inverted"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
     "Menu Color Theme"
     )
@@ -3656,7 +3668,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-    "Icon Shadows Enable"
+    "Icon Shadows"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -3712,28 +3724,31 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-    "Enable or disable achievements. For more information, visit http://retroachievements.org"
+    "Compete to earn custom-made achievements in classic games.\n"
+    "For more information, visit http://retroachievements.org"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-    "Enable or disable unofficial achievements and/or beta features for testing purposes."
+    "Use unofficial achievements and/or beta features for testing purposes."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Enables hardcore mode, this will enable or disable savestates, cheats, rewind, pause, and slow-motion.\n"
+    "Double the amount of points earned.\n"
+    "Disables savestates, cheats, rewind, pause, and slow-motion for all games.\n"
     "Toggling this setting at runtime will restart your game."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-    "Enable or disable in-game leaderboards. Has no effect if Hardcore Mode is disabled."
+    "Game specific leaderboards.\n"
+    "Has no effect if Hardcore Mode is disabled."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-    "Enable or disable badge display in the Achievement List."
+    "Display badges in the Achievement List."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-    "Enable or disable OSD verbosity for achievements."
+    "Show more information in the notifications."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
@@ -3809,7 +3824,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
-    "Enable or disable bluetooth."
+    "Determines the state of Bluetooth."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
@@ -3861,7 +3876,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-    "Enable or disable logging to the terminal."
+    "Log events to the terminal."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY,
@@ -3881,7 +3896,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-    "Enable or disable network sharing of your folders."
+    "Share network folders through the SMB protocol."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
@@ -3893,7 +3908,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SSH_ENABLE,
-    "Enable or disable remote command line access."
+    "Use SSH to access the command line remotely."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
@@ -4135,6 +4150,10 @@ MSG_HASH(
     MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
     "Libretro core requires special content, but none were provided."
     )
+MSG_HASH(
+    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+    "Core does not support VFS, and loading from a local copy failed"
+)
 MSG_HASH(
     MSG_ERROR_PARSING_ARGUMENTS,
     "Error parsing arguments."
@@ -4838,7 +4857,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-    "Enable audio output."
+    "Determines if audio is outputted."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
@@ -4958,11 +4977,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-    "Enable or disable composition."
+    "Window managers use composition to apply visual effects, detect unresponsive windows, amongst other things."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-    "Enable or disable recent playlist for games, images, music, and videos."
+    "Maintain a playlist of recently used games, images, music, and videos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -4982,7 +5001,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-    "User %d Remote Enable"
+    "User %d Remote"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
@@ -5226,7 +5245,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-    "Enable rewinding. This will take a performance hit when playing."
+    "Made a mistake? Rewind and try again.\n"
+    "Beware that this causes a performance hit when playing."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
@@ -5360,7 +5380,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-    "Enable performance counters for RetroArch (and cores)."
+    "Performance counters for RetroArch (and cores).\n"
+    "The counter data can help determine system bottlenecks and fine-tune system and application performance"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -5384,7 +5405,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-    "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
+    "If enabled attempts to autoconfigure controllers, Plug-and-Play style."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -5472,7 +5493,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-    "Enable the overlay."
+    "Overlays are used for borders and on-screen controls"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
@@ -5524,15 +5545,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-    "Enable stdin command interface."
+    "stdin command interface."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-    "Enable mouse controls inside the menu."
+    "Allows the menu to be controlled with the mouse."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-    "Enable touch controls inside the menu."
+    "Allows the menu to be controlled with screen touches."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -5636,15 +5657,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-    "Enable customized controls by default at startup."
+    "Load customized controls at startup."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-    "Enable customized configuration by default at startup."
+    "Load customized configuration at startup."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-    "Enable customized core options by default at startup."
+    "Load customized core options by default at startup."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ENABLE,
@@ -5824,7 +5845,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-    "Enable drop shadows for all icons. This will have a minor performance hit."
+    "Draw drop shadows for all icons.\n"
+    "This will have a minor performance hit."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
@@ -6125,11 +6147,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-    "Audio Mixer Volume Level (dB)"
+    "Mixer Volume Gain (dB)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-    "Audio Mixer Mute"
+    "Mixer Mute"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
@@ -6217,11 +6239,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-    "Enable/disable the menu icons shown at the lefthand side of the menu entries."
+    "Show icons at the left of the menu entries."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-    "Enable Settings Tab"
+    "Settings Tab"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -6460,7 +6482,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-    "Notification Background Enable"
+    "Notification Background"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
@@ -6488,7 +6510,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-    "Enable Kiosk Mode"
+    "Kiosk Mode"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
@@ -6576,7 +6598,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-    "Audio Resampler Quality"
+    "Resampler Quality"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
@@ -6604,15 +6626,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-    "Enable border filler"
+    "Border filler"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-    "Enable border filler thickness"
+    "Border filler thickness"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-    "Enable background filler thickness"
+    "Background filler thickness"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
@@ -6656,11 +6678,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-    "Enable menu audio"
+    "Mixer"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-    "Enable or disable menu sound."
+    "Play simultaneous audio streams even in the menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -6854,6 +6876,14 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_LOG,
     "Log"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+    "%1 items"
+    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
+   "Drop image here"
+   )
 #ifdef HAVE_QT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
@@ -7056,11 +7086,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-    "Enable Discord Rich Presence"
+    "Discord Rich Presence"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-    "Enable or disable Discord Rich Presence support.\n"
+    "Allows the discord app to show more data about the content played.\n"
     "NOTE: It will not work with the browser version, only with the native desktop client."
     )
 MSG_HASH(
@@ -8067,4 +8097,44 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HOLD_START,
     "Hold Start (2 seconds)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Save playlists using old format"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+    "Menu Sounds"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+    "Enable OK sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+    "Enable cancel sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+    "Enable notice sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+    "Enable BGM sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+    "Down + Select"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+    "Your graphics driver is not compatible with the current video driver in RetroArch, falling back to the %s driver. Please restart RetroArch for the changes to take effect."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

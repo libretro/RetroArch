@@ -4,7 +4,7 @@ static void* translation_cached_google_init(const struct translation_driver_info
 {
 	return NULL;
 }
-	
+
 static void translation_cached_google_free(void* data)
 {
 }
@@ -18,7 +18,7 @@ static char* translation_cached_google_translate_image(void* data, struct ocr_im
 {
 	return "";
 }
-	
+
 const translation_driver_t translation_cached_google = {
    translation_cached_google_init,
    translation_cached_google_free,

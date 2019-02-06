@@ -330,12 +330,11 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
       void *display_data,
       EGLint *major, EGLint *minor,
-      EGLint *n, const EGLint *attrib_ptr,
+      EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
    EGLint i;
    EGLConfig *configs = NULL;
-   EGLint count       = 0;
    EGLint matched     = 0;
    int config_index   = -1;
    EGLDisplay dpy     = get_egl_display(platform, display_data);
@@ -353,24 +352,24 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-   if (!eglGetConfigs(egl->dpy, NULL, 0, &count) || count < 1)
+   if (!eglGetConfigs(egl->dpy, NULL, 0, count) || *count < 1)
    {
       RARCH_ERR("[EGL]: No configs to choose from.\n");
       return false;
    }
 
-   configs = malloc(count * sizeof(*configs));
+   configs = (EGLConfig*)malloc(*count * sizeof(*configs));
    if (!configs)
       return false;
 
    if (!eglChooseConfig(egl->dpy, attrib_ptr,
-            configs, count, &matched) || !matched)
+            configs, *count, &matched) || !matched)
    {
       RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
       return false;
    }
 
-   for (i = 0; i < count; i++)
+   for (i = 0; i < *count; i++)
    {
       if (!cb || cb(display_data, egl->dpy, configs[i]))
       {
@@ -381,7 +380,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    free(configs);
 
-   if (i == count)
+   if (i == *count)
    {
       RARCH_ERR("[EGL]: No EGL config found which satifies requirements.\n");
       return false;

@@ -1325,7 +1325,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    }
    else if (video_info->statistics_show)
    {
-      struct font_params *osd_params = video_info ? 
+      struct font_params *osd_params = video_info ?
          (struct font_params*)&video_info->osd_stat_params : NULL;
 
       if (osd_params)

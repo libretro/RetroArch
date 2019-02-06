@@ -371,7 +371,7 @@ XMFINLINE XMVECTOR XMQuaternionExp
     FXMVECTOR Q
 )
 {
-#if defined(_XM_NO_INTRINSICS_) 
+#if defined(_XM_NO_INTRINSICS_)
 
     XMVECTOR Theta;
     XMVECTOR SinTheta;
@@ -1748,11 +1748,11 @@ XMFINLINE XMVECTOR XMColorAdjustSaturation
 #elif defined(_XM_SSE_INTRINSICS_)
     static const XMVECTORF32 gvLuminance = {0.2125f, 0.7154f, 0.0721f, 0.0f};
 // Mul RGB by intensity constants
-    XMVECTOR vLuminance = _mm_mul_ps(vColor,gvLuminance);      
+    XMVECTOR vLuminance = _mm_mul_ps(vColor,gvLuminance);
 // vResult.x = vLuminance.y, vResult.y = vLuminance.y,
-// vResult.z = vLuminance.z, vResult.w = vLuminance.z 
+// vResult.z = vLuminance.z, vResult.w = vLuminance.z
     XMVECTOR vResult = vLuminance;
-    vResult = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(2,2,1,1)); 
+    vResult = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(2,2,1,1));
 // vLuminance.x += vLuminance.y
     vLuminance = _mm_add_ss(vLuminance,vResult);
 // Splat vLuminance.z
@@ -1824,7 +1824,6 @@ XMINLINE BOOL XMVerifyCPUSupport()
 	return ( IsProcessorFeaturePresent( PF_XMMI_INSTRUCTIONS_AVAILABLE ) && IsProcessorFeaturePresent( PF_XMMI64_INSTRUCTIONS_AVAILABLE ) );
 #endif
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -1936,7 +1935,7 @@ XMFINLINE XMVECTOR XMFresnelTerm
     // Calc G-C and G+C
     XMVECTOR GAddC = _mm_add_ps(G,CosIncidentAngle);
     XMVECTOR GSubC = _mm_sub_ps(G,CosIncidentAngle);
-    // Perform the term (0.5f *(g - c)^2) / (g + c)^2 
+    // Perform the term (0.5f *(g - c)^2) / (g + c)^2
     XMVECTOR vResult = _mm_mul_ps(GSubC,GSubC);
     vTemp = _mm_mul_ps(GAddC,GAddC);
     vResult = _mm_mul_ps(vResult,g_XMOneHalf);
@@ -2253,7 +2252,7 @@ XMFINLINE FLOAT XMScalarSinEst
     XMASSERT(Value < XM_PI);
     float ValueSq = Value*Value;
     XMVECTOR vValue = _mm_set_ps1(Value);
-    XMVECTOR vTemp = _mm_set_ps(ValueSq * Value,ValueSq,Value,1.0f); 
+    XMVECTOR vTemp = _mm_set_ps(ValueSq * Value,ValueSq,Value,1.0f);
     vTemp = _mm_mul_ps(vTemp,vTemp);
     vTemp = _mm_mul_ps(vTemp,vValue);
     // vTemp = Value,Value^3,Value^5,Value^7
@@ -2264,7 +2263,7 @@ XMFINLINE FLOAT XMScalarSinEst
     vTemp = _mm_add_ps(vTemp,vValue);           // Add Z and W together
     vTemp = _mm_shuffle_ps(vTemp,vTemp,_MM_SHUFFLE(2,2,2,2));    // Splat Z and return
 #if defined(_MSC_VER) && (_MSC_VER>=1500)
-    return _mm_cvtss_f32(vTemp);    
+    return _mm_cvtss_f32(vTemp);
 #else
     return vTemp.m128_f32[0];
 #endif
@@ -2296,7 +2295,7 @@ XMFINLINE FLOAT XMScalarCosEst
     XMASSERT(Value < XM_PI);
     float ValueSq = Value*Value;
     XMVECTOR vValue = _mm_setzero_ps();
-    XMVECTOR vTemp = _mm_set_ps(ValueSq * Value,ValueSq,Value,1.0f); 
+    XMVECTOR vTemp = _mm_set_ps(ValueSq * Value,ValueSq,Value,1.0f);
     vTemp = _mm_mul_ps(vTemp,vTemp);
     // vTemp = 1.0f,Value^2,Value^4,Value^6
     vTemp = _mm_mul_ps(vTemp,g_XMCosEstCoefficients);
@@ -2306,7 +2305,7 @@ XMFINLINE FLOAT XMScalarCosEst
     vTemp = _mm_add_ps(vTemp,vValue);           // Add Z and W together
     vTemp = _mm_shuffle_ps(vTemp,vTemp,_MM_SHUFFLE(2,2,2,2));    // Splat Z and return
 #if defined(_MSC_VER) && (_MSC_VER>=1500)
-    return _mm_cvtss_f32(vTemp);    
+    return _mm_cvtss_f32(vTemp);
 #else
     return vTemp.m128_f32[0];
 #endif
@@ -2406,7 +2405,7 @@ XMFINLINE FLOAT XMScalarASinEst
     Result = _mm_mul_ps(Result, g_XMASinEstCoefficients);
     Result = XMVector4Dot(VR,Result);
 #if defined(_MSC_VER) && (_MSC_VER>=1500)
-    return _mm_cvtss_f32(Result);    
+    return _mm_cvtss_f32(Result);
 #else
     return Result.m128_f32[0];
 #endif
@@ -2452,7 +2451,7 @@ XMFINLINE FLOAT XMScalarACosEst
     Result = _mm_mul_ps(Result,g_XMASinEstCoefficients);
     Result = XMVector4Dot(VR,Result);
 #if defined(_MSC_VER) && (_MSC_VER>=1500)
-    return XM_PIDIV2 - _mm_cvtss_f32(Result);    
+    return XM_PIDIV2 - _mm_cvtss_f32(Result);
 #else
     return XM_PIDIV2 - Result.m128_f32[0];
 #endif
@@ -2461,4 +2460,3 @@ XMFINLINE FLOAT XMScalarACosEst
 }
 
 #endif // __XNAMATHMISC_INL__
-

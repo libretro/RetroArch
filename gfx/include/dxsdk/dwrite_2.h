@@ -81,7 +81,7 @@ interface DWRITE_DECLARE_INTERFACE("D3E0E934-22A0-427E-AAE4-7D9574B59DB1") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to
     /// render a run of glyphs.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     ///     IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -95,7 +95,7 @@ interface DWRITE_DECLARE_INTERFACE("D3E0E934-22A0-427E-AAE4-7D9574B59DB1") IDWri
     ///     DWRITE_RENDERING_MODE_CLEARTYPE_GDI_NATURAL for DWRITE_MEASURING_MODE_GDI_NATURAL
     /// </param>
     /// <param name="glyphRun">The glyph run to draw.</param>
-    /// <param name="glyphRunDescription">Properties of the characters 
+    /// <param name="glyphRunDescription">Properties of the characters
     ///     associated with this run.</param>
     /// <param name="clientDrawingEffect">The drawing effect set in
     ///     IDWriteTextLayout::SetDrawingEffect.</param>
@@ -124,7 +124,7 @@ interface DWRITE_DECLARE_INTERFACE("D3E0E934-22A0-427E-AAE4-7D9574B59DB1") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to draw
     /// an underline.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     /// IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -162,7 +162,7 @@ interface DWRITE_DECLARE_INTERFACE("D3E0E934-22A0-427E-AAE4-7D9574B59DB1") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to draw
     /// a strikethrough.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     /// IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -679,7 +679,7 @@ interface DWRITE_DECLARE_INTERFACE("d8b768ff-64bc-4e66-982b-ec8e87f693f7") IDWri
 
     /// <summary>
     /// Returns the number of entries in each color palette. All color palettes
-    /// in a font have the same number of palette entries. The return value is 
+    /// in a font have the same number of palette entries. The return value is
     /// zero if the font has no color information.
     /// </summary>
     STDMETHOD_(UINT32, GetPaletteEntryCount)() PURE;
@@ -688,7 +688,7 @@ interface DWRITE_DECLARE_INTERFACE("d8b768ff-64bc-4e66-982b-ec8e87f693f7") IDWri
     /// Reads color values from the font's color palette.
     /// </summary>
     /// <param name="colorPaletteIndex">Zero-based index of the color palette. If the
-    /// font does not have a palette with the specified index, the method returns 
+    /// font does not have a palette with the specified index, the method returns
     /// DWRITE_E_NOCOLOR.<param>
     /// <param name="firstEntryIndex">Zero-based index of the first palette entry
     /// to read.</param>
@@ -719,14 +719,14 @@ interface DWRITE_DECLARE_INTERFACE("d8b768ff-64bc-4e66-982b-ec8e87f693f7") IDWri
     /// <param name="outlineThreshold">Specifies the quality of the graphics system's outline rendering,
     /// affects the size threshold above which outline rendering is used.</param>
     /// <param name="measuringMode">Specifies the method used to measure during text layout. For proper
-    /// glyph spacing, the function returns a rendering mode that is compatible with the specified 
+    /// glyph spacing, the function returns a rendering mode that is compatible with the specified
     /// measuring mode.</param>
-    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters 
+    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters
     /// object overrides the rendering mode.</param>
     /// <param name="renderingMode">Receives the recommended rendering mode.</param>
     /// <param name="gridFitMode">Receives the recommended grid-fit mode.</param>
     /// <remarks>
-    /// This method should be used to determine the actual rendering mode in cases where the rendering 
+    /// This method should be used to determine the actual rendering mode in cases where the rendering
     /// mode of the rendering params object is DWRITE_RENDERING_MODE_DEFAULT, and the actual grid-fit
     /// mode when the rendering params object is DWRITE_GRID_FIT_MODE_DEFAULT.
     /// </remarks>
@@ -785,7 +785,7 @@ struct DWRITE_COLOR_GLYPH_RUN
 
     /// <summary>
     /// Zero-based index of this layer's color entry in the current color
-    /// palette, or 0xFFFF if this layer is to be rendered using 
+    /// palette, or 0xFFFF if this layer is to be rendered using
     /// the current foreground brush.
     /// </summary>
     UINT16 paletteIndex;
@@ -888,7 +888,7 @@ interface DWRITE_DECLARE_INTERFACE("0439fc60-ca44-4994-8dee-3a9af7b732ec") IDWri
     /// <returns>
     /// Returns DWRITE_E_NOCOLOR if the font has no color information, the base
     /// glyph run does not contain any color glyphs, or the specified color palette
-    /// index is out of range. In this case, the client should render the base glyph 
+    /// index is out of range. In this case, the client should render the base glyph
     /// run. Otherwise, returns a standard HRESULT error code.
     /// </returns>
     STDMETHOD(TranslateColorGlyphRun)(

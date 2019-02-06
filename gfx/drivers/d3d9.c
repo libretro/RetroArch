@@ -121,7 +121,7 @@ static bool d3d9_init_imports(d3d9_video_t *d3d)
       tracker_info.script_class   = d3d->shader.script_class;
 #endif
 
-   state_tracker                  = 
+   state_tracker                  =
       state_tracker_init(&tracker_info);
 
    if (!state_tracker)
@@ -690,7 +690,7 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ? 
+   bool gamma_enable              = global ?
       global->console.screen.gamma_correction : false;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
@@ -1033,6 +1033,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
    d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
@@ -1112,7 +1113,7 @@ static bool d3d9_alive(void *data)
 
    ret = !quit;
 
-   if (  temp_width  != 0 && 
+   if (  temp_width  != 0 &&
          temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
@@ -1174,11 +1175,13 @@ static void d3d9_set_osd_msg(void *data,
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
+   const struct font_params *d3d_font_params = (const
+         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, params);
+   d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
    font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
+         msg, d3d_font_params);
    d3d9_end_scene(dev);
 }
 
@@ -1733,14 +1736,14 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             d3d9_get_xrgb8888_format(),
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   if (d3d9_surface_lock_rect(dest, &rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1760,7 +1763,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect((void*)dest);
+      d3d9_surface_unlock_rect(dest);
    }
    else
       ret = false;
@@ -1824,12 +1827,14 @@ static void d3d9_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (    !d3d->menu->tex            || 
+   if (!d3d || !d3d->menu)
+      return;
+
+   if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      if (d3d->menu)
-	     d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,

@@ -56,7 +56,7 @@ typedef enum _D3DXIMAGE_FILEFORMAT
     D3DXIFF_PPM         = 5,
     D3DXIFF_DIB         = 6,
     D3DXIFF_HDR         = 7,       /* high dynamic range formats */
-    D3DXIFF_PFM         = 8,       
+    D3DXIFF_PFM         = 8,
     D3DXIFF_FORCE_DWORD = 0x7fffffff
 
 } D3DXIMAGE_FILEFORMAT;

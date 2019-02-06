@@ -37,6 +37,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -332,4 +333,3 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    NULL
 };
-

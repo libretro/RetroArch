@@ -36,7 +36,7 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
-struct dinput_joypad
+struct dinput_joypad_data
 {
    LPDIRECTINPUTDEVICE8 joypad;
    DIJOYSTATE2 joy_state;
@@ -48,7 +48,7 @@ struct dinput_joypad
    DIEFFECT rumble_props;
 };
 
-static struct dinput_joypad g_pads[MAX_USERS];
+static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
 
@@ -130,7 +130,7 @@ static void dinput_joypad_destroy(void)
    dinput_destroy_context();
 }
 
-static void dinput_create_rumble_effects(struct dinput_joypad *pad)
+static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 {
    DIENVELOPE dienv;
    DICONSTANTFORCE dicf;
@@ -150,7 +150,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad *pad)
    pad->rumble_props.dwTriggerRepeatInterval = 0;
    pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
    pad->rumble_props.dwDuration              = INFINITE;
-   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN | 
+   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN |
       DIEFF_OBJECTOFFSETS;
    pad->rumble_props.dwGain                  = 0;
    pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
@@ -160,15 +160,27 @@ static void dinput_create_rumble_effects(struct dinput_joypad *pad)
    pad->rumble_props.rgdwAxes                = &axis;
    pad->rumble_props.rglDirection            = &direction;
 
+#ifdef __cplusplus
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
+      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+#else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+#endif
 
    axis = DIJOFS_Y;
 
+#ifdef __cplusplus
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
+      RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+#else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+#endif
 }
 
 static BOOL CALLBACK enum_axes_cb(
@@ -245,7 +257,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
       if ((raw_devs[i].dwType == RIM_TYPEHID) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
                                   RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
-          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) 
+          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
            == ((LONG)product_guid->Data1)) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )
@@ -408,8 +420,8 @@ static bool dinput_joypad_init(void *data)
 
 static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   unsigned hat_dir                = 0;
-   const struct dinput_joypad *pad = &g_pads[port_num];
+   unsigned hat_dir                     = 0;
+   const struct dinput_joypad_data *pad = &g_pads[port_num];
    if (!pad || !pad->joypad)
       return false;
 
@@ -461,11 +473,11 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   const struct dinput_joypad *pad = NULL;
-   int val = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
+   const struct dinput_joypad_data *pad = NULL;
+   int val                              = 0;
+   int axis                             = -1;
+   bool is_neg                          = false;
+   bool is_pos                          = false;
 
    if (joyaxis == AXIS_NONE)
       return 0;
@@ -526,8 +538,8 @@ static void dinput_joypad_poll(void)
    unsigned i;
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct dinput_joypad *pad = &g_pads[i];
-      bool polled = g_xinput_pad_indexes[i] < 0;
+      struct dinput_joypad_data *pad = &g_pads[i];
+      bool                    polled = g_xinput_pad_indexes[i] < 0;
 
       if (!pad || !pad->joypad || !polled)
          continue;

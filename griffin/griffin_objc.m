@@ -38,11 +38,11 @@
 
 #if defined(HAVE_COCOATOUCH)
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 #include "../ui/drivers/cocoa/cocoatouch_menu.m"
+#endif
 
 #include "../ui/drivers/ui_cocoatouch.m"
-#endif
 
 #elif defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"
@@ -62,6 +62,10 @@
 
 #ifdef HAVE_MFI
 #include "../input/drivers_joypad/mfi_joypad.m"
+#endif
+
+#ifdef HAVE_COREAUDIO3
+#include "../audio/drivers/coreaudio3.m"
 #endif
 
 #if defined(HAVE_DISCORD)

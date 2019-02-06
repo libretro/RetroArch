@@ -116,7 +116,7 @@ static void win32_display_server_destroy(void *data)
 
    if (win32_orig_width > 0 && win32_orig_height > 0)
       video_display_server_set_resolution(win32_orig_width, win32_orig_height,
-            win32_orig_refresh, (float)win32_orig_refresh, crt_center );
+            win32_orig_refresh, (float)win32_orig_refresh, crt_center, 0);
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList)
@@ -210,7 +210,7 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index)
 {
    DEVMODE curDevmode;
    int iModeNum;
@@ -328,9 +328,9 @@ void *win32_display_server_get_resolution_list(void *data,
       if (!win32_get_video_output(&dm, i, sizeof(dm)))
          break;
 
-      conf[i].width       = dm.dmPelsWidth; 
-      conf[i].height      = dm.dmPelsHeight; 
-      conf[i].bpp         = dm.dmBitsPerPel; 
+      conf[i].width       = dm.dmPelsWidth;
+      conf[i].height      = dm.dmPelsHeight;
+      conf[i].bpp         = dm.dmBitsPerPel;
       conf[i].refreshrate = dm.dmDisplayFrequency;
       conf[i].idx         = i;
       conf[i].current     = false;

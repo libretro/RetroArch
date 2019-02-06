@@ -4,14 +4,20 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
 #include "../../../tasks/tasks_internal.h"
 #include "../../../verbosity.h"
 #include "../../../config.def.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #define USER_AGENT "RetroArch-WIMP/1.0"
 #define PARTIAL_EXTENSION ".partial"

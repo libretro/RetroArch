@@ -31,6 +31,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_driver.h"
@@ -442,4 +443,3 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    NULL
 };
-

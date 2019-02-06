@@ -88,9 +88,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
-#if defined(HAVE_NUKLEAR)
-   &menu_ctx_nuklear,
-#endif
 #if defined(HAVE_OZONE)
    &menu_ctx_ozone,
 #endif
@@ -105,9 +102,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
-#endif
-#if defined(HAVE_ZARCH)
-   &menu_ctx_zarch,
 #endif
    &menu_ctx_null,
    NULL
@@ -451,7 +445,7 @@ void menu_display_font_free(font_data_t *font)
  * to the menu driver */
 font_data_t *menu_display_font(
       enum application_special_type type,
-      float font_size,
+      float menu_font_size,
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
@@ -464,10 +458,10 @@ font_data_t *menu_display_font(
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   return menu_display_font_file(fontpath, font_size, is_threaded);
+   return menu_display_font_file(fontpath, menu_font_size, is_threaded);
 }
 
-font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+font_data_t *menu_display_font_file(char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
    if (!menu_disp)
@@ -475,7 +469,7 @@ font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_thr
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            fontpath, font_size, is_threaded))
+            fontpath, menu_font_size, is_threaded))
       return NULL;
 
    return font_data;
@@ -1847,6 +1841,9 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
 
@@ -1872,6 +1869,9 @@ static void menu_driver_toggle(bool on)
 
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
+
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)

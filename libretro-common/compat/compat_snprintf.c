@@ -49,7 +49,7 @@ static int c89_vscprintf_retro__(const char *format, va_list pargs)
 int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
 {
    int count = -1;
-	
+
    if (size != 0)
    {
 #if (_MSC_VER <= 1310)

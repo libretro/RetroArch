@@ -115,7 +115,11 @@ static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
    switch (flags)
    {
       case CFDocumentDirectory:
-         return NSDocumentDirectory;
+#if TARGET_OS_TV
+           return NSCachesDirectory;
+#else
+           return NSDocumentDirectory;
+#endif
    }
 
    return 0;
@@ -363,7 +367,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
          home_dir_buf, "shaders_glsl",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 #endif
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     int major, minor;
     get_ios_version(&major, &minor);
     if (major >= 10 )
@@ -372,6 +376,9 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     else
         fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
               home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#elif TARGET_OS_TV
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+                       bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
@@ -423,13 +430,13 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     char assets_zip_path[PATH_MAX_LENGTH];
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
 
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
-    
+
     if (filestream_exists(assets_zip_path))
     {
        settings_t *settings = config_get_ptr();
@@ -458,7 +465,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
       if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0)
          RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
    }
-
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
@@ -528,7 +534,7 @@ static int frontend_darwin_get_rating(void)
    if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
       return 18;
 
-   /* TODO/FIXME - 
+   /* TODO/FIXME -
       - more ratings for more systems
       - determine rating more intelligently*/
    return -1;
@@ -582,7 +588,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int
 end:
    if (blob)
       CFRelease(blob);
-#elif defined(IOS)
+#elif TARGET_OS_IOS
    float level;
    UIDevice *uidev = [UIDevice currentDevice];
 
@@ -626,7 +632,7 @@ static enum frontend_architecture frontend_darwin_get_architecture(void)
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
-   
+
    (void)buffer_hash;
 
 #ifdef OSX
@@ -699,7 +705,7 @@ static uint64_t frontend_darwin_get_mem_total(void)
     int mib[2]     = { CTL_HW, HW_MEMSIZE };
     u_int namelen  = sizeof(mib) / sizeof(mib[0]);
     size_t len     = sizeof(size);
-    
+
     if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
         return 0;
     return size;
@@ -715,12 +721,12 @@ static uint64_t frontend_darwin_get_mem_used(void)
     vm_statistics64_data_t vm_stats;
     mach_port_t mach_port        = mach_host_self();
     mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
-    
+
     if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
         KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
                                           (host_info64_t)&vm_stats, &count))
     {
-        
+
         long long used_memory = ((int64_t)vm_stats.active_count +
                                  (int64_t)vm_stats.inactive_count +
                                  (int64_t)vm_stats.wire_count) *  (int64_t)page_size;

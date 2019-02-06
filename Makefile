@@ -19,6 +19,7 @@ TARGET = retroarch
 OBJ :=
 LIBS :=
 DEF_FLAGS :=
+ASFLAGS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
@@ -171,7 +172,7 @@ all: $(TARGET) config.mk
 $(MOC_SRC):
 	@$(if $(Q), $(shell echo echo MOC $<),)
 	$(eval MOC_TMP := $(patsubst %.h,%_moc.cpp,$@))
-	$(Q)$(MOC) -o $(MOC_TMP) $<
+	$(Q)QT_SELECT=$(QT_VERSION) $(MOC) -o $(MOC_TMP) $<
 
 $(foreach x,$(join $(addsuffix :,$(MOC_SRC)),$(MOC_HEADERS)),$(eval $x))
 
@@ -253,14 +254,8 @@ install: $(TARGET)
 	@if test -d media/assets && test $(HAVE_ASSETS); then \
 		echo "Installing media assets..."; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets; \
-		if test $(HAVE_ZARCH) = 1; then \
-			cp -r media/assets/zarch/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		fi; \
 		if test $(HAVE_MATERIALUI) = 1; then \
 			cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
-		fi; \
-		if test $(HAVE_NUKLEAR) = 1; then \
-			cp -r media/assets/nuklear/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \
 		if test $(HAVE_XMB) = 1; then \
 			cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \

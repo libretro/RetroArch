@@ -21,6 +21,8 @@
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
+
+#include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../wifi/wifi_driver.h"
 

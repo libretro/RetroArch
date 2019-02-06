@@ -271,18 +271,48 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MSG_UNKNOWN;
-   /* TODO (krzys_h): UWP storage sandboxing */
-   char *home_dir               = (char*)malloc(
-         PATH_MAX_LENGTH * sizeof(char));
+   char drive[]                 = " :\\";
+   char *home_dir               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   bool have_any_drives         = false;
 
-   fill_pathname_home_dir(home_dir,
-      PATH_MAX_LENGTH * sizeof(char));
+   fill_pathname_home_dir(home_dir, PATH_MAX_LENGTH * sizeof(char));
+
+   for (drive[0] = 'A'; drive[0] <= 'Z'; drive[0]++)
+   {
+      if (uwp_drive_exists(drive))
+      {
+         menu_entries_append_enum(list,
+            drive,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+         have_any_drives = true;
+      }
+   }
 
    menu_entries_append_enum(list,
-         home_dir,
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+      home_dir,
+      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+      enum_idx,
+      FILE_TYPE_DIRECTORY, 0, 0);
+
+   if (!have_any_drives)
+   {
+      menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+         MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+         MENU_SETTING_ACTION, 0, 0);
+
+      if (string_is_equal(uwp_device_family, "Windows.Desktop"))
+      {
+         menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+            MENU_SETTING_ACTION, 0, 0);
+      }
+   }
 
    free(home_dir);
 #endif
@@ -293,7 +323,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 static void frontend_uwp_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   /* On UWP, we have to use the writable directory 
+   /* On UWP, we have to use the writable directory
     * instead of the install directory. */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
       "~\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -323,7 +353,7 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
       "~\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       "~\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-   /* This one is an exception: cores have to be loaded from 
+   /* This one is an exception: cores have to be loaded from
     * the install directory,
     * since this is the only place UWP apps can take .dlls from */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],

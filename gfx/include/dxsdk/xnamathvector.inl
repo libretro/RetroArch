@@ -50,9 +50,9 @@ XMFINLINE XMVECTOR XMVectorZero()
 // Initialize a vector with four floating point values
 XMFINLINE XMVECTOR XMVectorSet
 (
-    FLOAT x, 
-    FLOAT y, 
-    FLOAT z, 
+    FLOAT x,
+    FLOAT y,
+    FLOAT z,
     FLOAT w
 )
 {
@@ -69,9 +69,9 @@ XMFINLINE XMVECTOR XMVectorSet
 // Initialize a vector with four integer values
 XMFINLINE XMVECTOR XMVectorSetInt
 (
-    UINT x, 
-    UINT y, 
-    UINT z, 
+    UINT x,
+    UINT y,
+    UINT z,
     UINT w
 )
 {
@@ -188,9 +188,9 @@ XMFINLINE XMVECTOR XMVectorSplatX
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_f32[0] = 
-    vResult.vector4_f32[1] = 
-    vResult.vector4_f32[2] = 
+    vResult.vector4_f32[0] =
+    vResult.vector4_f32[1] =
+    vResult.vector4_f32[2] =
     vResult.vector4_f32[3] = V.vector4_f32[0];
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -208,9 +208,9 @@ XMFINLINE XMVECTOR XMVectorSplatY
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_f32[0] = 
-    vResult.vector4_f32[1] = 
-    vResult.vector4_f32[2] = 
+    vResult.vector4_f32[0] =
+    vResult.vector4_f32[1] =
+    vResult.vector4_f32[2] =
     vResult.vector4_f32[3] = V.vector4_f32[1];
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -228,9 +228,9 @@ XMFINLINE XMVECTOR XMVectorSplatZ
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_f32[0] = 
-    vResult.vector4_f32[1] = 
-    vResult.vector4_f32[2] = 
+    vResult.vector4_f32[0] =
+    vResult.vector4_f32[1] =
+    vResult.vector4_f32[2] =
     vResult.vector4_f32[3] = V.vector4_f32[2];
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -248,9 +248,9 @@ XMFINLINE XMVECTOR XMVectorSplatW
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_f32[0] = 
-    vResult.vector4_f32[1] = 
-    vResult.vector4_f32[2] = 
+    vResult.vector4_f32[0] =
+    vResult.vector4_f32[1] =
+    vResult.vector4_f32[2] =
     vResult.vector4_f32[3] = V.vector4_f32[3];
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -265,9 +265,9 @@ XMFINLINE XMVECTOR XMVectorSplatOne()
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_f32[0] = 
-    vResult.vector4_f32[1] = 
-    vResult.vector4_f32[2] = 
+    vResult.vector4_f32[0] =
+    vResult.vector4_f32[1] =
+    vResult.vector4_f32[2] =
     vResult.vector4_f32[3] = 1.0f;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -282,9 +282,9 @@ XMFINLINE XMVECTOR XMVectorSplatInfinity()
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_u32[0] = 
-    vResult.vector4_u32[1] = 
-    vResult.vector4_u32[2] = 
+    vResult.vector4_u32[0] =
+    vResult.vector4_u32[1] =
+    vResult.vector4_u32[2] =
     vResult.vector4_u32[3] = 0x7F800000;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -299,9 +299,9 @@ XMFINLINE XMVECTOR XMVectorSplatQNaN()
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_u32[0] = 
-    vResult.vector4_u32[1] = 
-    vResult.vector4_u32[2] = 
+    vResult.vector4_u32[0] =
+    vResult.vector4_u32[1] =
+    vResult.vector4_u32[2] =
     vResult.vector4_u32[3] = 0x7FC00000;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -316,9 +316,9 @@ XMFINLINE XMVECTOR XMVectorSplatEpsilon()
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_u32[0] = 
-    vResult.vector4_u32[1] = 
-    vResult.vector4_u32[2] = 
+    vResult.vector4_u32[0] =
+    vResult.vector4_u32[1] =
+    vResult.vector4_u32[2] =
     vResult.vector4_u32[3] = 0x34000000;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -333,9 +333,9 @@ XMFINLINE XMVECTOR XMVectorSplatSignMask()
 {
 #if defined(_XM_NO_INTRINSICS_)
     XMVECTOR vResult;
-    vResult.vector4_u32[0] = 
-    vResult.vector4_u32[1] = 
-    vResult.vector4_u32[2] = 
+    vResult.vector4_u32[0] =
+    vResult.vector4_u32[1] =
+    vResult.vector4_u32[2] =
     vResult.vector4_u32[3] = 0x80000000U;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -360,7 +360,7 @@ XMFINLINE FLOAT XMVectorGetByIndex(FXMVECTOR V,UINT i)
 }
 
 //------------------------------------------------------------------------------
-// Return the X component in an FPU register. 
+// Return the X component in an FPU register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE FLOAT XMVectorGetX(FXMVECTOR V)
 {
@@ -368,7 +368,7 @@ XMFINLINE FLOAT XMVectorGetX(FXMVECTOR V)
     return V.vector4_f32[0];
 #elif defined(_XM_SSE_INTRINSICS_)
 #if defined(_MSC_VER) && (_MSC_VER>=1500)
-    return _mm_cvtss_f32(V);    
+    return _mm_cvtss_f32(V);
 #else
     return V.m128_f32[0];
 #endif
@@ -376,7 +376,7 @@ XMFINLINE FLOAT XMVectorGetX(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the Y component in an FPU register. 
+// Return the Y component in an FPU register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE FLOAT XMVectorGetY(FXMVECTOR V)
 {
@@ -393,7 +393,7 @@ XMFINLINE FLOAT XMVectorGetY(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the Z component in an FPU register. 
+// Return the Z component in an FPU register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE FLOAT XMVectorGetZ(FXMVECTOR V)
 {
@@ -410,7 +410,7 @@ XMFINLINE FLOAT XMVectorGetZ(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the W component in an FPU register. 
+// Return the W component in an FPU register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE FLOAT XMVectorGetW(FXMVECTOR V)
 {
@@ -519,7 +519,7 @@ XMFINLINE UINT XMVectorGetIntByIndex(FXMVECTOR V, UINT i)
 
 //------------------------------------------------------------------------------
 
-// Return the X component in an integer register. 
+// Return the X component in an integer register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE UINT XMVectorGetIntX(FXMVECTOR V)
 {
@@ -531,7 +531,7 @@ XMFINLINE UINT XMVectorGetIntX(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the Y component in an integer register. 
+// Return the Y component in an integer register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE UINT XMVectorGetIntY(FXMVECTOR V)
 {
@@ -544,7 +544,7 @@ XMFINLINE UINT XMVectorGetIntY(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the Z component in an integer register. 
+// Return the Z component in an integer register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE UINT XMVectorGetIntZ(FXMVECTOR V)
 {
@@ -557,7 +557,7 @@ XMFINLINE UINT XMVectorGetIntZ(FXMVECTOR V)
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-// Return the W component in an integer register. 
+// Return the W component in an integer register.
 // This causes Load/Hit/Store on VMX targets
 XMFINLINE UINT XMVectorGetIntW(FXMVECTOR V)
 {
@@ -1187,9 +1187,9 @@ XMFINLINE XMVECTOR XMVectorSetIntWPtr(FXMVECTOR V,CONST UINT *w)
 
 XMFINLINE XMVECTOR XMVectorPermuteControl
 (
-    UINT     ElementIndex0, 
-    UINT     ElementIndex1, 
-    UINT     ElementIndex2, 
+    UINT     ElementIndex0,
+    UINT     ElementIndex1,
+    UINT     ElementIndex2,
     UINT     ElementIndex3
 )
 {
@@ -1226,8 +1226,8 @@ XMFINLINE XMVECTOR XMVectorPermuteControl
 // 16-31 = V2
 XMFINLINE XMVECTOR XMVectorPermute
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Control
 )
 {
@@ -1295,21 +1295,21 @@ XMFINLINE XMVECTOR XMVectorPermute
 }
 
 //------------------------------------------------------------------------------
-// Define a control vector to be used in XMVectorSelect 
+// Define a control vector to be used in XMVectorSelect
 // operations.  The four integers specified in XMVectorSelectControl
 // serve as indices to select between components in two vectors.
-// The first index controls selection for the first component of 
-// the vectors involved in a select operation, the second index 
+// The first index controls selection for the first component of
+// the vectors involved in a select operation, the second index
 // controls selection for the second component etc.  A value of
-// zero for an index causes the corresponding component from the first 
+// zero for an index causes the corresponding component from the first
 // vector to be selected whereas a one causes the component from the
 // second vector to be selected instead.
 
 XMFINLINE XMVECTOR XMVectorSelectControl
 (
-    UINT VectorIndex0, 
-    UINT VectorIndex1, 
-    UINT VectorIndex2, 
+    UINT VectorIndex0,
+    UINT VectorIndex1,
+    UINT VectorIndex2,
     UINT VectorIndex3
 )
 {
@@ -1346,8 +1346,8 @@ XMFINLINE XMVECTOR XMVectorSelectControl
 
 XMFINLINE XMVECTOR XMVectorSelect
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Control
 )
 {
@@ -1374,7 +1374,7 @@ XMFINLINE XMVECTOR XMVectorSelect
 
 XMFINLINE XMVECTOR XMVectorMergeXY
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1399,7 +1399,7 @@ XMFINLINE XMVECTOR XMVectorMergeXY
 
 XMFINLINE XMVECTOR XMVectorMergeZW
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1428,7 +1428,7 @@ XMFINLINE XMVECTOR XMVectorMergeZW
 
 XMFINLINE XMVECTOR XMVectorEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1454,7 +1454,7 @@ XMFINLINE XMVECTOR XMVectorEqual
 XMFINLINE XMVECTOR XMVectorEqualR
 (
     UINT*    pCR,
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1514,7 +1514,7 @@ XMFINLINE XMVECTOR XMVectorEqualR
 
 XMFINLINE XMVECTOR XMVectorEqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1541,7 +1541,7 @@ XMFINLINE XMVECTOR XMVectorEqualInt
 XMFINLINE XMVECTOR XMVectorEqualIntR
 (
     UINT*    pCR,
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1591,8 +1591,8 @@ XMFINLINE XMVECTOR XMVectorEqualIntR
 
 XMFINLINE XMVECTOR XMVectorNearEqual
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Epsilon
 )
 {
@@ -1635,7 +1635,7 @@ XMFINLINE XMVECTOR XMVectorNearEqual
 
 XMFINLINE XMVECTOR XMVectorNotEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1658,7 +1658,7 @@ XMFINLINE XMVECTOR XMVectorNotEqual
 
 XMFINLINE XMVECTOR XMVectorNotEqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1682,7 +1682,7 @@ XMFINLINE XMVECTOR XMVectorNotEqualInt
 
 XMFINLINE XMVECTOR XMVectorGreater
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1706,7 +1706,7 @@ XMFINLINE XMVECTOR XMVectorGreater
 XMFINLINE XMVECTOR XMVectorGreaterR
 (
     UINT*    pCR,
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1762,7 +1762,7 @@ XMFINLINE XMVECTOR XMVectorGreaterR
 
 XMFINLINE XMVECTOR XMVectorGreaterOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1786,7 +1786,7 @@ XMFINLINE XMVECTOR XMVectorGreaterOrEqual
 XMFINLINE XMVECTOR XMVectorGreaterOrEqualR
 (
     UINT*    pCR,
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1842,7 +1842,7 @@ XMFINLINE XMVECTOR XMVectorGreaterOrEqualR
 
 XMFINLINE XMVECTOR XMVectorLess
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1865,7 +1865,7 @@ XMFINLINE XMVECTOR XMVectorLess
 
 XMFINLINE XMVECTOR XMVectorLessOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -1888,7 +1888,7 @@ XMFINLINE XMVECTOR XMVectorLessOrEqual
 
 XMFINLINE XMVECTOR XMVectorInBounds
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
@@ -1920,7 +1920,7 @@ XMFINLINE XMVECTOR XMVectorInBounds
 XMFINLINE XMVECTOR XMVectorInBoundsR
 (
     UINT*    pCR,
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
@@ -2039,7 +2039,7 @@ XMFINLINE XMVECTOR XMVectorIsInfinite
 
 XMFINLINE XMVECTOR XMVectorMin
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2062,7 +2062,7 @@ XMFINLINE XMVECTOR XMVectorMin
 
 XMFINLINE XMVECTOR XMVectorMax
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2229,8 +2229,8 @@ XMFINLINE XMVECTOR XMVectorCeiling
 
 XMFINLINE XMVECTOR XMVectorClamp
 (
-    FXMVECTOR V, 
-    FXMVECTOR Min, 
+    FXMVECTOR V,
+    FXMVECTOR Min,
     FXMVECTOR Max
 )
 {
@@ -2445,7 +2445,7 @@ XMFINLINE XMVECTOR XMVectorNegate
 
 XMFINLINE XMVECTOR XMVectorAdd
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2470,7 +2470,7 @@ XMFINLINE XMVECTOR XMVectorAdd
 
 XMFINLINE XMVECTOR XMVectorAddAngles
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2519,7 +2519,7 @@ XMFINLINE XMVECTOR XMVectorAddAngles
 
 XMFINLINE XMVECTOR XMVectorSubtract
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2544,7 +2544,7 @@ XMFINLINE XMVECTOR XMVectorSubtract
 
 XMFINLINE XMVECTOR XMVectorSubtractAngles
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2593,7 +2593,7 @@ XMFINLINE XMVECTOR XMVectorSubtractAngles
 
 XMFINLINE XMVECTOR XMVectorMultiply
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2615,8 +2615,8 @@ XMFINLINE XMVECTOR XMVectorMultiply
 
 XMFINLINE XMVECTOR XMVectorMultiplyAdd
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR V3
 )
 {
@@ -2640,7 +2640,7 @@ XMFINLINE XMVECTOR XMVectorMultiplyAdd
 
 XMFINLINE XMVECTOR XMVectorDivide
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -2661,8 +2661,8 @@ XMFINLINE XMVECTOR XMVectorDivide
 
 XMFINLINE XMVECTOR XMVectorNegativeMultiplySubtract
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR V3
 )
 {
@@ -2687,7 +2687,7 @@ XMFINLINE XMVECTOR XMVectorNegativeMultiplySubtract
 
 XMFINLINE XMVECTOR XMVectorScale
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FLOAT    ScaleFactor
 )
 {
@@ -3155,7 +3155,7 @@ XMFINLINE XMVECTOR XMVectorAbs
 
 XMFINLINE XMVECTOR XMVectorMod
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -3230,7 +3230,7 @@ XMINLINE XMVECTOR XMVectorSin
 
     V1 = XMVectorModAngles(V);
 
-    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! - 
+    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
     //           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
     V2  = XMVectorMultiply(V1, V1);
     V3  = XMVectorMultiply(V2, V1);
@@ -3278,7 +3278,7 @@ XMINLINE XMVECTOR XMVectorSin
     // V2 = V1^2
     XMVECTOR V2  = _mm_mul_ps(vResult,vResult);
     // V1^3
-    XMVECTOR vPower = _mm_mul_ps(vResult,V2);    
+    XMVECTOR vPower = _mm_mul_ps(vResult,V2);
     XMVECTOR vConstants = _mm_load_ps1(&g_XMSinCoefficients0.f[1]);
     vConstants = _mm_mul_ps(vConstants,vPower);
     vResult = _mm_add_ps(vResult,vConstants);
@@ -3362,7 +3362,7 @@ XMINLINE XMVECTOR XMVectorCos
 
     V1 = XMVectorModAngles(V);
 
-    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! - 
+    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
     //           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
     V2 = XMVectorMultiply(V1, V1);
     V4 = XMVectorMultiply(V2, V2);
@@ -3481,8 +3481,8 @@ XMINLINE XMVECTOR XMVectorCos
 
 XMINLINE VOID XMVectorSinCos
 (
-    XMVECTOR* pSin, 
-    XMVECTOR* pCos, 
+    XMVECTOR* pSin,
+    XMVECTOR* pCos,
     FXMVECTOR  V
 )
 {
@@ -3499,9 +3499,9 @@ XMINLINE VOID XMVectorSinCos
 
     V1 = XMVectorModAngles(V);
 
-    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! - 
+    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
     //           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
-    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! - 
+    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
     //           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
 
     V2 = XMVectorMultiply(V1, V1);
@@ -3589,9 +3589,9 @@ XMINLINE VOID XMVectorSinCos
 
     V1 = XMVectorModAngles(V);
 
-    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! - 
+    // sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
     //           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
-    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! - 
+    // cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
     //           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
 
     V2 = XMVectorMultiply(V1, V1);
@@ -3976,7 +3976,7 @@ XMINLINE XMVECTOR XMVectorASin
     XMVECTOR Result;
     static CONST XMVECTOR OnePlusEpsilon = {1.00000011921f, 1.00000011921f, 1.00000011921f, 1.00000011921f};
 
-    // asin(V) = V * (C0 + C1 * V + C2 * V^2 + C3 * V^3 + C4 * V^4 + C5 * V^5) + (1 - V) * rsq(1 - V) * 
+    // asin(V) = V * (C0 + C1 * V + C2 * V^2 + C3 * V^3 + C4 * V^4 + C5 * V^5) + (1 - V) * rsq(1 - V) *
     //           V * (C6 + C7 * V + C8 * V^2 + C9 * V^3 + C10 * V^4 + C11 * V^5)
 
     AbsV = XMVectorAbs(V);
@@ -4027,7 +4027,7 @@ XMINLINE XMVECTOR XMVectorASin
 #elif defined(_XM_SSE_INTRINSICS_)
     static CONST XMVECTORF32 OnePlusEpsilon = {1.00000011921f, 1.00000011921f, 1.00000011921f, 1.00000011921f};
 
-    // asin(V) = V * (C0 + C1 * V + C2 * V^2 + C3 * V^3 + C4 * V^4 + C5 * V^5) + (1 - V) * rsq(1 - V) * 
+    // asin(V) = V * (C0 + C1 * V + C2 * V^2 + C3 * V^3 + C4 * V^4 + C5 * V^5) + (1 - V) * rsq(1 - V) *
     //           V * (C6 + C7 * V + C8 * V^2 + C9 * V^3 + C10 * V^4 + C11 * V^5)
     // Get abs(V)
 	XMVECTOR vAbsV = _mm_setzero_ps();
@@ -4442,7 +4442,7 @@ XMINLINE XMVECTOR XMVectorATan
 
 XMINLINE XMVECTOR XMVectorATan2
 (
-    FXMVECTOR Y, 
+    FXMVECTOR Y,
     FXMVECTOR X
 )
 {
@@ -4672,8 +4672,8 @@ XMFINLINE XMVECTOR XMVectorCosEst
 
 XMFINLINE VOID XMVectorSinCosEst
 (
-    XMVECTOR* pSin, 
-    XMVECTOR* pCos, 
+    XMVECTOR* pSin,
+    XMVECTOR* pCos,
     FXMVECTOR  V
 )
 {
@@ -5167,7 +5167,7 @@ XMFINLINE XMVECTOR XMVectorATanEst
 
 XMFINLINE XMVECTOR XMVectorATan2Est
 (
-    FXMVECTOR Y, 
+    FXMVECTOR Y,
     FXMVECTOR X
 )
 {
@@ -5285,8 +5285,8 @@ XMFINLINE XMVECTOR XMVectorATan2Est
 
 XMFINLINE XMVECTOR XMVectorLerp
 (
-    FXMVECTOR V0, 
-    FXMVECTOR V1, 
+    FXMVECTOR V0,
+    FXMVECTOR V1,
     FLOAT    t
 )
 {
@@ -5322,8 +5322,8 @@ XMFINLINE XMVECTOR XMVectorLerp
 
 XMFINLINE XMVECTOR XMVectorLerpV
 (
-    FXMVECTOR V0, 
-    FXMVECTOR V1, 
+    FXMVECTOR V0,
+    FXMVECTOR V1,
     FXMVECTOR T
 )
 {
@@ -5355,10 +5355,10 @@ XMFINLINE XMVECTOR XMVectorLerpV
 
 XMFINLINE XMVECTOR XMVectorHermite
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Tangent0, 
-    FXMVECTOR Position1, 
-    CXMVECTOR Tangent1, 
+    FXMVECTOR Position0,
+    FXMVECTOR Tangent0,
+    FXMVECTOR Position1,
+    CXMVECTOR Tangent1,
     FLOAT    t
 )
 {
@@ -5416,10 +5416,10 @@ XMFINLINE XMVECTOR XMVectorHermite
 
 XMFINLINE XMVECTOR XMVectorHermiteV
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Tangent0, 
-    FXMVECTOR Position1, 
-    CXMVECTOR Tangent1, 
+    FXMVECTOR Position0,
+    FXMVECTOR Tangent0,
+    FXMVECTOR Position1,
+    CXMVECTOR Tangent1,
     CXMVECTOR T
 )
 {
@@ -5498,10 +5498,10 @@ XMFINLINE XMVECTOR XMVectorHermiteV
 
 XMFINLINE XMVECTOR XMVectorCatmullRom
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Position1, 
-    FXMVECTOR Position2, 
-    CXMVECTOR Position3, 
+    FXMVECTOR Position0,
+    FXMVECTOR Position1,
+    FXMVECTOR Position2,
+    CXMVECTOR Position3,
     FLOAT    t
 )
 {
@@ -5559,10 +5559,10 @@ XMFINLINE XMVECTOR XMVectorCatmullRom
 
 XMFINLINE XMVECTOR XMVectorCatmullRomV
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Position1, 
-    FXMVECTOR Position2, 
-    CXMVECTOR Position3, 
+    FXMVECTOR Position0,
+    FXMVECTOR Position1,
+    FXMVECTOR Position2,
+    CXMVECTOR Position3,
     CXMVECTOR T
 )
 {
@@ -5632,10 +5632,10 @@ XMFINLINE XMVECTOR XMVectorCatmullRomV
 
 XMFINLINE XMVECTOR XMVectorBaryCentric
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Position1, 
-    FXMVECTOR Position2, 
-    FLOAT    f, 
+    FXMVECTOR Position0,
+    FXMVECTOR Position1,
+    FXMVECTOR Position2,
+    FLOAT    f,
     FLOAT    g
 )
 {
@@ -5677,10 +5677,10 @@ XMFINLINE XMVECTOR XMVectorBaryCentric
 
 XMFINLINE XMVECTOR XMVectorBaryCentricV
 (
-    FXMVECTOR Position0, 
-    FXMVECTOR Position1, 
-    FXMVECTOR Position2, 
-    CXMVECTOR F, 
+    FXMVECTOR Position0,
+    FXMVECTOR Position1,
+    FXMVECTOR Position2,
+    CXMVECTOR F,
     CXMVECTOR G
 )
 {
@@ -5725,7 +5725,7 @@ XMFINLINE XMVECTOR XMVectorBaryCentricV
 
 XMFINLINE BOOL XMVector2Equal
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5740,12 +5740,11 @@ XMFINLINE BOOL XMVector2Equal
 #endif
 }
 
-
 //------------------------------------------------------------------------------
 
 XMFINLINE UINT XMVector2EqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5753,12 +5752,12 @@ XMFINLINE UINT XMVector2EqualR
 
     UINT CR = 0;
 
-    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] == V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] != V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6FALSE;
@@ -5786,7 +5785,7 @@ XMFINLINE UINT XMVector2EqualR
 
 XMFINLINE BOOL XMVector2EqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5804,19 +5803,19 @@ XMFINLINE BOOL XMVector2EqualInt
 
 XMFINLINE UINT XMVector2EqualIntR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
 
     UINT CR = 0;
-    if ((V1.vector4_u32[0] == V2.vector4_u32[0]) && 
+    if ((V1.vector4_u32[0] == V2.vector4_u32[0]) &&
         (V1.vector4_u32[1] == V2.vector4_u32[1]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_u32[0] != V2.vector4_u32[0]) && 
+    else if ((V1.vector4_u32[0] != V2.vector4_u32[0]) &&
         (V1.vector4_u32[1] != V2.vector4_u32[1]))
     {
         CR = XM_CRMASK_CR6FALSE;
@@ -5844,8 +5843,8 @@ XMFINLINE UINT XMVector2EqualIntR
 
 XMFINLINE BOOL XMVector2NearEqual
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Epsilon
 )
 {
@@ -5873,7 +5872,7 @@ XMFINLINE BOOL XMVector2NearEqual
 
 XMFINLINE BOOL XMVector2NotEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5892,7 +5891,7 @@ XMFINLINE BOOL XMVector2NotEqual
 
 XMFINLINE BOOL XMVector2NotEqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5910,7 +5909,7 @@ XMFINLINE BOOL XMVector2NotEqualInt
 
 XMFINLINE BOOL XMVector2Greater
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5930,19 +5929,19 @@ XMFINLINE BOOL XMVector2Greater
 
 XMFINLINE UINT XMVector2GreaterR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
 
     UINT CR = 0;
-    if ((V1.vector4_f32[0] > V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] > V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] > V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] <= V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] <= V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] <= V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6FALSE;
@@ -5969,7 +5968,7 @@ XMFINLINE UINT XMVector2GreaterR
 
 XMFINLINE BOOL XMVector2GreaterOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -5987,18 +5986,18 @@ XMFINLINE BOOL XMVector2GreaterOrEqual
 
 XMFINLINE UINT XMVector2GreaterOrEqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] >= V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] < V2.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6FALSE;
@@ -6026,7 +6025,7 @@ XMFINLINE UINT XMVector2GreaterOrEqualR
 
 XMFINLINE BOOL XMVector2Less
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -6044,7 +6043,7 @@ XMFINLINE BOOL XMVector2Less
 
 XMFINLINE BOOL XMVector2LessOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -6062,12 +6061,12 @@ XMFINLINE BOOL XMVector2LessOrEqual
 
 XMFINLINE BOOL XMVector2InBounds
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
  #if defined(_XM_NO_INTRINSICS_)
-    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1])) != 0);
  #elif defined(_XM_SSE_INTRINSICS_)
     // Test if less than or equal
@@ -6080,7 +6079,7 @@ XMFINLINE BOOL XMVector2InBounds
     vTemp1 = _mm_and_ps(vTemp1,vTemp2);
     // x and y in bounds? (z and w are don't care)
     return (((_mm_movemask_ps(vTemp1)&0x3)==0x3) != 0);
-#else // _XM_VMX128_INTRINSICS_   
+#else // _XM_VMX128_INTRINSICS_
     return XMComparisonAllInBounds(XMVector2InBoundsR(V, Bounds));
 #endif
 }
@@ -6089,13 +6088,13 @@ XMFINLINE BOOL XMVector2InBounds
 
 XMFINLINE UINT XMVector2InBoundsR
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1]))
     {
         CR = XM_CRMASK_CR6BOUNDS;
@@ -6174,7 +6173,7 @@ XMFINLINE BOOL XMVector2IsInfinite
 
 XMFINLINE XMVECTOR XMVector2Dot
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -6206,13 +6205,13 @@ XMFINLINE XMVECTOR XMVector2Dot
 
 XMFINLINE XMVECTOR XMVector2Cross
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     FLOAT fCross = (V1.vector4_f32[0] * V2.vector4_f32[1]) - (V1.vector4_f32[1] * V2.vector4_f32[0]);
-    XMVECTOR vResult = { 
+    XMVECTOR vResult = {
         fCross,
         fCross,
         fCross,
@@ -6422,7 +6421,7 @@ XMFINLINE XMVECTOR XMVector2Normalize
     if (fLength > 0) {
         fLength = 1.0f/fLength;
     }
-    
+
     vResult.vector4_f32[0] = V.vector4_f32[0]*fLength;
     vResult.vector4_f32[1] = V.vector4_f32[1]*fLength;
     vResult.vector4_f32[2] = V.vector4_f32[2]*fLength;
@@ -6461,8 +6460,8 @@ XMFINLINE XMVECTOR XMVector2Normalize
 
 XMFINLINE XMVECTOR XMVector2ClampLength
 (
-    FXMVECTOR V, 
-    FLOAT    LengthMin, 
+    FXMVECTOR V,
+    FLOAT    LengthMin,
     FLOAT    LengthMax
 )
 {
@@ -6488,8 +6487,8 @@ XMFINLINE XMVECTOR XMVector2ClampLength
 
 XMFINLINE XMVECTOR XMVector2ClampLengthV
 (
-    FXMVECTOR V, 
-    FXMVECTOR LengthMin, 
+    FXMVECTOR V,
+    FXMVECTOR LengthMin,
     FXMVECTOR LengthMax
 )
 {
@@ -6591,7 +6590,7 @@ XMFINLINE XMVECTOR XMVector2ClampLengthV
 
 XMFINLINE XMVECTOR XMVector2Reflect
 (
-    FXMVECTOR Incident, 
+    FXMVECTOR Incident,
     FXMVECTOR Normal
 )
 {
@@ -6621,8 +6620,8 @@ XMFINLINE XMVECTOR XMVector2Reflect
 
 XMFINLINE XMVECTOR XMVector2Refract
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FLOAT    RefractionIndex
 )
 {
@@ -6643,8 +6642,8 @@ XMFINLINE XMVECTOR XMVector2Refract
 // Return the refraction of a 2D vector
 XMFINLINE XMVECTOR XMVector2RefractV
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FXMVECTOR RefractionIndex
 )
 {
@@ -6652,7 +6651,7 @@ XMFINLINE XMVECTOR XMVector2RefractV
     float IDotN;
     float RX,RY;
     XMVECTOR vResult;
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
     IDotN = (Incident.vector4_f32[0]*Normal.vector4_f32[0])+(Incident.vector4_f32[1]*Normal.vector4_f32[1]);
     // R = 1.0f - RefractionIndex * RefractionIndex * (1.0f - IDotN * IDotN)
@@ -6671,11 +6670,11 @@ XMFINLINE XMVECTOR XMVector2RefractV
     }
     vResult.vector4_f32[0] = RX;
     vResult.vector4_f32[1] = RY;
-    vResult.vector4_f32[2] = 0.0f;   
+    vResult.vector4_f32[2] = 0.0f;
     vResult.vector4_f32[3] = 0.0f;
     return vResult;
 #elif defined(_XM_SSE_INTRINSICS_)
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
     // Get the 2D Dot product of Incident-Normal
     XMVECTOR IDotN = _mm_mul_ps(Incident,Normal);
@@ -6732,7 +6731,7 @@ XMFINLINE XMVECTOR XMVector2Orthogonal
 
 XMFINLINE XMVECTOR XMVector2AngleBetweenNormalsEst
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -6765,7 +6764,7 @@ XMFINLINE XMVECTOR XMVector2AngleBetweenNormalsEst
 
 XMFINLINE XMVECTOR XMVector2AngleBetweenNormals
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -6798,7 +6797,7 @@ XMFINLINE XMVECTOR XMVector2AngleBetweenNormals
 
 XMFINLINE XMVECTOR XMVector2AngleBetweenVectors
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -6850,8 +6849,8 @@ XMFINLINE XMVECTOR XMVector2AngleBetweenVectors
 
 XMFINLINE XMVECTOR XMVector2LinePointDistance
 (
-    FXMVECTOR LinePoint1, 
-    FXMVECTOR LinePoint2, 
+    FXMVECTOR LinePoint1,
+    FXMVECTOR LinePoint2,
     FXMVECTOR Point
 )
 {
@@ -6865,7 +6864,7 @@ XMFINLINE XMVECTOR XMVector2LinePointDistance
     XMVECTOR Result;
 
     // Given a vector PointVector from LinePoint1 to Point and a vector
-    // LineVector from LinePoint1 to LinePoint2, the scaled distance 
+    // LineVector from LinePoint1 to LinePoint2, the scaled distance
     // PointProjectionScale from LinePoint1 to the perpendicular projection
     // of PointVector onto the line is defined as:
     //
@@ -6905,9 +6904,9 @@ XMFINLINE XMVECTOR XMVector2LinePointDistance
 
 XMFINLINE XMVECTOR XMVector2IntersectLine
 (
-    FXMVECTOR Line1Point1, 
-    FXMVECTOR Line1Point2, 
-    FXMVECTOR Line2Point1, 
+    FXMVECTOR Line1Point1,
+    FXMVECTOR Line1Point2,
+    FXMVECTOR Line2Point1,
     CXMVECTOR Line2Point2
 )
 {
@@ -6991,7 +6990,7 @@ XMFINLINE XMVECTOR XMVector2IntersectLine
 
 XMFINLINE XMVECTOR XMVector2Transform
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -7025,11 +7024,11 @@ XMFINLINE XMVECTOR XMVector2Transform
 
 XMINLINE XMFLOAT4* XMVector2TransformStream
 (
-    XMFLOAT4*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT2* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT4*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT2* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX        M
 )
 {
@@ -7059,7 +7058,7 @@ XMINLINE XMFLOAT4* XMVector2TransformStream
 
         XMStoreFloat4((XMFLOAT4*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -7081,7 +7080,7 @@ XMINLINE XMFLOAT4* XMVector2TransformStream
         X = _mm_mul_ps(X,M.r[0]);
         vResult = _mm_add_ps(vResult,X);
         _mm_storeu_ps(reinterpret_cast<float*>(pOutputVector),vResult);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
     return pOutputStream;
@@ -7093,11 +7092,11 @@ XMINLINE XMFLOAT4* XMVector2TransformStream
 
 XMINLINE XMFLOAT4* XMVector2TransformStreamNC
 (
-    XMFLOAT4*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT2* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT4*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT2* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -7111,7 +7110,7 @@ XMINLINE XMFLOAT4* XMVector2TransformStreamNC
 
 XMFINLINE XMVECTOR XMVector2TransformCoord
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -7153,11 +7152,11 @@ XMFINLINE XMVECTOR XMVector2TransformCoord
 
 XMINLINE XMFLOAT2* XMVector2TransformCoordStream
 (
-    XMFLOAT2*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT2* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT2*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT2* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -7193,7 +7192,7 @@ XMINLINE XMFLOAT2* XMVector2TransformCoordStream
 
         XMStoreFloat2((XMFLOAT2*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -7217,7 +7216,7 @@ XMINLINE XMFLOAT2* XMVector2TransformCoordStream
         X = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(3,3,3,3));
         vResult = _mm_div_ps(vResult,X);
         _mm_store_sd(reinterpret_cast<double *>(pOutputVector),reinterpret_cast<__m128d *>(&vResult)[0]);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
     return pOutputStream;
@@ -7229,7 +7228,7 @@ XMINLINE XMFLOAT2* XMVector2TransformCoordStream
 
 XMFINLINE XMVECTOR XMVector2TransformNormal
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -7262,11 +7261,11 @@ XMFINLINE XMVECTOR XMVector2TransformNormal
 
 XMINLINE XMFLOAT2* XMVector2TransformNormalStream
 (
-    XMFLOAT2*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT2* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT2*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT2* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX        M
 )
 {
@@ -7296,7 +7295,7 @@ XMINLINE XMFLOAT2* XMVector2TransformNormalStream
 
         XMStoreFloat2((XMFLOAT2*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -7317,7 +7316,7 @@ XMINLINE XMFLOAT2* XMVector2TransformNormalStream
         vResult = _mm_add_ps(vResult,X);
         _mm_store_sd(reinterpret_cast<double*>(pOutputVector),reinterpret_cast<const __m128d *>(&vResult)[0]);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -7340,7 +7339,7 @@ XMINLINE XMFLOAT2* XMVector2TransformNormalStream
 
 XMFINLINE BOOL XMVector3Equal
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7358,19 +7357,19 @@ XMFINLINE BOOL XMVector3Equal
 
 XMFINLINE UINT XMVector3EqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] == V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] == V2.vector4_f32[2]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] != V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] != V2.vector4_f32[2]))
     {
@@ -7398,7 +7397,7 @@ XMFINLINE UINT XMVector3EqualR
 
 XMFINLINE BOOL XMVector3EqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7416,19 +7415,19 @@ XMFINLINE BOOL XMVector3EqualInt
 
 XMFINLINE UINT XMVector3EqualIntR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V1.vector4_u32[0] == V2.vector4_u32[0]) && 
+    if ((V1.vector4_u32[0] == V2.vector4_u32[0]) &&
         (V1.vector4_u32[1] == V2.vector4_u32[1]) &&
         (V1.vector4_u32[2] == V2.vector4_u32[2]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_u32[0] != V2.vector4_u32[0]) && 
+    else if ((V1.vector4_u32[0] != V2.vector4_u32[0]) &&
         (V1.vector4_u32[1] != V2.vector4_u32[1]) &&
         (V1.vector4_u32[2] != V2.vector4_u32[2]))
     {
@@ -7456,8 +7455,8 @@ XMFINLINE UINT XMVector3EqualIntR
 
 XMFINLINE BOOL XMVector3NearEqual
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Epsilon
 )
 {
@@ -7488,7 +7487,7 @@ XMFINLINE BOOL XMVector3NearEqual
 
 XMFINLINE BOOL XMVector3NotEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7506,7 +7505,7 @@ XMFINLINE BOOL XMVector3NotEqual
 
 XMFINLINE BOOL XMVector3NotEqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7524,7 +7523,7 @@ XMFINLINE BOOL XMVector3NotEqualInt
 
 XMFINLINE BOOL XMVector3Greater
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7542,19 +7541,19 @@ XMFINLINE BOOL XMVector3Greater
 
 XMFINLINE UINT XMVector3GreaterR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V1.vector4_f32[0] > V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] > V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] > V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] > V2.vector4_f32[2]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] <= V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] <= V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] <= V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] <= V2.vector4_f32[2]))
     {
@@ -7566,7 +7565,7 @@ XMFINLINE UINT XMVector3GreaterR
     XMVECTOR vTemp = _mm_cmpgt_ps(V1,V2);
     UINT CR = 0;
     int iTest = _mm_movemask_ps(vTemp)&7;
-    if (iTest==7) 
+    if (iTest==7)
     {
         CR =  XM_CRMASK_CR6TRUE;
     }
@@ -7583,7 +7582,7 @@ XMFINLINE UINT XMVector3GreaterR
 
 XMFINLINE BOOL XMVector3GreaterOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7601,20 +7600,20 @@ XMFINLINE BOOL XMVector3GreaterOrEqual
 
 XMFINLINE UINT XMVector3GreaterOrEqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
 
     UINT CR = 0;
-    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] >= V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] >= V2.vector4_f32[2]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] < V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] < V2.vector4_f32[2]))
     {
@@ -7626,7 +7625,7 @@ XMFINLINE UINT XMVector3GreaterOrEqualR
     XMVECTOR vTemp = _mm_cmpge_ps(V1,V2);
     UINT CR = 0;
     int iTest = _mm_movemask_ps(vTemp)&7;
-    if (iTest==7) 
+    if (iTest==7)
     {
         CR =  XM_CRMASK_CR6TRUE;
     }
@@ -7643,7 +7642,7 @@ XMFINLINE UINT XMVector3GreaterOrEqualR
 
 XMFINLINE BOOL XMVector3Less
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7661,7 +7660,7 @@ XMFINLINE BOOL XMVector3Less
 
 XMFINLINE BOOL XMVector3LessOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7679,12 +7678,12 @@ XMFINLINE BOOL XMVector3LessOrEqual
 
 XMFINLINE BOOL XMVector3InBounds
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
-    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1]) &&
         (V.vector4_f32[2] <= Bounds.vector4_f32[2] && V.vector4_f32[2] >= -Bounds.vector4_f32[2])) != 0);
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -7707,13 +7706,13 @@ XMFINLINE BOOL XMVector3InBounds
 
 XMFINLINE UINT XMVector3InBoundsR
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1]) &&
         (V.vector4_f32[2] <= Bounds.vector4_f32[2] && V.vector4_f32[2] >= -Bounds.vector4_f32[2]))
     {
@@ -7796,7 +7795,7 @@ XMFINLINE BOOL XMVector3IsInfinite
 
 XMFINLINE XMVECTOR XMVector3Dot
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -7807,7 +7806,7 @@ XMFINLINE XMVECTOR XMVector3Dot
         fValue,
         fValue,
         fValue
-    };            
+    };
     return vResult;
 
 #elif defined(_XM_SSE_INTRINSICS_)
@@ -7831,7 +7830,7 @@ XMFINLINE XMVECTOR XMVector3Dot
 
 XMFINLINE XMVECTOR XMVector3Cross
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -8077,7 +8076,7 @@ XMFINLINE XMVECTOR XMVector3Normalize
     if (fLength > 0) {
         fLength = 1.0f/fLength;
     }
-    
+
     vResult.vector4_f32[0] = V.vector4_f32[0]*fLength;
     vResult.vector4_f32[1] = V.vector4_f32[1]*fLength;
     vResult.vector4_f32[2] = V.vector4_f32[2]*fLength;
@@ -8118,8 +8117,8 @@ XMFINLINE XMVECTOR XMVector3Normalize
 
 XMFINLINE XMVECTOR XMVector3ClampLength
 (
-    FXMVECTOR V, 
-    FLOAT    LengthMin, 
+    FXMVECTOR V,
+    FLOAT    LengthMin,
     FLOAT    LengthMax
 )
 {
@@ -8145,8 +8144,8 @@ XMFINLINE XMVECTOR XMVector3ClampLength
 
 XMFINLINE XMVECTOR XMVector3ClampLengthV
 (
-    FXMVECTOR V, 
-    FXMVECTOR LengthMin, 
+    FXMVECTOR V,
+    FXMVECTOR LengthMin,
     FXMVECTOR LengthMax
 )
 {
@@ -8249,7 +8248,7 @@ XMFINLINE XMVECTOR XMVector3ClampLengthV
 
 XMFINLINE XMVECTOR XMVector3Reflect
 (
-    FXMVECTOR Incident, 
+    FXMVECTOR Incident,
     FXMVECTOR Normal
 )
 {
@@ -8279,8 +8278,8 @@ XMFINLINE XMVECTOR XMVector3Reflect
 
 XMFINLINE XMVECTOR XMVector3Refract
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FLOAT    RefractionIndex
 )
 {
@@ -8301,8 +8300,8 @@ XMFINLINE XMVECTOR XMVector3Refract
 
 XMFINLINE XMVECTOR XMVector3RefractV
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FXMVECTOR RefractionIndex
 )
 {
@@ -8312,7 +8311,7 @@ XMFINLINE XMVECTOR XMVector3RefractV
     XMVECTOR        R;
     CONST XMVECTOR  Zero = XMVectorZero();
 
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
 
     IDotN = XMVector3Dot(Incident, Normal);
@@ -8343,7 +8342,7 @@ XMFINLINE XMVECTOR XMVector3RefractV
     }
 
 #elif defined(_XM_SSE_INTRINSICS_)
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
     XMVECTOR IDotN = XMVector3Dot(Incident, Normal);
     // R = 1.0f - RefractionIndex * RefractionIndex * (1.0f - IDotN * IDotN)
@@ -8454,7 +8453,7 @@ XMFINLINE XMVECTOR XMVector3Orthogonal
 
 XMFINLINE XMVECTOR XMVector3AngleBetweenNormalsEst
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -8487,7 +8486,7 @@ XMFINLINE XMVECTOR XMVector3AngleBetweenNormalsEst
 
 XMFINLINE XMVECTOR XMVector3AngleBetweenNormals
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -8520,7 +8519,7 @@ XMFINLINE XMVECTOR XMVector3AngleBetweenNormals
 
 XMFINLINE XMVECTOR XMVector3AngleBetweenVectors
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -8575,8 +8574,8 @@ XMFINLINE XMVECTOR XMVector3AngleBetweenVectors
 
 XMFINLINE XMVECTOR XMVector3LinePointDistance
 (
-    FXMVECTOR LinePoint1, 
-    FXMVECTOR LinePoint2, 
+    FXMVECTOR LinePoint1,
+    FXMVECTOR LinePoint2,
     FXMVECTOR Point
 )
 {
@@ -8590,7 +8589,7 @@ XMFINLINE XMVECTOR XMVector3LinePointDistance
     XMVECTOR Result;
 
     // Given a vector PointVector from LinePoint1 to Point and a vector
-    // LineVector from LinePoint1 to LinePoint2, the scaled distance 
+    // LineVector from LinePoint1 to LinePoint2, the scaled distance
     // PointProjectionScale from LinePoint1 to the perpendicular projection
     // of PointVector onto the line is defined as:
     //
@@ -8630,9 +8629,9 @@ XMFINLINE XMVECTOR XMVector3LinePointDistance
 
 XMFINLINE VOID XMVector3ComponentsFromNormal
 (
-    XMVECTOR* pParallel, 
-    XMVECTOR* pPerpendicular, 
-    FXMVECTOR  V, 
+    XMVECTOR* pParallel,
+    XMVECTOR* pPerpendicular,
+    FXMVECTOR  V,
     FXMVECTOR  Normal
 )
 {
@@ -8667,7 +8666,7 @@ XMFINLINE VOID XMVector3ComponentsFromNormal
 
 XMFINLINE XMVECTOR XMVector3Rotate
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR RotationQuaternion
 )
 {
@@ -8703,7 +8702,7 @@ XMFINLINE XMVECTOR XMVector3Rotate
 
 XMFINLINE XMVECTOR XMVector3InverseRotate
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR RotationQuaternion
 )
 {
@@ -8737,7 +8736,7 @@ XMFINLINE XMVECTOR XMVector3InverseRotate
 
 XMFINLINE XMVECTOR XMVector3Transform
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -8777,11 +8776,11 @@ XMFINLINE XMVECTOR XMVector3Transform
 
 XMINLINE XMFLOAT4* XMVector3TransformStream
 (
-    XMFLOAT4*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT4*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -8812,7 +8811,7 @@ XMINLINE XMFLOAT4* XMVector3TransformStream
 
         XMStoreFloat4((XMFLOAT4*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -8837,7 +8836,7 @@ XMINLINE XMFLOAT4* XMVector3TransformStream
         X = _mm_mul_ps(X,M.r[0]);
         vResult = _mm_add_ps(vResult,X);
         _mm_storeu_ps(reinterpret_cast<float *>(pOutputVector),vResult);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -8850,11 +8849,11 @@ XMINLINE XMFLOAT4* XMVector3TransformStream
 
 XMINLINE XMFLOAT4* XMVector3TransformStreamNC
 (
-    XMFLOAT4*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT4*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -8868,7 +8867,7 @@ XMINLINE XMFLOAT4* XMVector3TransformStreamNC
 
 XMFINLINE XMVECTOR XMVector3TransformCoord
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -8916,11 +8915,11 @@ XMFINLINE XMVECTOR XMVector3TransformCoord
 
 XMINLINE XMFLOAT3* XMVector3TransformCoordStream
 (
-    XMFLOAT3*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT3*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -8960,7 +8959,7 @@ XMINLINE XMFLOAT3* XMVector3TransformCoordStream
 
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -8993,7 +8992,7 @@ XMINLINE XMFLOAT3* XMVector3TransformCoordStream
     	_mm_store_ss(&reinterpret_cast<XMFLOAT3 *>(pOutputVector)->y,vResult);
         vResult = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(0,3,2,1));
 	    _mm_store_ss(&reinterpret_cast<XMFLOAT3 *>(pOutputVector)->z,vResult);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9006,7 +9005,7 @@ XMINLINE XMFLOAT3* XMVector3TransformCoordStream
 
 XMFINLINE XMVECTOR XMVector3TransformNormal
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -9045,11 +9044,11 @@ XMFINLINE XMVECTOR XMVector3TransformNormal
 
 XMINLINE XMFLOAT3* XMVector3TransformNormalStream
 (
-    XMFLOAT3*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT3*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -9083,7 +9082,7 @@ XMINLINE XMFLOAT3* XMVector3TransformNormalStream
 
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9112,7 +9111,7 @@ XMINLINE XMFLOAT3* XMVector3TransformNormalStream
     	_mm_store_ss(&reinterpret_cast<XMFLOAT3 *>(pOutputVector)->y,vResult);
         vResult = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(0,3,2,1));
 	    _mm_store_ss(&reinterpret_cast<XMFLOAT3 *>(pOutputVector)->z,vResult);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9125,15 +9124,15 @@ XMINLINE XMFLOAT3* XMVector3TransformNormalStream
 
 XMINLINE XMVECTOR XMVector3Project
 (
-    FXMVECTOR V, 
-    FLOAT    ViewportX, 
-    FLOAT    ViewportY, 
-    FLOAT    ViewportWidth, 
-    FLOAT    ViewportHeight, 
-    FLOAT    ViewportMinZ, 
-    FLOAT    ViewportMaxZ, 
-    CXMMATRIX Projection, 
-    CXMMATRIX View, 
+    FXMVECTOR V,
+    FLOAT    ViewportX,
+    FLOAT    ViewportY,
+    FLOAT    ViewportWidth,
+    FLOAT    ViewportHeight,
+    FLOAT    ViewportMinZ,
+    FLOAT    ViewportMaxZ,
+    CXMMATRIX Projection,
+    CXMMATRIX View,
     CXMMATRIX World
 )
 {
@@ -9146,7 +9145,7 @@ XMINLINE XMVECTOR XMVector3Project
     FLOAT    HalfViewportWidth = ViewportWidth * 0.5f;
     FLOAT    HalfViewportHeight = ViewportHeight * 0.5f;
 
-    Scale = XMVectorSet(HalfViewportWidth, 
+    Scale = XMVectorSet(HalfViewportWidth,
                         -HalfViewportHeight,
                         ViewportMaxZ - ViewportMinZ,
                         0.0f);
@@ -9173,7 +9172,7 @@ XMINLINE XMVECTOR XMVector3Project
     FLOAT    HalfViewportWidth = ViewportWidth * 0.5f;
     FLOAT    HalfViewportHeight = ViewportHeight * 0.5f;
 
-    Scale = XMVectorSet(HalfViewportWidth, 
+    Scale = XMVectorSet(HalfViewportWidth,
                         -HalfViewportHeight,
                         ViewportMaxZ - ViewportMinZ,
                         0.0f);
@@ -9196,19 +9195,19 @@ XMINLINE XMVECTOR XMVector3Project
 
 XMINLINE XMFLOAT3* XMVector3ProjectStream
 (
-    XMFLOAT3*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
-    FLOAT           ViewportX, 
-    FLOAT           ViewportY, 
-    FLOAT           ViewportWidth, 
-    FLOAT           ViewportHeight, 
-    FLOAT           ViewportMinZ, 
-    FLOAT           ViewportMaxZ, 
-    CXMMATRIX     Projection, 
-    CXMMATRIX     View, 
+    XMFLOAT3*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
+    FLOAT           ViewportX,
+    FLOAT           ViewportY,
+    FLOAT           ViewportWidth,
+    FLOAT           ViewportHeight,
+    FLOAT           ViewportMinZ,
+    FLOAT           ViewportMaxZ,
+    CXMMATRIX     Projection,
+    CXMMATRIX     View,
     CXMMATRIX     World
 )
 {
@@ -9228,7 +9227,7 @@ XMINLINE XMFLOAT3* XMVector3ProjectStream
     XMASSERT(pOutputStream);
     XMASSERT(pInputStream);
 
-    Scale = XMVectorSet(HalfViewportWidth, 
+    Scale = XMVectorSet(HalfViewportWidth,
                         -HalfViewportHeight,
                         ViewportMaxZ - ViewportMinZ,
                         1.0f);
@@ -9251,7 +9250,7 @@ XMINLINE XMFLOAT3* XMVector3ProjectStream
 
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9271,7 +9270,7 @@ XMINLINE XMFLOAT3* XMVector3ProjectStream
     BYTE*    pInputVector = (BYTE*)pInputStream;
     BYTE*    pOutputVector = (BYTE*)pOutputStream;
 
-    Scale = XMVectorSet(HalfViewportWidth, 
+    Scale = XMVectorSet(HalfViewportWidth,
                         -HalfViewportHeight,
                         ViewportMaxZ - ViewportMinZ,
                         1.0f);
@@ -9293,7 +9292,7 @@ XMINLINE XMFLOAT3* XMVector3ProjectStream
         Result = _mm_mul_ps(Result,Scale);
         Result = _mm_add_ps(Result,Offset);
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
     return pOutputStream;
@@ -9306,15 +9305,15 @@ XMINLINE XMFLOAT3* XMVector3ProjectStream
 
 XMFINLINE XMVECTOR XMVector3Unproject
 (
-    FXMVECTOR V, 
-    FLOAT    ViewportX, 
-    FLOAT    ViewportY, 
-    FLOAT    ViewportWidth, 
-    FLOAT    ViewportHeight, 
-    FLOAT    ViewportMinZ, 
-    FLOAT    ViewportMaxZ, 
-    CXMMATRIX Projection, 
-    CXMMATRIX View, 
+    FXMVECTOR V,
+    FLOAT    ViewportX,
+    FLOAT    ViewportY,
+    FLOAT    ViewportWidth,
+    FLOAT    ViewportHeight,
+    FLOAT    ViewportMinZ,
+    FLOAT    ViewportMaxZ,
+    CXMMATRIX Projection,
+    CXMMATRIX View,
     CXMMATRIX World
 )
 {
@@ -9388,19 +9387,19 @@ XMFINLINE XMVECTOR XMVector3Unproject
 
 XMINLINE XMFLOAT3* XMVector3UnprojectStream
 (
-    XMFLOAT3*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT3* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
-    FLOAT           ViewportX, 
-    FLOAT           ViewportY, 
-    FLOAT           ViewportWidth, 
-    FLOAT           ViewportHeight, 
-    FLOAT           ViewportMinZ, 
-    FLOAT           ViewportMaxZ, 
-    CXMMATRIX     Projection, 
-    CXMMATRIX     View, 
+    XMFLOAT3*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT3* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
+    FLOAT           ViewportX,
+    FLOAT           ViewportY,
+    FLOAT           ViewportWidth,
+    FLOAT           ViewportHeight,
+    FLOAT           ViewportMinZ,
+    FLOAT           ViewportMaxZ,
+    CXMMATRIX     Projection,
+    CXMMATRIX     View,
     CXMMATRIX     World)
 {
 #if defined(_XM_NO_INTRINSICS_)
@@ -9445,7 +9444,7 @@ XMINLINE XMFLOAT3* XMVector3UnprojectStream
 
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9492,7 +9491,7 @@ XMINLINE XMFLOAT3* XMVector3UnprojectStream
 
         XMStoreFloat3((XMFLOAT3*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -9515,7 +9514,7 @@ XMINLINE XMFLOAT3* XMVector3UnprojectStream
 
 XMFINLINE BOOL XMVector4Equal
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9533,7 +9532,7 @@ XMFINLINE BOOL XMVector4Equal
 
 XMFINLINE UINT XMVector4EqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9541,14 +9540,14 @@ XMFINLINE UINT XMVector4EqualR
 
     UINT CR = 0;
 
-    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] == V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] == V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] == V2.vector4_f32[2]) &&
         (V1.vector4_f32[3] == V2.vector4_f32[3]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] != V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] != V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] != V2.vector4_f32[2]) &&
         (V1.vector4_f32[3] != V2.vector4_f32[3]))
@@ -9578,7 +9577,7 @@ XMFINLINE UINT XMVector4EqualR
 
 XMFINLINE BOOL XMVector4EqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9596,20 +9595,20 @@ XMFINLINE BOOL XMVector4EqualInt
 
 XMFINLINE UINT XMVector4EqualIntR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if (V1.vector4_u32[0] == V2.vector4_u32[0] && 
+    if (V1.vector4_u32[0] == V2.vector4_u32[0] &&
         V1.vector4_u32[1] == V2.vector4_u32[1] &&
         V1.vector4_u32[2] == V2.vector4_u32[2] &&
         V1.vector4_u32[3] == V2.vector4_u32[3])
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if (V1.vector4_u32[0] != V2.vector4_u32[0] && 
+    else if (V1.vector4_u32[0] != V2.vector4_u32[0] &&
         V1.vector4_u32[1] != V2.vector4_u32[1] &&
         V1.vector4_u32[2] != V2.vector4_u32[2] &&
         V1.vector4_u32[3] != V2.vector4_u32[3])
@@ -9637,8 +9636,8 @@ XMFINLINE UINT XMVector4EqualIntR
 
 XMFINLINE BOOL XMVector4NearEqual
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR Epsilon
 )
 {
@@ -9670,7 +9669,7 @@ XMFINLINE BOOL XMVector4NearEqual
 
 XMFINLINE BOOL XMVector4NotEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9688,7 +9687,7 @@ XMFINLINE BOOL XMVector4NotEqual
 
 XMFINLINE BOOL XMVector4NotEqualInt
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9706,7 +9705,7 @@ XMFINLINE BOOL XMVector4NotEqualInt
 
 XMFINLINE BOOL XMVector4Greater
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9724,20 +9723,20 @@ XMFINLINE BOOL XMVector4Greater
 
 XMFINLINE UINT XMVector4GreaterR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if (V1.vector4_f32[0] > V2.vector4_f32[0] && 
+    if (V1.vector4_f32[0] > V2.vector4_f32[0] &&
         V1.vector4_f32[1] > V2.vector4_f32[1] &&
         V1.vector4_f32[2] > V2.vector4_f32[2] &&
         V1.vector4_f32[3] > V2.vector4_f32[3])
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if (V1.vector4_f32[0] <= V2.vector4_f32[0] && 
+    else if (V1.vector4_f32[0] <= V2.vector4_f32[0] &&
         V1.vector4_f32[1] <= V2.vector4_f32[1] &&
         V1.vector4_f32[2] <= V2.vector4_f32[2] &&
         V1.vector4_f32[3] <= V2.vector4_f32[3])
@@ -9766,7 +9765,7 @@ XMFINLINE UINT XMVector4GreaterR
 
 XMFINLINE BOOL XMVector4GreaterOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9784,20 +9783,20 @@ XMFINLINE BOOL XMVector4GreaterOrEqual
 
 XMFINLINE UINT XMVector4GreaterOrEqualR
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
     UINT CR = 0;
-    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) && 
+    if ((V1.vector4_f32[0] >= V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] >= V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] >= V2.vector4_f32[2]) &&
         (V1.vector4_f32[3] >= V2.vector4_f32[3]))
     {
         CR = XM_CRMASK_CR6TRUE;
     }
-    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) && 
+    else if ((V1.vector4_f32[0] < V2.vector4_f32[0]) &&
         (V1.vector4_f32[1] < V2.vector4_f32[1]) &&
         (V1.vector4_f32[2] < V2.vector4_f32[2]) &&
         (V1.vector4_f32[3] < V2.vector4_f32[3]))
@@ -9827,7 +9826,7 @@ XMFINLINE UINT XMVector4GreaterOrEqualR
 
 XMFINLINE BOOL XMVector4Less
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9845,7 +9844,7 @@ XMFINLINE BOOL XMVector4Less
 
 XMFINLINE BOOL XMVector4LessOrEqual
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -9863,12 +9862,12 @@ XMFINLINE BOOL XMVector4LessOrEqual
 
 XMFINLINE BOOL XMVector4InBounds
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
-    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    return (((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1]) &&
         (V.vector4_f32[2] <= Bounds.vector4_f32[2] && V.vector4_f32[2] >= -Bounds.vector4_f32[2]) &&
         (V.vector4_f32[3] <= Bounds.vector4_f32[3] && V.vector4_f32[3] >= -Bounds.vector4_f32[3])) != 0);
@@ -9892,14 +9891,14 @@ XMFINLINE BOOL XMVector4InBounds
 
 XMFINLINE UINT XMVector4InBoundsR
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     FXMVECTOR Bounds
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
 
     UINT CR = 0;
-    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) && 
+    if ((V.vector4_f32[0] <= Bounds.vector4_f32[0] && V.vector4_f32[0] >= -Bounds.vector4_f32[0]) &&
         (V.vector4_f32[1] <= Bounds.vector4_f32[1] && V.vector4_f32[1] >= -Bounds.vector4_f32[1]) &&
         (V.vector4_f32[2] <= Bounds.vector4_f32[2] && V.vector4_f32[2] >= -Bounds.vector4_f32[2]) &&
         (V.vector4_f32[3] <= Bounds.vector4_f32[3] && V.vector4_f32[3] >= -Bounds.vector4_f32[3]))
@@ -9977,7 +9976,7 @@ XMFINLINE BOOL XMVector4IsInfinite
 
 XMFINLINE XMVECTOR XMVector4Dot
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -10008,13 +10007,13 @@ XMFINLINE XMVECTOR XMVector4Dot
 
 XMFINLINE XMVECTOR XMVector4Cross
 (
-    FXMVECTOR V1, 
-    FXMVECTOR V2, 
+    FXMVECTOR V1,
+    FXMVECTOR V2,
     FXMVECTOR V3
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
-    XMVECTOR Result;   
+    XMVECTOR Result;
 
     Result.vector4_f32[0] = (((V2.vector4_f32[2]*V3.vector4_f32[3])-(V2.vector4_f32[3]*V3.vector4_f32[2]))*V1.vector4_f32[1])-(((V2.vector4_f32[1]*V3.vector4_f32[3])-(V2.vector4_f32[3]*V3.vector4_f32[1]))*V1.vector4_f32[2])+(((V2.vector4_f32[1]*V3.vector4_f32[2])-(V2.vector4_f32[2]*V3.vector4_f32[1]))*V1.vector4_f32[3]);
     Result.vector4_f32[1] = (((V2.vector4_f32[3]*V3.vector4_f32[2])-(V2.vector4_f32[2]*V3.vector4_f32[3]))*V1.vector4_f32[0])-(((V2.vector4_f32[3]*V3.vector4_f32[0])-(V2.vector4_f32[0]*V3.vector4_f32[3]))*V1.vector4_f32[2])+(((V2.vector4_f32[2]*V3.vector4_f32[0])-(V2.vector4_f32[0]*V3.vector4_f32[2]))*V1.vector4_f32[3]);
@@ -10201,7 +10200,7 @@ XMFINLINE XMVECTOR XMVector4Length
     FXMVECTOR V
 )
 {
-#if defined(_XM_NO_INTRINSICS_) 
+#if defined(_XM_NO_INTRINSICS_)
 
     XMVECTOR Result;
 
@@ -10290,7 +10289,7 @@ XMFINLINE XMVECTOR XMVector4Normalize
     if (fLength > 0) {
         fLength = 1.0f/fLength;
     }
-    
+
     vResult.vector4_f32[0] = V.vector4_f32[0]*fLength;
     vResult.vector4_f32[1] = V.vector4_f32[1]*fLength;
     vResult.vector4_f32[2] = V.vector4_f32[2]*fLength;
@@ -10338,8 +10337,8 @@ XMFINLINE XMVECTOR XMVector4Normalize
 
 XMFINLINE XMVECTOR XMVector4ClampLength
 (
-    FXMVECTOR V, 
-    FLOAT    LengthMin, 
+    FXMVECTOR V,
+    FLOAT    LengthMin,
     FLOAT    LengthMax
 )
 {
@@ -10365,8 +10364,8 @@ XMFINLINE XMVECTOR XMVector4ClampLength
 
 XMFINLINE XMVECTOR XMVector4ClampLengthV
 (
-    FXMVECTOR V, 
-    FXMVECTOR LengthMin, 
+    FXMVECTOR V,
+    FXMVECTOR LengthMin,
     FXMVECTOR LengthMax
 )
 {
@@ -10472,11 +10471,11 @@ XMFINLINE XMVECTOR XMVector4ClampLengthV
 
 XMFINLINE XMVECTOR XMVector4Reflect
 (
-    FXMVECTOR Incident, 
+    FXMVECTOR Incident,
     FXMVECTOR Normal
 )
 {
-#if defined(_XM_NO_INTRINSICS_) 
+#if defined(_XM_NO_INTRINSICS_)
 
     XMVECTOR Result;
 
@@ -10502,8 +10501,8 @@ XMFINLINE XMVECTOR XMVector4Reflect
 
 XMFINLINE XMVECTOR XMVector4Refract
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FLOAT    RefractionIndex
 )
 {
@@ -10524,8 +10523,8 @@ XMFINLINE XMVECTOR XMVector4Refract
 
 XMFINLINE XMVECTOR XMVector4RefractV
 (
-    FXMVECTOR Incident, 
-    FXMVECTOR Normal, 
+    FXMVECTOR Incident,
+    FXMVECTOR Normal,
     FXMVECTOR RefractionIndex
 )
 {
@@ -10535,7 +10534,7 @@ XMFINLINE XMVECTOR XMVector4RefractV
     XMVECTOR        R;
     CONST XMVECTOR  Zero = XMVectorZero();
 
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
 
     IDotN = XMVector4Dot(Incident, Normal);
@@ -10566,7 +10565,7 @@ XMFINLINE XMVECTOR XMVector4RefractV
     }
 
 #elif defined(_XM_SSE_INTRINSICS_)
-    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) + 
+    // Result = RefractionIndex * Incident - Normal * (RefractionIndex * dot(Incident, Normal) +
     // sqrt(1 - RefractionIndex * RefractionIndex * (1 - dot(Incident, Normal) * dot(Incident, Normal))))
 
     XMVECTOR IDotN = XMVector4Dot(Incident,Normal);
@@ -10629,7 +10628,7 @@ XMFINLINE XMVECTOR XMVector4Orthogonal
 
 XMFINLINE XMVECTOR XMVector4AngleBetweenNormalsEst
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -10662,7 +10661,7 @@ XMFINLINE XMVECTOR XMVector4AngleBetweenNormalsEst
 
 XMFINLINE XMVECTOR XMVector4AngleBetweenNormals
 (
-    FXMVECTOR N1, 
+    FXMVECTOR N1,
     FXMVECTOR N2
 )
 {
@@ -10695,7 +10694,7 @@ XMFINLINE XMVECTOR XMVector4AngleBetweenNormals
 
 XMFINLINE XMVECTOR XMVector4AngleBetweenVectors
 (
-    FXMVECTOR V1, 
+    FXMVECTOR V1,
     FXMVECTOR V2
 )
 {
@@ -10749,7 +10748,7 @@ XMFINLINE XMVECTOR XMVector4AngleBetweenVectors
 
 XMFINLINE XMVECTOR XMVector4Transform
 (
-    FXMVECTOR V, 
+    FXMVECTOR V,
     CXMMATRIX M
 )
 {
@@ -10790,11 +10789,11 @@ XMFINLINE XMVECTOR XMVector4Transform
 
 XMINLINE XMFLOAT4* XMVector4TransformStream
 (
-    XMFLOAT4*       pOutputStream, 
-    UINT            OutputStride, 
-    CONST XMFLOAT4* pInputStream, 
-    UINT            InputStride, 
-    UINT            VectorCount, 
+    XMFLOAT4*       pOutputStream,
+    UINT            OutputStride,
+    CONST XMFLOAT4* pInputStream,
+    UINT            InputStride,
+    UINT            VectorCount,
     CXMMATRIX     M
 )
 {
@@ -10832,7 +10831,7 @@ XMINLINE XMFLOAT4* XMVector4TransformStream
 
         XMStoreFloat4((XMFLOAT4*)pOutputVector, Result);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
 
@@ -10859,12 +10858,12 @@ XMINLINE XMFLOAT4* XMVector4TransformStream
         vTempz = _mm_mul_ps(vTempz,M.r[2]);
         vTempw = _mm_mul_ps(vTempw,M.r[3]);
         vTempx = _mm_add_ps(vTempx,vTempy);
-        vTempw = _mm_add_ps(vTempw,vTempz); 
+        vTempw = _mm_add_ps(vTempw,vTempz);
         vTempw = _mm_add_ps(vTempw,vTempx);
         // Store the transformed vector
         _mm_storeu_ps(reinterpret_cast<float *>(pOutputVector),vTempw);
 
-        pInputVector += InputStride; 
+        pInputVector += InputStride;
         pOutputVector += OutputStride;
     }
     return pOutputStream;
@@ -13276,4 +13275,3 @@ XMFINLINE _XMU555& _XMU555::operator=
 #endif
 
 #endif // __XNAMATHVECTOR_INL__
-

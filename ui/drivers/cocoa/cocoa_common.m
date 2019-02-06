@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -43,6 +43,11 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
+#ifdef HAVE_COCOATOUCH
+#import "GCDWebUploader.h"
+#import "WebServer.h"
+#endif
+
 static CocoaView* g_instance;
 
 #if defined(HAVE_COCOA)
@@ -55,6 +60,13 @@ void *nsview_get_ptr(void)
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
+
+#ifdef HAVE_COCOATOUCH
+@interface CocoaView()<GCDWebUploaderDelegate> {
+
+}
+@end
+#endif
 
 @implementation CocoaView
 
@@ -71,26 +83,27 @@ void *glkitview_init(void);
 {
    if (!g_instance)
       g_instance = [CocoaView new];
-   
+
    return g_instance;
 }
 
 - (id)init
 {
    self = [super init];
-   
+
 #if defined(HAVE_COCOA)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
-   
+
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
-   
+#if TARGET_OS_IOS
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
 #endif
-   
+#endif
+
    return self;
 }
 
@@ -121,20 +134,20 @@ void *glkitview_init(void);
 {
     NSDragOperation sourceDragMask = [sender draggingSourceOperationMask];
     NSPasteboard *pboard = [sender draggingPasteboard];
-    
+
     if ( [[pboard types] containsObject:NSFilenamesPboardType] )
     {
         if (sourceDragMask & NSDragOperationCopy)
             return NSDragOperationCopy;
     }
-    
+
     return NSDragOperationNone;
 }
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
     NSPasteboard *pboard = [sender draggingPasteboard];
-    
+
     if ( [[pboard types] containsObject:NSURLPboardType])
     {
         NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
@@ -152,7 +165,7 @@ void *glkitview_init(void);
     [self setNeedsDisplay: YES];
 }
 
-#elif defined(HAVE_COCOATOUCH)
+#elif TARGET_OS_IOS
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
 {
     return UIRectEdgeBottom;
@@ -161,15 +174,6 @@ void *glkitview_init(void);
 -(BOOL)prefersHomeIndicatorAutoHidden
 {
     return NO;
-}
-
-- (void)viewDidAppear:(BOOL)animated
-{
-   /* Pause Menus. */
-   [self showPauseIndicator];
-   if (@available(iOS 11.0, *)) {
-        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
-   }
 }
 
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
@@ -214,7 +218,7 @@ void *glkitview_init(void);
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
    SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));
-    
+
     if ([screen respondsToSelector:selector])
     {
         screenSize  = [[screen coordinateSpace] bounds];
@@ -226,10 +230,10 @@ void *glkitview_init(void);
         width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
         height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
     }
-   
+
    tenpctw          = width  / 10.0f;
    tenpcth          = height / 10.0f;
-   
+
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
    [self adjustViewFrameForSafeArea];
@@ -268,10 +272,62 @@ void *glkitview_init(void);
       default:
          return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskAll);
    }
-   
+
    return YES;
 }
 #endif
+
+#ifdef HAVE_COCOATOUCH
+- (void)viewDidAppear:(BOOL)animated
+{
+#if TARGET_OS_IOS
+    /* Pause Menus. */
+    [self showPauseIndicator];
+    if (@available(iOS 11.0, *)) {
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+    }
+#elif TARGET_OS_TV
+
+#endif
+}
+
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+#if TARGET_OS_TV
+    [[WebServer sharedInstance] startUploader];
+    [WebServer sharedInstance].webUploader.delegate = self;
+#endif
+}
+
+#pragma mark GCDWebServerDelegate
+- (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server {
+    NSMutableString *servers = [[NSMutableString alloc] init];
+    if ( server.serverURL != nil ) {
+        [servers appendString:[NSString stringWithFormat:@"%@",server.serverURL]];
+    }
+    if ( servers.length > 0 ) {
+        [servers appendString:@"\n\n"];
+    }
+    if ( server.bonjourServerURL != nil ) {
+        [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
+    }
+#if TARGET_OS_TV
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    }]];
+    [self presentViewController:alert animated:YES completion:^{
+    }];
+#elif TARGET_OS_IOS
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Web Server Started" message:[NSString stringWithFormat:@"To transfer ROMs from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [[WebServer sharedInstance] webUploader].delegate = nil;
+        [[WebServer sharedInstance] stopUploader];
+    }]];
+    [self presentViewController:alert animated:YES completion:^{
+    }];
+#endif
+}
+#endif  // end HAVE_COCOATOUCH
 
 #ifdef HAVE_AVFOUNDATION
 #include "../../gfx/common/gl_common.h"
@@ -315,16 +371,16 @@ static void event_process_camera_frame(void *pbuf_ptr)
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pbuf_ptr;
     size_t width                 = CVPixelBufferGetWidth(pixelBuffer);
     size_t height                = CVPixelBufferGetHeight(pixelBuffer);
-    
+
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
-    
+
     (void)width;
     (void)height;
-    
+
     /*TODO - rewrite all this.
      *
      * create a texture from our render target.
-     * textureCache will be what you previously 
+     * textureCache will be what you previously
      * made with RCVOpenGLTextureCacheCreate.
      */
 #ifdef HAVE_OPENGLES
@@ -342,17 +398,17 @@ static void event_process_camera_frame(void *pbuf_ptr)
         RARCH_ERR("[apple_camera]: RCVOpenGLTextureCacheCreateTextureFromImage failed.\n");
         return;
     }
-    
+
     outputTexture = RCVOpenGLTextureGetName(renderTexture);
 
     gl_bind_texture(outputTexture, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
-    
+
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
     [[NSNotificationCenter defaultCenter] postNotificationName:@"NewCameraTextureReady" object:nil];
     newFrame = true;
-    
+
     glBindTexture(GL_TEXTURE_2D, 0);
-    
+
     RCVOpenGLTextureCacheFlush(textureCache, 0);
 
     CFRelease(renderTexture);
@@ -381,42 +437,42 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     CVReturn ret = RCVOpenGLTextureCacheCreate(kCFAllocatorDefault, NULL,
     RCVOpenGLGetCurrentContext(), NULL, &textureCache);
     (void)ret;
-    
+
     /* Setup Capture Session. */
     _session = [[AVCaptureSession alloc] init];
     [_session beginConfiguration];
-    
+
     /* TODO: dehardcode this based on device capabilities */
     _sessionPreset = AVCaptureSessionPreset640x480;
-    
+
     /* Set preset session size. */
     [_session setSessionPreset:_sessionPreset];
-    
+
     /* Creata a video device and input from that Device.  Add the input to the capture session. */
     videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if (videoDevice == nil)
         retro_assert(0);
-    
+
     /* Add the device to the session. */
     input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
-    
+
     if (error)
     {
         RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
         retro_assert(0);
     }
-    
+
     [_session addInput:input];
-    
+
     /* Create the output for the capture session. */
     dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
     [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; /* Probably want to set this to NO when recording. */
-    
+
 	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
-    
+
     /* Set dispatch to be on the main thread so OpenGL can do things with the data. */
     [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
-    
+
     [_session addOutput:dataOutput];
     [_session commitConfiguration];
 }
@@ -451,10 +507,10 @@ static CLLocationAccuracy currentVerticalAccuracy;
 - (bool)onLocationHasChanged
 {
    bool hasChanged = locationChanged;
-    
+
    if (hasChanged)
       locationChanged = false;
-    
+
    return hasChanged;
 }
 
@@ -471,7 +527,7 @@ static CLLocationAccuracy currentVerticalAccuracy;
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     CLLocation *location      = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
-    
+
     locationChanged           = true;
     currentLatitude           = [location coordinate].latitude;
     currentLongitude          = [location coordinate].longitude;
@@ -497,10 +553,10 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 - (void)onLocationInit
 {
-    /* Create the location manager 
+    /* Create the location manager
      * if this object does not already have one.
      */
-    
+
     if (locationManager == nil)
         locationManager             = [[CLLocationManager alloc] init];
     locationManager.delegate        = self;
@@ -521,7 +577,7 @@ typedef struct apple_camera
 static void *apple_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    applecamera_t *applecamera;
-    
+
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
       RARCH_ERR("applecamera returns OpenGL texture.\n");
@@ -540,7 +596,7 @@ static void *apple_camera_init(const char *device, uint64_t caps, unsigned width
 static void apple_camera_free(void *data)
 {
    applecamera_t *applecamera = (applecamera_t*)data;
-    
+
    [[CocoaView get] onCameraFree];
 
    if (applecamera)
@@ -571,14 +627,14 @@ static bool apple_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t f
 
    if (frame_gl_cb && newFrame)
    {
-	   /* FIXME: Identity for now. 
+	   /* FIXME: Identity for now.
        * Use proper texture matrix as returned by iOS Camera (if at all?). */
 	   static const float affine[] = {
 		   1.0f, 0.0f, 0.0f,
 		   0.0f, 1.0f, 0.0f,
 		   0.0f, 0.0f, 1.0f
 	   };
-       
+
 	   frame_gl_cb(outputTexture, GL_TEXTURE_2D, affine);
        newFrame = false;
    }
@@ -607,25 +663,25 @@ static void *apple_location_init(void)
 	applelocation_t *applelocation = (applelocation_t*)calloc(1, sizeof(applelocation_t));
 	if (!applelocation)
 		return NULL;
-    
+
    [[CocoaView get] onLocationInit];
-	
+
 	return applelocation;
 }
 
 static void apple_location_set_interval(void *data, unsigned interval_update_ms, unsigned interval_distance)
 {
    (void)data;
-	
+
    locationManager.distanceFilter = interval_distance ? interval_distance : kCLDistanceFilterNone;
 }
 
 static void apple_location_free(void *data)
 {
 	applelocation_t *applelocation = (applelocation_t*)data;
-	
+
    /* TODO - free location manager? */
-	
+
 	if (applelocation)
 		free(applelocation);
 	applelocation = NULL;
@@ -634,7 +690,7 @@ static void apple_location_free(void *data)
 static bool apple_location_start(void *data)
 {
 	(void)data;
-	
+
    [locationManager startUpdatingLocation];
 	return true;
 }
@@ -642,7 +698,7 @@ static bool apple_location_start(void *data)
 static void apple_location_stop(void *data)
 {
 	(void)data;
-	
+
    [locationManager stopUpdatingLocation];
 }
 
@@ -655,7 +711,7 @@ static bool apple_location_get_position(void *data, double *lat, double *lon, do
 
    if (!ret)
       goto fail;
-	
+
    *lat            = currentLatitude;
    *lon            = currentLongitude;
    *horiz_accuracy = currentHorizontalAccuracy;
@@ -680,4 +736,3 @@ location_driver_t location_corelocation = {
 	"corelocation",
 };
 #endif
-

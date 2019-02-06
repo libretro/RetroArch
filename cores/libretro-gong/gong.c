@@ -35,7 +35,6 @@
 
 #define WIDTH 356
 #define HEIGHT 200
-#define FPS (60000.0f / 1000.0f)
 
 static retro_log_printf_t GONG_CORE_PREFIX(log_cb);
 static retro_video_refresh_t GONG_CORE_PREFIX(video_cb);
@@ -61,6 +60,7 @@ static bool is_initialized = 0;
 static unsigned player1_score = 0;
 static unsigned player2_score = 0;
 static float current_play_points = 0.0f;
+static float refresh = 60.0f;
 
 static unsigned char *video_buf = NULL;
 
@@ -84,7 +84,7 @@ typedef struct
    float last_dt;
 } Game_Input;
 
-static Game_Input g_input = {0};
+static Game_Input g_input = {{{0}}};
 
 typedef struct
 {
@@ -145,7 +145,7 @@ void GONG_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *inf
    info->geometry.max_width    = WIDTH;
    info->geometry.max_height   = HEIGHT;
    info->geometry.aspect_ratio = 16.0f / 9.0f;
-   info->timing.fps            = FPS;
+   info->timing.fps            = refresh;
    info->timing.sample_rate    = 44100.0;
 }
 
@@ -164,8 +164,6 @@ void GONG_CORE_PREFIX(retro_init)(void)
    game_buffer.height = HEIGHT;
    game_buffer.pitch = WIDTH * sizeof(unsigned);
    game_buffer.memory = video_buf;
-
-   g_input.last_dt = 1.0f / FPS;
 }
 
 void GONG_CORE_PREFIX(retro_deinit)(void)
@@ -182,6 +180,7 @@ void GONG_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    bool no_content = true;
 
    static const struct retro_variable vars[] = {
+      { "gong_refresh", "Video Refresh Rate (restart); 60|75|100|120" },
       { NULL, NULL },
    };
 
@@ -190,6 +189,19 @@ void GONG_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+}
+
+static void check_variables(void)
+{
+   struct retro_variable var        = {0};
+
+   var.key = "gong_refresh";
+
+   if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      refresh = atoi(var.value);
+      g_input.last_dt = 1.0f / refresh;
+   }
 }
 
 void GONG_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
@@ -264,6 +276,8 @@ bool GONG_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
+   check_variables();
+
    if (!GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (GONG_CORE_PREFIX(log_cb))
@@ -324,6 +338,10 @@ void GONG_CORE_PREFIX(retro_run)(void)
    int i = 0;
    int16_t analogYLeft1 = 0;
    int16_t analogYRight1 = 0;
+   bool updated = false;
+
+   if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
 
    GONG_CORE_PREFIX(input_poll_cb)();
 
@@ -460,7 +478,7 @@ static void draw_number(Game_Offscreen_Buffer *buffer, unsigned number, unsigned
             draw_rect(buffer, color, at_x + 2.f, y, .5f, 4.5f);
             break;
          }
- 
+
          case 2:
          {
             draw_rect(buffer, color, at_x - 2.f, y - 2.f, .5f, 2.f);
@@ -470,7 +488,7 @@ static void draw_number(Game_Offscreen_Buffer *buffer, unsigned number, unsigned
             draw_rect(buffer, color, at_x, y - 4.f, 2.5f, .5f);
             break;
          }
- 
+
          case 3:
          {
             draw_rect(buffer, color, at_x + 2.f, y, .5f, 4.f);
@@ -565,7 +583,7 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
    {
       float speed = 80.f;
       player1_dpy = 0.f;
-      
+
       if (is_down(input->buttons[B_SPEED_UP]))
          speed = 150.f;
 

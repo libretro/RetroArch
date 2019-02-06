@@ -58,14 +58,14 @@ static void tremolocore_init(struct tremolo_core *core,float depth,int samplerat
       unsigned i;
       double env;
       core->index = 0;
-	core->maxindex = samplerate/freq;	
+	core->maxindex = samplerate/freq;
 	core->wavetable = malloc(core->maxindex*sizeof(float));
 	memset(core->wavetable, 0, core->maxindex * sizeof(float));
 	for (i = 0; i < core->maxindex; i++) {
 	env = freq * i / samplerate;
 	env = sin((M_PI*2) * fmod(env + 0.25, 1.0));
 	core->wavetable[i] = env * (1 - fabs(offset)) + offset;
-      }	
+      }
 }
 
 float tremolocore_core(struct tremolo_core *core,float in)
@@ -130,4 +130,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-

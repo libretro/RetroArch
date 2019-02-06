@@ -198,6 +198,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(HAVE_LIBNX)
+   time_ticks = armGetSystemTick();
 #endif
 
    return time_ticks;
@@ -507,13 +509,13 @@ unsigned cpu_features_get_core_amount(void)
 		case 3:
 			/*Old 3/2DS*/
 			return 2;
-	   
+
 		case 2:
 		case 4:
 		case 5:
 			/*New 3/2DS*/
 			return 4;
-	   
+
 		default:
 			/*Unknown Device Or Check Failed*/
 			break;

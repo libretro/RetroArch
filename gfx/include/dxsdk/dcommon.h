@@ -123,23 +123,23 @@ DEFINE_ENUM_FLAG_OPERATORS(DWRITE_GLYPH_IMAGE_FORMATS);
 /// </summary>
 typedef enum D2D1_ALPHA_MODE
 {
-        
+
         /// <summary>
         /// Alpha mode should be determined implicitly. Some target surfaces do not supply
         /// or imply this information in which case alpha must be specified.
         /// </summary>
         D2D1_ALPHA_MODE_UNKNOWN = 0,
-        
+
         /// <summary>
         /// Treat the alpha as premultipled.
         /// </summary>
         D2D1_ALPHA_MODE_PREMULTIPLIED = 1,
-        
+
         /// <summary>
         /// Opacity is in the 'A' component only.
         /// </summary>
         D2D1_ALPHA_MODE_STRAIGHT = 2,
-        
+
         /// <summary>
         /// Ignore any alpha channel information.
         /// </summary>
@@ -342,7 +342,7 @@ typedef struct D2D_MATRIX_4X4_F
 {
     union
     {
-        struct 
+        struct
         {
             FLOAT _11, _12, _13, _14;
             FLOAT _21, _22, _23, _24;
@@ -362,7 +362,7 @@ typedef struct D2D_MATRIX_5X4_F
 {
     union
     {
-        struct 
+        struct
         {
             FLOAT _11, _12, _13, _14;
             FLOAT _21, _22, _23, _24;

@@ -126,7 +126,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type_y[64];
    char frame_count_mod[64];
    size_t path_size             = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp_str                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp_str                = (char*)malloc(path_size);
    char *tmp_path               = NULL;
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
@@ -443,7 +443,11 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
    if (!conf)
       return false;
 
-   parameters            = (char*)malloc(4096 * sizeof(char));
+   parameters            = (char*)malloc(param_size);
+
+   if (!parameters)
+      return false;
+
    parameters[0]         = '\0';
 
    /* Read in parameters which override the defaults. */
@@ -526,7 +530,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       if (!file)
          continue;
 
-      line    = (char*)malloc(4096 * sizeof(char));
+      line    = (char*)malloc(line_size);
       line[0] = '\0';
 
       /* even though the pass is set in the loop too, not all passes have parameters */
@@ -690,6 +694,10 @@ static bool video_shader_parse_imports(config_file_t *conf,
    }
 
    tmp_str    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   if (!tmp_str)
+      goto error;
+
    tmp_str[0] = '\0';
    if (config_get_path(conf, "import_script", tmp_str, path_size))
       strlcpy(shader->script_path, tmp_str, sizeof(shader->script_path));
@@ -961,112 +969,122 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char key[64];
-      size_t tmp_size = PATH_MAX_LENGTH * sizeof(char);
-      char *tmp       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      size_t tmp_size                      = PATH_MAX_LENGTH * sizeof(char);
+      char *tmp                            = (char*)malloc(tmp_size);
       const struct video_shader_pass *pass = &shader->pass[i];
 
-      key[0] = '\0';
-
-      snprintf(key, sizeof(key), "shader%u", i);
-      strlcpy(tmp, pass->source.path, tmp_size);
-
-      if (!path_is_absolute(tmp))
-         path_resolve_realpath(tmp, tmp_size);
-      config_set_string(conf, key, tmp);
-
-      free(tmp);
-
-      if (pass->filter != RARCH_FILTER_UNSPEC)
+      if (tmp)
       {
-         snprintf(key, sizeof(key), "filter_linear%u", i);
-         config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+         key[0] = '\0';
+
+         snprintf(key, sizeof(key), "shader%u", i);
+         strlcpy(tmp, pass->source.path, tmp_size);
+
+         if (!path_is_absolute(tmp))
+            path_resolve_realpath(tmp, tmp_size);
+         config_set_string(conf, key, tmp);
+
+         free(tmp);
+
+         if (pass->filter != RARCH_FILTER_UNSPEC)
+         {
+            snprintf(key, sizeof(key), "filter_linear%u", i);
+            config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+         }
+
+         snprintf(key, sizeof(key), "wrap_mode%u", i);
+         config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
+
+         if (pass->frame_count_mod)
+         {
+            snprintf(key, sizeof(key), "frame_count_mod%u", i);
+            config_set_int(conf, key, pass->frame_count_mod);
+         }
+
+         snprintf(key, sizeof(key), "mipmap_input%u", i);
+         config_set_bool(conf, key, pass->mipmap);
+
+         snprintf(key, sizeof(key), "alias%u", i);
+         config_set_string(conf, key, pass->alias);
+
+         shader_write_fbo(conf, &pass->fbo, i);
       }
-
-      snprintf(key, sizeof(key), "wrap_mode%u", i);
-      config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
-
-      if (pass->frame_count_mod)
-      {
-         snprintf(key, sizeof(key), "frame_count_mod%u", i);
-         config_set_int(conf, key, pass->frame_count_mod);
-      }
-
-      snprintf(key, sizeof(key), "mipmap_input%u", i);
-      config_set_bool(conf, key, pass->mipmap);
-
-      snprintf(key, sizeof(key), "alias%u", i);
-      config_set_string(conf, key, pass->alias);
-
-      shader_write_fbo(conf, &pass->fbo, i);
    }
 
    if (shader->num_parameters)
    {
       size_t param_size = 4096 * sizeof(char);
-      char *parameters  = (char*)malloc(4096 * sizeof(char));
+      char *parameters  = (char*)malloc(param_size);
 
-      parameters[0] = '\0';
-
-      strlcpy(parameters, shader->parameters[0].id, param_size);
-
-      for (i = 1; i < shader->num_parameters; i++)
+      if (parameters)
       {
-         /* O(n^2), but number of parameters is very limited. */
-         strlcat(parameters, ";", param_size);
-         strlcat(parameters, shader->parameters[i].id, param_size);
+         parameters[0] = '\0';
+
+         strlcpy(parameters, shader->parameters[0].id, param_size);
+
+         for (i = 1; i < shader->num_parameters; i++)
+         {
+            /* O(n^2), but number of parameters is very limited. */
+            strlcat(parameters, ";", param_size);
+            strlcat(parameters, shader->parameters[i].id, param_size);
+         }
+
+         config_set_string(conf, "parameters", parameters);
+
+         for (i = 0; i < shader->num_parameters; i++)
+            config_set_float(conf, shader->parameters[i].id,
+                  shader->parameters[i].current);
+         free(parameters);
       }
-
-      config_set_string(conf, "parameters", parameters);
-
-      for (i = 0; i < shader->num_parameters; i++)
-         config_set_float(conf, shader->parameters[i].id,
-               shader->parameters[i].current);
-      free(parameters);
    }
 
    if (shader->luts)
    {
       size_t tex_size = 4096 * sizeof(char);
-      char *textures  = (char*)malloc(4096 * sizeof(char));
+      char *textures  = (char*)malloc(tex_size);
 
-      textures[0] = '\0';
-
-      strlcpy(textures, shader->lut[0].id, tex_size);
-      for (i = 1; i < shader->luts; i++)
+      if (textures)
       {
-         /* O(n^2), but number of textures is very limited. */
-         strlcat(textures, ";", tex_size);
-         strlcat(textures, shader->lut[i].id, tex_size);
-      }
+         textures[0] = '\0';
 
-      config_set_string(conf, "textures", textures);
+         strlcpy(textures, shader->lut[0].id, tex_size);
 
-      free(textures);
-
-      for (i = 0; i < shader->luts; i++)
-      {
-         char key[64];
-
-         key[0] = '\0';
-
-         config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
-
-         if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
+         for (i = 1; i < shader->luts; i++)
          {
-            snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
-            config_set_bool(conf, key,
-                  shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            /* O(n^2), but number of textures is very limited. */
+            strlcat(textures, ";", tex_size);
+            strlcat(textures, shader->lut[i].id, tex_size);
          }
 
-         snprintf(key, sizeof(key),
-               "%s_wrap_mode", shader->lut[i].id);
-         config_set_string(conf, key,
-               wrap_mode_to_str(shader->lut[i].wrap));
+         config_set_string(conf, "textures", textures);
 
-         snprintf(key, sizeof(key),
-               "%s_mipmap", shader->lut[i].id);
-         config_set_bool(conf, key,
-               shader->lut[i].mipmap);
+         free(textures);
+
+         for (i = 0; i < shader->luts; i++)
+         {
+            char key[128];
+
+            key[0] = '\0';
+
+            config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
+
+            if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
+            {
+               snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
+               config_set_bool(conf, key,
+                     shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            }
+
+            snprintf(key, sizeof(key),
+                  "%s_wrap_mode", shader->lut[i].id);
+            config_set_string(conf, key,
+                  wrap_mode_to_str(shader->lut[i].wrap));
+
+            snprintf(key, sizeof(key),
+                  "%s_mipmap", shader->lut[i].id);
+            config_set_bool(conf, key,
+                  shader->lut[i].mipmap);
+         }
       }
    }
 
@@ -1078,23 +1096,26 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    if (shader->variables)
    {
       size_t var_tmp  = 4096 * sizeof(char);
-      char *variables = (char*)malloc(4096 * sizeof(char));
+      char *variables = (char*)malloc(var_tmp);
 
-      variables[0] = '\0';
-
-      strlcpy(variables, shader->variable[0].id, var_tmp);
-
-      for (i = 1; i < shader->variables; i++)
+      if (variables)
       {
-         strlcat(variables, ";", var_tmp);
-         strlcat(variables, shader->variable[i].id, var_tmp);
+         variables[0] = '\0';
+
+         strlcpy(variables, shader->variable[0].id, var_tmp);
+
+         for (i = 1; i < shader->variables; i++)
+         {
+            strlcat(variables, ";", var_tmp);
+            strlcat(variables, shader->variable[i].id, var_tmp);
+         }
+
+         config_set_string(conf, "imports", variables);
+
+         for (i = 0; i < shader->variables; i++)
+            shader_write_variable(conf, &shader->variable[i]);
+         free(variables);
       }
-
-      config_set_string(conf, "imports", variables);
-
-      for (i = 0; i < shader->variables; i++)
-         shader_write_variable(conf, &shader->variable[i]);
-      free(variables);
    }
 }
 
@@ -1309,7 +1330,10 @@ void video_shader_resolve_relative(struct video_shader *shader,
 {
    unsigned i;
    size_t tmp_path_size = 4096 * sizeof(char);
-   char *tmp_path       = (char*)malloc(4096 * sizeof(char));
+   char *tmp_path       = (char*)malloc(tmp_path_size);
+
+   if (!tmp_path)
+      return;
 
    tmp_path[0] = '\0';
 

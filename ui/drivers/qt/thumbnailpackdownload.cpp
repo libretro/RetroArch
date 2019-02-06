@@ -4,7 +4,10 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
@@ -13,7 +16,10 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #undef TEMP_EXTENSION
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION

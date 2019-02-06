@@ -114,7 +114,7 @@ static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;
 
-/* TODO/FIXME - Not thread safe to access this 
+/* TODO/FIXME - Not thread safe to access this
  * on main thread as well in its current state -
  * menu_input.c - menu_event calls this function
  * right now, while the underlying variable can
@@ -278,7 +278,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
-   
+
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
       {

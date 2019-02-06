@@ -4,7 +4,10 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
@@ -13,7 +16,10 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
@@ -236,7 +242,7 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
       if (!m_playlistThumbnailDownloadFile.open(QIODevice::WriteOnly))
       {
          m_failedThumbnails++;
-         
+
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
 
          if (m_pendingPlaylistThumbnails.count() > 0)

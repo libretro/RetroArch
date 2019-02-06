@@ -41,6 +41,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../verbosity.h"
 #include "../video_driver.h"
 
 #include "../common/win32_common.h"
@@ -529,7 +530,6 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
 #endif
- 
 
    win32_window_reset();
    win32_monitor_init();
@@ -874,4 +874,3 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
 #endif
    NULL
 };
-

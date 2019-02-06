@@ -108,7 +108,7 @@ apple_frontend_settings_t apple_frontend_settings;
 void get_ios_version(int *major, int *minor)
 {
     NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
-    
+
     if (major && decomposed_os_version.count > 0)
         *major = (int)[decomposed_os_version[0] integerValue];
     if (minor && decomposed_os_version.count > 1)
@@ -128,12 +128,12 @@ static void handle_touch_event(NSArray* touches)
       return;
 
    apple->touch_count = 0;
-   
+
    for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
    {
       CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
-      
+
       if (touch.view != [CocoaView get].view)
          continue;
 
@@ -192,12 +192,12 @@ enum
      * for each keypress, that's fine for polling
      * but is bad for business with events. */
     static double last_time_stamp;
-    
+
     if (last_time_stamp == event.timestamp)
        return [super handleKeyUIEvent:event];
-    
+
     last_time_stamp = event.timestamp;
-    
+
     /* If the _hidEvent is null, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
     if (event._hidEvent)
@@ -205,64 +205,64 @@ enum
         NSString       *ch = (NSString*)event._privateInput;
         uint32_t character = 0;
         uint32_t mod       = 0;
-        
+
         mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
         mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
         mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
         mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
         mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
         mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
-        
+
         if (ch && ch.length != 0)
         {
             unsigned i;
             character = [ch characterAtIndex:0];
-            
+
             apple_input_keyboard_event(event._isKeyDown,
                                        (uint32_t)event._keyCode, 0, mod,
                                        RETRO_DEVICE_KEYBOARD);
-            
+
             for (i = 1; i < ch.length; i++)
                 apple_input_keyboard_event(event._isKeyDown,
                                            0, [ch characterAtIndex:i], mod,
                                            RETRO_DEVICE_KEYBOARD);
         }
-        
+
         apple_input_keyboard_event(event._isKeyDown,
                                    (uint32_t)event._keyCode, character, mod,
                                    RETRO_DEVICE_KEYBOARD);
     }
-    
+
     [super handleKeyUIEvent:event];
 }
 
 // This is for iOS versions < 9.0
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   /* This gets called twice with the same timestamp 
+   /* This gets called twice with the same timestamp
     * for each keypress, that's fine for polling
     * but is bad for business with events. */
    static double last_time_stamp;
-   
+
    if (last_time_stamp == event.timestamp)
       return [super _keyCommandForEvent:event];
    last_time_stamp = event.timestamp;
-   
-   /* If the _hidEvent is null, [event _keyCode] will crash. 
+
+   /* If the _hidEvent is null, [event _keyCode] will crash.
     * (This happens with the on screen keyboard). */
    if (event._hidEvent)
    {
       NSString       *ch = (NSString*)event._privateInput;
       uint32_t character = 0;
       uint32_t mod       = 0;
-      
+
       mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
       mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
       mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
       mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
       mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
       mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
-      
+
       if (ch && ch.length != 0)
       {
          unsigned i;
@@ -271,13 +271,13 @@ enum
          apple_input_keyboard_event(event._isKeyDown,
                (uint32_t)event._keyCode, 0, mod,
                RETRO_DEVICE_KEYBOARD);
-         
+
          for (i = 1; i < ch.length; i++)
             apple_input_keyboard_event(event._isKeyDown,
                   0, [ch characterAtIndex:i], mod,
                   RETRO_DEVICE_KEYBOARD);
       }
-      
+
       apple_input_keyboard_event(event._isKeyDown,
             (uint32_t)event._keyCode, character, mod,
             RETRO_DEVICE_KEYBOARD);
@@ -299,13 +299,13 @@ enum
       handle_touch_event(event.allTouches.allObjects);
 
    get_ios_version(&major, &minor);
-    
+
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
    if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       /* Keyboard event hack for iOS versions prior to iOS 7.
        *
-       * Derived from: 
+       * Derived from:
        * http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
        */
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
@@ -379,7 +379,7 @@ enum
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-    
+
 #ifdef HAVE_MFI
     extern bool apple_gamecontroller_joypad_init(void *data);
     apple_gamecontroller_joypad_init(NULL);
@@ -404,13 +404,13 @@ enum
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    settings_t *settings = config_get_ptr();
-   
+
 #ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
 #endif
    if (settings->bools.ui_companion_start_on_boot)
       return;
-    
+
   [self showGameView];
 }
 
@@ -430,12 +430,12 @@ enum
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
    NSError     *error = nil;
-    
+
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
-   
+
    if (error)
       printf("%s\n", [[error description] UTF8String]);
-   
+
    return true;
 }
 
@@ -473,7 +473,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-
 - (void)toggleUI
 {
    if (ui_companion_is_on_foreground())
@@ -493,15 +492,15 @@ enum
 {
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
-   
+
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait 
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
-- (void)mainMenuRefresh 
+- (void)mainMenuRefresh
 {
   [self.mainmenu reloadData];
 }
@@ -525,7 +524,7 @@ enum
         self.menu_count--;
 
         [self popViewControllerAnimated:YES];
-        self.mainmenu = self.mainmenu.last_menu;      
+        self.mainmenu = self.mainmenu.last_menu;
      }
   }
 }
@@ -569,7 +568,7 @@ static void apple_display_alert(const char *message, const char *title)
 static void apple_rarch_exited(void)
 {
     RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-    
+
     if (!ap)
         return;
 #ifdef HAVE_AVFOUNDATION
@@ -608,7 +607,7 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
    RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
 
    (void)data;
-    
+
    if (ap)
       [ap showPauseMenu:ap];
 
@@ -632,7 +631,7 @@ static void *ui_companion_cocoatouch_init(void)
 
    if (!handle)
       return NULL;
-    
+
    rarch_enable_ui();
 
    return handle;
@@ -662,7 +661,7 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
      printf( "notify_list_pushed: old size should not be larger\n" );
 
    old_size = new_size;
-      
+
    if (ap)
      [ap mainMenuPushPop: pushp];
 }

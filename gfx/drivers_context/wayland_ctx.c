@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/poll.h>
+#include <poll.h>
 #include <unistd.h>
 
 #include <wayland-client.h>
@@ -46,6 +46,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
+#include "../../verbosity.h"
 
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../common/wayland/idle-inhibit-unstable-v1.h"
@@ -94,8 +95,8 @@ typedef struct gfx_ctx_wayland_data
    bool resize;
    bool configured;
    bool activated;
-   int prev_width;
-   int prev_height;
+   unsigned prev_width;
+   unsigned prev_height;
    unsigned width;
    unsigned height;
    struct wl_registry *registry;
@@ -568,7 +569,7 @@ static const struct wl_seat_listener seat_listener = {
 
 /* Touch handle functions */
 
-bool wayland_context_gettouchpos(void *data, unsigned id, 
+bool wayland_context_gettouchpos(void *data, unsigned id,
       unsigned* touch_x, unsigned* touch_y)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -619,7 +620,7 @@ static const struct xdg_wm_base_listener xdg_shell_listener = {
 
 static void handle_surface_config(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
-{	
+{
     xdg_surface_ack_configure(surface, serial);
 }
 
@@ -631,7 +632,7 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
                                    int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-    
+
     wl->fullscreen = false;
     wl->maximized = false;
     const uint32_t *state;
@@ -657,7 +658,12 @@ static void handle_toplevel_config(void *data, struct xdg_toplevel *toplevel,
 		wl->width = width;
 		wl->height = height;
 	}
-				
+
+	if (wl->win)
+		wl_egl_window_resize(wl->win, width, height, 0, 0);
+	else
+		wl->win = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
+
 	wl->configured = false;
 }
 
@@ -683,7 +689,7 @@ static const struct zxdg_shell_v6_listener zxdg_shell_v6_listener = {
 
 static void handle_zxdg_surface_config(void *data, struct zxdg_surface_v6 *surface,
                                   uint32_t serial)
-{	
+{
     zxdg_surface_v6_ack_configure(surface, serial);
 }
 
@@ -695,7 +701,7 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
                                    int32_t width, int32_t height, struct wl_array *states)
 {
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-    
+
     wl->fullscreen = false;
     wl->maximized = false;
     const uint32_t *state;
@@ -721,7 +727,12 @@ static void handle_zxdg_toplevel_config(void *data, struct zxdg_toplevel_v6 *top
 		wl->width = width;
 		wl->height = height;
 	}
-				
+
+	if (wl->win)
+		wl_egl_window_resize(wl->win, width, height, 0, 0);
+	else
+		wl->win = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
+
 	wl->configured = false;
 }
 
@@ -1147,7 +1158,7 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 	   else if (wl->zxdg_toplevel) {
 		   if (wl->deco) {
 			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		  } 
+		  }
 		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
 	  }
 	   else if (wl->shell_surf)
@@ -1318,23 +1329,23 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    {
       RARCH_LOG("[Wayland]: Using zxdg_shell_v6 interface.\n");
    }
-   
+
    if (!wl->xdg_shell && !wl->zxdg_shell)
    {
 	   RARCH_WARN("[Wayland]: Fallback to deprecated wl_shell interface!.\n");
    }
-   
+
    if (!wl->xdg_shell && !wl->zxdg_shell && !wl->shell)
    {
 	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
 	   goto error;
    }
-   
+
    if (!wl->idle_inhibit_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
    }
-   
+
    if (!wl->deco_manager)
    {
 	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
@@ -1562,26 +1573,26 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
-   
+
    if (wl->xdg_shell) {
 	   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
 	   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
-	   
+
 	   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
 	   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
 
 	   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
 	   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-	   
+
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
 	   }
-	   
+
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
-	   
+
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
@@ -1590,22 +1601,22 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    } else if (wl->zxdg_shell) {
 	   wl->zxdg_surface = zxdg_shell_v6_get_xdg_surface(wl->zxdg_shell, wl->surface);
 	   zxdg_surface_v6_add_listener(wl->zxdg_surface, &zxdg_surface_v6_listener, wl);
-	   
+
 	   wl->zxdg_toplevel = zxdg_surface_v6_get_toplevel(wl->zxdg_surface);
 	   zxdg_toplevel_v6_add_listener(wl->zxdg_toplevel, &zxdg_toplevel_v6_listener, wl);
 
 	   zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "retroarch");
 	   zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-	   
+
 	   if (wl->deco_manager) {
 		   wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
 		   wl->deco_manager, wl->xdg_toplevel);
 	   }
-	   
+
 	   /* Waiting for xdg_toplevel to be configured before starting to draw */
 	   wl_surface_commit(wl->surface);
 	   wl->configured = true;
-	   
+
    while (wl->configured) {
 	   wl_display_dispatch(wl->input.dpy);
    }
@@ -1618,7 +1629,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
 	   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
    }
-	   
 
    switch (wl_api)
    {
@@ -1718,7 +1728,7 @@ static bool gfx_ctx_wl_has_focus(void *data)
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
 	(void)data;
-	
+
 	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
     if (!wl->idle_inhibit_manager)

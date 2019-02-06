@@ -130,4 +130,3 @@ loopif_init(struct netif *netif)
 }
 
 #endif /* LWIP_HAVE_LOOPIF */
-

@@ -36,7 +36,9 @@
 #include "netplay_private.h"
 
 #include "../../configuration.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
+#include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
@@ -851,9 +853,9 @@ void netplay_get_architecture(char *frontend_architecture, size_t size)
 
 static void netplay_announce(void)
 {
-   char buf [4600];
+   char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
-   char url [2048]                  = "http://lobby.libretro.com/add/";
+   char url[2048]                   = "http://lobby.libretro.com/add/";
    char *username                   = NULL;
    char *corename                   = NULL;
    char *gamename                   = NULL;
@@ -865,6 +867,8 @@ static void netplay_announce(void)
    uint32_t content_crc             = content_get_crc();
    struct string_list *subsystem    = path_get_subsystem_list();
 
+   buf[0] = '\0';
+
    if (subsystem)
    {
       unsigned i;
@@ -875,9 +879,9 @@ static void netplay_announce(void)
          if (i < subsystem->size - 1)
             strlcat(buf, "|", sizeof(buf));
       }
-      RARCH_LOG("%s\n", buf);
       net_http_urlencode(&gamename, buf);
       net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
+      content_crc = 0;
    }
    else
    {
@@ -889,7 +893,12 @@ static void netplay_announce(void)
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
-   net_http_urlencode(&username, settings->paths.username);
+   if (!string_is_empty(settings->paths.username))
+      net_http_urlencode(&username, settings->paths.username);
+#ifdef HAVE_DISCORD
+   else
+      net_http_urlencode(&username, discord_get_own_username());
+#endif
    net_http_urlencode(&corename, system->library_name);
    net_http_urlencode(&coreversion, system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
@@ -1488,6 +1497,9 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          settings->ints.netplay_check_frames,
          &cbs,
          settings->bools.netplay_nat_traversal,
+#ifdef HAVE_DISCORD
+         string_is_empty(settings->paths.username) ? discord_get_own_username() :
+#endif
          settings->paths.username,
          quirks);
 

@@ -166,7 +166,7 @@ void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    IMAGE_CORE_PREFIX(environ_cb) = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
-   
+
 #ifndef RARCH_INTERNAL
    /* I don't trust filestream_vfs_init to work inside rarch */
    if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
@@ -254,7 +254,7 @@ static bool imageviewer_load(const char *path, int image_index)
    buf = malloc(len);
    filestream_read(f, buf, len);
    filestream_close(f);
-   
+
    image_buffer           = (uint32_t*)stbi_load_from_memory(
          buf, len,
          &image_width, &image_height,

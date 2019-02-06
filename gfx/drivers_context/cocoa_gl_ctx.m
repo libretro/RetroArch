@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -89,7 +89,7 @@ static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
 typedef struct cocoa_ctx_data
 {
-   bool core_hw_context_enable; 
+   bool core_hw_context_enable;
 } cocoa_ctx_data_t;
 
 #if defined(HAVE_COCOATOUCH)
@@ -133,13 +133,17 @@ static void glkitview_init_xibs(void)
 void *glkitview_init(void)
 {
 #if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IOS
    glkitview_init_xibs();
+#endif
 
    g_view = [GLKView new];
+#if TARGET_OS_IOS
    g_view.multipleTouchEnabled = YES;
+    [g_view addSubview:g_pause_indicator_view];
+#endif
    g_view.enableSetNeedsDisplay = NO;
-   [g_view addSubview:g_pause_indicator_view];
-    
+
    return (BRIDGE void *)((GLKView*)g_view);
 #else
     return nsview_get_ptr();
@@ -187,14 +191,13 @@ void *get_chosen_screen(void)
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
       return (BRIDGE void*)screens;
    }
-	
+
    return ((BRIDGE void*)[screens objectAtIndex:settings->uints.video_monitor_index]);
 }
 
-
 float get_backing_scale_factor(void)
 {
-   static float 
+   static float
       backing_scale_def = 0.0f;
    RAScreen *screen     = NULL;
 
@@ -292,11 +295,11 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
    if (api != GFX_CTX_OPENGL_API)
       return false;
 #endif
-    
+
    cocoagl_api = api;
    g_minor     = minor;
    g_major     = major;
-  
+
    return true;
 }
 
@@ -311,14 +314,14 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
 #elif defined(HAVE_COCOA)
    GLint value = interval ? 1 : 0;
    [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
-    
+
 #endif
 }
 
 static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
     (void)data;
-    
+
 #ifdef HAVE_COCOA
     if (state)
         [NSCursor unhide];
@@ -335,7 +338,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
     if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
         [g_view setWantsBestResolutionOpenGLSurface:YES];
-    
+
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize,
         24,
@@ -363,9 +366,9 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
        attributes[7] = NSOpenGLProfileVersion4_1Core;
     }
 #endif
-    
+
     g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-    
+
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
     if (g_format == nil)
     {
@@ -375,7 +378,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
         g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
     }
 #endif
-    
+
     if (g_use_hw_ctx)
         g_hw_ctx  = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
     g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(g_use_hw_ctx) ? g_hw_ctx : nil];
@@ -386,9 +389,9 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
     g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     g_view.context = g_context;
 #endif
-    
+
     [g_context makeCurrentContext];
-    
+
 #if defined(HAVE_COCOA)
    static bool has_went_fullscreen = false;
    /* TODO: Screen mode support. */
@@ -498,7 +501,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize  display_physical_size = CGDisplayScreenSize(
         [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-    
+
     float   display_width         = display_pixel_size.width;
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
@@ -531,9 +534,9 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
           break;
     }
 #endif
-    
+
     (void)display_height;
-    
+
     switch (type)
     {
         case DISPLAY_METRIC_MM_WIDTH:
@@ -550,7 +553,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
             *value = 0;
             return false;
     }
-    
+
     return true;
 }
 
@@ -583,7 +586,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
 {
    if (!(--g_fast_forward_skips < 0))
       return;
-    
+
 #if defined(HAVE_COCOA)
     [g_context flushBuffer];
     [g_hw_ctx flushBuffer];
@@ -591,7 +594,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
     if (g_view)
         [g_view display];
 #endif
-    
+
    g_fast_forward_skips = g_is_syncing ? 0 : 3;
 }
 
@@ -630,7 +633,7 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
-    
+
     if (enable)
         [g_hw_ctx makeCurrentContext];
     else

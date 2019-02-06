@@ -82,4 +82,3 @@
 #endif /* LWIP_DEBUG */
 
 #endif /* __LWIP_DEBUG_H__ */
-
