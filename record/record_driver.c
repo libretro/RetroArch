@@ -280,8 +280,7 @@ void recording_dump_frame(const void *data, unsigned width,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               1, 180, true);
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          return;
       }

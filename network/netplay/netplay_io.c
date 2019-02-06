@@ -118,7 +118,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
       netplay->is_connected = false;
    }
    RARCH_LOG("[netplay] %s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(dmsg, 1, 180, false);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -636,7 +636,7 @@ static void announce_play_spectate(netplay_t *netplay,
    if (msg[0])
    {
       RARCH_LOG("[netplay] %s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, false);
    }
 }
 
@@ -1469,7 +1469,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (dmsg)
             {
                RARCH_LOG("[netplay] %s\n", dmsg);
-               runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(dmsg, 1, 180, false);
             }
             break;
          }
@@ -1775,7 +1775,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
             }
             RARCH_LOG("[netplay] %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, 1, 180, false);
             break;
          }
 
@@ -2014,7 +2014,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
    {
       snprintf(msg, sizeof(msg), "%s\n",
             msg_hash_to_str(MSG_UPNP_FAILED));
-      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("[netplay] %s\n", msg);
       return;
    }
@@ -2022,7 +2022,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
    snprintf(msg, sizeof(msg), "%s: %s:%s\n",
          msg_hash_to_str(MSG_PUBLIC_ADDRESS),
          host, port);
-   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("[netplay] %s\n", msg);
 #endif
 }

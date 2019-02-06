@@ -59,9 +59,6 @@
 #include "menu/menu_content.h"
 #include "menu/menu_shader.h"
 #include "menu/widgets/menu_dialog.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "menu/widgets/menu_widgets.h"
-#endif
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -263,7 +260,7 @@ bool command_set_shader(const char *arg)
       return false;
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
@@ -791,7 +788,7 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 
       /* Only noise in menu. */
       if (print_log)
-         runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -849,7 +846,7 @@ static void command_event_disk_control_set_index(unsigned idx)
          RARCH_ERR("%s\n", msg);
       else
          RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -890,7 +887,7 @@ static bool command_event_disk_control_append_image(const char *path)
    snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
    strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 0, 180, true);
 
    command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
@@ -999,12 +996,7 @@ static void command_event_set_volume(float gain)
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
-#endif
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
+   runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
@@ -1031,7 +1023,7 @@ static void command_event_set_mixer_volume(float gain)
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
@@ -1510,7 +1502,7 @@ static bool command_event_save_core_config(void)
 
    if (string_is_empty(config_dir))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       free (config_dir);
       return false;
@@ -1583,7 +1575,7 @@ static bool command_event_save_core_config(void)
    command_event_save_config(config_path, msg, sizeof(msg));
 
    if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true);
 
    if (overrides_active)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
@@ -1638,7 +1630,7 @@ static void command_event_save_current_config(enum override_type type)
    }
 
    if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true);
 }
 
 static void command_event_undo_save_state(char *s, size_t len)
@@ -1747,7 +1739,7 @@ static bool command_event_main_state(unsigned cmd)
                MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    if (push_msg)
-      runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 
    free(state_path);
@@ -1810,7 +1802,7 @@ bool command_event(enum event_command cmd, void *data)
                   snprintf(msg, sizeof(msg),"%s: %dx%d",
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
                         width, height);
-               runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg, 1, 100, true);
             }
          }
 #endif
@@ -1905,7 +1897,7 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_hardcore_paused = false;
 #endif
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
@@ -2130,11 +2122,7 @@ TODO: Add a setting for these tweaks */
                return false;
             }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
-#endif
-               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
+            runloop_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
          }
          break;
@@ -2391,7 +2379,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true);
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
@@ -2399,7 +2387,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true);
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
@@ -2429,7 +2417,7 @@ TODO: Add a setting for these tweaks */
                core_path,
                core_name
                );
-         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
 
       }
@@ -2449,7 +2437,7 @@ TODO: Add a setting for these tweaks */
             NULL,
             NULL);
 
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true);
          break;
 
       }
@@ -2503,12 +2491,8 @@ TODO: Add a setting for these tweaks */
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (!video_driver_has_widgets() || !menu_widgets_set_paused(is_paused))
-#endif
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
-                        1, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
+                     1, true);
 
                if (!is_idle)
                   video_driver_cached_frame();
@@ -2522,11 +2506,6 @@ TODO: Add a setting for these tweaks */
             }
             else
             {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (video_driver_has_widgets())
-                  menu_widgets_set_paused(is_paused);
-#endif
-
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_AUDIO_START, NULL);
             }
@@ -2781,8 +2760,7 @@ TODO: Add a setting for these tweaks */
             else
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     1, 120, true);
          }
          break;
       case CMD_EVENT_DISK_NEXT:
@@ -2806,8 +2784,7 @@ TODO: Add a setting for these tweaks */
             else
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     1, 120, true);
          }
          break;
       case CMD_EVENT_DISK_PREV:
@@ -2831,8 +2808,7 @@ TODO: Add a setting for these tweaks */
             else
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     1, 120, true);
          }
          break;
       case CMD_EVENT_RUMBLE_STOP:
@@ -2899,8 +2875,7 @@ TODO: Add a setting for these tweaks */
                input_driver_keyboard_mapping_set_block(1);
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
-                        1, 120, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                        1, 120, true);
             }
             else
             {
@@ -2910,8 +2885,7 @@ TODO: Add a setting for these tweaks */
                input_driver_keyboard_mapping_set_block(0);
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
-                        1, 120, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                        1, 120, true);
             }
 
          }

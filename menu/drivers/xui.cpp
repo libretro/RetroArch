@@ -571,7 +571,7 @@ static void xui_render(void *data, bool is_idle)
 
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
-	  ticker.idx      = menu_animation_get_ticker_time();
+	  ticker.idx      = (unsigned int)frame_count / 15;
 	  ticker.str      = title;
 	  ticker.selected = true;
 

@@ -1406,7 +1406,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
       audio_mixer_streams[i].state   = (enum audio_mixer_state)type;
 }
 
-static void audio_driver_load_menu_bgm_callback(retro_task_t *task, void *task_data, void *user_data, const char *error)
+static void audio_driver_load_menu_bgm_callback(void *task_data, void *user_data, const char *error)
 {
    bool contentless = false;
    bool is_inited = false;

@@ -760,7 +760,7 @@ bool ozone_reset_theme_textures(ozone_handle_t *ozone)
          strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, ".png", sizeof(filename));
 
-         if (!menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         if (!menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR))
             result = false;
       }
    }

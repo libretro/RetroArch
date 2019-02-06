@@ -284,7 +284,7 @@ static int action_right_cheat_delete_all(unsigned type, const char *label,
             msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
       msg[sizeof(msg) - 1] = 0;
 
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true);
    }
 
    return 0;

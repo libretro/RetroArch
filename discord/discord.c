@@ -169,7 +169,7 @@ static void handle_discord_error(int errcode, const char* message)
    RARCH_LOG("[Discord] error (%d: %s)\n", errcode, message);
 }
 
-static void handle_discord_join_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+static void handle_discord_join_cb(void *task_data, void *user_data, const char *err)
 {
    struct netplay_room *room;
    char tmp_hostname[32];

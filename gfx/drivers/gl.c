@@ -70,9 +70,6 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
-#endif
 #endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
@@ -2724,10 +2721,6 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
       }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
-#endif
 #endif
 
    if (!string_is_empty(msg))
@@ -3553,7 +3546,6 @@ static void *gl2_init(const video_info_t *video,
    }
 
    gl2_context_bind_hw_render(gl, true);
-
    return gl;
 
 error:
@@ -4148,14 +4140,6 @@ static void gl2_get_poke_interface(void *data,
    *iface = &gl2_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool gl2_menu_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
-#endif
-
 video_driver_t video_gl2 = {
    gl2_init,
    gl2_frame,
@@ -4187,7 +4171,4 @@ video_driver_t video_gl2 = {
 #endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   gl2_menu_widgets_enabled
-#endif
 };

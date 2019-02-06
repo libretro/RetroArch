@@ -82,10 +82,6 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data);
 
 #ifdef HAVE_MENU
-bool task_load_content_is_pending();
-bool task_load_content_should_resume();
-void task_load_content_resume();
-
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,

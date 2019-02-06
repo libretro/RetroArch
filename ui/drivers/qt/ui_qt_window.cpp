@@ -3131,7 +3131,7 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
 
    if (!task_push_decompress(file, dir,
             NULL, NULL, NULL,
-            cb, this, NULL))
+            cb, this))
    {
       m_updateProgressDialog->cancel();
       return -1;

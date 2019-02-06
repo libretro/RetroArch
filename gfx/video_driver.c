@@ -33,7 +33,6 @@
 
 #include "../audio/audio_driver.h"
 #include "../menu/menu_shader.h"
-#include "../menu/menu_animation.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -48,9 +47,6 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_setting.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../menu/widgets/menu_widgets.h"
-#endif
 #endif
 
 #include "video_thread_wrapper.h"
@@ -856,9 +852,7 @@ static void video_driver_free_internal(void)
          && video_driver_data
          && current_video && current_video->free
       )
-      {
-         current_video->free(video_driver_data);
-      }
+      current_video->free(video_driver_data);
 
    video_driver_pixel_converter_free();
    video_driver_filter_free();
@@ -1284,7 +1278,7 @@ void video_monitor_set_refresh_rate(float hz)
 
    snprintf(msg, sizeof(msg),
          "Setting refresh rate to: %.3f Hz.", hz);
-   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
    configuration_set_float(settings,
@@ -2653,10 +2647,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show || video_info.framecount_show)
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!video_driver_has_widgets() || !menu_widgets_set_fps_text(video_info.fps_text))
-#endif
-         runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
@@ -3575,11 +3566,3 @@ float video_driver_get_refresh_rate(void)
 
    return 0.0f;
 }
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-bool video_driver_has_widgets(void)
-{
-   return current_video && current_video->menu_widgets_enabled 
-      && current_video->menu_widgets_enabled(video_driver_data);
-}
-#endif

@@ -308,7 +308,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
    free(iconpath);
 }
 
@@ -641,6 +641,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    with acceleration */
 static void materialui_render(void *data, bool is_idle)
 {
+   menu_animation_ctx_delta_t delta;
    unsigned bottom, width, height, header_height;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
@@ -658,6 +659,11 @@ static void materialui_render(void *data, bool is_idle)
          materialui_compute_entries_box(mui, width);
       mui->need_compute = false;
    }
+
+   delta.current = menu_animation_get_delta_time();
+
+   if (menu_animation_get_ideal_delta_time(&delta))
+      menu_animation_update(delta.ideal);
 
    menu_display_set_width(width);
    menu_display_set_height(height);
@@ -1519,7 +1525,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_time() / 5.0f;
+   ticker.idx      = mui->frame_count / 100;
    ticker.str      = title;
    ticker.selected = true;
 
@@ -1541,7 +1547,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
-      ticker.idx      = menu_animation_get_ticker_time();
+      ticker.idx      = mui->frame_count / 20;
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 
@@ -1795,7 +1801,7 @@ static void materialui_navigation_set(void *data, bool scroll)
    if (!mui || !scroll)
       return;
 
-   entry.duration     = 166;
+   entry.duration     = 10;
    entry.target_value = scroll_pos;
    entry.subject      = &mui->scroll_y;
    entry.easing_enum  = EASING_IN_OUT_QUAD;
