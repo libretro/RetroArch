@@ -22,6 +22,13 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
+#endif
+
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../configuration.h"
@@ -1463,6 +1470,12 @@ static bool d3d11_gfx_frame(
    }
 #endif
 
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
+#endif
+
    if (msg && *msg)
    {
       D3D11SetViewports(context, 1, &d3d11->viewport);
@@ -1472,6 +1485,8 @@ static bool d3d11_gfx_frame(
       dxgi_update_title(video_info);
    }
    d3d11->sprites.enabled = false;
+
+
 
 #if 0
    PERF_STOP();
@@ -1725,6 +1740,14 @@ static void d3d11_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d11_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool d3d11_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_d3d11 = {
    d3d11_gfx_init,
    d3d11_gfx_frame,
@@ -1746,4 +1769,8 @@ video_driver_t video_d3d11 = {
    d3d11_get_overlay_interface,
 #endif
    d3d11_gfx_get_poke_interface,
+   NULL, /* d3d11_wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   d3d11_menu_widgets_enabled
+#endif
 };
