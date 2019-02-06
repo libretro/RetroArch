@@ -3347,8 +3347,12 @@ static enum runloop_state runloop_check_state(
    {
       char s[128];
       unsigned t = 0;
-      bool rewinding = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      bool rewinding = state_manager_check_rewind(
+            BIT256_GET(current_input, RARCH_REWIND),
+            settings->uints.rewind_granularity,
+            runloop_paused, s, sizeof(s), &t);
+#endif
 
       s[0] = '\0';
 
