@@ -507,7 +507,7 @@ bool content_undo_load_state(void)
    return ret;
 }
 
-static void undo_save_state_cb(void *task_data,
+static void undo_save_state_cb(retro_task_t *task, void *task_data,
                                void *user_data, const char *error)
 {
    /* Wipe the save file buffer as it's intended to be one use only */
@@ -691,7 +691,7 @@ static void task_save_handler(retro_task_t *task)
  **/
 static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
-   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = task_init();
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t     *settings = config_get_ptr();
 
@@ -892,7 +892,7 @@ error:
  * Load a state from disk to memory.
  *
  **/
-static void content_load_state_cb(void *task_data,
+static void content_load_state_cb(retro_task_t *task, void *task_data,
                            void *user_data, const char *error)
 {
    retro_ctx_serialize_info_t serial_info;
@@ -1041,7 +1041,7 @@ error:
  *
  * Called after the save state is done. Takes a screenshot if needed.
  **/
-static void save_state_cb(void *task_data,
+static void save_state_cb(retro_task_t *task, void *task_data,
                            void *user_data, const char *error)
 {
    save_task_state_t *state = (save_task_state_t*)task_data;
@@ -1063,7 +1063,7 @@ static void save_state_cb(void *task_data,
  **/
 static void task_push_save_state(const char *path, void *data, size_t size, bool autosave)
 {
-   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = task_init();
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t     *settings = config_get_ptr();
 
@@ -1105,7 +1105,7 @@ error:
  * Load then save a state.
  *
  **/
-static void content_load_and_save_state_cb(void *task_data,
+static void content_load_and_save_state_cb(retro_task_t *task, void *task_data,
                            void *user_data, const char *error)
 {
    load_task_data_t *load_data = (load_task_data_t*)task_data;
@@ -1114,7 +1114,7 @@ static void content_load_and_save_state_cb(void *task_data,
    size_t                 size = load_data->undo_size;
    bool               autosave = load_data->autosave;
 
-   content_load_state_cb(task_data, user_data, error);
+   content_load_state_cb(NULL, task_data, user_data, error);
 
    task_push_save_state(path, data, size, autosave);
 
@@ -1134,7 +1134,7 @@ static void content_load_and_save_state_cb(void *task_data,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t      *task     = task_init();
    save_task_state_t *state    = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t        *settings = config_get_ptr();
 
@@ -1279,7 +1279,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task     = task_init();
    save_task_state_t *state     = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t *settings         = config_get_ptr();
 

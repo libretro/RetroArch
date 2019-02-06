@@ -33,9 +33,9 @@ typedef struct ozone_handle ozone_handle_t;
 #define FONT_SIZE_ENTRIES_SUBLABEL 18
 #define FONT_SIZE_SIDEBAR 24
 
-#define ANIMATION_PUSH_ENTRY_DURATION 10
-#define ANIMATION_CURSOR_DURATION 8
-#define ANIMATION_CURSOR_PULSE 30
+#define ANIMATION_PUSH_ENTRY_DURATION 166
+#define ANIMATION_CURSOR_DURATION 133
+#define ANIMATION_CURSOR_PULSE 500
 
 #define ENTRIES_START_Y 127
 
@@ -205,6 +205,6 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type);
 
 void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
-bool ozone_is_playlist(ozone_handle_t *ozone);
+bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 
 #endif

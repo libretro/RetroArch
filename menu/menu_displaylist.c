@@ -4138,7 +4138,7 @@ static void menu_displaylist_parse_playlist_generic(
 }
 
 #ifdef HAVE_NETWORKING
-static void wifi_scan_callback(void *task_data,
+static void wifi_scan_callback(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
    unsigned i;
@@ -4373,7 +4373,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -4425,7 +4425,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          profile = popen("gpu-profile get", "r");
          fgets(current_profile, PATH_MAX_LENGTH, profile);

@@ -34,6 +34,8 @@
 #include "../gfx/video_driver.h"
 #include "input_overlay.h"
 
+#include <queues/task_queue.h>
+
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
@@ -595,7 +597,7 @@ void input_overlay_free(input_overlay_t *ol)
 }
 
 /* task_data = overlay_task_data_t* */
-void input_overlay_loaded(void *task_data, void *user_data, const char *err)
+void input_overlay_loaded(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    size_t i;
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;

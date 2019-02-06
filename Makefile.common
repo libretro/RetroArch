@@ -699,6 +699,10 @@ ifeq ($(HAVE_MENU), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 
+   ifeq ($(HAVE_MENU_WIDGETS), 1)
+      DEFINES += -DHAVE_MENU_WIDGETS
+   endif
+
    ifeq ($(HAVE_RGUI), 1)
       OBJ += menu/drivers/rgui.o
       DEFINES += -DHAVE_RGUI
@@ -782,6 +786,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    ifeq ($(HAVE_MENU_COMMON),1)
 		OBJ += menu/drivers_display/menu_display_null.o
 	endif
+
+   ifeq ($(HAVE_MENU_WIDGETS), 1)
+      OBJ += menu/widgets/menu_widgets.o
+   endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

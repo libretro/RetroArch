@@ -43,6 +43,10 @@
 #define IMG_EXT "bmp"
 #endif
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#include "../../menu/widgets/menu_widgets.h"
+#endif
+
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
@@ -70,6 +74,7 @@ struct screenshot_task_state
    uint8_t *out_buffer;
    const void *frame;
    char filename[PATH_MAX_LENGTH];
+   char shotname[256];
    void *userbuf;
    struct scaler_ctx scaler;
 };
@@ -124,6 +129,11 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
          bmp_type);
 #endif
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (!state->silence)
+      menu_widgets_screenshot_taken(state->shotname, state->filename);
+#endif
+
    return ret;
 }
 
@@ -169,7 +179,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true);
+      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(msg);
    }
 }
@@ -190,14 +200,13 @@ static bool screenshot_dump(
    char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task             = task_init();
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
    const char *screenshot_dir     = settings->paths.directory_screenshot;
-   char shotname[256];
    struct retro_system_info system_info;
 
-   shotname[0]                    = '\0';
+   state->shotname[0]             = '\0';
    screenshot_path[0]             = '\0';
 
    if (!core_get_system_info(&system_info))
@@ -249,15 +258,15 @@ static bool screenshot_dump(
             else
                screenshot_name = path_basename(name_base);
 
-            fill_str_dated_filename(shotname, screenshot_name,
-                  IMG_EXT, sizeof(shotname));
+            fill_str_dated_filename(state->shotname, screenshot_name,
+                  IMG_EXT, sizeof(state->shotname));
          }
          else
-            snprintf(shotname, sizeof(shotname),
+            snprintf(state->shotname, sizeof(state->shotname),
                   "%s.png", path_basename(name_base));
 
          fill_pathname_join(state->filename, screenshot_dir,
-               shotname, sizeof(state->filename));
+               state->shotname, sizeof(state->filename));
       }
    }
 
@@ -279,6 +288,11 @@ static bool screenshot_dump(
 
    if (use_thread)
    {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (video_driver_has_widgets())
+         task_free_title(task);
+      else 
+#endif
       if (!savestate)
          task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
@@ -414,6 +428,11 @@ bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebu
    bool is_slowmotion     = false;
    bool is_perfcnt_enable = false;
    bool ret               = false;
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (!silence)
+      menu_widgets_take_screenshot();
+#endif
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 

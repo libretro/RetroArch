@@ -24,6 +24,9 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
+#include <queues/task_queue.h>
+#include <queues/message_queue.h>
+
 #include "core_type.h"
 #include "core.h"
 
@@ -374,8 +377,15 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void runloop_msg_queue_push(const char *msg, unsigned prio,
-      unsigned duration, bool flush);
+void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush);
+
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category);
 
 bool runloop_msg_queue_pull(const char **ret);
 

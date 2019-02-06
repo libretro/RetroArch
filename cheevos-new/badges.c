@@ -34,7 +34,7 @@ void set_badge_menu_texture(badges_ctx_t * badges, int i)
 
 #ifdef HAVE_MENU
    menu_display_reset_textures_list(badge_file, fullpath,
-         &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR);
+         &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 #endif
 }
 

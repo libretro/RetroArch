@@ -350,7 +350,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       /* We allow the connection but warn that this could cause issues. */
       dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
       RARCH_WARN("%s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false);
+      runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* We only care about platform magic if our core is quirky */
@@ -454,7 +454,7 @@ error:
    if (dmsg)
    {
       RARCH_ERR("%s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false);
+      runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return false;
 }
@@ -488,7 +488,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
    }
 
    RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Unstall if we were waiting for this */
    if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
@@ -706,7 +706,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
             sizeof(msg));
       RARCH_ERR("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
 
@@ -779,7 +779,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
             sizeof(msg));
       RARCH_ERR("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
 
@@ -885,7 +885,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
          /* Wrong core! */
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
          RARCH_ERR("%s\n", dmsg);
-         runloop_msg_queue_push(dmsg, 1, 180, false);
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          /* FIXME: Should still send INFO, so the other side knows what's what */
          return false;
       }
@@ -894,7 +894,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("%s\n", dmsg);
-         runloop_msg_queue_push(dmsg, 1, 180, false);
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -907,7 +907,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
       {
          dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
          RARCH_WARN("%s\n", dmsg);
-         runloop_msg_queue_push(dmsg, 1, 180, false);
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -954,7 +954,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       const char *msg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
       RARCH_ERR("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
 
@@ -1069,7 +1069,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
       RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* Now check the SRAM */

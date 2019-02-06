@@ -162,7 +162,6 @@ void menu_event_kb_set(bool down, enum retro_key key)
  */
 unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
-   menu_animation_ctx_delta_t delta;
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
@@ -198,7 +197,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
           * for old_input_state. */
 
          first_held  = true;
-         delay_timer = initial_held ? 12 : 6;
+         delay_timer = initial_held ? 200 : 100;
          delay_count = 0;
       }
 
@@ -235,10 +234,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      delay_count += delta.ideal;
+   delay_count += menu_animation_get_delta_time();
 
    if (menu_input_dialog_get_display_kb())
    {

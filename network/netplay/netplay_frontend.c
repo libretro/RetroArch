@@ -25,6 +25,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <net/net_http.h>
+#include <queues/task_queue.h>
 
 #ifdef HAVE_DISCORD
 #include <discord/discord.h>
@@ -638,7 +639,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
-static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
+static void netplay_announce_cb(retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("[netplay] announcing netplay game... \n");
 
@@ -963,7 +964,7 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
    if (!netplay_send_raw_cmd(netplay, connection, cmd, data, sz))
       return false;
 
-   runloop_msg_queue_push(success_msg, 1, 180, false);
+   runloop_msg_queue_push(success_msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return true;
 }
@@ -1481,7 +1482,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
       RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
-         0, 180, false);
+         0, 180, false,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       if (settings->bools.netplay_public_announce)
          netplay_announce();
@@ -1514,7 +1516,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_NETPLAY_FAILED),
-         0, 180, false);
+         0, 180, false,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return false;
 }
 

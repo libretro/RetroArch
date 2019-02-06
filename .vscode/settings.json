@@ -40,9 +40,23 @@
       "ozone_theme.h": "c",
       "ozone_texture.h": "c",
       "string_list.h": "c",
-      "core_info.h": "c"
+      "core_info.h": "c",
       "thread": "c",
-      "xlocale": "c"
+      "xlocale": "c",
+      "menu_widgets.h": "c",
+      "message_queue.h": "c",
+      "task_queue.h": "c",
+      "fifo_queue.h": "c",
+      "file_list.h": "c",
+      "strl.h": "c",
+      "configuration.h": "c",
+      "ozone_display.h": "c",
+      "verbosity.h": "c",
+      "retroarch.h": "c",
+      "menu_animation.h": "c",
+      "audio_driver.h": "c",
+      "netplay.h": "c",
+      "scaler.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
