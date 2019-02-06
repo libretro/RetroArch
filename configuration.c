@@ -1313,7 +1313,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 
 static struct config_bool_setting *populate_settings_bool(settings_t *settings, int *size)
 {
-   struct config_bool_setting  *tmp    = (struct config_bool_setting*)malloc((*size + 1) * sizeof(struct config_bool_setting));
+   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
@@ -1621,7 +1621,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 static struct config_uint_setting *populate_settings_uint(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
+   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(1, (*size + 1) * sizeof(struct config_uint_setting));
 
    if (!tmp)
       return NULL;
