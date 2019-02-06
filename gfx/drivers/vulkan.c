@@ -27,6 +27,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
 #include <retro_assert.h>
+#include <string/stdstring.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -35,6 +36,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -1914,9 +1918,13 @@ static bool vulkan_frame(void *data, const void *frame,
                   (const struct font_params*)&video_info->osd_stat_params);
          }
       }
+
+#ifdef HAVE_MENU_WIDGETS
+      menu_widgets_frame(video_info);
+#endif
 #endif
 
-      if (msg)
+      if (!string_is_empty(msg))
          font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
@@ -2733,6 +2741,14 @@ static void vulkan_get_overlay_interface(void *data,
 }
 #endif
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool vulkan_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
@@ -2755,4 +2771,7 @@ video_driver_t video_vulkan = {
 #endif
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   vulkan_menu_widgets_enabled
+#endif
 };
