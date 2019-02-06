@@ -259,7 +259,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
-   &video_gl,
+   &video_gl2,
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
@@ -1951,7 +1951,7 @@ bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-         current_video = &video_gl;
+         current_video = &video_gl2;
       }
 #endif
 
