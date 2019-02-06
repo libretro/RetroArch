@@ -103,7 +103,7 @@ bool file_list_insert(file_list_t *list,
    if (!file_list_expand_if_needed(list))
       return false;
 
-   for (i = (unsigned)list->size; i > idx; i--)
+   for (i = (unsigned)list->size; i > (int)idx; i--)
    {
       struct item_file *copy = (struct item_file*)
          calloc(1, sizeof(struct item_file));
