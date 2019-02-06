@@ -627,17 +627,14 @@ static void gl2_renderchain_render(
 
       gl2_bind_fb(chain->fbo[i]);
 
-      if (gl->shader->use)
-         gl->shader->use(gl, gl->shader_data,
-               i + 1, true);
+      gl->shader->use(gl, gl->shader_data,
+            i + 1, true);
 
       glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[i - 1]);
 
       mip_level = i + 1;
 
-      if (
-            gl->shader->mipmap_input &&
-            gl->shader->mipmap_input(gl->shader_data, mip_level)
+      if (gl->shader->mipmap_input(gl->shader_data, mip_level)
             && gl->have_mipmap)
          glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -661,8 +658,7 @@ static void gl2_renderchain_render(
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      if (gl->shader->set_params)
-         gl->shader->set_params(&params, gl->shader_data);
+      gl->shader->set_params(&params, gl->shader_data);
 
       gl->coords.vertices = 4;
 
@@ -701,18 +697,16 @@ static void gl2_renderchain_render(
    /* Render our FBO texture to back buffer. */
    gl2_renderchain_bind_backbuffer();
 
-   if (gl->shader->use)
-      gl->shader->use(gl, gl->shader_data,
-            chain->fbo_pass + 1, true);
+   gl->shader->use(gl, gl->shader_data,
+         chain->fbo_pass + 1, true);
 
    glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[chain->fbo_pass - 1]);
 
    mip_level = chain->fbo_pass + 1;
 
    if (
-            gl->shader->mipmap_input &&
-            gl->shader->mipmap_input(gl->shader_data, mip_level) &&
-            gl->have_mipmap)
+         gl->shader->mipmap_input(gl->shader_data, mip_level) &&
+         gl->have_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -733,8 +727,7 @@ static void gl2_renderchain_render(
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   if (gl->shader->set_params)
-      gl->shader->set_params(&params, gl->shader_data);
+   gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertex    = gl->vertex_ptr;
 
@@ -2405,9 +2398,8 @@ static void gl2_render_osd_background(
    uniform_param.result.f.v2       = colors[2];
    uniform_param.result.f.v3       = colors[3];
 
-   if (gl->shader->set_uniform_parameter)
-      gl->shader->set_uniform_parameter(gl->shader_data,
-            &uniform_param, NULL);
+   gl->shader->set_uniform_parameter(gl->shader_data,
+         &uniform_param, NULL);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
 
@@ -2417,9 +2409,8 @@ static void gl2_render_osd_background(
    uniform_param.result.f.v2       = 0.0f;
    uniform_param.result.f.v3       = 0.0f;
 
-   if (gl->shader->set_uniform_parameter)
-      gl->shader->set_uniform_parameter(gl->shader_data,
-            &uniform_param, NULL);
+   gl->shader->set_uniform_parameter(gl->shader_data,
+         &uniform_param, NULL);
 
    free(dummy);
    free(verts);
@@ -2683,8 +2674,7 @@ static bool gl2_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   if (gl->shader->set_params)
-      gl->shader->set_params(&params, gl->shader_data);
+   gl->shader->set_params(&params, gl->shader_data);
 
    gl->coords.vertices  = 4;
 
@@ -2850,8 +2840,7 @@ static void gl2_free(void *data)
 
    font_driver_free_osd();
 
-   if (gl->shader->deinit)
-      gl->shader->deinit(gl->shader_data);
+   gl->shader->deinit(gl->shader_data);
    video_shader_driver_deinit();
 
    glDeleteTextures(gl->textures, gl->texture);
@@ -2912,7 +2901,7 @@ static void gl2_set_nonblock_state(void *data, bool state)
    gl2_context_bind_hw_render(gl, true);
 }
 
-static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
+static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
 
@@ -3380,7 +3369,7 @@ static void *gl2_init(const video_info_t *video,
    if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
 
-   if (!resolve_extensions(gl, ctx_driver->ident, video))
+   if (!gl2_resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
 
 #ifdef GL_DEBUG
@@ -3663,8 +3652,7 @@ static bool gl2_set_shader(void *data,
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   if (gl->shader->deinit)
-      gl->shader->deinit(gl->shader_data);
+   gl->shader->deinit(gl->shader_data);
    video_shader_driver_deinit();
 
    switch (type)
@@ -3717,7 +3705,7 @@ static bool gl2_set_shader(void *data,
 
    {
       unsigned texture_info_id = gl->shader->get_prev_textures(gl->shader_data);
-      textures = texture_info_id + 1;
+      textures                 = texture_info_id + 1;
    }
 
    if (textures > gl->textures) /* Have to reinit a bit. */
@@ -4024,7 +4012,7 @@ static void gl2_get_video_output_next(void *data)
    video_context_driver_get_video_output_next();
 }
 
-static void video_texture_load_gl(
+static void video_texture_load_gl2(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
@@ -4046,18 +4034,18 @@ static int video_texture_load_wrap_gl2_mipmap(void *data)
 
    if (!data)
       return 0;
-   video_texture_load_gl((struct texture_image*)data,
+   video_texture_load_gl2((struct texture_image*)data,
          TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
-static int video_texture_load_wrap_gl(void *data)
+static int video_texture_load_wrap_gl2(void *data)
 {
    uintptr_t id = 0;
 
    if (!data)
       return 0;
-   video_texture_load_gl((struct texture_image*)data,
+   video_texture_load_gl2((struct texture_image*)data,
          TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
@@ -4071,7 +4059,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      custom_command_method_t func = video_texture_load_wrap_gl;
+      custom_command_method_t func = video_texture_load_wrap_gl2;
 
       switch (filter_type)
       {
@@ -4086,7 +4074,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
    }
 #endif
 
-   video_texture_load_gl((struct texture_image*)data, filter_type, &id);
+   video_texture_load_gl2((struct texture_image*)data, filter_type, &id);
    return id;
 }
 
