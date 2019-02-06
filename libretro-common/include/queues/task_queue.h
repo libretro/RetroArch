@@ -240,7 +240,7 @@ void task_queue_deinit(void);
 void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
 
 /* Allocs and inits a new retro_task_t */
-retro_task_t *task_init();
+retro_task_t *task_init(void);
 
 RETRO_END_DECLS
 
