@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>  // run pkg-config --static --libs xrandr
+#include <X11/extensions/Xrandr.h> /* run pkg-config --static --libs xrandr */
 #include <X11/extensions/randr.h>
 #include <X11/extensions/Xrender.h>
 
@@ -265,8 +265,8 @@ static bool x11_display_server_set_resolution(void *data,
 
    if (monitor_index == 0)
    {
-
-      for (int i = 0; i < res->noutput; i++)
+      int i;
+      for (i = 0; i < res->noutput; i++)
       {
 
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
@@ -290,7 +290,6 @@ static bool x11_display_server_set_resolution(void *data,
   }
  if (monitor_index > 0)
  {
-
     XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[monitor_index]);
     if (outputs->connection == RR_Connected)
     {
