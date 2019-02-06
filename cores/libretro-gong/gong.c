@@ -84,7 +84,7 @@ typedef struct
    float last_dt;
 } Game_Input;
 
-static Game_Input g_input = {0};
+static Game_Input g_input = {{{0}}};
 
 typedef struct
 {

@@ -649,9 +649,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          };
 #ifdef __WINRT__
       /* UWP requires the use of newer version of the factory which requires newer version of this struct */
-      DXGI_SWAP_CHAIN_DESC1 desc              = { 0 };
+      DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
 #else
-      DXGI_SWAP_CHAIN_DESC desc               = { 0 };
+      DXGI_SWAP_CHAIN_DESC desc               = {{0}};
 #endif
       UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
 
