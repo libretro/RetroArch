@@ -278,16 +278,4 @@ nbio_intf_t nbio_orbis = {
    nbio_orbis_free,
    "nbio_orbis",
 };
-#else
-nbio_intf_t nbio_orbis = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   "nbio_orbis",
-};
 #endif
