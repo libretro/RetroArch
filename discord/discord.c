@@ -225,6 +225,12 @@ static void handle_discord_join(const char* secret)
    RARCH_LOG("[Discord] join secret: (%s)\n", secret);
    list = string_split(secret, "|");
 
+   strlcpy(party_name, list->elems[1].data, sizeof(party_name));
+   strlcat(party_name, "|", sizeof(party_name));
+   strlcat(party_name, list->elems[2].data, sizeof(party_name));
+   discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
+
+
    strlcat(url, list->elems[0].data, sizeof(url));
    strlcat(url, "/", sizeof(url));
    RARCH_LOG("[Discord] querying lobby id: %s at %s\n", list->elems[0].data, url);
@@ -363,6 +369,10 @@ void discord_update(enum discord_presence presence)
 
             discord_presence.state          = label;
             discord_presence.instance       = 0;
+
+            if (!string_is_empty(party_name))
+               discord_presence.partyId    = strdup(party_name);
+
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
@@ -377,19 +387,22 @@ void discord_update(enum discord_presence presence)
 
          {
             char join_secret[128];
-            snprintf(join_secret, sizeof(join_secret), "%d|%s", room->id, room->nickname);
+            snprintf(join_secret, sizeof(join_secret), "%d|%s", room->id, party_name);
             discord_presence.joinSecret = strdup(join_secret);
             /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
             discord_presence.partyId    = strdup(party_name);
-            discord_presence.partyMax   = 0;
-            discord_presence.partySize  = 0;
+            discord_presence.partyMax   = 2;
+            discord_presence.partySize  = 1;
 
             RARCH_LOG("[Discord] join secret: %s\n", join_secret);
             RARCH_LOG("[Discord] party id: %s\n", party_name);
          }
          break;
-      case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
+         RARCH_LOG("[Discord] party id: %s\n", party_name);
+         discord_presence.partyId    = strdup(party_name);
+         break;
+      case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
       default:
          discord_presence.joinSecret = NULL;
          break;
