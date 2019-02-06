@@ -770,11 +770,17 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
    if (menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true);
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO
+            );
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true);
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR
+            );
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
