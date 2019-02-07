@@ -17,9 +17,7 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 #include "cocoa_common_metal.h"
-#ifdef HAVE_COCOA_METAL
-#include "../ui_cocoa_metal.h"
-#endif
+#include "../ui_cocoa.h"
 
 #include <retro_assert.h>
 

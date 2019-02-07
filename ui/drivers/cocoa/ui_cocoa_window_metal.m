@@ -22,7 +22,7 @@
 #include <string/stdstring.h>
 
 #include "cocoa_common_metal.h"
-#include "../ui_cocoa_metal.h"
+#include "../ui_cocoa.h"
 #include "../../ui_companion_driver.h"
 
 static void* ui_window_cocoa_init(void)

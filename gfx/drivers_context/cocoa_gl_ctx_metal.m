@@ -104,8 +104,9 @@ static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 static bool g_use_hw_ctx = false;
 
+#include "../../ui/drivers/ui_cocoa.h"
+
 #if defined(HAVE_COCOA_METAL)
-#include "../../ui/drivers/ui_cocoa_metal.h"
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -822,8 +823,8 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
 }
 
 static void cocoagl_gfx_ctx_input_driver(void *data,
-                                         const char *name,
-                                         const input_driver_t **input, void **input_data)
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;

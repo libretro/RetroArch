@@ -547,7 +547,6 @@
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MenuDisplay.h; sourceTree = "<group>"; };
-		A90205DCA5102DF8D80D3F68 /* ui_cocoa_metal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_cocoa_metal.h; sourceTree = "<group>"; };
 		A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; name = Info_Metal.plist; path = OSX/Info_Metal.plist; sourceTree = "<group>"; };
 		A902065A41AEBECE594908C7 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu_Metal.xib; sourceTree = "<group>"; };
 		A902070F2C43F222FD56A95A /* MenuDisplay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MenuDisplay.m; sourceTree = "<group>"; };
@@ -944,7 +943,6 @@
 				05366511213F8BE5007E7EA0 /* qt */,
 				05A8C5CE20DB72F000FF7857 /* ui_cocoa.h */,
 				05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */,
-				A90205DCA5102DF8D80D3F68 /* ui_cocoa_metal.h */,
 				A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */,
 				A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,

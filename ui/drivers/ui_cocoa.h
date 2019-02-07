@@ -23,7 +23,11 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#if defined(HAVE_COCOA_METAL)
+#include "cocoa/cocoa_common_metal.h"
+#elif defined(HAVE_COCOA)
 #include "cocoa/cocoa_common.h"
+#endif
 
 #include "../ui_companion_driver.h"
 
@@ -36,7 +40,7 @@ typedef struct ui_application_cocoa
 
 typedef struct ui_window_cocoa
 {
-    CocoaView *data;
+    void *data;
 } ui_window_cocoa_t;
 
 RETRO_END_DECLS
