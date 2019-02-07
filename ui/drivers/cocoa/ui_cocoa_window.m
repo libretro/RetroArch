@@ -21,7 +21,11 @@
 
 #include <string/stdstring.h>
 
+#if defined(HAVE_COCOA_METAL)
+#include "cocoa_common_metal.h"
+#elif defined(HAVE_COCOA)
 #include "cocoa_common.h"
+#endif
 #include "../ui_cocoa.h"
 #include "../../ui_companion_driver.h"
 
@@ -32,15 +36,21 @@ static void* ui_window_cocoa_init(void)
 
 static void ui_window_cocoa_destroy(void *data)
 {
+#if !defined(HAVE_COCOA_METAL)
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
     [[cocoa_view window] release];
+#endif
 }
 
 static void ui_window_cocoa_set_focused(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+#if defined(HAVE_COCOA_METAL)
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+#elif defined(HAVE_COCOA)
+    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#endif
     [[cocoa_view window] makeKeyAndOrderFront:nil];
 }
 
@@ -48,7 +58,11 @@ static void ui_window_cocoa_set_visible(void *data,
         bool set_visible)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+#if defined(HAVE_COCOA_METAL)
+    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#elif defined(HAVE_COCOA)
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+#endif
     if (set_visible)
         [[cocoa_view window] makeKeyAndOrderFront:nil];
     else
@@ -58,7 +72,11 @@ static void ui_window_cocoa_set_visible(void *data,
 static void ui_window_cocoa_set_title(void *data, char *buf)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+#if defined(HAVE_COCOA_METAL)
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#else
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+#endif
    const char* const text   = buf; /* < Can't access buffer directly in the block */
    [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 }
@@ -66,11 +84,19 @@ static void ui_window_cocoa_set_title(void *data, char *buf)
 static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+#if defined(HAVE_COCOA_METAL)
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#else
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+#endif
 
    if (droppable)
    {
+#if defined(HAVE_COCOA_METAL)
+      [[cocoa_view window] registerForDraggedTypes:@[NSPasteboardTypeColor, NSPasteboardTypeFileURL]];
+#elif defined(HAVE_COCOA)
       [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
+#endif
    }
    else
    {
@@ -81,10 +107,12 @@ static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 static bool ui_window_cocoa_focused(void *data)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+#if defined(HAVE_COCOA_METAL)
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#else
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-   if ([[cocoa_view window] isMainWindow] == YES)
-      return true;
-   return false;
+#endif
+   return cocoa_view.window.isMainWindow;
 }
 
 ui_window_t ui_window_cocoa = {
