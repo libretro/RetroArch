@@ -1253,12 +1253,12 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-bool task_load_content_is_pending()
+bool task_load_content_is_pending(void)
 {
    return pending_load_content_pending;
 }
 
-bool task_load_content_should_resume()
+bool task_load_content_should_resume(void)
 {
    /* Avoid having one menu frame before running content
       once the animation is finished */
@@ -1268,7 +1268,7 @@ bool task_load_content_should_resume()
    return pending_load_content_resume;
 }
 
-void task_load_content_resume()
+void task_load_content_resume(void)
 {
    pending_load_content_resume = true;
 }
