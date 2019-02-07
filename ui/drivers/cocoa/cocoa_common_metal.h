@@ -24,10 +24,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CORELOCATION
-#include <CoreLocation/CoreLocation.h>
-#endif
-
 typedef enum apple_view_type {
    APPLE_VIEW_TYPE_NONE,
    APPLE_VIEW_TYPE_OPENGL_ES,
@@ -70,10 +66,6 @@ extern id<ApplePlatform> apple_platform;
 
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
-
-#ifdef HAVE_AVFOUNDATION
-#import <AVFoundation/AVCaptureOutput.h>
-#endif
 
 /*********************************************/
 /* RAMenuBase                                */
@@ -129,9 +121,6 @@ void get_ios_version(int *major, int *minor);
 #include <AppKit/AppKit.h>
 
 @interface CocoaView : NSView
-#ifdef HAVE_CORELOCATION
-<CLLocationManagerDelegate>
-#endif
 
 + (CocoaView*)get;
 #if !defined(HAVE_COCOA_METAL)

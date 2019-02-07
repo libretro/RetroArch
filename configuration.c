@@ -547,8 +547,6 @@ static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
-#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
@@ -561,8 +559,6 @@ static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
-#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
-static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif

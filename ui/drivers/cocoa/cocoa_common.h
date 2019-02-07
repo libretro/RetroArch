@@ -24,19 +24,11 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CORELOCATION
-#include <CoreLocation/CoreLocation.h>
-#endif
-
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
 #if TARGET_OS_TV
 #import <GameController/GameController.h>
-#endif
-
-#ifdef HAVE_AVFOUNDATION
-#import <AVFoundation/AVCaptureOutput.h>
 #endif
 
 /*********************************************/
@@ -97,9 +89,6 @@ void get_ios_version(int *major, int *minor);
 #include <AppKit/AppKit.h>
 
 @interface CocoaView : NSView
-#ifdef HAVE_CORELOCATION
-<CLLocationManagerDelegate>
-#endif
 
 + (CocoaView*)get;
 #if !defined(HAVE_COCOA)

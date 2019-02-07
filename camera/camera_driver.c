@@ -38,11 +38,6 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
-#if defined(HAVE_AVFOUNDATION)
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-    &camera_avfoundation,
-#endif
-#endif
    &camera_null,
    NULL,
 };
