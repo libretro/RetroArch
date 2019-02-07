@@ -1456,6 +1456,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_use_preferred_system_color_theme",         &settings->bools.menu_use_preferred_system_color_theme, true, menu_use_preferred_system_color_theme, false);
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
+   SETTING_BOOL("menu_rgui_lock_aspect",         &settings->bools.menu_rgui_lock_aspect, true, rgui_lock_aspect, false);
 #ifdef HAVE_IMAGEVIEWER
    SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif

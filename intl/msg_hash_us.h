@@ -6641,6 +6641,10 @@ MSG_HASH(
     "Background filler thickness"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
+    "Lock Menu Aspect Ratio"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
     "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )
