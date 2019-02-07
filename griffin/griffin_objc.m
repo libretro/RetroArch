@@ -38,26 +38,25 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH)
+
 #if TARGET_OS_IOS
 #include "../ui/drivers/cocoa/cocoatouch_menu.m"
 #endif
 #include "../ui/drivers/ui_cocoatouch.m"
+
 #else
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
+#include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
+#include "../ui/drivers/cocoa/ui_cocoa_application.m"
+#include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
 #endif
 
 #if defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"
-#include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
-#include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
-#include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #elif defined(HAVE_COCOA_METAL)
 #include "../ui/drivers/ui_cocoa_metal.m"
-#include "../ui/drivers/cocoa/ui_cocoa_browser_window_metal.m"
-#include "../ui/drivers/cocoa/ui_cocoa_msg_window_metal.m"
-#include "../ui/drivers/cocoa/ui_cocoa_application_metal.m"
 #endif
 
 #endif
