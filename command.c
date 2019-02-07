@@ -2623,11 +2623,13 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             /* buf is expected to be address|port */
-            char *buf = (char *)data;
-            RARCH_LOG("[netplay] buf %s\n", buf);
             static struct string_list *hostname = NULL;
-            settings_t *settings = config_get_ptr();
-            hostname = string_split(buf, "|");
+            settings_t *settings                = config_get_ptr();
+            char *buf                           = (char *)data;
+
+            RARCH_LOG("[netplay] buf %s\n", buf);
+
+            hostname                            = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -2657,12 +2659,14 @@ TODO: Add a setting for these tweaks */
       /* init netplay via lobby when content is not loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
-            /* buf is expected to be address|port */
-            char *buf = (char *)data;
-            RARCH_LOG("[netplay] buf %s\n", buf);
             static struct string_list *hostname = NULL;
-            settings_t *settings = config_get_ptr();
-            hostname = string_split(buf, "|");
+            /* buf is expected to be address|port */
+            settings_t *settings                = config_get_ptr();
+            char *buf                           = (char *)data;
+
+            RARCH_LOG("[netplay] buf %s\n", buf);
+            
+			hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
