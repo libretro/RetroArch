@@ -1413,6 +1413,15 @@ static bool netplay_disconnect(netplay_t *netplay)
       netplay_hangup(netplay, &netplay->connections[i]);
 
    deinit_netplay();
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
    return true;
 }
 
@@ -1554,7 +1563,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             if (discord_is_inited)
             {
                discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED;
+               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
 #endif

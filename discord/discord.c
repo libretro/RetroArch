@@ -68,7 +68,10 @@ struct netplay_room *room;
 static char user_id[128];
 static char user_name[128];
 static char party_name[128];
+static char client_party_name[128];
 static char user_avatar[PATH_MAX_LENGTH];
+
+static bool connecting = false;
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
@@ -198,6 +201,8 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data, void *us
       RARCH_LOG("[Discord] joining lobby at: %s\n", tmp_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, tmp_hostname, room->corename, room->subsystem_name);
+      connecting = true;
+      discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
    }
 
 finish:
@@ -225,11 +230,9 @@ static void handle_discord_join(const char* secret)
    RARCH_LOG("[Discord] join secret: (%s)\n", secret);
    list = string_split(secret, "|");
 
-   strlcpy(party_name, list->elems[1].data, sizeof(party_name));
-   strlcat(party_name, "|", sizeof(party_name));
-   strlcat(party_name, list->elems[2].data, sizeof(party_name));
-   discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
-
+   strlcpy(client_party_name, list->elems[1].data, sizeof(client_party_name));
+   strlcat(client_party_name, "|", sizeof(client_party_name));
+   strlcat(client_party_name, list->elems[2].data, sizeof(client_party_name));
 
    strlcat(url, list->elems[0].data, sizeof(url));
    strlcat(url, "/", sizeof(url));
@@ -309,8 +312,11 @@ void discord_update(enum discord_presence presence)
    if (presence == discord_status)
       return;
 
-   if (presence == DISCORD_PRESENCE_NONE || presence == DISCORD_PRESENCE_MENU)
+   if (!connecting && (presence == DISCORD_PRESENCE_NONE || presence == DISCORD_PRESENCE_MENU))
+   {
       memset(&discord_presence, 0, sizeof(discord_presence));
+      client_party_name[0] = '\0';
+   }
 
    switch (presence)
    {
@@ -370,9 +376,14 @@ void discord_update(enum discord_presence presence)
             discord_presence.state          = label;
             discord_presence.instance       = 0;
 
-            if (!string_is_empty(party_name))
-               discord_presence.partyId    = strdup(party_name);
-
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            {
+               client_party_name[0] = '\0';
+               discord_presence.partyId    = NULL;
+               discord_presence.partyMax   = 0;
+               discord_presence.partySize  = 0;
+               connecting = false;
+            }
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
@@ -399,12 +410,28 @@ void discord_update(enum discord_presence presence)
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
-         RARCH_LOG("[Discord] party id: %s\n", party_name);
-         discord_presence.partyId    = strdup(party_name);
+         RARCH_LOG("[Discord] party id: %s\n", client_party_name);
+         discord_presence.partyId    = strdup(client_party_name);
          break;
-      case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
+      case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
+         {
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) && 
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+            {
+               client_party_name[0] = '\0';
+               discord_presence.partyId    = NULL;
+               discord_presence.partyMax   = 0;
+               discord_presence.partySize  = 0;
+               connecting = false;
+            }
+         }
+         break;
+      case DISCORD_PRESENCE_SHUTDOWN:
+            discord_presence.partyId    = NULL;
+            discord_presence.partyMax   = 0;
+            discord_presence.partySize  = 0;
+            connecting = false;
       default:
-         discord_presence.joinSecret = NULL;
          break;
    }
 
@@ -434,7 +461,11 @@ void discord_init(void)
 
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
+#ifdef _WIN32)
    strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+#else
+   snprintf(command, sizeof(command), "sh -c %s", get_retroarch_launch_arguments());
+#endif
 
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
