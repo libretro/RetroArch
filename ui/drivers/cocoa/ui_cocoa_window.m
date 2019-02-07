@@ -47,9 +47,9 @@ static void ui_window_cocoa_set_focused(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
 #if defined(HAVE_COCOA_METAL)
-    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#elif defined(HAVE_COCOA)
     CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+#elif defined(HAVE_COCOA)
+    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
 #endif
     [[cocoa_view window] makeKeyAndOrderFront:nil];
 }
