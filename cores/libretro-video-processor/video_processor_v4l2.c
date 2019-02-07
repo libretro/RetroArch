@@ -557,7 +557,7 @@ void v4l2_frame_times(struct v4l2_buffer buf) {
        return;
 
    if (ft_info == NULL)
-       ft_info = calloc(5000, sizeof(char));
+       ft_info = (char*)calloc(5000, sizeof(char));
 
    if ( (buf.timestamp.tv_sec - ft_prevtime.tv_sec >= 1) && \
         (buf.timestamp.tv_usec + 1000000 - ft_prevtime2.tv_usec) >= 1000000) {
@@ -567,7 +567,7 @@ void v4l2_frame_times(struct v4l2_buffer buf) {
        printf("Average frame times: %.3fms\n", ft_favg/(1000*ft_fcount));
        printf("Fields timestampdiffs last second:\n%s\n", ft_info);
        free(ft_info);
-       ft_info = calloc(5000, sizeof(char));
+       ft_info = (char*)calloc(5000, sizeof(char));
        ft_fcount = 0;
        ft_favg = 0;
        ft_prevtime = buf.timestamp;
@@ -955,7 +955,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
           */
          processing_deinterlacing_crap(frame_curr, frame_out, video_cap_width, video_cap_height/2, field_read, 1);
       } else {
-         processing_deinterlacing_crap(frame_curr, frame_out, video_cap_width, video_cap_height, video_buf.field, 0);
+         processing_deinterlacing_crap(frame_curr, frame_out, video_cap_width, video_cap_height, (enum v4l2_field)video_buf.field, 0);
       }
       aux = frame_prev3;
       frame_prev3 = frame_prev2;
@@ -1276,13 +1276,13 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    printf("Capture Resolution %ux%u\n", video_cap_width, video_cap_height);
    printf("Output Resolution %ux%u\n", video_cap_width, video_out_height);
 
-   frame_cap = calloc(1, video_cap_width * video_cap_height * sizeof(uint8_t) * 3);
-   frame_out = calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
+   frame_cap = (uint8_t*)calloc(1, video_cap_width * video_cap_height * sizeof(uint8_t) * 3);
+   frame_out = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
    /* TODO: Only allocate frames if we are going to use it (for deinterlacing or other filters?) */
-   frames[0] = calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
-   frames[1] = calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
-   frames[2] = calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
-   frames[3] = calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
+   frames[0] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
+   frames[1] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
+   frames[2] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
+   frames[3] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
 
    frame_curr = frames[0];
    frame_prev1 = frames[1];
