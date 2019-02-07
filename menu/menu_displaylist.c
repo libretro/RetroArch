@@ -7533,11 +7533,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             {
                if (settings->bools.menu_show_load_core)
                {
-                  if (!core_is_game_loaded())
-                  {
-                     menu_displaylist_parse_settings_enum(menu, info,
-                           MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false);
-                  }
+                  menu_displaylist_parse_settings_enum(menu, info,
+                        MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false);
                }
             }
 
