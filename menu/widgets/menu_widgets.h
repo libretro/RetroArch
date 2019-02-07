@@ -36,19 +36,19 @@
 #define HOURGLASS_DURATION                1000
 
 void menu_widgets_init(bool video_is_threaded);
-void menu_widgets_free();
-bool menu_widgets_ready();
+void menu_widgets_free(void);
+bool menu_widgets_ready(void);
 
 bool menu_widgets_msg_queue_push(const char *msg,
       unsigned duration,
       char *title,
       enum message_queue_icon icon, enum message_queue_category category);
 
-bool menu_widgets_volume_update_and_show();
+bool menu_widgets_volume_update_and_show(void);
 
 bool menu_widgets_set_fps_text(char *fps_text);
 
-void menu_widgets_iterate();
+void menu_widgets_iterate(void);
 
 bool menu_widgets_set_paused(bool is_paused);
 bool menu_widgets_set_fast_forward(bool is_fast_forward);
@@ -56,15 +56,16 @@ bool menu_widgets_set_rewind(bool is_rewind);
 
 bool menu_widgets_task_msg_queue_push(retro_task_t *task);
 
-void menu_widgets_take_screenshot();
+void menu_widgets_take_screenshot(void);
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
-void menu_widgets_cleanup_load_content_animation();
+void menu_widgets_cleanup_load_content_animation(void);
 
 void menu_widgets_context_reset(bool is_threaded);
-void menu_widgets_context_destroy();
+
+void menu_widgets_context_destroy(void);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set 

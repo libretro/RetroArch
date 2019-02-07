@@ -66,9 +66,9 @@ static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
 static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
 
-static bool init                             = false;
+static bool menu_widgets_inited              = false;
 static uint64_t menu_widgets_frame_count     = 0;
-static menu_animation_ctx_tag generic_tag    = (uintptr_t) &init;
+static menu_animation_ctx_tag generic_tag    = (uintptr_t) &menu_widgets_inited;
 
 /* Font data */
 font_data_t *font_regular;
@@ -272,7 +272,7 @@ static unsigned msg_queue_task_hourglass_x;
 
 bool menu_widgets_set_paused(bool is_paused)
 {
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    paused = is_paused;
@@ -297,7 +297,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 {
    menu_widget_msg_t* msg_widget = NULL;
 
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    #ifdef HAVE_THREADS
@@ -514,7 +514,7 @@ static void menu_widgets_msg_queue_expired(void *userdata)
       msg->expired = true;
 }
 
-static void menu_widgets_msg_queue_move()
+static void menu_widgets_msg_queue_move(void)
 {
    int i;
    float y = 0;
@@ -769,18 +769,18 @@ static void menu_widgets_hourglass_tick(void *userdata)
    menu_animation_push(&entry);
 }
 
-void menu_widgets_iterate()
+void menu_widgets_iterate(void)
 {
    int i;
    settings_t *settings = config_get_ptr();
 
-   if (!init)
+   if (!menu_widgets_inited)
       return;
 
    /* Messages queue */
-   #ifdef HAVE_THREADS
+#ifdef HAVE_THREADS
    runloop_msg_queue_lock();
-   #endif
+#endif
 
    /* Consume one message if available */
    if (fifo_read_avail(msg_queue) > 0 && !moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
@@ -833,9 +833,9 @@ void menu_widgets_iterate()
       menu_widgets_msg_queue_move();
    }
 
-   #ifdef HAVE_THREADS
+#ifdef HAVE_THREADS
    runloop_msg_queue_unlock();
-   #endif
+#endif
 
    /* Kill first expired message */
    /* Start expiration timer of dead tasks */
@@ -1282,7 +1282,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
 
    settings_t *settings = config_get_ptr();
 
-   if (!init)
+   if (!menu_widgets_inited)
       return;
 
    menu_widgets_frame_count++;
@@ -1585,10 +1585,10 @@ void menu_widgets_frame(video_frame_info_t *video_info)
 
 void menu_widgets_init(bool video_is_threaded)
 {
-   if (init)
+   if (menu_widgets_inited)
       return;
 
-   init = true;
+   menu_widgets_inited = true;
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto err;
@@ -1746,13 +1746,13 @@ void menu_widgets_context_reset(bool is_threaded)
    msg_queue_task_hourglass_x       = msg_queue_rect_start_x - msg_queue_icon_size_x;
 }
 
-void menu_widgets_context_destroy()
+void menu_widgets_context_destroy(void)
 {
    int i;
-   if (!init)
+   if (!menu_widgets_inited)
       return;
 
-   //TODO: Dismiss onscreen notifications that have been freed
+   /* TODO: Dismiss onscreen notifications that have been freed */
 
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
@@ -1772,11 +1772,11 @@ void menu_widgets_context_destroy()
    font_bold = NULL;
 }
 
-void menu_widgets_free()
+void menu_widgets_free(void)
 {
    int i;
 
-   init = false;
+   menu_widgets_inited = false;
 
    /* Kill any pending animation */
    menu_animation_kill_by_tag(&volume_tag);
@@ -1819,7 +1819,7 @@ void menu_widgets_free()
    font_driver_bind_block(NULL, NULL);
 }
 
-static void menu_widgets_volume_timer_end()
+static void menu_widgets_volume_timer_end(void *userdata)
 {
    menu_animation_ctx_entry_t entry;
 
@@ -1838,14 +1838,14 @@ static void menu_widgets_volume_timer_end()
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_volume_update_and_show()
+bool menu_widgets_volume_update_and_show(void)
 {
    settings_t *settings = config_get_ptr();
    bool mute            = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
    float new_volume     = settings->floats.audio_volume;
    menu_timer_ctx_entry_t entry;
 
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    menu_animation_kill_by_tag(&volume_tag);
@@ -1856,9 +1856,18 @@ bool menu_widgets_volume_update_and_show()
    volume_text_alpha = 1.0f;
    volume_mute       = mute;
 
-   entry.cb       = menu_widgets_volume_timer_end;
-   entry.duration = VOLUME_DURATION;
-   entry.userdata = NULL;
+   /* TODO/FIXME - natinusula -
+    *
+menu/widgets/menu_widgets.c: In function 'menu_widgets_volume_update_and_show':
+menu/widgets/menu_widgets.c:1859:19: warning: assignment to 'tween_cb' {aka 'void (*)(void *)'} from incompatible pointer type 'void (*)(void)' [-Wincompatible-pointer-types]
+    entry.cb       = menu_widgets_volume_timer_end;
+                   ^
+    * 
+    *
+    */
+   entry.cb          = menu_widgets_volume_timer_end;
+   entry.duration    = VOLUME_DURATION;
+   entry.userdata    = NULL;
 
    menu_timer_start(&volume_timer, &entry);
 
@@ -1867,7 +1876,7 @@ bool menu_widgets_volume_update_and_show()
 
 bool menu_widgets_set_fps_text(char *new_fps_text)
 {
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    strlcpy(fps_text, new_fps_text, sizeof(fps_text));
@@ -1877,7 +1886,7 @@ bool menu_widgets_set_fps_text(char *new_fps_text)
 
 bool menu_widgets_set_fast_forward(bool is_fast_forward)
 {
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    fast_forward = is_fast_forward;
@@ -1887,7 +1896,7 @@ bool menu_widgets_set_fast_forward(bool is_fast_forward)
 
 bool menu_widgets_set_rewind(bool is_rewind)
 {
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    rewinding = is_rewind;
@@ -1899,7 +1908,7 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
 {
    menu_animation_ctx_entry_t entry;
 
-   if (!init)
+   if (!menu_widgets_inited)
       return;
 
    entry.cb             = menu_widgets_screenshot_fadeout;
@@ -1919,11 +1928,11 @@ void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
 }
 
-void menu_widgets_take_screenshot()
+void menu_widgets_take_screenshot(void)
 {
    menu_animation_ctx_entry_t entry;
 
-   if (!init)
+   if (!menu_widgets_inited)
       return;
 
    entry.cb             = menu_widgets_screenshot_fadeout;
@@ -1939,7 +1948,7 @@ void menu_widgets_take_screenshot()
 
 bool menu_widgets_task_msg_queue_push(retro_task_t *task)
 {
-   if (!init)
+   if (!menu_widgets_inited)
       return false;
 
    if (task->title != NULL && !task->mute)
@@ -1953,7 +1962,7 @@ static void menu_widgets_end_load_content_animation(void *userdata)
    task_load_content_resume();
 }
 
-void menu_widgets_cleanup_load_content_animation()
+void menu_widgets_cleanup_load_content_animation(void)
 {
    load_content_animation_running = false;
    free(load_content_animation_content_name);
@@ -1967,7 +1976,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    menu_timer_ctx_entry_t timer_entry;
    int i;
 
-   float icon_color[16] = COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); //TODO: random color
+   float icon_color[16] = COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
    unsigned timing      = 0;
 
    /* Prepare data */
@@ -2062,7 +2071,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    load_content_animation_running = true;
 }
 
-bool menu_widgets_ready()
+bool menu_widgets_ready(void)
 {
-   return init;
+   return menu_widgets_inited;
 }
