@@ -52,7 +52,7 @@
 #include "../../../tasks/tasks_internal.h"
 #include "../../../dynamic.h"
 
-ozone_node_t *ozone_alloc_node()
+ozone_node_t *ozone_alloc_node(void)
 {
    ozone_node_t *node = (ozone_node_t*)malloc(sizeof(*node));
 

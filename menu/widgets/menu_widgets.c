@@ -71,11 +71,11 @@ static uint64_t menu_widgets_frame_count     = 0;
 static menu_animation_ctx_tag generic_tag    = (uintptr_t) &menu_widgets_inited;
 
 /* Font data */
-font_data_t *font_regular;
-font_data_t *font_bold;
+static font_data_t *font_regular;
+static font_data_t *font_bold;
 
-video_font_raster_block_t font_raster_regular;
-video_font_raster_block_t font_raster_bold;
+static video_font_raster_block_t font_raster_regular;
+static video_font_raster_block_t font_raster_bold;
 
 static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
@@ -152,9 +152,9 @@ typedef struct menu_widget_msg
    menu_timer_t hourglass_timer;
 } menu_widget_msg_t;
 
-static fifo_buffer_t *msg_queue;
-static file_list_t *current_msgs;
-static unsigned msg_queue_kill;
+static fifo_buffer_t *msg_queue       = NULL;
+static file_list_t *current_msgs      = NULL;
+static unsigned msg_queue_kill        = 0;
 
 static unsigned msg_queue_tasks_count = 0; /* count of messages bound to a taskin current_msgs */
 
@@ -166,7 +166,7 @@ static menu_texture_item msg_queue_icon_rect     = 0;
 static bool msg_queue_has_icons                  = false;
 
 /* there can only be one message animation at a time to avoid confusing users */
-static bool moving   = false;
+static bool widgets_moving   = false;
 
 /* Icons */
 enum menu_widgets_icon
@@ -476,7 +476,7 @@ static void menu_widgets_unfold_end(void *userdata)
    menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
 
    unfold->unfolding = false;
-   moving            = false;
+   widgets_moving    = false;
 }
 
 static void menu_widgets_move_end(void *userdata)
@@ -501,9 +501,7 @@ static void menu_widgets_move_end(void *userdata)
       unfold->unfolding = true;
    }
    else
-   {
-      moving = false;
-   }
+      widgets_moving = false;
 }
 
 static void menu_widgets_msg_queue_expired(void *userdata)
@@ -552,7 +550,7 @@ static void menu_widgets_msg_queue_move(void)
 
          menu_animation_push(&entry);
 
-         moving = true;
+         widgets_moving = true;
       }
    }
 }
@@ -587,7 +585,7 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
       current_msgs->size--;
    }
 
-   moving = false;
+   widgets_moving = false;
 }
 
 static void menu_widgets_msg_queue_kill_end(void *userdata)
@@ -609,8 +607,8 @@ static void menu_widgets_msg_queue_kill(unsigned idx)
    if (!msg)
       return;
 
-   moving = true;
-   msg->dying = true;
+   widgets_moving = true;
+   msg->dying     = true;
 
    msg_queue_kill = idx;
 
@@ -783,7 +781,7 @@ void menu_widgets_iterate(void)
 #endif
 
    /* Consume one message if available */
-   if (fifo_read_avail(msg_queue) > 0 && !moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
+   if (fifo_read_avail(msg_queue) > 0 && !widgets_moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
    {
       menu_widget_msg_t *msg_widget;
 
@@ -849,7 +847,7 @@ void menu_widgets_iterate(void)
       if (msg->task_ptr != NULL && (msg->task_finished || msg->task_cancelled))
          menu_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
 
-      if (msg->expired && !moving)
+      if (msg->expired && !widgets_moving)
       {
          menu_widgets_msg_queue_kill(i);
          break;

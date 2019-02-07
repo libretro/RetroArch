@@ -157,6 +157,6 @@ extern bool last_use_preferred_system_color_theme;
 extern ozone_theme_t *ozone_default_theme;
 
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme);
-unsigned ozone_get_system_theme();
+unsigned ozone_get_system_theme(void);
 
 #endif
