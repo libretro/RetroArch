@@ -62,9 +62,6 @@
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
 
-/* forward declarations */
-void cocoagl_gfx_ctx_show_mouse(void *data, bool state);
-
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -321,6 +318,17 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
 #endif
 }
 
+static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
+{
+    (void)data;
+
+#ifdef HAVE_COCOA
+    if (state)
+        [NSCursor unhide];
+    else
+        [NSCursor hide];
+#endif
+}
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
