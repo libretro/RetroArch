@@ -1297,7 +1297,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    }
 
    printf("Allocated %" PRI_SIZET " byte conversion buffer\n",
-         video_cap_width * video_cap_height * sizeof(uint32_t));
+         (size_t)(video_cap_width * video_cap_height) * sizeof(uint32_t));
 
    pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixel_format))
