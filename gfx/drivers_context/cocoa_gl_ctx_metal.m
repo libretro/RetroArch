@@ -120,7 +120,8 @@ void *glcontext_get_ptr(void)
 static unsigned g_minor = 0;
 static unsigned g_major = 0;
 
-/* forward declaration */
+/* forward declarations */
+void cocoagl_gfx_ctx_show_mouse(void *data, bool state);
 void *nsview_get_ptr(void);
 
 #if defined(HAVE_COCOATOUCH)
@@ -398,18 +399,6 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int interval)
          break;
    }
 
-}
-
-static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
-{
-   (void)data;
-
-#ifdef HAVE_COCOA_METAL
-   if (state)
-      [NSCursor unhide];
-   else
-      [NSCursor hide];
-#endif
 }
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,

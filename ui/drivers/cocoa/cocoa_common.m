@@ -568,6 +568,18 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 @end
 
+void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
+{
+    (void)data;
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+    if (state)
+        [NSCursor unhide];
+    else
+        [NSCursor hide];
+#endif
+}
+
 #ifdef HAVE_AVFOUNDATION
 typedef struct apple_camera
 {
