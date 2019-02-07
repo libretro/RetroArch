@@ -37,6 +37,9 @@
 
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#import "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #import "../font_driver.h"
@@ -419,23 +422,36 @@ static void metal_get_overlay_interface(void *data,
 
 #endif
 
-video_driver_t video_metal = {
-   .init                   = metal_init,
-   .frame                  = metal_frame,
-   .set_nonblock_state     = metal_set_nonblock_state,
-   .alive                  = metal_alive,
-   .has_windowed           = metal_has_windowed,
-   .focus                  = metal_focus,
-   .suppress_screensaver   = metal_suppress_screensaver,
-   .set_shader             = metal_set_shader,
-   .free                   = metal_free,
-   .ident                  = "metal",
-   .set_viewport           = metal_set_viewport,
-   .set_rotation           = metal_set_rotation,
-   .viewport_info          = metal_viewport_info,
-   .read_viewport          = metal_read_viewport,
-#ifdef HAVE_OVERLAY
-   .overlay_interface      = metal_get_overlay_interface,
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool metal_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
 #endif
-   .poke_interface         = metal_get_poke_interface,
+
+video_driver_t video_metal = {
+   metal_init,
+   metal_frame,
+   metal_set_nonblock_state,
+   metal_alive,
+   metal_focus,
+   metal_suppress_screensaver,
+   metal_has_windowed,
+   metal_set_shader,
+   metal_free,
+   "metal",
+   metal_set_viewport,
+   metal_set_rotation,
+   metal_viewport_info,
+   metal_read_viewport,
+   NULL, /* read_frame_raw */
+#ifdef HAVE_OVERLAY
+   metal_get_overlay_interface,
+#endif
+   metal_get_poke_interface,
+   NULL, /* metal_wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   metal_menu_widgets_enabled
+#endif
 };
