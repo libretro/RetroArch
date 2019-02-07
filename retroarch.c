@@ -438,7 +438,6 @@ static void retroarch_print_features(void)
                                               "(for OSX and/or iOS)");
 
    _PSUPP(qt,              "Qt",              "Qt UI companion support");
-   _PSUPP(avfoundation,    "AVFoundation",    "Camera driver");
    _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
 }
 #undef _PSUPP
