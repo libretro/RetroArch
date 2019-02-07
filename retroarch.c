@@ -2445,7 +2445,7 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
       bool flush)
 {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_task_msg_queue_push(task))
+   if (!video_driver_has_widgets() || !menu_widgets_task_msg_queue_push(task, msg, prio, duration, flush))
 #endif
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
@@ -2460,8 +2460,8 @@ void runloop_msg_queue_push(const char *msg,
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    /* People have 60FPS in mind when they use runloop_msg_queue_push */
-   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg, duration / 60 * 1000, title, icon, category))
-     return;
+   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg, duration / 60 * 1000, title, icon, category, prio, flush))
+      return;
 #endif
 
 #ifdef HAVE_THREADS
