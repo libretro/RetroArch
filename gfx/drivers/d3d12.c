@@ -28,11 +28,17 @@
 #include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 
-#include "../../menu/menu_driver.h"
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
+#endif
 
 #include "wiiu/wiiu_dbg.h"
 
@@ -1531,6 +1537,12 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
+#endif
+
    if (msg && *msg)
    {
       D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
@@ -1816,6 +1828,14 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d12_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool d3d12_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_d3d12 = {
    d3d12_gfx_init,
    d3d12_gfx_frame,
@@ -1837,4 +1857,8 @@ video_driver_t video_d3d12 = {
    d3d12_get_overlay_interface,
 #endif
    d3d12_gfx_get_poke_interface,
+   NULL, /* d3d12_wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   d3d12_menu_widgets_enabled
+#endif
 };
