@@ -566,14 +566,14 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
             PATH_MAX_LENGTH,
             ticker->str,
             ticker->len);
-      return true;
+      return false;
    }
 
    if (!ticker->selected)
    {
       utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
       strlcat(ticker->s, "...", PATH_MAX_LENGTH);
-      return true;
+      return false;
    }
 
    if (str_len > ticker->len)

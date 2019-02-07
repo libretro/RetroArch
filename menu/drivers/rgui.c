@@ -1588,7 +1588,8 @@ static void rgui_render(void *data, bool is_idle)
       ticker.idx      = menu_animation_get_ticker_time();
       ticker.str      = rgui->thumbnail_content;
       ticker.selected = true;
-      menu_animation_ticker(&ticker);
+      if (menu_animation_ticker(&ticker))
+         rgui->force_redraw = true;
 
       title_width = utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE;
       title_x = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
@@ -1623,7 +1624,8 @@ static void rgui_render(void *data, bool is_idle)
       ticker.str      = title;
       ticker.selected = true;
 
-      menu_animation_ticker(&ticker);
+      if (menu_animation_ticker(&ticker))
+         rgui->force_redraw = true;
 
       string_to_upper(title_buf);
 
@@ -1643,7 +1645,8 @@ static void rgui_render(void *data, bool is_idle)
          ticker.str      = core_title;
          ticker.selected = true;
 
-         menu_animation_ticker(&ticker);
+         if (menu_animation_ticker(&ticker))
+            rgui->force_redraw = true;
 
          if (rgui_framebuf_data)
             blit_line(
@@ -1713,13 +1716,15 @@ static void rgui_render(void *data, bool is_idle)
          ticker.str      = entry_path;
          ticker.selected = entry_selected;
 
-         menu_animation_ticker(&ticker);
+         if (menu_animation_ticker(&ticker))
+            rgui->force_redraw = true;
 
          ticker.s        = type_str_buf;
          ticker.len      = entry_spacing;
          ticker.str      = entry_value;
 
-         menu_animation_ticker(&ticker);
+         if (menu_animation_ticker(&ticker))
+            rgui->force_redraw = true;
 
          entry_title_buf_utf8len = utf8len(entry_title_buf);
          entry_title_buf_len     = strlen(entry_title_buf);
