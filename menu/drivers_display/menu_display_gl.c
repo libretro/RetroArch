@@ -84,9 +84,8 @@ static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   if (gl && gl->shader && gl->shader->use)
-      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND,
-            true);
+   gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND,
+         true);
 }
 
 static void menu_display_gl_blend_end(video_frame_info_t *video_info)
@@ -144,8 +143,7 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 {
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
-   gl_t             *gl             = video_info ?
-      (gl_t*)video_info->userdata : NULL;
+   gl_t             *gl             = (gl_t*)video_info->userdata;
    static float t                   = 0;
    video_coord_array_t *ca          = menu_display_get_coords_array();
 
@@ -173,9 +171,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         if (gl && gl->shader && gl->shader->use)
-            gl->shader->use(gl, gl->shader_data, draw->pipeline.id,
-                  true);
+         gl->shader->use(gl, gl->shader_data, draw->pipeline.id,
+               true);
 
          t += 0.01;
 
@@ -192,9 +189,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          uniform_param.result.f.v0       = t;
 
-         if (gl->shader->set_uniform_parameter)
-            gl->shader->set_uniform_parameter(gl->shader_data,
-                  &uniform_param, NULL);
+         gl->shader->set_uniform_parameter(gl->shader_data,
+               &uniform_param, NULL);
          break;
    }
 
@@ -210,9 +206,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
          uniform_param.result.f.v0       = draw->width;
          uniform_param.result.f.v1       = draw->height;
 
-         if (gl->shader->set_uniform_parameter)
-            gl->shader->set_uniform_parameter(gl->shader_data,
-                  &uniform_param, NULL);
+         gl->shader->set_uniform_parameter(gl->shader_data,
+               &uniform_param, NULL);
 #endif
          break;
    }
