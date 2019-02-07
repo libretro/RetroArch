@@ -2227,6 +2227,32 @@ static int rgui_pointer_tap(void *data,
    return 0;
 }
 
+static void rgui_toggle(void *userdata, bool menu_on)
+{
+   settings_t *settings = config_get_ptr();
+   
+   if (settings->bools.menu_rgui_lock_aspect)
+   {
+      if (menu_on)
+      {
+         if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
+         {
+            unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+            settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_4_3;
+            video_driver_set_aspect_ratio();
+            settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
+         }
+      }
+      else
+      {
+         if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
+         {
+            video_driver_set_aspect_ratio();
+         }
+      }
+   }
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
@@ -2238,7 +2264,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_populate_entries,
-   NULL,
+   rgui_toggle,
    rgui_navigation_clear,
    NULL,
    NULL,
