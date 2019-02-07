@@ -461,7 +461,7 @@ void discord_init(void)
 
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
-#ifdef _WIN32)
+#ifdef _WIN32
    strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
 #else
    snprintf(command, sizeof(command), "sh -c %s", get_retroarch_launch_arguments());
