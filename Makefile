@@ -96,7 +96,7 @@ endif
 
 DEF_FLAGS += -Wall $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb
 
-CFLAGS += $(DEF_FLAGS)
+CFLAGS += $(DEF_FLAGS) -Wformat-truncation
 CXXFLAGS += $(DEF_FLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
