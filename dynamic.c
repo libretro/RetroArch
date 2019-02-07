@@ -222,6 +222,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          {
             for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
             {
+               /* Nasty, but have to do it like this since
+                * the pointers are const char *
+                * (if we don't free them, we get a memory leak) */
+               if (!string_is_empty(subsystem_data[i].desc))
+                  free((char *)subsystem_data[i].desc);
+               if (!string_is_empty(subsystem_data[i].ident))
+                  free((char *)subsystem_data[i].ident);
                subsystem_data[i].desc = strdup(info[i].desc);
                subsystem_data[i].ident = strdup(info[i].ident);
                subsystem_data[i].id = info[i].id;
@@ -232,6 +239,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 
                for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
                {
+                  /* Nasty, but have to do it like this since
+                   * the pointers are const char *
+                   * (if we don't free them, we get a memory leak) */
+                  if (!string_is_empty(subsystem_data_roms[i][j].desc))
+                     free((char *)subsystem_data_roms[i][j].desc);
+                  if (!string_is_empty(subsystem_data_roms[i][j].valid_extensions))
+                     free((char *)subsystem_data_roms[i][j].valid_extensions);
                   subsystem_data_roms[i][j].desc = strdup(info[i].roms[j].desc);
                   subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
                   subsystem_data_roms[i][j].required = info[i].roms[j].required;

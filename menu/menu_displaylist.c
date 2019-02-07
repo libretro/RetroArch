@@ -92,6 +92,7 @@
 #include "../core_info.h"
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
+#include "../dynamic.h"
 
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -7507,6 +7508,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          {
             settings_t      *settings      = config_get_ptr();
             rarch_system_info_t *sys_info  = runloop_get_system_info();
+            const struct retro_subsystem_info* subsystem;
 
             if (sys_info)
             {
@@ -7529,18 +7531,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             if (frontend_driver_has_fork())
 #endif
             {
-            if (settings->bools.menu_show_load_core)
+               if (settings->bools.menu_show_load_core)
+               {
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false);
-            if (settings->bools.menu_show_load_core)
-                  menu_displaylist_parse_settings_enum(menu, info,
-                        MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, PARSE_ACTION, false);
+               }
             }
 
             if (settings->bools.menu_show_load_content)
+            {
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
                      PARSE_ACTION, false);
+
+               /* Core fully loaded, use the subsystem data */
+               if (sys_info->subsystem.data)
+                     subsystem = sys_info->subsystem.data;
+               /* Core not loaded completely, use the data we peeked on load core */
+               else
+                  subsystem = subsystem_data;
+
+               menu_subsystem_populate(subsystem, info);
+            }
+
             if (settings->bools.menu_content_show_history)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,

@@ -2691,7 +2691,16 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
+   char star_char[8];
    unsigned i = 0;
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
+   
+   /* Select approriate 'star' marker for subsystem menu entries
+    * (i.e. RGUI does not support unicode, so use a 'standard'
+    * character fallback) */
+   snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : "\u2605");
+   
    if (subsystem && subsystem_current_count > 0)
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)
@@ -2704,8 +2713,20 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                snprintf(s, sizeof(s),
                   "Load %s %s",
                   subsystem->desc,
-                  i == content_get_subsystem()
-                  ? "\u2605" : " ");
+                  star_char);
+               
+               /* RGUI does not support sublabels, so have to add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[content_get_subsystem_rom_id()].desc);
+                  strlcpy(s, tmp, sizeof(s));
+               }
+               
                menu_entries_append_enum(info->list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -2717,8 +2738,31 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                snprintf(s, sizeof(s),
                   "Start %s %s",
                   subsystem->desc,
-                  i == content_get_subsystem()
-                  ? "\u2605" : " ");
+                  star_char);
+               
+               /* RGUI does not support sublabels, so have to add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui)
+               {
+                  unsigned j = 0;
+                  char rom_buff[PATH_MAX_LENGTH];
+                  char tmp[PATH_MAX_LENGTH];
+                  rom_buff[0] = '\0';
+
+                  for (j = 0; j < content_get_subsystem_rom_id(); j++)
+                  {
+                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     if (j != content_get_subsystem_rom_id() - 1)
+                        strlcat(rom_buff, "|", sizeof(rom_buff));
+                  }
+
+                  if (!string_is_empty(rom_buff))
+                  {
+                     snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
+                     strlcpy(s, tmp, sizeof(s));
+                  }
+               }
+               
                menu_entries_append_enum(info->list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
@@ -2729,10 +2773,27 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
          else
          {
             snprintf(s, sizeof(s),
-               "Load %s %s",
-               subsystem->desc,
-               i == content_get_subsystem()
-               ? "\u2605" : " ");
+               "Load %s",
+               subsystem->desc);
+            
+            /* RGUI does not support sublabels, so have to add the
+             * appropriate text to the menu entry itself... */
+            if (is_rgui)
+            {
+               /* This check is probably not required (it's not done
+                * in menu_cbs_sublabel.c action_bind_sublabel_subsystem_add(),
+                * anyway), but no harm in being safe... */
+               if (subsystem->num_roms > 0)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[0].desc);
+                  strlcpy(s, tmp, sizeof(s));
+               }
+            }
+            
             menu_entries_append_enum(info->list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
