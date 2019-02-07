@@ -819,6 +819,7 @@ static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
    }
 }
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -878,7 +879,9 @@ static void setting_get_string_representation_uint_xmb_icon_theme(
          break;
    }
 }
+#endif
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_layout(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -899,6 +902,7 @@ static void setting_get_string_representation_uint_xmb_layout(
          break;
    }
 }
+#endif
 
 #ifdef HAVE_MATERIALUI
 static void setting_get_string_representation_uint_materialui_menu_color_theme(
@@ -1066,7 +1070,7 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
 }
 #endif
 
-#ifdef HAVE_SHADERPIPELINE
+#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
       char *s, size_t len)
