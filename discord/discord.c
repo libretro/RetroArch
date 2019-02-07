@@ -130,7 +130,7 @@ static bool discord_download_avatar(
 
    file_transfer_t *transf = NULL;
 
-   RARCH_LOG("[Discord] user avatar id: %s\n", user_id);
+   RARCH_LOG("[discord] user avatar id: %s\n", user_id);
 
    fill_pathname_application_special(buf,
             sizeof(buf),
@@ -152,7 +152,7 @@ static bool discord_download_avatar(
    transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
    strlcpy(transf->path, buf, sizeof(transf->path));
 
-   RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+   RARCH_LOG("[discord] downloading avatar from: %s\n", url_encoded);
    task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
 
    return false;
@@ -163,7 +163,7 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 {
    strlcpy(user_name, connectedUser->username, sizeof(user_name));
 
-   RARCH_LOG("[Discord] connected to user: %s#%s\n",
+   RARCH_LOG("[discord] connected to user: %s#%s\n",
       connectedUser->username,
       connectedUser->discriminator);
 
@@ -174,12 +174,12 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 
 static void handle_discord_disconnected(int errcode, const char* message)
 {
-   RARCH_LOG("[Discord] disconnected (%d: %s)\n", errcode, message);
+   RARCH_LOG("[discord] disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_error(int errcode, const char* message)
 {
-   RARCH_LOG("[Discord] error (%d: %s)\n", errcode, message);
+   RARCH_LOG("[discord] error (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_join_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -208,7 +208,7 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data, void *us
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
          room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
 
-      RARCH_LOG("[Discord] joining lobby at: %s\n", join_hostname);
+      RARCH_LOG("[discord] joining lobby at: %s\n", join_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       connecting = true;
@@ -236,20 +236,20 @@ static void handle_discord_join(const char* secret)
    char url [2048] = "http://lobby.libretro.com/";
    static struct string_list *list =  NULL;
 
-   RARCH_LOG("[Discord] join secret: (%s)\n", secret);
+   RARCH_LOG("[discord] join secret: (%s)\n", secret);
    list = string_split(secret, "|");
 
    strlcpy(peer_party_id, list->elems[0].data, sizeof(peer_party_id));
    strlcat(url, peer_party_id, sizeof(url));
    strlcat(url, "/", sizeof(url));
 
-   RARCH_LOG("[Discord] querying lobby id: %s at %s\n", peer_party_id, url);
+   RARCH_LOG("[discord] querying lobby id: %s at %s\n", peer_party_id, url);
    task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
 }
 
 static void handle_discord_spectate(const char* secret)
 {
-   RARCH_LOG("[Discord] spectate (%s)\n", secret);
+   RARCH_LOG("[discord] spectate (%s)\n", secret);
 }
 
 static void handle_discord_join_response(void *ignore, const char *line)
@@ -275,7 +275,7 @@ static void handle_discord_join_request(const DiscordUser* request)
    menu_input_ctx_line_t line;
 #endif
 
-   RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
+   RARCH_LOG("[discord] join request from %s#%s - %s %s\n",
       request->username,
       request->discriminator,
       request->userId,
@@ -353,8 +353,8 @@ void discord_update(enum discord_presence presence)
             if (!label)
                label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
 #if 0
-            RARCH_LOG("[Discord] current core: %s\n", system_id);
-            RARCH_LOG("[Discord] current content: %s\n", label);
+            RARCH_LOG("[discord] current core: %s\n", system_id);
+            RARCH_LOG("[discord] current content: %s\n", label);
 #endif
             discord_presence.largeImageKey = system_id;
 
@@ -393,7 +393,7 @@ void discord_update(enum discord_presence presence)
          if (room->id == 0)
             return;
 
-         RARCH_LOG("[Discord] netplay room details: id=%d, nick=%s IP=%s port=%d\n",
+         RARCH_LOG("[discord] netplay room details: id=%d, nick=%s IP=%s port=%d\n",
             room->id, room->nickname,
             room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
             room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
@@ -409,12 +409,12 @@ void discord_update(enum discord_presence presence)
             discord_presence.partyMax   = 2;
             discord_presence.partySize  = 1;
 
-            RARCH_LOG("[Discord] join secret: %s\n", join_secret);
-            RARCH_LOG("[Discord] party id: %s\n", self_party_id);
+            RARCH_LOG("[discord] join secret: %s\n", join_secret);
+            RARCH_LOG("[discord] party id: %s\n", self_party_id);
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
-         RARCH_LOG("[Discord] party id: %s\n", peer_party_id);
+         RARCH_LOG("[discord] party id: %s\n", peer_party_id);
          discord_presence.partyId    = strdup(peer_party_id);
          break;
       case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
@@ -439,7 +439,7 @@ void discord_update(enum discord_presence presence)
          break;
    }
 
-   RARCH_LOG("[Discord] updating (%d)\n", presence);
+   RARCH_LOG("[discord] updating (%d)\n", presence);
 
    Discord_UpdatePresence(&discord_presence);
    discord_status = presence;
@@ -452,7 +452,7 @@ void discord_init(void)
 
    DiscordEventHandlers handlers;
 
-   RARCH_LOG("[Discord] initializing ..\n");
+   RARCH_LOG("[discord] initializing ..\n");
    start_time            = time(0);
 
    memset(&handlers, 0, sizeof(handlers));
@@ -471,14 +471,14 @@ void discord_init(void)
    snprintf(command, sizeof(command), "sh -c %s", get_retroarch_launch_arguments());
 #endif
 
-   RARCH_LOG("[Discord] registering startup command: %s\n", command);
+   RARCH_LOG("[discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
    discord_ready = true;
 }
 
 void discord_shutdown(void)
 {
-   RARCH_LOG("[Discord] shutting down ..\n");
+   RARCH_LOG("[discord] shutting down ..\n");
    Discord_ClearPresence();
    Discord_Shutdown();
    discord_ready = false;
