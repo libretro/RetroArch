@@ -794,12 +794,6 @@ static void gl2_renderchain_deinit_hw_render(
    gl2_context_bind_hw_render(gl, false);
 }
 
-static void gl2_renderchain_free(gl_t *gl, void *chain_data)
-{
-   gl2_renderchain_deinit_fbo(gl, chain_data);
-   gl2_renderchain_deinit_hw_render(gl, chain_data);
-}
-
 static bool gl2_create_fbo_targets(gl_t *gl, gl2_renderchain_data_t *chain)
 {
    unsigned i;
@@ -997,14 +991,15 @@ static void gl2_create_fbo_textures(gl_t *gl,
    glGenTextures(chain->fbo_pass, chain->fbo_texture);
 
    for (i = 0; i < chain->fbo_pass; i++)
-      gl2_create_fbo_texture(gl, gl->renderchain_data,
+      gl2_create_fbo_texture(gl, 
+            (gl2_renderchain_data_t*)gl->renderchain_data,
             i, chain->fbo_texture[i]);
 
    if (gl->fbo_feedback_enable)
    {
       glGenTextures(1, &gl->fbo_feedback_texture);
       gl2_create_fbo_texture(gl,
-            gl->renderchain_data,
+            (gl2_renderchain_data_t*)gl->renderchain_data,
             gl->fbo_feedback_pass, gl->fbo_feedback_texture);
    }
 
@@ -2240,7 +2235,8 @@ static void gl2_init_textures(gl_t *gl, const video_info_t *video)
             gl->tex_min_filter);
 
       gl2_renderchain_init_texture_reference(
-            gl, gl->renderchain_data, i, internal_fmt,
+            gl, (gl2_renderchain_data_t*)gl->renderchain_data,
+            i, internal_fmt,
             texture_fmt, texture_type);
    }
 
@@ -2547,7 +2543,8 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use)
-      gl2_renderchain_bind_vao(gl->renderchain_data);
+      gl2_renderchain_bind_vao((gl2_renderchain_data_t*)
+            gl->renderchain_data);
 
    if (video_info->shader_driver && video_info->shader_driver->use)
       video_info->shader_driver->use(gl,
@@ -2562,10 +2559,12 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->fbo_inited)
    {
       gl2_renderchain_recompute_pass_sizes(
-            gl, gl->renderchain_data, frame_width, frame_height,
+            gl, (gl2_renderchain_data_t*)gl->renderchain_data,
+            frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
 
-      gl2_renderchain_start_render(gl, gl->renderchain_data,
+      gl2_renderchain_start_render(gl, (gl2_renderchain_data_t*)
+            gl->renderchain_data,
             video_info);
    }
 
@@ -2584,11 +2583,12 @@ static bool gl2_frame(void *data, const void *frame,
       if (gl->fbo_inited)
       {
          gl2_renderchain_check_fbo_dimensions(gl,
-               gl->renderchain_data);
+               (gl2_renderchain_data_t*)gl->renderchain_data);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl2_renderchain_start_render(gl, gl->renderchain_data,
+         gl2_renderchain_start_render(gl, 
+               (gl2_renderchain_data_t*)gl->renderchain_data,
                video_info);
       }
       else
@@ -2607,7 +2607,8 @@ static bool gl2_frame(void *data, const void *frame,
       {
          gl2_update_input_size(gl, frame_width, frame_height, pitch, true);
 
-         gl2_renderchain_copy_frame(gl, gl->renderchain_data,
+         gl2_renderchain_copy_frame(gl, (gl2_renderchain_data_t*)
+               gl->renderchain_data,
                video_info, frame, frame_width, frame_height, pitch);
       }
 
@@ -2690,12 +2691,14 @@ static bool gl2_frame(void *data, const void *frame,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    if (gl->fbo_inited)
-      gl2_renderchain_render(gl, gl->renderchain_data,
+      gl2_renderchain_render(gl, 
+            (gl2_renderchain_data_t*)gl->renderchain_data,
             video_info,
             frame_count, &gl->tex_info, &feedback_info);
 
    /* Set prev textures. */
-   gl2_renderchain_bind_prev_texture(gl, gl->renderchain_data,
+   gl2_renderchain_bind_prev_texture(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data,
          &gl->tex_info);
 
 #if defined(HAVE_MENU)
@@ -2796,6 +2799,7 @@ static bool gl2_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
 
       gl2_renderchain_fence_iterate(gl,
+            (gl2_renderchain_data_t*)
             gl->renderchain_data,
             video_info->hard_sync_frames);
    }
@@ -2843,7 +2847,9 @@ static void gl2_free(void *data)
    gl2_context_bind_hw_render(gl, false);
 
    if (gl->have_sync)
-      gl2_renderchain_fence_free(gl, gl->renderchain_data);
+      gl2_renderchain_fence_free(gl, 
+            (gl2_renderchain_data_t*)
+            gl->renderchain_data);
 
    font_driver_free_osd();
 
@@ -2877,10 +2883,12 @@ static void gl2_free(void *data)
    if (gl->core_context_in_use)
    {
       gl2_renderchain_unbind_vao();
-      gl2_renderchain_free_vao(gl->renderchain_data);
+      gl2_renderchain_free_vao((gl2_renderchain_data_t*)
+            gl->renderchain_data);
    }
 
-   gl2_renderchain_free(gl, gl->renderchain_data);
+   gl2_renderchain_deinit_fbo(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
+   gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
    gl2_deinit_chain(gl);
 
    video_context_driver_free();
@@ -2933,7 +2941,8 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    video_driver_unset_rgba();
 
    gl2_renderchain_resolve_extensions(gl,
-         gl->renderchain_data, context_ident, video);
+         (gl2_renderchain_data_t*)gl->renderchain_data,
+         context_ident, video);
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
@@ -3365,7 +3374,8 @@ static void *gl2_init(const video_info_t *video,
    gl2_renderchain_restore_default_state(gl);
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
-      gl2_renderchain_new_vao(gl->renderchain_data);
+      gl2_renderchain_new_vao((gl2_renderchain_data_t*)
+            gl->renderchain_data);
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
@@ -3510,12 +3520,14 @@ static void *gl2_init(const video_info_t *video,
    gl2_init_textures(gl, video);
    gl2_init_textures_data(gl);
 
-   gl2_renderchain_init(gl, gl->renderchain_data, gl->tex_w, gl->tex_h);
+   gl2_renderchain_init(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data,
+         gl->tex_w, gl->tex_h);
 
    if (gl->has_fbo)
    {
       if (gl->hw_render_use &&
-            !gl2_renderchain_init_hw_render(gl, gl->renderchain_data, gl->tex_w, gl->tex_h))
+            !gl2_renderchain_init_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h))
       {
          RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
          goto error;
@@ -3682,7 +3694,8 @@ static bool gl2_set_shader(void *data,
 
    if (gl->fbo_inited)
    {
-      gl2_renderchain_deinit_fbo(gl, gl->renderchain_data);
+      gl2_renderchain_deinit_fbo(gl,
+            (gl2_renderchain_data_t*)gl->renderchain_data);
 
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
@@ -3719,7 +3732,8 @@ static bool gl2_set_shader(void *data,
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
       if (gl->hw_render_use && gl->fbo_inited)
-         gl2_renderchain_deinit_hw_render(gl, gl->renderchain_data);
+         gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)
+               gl->renderchain_data);
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
@@ -3733,11 +3747,13 @@ static bool gl2_set_shader(void *data,
       gl2_init_textures_data(gl);
 
       if (gl->hw_render_use)
-         gl2_renderchain_init_hw_render(gl, gl->renderchain_data,
+         gl2_renderchain_init_hw_render(gl, 
+               (gl2_renderchain_data_t*)gl->renderchain_data,
                gl->tex_w, gl->tex_h);
    }
 
-   gl2_renderchain_init(gl, gl->renderchain_data,
+   gl2_renderchain_init(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data,
          gl->tex_w, gl->tex_h);
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
