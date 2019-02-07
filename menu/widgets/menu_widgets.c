@@ -22,6 +22,7 @@
 #include "../../msg_hash.h"
 
 #include "../../tasks/task_content.h"
+#include "../../ui/ui_companion_driver.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -293,7 +294,8 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category)
+      enum message_queue_icon icon, enum message_queue_category category,
+      unsigned prio, bool flush)
 {
    menu_widget_msg_t* msg_widget = NULL;
 
@@ -303,6 +305,9 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
    #ifdef HAVE_THREADS
    runloop_msg_queue_lock();
    #endif
+
+   ui_companion_driver_msg_queue_push(msg,
+      prio, task ? duration : duration * 60 / 1000, flush);
 
    if (fifo_write_avail(msg_queue) > 0)
    {
@@ -466,9 +471,10 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 bool menu_widgets_msg_queue_push(const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category)
+      enum message_queue_icon icon, enum message_queue_category category,
+      unsigned prio, bool flush)
 {
-   return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category);
+   return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category, prio, flush);
 }
 
 static void menu_widgets_unfold_end(void *userdata)
@@ -1944,13 +1950,16 @@ void menu_widgets_take_screenshot(void)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_task_msg_queue_push(retro_task_t *task)
+bool menu_widgets_task_msg_queue_push(retro_task_t *task,
+      const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush)
 {
    if (!menu_widgets_inited)
       return false;
 
    if (task->title != NULL && !task->mute)
-      menu_widgets_msg_queue_push_internal(task, NULL, 0, NULL, MESSAGE_QUEUE_CATEGORY_INFO, MESSAGE_QUEUE_ICON_DEFAULT);
+      menu_widgets_msg_queue_push_internal(task, msg, duration, NULL, MESSAGE_QUEUE_CATEGORY_INFO, MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
 
    return true;
 }

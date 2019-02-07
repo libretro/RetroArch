@@ -42,7 +42,8 @@ bool menu_widgets_ready(void);
 bool menu_widgets_msg_queue_push(const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category);
+      enum message_queue_icon icon, enum message_queue_category category,
+      unsigned prio, bool flush);
 
 bool menu_widgets_volume_update_and_show(void);
 
@@ -54,7 +55,10 @@ bool menu_widgets_set_paused(bool is_paused);
 bool menu_widgets_set_fast_forward(bool is_fast_forward);
 bool menu_widgets_set_rewind(bool is_rewind);
 
-bool menu_widgets_task_msg_queue_push(retro_task_t *task);
+bool menu_widgets_task_msg_queue_push(retro_task_t *task,
+      const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush);
 
 void menu_widgets_take_screenshot(void);
 
