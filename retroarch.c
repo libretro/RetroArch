@@ -682,6 +682,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       strlcat(launch_arguments, " ", sizeof(launch_arguments));
    }
    string_trim_whitespace_left(launch_arguments);
+   string_trim_whitespace_right(launch_arguments);
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
     * we handle it differently.
@@ -2407,6 +2408,18 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
+
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_SHUTDOWN;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
+   discord_is_inited          = false;
+#endif
+
    if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
    {
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
@@ -2417,11 +2430,6 @@ bool retroarch_main_quit(void)
 
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    rarch_menu_running_finished();
-
-#ifdef HAVE_DISCORD
-   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
-   discord_is_inited          = false;
-#endif
 
    return true;
 }

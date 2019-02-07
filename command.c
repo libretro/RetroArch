@@ -1849,7 +1849,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
       {
-	 bool success   = false;
+         bool success   = false;
          subsystem_current_count = 0;
          content_clear_subsystem();
          success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
@@ -1976,18 +1976,19 @@ bool command_event(enum event_command cmd, void *data)
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
-#ifdef HAVE_DYNAMIC
-            path_clear(RARCH_PATH_CORE);
-            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
-#endif
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
                discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
                userdata.status = DISCORD_PRESENCE_MENU;
-
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
+#endif
+#ifdef HAVE_DYNAMIC
+            path_clear(RARCH_PATH_CORE);
+            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
 #endif
             if (is_inited)
             {
@@ -2623,13 +2624,14 @@ TODO: Add a setting for these tweaks */
          {
             /* buf is expected to be address|port */
             char *buf = (char *)data;
+            RARCH_LOG("[netplay] buf %s\n", buf);
             static struct string_list *hostname = NULL;
             settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n",
+            RARCH_LOG("[netplay] connecting to %s:%d (direct)\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
@@ -2657,13 +2659,14 @@ TODO: Add a setting for these tweaks */
          {
             /* buf is expected to be address|port */
             char *buf = (char *)data;
+            RARCH_LOG("[netplay] buf %s\n", buf);
             static struct string_list *hostname = NULL;
             settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n",
+            RARCH_LOG("[netplay] connecting to %s:%d (deferred)\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 

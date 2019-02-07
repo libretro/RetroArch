@@ -26,7 +26,12 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../command.h"
 #include "../../tasks/tasks_internal.h"
+
+#include "../../discord/discord.h"
+
+extern bool discord_is_inited;
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,
@@ -115,6 +120,14 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    else
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+      {
+         discord_userdata_t userdata;
+         userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      }
+#endif
       netplay->is_connected = false;
    }
    RARCH_LOG("[netplay] %s\n", dmsg);

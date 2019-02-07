@@ -56,7 +56,14 @@
       "menu_animation.h": "c",
       "audio_driver.h": "c",
       "netplay.h": "c",
-      "scaler.h": "c"
+      "scaler.h": "c",
+      "deque": "c",
+      "vector": "c",
+      "xhash": "c",
+      "xiosbase": "c",
+      "xstring": "c",
+      "xtree": "c",
+      "xutility": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

@@ -100,7 +100,11 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
+#include "../discord/discord.h"
+
 #include "task_patch.c"
+
+extern bool discord_is_inited;
 
 #define MAX_ARGS 32
 
@@ -1707,6 +1711,17 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    if (firmware_update_status(&content_ctx))
       goto end;
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      userdata.status = DISCORD_PRESENCE_MENU;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
 
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
