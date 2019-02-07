@@ -405,42 +405,6 @@ static bool gl2_recreate_fbo(
    return false;
 }
 
-static void gl2_check_fbo_dimension(gl_t *gl,
-      gl2_renderchain_data_t *chain,
-      unsigned i,
-      bool update_feedback)
-{
-   struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-   /* Check proactively since we might suddently
-    * get sizes of tex_w width or tex_h height. */
-   unsigned img_width              = fbo_rect->max_img_width;
-   unsigned img_height             = fbo_rect->max_img_height;
-   unsigned max                    = img_width > img_height ? img_width : img_height;
-   unsigned pow2_size              = next_pow2(max);
-
-   fbo_rect->width                 = pow2_size;
-   fbo_rect->height                = pow2_size;
-
-   gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
-
-   /* Update feedback texture in-place so we avoid having to
-    * juggle two different fbo_rect structs since they get updated here. */
-   if (update_feedback)
-   {
-      if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
-               &gl->fbo_feedback_texture))
-      {
-         /* Make sure the feedback textures are cleared
-          * so we don't feedback noise. */
-         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-         glClear(GL_COLOR_BUFFER_BIT);
-      }
-   }
-
-   RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
-         i, fbo_rect->width, fbo_rect->height);
-}
-
 /* On resize, we might have to recreate our FBOs
  * due to "Viewport" scale, and set a new viewport. */
 
@@ -455,12 +419,41 @@ static void gl2_renderchain_check_fbo_dimensions(
       struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
       if (fbo_rect)
       {
-         bool update_feedback = gl->fbo_feedback_enable
-            && (unsigned)i == gl->fbo_feedback_pass;
+         unsigned img_width   = fbo_rect->max_img_width;
+         unsigned img_height  = fbo_rect->max_img_height;
 
-         if ((fbo_rect->max_img_width  > fbo_rect->width) ||
-             (fbo_rect->max_img_height > fbo_rect->height))
-               gl2_check_fbo_dimension(gl, chain, i, update_feedback);
+         if ((img_width  > fbo_rect->width) ||
+             (img_height > fbo_rect->height))
+         {
+            /* Check proactively since we might suddently
+             * get sizes of tex_w width or tex_h height. */
+            unsigned max                    = img_width > img_height ? img_width : img_height;
+            unsigned pow2_size              = next_pow2(max);
+            bool update_feedback            = gl->fbo_feedback_enable
+               && (unsigned)i == gl->fbo_feedback_pass;
+
+            fbo_rect->width                 = pow2_size;
+            fbo_rect->height                = pow2_size;
+
+            gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
+
+            /* Update feedback texture in-place so we avoid having to
+             * juggle two different fbo_rect structs since they get updated here. */
+            if (update_feedback)
+            {
+               if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
+                        &gl->fbo_feedback_texture))
+               {
+                  /* Make sure the feedback textures are cleared
+                   * so we don't feedback noise. */
+                  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                  glClear(GL_COLOR_BUFFER_BIT);
+               }
+            }
+
+            RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
+                  i, fbo_rect->width, fbo_rect->height);
+         }
       }
    }
 }
@@ -2534,6 +2527,7 @@ static bool gl2_frame(void *data, const void *frame,
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
    gl_t                            *gl = (gl_t*)data;
+   gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
@@ -2543,8 +2537,7 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use)
-      gl2_renderchain_bind_vao((gl2_renderchain_data_t*)
-            gl->renderchain_data);
+      gl2_renderchain_bind_vao(chain);
 
    if (video_info->shader_driver && video_info->shader_driver->use)
       video_info->shader_driver->use(gl,
@@ -2559,13 +2552,11 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->fbo_inited)
    {
       gl2_renderchain_recompute_pass_sizes(
-            gl, (gl2_renderchain_data_t*)gl->renderchain_data,
+            gl, chain,
             frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
 
-      gl2_renderchain_start_render(gl, (gl2_renderchain_data_t*)
-            gl->renderchain_data,
-            video_info);
+      gl2_renderchain_start_render(gl, chain, video_info);
    }
 
    if (gl->should_resize)
@@ -2582,14 +2573,11 @@ static bool gl2_frame(void *data, const void *frame,
 
       if (gl->fbo_inited)
       {
-         gl2_renderchain_check_fbo_dimensions(gl,
-               (gl2_renderchain_data_t*)gl->renderchain_data);
+         gl2_renderchain_check_fbo_dimensions(gl, chain);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl2_renderchain_start_render(gl, 
-               (gl2_renderchain_data_t*)gl->renderchain_data,
-               video_info);
+         gl2_renderchain_start_render(gl, chain, video_info);
       }
       else
          gl2_set_viewport(gl, video_info, width, height, false, true);
@@ -2607,8 +2595,7 @@ static bool gl2_frame(void *data, const void *frame,
       {
          gl2_update_input_size(gl, frame_width, frame_height, pitch, true);
 
-         gl2_renderchain_copy_frame(gl, (gl2_renderchain_data_t*)
-               gl->renderchain_data,
+         gl2_renderchain_copy_frame(gl, chain,
                video_info, frame, frame_width, frame_height, pitch);
       }
 
@@ -2692,14 +2679,13 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (gl->fbo_inited)
       gl2_renderchain_render(gl, 
-            (gl2_renderchain_data_t*)gl->renderchain_data,
+            chain,
             video_info,
             frame_count, &gl->tex_info, &feedback_info);
 
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
-         (gl2_renderchain_data_t*)gl->renderchain_data,
-         &gl->tex_info);
+         chain, &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
@@ -2761,7 +2747,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Screenshots. */
    if (gl->readback_buffer_screenshot)
       gl2_renderchain_readback(gl,
-            gl->renderchain_data,
+            chain,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
 
@@ -2798,9 +2784,7 @@ static bool gl2_frame(void *data, const void *frame,
    {
       glClear(GL_COLOR_BUFFER_BIT);
 
-      gl2_renderchain_fence_iterate(gl,
-            (gl2_renderchain_data_t*)
-            gl->renderchain_data,
+      gl2_renderchain_fence_iterate(gl, chain,
             video_info->hard_sync_frames);
    }
 
