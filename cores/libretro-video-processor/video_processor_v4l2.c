@@ -33,6 +33,7 @@
 
 #include <libretro.h>
 #include <clamping.h>
+#include <retro_miscellaneous.h>
 
 #include <sys/mman.h>
 #include <errno.h>
@@ -1011,9 +1012,9 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabl
 {
 }
 
+#if 0
 static void videoinput_set_control_v4l2( uint32_t id, double val )
 {
-#if 0
     struct v4l2_queryctrl query;
 
     query.id = id;
@@ -1023,8 +1024,8 @@ static void videoinput_set_control_v4l2( uint32_t id, double val )
         control.value = query.minimum + ((int) ((val * ((double) (query.maximum - query.minimum))) + 0.5));
         ioctl( video_device_fd, VIDIOC_S_CTRL, &control );
     }
-#endif
 }
+#endif
 
 RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_info *game)
 {
@@ -1197,7 +1198,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          return false;
       }
       v4l2_ncapbuf = reqbufs.count;
-      printf("GOT v4l2_ncapbuf=%ld\n", v4l2_ncapbuf);
+      printf("GOT v4l2_ncapbuf=%" PRI_SIZET "\n", v4l2_ncapbuf);
 
       for (index = 0; index < v4l2_ncapbuf; index++)
       {
@@ -1295,7 +1296,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       return false;
    }
 
-   printf("Allocated %lu byte conversion buffer\n",
+   printf("Allocated %" PRI_SIZET " byte conversion buffer\n",
          video_cap_width * video_cap_height * sizeof(uint32_t));
 
    pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
