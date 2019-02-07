@@ -295,12 +295,26 @@ create_config_header()
 		while [ "$1" ]; do
 			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
-					if [ "$(eval "printf %s \"\$C89_$1\"")" = 'no' ]; then
-						printf %s\\n '#if __cplusplus || __STDC_VERSION__ >= 199901L' \
-							"#define HAVE_$1 1" '#endif'
-					else
-						printf %s\\n "#define HAVE_$1 1"
+					n='0'
+					c89_build="$(eval "printf %s \"\$C89_$1\"")"
+					cxx_build="$(eval "printf %s \"\$CXX_$1\"")"
+
+					if [ "$c89_build" = 'no' ]; then
+						n=$(($n+1))
+						printf %s\\n '#if __cplusplus || __STDC_VERSION__ >= 199901L'
 					fi
+
+					if [ "$cxx_build" = 'no' ]; then
+						n=$(($n+1))
+						printf %s\\n '#ifndef CXX_BUILD'
+					fi
+
+					printf %s\\n "#define HAVE_$1 1"
+
+					while [ $n != '0' ]; do
+						n=$(($n-1))
+						printf %s\\n '#endif'
+					done
 				;;
 				'no') printf %s\\n "/* #undef HAVE_$1 */";;
 			esac
@@ -350,12 +364,23 @@ create_config_make()
 		while [ "$1" ]; do
 			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
-					if [ "$(eval "printf %s \"\$C89_$1\"")" = 'no' ]; then
-						printf %s\\n "ifneq (\$(C89_BUILD),1)" \
-							"HAVE_$1 = 1" 'endif'
-					else
-						printf %s\\n "HAVE_$1 = 1"
-					fi
+					n='0'
+					c89_build="C89_$1"
+					cxx_build="CXX_$1"
+
+					for build in "$c89_build" "$cxx_build"; do
+						if [ "$(eval "printf %s \"\$$build\"")" = 'no' ]; then
+							n=$(($n+1))
+							printf %s\\n "ifneq (\$(${build%%_*}_BUILD),1)"
+						fi
+					done
+
+					printf %s\\n "HAVE_$1 = 1"
+
+					while [ $n != '0' ]; do
+						n=$(($n-1))
+						printf %s\\n 'endif'
+					done
 				;;
 				'no') printf %s\\n "HAVE_$1 = 0";;
 			esac
