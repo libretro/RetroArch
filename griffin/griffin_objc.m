@@ -51,12 +51,7 @@
 #include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
-#endif
-
-#if defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"
-#elif defined(HAVE_COCOA_METAL)
-#include "../ui/drivers/ui_cocoa_metal.m"
 #endif
 
 #endif
