@@ -710,10 +710,14 @@ static bool content_file_load(
          }
 #endif
 
+/* It adds up to 10 seconds when loading large roms.
+ * It's mainly used for network play which isn't available for these platforms. */
+#if !defined(GEKKO)
          RARCH_LOG("%s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+#endif
 
       }
    }
