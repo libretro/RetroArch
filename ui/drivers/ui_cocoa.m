@@ -273,13 +273,14 @@ static char** waiting_argv;
 @synthesize window = _window;
 
 #ifdef HAVE_COCOA_METAL
+#else
+#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
+
 - (void)dealloc
 {
    [_window release];
    [super dealloc];
 }
-#else
-#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 #endif
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
