@@ -40,7 +40,7 @@ EOF
 		VAL="${VAR#*=}"
 		VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 		case "$VAR" in
-			'c89_'*) continue;;
+			'c89_'*|'cxx_'*) continue;;
 			*)
 			case "$VAL" in
 				'yes'*)
