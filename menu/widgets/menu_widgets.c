@@ -40,12 +40,6 @@
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 
-static float backdrop[16] =  {
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-};
 
 static float msg_queue_background[16]  = COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
 static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
@@ -103,6 +97,13 @@ static float load_content_animation_fade_alpha;
 static float load_content_animation_final_fade_alpha;
 
 static menu_timer_t load_content_animation_end_timer;
+
+static float menu_widgets_backdrop_orig[16] =  {
+   0.00, 0.00, 0.00, 0.75,
+   0.00, 0.00, 0.00, 0.75,
+   0.00, 0.00, 0.00, 0.75,
+   0.00, 0.00, 0.00, 0.75,
+};
 
 static float menu_widgets_backdrop[16] = {
       0.00, 0.00, 0.00, 0.75,
@@ -220,12 +221,12 @@ static menu_animation_ctx_tag volume_tag   = (uintptr_t) &volume_alpha;
 static bool volume_mute                    = false;
 
 /* FPS */
-static char fps_text[255];
+static char menu_widgets_fps_text[255];
 
 /* Status icons */
-static bool paused         = false;
-static bool fast_forward   = false;
-static bool rewinding      = false;
+static bool menu_widgets_paused              = false;
+static bool menu_widgets_fast_forward        = false;
+static bool menu_widgets_rewinding           = false;
 
 /* Screenshot */
 static float screenshot_alpha                = 0.0f;
@@ -276,7 +277,7 @@ bool menu_widgets_set_paused(bool is_paused)
    if (!menu_widgets_inited)
       return false;
 
-   paused = is_paused;
+   menu_widgets_paused = is_paused;
    return true;
 }
 
@@ -915,7 +916,7 @@ static int menu_widgets_draw_indicator(video_frame_info_t *video_info,
    unsigned width;
    settings_t *settings = config_get_ptr();
 
-   color_alpha(backdrop, DEFAULT_BACKDROP);
+   color_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
    if (icon)
    {
@@ -926,7 +927,7 @@ static int menu_widgets_draw_indicator(video_frame_info_t *video_info,
          top_right_x_advance - width, y,
          width, height, 
          video_info->width, video_info->height,
-         backdrop
+         menu_widgets_backdrop_orig
       );
 
       color_alpha(menu_widgets_pure_white, 1.0f);
@@ -949,7 +950,7 @@ static int menu_widgets_draw_indicator(video_frame_info_t *video_info,
          top_right_x_advance - width, y,
          width, height, 
          video_info->width, video_info->height,
-         backdrop
+         menu_widgets_backdrop_orig
       );
 
       menu_display_draw_text(font_regular,
@@ -1306,13 +1307,13 @@ void menu_widgets_frame(video_frame_info_t *video_info)
       char shotname[256];
       menu_animation_ctx_ticker_t ticker;
 
-      color_alpha(backdrop, DEFAULT_BACKDROP);
+      color_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
       menu_display_draw_quad(video_info,
          0, screenshot_y, 
          screenshot_width, screenshot_height,
          video_info->width, video_info->height,
-         backdrop
+         menu_widgets_backdrop_orig
       );
 
       color_alpha(menu_widgets_pure_white, 1.0f);
@@ -1410,7 +1411,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          bar_percentage = 1.0f;
 
       /* Backdrop */
-      color_alpha(backdrop, volume_alpha);
+      color_alpha(menu_widgets_backdrop_orig, volume_alpha);
 
       menu_display_draw_quad(video_info,
          0, 0,
@@ -1418,7 +1419,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          volume_height,
          video_info->width,
          video_info->height,
-         backdrop
+         menu_widgets_backdrop_orig
       );
 
       /* Icon */
@@ -1515,18 +1516,18 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    /* FPS Counter */
    if (video_info->fps_show || video_info->framecount_show)
    {
-      char *text = *fps_text == '\0' ? "n/a" : fps_text;
+      char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
 
-      int text_width = font_driver_get_message_width(font_regular, text, strlen(text), 1.0f);
+      int text_width  = font_driver_get_message_width(font_regular, text, strlen(text), 1.0f);
       int total_width = text_width + simple_widget_padding * 2;
 
-      color_alpha(backdrop, DEFAULT_BACKDROP);
+      color_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
       menu_display_draw_quad(video_info,
          top_right_x_advance - total_width, 0,
          total_width, simple_widget_height,
          video_info->width, video_info->height,
-         backdrop
+         menu_widgets_backdrop_orig
       );
 
       menu_display_draw_text(font_regular,
@@ -1540,17 +1541,17 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* Indicators */
-   if (paused)
+   if (menu_widgets_paused)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (fast_forward)
+   if (menu_widgets_fast_forward)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (rewinding)
+   if (menu_widgets_rewinding)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_REWINDING);
@@ -1599,7 +1600,7 @@ void menu_widgets_init(bool video_is_threaded)
 
    menu_widgets_frame_count = 0;
 
-   fps_text[0] = '\0';
+   menu_widgets_fps_text[0] = '\0';
 
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
@@ -1883,7 +1884,8 @@ bool menu_widgets_set_fps_text(char *new_fps_text)
    if (!menu_widgets_inited)
       return false;
 
-   strlcpy(fps_text, new_fps_text, sizeof(fps_text));
+   strlcpy(menu_widgets_fps_text,
+         new_fps_text, sizeof(menu_widgets_fps_text));
 
    return true;
 }
@@ -1893,7 +1895,7 @@ bool menu_widgets_set_fast_forward(bool is_fast_forward)
    if (!menu_widgets_inited)
       return false;
 
-   fast_forward = is_fast_forward;
+   menu_widgets_fast_forward = is_fast_forward;
 
    return true;
 }
@@ -1903,7 +1905,7 @@ bool menu_widgets_set_rewind(bool is_rewind)
    if (!menu_widgets_inited)
       return false;
 
-   rewinding = is_rewind;
+   menu_widgets_rewinding = is_rewind;
 
    return true;
 }
