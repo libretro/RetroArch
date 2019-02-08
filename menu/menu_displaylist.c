@@ -7090,7 +7090,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
                PARSE_ONLY_BOOL, false) == 0)
             count++;
-
+#ifdef ANDROID
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
          if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),

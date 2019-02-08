@@ -42,6 +42,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
+#include "../../configuration.h"
+
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 
@@ -1337,13 +1339,14 @@ static bool android_input_key_pressed(void *data, int key)
  */
 static void android_input_poll(void *data)
 {
+   settings_t *settings = config_get_ptr();
    int ident;
    unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
             ALooper_pollAll((android_input_key_pressed(data, key))
-               ? -1 : 1,
+               ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
