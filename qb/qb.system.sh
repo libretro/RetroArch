@@ -1,4 +1,4 @@
-if [ -n "$CROSS_COMPILE" ]; then
+if [ -n "${CROSS_COMPILE:=}" ]; then
 	case "$CROSS_COMPILE" in
 		*'-mingw32'*) OS='Win32';;
 		*'-msdosdjgpp'*) OS='DOS';;

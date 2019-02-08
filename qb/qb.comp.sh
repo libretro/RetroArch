@@ -4,6 +4,11 @@ TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
 TEMP_EXE=.tmp
 
+CC="${CC:-}"
+CXX="${CXX:-}"
+PKG_CONF_PATH="${PKG_CONF_PATH:-}"
+WINDRES="${WINDRES:-}"
+
 # Checking for working C compiler
 cat << EOF > "$TEMP_C"
 #include <stdio.h>

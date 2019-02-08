@@ -66,7 +66,9 @@ opt_exists() # $opt is returned if exists in OPTS
 }
 
 parse_input() # Parse stuff :V
-{	OPTS=; while read -r VAR _; do
+{	BUILD=''
+	OPTS=''
+	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
 		OPTS="$OPTS ${TMPVAR##HAVE_}"
 	done < 'qb/config.params.sh'
