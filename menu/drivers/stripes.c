@@ -4457,5 +4457,8 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_set_thumbnail_content,
    stripes_osk_ptr_at_pos,
    stripes_update_savestate_thumbnail_path,
-   stripes_update_savestate_thumbnail_image
+   stripes_update_savestate_thumbnail_image,
+   NULL,                                     /* pointer_down */
+   NULL,                                     /* pointer_up   */
+   NULL                                      /* get_load_content_animation_data   */
 };

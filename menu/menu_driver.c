@@ -1907,6 +1907,12 @@ void menu_driver_frame(video_frame_info_t *video_info)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
+bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name)
+{
+   return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
+      && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
+}
+
 bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {

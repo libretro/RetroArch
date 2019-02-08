@@ -1854,6 +1854,28 @@ static int ozone_list_bind_init(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
+#ifdef HAVE_MENU_WIDGETS
+static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+
+   if (ozone->categories_selection_ptr > ozone->system_tab_end)
+   {
+      ozone_node_t *node = file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
+
+      *icon          = node->icon;
+      *playlist_name = node->console_name;
+   }
+   else
+   {
+      *icon          = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU];
+      *playlist_name = "RetroArch";
+   }
+
+   return true;
+}
+#endif
+
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
@@ -1896,6 +1918,11 @@ menu_ctx_driver_t menu_ctx_ozone = {
    menu_display_osk_ptr_at_pos,
    NULL,                         /* update_savestate_thumbnail_path */
    NULL,                         /* update_savestate_thumbnail_image */
-   NULL,
+   NULL,                         /* pointer_down */
+   NULL,                         /* pointer_up   */
+#ifdef HAVE_MENU_WIDGETS
+   ozone_get_load_content_animation_data
+#else
    NULL
+#endif
 };

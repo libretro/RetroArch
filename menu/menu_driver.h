@@ -388,6 +388,7 @@ typedef struct menu_ctx_driver
    int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
+   bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
 } menu_ctx_driver_t;
 
 typedef struct menu_ctx_displaylist
@@ -492,6 +493,8 @@ bool menu_driver_is_binding_state(void);
 void menu_driver_set_binding_state(bool on);
 
 void menu_driver_frame(video_frame_info_t *video_info);
+
+bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
 
 /* Is a background texture set for the current menu driver?  Should
  * return true for RGUI, for instance. */

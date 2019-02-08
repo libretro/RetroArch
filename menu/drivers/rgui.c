@@ -2288,11 +2288,14 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
-   NULL,
+   NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
    rgui_set_thumbnail_system,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL,                               /* set_thumbnail_content */
+   NULL,                               /* osk_ptr_at_pos */
+   NULL,                               /* update_savestate_thumbnail_path */
+   NULL,                               /* update_savestate_thumbnail_image */
+   NULL,                               /* pointer_down */
+   NULL,                               /* pointer_up */
+   NULL,                               /* get_load_content_animation_data */
 };

@@ -3070,7 +3070,7 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = xmb ? xmb->frame_count : 0;
+   uint64_t frame_count        = xmb->frame_count;
    const char *thumb_ident     = xmb_thumbnails_ident('R');
    const char *left_thumb_ident= xmb_thumbnails_ident('L');
 
@@ -5771,6 +5771,28 @@ static int xmb_pointer_tap(void *userdata,
    return 0;
 }
 
+#ifdef HAVE_MENU_WIDGETS
+static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*) userdata;
+
+   if (xmb->categories_selection_ptr > xmb->system_tab_end)
+   {
+      xmb_node_t *node = file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
+
+      *icon          = node->icon;
+      *playlist_name = xmb->title_name;
+   }
+   else
+   {
+      *icon          = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+      *playlist_name = "RetroArch";
+   }
+
+   return true;
+}
+#endif
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_messagebox,
@@ -5813,6 +5835,11 @@ menu_ctx_driver_t menu_ctx_xmb = {
    menu_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
-   NULL,
+   NULL, /* pointer_down */
+   NULL, /* pointer_up   */
+#ifdef HAVE_MENU_WIDGETS
+   xmb_get_load_content_animation_data
+#else
    NULL
+#endif
 };
