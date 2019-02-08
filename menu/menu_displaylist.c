@@ -7568,6 +7568,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                      PARSE_ACTION, false);
+#ifdef HAVE_LIBRETRODB
+            if (string_is_equal(settings->arrays.menu_driver, "rgui") && settings->bools.menu_content_show_playlists)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+                     MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+#endif
             if (settings->bools.menu_content_show_add)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_ADD_CONTENT_LIST,
