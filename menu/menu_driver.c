@@ -2689,6 +2689,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
    settings_t *settings = config_get_ptr();
    char star_char[8];
    unsigned i = 0;
+   int n = 0;
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    
    /* Select approriate 'star' marker for subsystem menu entries
@@ -2716,9 +2717,30 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                {
                   char tmp[PATH_MAX_LENGTH];
                   
-                  snprintf(tmp, sizeof(tmp),
+                  n = snprintf(tmp, sizeof(tmp),
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[content_get_subsystem_rom_id()].desc);
+
+                  /* Stupid gcc will warn about snprintf() truncation even though
+                   * we couldn't care less about it (if the menu entry label gets
+                   * truncated then the string will already be too long to view in
+                   * any usable manner on screen, so the fact that the end is
+                   * missing is irrelevant). There are two ways to silence this noise:
+                   * 1) Make the destination buffers large enough that text cannot be
+                   *    truncated. This is a waste of memory.
+                   * 2) Check the snprintf() return value (and take action). This is
+                   *    the most harmless option, so we just print a warning if anything
+                   *    is truncated.
+                   * To reiterate: The actual warning generated here is pointless, and
+                   * should be ignored. */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+
                   strlcpy(s, tmp, sizeof(s));
                }
                
@@ -2753,7 +2775,17 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 
                   if (!string_is_empty(rom_buff))
                   {
-                     snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
+                     n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
+                     
+                     /* More snprintf() gcc warning suppression... */
+                     if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                     {
+                        if (verbosity_is_enabled())
+                        {
+                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        }
+                     }
+                     
                      strlcpy(s, tmp, sizeof(s));
                   }
                }
@@ -2782,9 +2814,19 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                {
                   char tmp[PATH_MAX_LENGTH];
                   
-                  snprintf(tmp, sizeof(tmp),
+                  n = snprintf(tmp, sizeof(tmp),
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[0].desc);
+                  
+                  /* More snprintf() gcc warning suppression... */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+                  
                   strlcpy(s, tmp, sizeof(s));
                }
             }
