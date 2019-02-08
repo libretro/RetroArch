@@ -495,10 +495,9 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-bool menu_animation_update()
+bool menu_animation_update(void)
 {
    unsigned i;
-
    settings_t *settings = config_get_ptr();
 
    menu_animation_update_time(settings->bools.menu_timedate_enable);
@@ -744,7 +743,7 @@ void menu_timer_kill(menu_timer_t *timer)
    menu_animation_kill_by_tag(&tag);
 }
 
-float menu_animation_get_ticker_time()
+float menu_animation_get_ticker_time(void)
 {
    return ticker_time;
 }

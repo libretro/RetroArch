@@ -135,7 +135,7 @@ void menu_animation_init(void);
 
 void menu_animation_free(void);
 
-bool menu_animation_update();
+bool menu_animation_update(void);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 
@@ -155,7 +155,7 @@ float menu_animation_get_delta_time(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
-float menu_animation_get_ticker_time();
+float menu_animation_get_ticker_time(void);
 
 RETRO_END_DECLS
 
