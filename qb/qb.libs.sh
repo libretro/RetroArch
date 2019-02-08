@@ -16,7 +16,7 @@ add_define()
 # $@ = include or library paths
 add_dirs()
 {	ADD="$1"; LINK="${1%"${1#?}"}"; shift
-	while [ "$1" ]; do
+	while [ $# -gt 0 ]; do
 		eval "${ADD}_DIRS=\"\${${ADD}_DIRS} -${LINK}${1}\""
 		shift
 	done
@@ -292,7 +292,7 @@ create_config_header()
 	{	printf %s\\n "#ifndef $name" "#define $name" '' \
 			"#define PACKAGE_NAME \"$PACKAGE_NAME\""
 
-		while [ "$1" ]; do
+		while [ $# -gt 0 ]; do
 			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
 					n='0'
@@ -361,7 +361,7 @@ create_config_make()
 			"BUILD = $BUILD" \
 			"PREFIX = $PREFIX"
 
-		while [ "$1" ]; do
+		while [ $# -gt 0 ]; do
 			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
 					n='0'
