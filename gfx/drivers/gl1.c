@@ -243,6 +243,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    RARCH_LOG("[GL1]: Version: %s.\n", version);
    RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
 
+   gl1->smooth = settings->bools.video_smooth;
    gl1->supports_bgra = string_list_find_elem(gl1->extensions, "GL_EXT_bgra");
 
    glDisable(GL_BLEND);
@@ -420,8 +421,18 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, i
    /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, height, format, type, frame_to_copy);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+   if (tex == gl1->tex)
+   {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (gl1->smooth ? GL_LINEAR : GL_NEAREST));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (gl1->smooth ? GL_LINEAR : GL_NEAREST));
+   }
+   else if (tex == gl1->menu_tex)
+   {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (gl1->menu_smooth ? GL_LINEAR : GL_NEAREST));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (gl1->menu_smooth ? GL_LINEAR : GL_NEAREST));
+   }
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -449,7 +460,7 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, i
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);*/
 
-   if (gl1->rotation)
+   if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
 
    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -554,6 +565,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          tex_width = pitch / (bits / 8);
          pot_width = get_pot(tex_width);
          pot_height = get_pot(frame_height);
+
+         RARCH_LOG("***** res changed to %d (%d) x %d *****\n", frame_width, tex_width, frame_height);
+         RARCH_LOG("***** alloc %d bytes for %d x %d POT\n", (pot_width * pot_height * 4), pot_width, pot_height);
 
          if (gl1_video_buf)
             free(gl1_video_buf);
@@ -697,7 +711,32 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
 
+   /* emscripten has to do black frame insertion in its main loop */
+#ifndef EMSCRIPTEN
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+   if (
+         video_info->black_frame_insertion
+         && !video_info->input_driver_nonblock_state
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused)
+   {
+      video_info->cb_swap_buffers(video_info->context_data, video_info);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
+#endif
+
    video_info->cb_swap_buffers(video_info->context_data, video_info);
+
+   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
+   if (gl1->have_sync
+         && video_info->hard_sync
+         && !video_info->input_driver_nonblock_state
+         && !gl1->menu_texture_enable)
+   {
+      glClear(GL_COLOR_BUFFER_BIT);
+      /* hard sync would go here if possible */
+   }
 
    gl1_context_bind_hw_render(gl1, true);
 
@@ -861,11 +900,14 @@ static void gl1_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+   settings_t *settings = config_get_ptr();
    unsigned pitch = width * 2;
    gl1_t *gl1 = (gl1_t*)data;
 
    if (!gl1)
       return;
+
+   gl1->menu_smooth = settings->bools.menu_linear_filter;
 
    gl1_context_bind_hw_render(gl1, false);
 
@@ -1047,8 +1089,18 @@ static void gl1_set_texture_enable(void *data, bool state, bool full_screen)
    gl1->menu_texture_full_screen = full_screen;
 }
 
+static uint32_t gl1_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t gl1_poke_interface = {
-   NULL, /* get_flags */
+   gl1_get_flags,
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    gl1_load_texture,

@@ -67,6 +67,9 @@ typedef struct gl1
    unsigned rotation;
    bool menu_texture_enable;
    bool menu_texture_full_screen;
+   bool have_sync;
+   bool smooth;
+   bool menu_smooth;
 } gl1_t;
 
 typedef struct gl1_texture
