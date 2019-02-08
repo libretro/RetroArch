@@ -20,10 +20,6 @@
 #include "ozone.h"
 #include "ozone_texture.h"
 
-#ifdef HAVE_MENU_WIDGETS
-#include "../../widgets/menu_widgets.h"
-#endif
-
 #include "../../../retroarch.h"
 
 static float ozone_pure_white[16] = {

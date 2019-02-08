@@ -107,6 +107,9 @@ void ozone_draw_text(
       uint32_t color,
       bool draw_outside)
 {
+   if ((color & 0x000000FF) == 0)
+      return;
+
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, 1.0f,
          false,

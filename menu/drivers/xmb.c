@@ -71,7 +71,7 @@
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
 #ifndef XMB_DELAY
-#define XMB_DELAY 166
+#define XMB_DELAY 10
 #endif
 
 #define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
@@ -2923,7 +2923,7 @@ static int xmb_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_time();
+   ticker.idx      = frame_count / 20;
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2959,7 +2959,7 @@ static int xmb_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * scale_mod[7];
-   ticker.idx      = menu_animation_get_ticker_time();
+   ticker.idx      = frame_count / 20;
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
@@ -3140,6 +3140,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
+   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -3161,6 +3162,11 @@ static void xmb_render(void *data, bool is_idle)
             false);
 
    xmb->previous_scale_factor = scale_factor;
+
+   delta.current = menu_animation_get_delta_time();
+
+   if (menu_animation_get_ideal_delta_time(&delta))
+      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {
@@ -5765,28 +5771,6 @@ static int xmb_pointer_tap(void *userdata,
    return 0;
 }
 
-#ifdef HAVE_MENU_WIDGETS
-static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
-{
-   xmb_handle_t *xmb = (xmb_handle_t*) userdata;
-
-   if (xmb->categories_selection_ptr > xmb->system_tab_end)
-   {
-      xmb_node_t *node = file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
-
-      *icon          = node->icon;
-      *playlist_name = xmb->title_name;
-   }
-   else
-   {
-      *icon          = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
-      *playlist_name = "RetroArch";
-   }
-
-   return true;
-}
-#endif
-
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_messagebox,
@@ -5830,8 +5814,5 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
    NULL,
-   NULL,
-#ifdef HAVE_MENU_WIDGETS
-   xmb_get_load_content_animation_data
-#endif
+   NULL
 };

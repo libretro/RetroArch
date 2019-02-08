@@ -24,8 +24,7 @@ extern "C" {
 #define TEMP_EXTENSION ".update_tmp"
 #define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
 
-static void extractUpdateCB(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+static void extractUpdateCB(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;

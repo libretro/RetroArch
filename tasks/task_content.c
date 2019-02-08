@@ -65,9 +65,6 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../menu/widgets/menu_widgets.h"
-#endif
 #endif
 
 #include "../menu/menu_shader.h"
@@ -165,11 +162,6 @@ static char pending_subsystem_ident[255];
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 #endif
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool pending_load_content_pending  = false;
-static bool pending_load_content_resume   = false;
-#endif
 
 static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
@@ -1256,27 +1248,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 }
 
 #ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
-bool task_load_content_is_pending(void)
-{
-   return pending_load_content_pending;
-}
-
-bool task_load_content_should_resume(void)
-{
-   /* Avoid having one menu frame before running content
-      once the animation is finished */
-   if (pending_load_content_resume)
-      menu_widgets_cleanup_load_content_animation();
-
-   return pending_load_content_resume;
-}
-
-void task_load_content_resume(void)
-{
-   pending_load_content_resume = true;
-}
-#endif
 
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
@@ -1293,23 +1264,6 @@ bool task_push_load_content_from_playlist_from_menu(
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
-
-#ifdef HAVE_MENU_WIDGETS
-   if (video_driver_has_widgets() && menu_widgets_ready() && !pending_load_content_resume)
-   {
-      pending_load_content_pending = true;
-
-      if (label)
-         menu_widgets_start_load_content_animation(label, false);
-      else
-         menu_widgets_start_load_content_animation(path_basename(fullpath), true);
-
-      return true;
-   }
-
-   pending_load_content_resume   = false;
-   pending_load_content_pending  = false;
-#endif
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
@@ -1536,18 +1490,6 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
-
-#ifdef HAVE_MENU_WIDGETS
-   if (video_driver_has_widgets() && menu_widgets_ready() && !pending_load_content_resume)
-   {
-      pending_load_content_pending = true;
-      menu_widgets_start_load_content_animation(path_basename(fullpath), true);
-      return true;
-   }
-
-   pending_load_content_resume   = false;
-   pending_load_content_pending  = false;
-#endif
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
@@ -1849,18 +1791,6 @@ bool task_push_load_content_with_current_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data)
 {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (video_driver_has_widgets() && menu_widgets_ready() && !pending_load_content_resume)
-   {
-      pending_load_content_pending = true;
-      menu_widgets_start_load_content_animation(path_basename(fullpath), true);
-      return true;
-   }
-
-   pending_load_content_resume   = false;
-   pending_load_content_pending  = false;
-#endif
-
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -1910,18 +1840,6 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (video_driver_has_widgets() && menu_widgets_ready() && !pending_load_content_resume)
-   {
-      pending_load_content_pending = true;
-      menu_widgets_start_load_content_animation(path_basename(fullpath), true);
-      return true;
-   }
-
-   pending_load_content_resume   = false;
-   pending_load_content_pending  = false;
-#endif
-
    pending_subsystem_init = true;
 
    /* Load content */

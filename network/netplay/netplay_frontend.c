@@ -25,7 +25,6 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <net/net_http.h>
-#include <queues/task_queue.h>
 
 #ifdef HAVE_DISCORD
 #include <discord/discord.h>
@@ -639,7 +638,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
-static void netplay_announce_cb(retro_task_t *task, void *task_data, void *user_data, const char *error)
+static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("[netplay] announcing netplay game... \n");
 

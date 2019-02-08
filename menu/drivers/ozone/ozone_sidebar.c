@@ -206,10 +206,10 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             goto console_iterate;
 
          /* Icon */
-         ozone_draw_icon(video_info, 46, 46, node->icon, ozone->sidebar_offset + 41 + 10 - 3, y - 5 - 3 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+         ozone_draw_icon(video_info, 40, 40, node->icon, ozone->sidebar_offset + 41 + 10 - 3, y - 5 - 3 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
          /* Text */
-         ticker.idx        = menu_animation_get_ticker_time();
+         ticker.idx        = ozone->frame_count / 20;
          ticker.len        = 19;
          ticker.s          = console_title;
          ticker.selected   = selected;

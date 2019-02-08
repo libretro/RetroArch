@@ -59,9 +59,6 @@
 #include "menu/menu_content.h"
 #include "menu/menu_shader.h"
 #include "menu/widgets/menu_dialog.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "menu/widgets/menu_widgets.h"
-#endif
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -1000,10 +997,7 @@ static void command_event_set_volume(float gain)
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
-#endif
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("%s\n", msg);
 
@@ -2131,10 +2125,7 @@ TODO: Add a setting for these tweaks */
                return false;
             }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
-#endif
-               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
             RARCH_LOG("%s\n", msg);
          }
@@ -2504,12 +2495,9 @@ TODO: Add a setting for these tweaks */
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (!video_driver_has_widgets() || !menu_widgets_set_paused(is_paused))
-#endif
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
-                        1, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
+                     1, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
                if (!is_idle)
                   video_driver_cached_frame();
@@ -2523,11 +2511,6 @@ TODO: Add a setting for these tweaks */
             }
             else
             {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (video_driver_has_widgets())
-                  menu_widgets_set_paused(is_paused);
-#endif
-
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_AUDIO_START, NULL);
             }

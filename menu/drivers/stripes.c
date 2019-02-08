@@ -69,7 +69,7 @@
 #define STRIPES_RIBBON_VERTICES 2*STRIPES_RIBBON_COLS*STRIPES_RIBBON_ROWS-2*STRIPES_RIBBON_COLS
 
 #ifndef STRIPES_DELAY
-#define STRIPES_DELAY 166
+#define STRIPES_DELAY 10
 #endif
 
 #define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
@@ -2450,7 +2450,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_time();
+   ticker.idx      = frame_count / 20;
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2486,7 +2486,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * stripes_scale_mod[7];
-   ticker.idx      = menu_animation_get_ticker_time();
+   ticker.idx      = frame_count / 20;
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
@@ -2654,6 +2654,7 @@ static void stripes_draw_items(
 static void stripes_render(void *data, bool is_idle)
 {
    size_t i;
+   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    stripes_handle_t *stripes        = (stripes_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -2662,6 +2663,11 @@ static void stripes_render(void *data, bool is_idle)
 
    if (!stripes)
       return;
+
+   delta.current = menu_animation_get_delta_time();
+
+   if (menu_animation_get_ideal_delta_time(&delta))
+      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {

@@ -43,10 +43,6 @@
 #define IMG_EXT "bmp"
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-#include "../../menu/widgets/menu_widgets.h"
-#endif
-
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
@@ -127,11 +123,6 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
          state->height,
          state->pitch,
          bmp_type);
-#endif
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!state->silence)
-      menu_widgets_screenshot_taken(state->shotname, state->filename);
 #endif
 
    return ret;
@@ -288,11 +279,6 @@ static bool screenshot_dump(
 
    if (use_thread)
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (video_driver_has_widgets())
-         task_free_title(task);
-      else 
-#endif
       if (!savestate)
          task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
@@ -428,11 +414,6 @@ bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebu
    bool is_slowmotion     = false;
    bool is_perfcnt_enable = false;
    bool ret               = false;
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!silence)
-      menu_widgets_take_screenshot();
-#endif
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 

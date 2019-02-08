@@ -4139,7 +4139,7 @@ static void menu_displaylist_parse_playlist_generic(
 }
 
 #ifdef HAVE_NETWORKING
-static void wifi_scan_callback(retro_task_t *task, void *task_data,
+static void wifi_scan_callback(void *task_data,
       void *user_data, const char *error)
 {
    unsigned i;

@@ -120,8 +120,7 @@ static const QPixmap getInvader()
 }
 
 #ifdef HAVE_LIBRETRODB
-static void scan_finished_handler(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+static void scan_finished_handler(void *task_data, void *user_data, const char *err)
 {
    bool dontAsk = false;
    bool answer = false;

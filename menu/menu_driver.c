@@ -44,10 +44,6 @@
 
 #include "../gfx/video_driver.h"
 
-#ifdef HAVE_MENU_WIDGETS
-#include "widgets/menu_widgets.h"
-#endif
-
 #include "menu_animation.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -1257,7 +1253,7 @@ static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
    return false;
 }
 
-void menu_display_handle_thumbnail_upload(retro_task_t *task, void *task_data,
+void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1273,7 +1269,7 @@ void menu_display_handle_thumbnail_upload(retro_task_t *task, void *task_data,
    free(user_data);
 }
 
-void menu_display_handle_left_thumbnail_upload(retro_task_t *task, void *task_data,
+void menu_display_handle_left_thumbnail_upload(void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1289,7 +1285,7 @@ void menu_display_handle_left_thumbnail_upload(retro_task_t *task, void *task_da
    free(user_data);
 }
 
-void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task, void *task_data,
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1308,7 +1304,7 @@ void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task, void *ta
 /* Function that gets called when we want to load in a
  * new menu wallpaper.
  */
-void menu_display_handle_wallpaper_upload(retro_task_t *task, void *task_data,
+void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1579,10 +1575,6 @@ void menu_display_draw_text(
 {
    struct font_params params;
 
-   /* Don't draw is alpha is 0 */
-   if ((color & 0x000000FF) == 0)
-      return;
-
    /* Don't draw outside of the screen */
    if (     ((x < -64 || x > width  + 64)
          || (y < -64 || y > height + 64))
@@ -1704,7 +1696,7 @@ const char *config_get_menu_driver_options(void)
  * when we need to extract the APK contents/zip file. This
  * file contains assets which then get extracted to the
  * user's asset directories. */
-static void bundle_decompressed(retro_task_t *task, void *task_data,
+static void bundle_decompressed(void *task_data,
       void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
@@ -1910,14 +1902,6 @@ void menu_driver_frame(video_frame_info_t *video_info)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
-#ifdef HAVE_MENU_WIDGETS
-bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name)
-{
-   return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
-      && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
-}
-#endif
-
 bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {
@@ -1948,6 +1932,9 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
+      settings_t *settings = config_get_ptr();
+      menu_animation_update_time(settings->bools.menu_timedate_enable);
+
       if (menu_driver_ctx->render)
          menu_driver_ctx->render(menu_userdata, is_idle);
    }
@@ -2304,9 +2291,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
-#ifdef HAVE_MENU_WIDGETS
-         menu_widgets_context_destroy();
-#endif
          if (menu_driver_ctx && menu_driver_ctx->context_destroy)
             menu_driver_ctx->context_destroy(menu_userdata);
 

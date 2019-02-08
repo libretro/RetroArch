@@ -180,7 +180,7 @@ void print_buf_lines(file_list_t *list, char *buf,
     * with a newline, just ignore the partial last line. */
 }
 
-void cb_net_generic_subdir(retro_task_t *task, void *task_data, void *user_data, const char *err)
+void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
 #ifdef HAVE_NETWORKING
    char subdir_path[PATH_MAX_LENGTH];
@@ -222,7 +222,7 @@ finish:
 #endif
 }
 
-void cb_net_generic(retro_task_t *task, void *task_data, void *user_data, const char *err)
+void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
 #ifdef HAVE_NETWORKING
    bool refresh                   = false;
