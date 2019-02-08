@@ -1917,7 +1917,7 @@ static void rgui_navigation_clear(void *data, bool pending_push)
    rgui->scroll_y = 0;
 }
 
-static const char *rgui_thumbnail_ident()
+static const char *rgui_thumbnail_ident(void)
 {
    char folder = 0;
    settings_t *settings = config_get_ptr();
@@ -2231,6 +2231,13 @@ static void rgui_toggle(void *userdata, bool menu_on)
 {
    settings_t *settings = config_get_ptr();
    
+   /* TODO/FIXME - when we close RetroArch, this function
+    * gets called and settings is NULL at this point. 
+    * Maybe fundamentally change control flow so that on RetroArch
+    * exit, this doesn't get called. */
+   if (!settings)
+      return;
+
    if (settings->bools.menu_rgui_lock_aspect)
    {
       if (menu_on)
@@ -2246,9 +2253,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
       else
       {
          if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
-         {
             video_driver_set_aspect_ratio();
-         }
       }
    }
 }
