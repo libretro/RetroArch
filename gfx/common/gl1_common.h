@@ -70,6 +70,7 @@ typedef struct gl1
    bool have_sync;
    bool smooth;
    bool menu_smooth;
+   void *readback_buffer_screenshot;
 } gl1_t;
 
 typedef struct gl1_texture

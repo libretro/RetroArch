@@ -23,6 +23,7 @@
 #include <formats/image.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
+#include <gfx/video_frame.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -508,6 +509,21 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glPopMatrix();
 }
 
+static void gl1_readback(
+      gl1_t *gl1,
+      unsigned alignment,
+      unsigned fmt, unsigned type,
+      void *src)
+{
+   glPixelStorei(GL_PACK_ALIGNMENT, alignment);
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glReadBuffer(GL_BACK);
+
+   glReadPixels(gl1->vp.x, gl1->vp.y,
+         gl1->vp.width, gl1->vp.height,
+         (GLenum)fmt, (GLenum)type, (GLvoid*)src);
+}
+
 static bool gl1_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -704,6 +720,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
 
+   /* Screenshots. */
+   if (gl1->readback_buffer_screenshot)
+      gl1_readback(gl1,
+            4, GL_RGBA, GL_UNSIGNED_BYTE,
+            gl1->readback_buffer_screenshot);
+
    /* emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
@@ -877,16 +899,57 @@ static void gl1_gfx_set_rotation(void *data,
 static void gl1_gfx_viewport_info(void *data,
       struct video_viewport *vp)
 {
-   (void)data;
-   (void)vp;
+   unsigned width, height;
+   unsigned top_y, top_dist;
+   gl1_t *gl1             = (gl1_t*)data;
+
+   video_driver_get_size(&width, &height);
+
+   *vp             = gl1->vp;
+   vp->full_width  = width;
+   vp->full_height = height;
+
+   /* Adjust as GL viewport is bottom-up. */
+   top_y           = vp->y + vp->height;
+   top_dist        = height - top_y;
+   vp->y           = top_dist;
 }
 
 static bool gl1_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   (void)data;
-   (void)buffer;
+   unsigned num_pixels = 0;
+   gl1_t *gl1 = (gl1_t*)data;
 
+   if (!gl1)
+      return false;
+
+   gl1_context_bind_hw_render(gl1, false);
+
+   num_pixels = gl1->vp.width * gl1->vp.height;
+
+   gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+
+   if (!gl1->readback_buffer_screenshot)
+      goto error;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   video_frame_convert_rgba_to_bgr(
+         (const void*)gl1->readback_buffer_screenshot,
+         buffer,
+         num_pixels);
+
+   free(gl1->readback_buffer_screenshot);
+   gl1->readback_buffer_screenshot = NULL;
+
+   gl1_context_bind_hw_render(gl1, true);
    return true;
+
+error:
+   gl1_context_bind_hw_render(gl1, true);
+
+   return false;
 }
 
 static void gl1_set_texture_frame(void *data,
