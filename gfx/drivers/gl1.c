@@ -399,7 +399,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 #endif
 }
 
-static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, int height, GLuint tex, const void *frame_to_copy)
+static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
    GLint internalFormat = GL_RGBA8;
@@ -420,7 +420,7 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, i
 
    /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, height, format, type, frame_to_copy);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame_to_copy);
 
    if (tex == gl1->tex)
    {
@@ -476,7 +476,7 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, i
       float *tex_mirror_BR = tex_TR;
       float *tex_mirror_TL = tex_BL;
       float *tex_mirror_TR = tex_BR;
-      float norm_width = (1.0f / (float)pot_width) * (float)tex_width;
+      float norm_width = (1.0f / (float)pot_width) * (float)width;
       float norm_height = (1.0f / (float)pot_height) * (float)height;
 
       /* remove extra POT padding */
@@ -519,7 +519,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned bits             = gl1_video_bits;
    bool draw                 = true;
    gl1_t *gl1                = (gl1_t*)data;
-   unsigned tex_width        = 0;
    unsigned pot_width        = 0;
    unsigned pot_height       = 0;
 
@@ -562,12 +561,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          gl1_video_height = frame_height;
          gl1_video_pitch  = pitch;
 
-         tex_width = pitch / (bits / 8);
-         pot_width = get_pot(tex_width);
+         pot_width = get_pot(frame_width);
          pot_height = get_pot(frame_height);
-
-         RARCH_LOG("***** res changed to %d (%d) x %d *****\n", frame_width, tex_width, frame_height);
-         RARCH_LOG("***** alloc %d bytes for %d x %d POT\n", (pot_width * pot_height * 4), pot_width, pot_height);
 
          if (gl1_video_buf)
             free(gl1_video_buf);
@@ -580,8 +575,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    height        = gl1_video_height;
    pitch         = gl1_video_pitch;
 
-   tex_width = pitch / (bits / 8);
-   pot_width = get_pot(tex_width);
+   pot_width = get_pot(width);
    pot_height = get_pot(height);
 
    if (  frame_width  == 4 &&
@@ -599,7 +593,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          for (y = 0; y < height; y++)
          {
             /* copy lines into top-left portion of larger (power-of-two) buffer */
-            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), frame + (pitch * y), pitch);
+            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), frame + (pitch * y), width * (bits / 8));
          }
       }
       else if (bits == 16)
@@ -607,9 +601,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          /* change bit depth from 565 to 8888 */
          for (y = 0; y < height; y++)
          {
-            for (x = 0; x < tex_width; x++)
+            for (x = 0; x < width; x++)
             {
-               unsigned pixel = ((unsigned short*)frame)[tex_width * y + x];
+               unsigned pixel = ((unsigned short*)frame)[(pitch / (bits / 8)) * y + x];
                unsigned *new_pixel = (unsigned*)gl1_video_buf + (pot_width * y + x);
                unsigned r = (255.0f / 31.0f) * ((pixel & 0xF800) >> 11);
                unsigned g = (255.0f / 63.0f) * ((pixel & 0x7E0) >> 5);
@@ -640,7 +634,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (draw)
    {
       if (frame_to_copy)
-         draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->tex, frame_to_copy);
+         draw_tex(gl1, pot_width, pot_height, width, height, gl1->tex, frame_to_copy);
    }
 
    if (gl1_menu_frame && video_info->menu_is_alive)
@@ -652,8 +646,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       pitch         = gl1_menu_pitch;
       bits          = gl1_menu_bits;
 
-      tex_width = pitch / (bits / 8);
-      pot_width = get_pot(tex_width);
+      pot_width = get_pot(width);
       pot_height = get_pot(height);
 
       if (gl1_menu_size_changed)
@@ -675,9 +668,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          /* change bit depth from 4444 to 8888 */
          for (y = 0; y < height; y++)
          {
-            for (x = 0; x < tex_width; x++)
+            for (x = 0; x < width; x++)
             {
-               unsigned pixel = ((unsigned short*)gl1_menu_frame)[tex_width * y + x];
+               unsigned pixel = ((unsigned short*)gl1_menu_frame)[(pitch / (bits / 8)) * y + x];
                unsigned *new_pixel = (unsigned*)gl1_menu_video_buf + (pot_width * y + x);
                unsigned r = (255.0f / 15.0f) * ((pixel & 0xF000) >> 12);
                unsigned g = (255.0f / 15.0f) * ((pixel & 0xF00) >> 8);
@@ -695,11 +688,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          if (gl1->menu_texture_full_screen)
          {
             glViewport(0, 0, video_info->width, video_info->height);
-            draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->menu_tex, frame_to_copy);
+            draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
             glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
          }
          else
-            draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->menu_tex, frame_to_copy);
+            draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
 
          glDisable(GL_BLEND);
       }
