@@ -1325,7 +1325,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       goto error;
    }
 
-   if (!wl->xdg_shell)
+   if (!wl->xdg_shell && !!wl->zxdg_shell)
    {
       RARCH_LOG("[Wayland]: Using zxdg_shell_v6 interface.\n");
    }
