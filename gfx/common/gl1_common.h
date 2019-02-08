@@ -48,6 +48,7 @@ typedef struct gl1
    void *ctx_data;
    const gfx_ctx_driver_t *ctx_driver;
    GLuint tex;
+   GLuint menu_tex;
    struct string_list *extensions;
    bool supports_bgra;
    struct video_viewport vp;
@@ -64,6 +65,8 @@ typedef struct gl1
    const float *vertex_ptr;
    const float *white_color_ptr;
    unsigned rotation;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
 } gl1_t;
 
 typedef struct gl1_texture

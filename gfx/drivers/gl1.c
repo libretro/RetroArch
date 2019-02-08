@@ -56,7 +56,9 @@ static unsigned gl1_video_bits       = 0;
 static unsigned gl1_menu_bits        = 0;
 static bool gl1_rgb32                = false;
 static bool gl1_menu_rgb32           = false;
+static bool gl1_menu_size_changed    = false;
 static unsigned char *gl1_video_buf  = NULL;
+static unsigned char *gl1_menu_video_buf = NULL;
 
 static bool gl1_shared_context_use = false;
 
@@ -249,6 +251,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    glDisable(GL_SCISSOR_TEST);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glGenTextures(1, &gl1->tex);
+   glGenTextures(1, &gl1->menu_tex);
 
    hwr = video_driver_get_hw_context();
 
@@ -395,6 +398,105 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 #endif
 }
 
+static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int tex_width, int height, GLuint tex, const void *frame_to_copy)
+{
+   /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
+   GLint internalFormat = GL_RGBA8;
+   GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
+   GLenum type = GL_UNSIGNED_BYTE;
+
+   glDisable(GL_DEPTH_TEST);
+   glDisable(GL_STENCIL_TEST);
+   glDisable(GL_SCISSOR_TEST);
+   glEnable(GL_TEXTURE_2D);
+
+   /* multi-texture not part of GL 1.1 */
+   /*glActiveTexture(GL_TEXTURE0);*/
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
+   glBindTexture(GL_TEXTURE_2D, tex);
+
+   /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, height, format, type, frame_to_copy);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadIdentity();
+   /*glLoadMatrixf(gl1->mvp.data);*/
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+
+   /* stock coord set does not handle POT, disable for now */
+   /*glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+   glColorPointer(4, GL_FLOAT, 0, gl1->coords.color);
+   glVertexPointer(2, GL_FLOAT, 0, gl1->coords.vertex);
+   glTexCoordPointer(2, GL_FLOAT, 0, gl1->coords.tex_coord);
+
+   glDrawArrays(GL_TRIANGLES, 0, gl1->coords.vertices);
+
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);*/
+
+   if (gl1->rotation)
+      glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
+
+   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+   glBegin(GL_QUADS);
+
+   {
+      float tex_BL[2] = {0.0f, 0.0f};
+      float tex_BR[2] = {1.0f, 0.0f};
+      float tex_TL[2] = {0.0f, 1.0f};
+      float tex_TR[2] = {1.0f, 1.0f};
+      float *tex_mirror_BL = tex_TL;
+      float *tex_mirror_BR = tex_TR;
+      float *tex_mirror_TL = tex_BL;
+      float *tex_mirror_TR = tex_BR;
+      float norm_width = (1.0f / (float)pot_width) * (float)tex_width;
+      float norm_height = (1.0f / (float)pot_height) * (float)height;
+
+      /* remove extra POT padding */
+      tex_mirror_BR[0] = norm_width;
+      tex_mirror_TR[0] = norm_width;
+
+      /* normally this would be 1.0 - height, but we're drawing upside-down */
+      tex_mirror_BL[1] = norm_height;
+      tex_mirror_BR[1] = norm_height;
+
+      glTexCoord2f(tex_mirror_BL[0], tex_mirror_BL[1]);
+      glVertex2f(-1.0f, -1.0f);
+
+      glTexCoord2f(tex_mirror_TL[0], tex_mirror_TL[1]);
+      glVertex2f(-1.0f, 1.0f);
+
+      glTexCoord2f(tex_mirror_TR[0], tex_mirror_TR[1]);
+      glVertex2f(1.0f, 1.0f);
+
+      glTexCoord2f(tex_mirror_BR[0], tex_mirror_BR[1]);
+      glVertex2f(1.0f, -1.0f);
+   }
+
+   glEnd();
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
+}
+
 static bool gl1_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -435,7 +537,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   if (gl1->menu_texture_enable)
+      menu_driver_frame(video_info);
 #endif
 
    if (  gl1_video_width  != frame_width  ||
@@ -459,94 +562,51 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gl1_menu_frame && video_info->menu_is_alive)
+   width         = gl1_video_width;
+   height        = gl1_video_height;
+   pitch         = gl1_video_pitch;
+
+   tex_width = pitch / (bits / 8);
+   pot_width = get_pot(tex_width);
+   pot_height = get_pot(height);
+
+   if (  frame_width  == 4 &&
+         frame_height == 4 &&
+         (frame_width < width && frame_height < height)
+      )
+      draw = false;
+
+   if (draw && gl1_video_buf)
    {
       unsigned x, y;
-      frame_to_copy = NULL;
-      width         = gl1_menu_width;
-      height        = gl1_menu_height;
-      pitch         = gl1_menu_pitch;
-      bits          = gl1_menu_bits;
 
-      tex_width = pitch / (bits / 8);
-      pot_width = get_pot(tex_width);
-      pot_height = get_pot(height);
-
-      if (!gl1_video_buf)
-         gl1_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
-
-      if (bits == 16 && gl1_video_buf)
+      if (bits == 32)
       {
-         /* change bit depth from 4444 to 8888 */
+         for (y = 0; y < height; y++)
+         {
+            /* copy lines into top-left portion of larger (power-of-two) buffer */
+            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), frame + (pitch * y), pitch);
+         }
+      }
+      else if (bits == 16)
+      {
+         /* change bit depth from 565 to 8888 */
          for (y = 0; y < height; y++)
          {
             for (x = 0; x < tex_width; x++)
             {
-               unsigned pixel = ((unsigned short*)gl1_menu_frame)[tex_width * y + x];
+               unsigned pixel = ((unsigned short*)frame)[tex_width * y + x];
                unsigned *new_pixel = (unsigned*)gl1_video_buf + (pot_width * y + x);
-               unsigned r = (255.0f / 15.0f) * ((pixel & 0xF000) >> 12);
-               unsigned g = (255.0f / 15.0f) * ((pixel & 0xF00) >> 8);
-               unsigned b = (255.0f / 15.0f) * ((pixel & 0xF0) >> 4);
-               unsigned a = (255.0f / 15.0f) * ((pixel & 0xF) >> 0);
+               unsigned r = (255.0f / 31.0f) * ((pixel & 0xF800) >> 11);
+               unsigned g = (255.0f / 63.0f) * ((pixel & 0x7E0) >> 5);
+               unsigned b = (255.0f / 31.0f) * ((pixel & 0x1F) >> 0);
                /* copy pixels into top-left portion of larger (power-of-two) buffer */
-               *new_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+               *new_pixel = 0xFF000000 | (r << 16) | (g << 8) | b;
             }
          }
-
-         frame_to_copy = gl1_video_buf;
       }
-   }
-   else
-   {
-      width         = gl1_video_width;
-      height        = gl1_video_height;
-      pitch         = gl1_video_pitch;
 
-      tex_width = pitch / (bits / 8);
-      pot_width = get_pot(tex_width);
-      pot_height = get_pot(height);
-
-      if (  frame_width  == 4 &&
-            frame_height == 4 &&
-            (frame_width < width && frame_height < height)
-         )
-         draw = false;
-
-      if (video_info->menu_is_alive)
-         draw = false;
-
-      if (draw && gl1_video_buf)
-      {
-         unsigned x, y;
-
-         if (bits == 32)
-         {
-            for (y = 0; y < height; y++)
-            {
-               /* copy lines into top-left portion of larger (power-of-two) buffer */
-               memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), frame + (pitch * y), pitch);
-            }
-         }
-         else if (bits == 16)
-         {
-            /* change bit depth from 565 to 8888 */
-            for (y = 0; y < height; y++)
-            {
-               for (x = 0; x < tex_width; x++)
-               {
-                  unsigned pixel = ((unsigned short*)frame)[tex_width * y + x];
-                  unsigned *new_pixel = (unsigned*)gl1_video_buf + (pot_width * y + x);
-                  unsigned r = (255.0f / 31.0f) * ((pixel & 0xF800) >> 11);
-                  unsigned g = (255.0f / 63.0f) * ((pixel & 0x7E0) >> 5);
-                  unsigned b = (255.0f / 31.0f) * ((pixel & 0x1F) >> 0);
-                  /* copy pixels into top-left portion of larger (power-of-two) buffer */
-                  *new_pixel = 0xFF000000 | (r << 16) | (g << 8) | b;
-               }
-            }
-         }
-
-         frame_to_copy = gl1_video_buf;
-      }
+      frame_to_copy = gl1_video_buf;
    }
 
    if (gl1->video_width != width || gl1->video_height != height)
@@ -563,101 +623,72 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glClear(GL_COLOR_BUFFER_BIT);
 
-   if (draw && frame_to_copy)
+   if (draw)
    {
-      /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
-      GLint internalFormat = GL_RGBA8;
-      GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
-      GLenum type = GL_UNSIGNED_BYTE;
+      if (frame_to_copy)
+         draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->tex, frame_to_copy);
+   }
 
-      /*glDisable(GL_BLEND);*/
-      glDisable(GL_DEPTH_TEST);
-      glDisable(GL_STENCIL_TEST);
-      glDisable(GL_SCISSOR_TEST);
-      glEnable(GL_TEXTURE_2D);
+   if (gl1_menu_frame && video_info->menu_is_alive)
+   {
+      unsigned x, y;
+      frame_to_copy = NULL;
+      width         = gl1_menu_width;
+      height        = gl1_menu_height;
+      pitch         = gl1_menu_pitch;
+      bits          = gl1_menu_bits;
 
-      /* multi-texture not part of GL 1.1 */
-      /*glActiveTexture(GL_TEXTURE0);*/
+      tex_width = pitch / (bits / 8);
+      pot_width = get_pot(tex_width);
+      pot_height = get_pot(height);
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
-      glBindTexture(GL_TEXTURE_2D, gl1->tex);
-
-      /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
-      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, height, format, type, frame_to_copy);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-      glMatrixMode(GL_PROJECTION);
-      glPushMatrix();
-      glLoadIdentity();
-      /*glLoadMatrixf(gl1->mvp.data);*/
-
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-
-      /*glEnableClientState(GL_COLOR_ARRAY);
-      glEnableClientState(GL_VERTEX_ARRAY);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-      glColorPointer(4, GL_FLOAT, 0, gl1->coords.color);
-      glVertexPointer(2, GL_FLOAT, 0, gl1->coords.vertex);
-      glTexCoordPointer(2, GL_FLOAT, 0, gl1->coords.tex_coord);
-
-      glDrawArrays(GL_TRIANGLES, 0, gl1->coords.vertices);
-
-      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-      glDisableClientState(GL_VERTEX_ARRAY);
-      glDisableClientState(GL_COLOR_ARRAY);*/
-
-
-      glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-      glBegin(GL_QUADS);
-
+      if (gl1_menu_size_changed)
       {
-         float tex_BL[2] = {0.0f, 0.0f};
-         float tex_BR[2] = {1.0f, 0.0f};
-         float tex_TL[2] = {0.0f, 1.0f};
-         float tex_TR[2] = {1.0f, 1.0f};
-         float *tex_mirror_BL = tex_TL;
-         float *tex_mirror_BR = tex_TR;
-         float *tex_mirror_TL = tex_BL;
-         float *tex_mirror_TR = tex_BR;
-         float norm_width = (1.0f / (float)pot_width) * (float)tex_width;
-         float norm_height = (1.0f / (float)pot_height) * (float)height;
+         gl1_menu_size_changed = false;
 
-         /* remove extra POT padding */
-         tex_mirror_BR[0] = norm_width;
-         tex_mirror_TR[0] = norm_width;
-
-         /* normally this would be 1.0 - height, but we're drawing upside-down */
-         tex_mirror_BL[1] = norm_height;
-         tex_mirror_BR[1] = norm_height;
-
-         glTexCoord2f(tex_mirror_BL[0], tex_mirror_BL[1]);
-         glVertex2f(-1.0f, -1.0f);
-
-         glTexCoord2f(tex_mirror_TL[0], tex_mirror_TL[1]);
-         glVertex2f(-1.0f, 1.0f);
-
-         glTexCoord2f(tex_mirror_TR[0], tex_mirror_TR[1]);
-         glVertex2f(1.0f, 1.0f);
-
-         glTexCoord2f(tex_mirror_BR[0], tex_mirror_BR[1]);
-         glVertex2f(1.0f, -1.0f);
+         if (gl1_menu_video_buf)
+         {
+            free(gl1_menu_video_buf);
+            gl1_menu_video_buf = NULL;
+         }
       }
 
-      glEnd();
+      if (!gl1_menu_video_buf)
+         gl1_menu_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
 
-      glMatrixMode(GL_MODELVIEW);
-      glPopMatrix();
-      glMatrixMode(GL_PROJECTION);
-      glPopMatrix();
+      if (bits == 16 && gl1_menu_video_buf)
+      {
+         /* change bit depth from 4444 to 8888 */
+         for (y = 0; y < height; y++)
+         {
+            for (x = 0; x < tex_width; x++)
+            {
+               unsigned pixel = ((unsigned short*)gl1_menu_frame)[tex_width * y + x];
+               unsigned *new_pixel = (unsigned*)gl1_menu_video_buf + (pot_width * y + x);
+               unsigned r = (255.0f / 15.0f) * ((pixel & 0xF000) >> 12);
+               unsigned g = (255.0f / 15.0f) * ((pixel & 0xF00) >> 8);
+               unsigned b = (255.0f / 15.0f) * ((pixel & 0xF0) >> 4);
+               unsigned a = (255.0f / 15.0f) * ((pixel & 0xF) >> 0);
+               /* copy pixels into top-left portion of larger (power-of-two) buffer */
+               *new_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+            }
+         }
+
+         frame_to_copy = gl1_menu_video_buf;
+
+         glEnable(GL_BLEND);
+
+         if (gl1->menu_texture_full_screen)
+         {
+            glViewport(0, 0, video_info->width, video_info->height);
+            draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->menu_tex, frame_to_copy);
+            glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
+         }
+         else
+            draw_tex(gl1, pot_width, pot_height, tex_width, height, gl1->menu_tex, frame_to_copy);
+
+         glDisable(GL_BLEND);
+      }
    }
 
    if (msg)
@@ -757,6 +788,12 @@ static void gl1_gfx_free(void *data)
       gl1_video_buf = NULL;
    }
 
+   if (gl1_menu_video_buf)
+   {
+      free(gl1_menu_video_buf);
+      gl1_menu_video_buf = NULL;
+   }
+
    if (!gl1)
       return;
 
@@ -764,6 +801,12 @@ static void gl1_gfx_free(void *data)
    {
       glDeleteTextures(1, &gl1->tex);
       gl1->tex = 0;
+   }
+
+   if (gl1->menu_tex)
+   {
+      glDeleteTextures(1, &gl1->menu_tex);
+      gl1->menu_tex = 0;
    }
 
    if (gl1->extensions)
@@ -857,6 +900,7 @@ static void gl1_set_texture_frame(void *data,
       gl1_menu_height = height;
       gl1_menu_pitch  = pitch;
       gl1_menu_bits   = rgb32 ? 32 : 16;
+      gl1_menu_size_changed = true;
    }
 
    gl1_context_bind_hw_render(gl1, true);
@@ -992,6 +1036,17 @@ static float gl1_get_refresh_rate(void *data)
    return 0.0f;
 }
 
+static void gl1_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   gl1_t *gl1                    = (gl1_t*)data;
+
+   if (!gl1)
+      return;
+
+   gl1->menu_texture_enable      = state;
+   gl1->menu_texture_full_screen = full_screen;
+}
+
 static const video_poke_interface_t gl1_poke_interface = {
    NULL, /* get_flags */
    NULL,                      /* set_coords */
@@ -1009,7 +1064,7 @@ static const video_poke_interface_t gl1_poke_interface = {
    gl1_set_aspect_ratio,
    NULL,
    gl1_set_texture_frame,
-   NULL,
+   gl1_set_texture_enable,
    gl1_set_osd_msg,
    NULL,
    NULL,                         /* grab_mouse_toggle */
