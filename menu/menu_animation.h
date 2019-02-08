@@ -143,7 +143,7 @@ void menu_animation_free(void);
 
 bool menu_animation_update(float delta_time);
 
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
+void menu_animation_get_time(menu_animation_ctx_delta_t *delta);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 
@@ -158,8 +158,6 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject);
 bool menu_animation_push(menu_animation_ctx_entry_t *entry);
 
 void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry);
-
-float menu_animation_get_delta_time(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 

@@ -591,14 +591,6 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
    return true;
 }
 
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
-{
-   if (!delta)
-      return false;
-   delta->ideal = delta->current / IDEAL_DELTA_TIME;
-   return true;
-}
-
 void menu_animation_update_time(bool timedate_enable)
 {
    static retro_time_t
@@ -686,9 +678,10 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    }
 }
 
-float menu_animation_get_delta_time(void)
+void menu_animation_get_time(menu_animation_ctx_delta_t *delta)
 {
-   return delta_time;
+   delta->current = delta_time;
+   delta->ideal   = delta_time / IDEAL_DELTA_TIME;
 }
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)

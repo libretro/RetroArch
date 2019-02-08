@@ -2641,6 +2641,7 @@ static enum runloop_state runloop_check_state(
    bool rarch_is_initialized        = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
    bool fs_toggle_triggered         = false;
 #ifdef HAVE_MENU
+   menu_animation_ctx_delta_t delta;
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
    unsigned menu_toggle_gamepad_combo = settings->uints.input_menu_toggle_gamepad_combo;
@@ -2828,14 +2829,8 @@ static enum runloop_state runloop_check_state(
    }
 
 #if defined(HAVE_MENU)
-   {
-      menu_animation_ctx_delta_t delta;
-
-      delta.current = menu_animation_get_delta_time();
-
-      if (menu_animation_get_ideal_delta_time(&delta))
-         menu_animation_update(delta.ideal);
-   }
+   menu_animation_get_time(&delta);
+   menu_animation_update(delta.ideal);
 
    if (menu_is_alive)
    {
