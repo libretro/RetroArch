@@ -73,7 +73,7 @@ parse_input() # Parse stuff :V
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
 
-	while [ "$1" ]; do
+	while [ $# -gt 0 ]; do
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
 			--global-config-dir=*|--sysconfdir=*) GLOBAL_CONFIG_DIR="${1#*=}";;
@@ -101,6 +101,8 @@ parse_input() # Parse stuff :V
 				eval "$opt=\"$val\""
 			;;
 			-h|--help) print_help; exit 0;;
+			--) break ;;
+			'') : ;;
 			*) die 1 "Unknown option $1";;
 		esac
 		shift
