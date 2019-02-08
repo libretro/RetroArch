@@ -3140,7 +3140,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
-   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -3162,11 +3161,6 @@ static void xmb_render(void *data, bool is_idle)
             false);
 
    xmb->previous_scale_factor = scale_factor;
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {

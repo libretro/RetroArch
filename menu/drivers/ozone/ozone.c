@@ -932,7 +932,6 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone)
 static void ozone_render(void *data, bool is_idle)
 {
    size_t i;
-   menu_animation_ctx_delta_t delta;
    unsigned end                     = (unsigned)menu_entries_get_size();
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    if (!data)
@@ -945,11 +944,6 @@ static void ozone_render(void *data, bool is_idle)
    }
 
    ozone->selection = menu_navigation_get_selection();
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    /* TODO Handle pointer & mouse */
 

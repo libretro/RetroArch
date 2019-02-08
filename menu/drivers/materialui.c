@@ -643,7 +643,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    with acceleration */
 static void materialui_render(void *data, bool is_idle)
 {
-   menu_animation_ctx_delta_t delta;
    unsigned bottom, width, height, header_height;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
@@ -661,11 +660,6 @@ static void materialui_render(void *data, bool is_idle)
          materialui_compute_entries_box(mui, width);
       mui->need_compute = false;
    }
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    menu_display_set_width(width);
    menu_display_set_height(height);

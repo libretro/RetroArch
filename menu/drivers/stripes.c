@@ -2654,7 +2654,6 @@ static void stripes_draw_items(
 static void stripes_render(void *data, bool is_idle)
 {
    size_t i;
-   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    stripes_handle_t *stripes        = (stripes_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -2663,11 +2662,6 @@ static void stripes_render(void *data, bool is_idle)
 
    if (!stripes)
       return;
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {
