@@ -157,6 +157,7 @@ void font_driver_init_osd(
 void font_driver_free_osd(void);
 
 extern font_renderer_t gl_raster_font;
+extern font_renderer_t gl1_raster_font;
 extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;

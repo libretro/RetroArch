@@ -126,6 +126,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
+#ifdef HAVE_OPENGL1
+   &menu_display_ctx_gl1,
+#endif
 #endif
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
@@ -272,6 +275,10 @@ static bool menu_display_check_compatibility(
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (string_is_equal(video_driver, "gl"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL1:
+         if (string_is_equal(video_driver, "gl1"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
@@ -781,7 +788,8 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
 
-   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
+   if (menu_disp && menu_disp->get_default_mvp)
+      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
 }
 
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,

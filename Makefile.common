@@ -1060,8 +1060,17 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
           gfx/drivers_font/gl_raster_font.o \
           $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
+   ifeq ($(HAVE_OPENGL1), 1)
+      OBJ += gfx/drivers/gl1.o \
+             gfx/drivers_font/gl1_raster_font.o
+   endif
+
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl.o
+
+      ifeq ($(HAVE_OPENGL1), 1)
+         OBJ += menu/drivers_display/menu_display_gl1.o
+      endif
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)

@@ -260,6 +260,9 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl2,
+#ifdef HAVE_OPENGL1
+   &video_gl1,
+#endif
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
@@ -424,7 +427,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_null,
    NULL
 };
-
 
 bool video_driver_started_fullscreen(void)
 {

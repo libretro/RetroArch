@@ -411,6 +411,9 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
+#ifdef HAVE_OPENGL1
+#include "../gfx/drivers/gl1.c"
+#endif
 #include "../libretro-common/gfx/gl_capabilities.c"
 
 #ifndef HAVE_PSGL
@@ -488,6 +491,9 @@ FONTS
 
 #if defined(HAVE_OPENGL)
 #include "../gfx/drivers_font/gl_raster_font.c"
+#ifdef HAVE_OPENGL1
+#include "../gfx/drivers_font/gl1_raster_font.c"
+#endif
 #endif
 
 #if defined(_XBOX1)
@@ -1248,6 +1254,9 @@ MENU
 
 #ifdef HAVE_OPENGL
 #include "../menu/drivers_display/menu_display_gl.c"
+#ifdef HAVE_OPENGL1
+#include "../menu/drivers_display/menu_display_gl1.c"
+#endif
 #endif
 
 #ifdef HAVE_VULKAN

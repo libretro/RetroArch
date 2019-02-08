@@ -183,6 +183,37 @@ static bool gl_font_init_first(
 
    return false;
 }
+
+#ifdef HAVE_OPENGL1
+static const font_renderer_t *gl1_font_backends[] = {
+   &gl1_raster_font,
+   NULL,
+};
+
+static bool gl1_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; gl1_font_backends[i]; i++)
+   {
+      void *data = gl1_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = gl1_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
 #endif
 
 #ifdef HAVE_CACA
@@ -630,6 +661,11 @@ static bool font_init_first(
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
+#ifdef HAVE_OPENGL1
+      case FONT_DRIVER_RENDER_OPENGL1_API:
+         return gl1_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
