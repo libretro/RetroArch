@@ -81,11 +81,11 @@ static char *get_temp_directory_alloc(void)
       path = strcpy_alloc_force(settings->paths.directory_libretro);
    }
 #else
-   path = "/tmp";
    if (getenv("TMPDIR"))
-      path = getenv("TMPDIR");
+      path = strcpy_alloc_force(getenv("TMPDIR"));
+   else
+      path = strcpy_alloc_force("/tmp");
 
-   path = strcpy_alloc_force(path);
 #endif
    return path;
 }
