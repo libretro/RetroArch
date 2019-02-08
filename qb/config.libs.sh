@@ -9,20 +9,22 @@ add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_dirs LIBRARY /opt/local/lib
 
-[ "$GLOBAL_CONFIG_DIR" ] || \
+[ "${GLOBAL_CONFIG_DIR:-}" ] ||
 {	case "$PREFIX" in
 		/usr*) GLOBAL_CONFIG_DIR=/etc ;;
 		*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
 	esac
 }
 
-DYLIB=-ldl;
+DYLIB=-ldl
 CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
 INCLUDES='usr/include usr/local/include'
 SORT='sort'
+EXTRA_GL_LIBS=''
+VC_PREFIX=''
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
