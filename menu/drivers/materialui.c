@@ -56,6 +56,8 @@
 
 #include "../../file_path_special.h"
 
+#include "../../dynamic.h"
+
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
@@ -1994,6 +1996,7 @@ static int materialui_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
+   const struct retro_subsystem_info* subsystem;
 
    (void)userdata;
 
@@ -2076,6 +2079,15 @@ static int materialui_list_push(void *data, void *userdata,
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
+
+               /* Core fully loaded, use the subsystem data */
+               if (system->subsystem.data)
+                     subsystem = system->subsystem.data;
+               /* Core not loaded completely, use the data we peeked on load core */
+               else
+                  subsystem = subsystem_data;
+
+               menu_subsystem_populate(subsystem, info);
             }
 
             if (settings->bools.menu_content_show_history)
@@ -2492,6 +2504,8 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
                   ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
                   )
             {
                node->texture_switch2_index = MUI_TEXTURE_START_CORE;
@@ -2554,7 +2568,10 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_index = MUI_TEXTURE_CONFIGURATIONS;
                node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
+                  )
             {
                node->texture_switch2_index = MUI_TEXTURE_LOAD_CONTENT;
                node->texture_switch2_set   = true;
