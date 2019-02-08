@@ -126,7 +126,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
+#ifdef HAVE_OPENGL1
    &menu_display_ctx_gl1,
+#endif
 #endif
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
