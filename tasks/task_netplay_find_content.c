@@ -54,7 +54,7 @@ typedef struct
    struct string_list *lpl_list;
 } netplay_crc_handle_t;
 
-static void netplay_crc_scan_callback(retro_task_t *task, void *task_data,
+static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
@@ -152,14 +152,16 @@ static void netplay_crc_scan_callback(retro_task_t *task, void *task_data,
    free(state);
 }
 
-static void begin_task(retro_task_t *task, const char *title) {
+static void begin_task(retro_task_t *task, const char *title)
+{
    task_set_progress(task, 0);
    task_free_title(task);
    task_set_title(task, strdup(title));
    task_set_finished(task, false);
 }
 
-static void finish_task(retro_task_t *task, const char *title) {
+static void finish_task(retro_task_t *task, const char *title)
+{
    task_set_progress(task, 100);
    task_free_title(task);
    task_set_title(task, strdup(title));

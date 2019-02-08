@@ -1818,7 +1818,7 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
 #endif
 }
 
-static void cheevos_lboard_submit(retro_task_t *task, void *task_data, void *user_data,
+static void cheevos_lboard_submit(void *task_data, void *user_data,
       const char *error)
 {
    cheevos_leaderboard_t *lboard = (cheevos_leaderboard_t *)user_data;
