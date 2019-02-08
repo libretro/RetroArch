@@ -377,7 +377,8 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void runloop_task_msg_queue_push(const char *msg,
+void runloop_task_msg_queue_push(retro_task_t *task,
+      const char *msg,
       unsigned prio, unsigned duration,
       bool flush);
 

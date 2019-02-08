@@ -54,8 +54,9 @@ typedef struct
    struct string_list *lpl_list;
 } netplay_crc_handle_t;
 
-static void netplay_crc_scan_callback(void *task_data,
-                               void *user_data, const char *error)
+static void netplay_crc_scan_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};

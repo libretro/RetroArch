@@ -39,8 +39,9 @@ enum frontend_powerstate get_last_powerstate(int *percent)
    return state;
 }
 
-static void task_powerstate_cb(void *task_data,
-                               void *user_data, const char *error)
+static void task_powerstate_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    powerstate_t *powerstate = (powerstate_t*)task_data;
 

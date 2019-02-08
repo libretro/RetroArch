@@ -78,7 +78,7 @@ static void task_queue_msg_push(retro_task_t *task,
    va_end(ap);
 
    if (impl_current->msg_push)
-      impl_current->msg_push(buf, prio, duration, flush);
+      impl_current->msg_push(task, buf, prio, duration, flush);
 }
 
 static void task_queue_push_progress(retro_task_t *task)
@@ -140,7 +140,7 @@ static void retro_task_internal_gather(void)
       task_queue_push_progress(task);
 
       if (task->callback)
-         task->callback(task->task_data, task->user_data, task->error);
+         task->callback(task, task->task_data, task->user_data, task->error);
 
       if (task->cleanup)
           task->cleanup(task);

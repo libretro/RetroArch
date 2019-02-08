@@ -507,8 +507,9 @@ bool content_undo_load_state(void)
    return ret;
 }
 
-static void undo_save_state_cb(void *task_data,
-                               void *user_data, const char *error)
+static void undo_save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
@@ -892,8 +893,9 @@ error:
  * Load a state from disk to memory.
  *
  **/
-static void content_load_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void content_load_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    retro_ctx_serialize_info_t serial_info;
    unsigned i;
@@ -1041,8 +1043,9 @@ error:
  *
  * Called after the save state is done. Takes a screenshot if needed.
  **/
-static void save_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    save_task_state_t *state = (save_task_state_t*)task_data;
    char               *path = strdup(state->path);
@@ -1105,8 +1108,9 @@ error:
  * Load then save a state.
  *
  **/
-static void content_load_and_save_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void content_load_and_save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    load_task_data_t *load_data = (load_task_data_t*)task_data;
    char                  *path = strdup(load_data->path);
@@ -1114,7 +1118,7 @@ static void content_load_and_save_state_cb(void *task_data,
    size_t                 size = load_data->undo_size;
    bool               autosave = load_data->autosave;
 
-   content_load_state_cb(task_data, user_data, error);
+   content_load_state_cb(task, task_data, user_data, error);
 
    task_push_save_state(path, data, size, autosave);
 

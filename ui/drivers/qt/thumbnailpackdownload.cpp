@@ -10,6 +10,7 @@ extern "C" {
 
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <queues/task_queue.h>
 #include <file/archive_file.h>
 #include "../../../tasks/tasks_internal.h"
 #include "../../../verbosity.h"
@@ -28,7 +29,8 @@ extern "C" {
 #define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
 #define THUMBNAILPACK_EXTENSION ".zip"
 
-static void extractThumbnailPackCB(void *task_data, void *user_data, const char *err)
+static void extractThumbnailPackCB(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;

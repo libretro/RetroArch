@@ -1082,7 +1082,8 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 }
 
 #ifdef HAVE_LIBRETRODB
-void handle_dbscan_finished(void *task_data, void *user_data, const char *err);
+void handle_dbscan_finished(retro_task_t *task,
+      void *task_data, void *user_data, const char *err);
 #endif
 
 static void content_add_to_playlist(const char *path)
@@ -3259,7 +3260,8 @@ static int action_ok_undo_save_state(const char *path,
 #ifdef HAVE_NETWORKING
 
 #ifdef HAVE_ZLIB
-static void cb_decompressed(void *task_data, void *user_data, const char *err)
+static void cb_decompressed(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
@@ -3392,7 +3394,8 @@ default_action_ok_list(action_ok_core_updater_list, MENU_ENUM_LABEL_CB_CORE_UPDA
 default_action_ok_list(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
 default_action_ok_list(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
-static void cb_generic_dir_download(void *task_data,
+static void cb_generic_dir_download(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    file_transfer_t     *transf      = (file_transfer_t*)user_data;
@@ -3406,7 +3409,8 @@ static void cb_generic_dir_download(void *task_data,
 }
 
 /* expects http_transfer_t*, file_transfer_t* */
-void cb_generic_download(void *task_data,
+void cb_generic_download(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
@@ -3541,11 +3545,14 @@ void cb_generic_download(void *task_data,
 
    if (path_is_compressed_file(output_path))
    {
+      void *frontend_userdata = task->frontend_userdata;
+      task->frontend_userdata = NULL;
+
       if (!task_push_decompress(output_path, dir_path,
                NULL, NULL, NULL,
                cb_decompressed, (void*)(uintptr_t)
                msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
-               NULL))
+               frontend_userdata))
       {
         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
         goto finish;
@@ -4275,7 +4282,8 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 #define INET6_ADDRSTRLEN 46
 #endif
 
-static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
+static void netplay_refresh_rooms_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    char *new_data                = NULL;
    const char *path              = NULL;
@@ -4402,7 +4410,8 @@ finish:
 
 }
 
-static void netplay_lan_scan_callback(void *task_data,
+static void netplay_lan_scan_callback(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *error)
 {
    struct netplay_host_list *netplay_hosts = NULL;

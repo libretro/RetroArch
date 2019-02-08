@@ -11,6 +11,7 @@ extern "C" {
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
+#include <queues/task_queue.h>
 #include "../../../tasks/tasks_internal.h"
 #include "../../../verbosity.h"
 #include "../../../config.def.h"
@@ -24,7 +25,8 @@ extern "C" {
 #define TEMP_EXTENSION ".update_tmp"
 #define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
 
-static void extractUpdateCB(void *task_data, void *user_data, const char *err)
+static void extractUpdateCB(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;

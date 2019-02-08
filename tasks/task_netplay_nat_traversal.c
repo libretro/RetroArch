@@ -35,8 +35,9 @@ struct nat_traversal_state_data
    uint16_t port;
 };
 
-static void netplay_nat_traversal_callback(void *task_data,
-                               void *user_data, const char *error)
+static void netplay_nat_traversal_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    struct nat_traversal_state_data *ntsd =
       (struct nat_traversal_state_data *) task_data;
