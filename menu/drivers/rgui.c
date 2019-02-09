@@ -1460,6 +1460,11 @@ static void rgui_render(void *data, bool is_idle)
    rgui_t *rgui                   = (rgui_t*)data;
    uint64_t frame_count           = rgui->frame_count;
 
+   static bool display_kb         = false;
+   bool current_display_cb        = false;
+
+   current_display_cb = menu_input_dialog_get_display_kb();
+
    if (!rgui->force_redraw)
    {
       msg_force = menu_display_get_msg_force();
@@ -1468,9 +1473,11 @@ static void rgui_render(void *data, bool is_idle)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (is_idle || !menu_display_get_update_pending())
+      if (!display_kb && !current_display_cb && (is_idle || !menu_display_get_update_pending()))
          return;
    }
+
+   display_kb = current_display_cb;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -1742,7 +1749,7 @@ static void rgui_render(void *data, bool is_idle)
       }
    }
 
-   if (menu_input_dialog_get_display_kb())
+   if (current_display_cb)
    {
       char msg[255];
       const char *str   = menu_input_dialog_get_buffer();
