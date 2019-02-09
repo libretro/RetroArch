@@ -22,6 +22,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <libretro.h>
 #include <retro_math.h>
 #include <retro_inline.h>
@@ -35,6 +36,7 @@
 
 #define WIDTH 356
 #define HEIGHT 200
+#define MAX_PLAYERS 2
 
 static retro_log_printf_t GONG_CORE_PREFIX(log_cb);
 static retro_video_refresh_t GONG_CORE_PREFIX(video_cb);
@@ -46,10 +48,6 @@ static retro_environment_t GONG_CORE_PREFIX(environ_cb);
 
 static const char *GONG_CORE_PREFIX(valid_extensions) = "gong";
 
-static float player1_py = 0.0f;
-static float player1_dpy = 0.0f;
-static float player2_py = 0.0f;
-static float player2_dpy = 0.0f;
 static float player2_speed = 0.0f;
 static float ball_px = 0.0f;
 static float ball_py = 0.0f;
@@ -61,6 +59,7 @@ static unsigned player1_score = 0;
 static unsigned player2_score = 0;
 static float current_play_points = 0.0f;
 static float refresh = 60.0f;
+static bool player2_human = false;
 
 static unsigned char *video_buf = NULL;
 
@@ -74,6 +73,12 @@ enum
 
 typedef struct
 {
+   float py;
+   float dpy;
+} Player;
+
+typedef struct
+{
    int half_transition_count;
    bool ended_down;
 } Game_Button_State;
@@ -84,7 +89,18 @@ typedef struct
    float last_dt;
 } Game_Input;
 
-static Game_Input g_input = {{{0}}};
+typedef struct
+{
+   uint16_t input;
+   uint16_t not_input;
+   uint16_t realinput;
+   int16_t analogYLeft;
+   int16_t analogYRight;
+} retro_inputs;
+
+static uint16_t previnput[MAX_PLAYERS] = {0};
+static Game_Input g_input[MAX_PLAYERS] = {0};
+static Player player[MAX_PLAYERS] = {0};
 
 typedef struct
 {
@@ -99,13 +115,19 @@ static Game_Offscreen_Buffer game_buffer = {0};
 
 static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *draw_buffer);
 
-static const struct retro_controller_description pads[] = {
+static const struct retro_controller_description pads1[] = {
+   { "Joypad", RETRO_DEVICE_JOYPAD },
+   { NULL, 0 },
+};
+
+static const struct retro_controller_description pads2[] = {
    { "Joypad", RETRO_DEVICE_JOYPAD },
    { NULL, 0 },
 };
 
 static const struct retro_controller_info ports[] = {
-   { pads, 1 },
+   { pads1, 1 },
+   { pads2, 1 },
    { 0 },
 };
 
@@ -180,6 +202,7 @@ void GONG_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    bool no_content = true;
 
    static const struct retro_variable vars[] = {
+      { "gong_player2", "Player 2; CPU|Human" },
       { "gong_refresh", "Video Refresh Rate (restart); 60|75|100|120" },
       { NULL, NULL },
    };
@@ -196,11 +219,22 @@ static void check_variables(void)
    struct retro_variable var        = {0};
 
    var.key = "gong_refresh";
-
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
+      int i;
       refresh = atoi(var.value);
-      g_input.last_dt = 1.0f / refresh;
+
+      for (i = 0; i < sizeof(g_input) / sizeof(g_input[0]); i++)
+         g_input[i].last_dt = 1.0f / refresh;
+   }
+
+   var.key = "gong_player2";
+   if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strncmp(var.value, "CPU", 3))
+         player2_human = false;
+      else if (!strncmp(var.value, "Human", 5))
+         player2_human = true;
    }
 }
 
@@ -235,13 +269,14 @@ void GONG_CORE_PREFIX(retro_set_controller_port_device)(unsigned a, unsigned b)
 
 void GONG_CORE_PREFIX(retro_reset)(void)
 {
-   player1_py = 0.0f;
-   player1_dpy = 0.0f;
-   player2_py = 0.0f;
-   player2_dpy = 0.0f;
+   player[0].py = 0.0f;
+   player[0].dpy = 0.0f;
+   player[1].py = 0.0f;
+   player[1].dpy = 0.0f;
    player2_speed = 0.0f;
    player1_score = 0;
    player2_score = 0;
+   player2_human = false;
    is_initialized = 0;
 }
 
@@ -331,63 +366,62 @@ static bool is_key_up_or_down(int16_t input, int16_t not_input, int key)
 
 void GONG_CORE_PREFIX(retro_run)(void)
 {
-   uint16_t input         = 0;
-   uint16_t not_input     = 0;
-   static uint16_t previnput = 0;
-   uint16_t realinput     = 0;
    int i = 0;
-   int16_t analogYLeft1 = 0;
-   int16_t analogYRight1 = 0;
+   int port = 0;
    bool updated = false;
+   retro_inputs inputs[MAX_PLAYERS] = {0};
 
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
 
    GONG_CORE_PREFIX(input_poll_cb)();
 
-   for (i = 0; i < 16; i++)
+   for (port = 0; port < MAX_PLAYERS; port++)
    {
-      if (GONG_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
+      for (i = 0; i < 16; i++)
       {
-         realinput |= 1 << i;
+         if (GONG_CORE_PREFIX(input_state_cb)(port, RETRO_DEVICE_JOYPAD, 0, i))
+         {
+            inputs[port].realinput |= 1 << i;
+         }
       }
+
+      inputs[port].analogYLeft = GONG_CORE_PREFIX(input_state_cb)(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) / 5000.0f;
+      inputs[port].analogYRight = GONG_CORE_PREFIX(input_state_cb)(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y) / 5000.0f;
+
+      if (inputs[port].analogYLeft > 0)
+         inputs[port].realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      else if (inputs[port].analogYRight > 0)
+         inputs[port].realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+      if (inputs[port].analogYLeft < 0)
+         inputs[port].realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+      else if (inputs[port].analogYRight < 0)
+         inputs[port].realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+
+      inputs[port].input = inputs[port].realinput & ~previnput[port];
+      inputs[port].not_input = previnput[port] & ~inputs[port].realinput;
+
+      if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_UP))
+         process_joypad(&g_input[port].buttons[B_MOVE_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_UP));
+      else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         process_joypad(&g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+      else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         process_joypad(&g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+
+      if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_A))
+         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_A));
+      else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_B))
+         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_B));
+      else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_X))
+         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_X));
+      else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_Y));
+
+      previnput[port] = inputs[port].realinput;
    }
 
-   analogYLeft1 = GONG_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) / 5000.0f;
-   analogYRight1 = GONG_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y) / 5000.0f;
-
-   if (analogYLeft1 > 0)
-      realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-   else if (analogYRight1 > 0)
-      realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-
-   if (analogYLeft1 < 0)
-      realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-   else if (analogYRight1 < 0)
-      realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-
-   input = realinput & ~previnput;
-   not_input = previnput & ~realinput;
-
-   if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_UP))
-      process_joypad(&g_input.buttons[B_MOVE_UP], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_UP));
-   else if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-      process_joypad(&g_input.buttons[B_MOVE_DOWN], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
-   else if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-      process_joypad(&g_input.buttons[B_MOVE_DOWN], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
-
-   if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_A))
-      process_joypad(&g_input.buttons[B_SPEED_UP], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_A));
-   else if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_B))
-      process_joypad(&g_input.buttons[B_SPEED_UP], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_B));
-   else if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_X))
-      process_joypad(&g_input.buttons[B_SPEED_UP], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_X));
-   else if (is_key_up_or_down(input, not_input, RETRO_DEVICE_ID_JOYPAD_Y))
-      process_joypad(&g_input.buttons[B_SPEED_UP], realinput & (1 << RETRO_DEVICE_ID_JOYPAD_Y));
-
-   previnput = realinput;
-
-   game_update_and_render(&g_input, &game_buffer);
+   game_update_and_render(g_input, &game_buffer);
 
    GONG_CORE_PREFIX(video_cb)(video_buf, WIDTH, HEIGHT, WIDTH * sizeof(uint32_t));
 }
@@ -568,6 +602,7 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
    float playing_field_y = 48.f;
    float player_size_x = 2.5f;
    float player_size_y = 10.f;
+   int i;
 
    if (!is_initialized)
    {
@@ -580,59 +615,65 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
       player2_speed = 80.f;
    }
 
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
       float speed = 80.f;
-      player1_dpy = 0.f;
 
-      if (is_down(input->buttons[B_SPEED_UP]))
+      if (i == 1 && !player2_human)
+        break;
+
+      player[i].dpy = 0.f;
+
+      if (is_down(input[i].buttons[B_SPEED_UP]))
          speed = 150.f;
 
-      if (is_down(input->buttons[B_MOVE_UP]))
+      if (is_down(input[i].buttons[B_MOVE_UP]))
       {
-         if (player1_py < playing_field_y - player_size_y)
+         if (player[i].py < playing_field_y - player_size_y)
          {
-            player1_dpy = speed;
+            player[i].dpy = speed;
          }
 
-         if (player1_py < -playing_field_y + player_size_y)
+         if (player[i].py < -playing_field_y + player_size_y)
          {
-            player1_py = -playing_field_y + player_size_y;
-            player1_dpy = 0.f;
+            player[i].py = -playing_field_y + player_size_y;
+            player[i].dpy = 0.f;
          }
       }
-      if (is_down(input->buttons[B_MOVE_DOWN]))
+      if (is_down(input[i].buttons[B_MOVE_DOWN]))
       {
-         if (player1_py > -playing_field_y + player_size_y)
+         if (player[i].py > -playing_field_y + player_size_y)
          {
-            player1_dpy = -speed;
+            player[i].dpy = -speed;
          }
 
-         if (player1_py < -playing_field_y + player_size_y)
+         if (player[i].py < -playing_field_y + player_size_y)
          {
-            player1_py = -playing_field_y + player_size_y;
-            player1_dpy = 0.f;
+            player[i].py = -playing_field_y + player_size_y;
+            player[i].dpy = 0.f;
          }
       }
 
-      player1_py += player1_dpy * input->last_dt;
+      player[i].py += player[i].dpy * input->last_dt;
    }
 
+   if (!player2_human)
    {
-      player2_dpy = (ball_py - player2_py) * 100.f;
-      player2_dpy = MIN(player2_dpy, player2_speed);
-      player2_dpy = MAX(player2_dpy, -player2_speed);
-      player2_py += player2_dpy * input->last_dt;
+      player[1].dpy = (ball_py - player[1].py) * 100.f;
+      player[1].dpy = MIN(player[1].dpy, player2_speed);
+      player[1].dpy = MAX(player[1].dpy, -player2_speed);
+      player[1].py += player[1].dpy * input->last_dt;
 
-      if (player2_py < -playing_field_y + player_size_y)
+      if (player[1].py < -playing_field_y + player_size_y)
       {
-         player2_py = -playing_field_y + player_size_y;
-         player2_dpy = 0.f;
+         player[1].py = -playing_field_y + player_size_y;
+         player[1].dpy = 0.f;
       }
 
-      if (player2_py > playing_field_y - player_size_y)
+      if (player[1].py > playing_field_y - player_size_y)
       {
-         player2_py = playing_field_y - player_size_y;
-         player2_dpy = 0.f;
+         player[1].py = playing_field_y - player_size_y;
+         player[1].dpy = 0.f;
       }
    }
 
@@ -662,11 +703,11 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
 
    if (ball_px > 80.f - 2.5f - 1.f) /* @Hardcoded */
    {
-      if ((ball_py >= (player2_py - 10.f)) && (ball_py <= (player2_py + 10.f)))
+      if ((ball_py >= (player[1].py - 10.f)) && (ball_py <= (player[1].py + 10.f)))
       {
          ball_dpx *= -1.f;
          ball_px = 80.f - 2.5f - 1.f; /* @Hardcoded */
-         ball_dpy = (ball_py - player2_py) + player2_dpy;
+         ball_dpy = (ball_py - player[1].py) + player[1].dpy;
          ++current_play_points;
       }
       else if (ball_px >= playing_field_x - 1)
@@ -681,11 +722,11 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
    }
    else if (ball_px < -80 + 2.5f + 1.f) /* @Hardcoded */
    {
-      if ((ball_py >= (player1_py - 10.f)) && (ball_py <= (player1_py + 10.f)))
+      if ((ball_py >= (player[0].py - 10.f)) && (ball_py <= (player[0].py + 10.f)))
       {
          ball_dpx *= -1.f;
          ball_px = -80 + 2.5f + 1.f; /* @Hardcoded */
-         ball_dpy = (ball_py - player1_py) + player1_dpy;
+         ball_dpy = (ball_py - player[0].py) + player[0].dpy;
          ++current_play_points;
       }
       else if (ball_px <= -playing_field_x + 1)
@@ -696,15 +737,17 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
          ball_dpx = initial_ball_speed;
          player1_score += (unsigned)current_play_points;
          current_play_points = 10.f;
-         player2_speed += current_play_points * 0.01f;
+
+         if (!player2_human)
+            player2_speed += current_play_points * 0.01f;
       }
    }
 
    clear(draw_buffer, 0x021077);
    draw_rect(draw_buffer, 0x000530, 0.f, 0.f, playing_field_x, playing_field_y);
 
-   draw_rect(draw_buffer, 0x00ffff, -80.f, player1_py, player_size_x, player_size_y);
-   draw_rect(draw_buffer, 0x00ffff, 80.f, player2_py, player_size_x, player_size_y);
+   draw_rect(draw_buffer, 0x00ffff, -80.f, player[0].py, player_size_x, player_size_y);
+   draw_rect(draw_buffer, 0x00ffff, 80.f, player[1].py, player_size_x, player_size_y);
 
    draw_rect(draw_buffer, 0xffff00, ball_px, ball_py, 1.f, 1.f);
 
