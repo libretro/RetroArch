@@ -21,11 +21,7 @@
 
 #include <string/stdstring.h>
 
-#if defined(HAVE_COCOA_METAL)
-#include "cocoa_common_metal.h"
-#elif defined(HAVE_COCOA)
-#endif
-
+#include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
 static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)

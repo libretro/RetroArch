@@ -25,7 +25,7 @@
 #include <string/stdstring.h>
 #include <retro_timers.h>
 
-#include "cocoa/cocoa_common_metal.h"
+#include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"

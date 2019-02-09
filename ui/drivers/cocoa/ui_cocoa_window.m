@@ -21,11 +21,7 @@
 
 #include <string/stdstring.h>
 
-#if defined(HAVE_COCOA_METAL)
-#include "cocoa_common_metal.h"
-#elif defined(HAVE_COCOA)
 #include "cocoa_common.h"
-#endif
 #include "../ui_cocoa.h"
 #include "../../ui_companion_driver.h"
 

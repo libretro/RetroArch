@@ -34,7 +34,7 @@
 #include <retro_assert.h>
 #include <compat/apple_compat.h>
 
-#import "../../ui/drivers/cocoa/cocoa_common_metal.h"
+#import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"

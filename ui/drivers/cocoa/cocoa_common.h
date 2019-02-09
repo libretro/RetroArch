@@ -14,14 +14,83 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __COCOA_COMMON_H
-#define __COCOA_COMMON_H
+#ifndef __COCOA_COMMON_SHARED_H
+#define __COCOA_COMMON_SHARED_H
 
-#include "cocoa_common_shared.h"
+#include <Foundation/Foundation.h>
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_setting.h"
+#include "../../menu/menu_driver.h"
+#endif
+
+typedef enum apple_view_type {
+   APPLE_VIEW_TYPE_NONE,
+   APPLE_VIEW_TYPE_OPENGL_ES,
+   APPLE_VIEW_TYPE_OPENGL,
+   APPLE_VIEW_TYPE_VULKAN,
+   APPLE_VIEW_TYPE_METAL,
+} apple_view_type_t;
+
+#ifdef HAVE_METAL
+#import <MetalKit/MetalKit.h>
+
+@interface MetalView : MTKView
+@end
+
+#ifdef HAVE_COCOA_METAL
+
+@protocol ApplePlatform
+
+/*! @brief renderView returns the current render view based on the viewType */
+@property (readonly) id renderView;
+
+/*! @brief isActive returns true if the application has focus */
+@property (readonly) bool hasFocus;
+
+@property (readwrite) apple_view_type_t viewType;
+
+/*! @brief setVideoMode adjusts the video display to the specified mode */
+- (void)setVideoMode:(gfx_ctx_mode_t)mode;
+
+/*! @brief setCursorVisible specifies whether the cursor is visible */
+- (void)setCursorVisible:(bool)v;
+
+/*! @brief controls whether the screen saver should be disabled and
+ * the displays should not sleep.
+ */
+- (bool)setDisableDisplaySleep:(bool)disable;
+@end
+
+extern id<ApplePlatform> apple_platform;
+#endif
+#endif
 
 #if defined(HAVE_COCOATOUCH)
+#include <UIKit/UIKit.h>
+
+#if TARGET_OS_TV
+#import <GameController/GameController.h>
+#endif
+
+/*********************************************/
+/* RAMenuBase                                */
+/* A menu class that displays RAMenuItemBase */
+/* objects.                                  */
+/*********************************************/
+@interface RAMenuBase : UITableViewController
+@property (nonatomic) NSMutableArray* sections;
+@property (nonatomic) BOOL hidesHeaders;
+@property (nonatomic) RAMenuBase* last_menu;
+@property (nonatomic) UILabel *osdmessage;
+
+- (id)initWithStyle:(UITableViewStyle)style;
+- (id)itemForIndexPath:(NSIndexPath*)indexPath;
+
+@end
+
 #if TARGET_OS_IOS
-@interface CocoaView : UIViewController<CLLocationManagerDelegate,
+@interface CocoaView : UIViewController<
 AVCaptureAudioDataOutputSampleBufferDelegate>
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
@@ -50,6 +119,44 @@ UINavigationControllerDelegate>
 
 void get_ios_version(int *major, int *minor);
 
+#endif
+
+typedef struct
+{
+   char orientations[32];
+   unsigned orientation_flags;
+   char bluetooth_mode[64];
+} apple_frontend_settings_t;
+extern apple_frontend_settings_t apple_frontend_settings;
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#include <AppKit/AppKit.h>
+
+@interface CocoaView : NSView
+
++ (CocoaView*)get;
+#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
+- (void)display;
+#endif
+
+@end
+
+#endif
+
+#define BOXSTRING(x) [NSString stringWithUTF8String:x]
+#define BOXINT(x)    [NSNumber numberWithInt:x]
+#define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
+#define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
+
+#if __has_feature(objc_arc)
+#define RELEASE(x)   x = nil
+#define BRIDGE       __bridge
+#define UNSAFE_UNRETAINED __unsafe_unretained
+#else
+#define RELEASE(x)   [x release]; \
+   x = nil
+#define BRIDGE
+#define UNSAFE_UNRETAINED
 #endif
 
 #endif

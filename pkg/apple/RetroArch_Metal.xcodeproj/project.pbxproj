@@ -555,7 +555,6 @@
 		A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_common_metal.m; sourceTree = "<group>"; };
 		A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoatouch_metal.m; sourceTree = "<group>"; };
 		A9020C55D864F0E0C6E7DFF9 /* ui_cocoa_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_window_metal.m; sourceTree = "<group>"; };
-		A9020E880B5DBFD909921A8F /* cocoa_common_metal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_common_metal.h; sourceTree = "<group>"; };
 		A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_metal.m; sourceTree = "<group>"; };
 		A9020F2EEF870903107B0EA7 /* ui_cocoa_application_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_application_metal.m; sourceTree = "<group>"; };
 		A9020F48BA562B13D4789292 /* ui_cocoa_browser_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_browser_window_metal.m; sourceTree = "<group>"; };
@@ -959,7 +958,6 @@
 		05A8C5BB20DB72F000FF7857 /* cocoa */ = {
 			isa = PBXGroup;
 			children = (
-				A9020E880B5DBFD909921A8F /* cocoa_common_metal.h */,
 				A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */,
 				05A8C5C220DB72F000FF7857 /* cocoa_common.h */,
 				05A8C5BD20DB72F000FF7857 /* cocoa_common.m */,

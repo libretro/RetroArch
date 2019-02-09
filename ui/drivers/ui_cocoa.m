@@ -26,12 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#if defined(HAVE_COCOA_METAL)
-#include "cocoa/cocoa_common_metal.h"
-#elif defined(HAVE_COCOA)
 #include "cocoa/cocoa_common.h"
-#endif
-
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"

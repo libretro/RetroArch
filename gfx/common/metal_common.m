@@ -6,14 +6,17 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "metal_common.h"
-#import "../../ui/drivers/cocoa/cocoa_common_metal.h"
-#import <memory.h>
-#import <gfx/video_frame.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
+
+#import <memory.h>
 #import <stddef.h>
 #include <simd/simd.h>
+
+#import <gfx/video_frame.h>
+
+#import "metal_common.h"
+#import "../../ui/drivers/cocoa/cocoa_common.h"
 #import "Context.h"
 
 #ifdef HAVE_MENU
