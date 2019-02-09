@@ -48,19 +48,6 @@ static retro_environment_t GONG_CORE_PREFIX(environ_cb);
 
 static const char *GONG_CORE_PREFIX(valid_extensions) = "gong";
 
-static float player2_speed = 0.0f;
-static float ball_px = 0.0f;
-static float ball_py = 0.0f;
-static float ball_dpx = 0.0f;
-static float ball_dpy = 0.0f;
-static float ball_speed = 0.0f;
-static bool is_initialized = 0;
-static unsigned player1_score = 0;
-static unsigned player2_score = 0;
-static float current_play_points = 0.0f;
-static float refresh = 60.0f;
-static bool player2_human = false;
-
 static unsigned char *video_buf = NULL;
 
 enum
@@ -98,9 +85,24 @@ typedef struct
    int16_t analogYRight;
 } retro_inputs;
 
-static uint16_t previnput[MAX_PLAYERS] = {0};
-static Game_Input g_input[MAX_PLAYERS] = {{{{0}}}};
-static Player player[MAX_PLAYERS] = {{0}};
+typedef struct
+{
+   unsigned player1_score;
+   unsigned player2_score;
+   float player2_speed;
+   float ball_px;
+   float ball_py;
+   float ball_dpx;
+   float ball_dpy;
+   float ball_speed;
+   float current_play_points;
+   float refresh;
+   bool is_initialized;
+   bool player2_human;
+   uint16_t previnput[MAX_PLAYERS];
+   Game_Input g_input[MAX_PLAYERS];
+   Player player[MAX_PLAYERS];
+} State;
 
 typedef struct
 {
@@ -110,6 +112,8 @@ typedef struct
    int pitch;
    void *memory;
 } Game_Offscreen_Buffer;
+
+static State *g_state = NULL;
 
 static Game_Offscreen_Buffer game_buffer = {0};
 
@@ -167,13 +171,15 @@ void GONG_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *inf
    info->geometry.max_width    = WIDTH;
    info->geometry.max_height   = HEIGHT;
    info->geometry.aspect_ratio = 16.0f / 9.0f;
-   info->timing.fps            = refresh;
+   info->timing.fps            = g_state->refresh;
    info->timing.sample_rate    = 44100.0;
 }
 
 void GONG_CORE_PREFIX(retro_init)(void)
 {
    struct retro_log_callback log;
+
+   g_state = (State*)calloc(1, sizeof(*g_state));
 
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       GONG_CORE_PREFIX(log_cb) = log.log;
@@ -195,6 +201,9 @@ void GONG_CORE_PREFIX(retro_deinit)(void)
 
    video_buf = NULL;
    game_buffer.memory = NULL;
+
+   if (g_state)
+      free(g_state);
 }
 
 void GONG_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
@@ -222,19 +231,19 @@ static void check_variables(void)
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       int i;
-      refresh = atoi(var.value);
+      g_state->refresh = atoi(var.value);
 
-      for (i = 0; i < sizeof(g_input) / sizeof(g_input[0]); i++)
-         g_input[i].last_dt = 1.0f / refresh;
+      for (i = 0; i < sizeof(g_state->g_input) / sizeof(g_state->g_input[0]); i++)
+         g_state->g_input[i].last_dt = 1.0f / g_state->refresh;
    }
 
    var.key = "gong_player2";
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (!strncmp(var.value, "CPU", 3))
-         player2_human = false;
+         g_state->player2_human = false;
       else if (!strncmp(var.value, "Human", 5))
-         player2_human = true;
+         g_state->player2_human = true;
    }
 }
 
@@ -269,15 +278,15 @@ void GONG_CORE_PREFIX(retro_set_controller_port_device)(unsigned a, unsigned b)
 
 void GONG_CORE_PREFIX(retro_reset)(void)
 {
-   player[0].py = 0.0f;
-   player[0].dpy = 0.0f;
-   player[1].py = 0.0f;
-   player[1].dpy = 0.0f;
-   player2_speed = 0.0f;
-   player1_score = 0;
-   player2_score = 0;
-   player2_human = false;
-   is_initialized = 0;
+   g_state->player[0].py = 0.0f;
+   g_state->player[0].dpy = 0.0f;
+   g_state->player[1].py = 0.0f;
+   g_state->player[1].dpy = 0.0f;
+   g_state->player2_speed = 0.0f;
+   g_state->player1_score = 0;
+   g_state->player2_score = 0;
+   g_state->player2_human = false;
+   g_state->is_initialized = 0;
 }
 
 size_t GONG_CORE_PREFIX(retro_serialize_size)(void)
@@ -399,29 +408,29 @@ void GONG_CORE_PREFIX(retro_run)(void)
       else if (inputs[port].analogYRight < 0)
          inputs[port].realinput |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
 
-      inputs[port].input = inputs[port].realinput & ~previnput[port];
-      inputs[port].not_input = previnput[port] & ~inputs[port].realinput;
+      inputs[port].input = inputs[port].realinput & ~g_state->previnput[port];
+      inputs[port].not_input = g_state->previnput[port] & ~inputs[port].realinput;
 
       if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_UP))
-         process_joypad(&g_input[port].buttons[B_MOVE_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_UP));
+         process_joypad(&g_state->g_input[port].buttons[B_MOVE_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_UP));
       else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-         process_joypad(&g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+         process_joypad(&g_state->g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
       else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-         process_joypad(&g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+         process_joypad(&g_state->g_input[port].buttons[B_MOVE_DOWN], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
 
       if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_A))
-         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_A));
+         process_joypad(&g_state->g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_A));
       else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_B))
-         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_B));
+         process_joypad(&g_state->g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_B));
       else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_X))
-         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_X));
+         process_joypad(&g_state->g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_X));
       else if (is_key_up_or_down(inputs[port].input, inputs[port].not_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         process_joypad(&g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_Y));
+         process_joypad(&g_state->g_input[port].buttons[B_SPEED_UP], inputs[port].realinput & (1 << RETRO_DEVICE_ID_JOYPAD_Y));
 
-      previnput[port] = inputs[port].realinput;
+      g_state->previnput[port] = inputs[port].realinput;
    }
 
-   game_update_and_render(g_input, &game_buffer);
+   game_update_and_render(g_state->g_input, &game_buffer);
 
    GONG_CORE_PREFIX(video_cb)(video_buf, WIDTH, HEIGHT, WIDTH * sizeof(uint32_t));
 }
@@ -604,154 +613,154 @@ static void game_update_and_render(Game_Input *input, Game_Offscreen_Buffer *dra
    float player_size_y = 10.f;
    int i;
 
-   if (!is_initialized)
+   if (!g_state->is_initialized)
    {
-      is_initialized = 1;
-      ball_px = 0;
-      ball_py = 0;
-      ball_dpx = initial_ball_speed;
-      ball_dpy = 0;
-      current_play_points = 10.f;
-      player2_speed = 80.f;
+      g_state->is_initialized = 1;
+      g_state->ball_px = 0;
+      g_state->ball_py = 0;
+      g_state->ball_dpx = initial_ball_speed;
+      g_state->ball_dpy = 0;
+      g_state->current_play_points = 10.f;
+      g_state->player2_speed = 80.f;
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       float speed = 80.f;
 
-      if (i == 1 && !player2_human)
+      if (i == 1 && !g_state->player2_human)
         break;
 
-      player[i].dpy = 0.f;
+      g_state->player[i].dpy = 0.f;
 
       if (is_down(input[i].buttons[B_SPEED_UP]))
          speed = 150.f;
 
       if (is_down(input[i].buttons[B_MOVE_UP]))
       {
-         if (player[i].py < playing_field_y - player_size_y)
+         if (g_state->player[i].py < playing_field_y - player_size_y)
          {
-            player[i].dpy = speed;
+            g_state->player[i].dpy = speed;
          }
 
-         if (player[i].py < -playing_field_y + player_size_y)
+         if (g_state->player[i].py < -playing_field_y + player_size_y)
          {
-            player[i].py = -playing_field_y + player_size_y;
-            player[i].dpy = 0.f;
+            g_state->player[i].py = -playing_field_y + player_size_y;
+            g_state->player[i].dpy = 0.f;
          }
       }
       if (is_down(input[i].buttons[B_MOVE_DOWN]))
       {
-         if (player[i].py > -playing_field_y + player_size_y)
+         if (g_state->player[i].py > -playing_field_y + player_size_y)
          {
-            player[i].dpy = -speed;
+            g_state->player[i].dpy = -speed;
          }
 
-         if (player[i].py < -playing_field_y + player_size_y)
+         if (g_state->player[i].py < -playing_field_y + player_size_y)
          {
-            player[i].py = -playing_field_y + player_size_y;
-            player[i].dpy = 0.f;
+            g_state->player[i].py = -playing_field_y + player_size_y;
+            g_state->player[i].dpy = 0.f;
          }
       }
 
-      player[i].py += player[i].dpy * input->last_dt;
+      g_state->player[i].py += g_state->player[i].dpy * input->last_dt;
    }
 
-   if (!player2_human)
+   if (!g_state->player2_human)
    {
-      player[1].dpy = (ball_py - player[1].py) * 100.f;
-      player[1].dpy = MIN(player[1].dpy, player2_speed);
-      player[1].dpy = MAX(player[1].dpy, -player2_speed);
-      player[1].py += player[1].dpy * input->last_dt;
+      g_state->player[1].dpy = (g_state->ball_py - g_state->player[1].py) * 100.f;
+      g_state->player[1].dpy = MIN(g_state->player[1].dpy, g_state->player2_speed);
+      g_state->player[1].dpy = MAX(g_state->player[1].dpy, -g_state->player2_speed);
+      g_state->player[1].py += g_state->player[1].dpy * input->last_dt;
 
-      if (player[1].py < -playing_field_y + player_size_y)
+      if (g_state->player[1].py < -playing_field_y + player_size_y)
       {
-         player[1].py = -playing_field_y + player_size_y;
-         player[1].dpy = 0.f;
+         g_state->player[1].py = -playing_field_y + player_size_y;
+         g_state->player[1].dpy = 0.f;
       }
 
-      if (player[1].py > playing_field_y - player_size_y)
+      if (g_state->player[1].py > playing_field_y - player_size_y)
       {
-         player[1].py = playing_field_y - player_size_y;
-         player[1].dpy = 0.f;
+         g_state->player[1].py = playing_field_y - player_size_y;
+         g_state->player[1].dpy = 0.f;
       }
    }
 
-   ball_px += ball_dpx * input->last_dt;
+   g_state->ball_px += g_state->ball_dpx * input->last_dt;
 
-   if (ball_dpx > 0)
+   if (g_state->ball_dpx > 0)
    {
-      ball_dpx += 10.f * input->last_dt;
+      g_state->ball_dpx += 10.f * input->last_dt;
    }
    else
    {
-      ball_dpx -= 10.f * input->last_dt;
+      g_state->ball_dpx -= 10.f * input->last_dt;
    }
 
-   ball_py += ball_dpy * input->last_dt;
+   g_state->ball_py += g_state->ball_dpy * input->last_dt;
 
-   if (ball_py > playing_field_y - 1.f)
+   if (g_state->ball_py > playing_field_y - 1.f)
    {
-      ball_py = playing_field_y - 1.f;
-      ball_dpy *= -1.f;
+      g_state->ball_py = playing_field_y - 1.f;
+      g_state->ball_dpy *= -1.f;
    }
-   else if (ball_py < -playing_field_y + 1)
+   else if (g_state->ball_py < -playing_field_y + 1)
    {
-      ball_py = -playing_field_y + 1.f;
-      ball_dpy *= -1;
+      g_state->ball_py = -playing_field_y + 1.f;
+      g_state->ball_dpy *= -1;
    }
 
-   if (ball_px > 80.f - 2.5f - 1.f) /* @Hardcoded */
+   if (g_state->ball_px > 80.f - 2.5f - 1.f) /* @Hardcoded */
    {
-      if ((ball_py >= (player[1].py - 10.f)) && (ball_py <= (player[1].py + 10.f)))
+      if ((g_state->ball_py >= (g_state->player[1].py - 10.f)) && (g_state->ball_py <= (g_state->player[1].py + 10.f)))
       {
-         ball_dpx *= -1.f;
-         ball_px = 80.f - 2.5f - 1.f; /* @Hardcoded */
-         ball_dpy = (ball_py - player[1].py) + player[1].dpy;
-         ++current_play_points;
+         g_state->ball_dpx *= -1.f;
+         g_state->ball_px = 80.f - 2.5f - 1.f; /* @Hardcoded */
+         g_state->ball_dpy = (g_state->ball_py - g_state->player[1].py) + g_state->player[1].dpy;
+         ++g_state->current_play_points;
       }
-      else if (ball_px >= playing_field_x - 1)
+      else if (g_state->ball_px >= playing_field_x - 1)
       {
-         ball_px = 0;
-         ball_py = 0;
-         ball_dpy = 0;
-         ball_dpx = -initial_ball_speed;
-         player2_score += (unsigned)current_play_points;
-         current_play_points = 10.f;
+         g_state->ball_px = 0;
+         g_state->ball_py = 0;
+         g_state->ball_dpy = 0;
+         g_state->ball_dpx = -initial_ball_speed;
+         g_state->player2_score += (unsigned)g_state->current_play_points;
+         g_state->current_play_points = 10.f;
       }
    }
-   else if (ball_px < -80 + 2.5f + 1.f) /* @Hardcoded */
+   else if (g_state->ball_px < -80 + 2.5f + 1.f) /* @Hardcoded */
    {
-      if ((ball_py >= (player[0].py - 10.f)) && (ball_py <= (player[0].py + 10.f)))
+      if ((g_state->ball_py >= (g_state->player[0].py - 10.f)) && (g_state->ball_py <= (g_state->player[0].py + 10.f)))
       {
-         ball_dpx *= -1.f;
-         ball_px = -80 + 2.5f + 1.f; /* @Hardcoded */
-         ball_dpy = (ball_py - player[0].py) + player[0].dpy;
-         ++current_play_points;
+         g_state->ball_dpx *= -1.f;
+         g_state->ball_px = -80 + 2.5f + 1.f; /* @Hardcoded */
+         g_state->ball_dpy = (g_state->ball_py - g_state->player[0].py) + g_state->player[0].dpy;
+         ++g_state->current_play_points;
       }
-      else if (ball_px <= -playing_field_x + 1)
+      else if (g_state->ball_px <= -playing_field_x + 1)
       {
-         ball_px = 0;
-         ball_py = 0;
-         ball_dpy = 0;
-         ball_dpx = initial_ball_speed;
-         player1_score += (unsigned)current_play_points;
-         current_play_points = 10.f;
+         g_state->ball_px = 0;
+         g_state->ball_py = 0;
+         g_state->ball_dpy = 0;
+         g_state->ball_dpx = initial_ball_speed;
+         g_state->player1_score += (unsigned)g_state->current_play_points;
+         g_state->current_play_points = 10.f;
 
-         if (!player2_human)
-            player2_speed += current_play_points * 0.01f;
+         if (!g_state->player2_human)
+            g_state->player2_speed += g_state->current_play_points * 0.01f;
       }
    }
 
    clear(draw_buffer, 0x021077);
    draw_rect(draw_buffer, 0x000530, 0.f, 0.f, playing_field_x, playing_field_y);
 
-   draw_rect(draw_buffer, 0x00ffff, -80.f, player[0].py, player_size_x, player_size_y);
-   draw_rect(draw_buffer, 0x00ffff, 80.f, player[1].py, player_size_x, player_size_y);
+   draw_rect(draw_buffer, 0x00ffff, -80.f, g_state->player[0].py, player_size_x, player_size_y);
+   draw_rect(draw_buffer, 0x00ffff, 80.f, g_state->player[1].py, player_size_x, player_size_y);
 
-   draw_rect(draw_buffer, 0xffff00, ball_px, ball_py, 1.f, 1.f);
+   draw_rect(draw_buffer, 0xffff00, g_state->ball_px, g_state->ball_py, 1.f, 1.f);
 
-   draw_number(draw_buffer, (unsigned)current_play_points, 0xaaaaaa, 0.f, 38.f);
-   draw_number(draw_buffer, player1_score, 0xff6611, 20.f, 38.f);
-   draw_number(draw_buffer, player2_score, 0xff6611, -20.f, 38.f);
+   draw_number(draw_buffer, (unsigned)g_state->current_play_points, 0xaaaaaa, 0.f, 38.f);
+   draw_number(draw_buffer, g_state->player1_score, 0xff6611, 20.f, 38.f);
+   draw_number(draw_buffer, g_state->player2_score, 0xff6611, -20.f, 38.f);
 }
