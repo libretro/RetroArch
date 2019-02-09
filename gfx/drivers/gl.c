@@ -3216,11 +3216,11 @@ static void gl2_begin_debug(gl_t *gl)
    if (gl_check_capability(GL_CAPS_DEBUG))
    {
 #ifdef HAVE_GL_DEBUG_ES
-      glDebugMessageCallbackKHR(gl_debug_cb, gl);
+      glDebugMessageCallbackKHR(gl2_debug_cb, gl);
       glDebugMessageControlKHR(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
 #else
-      glDebugMessageCallback(gl_debug_cb, gl);
+      glDebugMessageCallback(gl2_debug_cb, gl);
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
