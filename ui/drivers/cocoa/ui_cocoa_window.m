@@ -42,11 +42,7 @@ static void ui_window_cocoa_destroy(void *data)
 static void ui_window_cocoa_set_focused(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-#if defined(HAVE_COCOA_METAL)
     CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-#elif defined(HAVE_COCOA)
-    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#endif
     [[cocoa_view window] makeKeyAndOrderFront:nil];
 }
 
@@ -54,11 +50,7 @@ static void ui_window_cocoa_set_visible(void *data,
         bool set_visible)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-#if defined(HAVE_COCOA_METAL)
     CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-#elif defined(HAVE_COCOA)
-    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#endif
     if (set_visible)
         [[cocoa_view window] makeKeyAndOrderFront:nil];
     else
@@ -68,11 +60,7 @@ static void ui_window_cocoa_set_visible(void *data,
 static void ui_window_cocoa_set_title(void *data, char *buf)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-#if defined(HAVE_COCOA_METAL)
    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-#else
-   CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#endif
    const char* const text   = buf; /* < Can't access buffer directly in the block */
    [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 }
@@ -80,11 +68,7 @@ static void ui_window_cocoa_set_title(void *data, char *buf)
 static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-#if defined(HAVE_COCOA_METAL)
    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-#else
-   CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#endif
 
    if (droppable)
    {
@@ -103,11 +87,7 @@ static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 static bool ui_window_cocoa_focused(void *data)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-#if defined(HAVE_COCOA_METAL)
    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-#else
-   CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-#endif
    return cocoa_view.window.isMainWindow;
 }
 
