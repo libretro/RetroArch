@@ -90,8 +90,7 @@ extern id<ApplePlatform> apple_platform;
 @end
 
 #if TARGET_OS_IOS
-@interface CocoaView : UIViewController<
-AVCaptureAudioDataOutputSampleBufferDelegate>
+@interface CocoaView : UIViewController
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
