@@ -17,13 +17,6 @@
 #ifndef __COCOA_COMMON_METAL_H
 #define __COCOA_COMMON_METAL_H
 
-#include <Foundation/Foundation.h>
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_setting.h"
-#include "../../menu/menu_driver.h"
-#endif
-
 #include "cocoa_common_shared.h"
 
 typedef enum apple_view_type {
@@ -67,8 +60,6 @@ typedef enum apple_view_type {
 extern id<ApplePlatform> apple_platform;
 
 #if defined(HAVE_COCOATOUCH)
-#include <UIKit/UIKit.h>
-
 @interface CocoaView : UIViewController<CLLocationManagerDelegate,
 AVCaptureAudioDataOutputSampleBufferDelegate>
 + (CocoaView*)get;

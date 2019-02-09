@@ -17,6 +17,20 @@
 #ifndef __COCOA_COMMON_SHARED_H
 #define __COCOA_COMMON_SHARED_H
 
+#include <Foundation/Foundation.h>
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_setting.h"
+#include "../../menu/menu_driver.h"
+#endif
+
+#if defined(HAVE_COCOATOUCH)
+#include <UIKit/UIKit.h>
+
+#if TARGET_OS_TV
+#import <GameController/GameController.h>
+#endif
+
 /*********************************************/
 /* RAMenuBase                                */
 /* A menu class that displays RAMenuItemBase */
@@ -32,6 +46,8 @@
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
 
 @end
+
+#endif
 
 typedef struct
 {

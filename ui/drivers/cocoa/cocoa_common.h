@@ -17,22 +17,9 @@
 #ifndef __COCOA_COMMON_H
 #define __COCOA_COMMON_H
 
-#include <Foundation/Foundation.h>
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_setting.h"
-#include "../../menu/menu_driver.h"
-#endif
-
-#if defined(HAVE_COCOATOUCH)
-#include <UIKit/UIKit.h>
-
-#if TARGET_OS_TV
-#import <GameController/GameController.h>
-#endif
-
 #include "cocoa_common_shared.h"
 
+#if defined(HAVE_COCOATOUCH)
 #if TARGET_OS_IOS
 @interface CocoaView : UIViewController<CLLocationManagerDelegate,
 AVCaptureAudioDataOutputSampleBufferDelegate>
@@ -64,6 +51,5 @@ UINavigationControllerDelegate>
 void get_ios_version(int *major, int *minor);
 
 #endif
-
 
 #endif
