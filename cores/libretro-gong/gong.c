@@ -99,7 +99,7 @@ typedef struct
 } retro_inputs;
 
 static uint16_t previnput[MAX_PLAYERS] = {0};
-static Game_Input g_input[MAX_PLAYERS] = {0};
+static Game_Input g_input[MAX_PLAYERS] = {{0}};
 static Player player[MAX_PLAYERS] = {0};
 
 typedef struct
