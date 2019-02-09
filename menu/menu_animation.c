@@ -67,6 +67,7 @@ static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static float delta_time         = 0.0f;
 static bool animation_is_active = false;
+static bool ticker_is_active    = false;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -586,7 +587,7 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
          utf8skip(ticker->str, offset),
          str_len);
 
-   animation_is_active = true;
+   ticker_is_active = true;
 
    return true;
 }
@@ -616,7 +617,7 @@ void menu_animation_update_time(bool timedate_enable)
 
 bool menu_animation_is_active(void)
 {
-   return animation_is_active;
+   return animation_is_active || ticker_is_active;
 }
 
 bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
@@ -709,9 +710,11 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          animation_is_active       = false;
+         ticker_is_active          = false;
          break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
          animation_is_active       = true;
+         ticker_is_active          = true;
          break;
       case MENU_ANIMATION_CTL_NONE:
       default:
