@@ -209,7 +209,7 @@ float get_backing_scale_factor(void)
       return backing_scale_def;
 
    backing_scale_def = 1.0f;
-#ifdef HAVE_COCOA || defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    screen = (BRIDGE RAScreen*)get_chosen_screen();
 
    if (screen)
@@ -374,7 +374,6 @@ static bool cocoagl_gfx_ctx_bind_api(void *data,
 
 static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    unsigned interval = (unsigned)i;
 
    switch (cocoagl_api)
@@ -394,7 +393,9 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
          break;
       }
       case GFX_CTX_VULKAN_API:
+         {
 #ifdef HAVE_VULKAN
+         cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
          if (cocoa_ctx->swap_interval != interval)
          {
             cocoa_ctx->swap_interval = interval;
@@ -402,6 +403,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
                cocoa_ctx->vk.need_new_swapchain = true;
          }
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -770,7 +772,7 @@ static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-#ifdef (HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
          return (gfx_ctx_proc_t)
             CFBundleGetFunctionPointerForName(
                   CFBundleGetBundleWithIdentifier(GLFrameworkID),
@@ -789,7 +791,6 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    unsigned new_width, new_height;
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
    *quit = false;
 
@@ -799,9 +800,12 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
       case GFX_CTX_OPENGL_ES_API:
          break;
       case GFX_CTX_VULKAN_API:
+        {
 #ifdef HAVE_VULKAN
+         cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
          *resize = cocoa_ctx->vk.need_new_swapchain;
 #endif
+        }
          break;
       case GFX_CTX_NONE:
       default:
@@ -872,15 +876,15 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
 static bool cocoagl_gfx_ctx_set_resize(
       void *data, unsigned width, unsigned height)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          break;
       case GFX_CTX_VULKAN_API:
+       {
 #ifdef HAVE_VULKAN
+         cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
          cocoa_ctx->width  = width;
          cocoa_ctx->height = height;
 
@@ -899,6 +903,7 @@ static bool cocoagl_gfx_ctx_set_resize(
 
          cocoa_ctx->vk.need_new_swapchain = false;
 #endif
+       }
          break;
       case GFX_CTX_NONE:
       default:
