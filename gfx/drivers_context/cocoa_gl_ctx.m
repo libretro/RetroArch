@@ -40,12 +40,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if __has_feature(objc_arc)
-#define BRIDGE __bridge
-#else
-#define BRIDGE
-#endif
-
 #if defined(HAVE_COCOATOUCH)
 #define GLContextClass EAGLContext
 #define GLFrameworkID CFSTR("com.apple.opengles")
