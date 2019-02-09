@@ -414,7 +414,7 @@ error:
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static void cheevos_award_task_softcore(void* task_data, void* user_data,
+static void cheevos_award_task_softcore(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -445,7 +445,7 @@ static void cheevos_award_task_softcore(void* task_data, void* user_data,
    task_push_http_transfer(buffer, true, NULL, cheevos_award_task_softcore, user_data);
 }
 
-static void cheevos_award_task_hardcore(void* task_data, void* user_data,
+static void cheevos_award_task_hardcore(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -498,9 +498,9 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
    /* Start the award task. */
    if ((mode & CHEEVOS_ACTIVE_HARDCORE) != 0)
-      cheevos_award_task_hardcore(NULL, cheevo, "");
+      cheevos_award_task_hardcore(NULL, NULL, cheevo, "");
    else
-      cheevos_award_task_softcore(NULL, cheevo, "");
+      cheevos_award_task_softcore(NULL, NULL, cheevo, "");
 
    /* Take a screenshot of the achievement. */
    if (settings && settings->bools.cheevos_auto_screenshot)
@@ -578,7 +578,7 @@ static void cheevos_test_cheevo_set(bool official)
    }
 }
 
-static void cheevos_lboard_submit_task(void* task_data, void* user_data,
+static void cheevos_lboard_submit_task(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -645,7 +645,7 @@ static void cheevos_lboard_submit(cheevos_lboard_t* lboard)
    runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Start the submit task. */
-   cheevos_lboard_submit_task(NULL, lboard, "no error, first try");
+   cheevos_lboard_submit_task(NULL, NULL, lboard, "no error, first try");
 }
 
 static void cheevos_test_leaderboards(void)
@@ -674,7 +674,7 @@ static void cheevos_test_leaderboards(void)
             CHEEVOS_LOG(CHEEVOS_TAG "Cancel leaderboard %s\n", lboard->info->title);
             lboard->active = 0;
             runloop_msg_queue_push("Leaderboard attempt cancelled!",
-                  0, 2 * 60, false);
+                  0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
       }
       else
@@ -1355,7 +1355,7 @@ found:
       {
          runloop_msg_queue_push(
                "This game has no achievements.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          CORO_STOP();
       }
@@ -1766,10 +1766,10 @@ found:
       {
          runloop_msg_queue_push(
                "Missing RetroAchievements account information.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          runloop_msg_queue_push(
                "Please fill in your account information in Settings.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          CHEEVOS_ERR(CHEEVOS_TAG "login info not informed\n");
          CORO_STOP();
       }
