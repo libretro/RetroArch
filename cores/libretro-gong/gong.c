@@ -99,8 +99,8 @@ typedef struct
 } retro_inputs;
 
 static uint16_t previnput[MAX_PLAYERS] = {0};
-static Game_Input g_input[MAX_PLAYERS] = {{0}};
-static Player player[MAX_PLAYERS] = {0};
+static Game_Input g_input[MAX_PLAYERS] = {{{{0}}}};
+static Player player[MAX_PLAYERS] = {{0}};
 
 typedef struct
 {
@@ -369,7 +369,7 @@ void GONG_CORE_PREFIX(retro_run)(void)
    int i = 0;
    int port = 0;
    bool updated = false;
-   retro_inputs inputs[MAX_PLAYERS] = {0};
+   retro_inputs inputs[MAX_PLAYERS] = {{0}};
 
    if (GONG_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
