@@ -499,7 +499,7 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && [filenames objectAtIndex:0])
+   if (filenames.count == 1 && filenames[0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
       NSString *__core                 = filenames[0];
