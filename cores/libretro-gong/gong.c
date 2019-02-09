@@ -203,7 +203,7 @@ void GONG_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 
    static const struct retro_variable vars[] = {
       { "gong_player2", "Player 2; CPU|Human" },
-      { "gong_refresh", "Video Refresh Rate (restart); 60|75|100|120" },
+      { "gong_refresh", "Video Refresh Rate (restart); 60|70|72|75|100|119|120|140|144" },
       { NULL, NULL },
    };
 
