@@ -38,7 +38,11 @@
 #endif
 
 static char msg_old[PATH_MAX_LENGTH];
+#ifdef HAVE_COCOA_METAL
+id<ApplePlatform> apple_platform;
+#else
 static id apple_platform;
+#endif
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
