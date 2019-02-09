@@ -24,6 +24,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "cocoa_common_shared.h"
+
 typedef enum apple_view_type {
    APPLE_VIEW_TYPE_NONE,
    APPLE_VIEW_TYPE_OPENGL_ES,
@@ -67,30 +69,6 @@ extern id<ApplePlatform> apple_platform;
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
-/*********************************************/
-/* RAMenuBase                                */
-/* A menu class that displays RAMenuItemBase */
-/* objects.                                  */
-/*********************************************/
-@interface RAMenuBase : UITableViewController
-@property (nonatomic) NSMutableArray* sections;
-@property (nonatomic) BOOL hidesHeaders;
-@property (nonatomic) RAMenuBase* last_menu;
-@property (nonatomic) UILabel *osdmessage;
-
-- (id)initWithStyle:(UITableViewStyle)style;
-- (id)itemForIndexPath:(NSIndexPath*)indexPath;
-
-@end
-
-typedef struct
-{
-   char orientations[32];
-   unsigned orientation_flags;
-   char bluetooth_mode[64];
-} apple_frontend_settings_t;
-extern apple_frontend_settings_t apple_frontend_settings;
-
 @interface CocoaView : UIViewController<CLLocationManagerDelegate,
 AVCaptureAudioDataOutputSampleBufferDelegate>
 + (CocoaView*)get;
@@ -117,34 +95,6 @@ UINavigationControllerDelegate, ApplePlatform>
 
 void get_ios_version(int *major, int *minor);
 
-#elif defined(HAVE_COCOA_METAL)
-#include <AppKit/AppKit.h>
-
-@interface CocoaView : NSView
-
-+ (CocoaView*)get;
-#if !defined(HAVE_COCOA_METAL)
-- (void)display;
-#endif
-
-@end
-
-#endif
-
-#define BOXSTRING(x) [NSString stringWithUTF8String:x]
-#define BOXINT(x)    [NSNumber numberWithInt:x]
-#define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
-#define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
-
-#if __has_feature(objc_arc)
-#define RELEASE(x)   x = nil
-#define BRIDGE       __bridge
-#define UNSAFE_UNRETAINED __unsafe_unretained
-#else
-#define RELEASE(x)   [x release]; \
-   x = nil
-#define BRIDGE
-#define UNSAFE_UNRETAINED
 #endif
 
 #endif
