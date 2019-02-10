@@ -119,7 +119,7 @@ else
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
@@ -281,7 +281,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
       mbedtls/ctr_drbg.h \
       mbedtls/entropy.h
 
-   check_lib '' MBEDTLS -lmbedtls
+   check_lib '' MBEDTLS -lmbedtls '' '' '' mbedtls
    check_lib '' MBEDX509 -lmbedx509
    check_lib '' MBEDCRYPTO -lmbedcrypto
 
