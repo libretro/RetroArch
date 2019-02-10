@@ -682,7 +682,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-#if defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 #endif
@@ -768,7 +768,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          break;
    }
 
-#if defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    static bool has_went_fullscreen = false;
    /* TODO: Screen mode support. */
 
