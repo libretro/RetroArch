@@ -40,7 +40,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define HEADER_HEIGHT 87
 #define FOOTER_HEIGHT 78
 #define SIDEBAR_WIDTH 408
-#define ENTRIE_PADDING 67
+#define ENTRY_PADDING 67
 
 #define ENTRIES_START_Y (HEADER_HEIGHT + 40)
 

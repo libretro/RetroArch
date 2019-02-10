@@ -990,7 +990,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    menu_display_blend_end(video_info);
 
    /* Battery */
-   if (video_info->battery_level_enable || true)
+   if (video_info->battery_level_enable)
    {
       char msg[12];
       static retro_time_t last_time  = 0;
