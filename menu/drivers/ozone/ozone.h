@@ -42,7 +42,11 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_WIDTH 408
 #define ENTRY_PADDING 67
 
-#define ENTRIES_START_Y (HEADER_HEIGHT + 40)
+#define SIDEBAR_Y_PADDING 20
+#define ENTRY_HEIGHT 50
+#define ENTRY_Y_PADDING 10
+
+#define ENTRIES_START_Y (HEADER_HEIGHT + 1) + 40
 
 #define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
 #define INTERVAL_OSK_CURSOR (0.5f * 1000000)
@@ -157,6 +161,17 @@ struct ozone_handle
    unsigned old_list_offset_y;
 
    file_list_t *horizontal_list; /* console tabs */
+
+   struct {
+      int header_height;
+      int footer_height;
+      int sidebar_width;
+      int entry_padding;
+
+      int sidebar_entry_height;
+      int sidebar_padding_vertical;
+      int sidebar_entry_padding_vertical;
+   } ui_dimensions;
 };
 
 /* If you change this struct, also
