@@ -1,3 +1,62 @@
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#if TARGET_OS_IPHONE
+#include <CoreGraphics/CoreGraphics.h>
+#else
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#include <OpenGL/CGLTypes.h>
+#include <OpenGL/OpenGL.h>
+#include <AppKit/NSScreen.h>
+#include <AppKit/NSOpenGL.h>
+#elif defined(HAVE_COCOATOUCH)
+#include <GLKit/GLKit.h>
+#endif
+
+#include <retro_assert.h>
+#include <compat/apple_compat.h>
+
+#include "../../ui/drivers/ui_cocoa.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
+#include "../video_driver.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
+#ifdef HAVE_VULKAN
+#include "../common/vulkan_common.h"
+#endif
+
+typedef struct cocoa_ctx_data
+{
+   bool core_hw_context_enable;
+#ifdef HAVE_VULKAN
+   gfx_ctx_vulkan_data_t vk;
+   int swap_interval;
+#endif
+    unsigned width;
+    unsigned height;
+} cocoa_ctx_data_t;
+
+#if defined(HAVE_COCOATOUCH)
+#define GLContextClass EAGLContext
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+
+#ifndef UIUserInterfaceIdiomTV
+#define UIUserInterfaceIdiomTV 2
+#endif
+
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+#else
+#define GLContextClass NSOpenGLContext
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
+#endif
+
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
 #if defined(HAVE_COCOATOUCH)
@@ -16,27 +75,12 @@ static unsigned g_minor  = 0;
 static unsigned g_major  = 0;
 
 #if defined(HAVE_COCOATOUCH)
-#define GLContextClass EAGLContext
-#define GLFrameworkID CFSTR("com.apple.opengles")
-#define RAScreen UIScreen
-
-#ifndef UIUserInterfaceIdiomTV
-#define UIUserInterfaceIdiomTV 2
-#endif
-
-#ifndef UIUserInterfaceIdiomCarPlay
-#define UIUserInterfaceIdiomCarPlay 3
-#endif
-
-
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
 - (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
 @end
-
 #else
-
 @interface NSScreen (IOSCompat) @end
 @implementation NSScreen (IOSCompat)
 - (CGRect)bounds
@@ -46,10 +90,6 @@ static unsigned g_major  = 0;
 }
 - (float) scale  { return 1.0f; }
 @end
-
-#define GLContextClass NSOpenGLContext
-#define GLFrameworkID CFSTR("com.apple.opengl")
-#define RAScreen NSScreen
 #endif
 
 /* forward declaration */

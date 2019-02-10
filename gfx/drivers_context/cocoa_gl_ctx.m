@@ -14,38 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
-#if TARGET_OS_IPHONE
-#include <CoreGraphics/CoreGraphics.h>
-#else
-#include <ApplicationServices/ApplicationServices.h>
-#endif
-#if defined(HAVE_COCOA)
-#include <OpenGL/CGLTypes.h>
-#include <OpenGL/OpenGL.h>
-#include <AppKit/NSScreen.h>
-#include <AppKit/NSOpenGL.h>
-#elif defined(HAVE_COCOATOUCH)
-#include <GLKit/GLKit.h>
-#endif
-
-#include <retro_assert.h>
-#include <compat/apple_compat.h>
-
-#include "../../ui/drivers/ui_cocoa.h"
-#include "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../video_driver.h"
-#include "../../configuration.h"
-#include "../../verbosity.h"
-
-typedef struct cocoa_ctx_data
-{
-   bool core_hw_context_enable;
-} cocoa_ctx_data_t;
-
 #include "cocoa_gl_shared.h"
 
 static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
