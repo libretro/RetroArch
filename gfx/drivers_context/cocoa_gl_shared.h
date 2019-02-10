@@ -1,3 +1,68 @@
+static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
+
+#if defined(HAVE_COCOATOUCH)
+static GLKView *g_view;
+UIView *g_pause_indicator_view;
+#endif
+
+static GLContextClass* g_hw_ctx;
+static GLContextClass* g_context;
+
+static int g_fast_forward_skips;
+static bool g_is_syncing = true;
+static bool g_use_hw_ctx = false;
+
+static unsigned g_minor  = 0;
+static unsigned g_major  = 0;
+
+#if defined(HAVE_COCOATOUCH)
+#define GLContextClass EAGLContext
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+
+#ifndef UIUserInterfaceIdiomTV
+#define UIUserInterfaceIdiomTV 2
+#endif
+
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+
+
+@interface EAGLContext (OSXCompat) @end
+@implementation EAGLContext (OSXCompat)
++ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
+- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
+@end
+
+#else
+
+@interface NSScreen (IOSCompat) @end
+@implementation NSScreen (IOSCompat)
+- (CGRect)bounds
+{
+   CGRect cgrect  = NSRectToCGRect(self.frame);
+   return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+}
+- (float) scale  { return 1.0f; }
+@end
+
+#define GLContextClass NSOpenGLContext
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
+#endif
+
+/* forward declaration */
+void *nsview_get_ptr(void);
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+static NSOpenGLPixelFormat* g_format;
+
+void *glcontext_get_ptr(void)
+{
+   return (BRIDGE void *)g_context;
+}
+#endif
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
@@ -366,4 +431,76 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 #endif
    *width                          = CGRectGetWidth(size)  * screenscale;
    *height                         = CGRectGetHeight(size) * screenscale;
+}
+
+static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
+{
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
+               CFBundleGetBundleWithIdentifier(GLFrameworkID),
+               (BRIDGE CFStringRef)BOXSTRING(symbol_name)
+               );
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         g_use_hw_ctx = enable;
+
+         if (enable)
+            [g_hw_ctx makeCurrentContext];
+         else
+            [g_context makeCurrentContext];
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
+
+static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+{
+   unsigned new_width, new_height;
+#ifdef HAVE_VULKAN
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
+
+   *quit = false;
+
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         break;
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
+         *resize = cocoa_ctx->vk.need_new_swapchain;
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   cocoagl_gfx_ctx_get_video_size(data, &new_width, &new_height);
+   if (new_width != *width || new_height != *height)
+   {
+      *width  = new_width;
+      *height = new_height;
+      *resize = true;
+   }
 }

@@ -41,76 +41,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_COCOATOUCH)
-#define GLContextClass EAGLContext
-#define GLFrameworkID CFSTR("com.apple.opengles")
-#define RAScreen UIScreen
-
-#ifndef UIUserInterfaceIdiomTV
-#define UIUserInterfaceIdiomTV 2
-#endif
-
-#ifndef UIUserInterfaceIdiomCarPlay
-#define UIUserInterfaceIdiomCarPlay 3
-#endif
-
-@interface EAGLContext (OSXCompat) @end
-@implementation EAGLContext (OSXCompat)
-+ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
-- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
-@end
-
-#else
-
-@interface NSScreen (IOSCompat) @end
-@implementation NSScreen (IOSCompat)
-- (CGRect)bounds
-{
-    CGRect cgrect  = NSRectToCGRect(self.frame);
-    return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
-}
-- (float) scale  { return 1.0f; }
-@end
-
-#define GLContextClass NSOpenGLContext
-#define GLFrameworkID CFSTR("com.apple.opengl")
-#define RAScreen NSScreen
-#endif
-
-static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
-
 typedef struct cocoa_ctx_data
 {
    bool core_hw_context_enable;
 } cocoa_ctx_data_t;
-
-#if defined(HAVE_COCOATOUCH)
-
-static GLKView *g_view;
-UIView *g_pause_indicator_view;
-#endif
-
-static GLContextClass* g_hw_ctx;
-static GLContextClass* g_context;
-
-static int g_fast_forward_skips;
-static bool g_is_syncing = true;
-static bool g_use_hw_ctx = false;
-
-#if defined(HAVE_COCOA)
-static NSOpenGLPixelFormat* g_format;
-
-void *glcontext_get_ptr(void)
-{
-    return g_context;
-}
-#endif
-
-static unsigned g_minor = 0;
-static unsigned g_major = 0;
-
-/* forward declaration */
-void *nsview_get_ptr(void);
 
 #include "cocoa_gl_shared.h"
 
@@ -269,40 +203,6 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
 #endif
 
    g_fast_forward_skips = g_is_syncing ? 0 : 3;
-}
-
-static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
-{
-   return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-   (BRIDGE CFStringRef)BOXSTRING(symbol_name)
-         );
-}
-
-static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
-{
-   unsigned new_width, new_height;
-
-   *quit = false;
-
-   cocoagl_gfx_ctx_get_video_size(data, &new_width, &new_height);
-   if (new_width != *width || new_height != *height)
-   {
-      *width  = new_width;
-      *height = new_height;
-      *resize = true;
-   }
-}
-
-static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
-{
-   (void)data;
-   g_use_hw_ctx = enable;
-
-    if (enable)
-        [g_hw_ctx makeCurrentContext];
-    else
-        [g_context makeCurrentContext];
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
