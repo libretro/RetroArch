@@ -435,12 +435,14 @@ check_pkgconf DBUS dbus-1
 check_val '' XEXT -lXext '' xext '' '' false
 check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
-if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
-   [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-    ./gfx/common/wayland/generate_wayland_protos.sh -c "$WAYLAND_SCANNER_VERSION" -s "$SHARE_DIR" ||
-       die 1 'Error: Failed generating wayland protocols.'
+      ./gfx/common/wayland/generate_wayland_protos.sh \
+         -c "$WAYLAND_SCANNER_VERSION" \
+         -p "$HAVE_WAYLAND_PROTOS" \
+         -s "$SHARE_DIR" ||
+         die 1 'Error: Failed generating wayland protocols.'
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
