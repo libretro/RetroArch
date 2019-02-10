@@ -30,6 +30,8 @@
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
+
+extern UIView *g_pause_indicator_view;
 #endif
 
 #ifdef HAVE_METAL
