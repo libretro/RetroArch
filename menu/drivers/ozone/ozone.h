@@ -42,6 +42,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_WIDTH 408
 #define ENTRY_PADDING 67
 
+#define SIDEBAR_X_PADDING 40
 #define SIDEBAR_Y_PADDING 20
 #define ENTRY_HEIGHT 50
 #define ENTRY_Y_PADDING 10
@@ -169,6 +170,7 @@ struct ozone_handle
       int entry_padding;
 
       int sidebar_entry_height;
+      int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
    } ui_dimensions;

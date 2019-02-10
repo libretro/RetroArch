@@ -478,6 +478,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->ui_dimensions.entry_padding = ENTRY_PADDING * scale;
 
       ozone->ui_dimensions.sidebar_entry_height = ENTRY_HEIGHT * scale;
+      ozone->ui_dimensions.sidebar_padding_horizontal = SIDEBAR_X_PADDING * scale;
       ozone->ui_dimensions.sidebar_padding_vertical = SIDEBAR_Y_PADDING * scale;
       ozone->ui_dimensions.sidebar_entry_padding_vertical = ENTRY_Y_PADDING * scale;
    }
