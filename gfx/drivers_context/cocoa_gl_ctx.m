@@ -221,8 +221,11 @@ float get_backing_scale_factor(void)
       if ([screen respondsToSelector:selector])
       {
          CGFloat ret;
+#if defined(HAVE_COCOA_METAL)
          NSView *g_view        = apple_platform.renderView;
-         //CocoaView *g_view     = (CocoaView*)nsview_get_ptr();
+#elif defined(HAVE_COCOA)
+         CocoaView *g_view     = (CocoaView*)nsview_get_ptr();
+#endif
          backing_scale_def     = (float)get_from_selector
          ([[g_view window] class], [g_view window], selector, &ret);
       }
