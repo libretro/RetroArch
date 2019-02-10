@@ -280,11 +280,11 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    menu_animation_push(&entry);
 }
 
-// @TODO: fix
 unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
 {
-   return ozone->categories_selection_ptr * ozone->ui_dimensions.sidebar_entry_height + (ozone->categories_selection_ptr - 1) * ozone->ui_dimensions.sidebar_entry_padding_vertical + ozone->ui_dimensions.sidebar_padding_vertical + 
-            (ozone->categories_selection_ptr > ozone->system_tab_end ? ozone->ui_dimensions.sidebar_entry_padding_vertical + 1 : 0);
+   return ozone->categories_selection_ptr * ozone->ui_dimensions.sidebar_entry_height + 
+         (ozone->categories_selection_ptr - 1) * ozone->ui_dimensions.sidebar_entry_padding_vertical + ozone->ui_dimensions.sidebar_padding_vertical + 
+         (ozone->categories_selection_ptr > ozone->system_tab_end ? ozone->ui_dimensions.sidebar_entry_padding_vertical + 1 : 0);
 }
 
 unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
