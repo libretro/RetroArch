@@ -24,6 +24,24 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#if defined(HAVE_COCOATOUCH)
+#define GLContextClass EAGLContext
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+
+#ifndef UIUserInterfaceIdiomTV
+#define UIUserInterfaceIdiomTV 2
+#endif
+
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+#else
+#define GLContextClass NSOpenGLContext
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
+#endif
+
 typedef enum apple_view_type {
    APPLE_VIEW_TYPE_NONE,
    APPLE_VIEW_TYPE_OPENGL_ES,

@@ -55,24 +55,6 @@ typedef struct cocoa_ctx_data
     unsigned height;
 } cocoa_ctx_data_t;
 
-#if defined(HAVE_COCOATOUCH)
-#define GLContextClass EAGLContext
-#define GLFrameworkID CFSTR("com.apple.opengles")
-#define RAScreen UIScreen
-
-#ifndef UIUserInterfaceIdiomTV
-#define UIUserInterfaceIdiomTV 2
-#endif
-
-#ifndef UIUserInterfaceIdiomCarPlay
-#define UIUserInterfaceIdiomCarPlay 3
-#endif
-#else
-#define GLContextClass NSOpenGLContext
-#define GLFrameworkID CFSTR("com.apple.opengl")
-#define RAScreen NSScreen
-#endif
-
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
 #if defined(HAVE_COCOATOUCH)
