@@ -85,7 +85,8 @@ check_enabled()
 # $4 = function in lib [checked only if non-empty]
 # $5 = extralibs [checked only if non-empty]
 # $6 = headers [checked only if non-empty]
-# $7 = critical error message [checked only if non-empty]
+# $7 = include directory [checked only if non-empty]
+# $8 = critical error message [checked only if non-empty]
 check_lib()
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
@@ -106,19 +107,30 @@ check_lib()
 
 	val="$2"
 	lib="$3"
-	error="${7:-}"
+	include="${7:-}"
+	error="${8:-}"
 	answer='no'
 	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $3"
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
+
+	if [ "$answer" = 'yes' ] && [ "$include" ]; then
+		eval "set -- $INCLUDES"
+		for dir do
+			[ -d "/$dir/$include" ] && { eval "${val}_CFLAGS=\"-I/$dir/$include\""; break; }
+		done
+		[ -z "$(eval "printf %s \"\${${val}_CFLAGS}\"")" ] && answer='no'
+	fi
+
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
 		[ "$error" ] && die 1 "$error"
-		[ "$tmpval" = 'yes' ] && {
+		setval="$(eval "printf %s \"\$USER_$val\"")"
+		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
-		}
+		fi
 	else
 		eval "${val}_LIBS=\"$lib\""
 		PKG_CONF_USED="$PKG_CONF_USED $val"
@@ -170,8 +182,10 @@ check_pkgconf()
 	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
 		[ "$err" ] && die 1 "$err"
-		[ "$tmpval" = 'yes' ] &&
+		setval="$(eval "printf %s \"\$USER_$val\"")"
+		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
+		fi
 	else
 		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
@@ -198,8 +212,10 @@ check_header()
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+	setval="$(eval "printf %s \"\$USER_$val\"")"
+	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
+	fi
 }
 
 # check_macro:
@@ -231,8 +247,10 @@ EOF
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+	setval="$(eval "printf %s \"\$USER_$val\"")"
+	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
+	fi
 }
 
 # check_switch:
@@ -272,21 +290,7 @@ check_val()
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
-		check_lib "$1" "$2" "$3"
-
-		if [ "${4:-}" ] && [ "$answer" = 'yes' ]; then
-			val="$2"
-			include="$4"
-			eval "set -- $INCLUDES"
-			for dir do
-				[ -d "/$dir/$include" ] && { eval "${val}_CFLAGS=\"-I/$dir/$include\""; break; }
-			done
-			[ -z "$(eval "printf %s \"\${${val}_CFLAGS}\"")" ] && eval "HAVE_$val=no"
-		fi
-
-		if [ "$answer" = 'no' ] && [ "$oldval" = 'yes' ]; then
-			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
-		fi
+		check_lib "$1" "$2" "$3" '' '' '' "$4" ''
 	fi
 }
 

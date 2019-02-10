@@ -119,7 +119,7 @@ else
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
