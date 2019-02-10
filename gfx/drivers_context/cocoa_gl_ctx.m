@@ -212,7 +212,7 @@ float get_backing_scale_factor(void)
       return backing_scale_def;
 
    backing_scale_def = 1.0f;
-#ifdef HAVE_COCOA_METAL
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    screen = (BRIDGE RAScreen*)get_chosen_screen();
 
    if (screen)
@@ -612,7 +612,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
          if (!(--g_fast_forward_skips < 0))
             return;
 
-#if defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
          [g_context flushBuffer];
          [g_hw_ctx flushBuffer];
 #elif defined(HAVE_COCOATOUCH)
@@ -643,7 +643,7 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
          break;
-#elif defined(HAVE_COCOA_METAL)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
       case GFX_CTX_OPENGL_API:
          break;
 #ifdef HAVE_VULKAN
