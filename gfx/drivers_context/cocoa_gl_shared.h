@@ -449,7 +449,7 @@ static void cocoagl_gfx_ctx_input_driver(void *data,
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
-#if defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    CGRect size;
    GLsizei backingPixelWidth, backingPixelHeight;
 #if defined(HAVE_COCOA_METAL)
