@@ -646,3 +646,11 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
 
    return true;
 }
+
+#ifdef HAVE_VULKAN
+static void *cocoagl_gfx_ctx_get_context_data(void *data)
+{
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   return &cocoa_ctx->vk.context;
+}
+#endif

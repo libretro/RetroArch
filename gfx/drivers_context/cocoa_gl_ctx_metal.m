@@ -181,14 +181,6 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    return true;
 }
 
-#ifdef HAVE_VULKAN
-static void *cocoagl_gfx_ctx_get_context_data(void *data)
-{
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   return &cocoa_ctx->vk.context;
-}
-#endif
-
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
 #ifdef HAVE_VULKAN
