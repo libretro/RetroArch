@@ -46,21 +46,6 @@ static bool cocoagl_gfx_ctx_bind_api(void *data,
    return true;
 }
 
-static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
-{
-   (void)data;
-   unsigned interval = (unsigned)i;
-#if defined(HAVE_COCOATOUCH) // < No way to disable Vsync on iOS?
-           //   Just skip presents so fast forward still works.
-   g_is_syncing = interval ? true : false;
-   g_fast_forward_skips = interval ? 0 : 3;
-#elif defined(HAVE_COCOA)
-   GLint value = interval ? 1 : 0;
-   [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
-
-#endif
-}
-
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)

@@ -544,3 +544,42 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
       *resize = true;
    }
 }
+
+static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
+{
+   unsigned interval           = (unsigned)i;
+#ifdef HAVE_VULKAN
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
+
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      {
+#if defined(HAVE_COCOATOUCH) // < No way to disable Vsync on iOS?
+         //   Just skip presents so fast forward still works.
+         g_is_syncing         = interval ? true : false;
+         g_fast_forward_skips = interval ? 0 : 3;
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+         GLint value          = interval ? 1 : 0;
+         [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+#endif
+         break;
+      }
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
+         if (cocoa_ctx->swap_interval != interval)
+         {
+            cocoa_ctx->swap_interval = interval;
+            if (cocoa_ctx->vk.swapchain)
+               cocoa_ctx->vk.need_new_swapchain = true;
+         }
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+}
