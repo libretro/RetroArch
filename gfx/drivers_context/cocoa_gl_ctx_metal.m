@@ -54,36 +54,6 @@ error:
    return NULL;
 }
 
-static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
-      unsigned major, unsigned minor)
-{
-   (void)data;
-   switch (api)
-   {
-#if defined(HAVE_COCOATOUCH)
-      case GFX_CTX_OPENGL_ES_API:
-         break;
-#elif defined(HAVE_COCOA_METAL)
-      case GFX_CTX_OPENGL_API:
-         break;
-#ifdef HAVE_VULKAN
-      case GFX_CTX_VULKAN_API:
-         break;
-#endif
-#endif
-      case GFX_CTX_NONE:
-      default:
-         return false;
-   }
-
-   cocoagl_api = api;
-   g_minor     = minor;
-   g_major     = major;
-
-   return true;
-}
-
-
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
@@ -218,42 +188,6 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
    return &cocoa_ctx->vk.context;
 }
 #endif
-
-static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
-{
-#ifdef HAVE_VULKAN
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#endif
-
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         if (!(--g_fast_forward_skips < 0))
-            return;
-
-#if defined(HAVE_COCOA_METAL)
-         [g_context flushBuffer];
-         [g_hw_ctx flushBuffer];
-#elif defined(HAVE_COCOATOUCH)
-         if (g_view)
-            [g_view display];
-#endif
-
-         g_fast_forward_skips = g_is_syncing ? 0 : 3;
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
-         vulkan_acquire_next_image(&cocoa_ctx->vk);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-}
-
 
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {

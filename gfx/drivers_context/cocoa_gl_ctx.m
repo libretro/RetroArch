@@ -27,25 +27,6 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    return cocoa_ctx;
 }
 
-static bool cocoagl_gfx_ctx_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)data;
-#if defined(HAVE_COCOATOUCH)
-   if (api != GFX_CTX_OPENGL_ES_API)
-      return false;
-#elif defined(HAVE_COCOA)
-   if (api != GFX_CTX_OPENGL_API)
-      return false;
-#endif
-
-   cocoagl_api = api;
-   g_minor     = minor;
-   g_major     = major;
-
-   return true;
-}
-
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
@@ -140,22 +121,6 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    /* TODO: Maybe iOS users should be able to show/hide the status bar here? */
 
    return true;
-}
-
-static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
-{
-   if (!(--g_fast_forward_skips < 0))
-      return;
-
-#if defined(HAVE_COCOA)
-    [g_context flushBuffer];
-    [g_hw_ctx flushBuffer];
-#elif defined(HAVE_COCOATOUCH)
-    if (g_view)
-        [g_view display];
-#endif
-
-   g_fast_forward_skips = g_is_syncing ? 0 : 3;
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
