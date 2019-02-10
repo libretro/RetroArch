@@ -698,21 +698,26 @@ static void cheevos_test_leaderboards(void)
 
 void cheevos_reset_game(void)
 {
-   cheevos_cheevo_t* cheevo = NULL;
-   int i, count;
+   cheevos_cheevo_t* cheevo;
+   cheevos_lboard_t* lboard;
+   unsigned i;
 
    cheevo = cheevos_locals.core;
-
-   for (i = 0, count = cheevos_locals.patchdata.core_count; i < count; i++, cheevo++)
+   for (i = 0; i < cheevos_locals.patchdata.core_count; i++, cheevo++)
    {
       cheevo->last = 1;
    }
 
    cheevo = cheevos_locals.unofficial;
-
-   for (i = 0, count = cheevos_locals.patchdata.unofficial_count; i < count; i++, cheevo++)
+   for (i = 0; i < cheevos_locals.patchdata.unofficial_count; i++, cheevo++)
    {
       cheevo->last = 1;
+   }
+
+   lboard = cheevos_locals.lboards;
+   for (i = 0; i < cheevos_locals.patchdata.lboard_count; i++, lboard++)
+   {
+      lboard->active = 0;
    }
 }
 

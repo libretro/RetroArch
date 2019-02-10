@@ -2056,22 +2056,21 @@ static int cheevos_deactivate_unlocks(const char* json, unsigned mode)
 
 void cheevos_reset_game(void)
 {
-   cheevo_t *end       = NULL;
-   cheevo_t *cheevo    = cheevos_locals.core.cheevos;
+   cheevo_t *cheevo;
+   cheevos_leaderboard_t *lboard;
+   unsigned i;
 
-   if (!cheevo)
-      return;
-
-   end                 = cheevo + cheevos_locals.core.count;
-
-   for (; cheevo < end; cheevo++)
+   cheevo = cheevos_locals.core.cheevos;
+   for (i = 0; i < cheevos_locals.core.count; i++, cheevo++)
       cheevo->last     = 1;
 
-   cheevo              = cheevos_locals.unofficial.cheevos;
-   end                 = cheevo + cheevos_locals.unofficial.count;
-
-   for (; cheevo < end; cheevo++)
+   cheevo = cheevos_locals.unofficial.cheevos;
+   for (i = 0; i < cheevos_locals.unofficial.count; i++, cheevo++)
       cheevo->last = 1;
+
+   lboard = cheevos_locals.leaderboards;
+   for (i = 0; i < cheevos_locals.lboard_count; i++, lboard++)
+      lboard->active = 0;
 }
 
 void cheevos_populate_menu(void *data)
