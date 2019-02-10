@@ -127,9 +127,10 @@ check_lib()
 
 	if [ "$answer" = 'no' ]; then
 		[ "$error" ] && die 1 "$error"
-		[ "$tmpval" = 'yes' ] && {
+		setval="$(eval "printf %s \"\$USER_$val\"")"
+		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
-		}
+		fi
 	else
 		eval "${val}_LIBS=\"$lib\""
 		PKG_CONF_USED="$PKG_CONF_USED $val"
@@ -181,8 +182,10 @@ check_pkgconf()
 	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
 		[ "$err" ] && die 1 "$err"
-		[ "$tmpval" = 'yes' ] &&
+		setval="$(eval "printf %s \"\$USER_$val\"")"
+		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
+		fi
 	else
 		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
@@ -209,8 +212,10 @@ check_header()
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+	setval="$(eval "printf %s \"\$USER_$val\"")"
+	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
+	fi
 }
 
 # check_macro:
@@ -242,8 +247,10 @@ EOF
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+	setval="$(eval "printf %s \"\$USER_$val\"")"
+	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
+	fi
 }
 
 # check_switch:
@@ -284,11 +291,6 @@ check_val()
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
 		check_lib "$1" "$2" "$3" '' '' '' "$4" ''
-
-		if [ "$answer" = 'no' ] && [ "$oldval" = 'yes' ]; then
-			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
-		fi
-
 	fi
 }
 

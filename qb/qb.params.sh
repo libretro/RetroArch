@@ -70,7 +70,9 @@ parse_input() # Parse stuff :V
 	OPTS=''
 	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
-		OPTS="$OPTS ${TMPVAR##HAVE_}"
+		NEWVAR="${TMPVAR##HAVE_}"
+		OPTS="$OPTS $NEWVAR"
+		eval "USER_$NEWVAR=no"
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
@@ -93,7 +95,6 @@ parse_input() # Parse stuff :V
 			--disable-*)
 				opt_exists "${1##--disable-}" "$1"
 				eval "HAVE_$opt=no"
-				eval "USER_$opt=no"
 				eval "HAVE_NO_$opt=yes"
 			;;
 			--with-*)
