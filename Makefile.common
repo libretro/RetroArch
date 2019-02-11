@@ -1657,8 +1657,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       ifeq ($(HAVE_NEW_CHEEVOS), 1)
          DEFINES += -DHAVE_NEW_CHEEVOS \
-            -Ideps/rcheevos/include \
-            -Ideps/lua/src
+            -Ideps/rcheevos/include
          OBJ += cheevos-new/cheevos.o \
             cheevos-new/badges.o \
             cheevos-new/fixup.o \
