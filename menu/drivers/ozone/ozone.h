@@ -39,17 +39,22 @@ typedef struct ozone_handle ozone_handle_t;
 
 #define HEADER_HEIGHT 87
 #define FOOTER_HEIGHT 78
-#define SIDEBAR_WIDTH 408
-#define ENTRY_PADDING 67
 
+#define ENTRY_PADDING_HORIZONTAL_HALF 60
+#define ENTRY_PADDING_HORIZONTAL_FULL 100
+#define ENTRY_PADDING_VERTRICAL 20
+#define ENTRY_HEIGHT 50
+#define ENTRY_PADDING 0
+#define ENTRY_ICON_SIZE 46
+#define ENTRY_ICON_PADDING  15
+
+#define SIDEBAR_WIDTH 408
 #define SIDEBAR_X_PADDING 40
 #define SIDEBAR_Y_PADDING 20
-#define ENTRY_HEIGHT 50
-#define ENTRY_Y_PADDING 10
+#define SIDEBAR_ENTRY_HEIGHT 50
+#define SIDEBAR_ENTRY_Y_PADDING 10
 #define SIDEBAR_ENTRY_ICON_SIZE 40
-#define SIDEBAR_ENTRY_ICON_WIDTH 70
-
-#define ENTRIES_START_Y (HEADER_HEIGHT + 1) + 40
+#define SIDEBAR_ENTRY_ICON_PADDING 15
 
 #define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
 #define INTERVAL_OSK_CURSOR (0.5f * 1000000)
@@ -125,7 +130,8 @@ struct ozone_handle
    unsigned title_font_glyph_width;
    unsigned entry_font_glyph_width;
    unsigned sublabel_font_glyph_width;
-
+   unsigned sidebar_font_glyph_width;
+   
    ozone_theme_t *theme;
 
    struct {
@@ -168,16 +174,23 @@ struct ozone_handle
    struct {
       int header_height;
       int footer_height;
-      int sidebar_width;
-      int entry_padding;
 
-      int sidebar_entry_height;
+      int entry_padding_horizontal_half;
+      int entry_padding_horizontal_full; /* todo when sidebar is not visible */
+      int entry_padding_vertical;
+      int entry_height;
+      int entry_padding;
+      int entry_icon_size;
+      int entry_icon_padding;
+
+      int sidebar_width;
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
+      int sidebar_entry_height;
       int sidebar_entry_icon_size;
-      int sidebar_entry_icon_width;
-   } ui_dimensions;
+      int sidebar_entry_icon_padding;
+   } dimensions;
 };
 
 /* If you change this struct, also
