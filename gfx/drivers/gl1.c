@@ -616,7 +616,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          for (y = 0; y < height; y++)
          {
             /* copy lines into top-left portion of larger (power-of-two) buffer */
-            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), frame + (pitch * y), width * (bits / 8));
+            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
          }
       }
       else if (bits == 16)
@@ -1263,10 +1263,10 @@ static uint32_t gl1_get_flags(void *data)
 
 static void gl1_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
+   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+
    (void)data;
    (void)shader_data;
-
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
 
    if (!mat)
       return;
