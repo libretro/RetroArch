@@ -94,35 +94,42 @@ check_lib()
 	check_compiler "$1" "$4"
 
 	if [ "$4" ]; then
-		ECHOBUF="Checking function $4 in ${3% }"
+		MSG="Checking function $4 in"
 		if [ "$6" ]; then
 			printf %s\\n "$6" "int main(void) { void *p = (void*)$4; return 0; }" > "$TEMP_CODE"
 		else
 			printf %s\\n "$TEST_C" > "$TEMP_CODE"
 		fi
 	else
-		ECHOBUF="Checking existence of ${3% }"
+		MSG='Checking existence of'
 		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	fi
 
 	val="$2"
-	lib="$3"
+	lib="${3% }"
 	include="${7:-}"
 	error="${8:-}"
 	answer='no'
-	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $3"
+	printf %s "$MSG $lib"
+	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $lib"
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
+	printf %s\\n " ... $answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
+		answer='no'
 		eval "set -- $INCLUDES"
 		for dir do
-			[ -d "/$dir/$include" ] && { eval "${val}_CFLAGS=\"-I/$dir/$include\""; break; }
+			[ "$answer" = 'yes' ] && break
+			printf %s "Checking existence of /$dir/$include"
+			if [ -d "/$dir/$include" ]; then
+				eval "${val}_CFLAGS=\"-I/$dir/$include\""
+				answer='yes'
+			fi
+			printf %s\\n " ... $answer"
 		done
-		[ -z "$(eval "printf %s \"\${${val}_CFLAGS}\"")" ] && answer='no'
 	fi
 
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
@@ -150,13 +157,15 @@ check_pkgconf()
 	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
 
-	ECHOBUF="Checking presence of package $2"
-	[ "$3" ] && ECHOBUF="$ECHOBUF >= ${3##* }"
+	ECHOBUF=''
+	[ "${3:-}" ] && ECHOBUF=" >= ${3##* }"
+
+	MSG='Checking presence of package'
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
 		eval "HAVE_$1=no"
 		eval "${1#HAVE_}_VERSION=0.0"
-		printf %s\\n "$ECHOBUF ... no"
+		printf %s\\n "$MSG $2$ECHOBUF ... no"
 		return 0
 	}
 
@@ -165,6 +174,8 @@ check_pkgconf()
 	err="$4"
 	answer='no'
 	version='no'
+
+	printf %s "$MSG $pkg$ECHOBUF"
 
 	eval "set -- ${3:-0.0}"
 	for ver do
@@ -179,7 +190,8 @@ check_pkgconf()
 	done
 
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n "$ECHOBUF ... $version"
+	printf %s\\n " ... $version"
+
 	if [ "$answer" = 'no' ]; then
 		[ "$err" ] && die 1 "$err"
 		setval="$(eval "printf %s \"\$USER_$val\"")"
@@ -207,10 +219,11 @@ check_header()
 	done
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
+	printf %s "Checking presence of header file $CHECKHEADER"
 	eval "set -- $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
+	printf %s\\n " ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	setval="$(eval "printf %s \"\$USER_$val\"")"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
@@ -225,12 +238,11 @@ check_header()
 check_macro()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
-	if [ "${3}" ]; then
-		ECHOBUF="Checking presence of predefined macro $2 in $3"
+	header_include=''
+	ECHOBUF=''
+	if [ "${3:-}" ]; then
 		header_include="#include <$3>"
-	else
-		ECHOBUF="Checking presence of predefined macro $2"
-		header_include=""
+		ECHOBUF=" in $3"
 	fi
 	cat << EOF > "$TEMP_C"
 $header_include
@@ -242,10 +254,11 @@ EOF
 	answer='no'
 	val="$1"
 	macro="$2"
+	printf %s "Checking presence of predefined macro $macro$ECHOBUF"
 	eval "set -- $CFLAGS $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n "$ECHOBUF ... $answer"
+	printf %s\\n " ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	setval="$(eval "printf %s \"\$USER_$val\"")"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
@@ -261,16 +274,16 @@ EOF
 check_switch()
 {	check_compiler "$1" ''
 
-	ECHOBUF="Checking for availability of switch $3 in $COMPILER"
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
+	printf %s "Checking for availability of switch $3 in $COMPILER"
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$3" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$2=\"$answer\""
-	printf %s\\n "$ECHOBUF ... $answer"
+	printf %s\\n " ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
-	[ "$answer" = 'no' ] && {
-		[ "$4" ] && die 1 "$4"
-	}
+	if [ "$answer" = 'no' ] && [ "${4:-}" ]; then
+		die 1 "$4"
+	fi
 }
 
 # check_val:
