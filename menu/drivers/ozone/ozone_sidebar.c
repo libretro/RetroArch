@@ -115,6 +115,8 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    unsigned selection_old_y      = 0;
    unsigned horizontal_list_size = 0;
 
+   int entry_width = 0;
+
    if (!ozone->draw_sidebar)
       return;
 
@@ -155,14 +157,16 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       y += ozone->ui_dimensions.sidebar_entry_height + ozone->ui_dimensions.sidebar_entry_padding_vertical;
    }
 
+   entry_width = ozone->ui_dimensions.sidebar_width - ozone->ui_dimensions.sidebar_padding_horizontal * 2;
+
    /* Cursor */
    if (ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal, ozone->ui_dimensions.sidebar_width - ozone->ui_dimensions.sidebar_padding_horizontal * 2,
-         ozone->ui_dimensions.sidebar_entry_height + 2, selection_y + 1 + ozone->animations.scroll_y_sidebar, ozone->animations.cursor_alpha);
+      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 3, 
+         entry_width - 5, ozone->ui_dimensions.sidebar_entry_height + 2, selection_y + 1 + ozone->animations.scroll_y_sidebar, ozone->animations.cursor_alpha);
 
    if (ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal, ozone->ui_dimensions.sidebar_width - ozone->ui_dimensions.sidebar_padding_horizontal * 2,
-         ozone->ui_dimensions.sidebar_entry_height + 2, selection_old_y + 1 + ozone->animations.scroll_y_sidebar, 1-ozone->animations.cursor_alpha);
+      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 3, 
+         entry_width - 5, ozone->ui_dimensions.sidebar_entry_height + 2, selection_old_y + 1 + ozone->animations.scroll_y_sidebar, 1-ozone->animations.cursor_alpha);
 
    /* Menu tabs */
    y = ozone->ui_dimensions.header_height + 1 + ozone->ui_dimensions.sidebar_padding_vertical;
@@ -176,14 +180,15 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       unsigned     icon = ozone_system_tabs_icons[ozone->tabs[i]];
 
       /* Icon */
-      ozone_draw_icon(video_info, 40, 40, ozone->tab_textures[icon], ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 10, 
-         y + ozone->ui_dimensions.sidebar_entry_height / 2 - 20 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+      ozone_draw_icon(video_info, ozone->ui_dimensions.sidebar_entry_icon_size, ozone->ui_dimensions.sidebar_entry_icon_size, 
+         ozone->tab_textures[icon], ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + ozone->ui_dimensions.sidebar_entry_icon_width / 2 - ozone->ui_dimensions.sidebar_entry_icon_size / 2,
+         y + ozone->ui_dimensions.sidebar_entry_height / 2 - ozone->ui_dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
 
       /* Text */
-      ozone_draw_text(video_info, ozone, title, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 65, 
+      ozone_draw_text(video_info, ozone, title, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + ozone->ui_dimensions.sidebar_entry_icon_width, 
          y + ozone->ui_dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR  * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.sidebar, (selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), true);
 
       y += ozone->ui_dimensions.sidebar_entry_height + ozone->ui_dimensions.sidebar_entry_padding_vertical;
@@ -210,19 +215,21 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             goto console_iterate;
 
          /* Icon */
-         ozone_draw_icon(video_info, 40, 40, node->icon, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 10 - 3,
-            y + ozone->ui_dimensions.sidebar_entry_height / 2 - 20 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+         ozone_draw_icon(video_info, ozone->ui_dimensions.sidebar_entry_icon_size, ozone->ui_dimensions.sidebar_entry_icon_size,
+            node->icon, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + ozone->ui_dimensions.sidebar_entry_icon_width / 2 - ozone->ui_dimensions.sidebar_entry_icon_size / 2,
+            y + ozone->ui_dimensions.sidebar_entry_height / 2 - ozone->ui_dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+
 
          /* Text */
          ticker.idx        = ozone->frame_count / 20;
-         ticker.len        = 19;
+         ticker.len        = (entry_width - ozone->ui_dimensions.sidebar_entry_icon_size - 35) / ozone->entry_font_glyph_width;
          ticker.s          = console_title;
          ticker.selected   = selected;
          ticker.str        = node->console_name;
 
          menu_animation_ticker(&ticker);
 
-         ozone_draw_text(video_info, ozone, console_title, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + 65,
+         ozone_draw_text(video_info, ozone, console_title, ozone->sidebar_offset + ozone->ui_dimensions.sidebar_padding_horizontal + ozone->ui_dimensions.sidebar_entry_icon_width,
             y + ozone->ui_dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, 
             video_info->width, video_info->height, ozone->fonts.sidebar, (selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), true);
 

@@ -46,6 +46,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_Y_PADDING 20
 #define ENTRY_HEIGHT 50
 #define ENTRY_Y_PADDING 10
+#define SIDEBAR_ENTRY_ICON_SIZE 40
+#define SIDEBAR_ENTRY_ICON_WIDTH 70
 
 #define ENTRIES_START_Y (HEADER_HEIGHT + 1) + 40
 
@@ -173,6 +175,8 @@ struct ozone_handle
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
+      int sidebar_entry_icon_size;
+      int sidebar_entry_icon_width;
    } ui_dimensions;
 };
 
