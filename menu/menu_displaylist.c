@@ -3326,6 +3326,7 @@ static int menu_displaylist_parse_options_remappings(
    unsigned p, retro_id;
    settings_t        *settings = config_get_ptr();
    unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
 
    for (p = 0; p < max_users; p++)
    {
@@ -3424,9 +3425,9 @@ static int menu_displaylist_parse_options_remappings(
                strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
-            /* Add user index when display driver == rgui,
-             * but only if there is more than one user */
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            /* Add user index when display driver == rgui and sublabels
+             * are disabled, but only if there is more than one user */
+            if (is_rgui && (max_users > 1) && !settings->bools.menu_show_sublabels)
             {
                snprintf(desc_label, sizeof(desc_label),
                         "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
@@ -3463,9 +3464,9 @@ static int menu_displaylist_parse_options_remappings(
                strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
             }
 
-            /* Add user index when display driver == rgui,
-             * but only if there is more than one user */
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            /* Add user index when display driver == rgui and sublabels
+             * are disabled, but only if there is more than one user */
+            if (is_rgui && (max_users > 1) && !settings->bools.menu_show_sublabels)
             {
                snprintf(desc_label, sizeof(desc_label),
                         "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
@@ -5900,6 +5901,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CORE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,

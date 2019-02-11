@@ -142,6 +142,7 @@ typedef struct settings
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
+      bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
       bool menu_throttle;
       bool menu_mouse_enable;
