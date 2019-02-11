@@ -321,6 +321,7 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
+static bool menu_show_sublabels          = false;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;

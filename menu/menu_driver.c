@@ -2719,9 +2719,9 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   subsystem->desc,
                   star_char);
                
-               /* RGUI does not support sublabels, so have to add the
+               /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
-               if (is_rgui)
+               if (is_rgui && !settings->bools.menu_show_sublabels)
                {
                   char tmp[PATH_MAX_LENGTH];
                   
@@ -2765,9 +2765,9 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   subsystem->desc,
                   star_char);
                
-               /* RGUI does not support sublabels, so have to add the
+               /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
-               if (is_rgui)
+               if (is_rgui && !settings->bools.menu_show_sublabels)
                {
                   unsigned j = 0;
                   char rom_buff[PATH_MAX_LENGTH];
@@ -2811,9 +2811,9 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                "Load %s",
                subsystem->desc);
             
-            /* RGUI does not support sublabels, so have to add the
+            /* If using RGUI with sublabels disabled, add the
              * appropriate text to the menu entry itself... */
-            if (is_rgui)
+            if (is_rgui && !settings->bools.menu_show_sublabels)
             {
                /* This check is probably not required (it's not done
                 * in menu_cbs_sublabel.c action_bind_sublabel_subsystem_add(),
