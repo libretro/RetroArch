@@ -149,7 +149,7 @@ check_lib()
 # check_pkgconf:
 # If available uses $PKG_CONF_PATH to find a library.
 # $1 = HAVE_$1
-# $2 = package
+# $2 = package ['package' or 'package package1 package2', $1 = name]
 # $3 = version [checked only if non-empty]
 # $4 = critical error message [checked only if non-empty]
 check_pkgconf()
@@ -160,37 +160,41 @@ check_pkgconf()
 	ECHOBUF=''
 	[ "${3:-}" ] && ECHOBUF=" >= ${3##* }"
 
+	pkg="${2%% *}"
 	MSG='Checking presence of package'
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
 		eval "HAVE_$1=no"
 		eval "${1#HAVE_}_VERSION=0.0"
-		printf %s\\n "$MSG $2$ECHOBUF ... no"
+		printf %s\\n "$MSG $pkg$ECHOBUF ... no"
 		return 0
 	}
 
 	val="$1"
-	pkg="$2"
-	err="$4"
+	ver="${3:-0.0}"
+	err="${4:-}"
 	answer='no'
 	version='no'
 
-	printf %s "$MSG $pkg$ECHOBUF"
-
-	eval "set -- ${3:-0.0}"
-	for ver do
-		if $PKG_CONF_PATH --atleast-version="$ver" "$pkg"; then
-			answer='yes'
-			version="$("$PKG_CONF_PATH" --modversion "$pkg")"
-			eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" "$pkg" --cflags)\""
-			eval "${val}_LIBS=\"$("$PKG_CONF_PATH" "$pkg" --libs)\""
-			eval "${val#HAVE_}_VERSION=\"$ver\""
-			break
-		fi
+	eval "set -- ${2#* }"
+	for pkgnam do
+		[ "$answer" = 'yes' ] && break
+		printf %s "$MSG $pkgnam$ECHOBUF"
+		eval "set -- $ver"
+		for pkgver do
+			if $PKG_CONF_PATH --atleast-version="$pkgver" "$pkgnam"; then
+				answer='yes'
+				version="$("$PKG_CONF_PATH" --modversion "$pkgnam")"
+				eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" --cflags "$pkgnam")\""
+				eval "${val}_LIBS=\"$("$PKG_CONF_PATH" --libs "$pkgnam")\""
+				eval "${val#HAVE_}_VERSION=\"$pkgver\""
+				break
+			fi
+		done
+		printf %s\\n " ... $version"
 	done
 
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n " ... $version"
 
 	if [ "$answer" = 'no' ]; then
 		[ "$err" ] && die 1 "$err"
