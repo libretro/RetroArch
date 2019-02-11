@@ -46,6 +46,10 @@
 #include "../common/win32_common.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+
 static unsigned char *gl1_menu_frame = NULL;
 static unsigned gl1_menu_width       = 0;
 static unsigned gl1_menu_height      = 0;
@@ -249,6 +253,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    glDisable(GL_BLEND);
    glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
    glDisable(GL_SCISSOR_TEST);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -408,6 +413,7 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    GLenum type = GL_UNSIGNED_BYTE;
 
    glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
    glDisable(GL_SCISSOR_TEST);
    glEnable(GL_TEXTURE_2D);
@@ -562,10 +568,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       gl1_gfx_set_viewport(gl1, video_info, video_info->width, video_info->height, false, true);
    }
 
-#ifdef HAVE_MENU
-   if (gl1->menu_texture_enable)
-      menu_driver_frame(video_info);
-#endif
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (  gl1_video_width  != frame_width  ||
          gl1_video_height != frame_height ||
@@ -644,13 +651,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    gl1->screen_width           = mode.width;
    gl1->screen_height          = mode.height;
 
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
-
    if (draw)
    {
       if (frame_to_copy)
+      {
          draw_tex(gl1, pot_width, pot_height, width, height, gl1->tex, frame_to_copy);
+      }
    }
 
    if (gl1_menu_frame && video_info->menu_is_alive)
@@ -699,8 +705,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
          frame_to_copy = gl1_menu_video_buf;
 
-         glEnable(GL_BLEND);
-
          if (gl1->menu_texture_full_screen)
          {
             glViewport(0, 0, video_info->width, video_info->height);
@@ -709,10 +713,13 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          }
          else
             draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
-
-         glDisable(GL_BLEND);
       }
    }
+
+#ifdef HAVE_MENU
+   if (gl1->menu_texture_enable)
+      menu_driver_frame(video_info);
+#endif
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
@@ -1044,41 +1051,143 @@ static void gl1_set_video_mode(void *data, unsigned width, unsigned height,
    video_context_driver_set_video_mode(&mode);
 }
 
+static unsigned gl1_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_REPEAT:
+      case RARCH_WRAP_MIRRORED_REPEAT: /* mirrored not actually supported */
+         return GL_REPEAT;
+      default:
+         return GL_CLAMP;
+	 break;
+   }
+
+   return 0;
+}
+
+static void gl1_load_texture_data(
+      GLuint id,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size)
+{
+   GLint mag_filter, min_filter;
+   bool use_rgba    = video_driver_supports_rgba();
+   bool rgb32       = (base_size == (sizeof(uint32_t)));
+   GLenum wrap      = gl1_wrap_type_to_enum(wrap_type);
+
+   /* Assume no mipmapping support. */
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         filter_type = TEXTURE_FILTER_LINEAR;
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         filter_type = TEXTURE_FILTER_NEAREST;
+         break;
+      default:
+         break;
+   }
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         min_filter = GL_LINEAR_MIPMAP_NEAREST;
+         mag_filter = GL_LINEAR;
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         min_filter = GL_NEAREST_MIPMAP_NEAREST;
+         mag_filter = GL_NEAREST;
+         break;
+      case TEXTURE_FILTER_NEAREST:
+         min_filter = GL_NEAREST;
+         mag_filter = GL_NEAREST;
+         break;
+      case TEXTURE_FILTER_LINEAR:
+      default:
+         min_filter = GL_LINEAR;
+         mag_filter = GL_LINEAR;
+         break;
+   }
+
+   gl1_bind_texture(id, wrap, mag_filter, min_filter);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glTexImage2D(GL_TEXTURE_2D,
+         0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,
+         width, height, 0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_TEXTURE_TYPE32,
+         (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE, frame);
+}
+
+static void video_texture_load_gl1(
+      struct texture_image *ti,
+      enum texture_filter_type filter_type,
+      uintptr_t *id)
+{
+   /* Generate the OpenGL texture object */
+   glGenTextures(1, (GLuint*)id);
+   gl1_load_texture_data((GLuint)*id,
+         RARCH_WRAP_EDGE, filter_type,
+         4 /* TODO/FIXME - dehardcode */,
+         ti->width, ti->height, ti->pixels,
+         sizeof(uint32_t) /* TODO/FIXME - dehardcode */
+         );
+}
+
+#ifdef HAVE_THREADS
+static int video_texture_load_wrap_gl1_mipmap(void *data)
+{
+   uintptr_t id = 0;
+
+   if (!data)
+      return 0;
+   video_texture_load_gl1((struct texture_image*)data,
+         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   return (int)id;
+}
+
+static int video_texture_load_wrap_gl1(void *data)
+{
+   uintptr_t id = 0;
+
+   if (!data)
+      return 0;
+   video_texture_load_gl1((struct texture_image*)data,
+         TEXTURE_FILTER_LINEAR, &id);
+   return (int)id;
+}
+#endif
+
 static uintptr_t gl1_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   void *tmpdata               = NULL;
-   gl1_texture_t *texture      = NULL;
-   struct texture_image *image = (struct texture_image*)data;
-   int size                    = image->width *
-      image->height * sizeof(uint32_t);
+   uintptr_t id = 0;
 
-   if (!image || image->width > 2048 || image->height > 2048)
-      return 0;
-
-   texture                     = (gl1_texture_t*)calloc(1, sizeof(*texture));
-
-   if (!texture)
-      return 0;
-
-   texture->width              = image->width;
-   texture->height             = image->height;
-   texture->active_width       = image->width;
-   texture->active_height      = image->height;
-   texture->data               = calloc(1,
-         texture->width * texture->height * sizeof(uint32_t));
-   texture->type               = filter_type;
-
-   if (!texture->data)
+#ifdef HAVE_THREADS
+   if (threaded)
    {
-      free(texture);
-      return 0;
+      custom_command_method_t func = video_texture_load_wrap_gl1;
+
+      switch (filter_type)
+      {
+         case TEXTURE_FILTER_MIPMAP_LINEAR:
+         case TEXTURE_FILTER_MIPMAP_NEAREST:
+            func = video_texture_load_wrap_gl1_mipmap;
+            break;
+         default:
+            break;
+      }
+      return video_thread_texture_load(data, func);
    }
+#endif
 
-   memcpy(texture->data, image->pixels,
-         texture->width * texture->height * sizeof(uint32_t));
-
-   return (uintptr_t)texture;
+   video_texture_load_gl1((struct texture_image*)data, filter_type, &id);
+   return id;
 }
 
 static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1113,17 +1222,14 @@ static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl1->should_resize = true;
 }
 
-static void gl1_unload_texture(void *data, uintptr_t handle)
+static void gl1_unload_texture(void *data, uintptr_t id)
 {
-   struct gl1_texture *texture = (struct gl1_texture*)handle;
-
-   if (!texture)
+   GLuint glid;
+   if (!id)
       return;
 
-   if (texture->data)
-      free(texture->data);
-
-   free(texture);
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
 }
 
 static float gl1_get_refresh_rate(void *data)
@@ -1155,10 +1261,37 @@ static uint32_t gl1_get_flags(void *data)
    return flags;
 }
 
+static void gl1_set_mvp(void *data, void *shader_data, const void *mat_data)
+{
+   (void)data;
+   (void)shader_data;
+
+   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+
+   if (!mat)
+      return;
+
+   glLoadMatrixf(mat->data);
+}
+
+static void gl1_set_coords(void *handle_data, void *shader_data,
+      const struct video_coords *coords)
+{
+   gl1_t *gl1 = (gl1_t*)handle_data;
+
+   if (!gl1)
+      return;
+
+   gl1->coords.vertex = coords->vertex;
+   gl1->coords.color = coords->color;
+   gl1->coords.tex_coord = coords->tex_coord;
+   gl1->coords.lut_tex_coord = coords->lut_tex_coord;
+}
+
 static const video_poke_interface_t gl1_poke_interface = {
    gl1_get_flags,
-   NULL,                      /* set_coords */
-   NULL,                      /* set_mvp */
+   gl1_set_coords,
+   gl1_set_mvp,
    gl1_load_texture,
    gl1_unload_texture,
    gl1_set_video_mode,
@@ -1203,21 +1336,6 @@ static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
 bool gl1_has_menu_frame(void)
 {
    return (gl1_menu_frame != NULL);
-}
-
-static unsigned gl1_wrap_type_to_enum(enum gfx_wrap_type type)
-{
-   switch (type)
-   {
-      case RARCH_WRAP_REPEAT:
-      case RARCH_WRAP_MIRRORED_REPEAT: /* mirrored not actually supported */
-         return GL_REPEAT;
-      default:
-         return GL_CLAMP;
-	 break;
-   }
-
-   return 0;
 }
 
 video_driver_t video_gl1 = {

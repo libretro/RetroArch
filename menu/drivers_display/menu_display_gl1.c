@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -116,6 +117,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
    menu_display_gl1_viewport(draw, video_info);
 
    glEnable(GL_TEXTURE_2D);
+
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    coords.handle_data = gl1;
@@ -127,11 +129,10 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl1_get_default_mvp(video_info);
 
-   video_driver_set_mvp(&mvp);
-
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-   glLoadMatrixf(((math_matrix_4x4*)mvp.matrix)->data);
+
+   video_driver_set_mvp(&mvp);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
