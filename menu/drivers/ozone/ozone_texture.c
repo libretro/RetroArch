@@ -725,8 +725,7 @@ switch (id)
 
 void ozone_unload_theme_textures(ozone_handle_t *ozone)
 {
-   int i;
-   int j;
+   unsigned i, j;
 
    for (j = 0; j < ozone_themes_count; j++)
    {
@@ -738,8 +737,7 @@ void ozone_unload_theme_textures(ozone_handle_t *ozone)
 
 bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
-   int i;
-   int j;
+   unsigned i, j;
    char theme_path[255];
    bool result = true;
 

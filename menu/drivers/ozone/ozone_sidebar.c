@@ -166,7 +166,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    y = ENTRIES_START_Y - 10;
    menu_display_blend_begin(video_info);
 
-   for (i = 0; i < ozone->system_tab_end+1; i++)
+   for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
       enum msg_hash_enums value_idx;
       const char *title = NULL;

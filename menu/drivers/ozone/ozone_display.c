@@ -258,7 +258,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       video_frame_info_t *video_info,
       const char *label, const char *str)
 {
-   int i;
+   unsigned i;
    const char *text;
    char message[2048];
    unsigned text_color;
