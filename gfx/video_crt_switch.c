@@ -229,7 +229,7 @@ void crt_video_restore(void)
    first_run = true;
 }
 
-static int crt_compute_dynamic_width(int width)
+int crt_compute_dynamic_width(int width)
 {
    double p_clock = 18000000;
    int min_height = 261;
