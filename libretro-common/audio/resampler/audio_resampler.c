@@ -28,14 +28,6 @@
 
 #include <audio/audio_resampler.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
-#ifdef HAVE_THREADS
-static slock_t* s_resampler_lock = NULL;
-#endif
-
 static const retro_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
 #ifdef HAVE_CC_RESAMPLER
@@ -177,38 +169,4 @@ bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
    }
 
    return true;
-}
-
-void audio_resampler_lock_init(void)
-{
-#ifdef HAVE_THREADS
-   if (s_resampler_lock)
-      slock_free(s_resampler_lock);
-   s_resampler_lock = slock_new();
-#endif
-}
-
-void audio_resampler_lock_free(void)
-{
-#ifdef HAVE_THREADS
-   if (s_resampler_lock)
-      slock_free(s_resampler_lock);
-   s_resampler_lock = NULL;
-#endif
-}
-
-void audio_resampler_lock(void)
-{
-#ifdef HAVE_THREADS
-   if (s_resampler_lock)
-      slock_lock(s_resampler_lock);
-#endif
-}
-
-void audio_resampler_unlock(void)
-{
-#ifdef HAVE_THREADS
-   if (s_resampler_lock)
-      slock_unlock(s_resampler_lock);
-#endif
 }
