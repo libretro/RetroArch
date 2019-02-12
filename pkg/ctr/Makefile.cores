@@ -298,6 +298,6 @@ else ifeq ($(LIBRETRO), theodore)
 else ifeq ($(LIBRETRO), mu)
 	APP_TITLE            = Mu Palm Emulator
 	APP_PRODUCT_CODE     = RARCH-MU
-	APP_UNIQUE_ID        = 0xBAC30
+	APP_UNIQUE_ID        = 0xBAC2F
 
 endif
