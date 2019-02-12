@@ -119,7 +119,7 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
    if (height == 4)
    {
       /* detect menu only */
-      if (width < 1920)
+      if (width < 700)
          width = 320;
 
       height = 240;
