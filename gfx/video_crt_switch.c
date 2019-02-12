@@ -240,9 +240,11 @@ int crt_compute_dynamic_width(int width)
    for (int i =1; i < 10; i++)
    {
       if (((width*0.5*i) * min_height * ra_core_hz) > p_clock)
+      {
          width = width*i;
          return width;
          break;        
+      }
    }
   return 0;
 }
