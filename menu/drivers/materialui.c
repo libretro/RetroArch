@@ -171,6 +171,8 @@ typedef struct materialui_handle
 
    char *box_message;
 
+   char menu_title[255];
+
    struct
    {
       menu_texture_item bg;
@@ -1063,7 +1065,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
    char msg[255];
-   char title[255];
    char title_buf[255];
    char title_msg[255];
 
@@ -1168,7 +1169,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    mui->frame_count++;
 
-   msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
+   msg[0] = title_buf[0] = title_msg[0] = '\0';
 
    switch (video_info->materialui_color_theme)
    {
@@ -1384,8 +1385,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   menu_entries_get_title(title, sizeof(title));
-
    selection = menu_navigation_get_selection();
 
    if (background_rendered || libretro_running)
@@ -1522,7 +1521,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
    ticker.idx      = mui->frame_count / 100;
-   ticker.str      = title;
+   ticker.str      = mui->menu_title;
    ticker.selected = true;
 
    menu_animation_ticker(&ticker);
@@ -1685,6 +1684,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->cursor_size  = scale_factor / 3;
    mui->need_compute = false;
 
+   mui->menu_title[0] = '\0';
+
    return menu;
 error:
    if (menu)
@@ -1845,6 +1846,7 @@ static void materialui_populate_entries(
    if (!mui)
       return;
 
+   menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
    mui->need_compute = true;
    mui->scroll_y = materialui_get_scroll(mui);
 }
