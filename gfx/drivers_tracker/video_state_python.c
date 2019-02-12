@@ -314,7 +314,7 @@ py_state_t *py_state_new(const char *script,
        * isn't standardized across environments.
        * PyRun_SimpleFile() breaks on Windows because it's
        * compiled with MSVC. */
-      ssize_t len;
+      int64_t len;
       char *script_ = NULL;
       bool ret      = filestream_read_file
          (script, (void**)&script_, &len);
