@@ -41,6 +41,7 @@ static unsigned ra_set_core_hz    = 0;
 static unsigned orig_width        = 0;
 static unsigned orig_height       = 0;
 static int crt_center_adjust      = 0;
+static int crt_tmp_center_adjust  = 0;
 
 static bool first_run             = true;
 
@@ -97,7 +98,7 @@ void crt_aspect_ratio_switch(unsigned width, unsigned height)
 static void switch_res_crt(unsigned width, unsigned height)
 {
    video_display_server_set_resolution(width, height,
-         ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index);
+         ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index, crt_center_adjust);
 #if defined(HAVE_VIDEOCORE)
    crt_rpi_switch(width, height, ra_core_hz);
    video_monitor_set_refresh_rate(ra_core_hz);
@@ -119,7 +120,7 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
    if (height == 4)
    {
       /* detect menu only */
-      if (width < 1920)
+      if (width < 700)
          width = 320;
 
       height = 240;
@@ -181,13 +182,19 @@ void crt_switch_res_core(unsigned width, unsigned height,
 {
    /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
+   if (width == 4 )
+   {
+      width = 320;
+      height = 240;
+   }
 
-   ra_core_width  = width;
    ra_core_height = height;
    ra_core_hz     = hz;
 
    if (dynamic == true)
       ra_core_width = crt_compute_dynamic_width(width);
+   else 
+      ra_core_width  = width;
 
    crt_center_adjust = crt_switch_center_adjust;
    crt_index  = monitor_index;
@@ -206,12 +213,13 @@ void crt_switch_res_core(unsigned width, unsigned height,
    /* Detect resolution change and switch */
    if (
       (ra_tmp_height != ra_core_height) ||
-      (ra_core_width != ra_tmp_width)
+      (ra_core_width != ra_tmp_width) || (crt_center_adjust != crt_tmp_center_adjust)
       )
-      crt_screen_setup_aspect(width, height);
+      crt_screen_setup_aspect(ra_core_width, ra_core_height);
 
    ra_tmp_height  = ra_core_height;
    ra_tmp_width   = ra_core_width;
+    crt_tmp_center_adjust = crt_center_adjust;
 
    /* Check if aspect is correct, if not change */
    if (video_driver_get_aspect_ratio() != fly_aspect)
@@ -231,20 +239,22 @@ void crt_video_restore(void)
 
 int crt_compute_dynamic_width(int width)
 {
-   double p_clock    = 18000000;
+   double p_clock    = 15000000;
    int min_height    = 261;
    int dynamic_width = 0;
    #if defined(HAVE_VIDEOCORE)
       double p_clock = 32000000;
    #endif
 
-   for (int i =1; i < 10; i++)
+   for (int i =0; i < 10; i++)
    {
-      dynamic_width = (width*0.5)*i;
+      dynamic_width = (width*1.5)*i;
       if ((dynamic_width * min_height * ra_core_hz) > p_clock)
-         return dynamic_width;   
+         break;
+      
+     
    }
-  return width;
+  return dynamic_width;
 }
 
 #if defined(HAVE_VIDEOCORE)
@@ -296,7 +306,7 @@ static void crt_rpi_switch(int width, int height, float hz)
       roundw = 1.34;
    hfp = width * 0.065;
 
-   hsp = width * 0.1433-hfp;
+   hsp = width * 0.1433-hfp+(crt_center_adjust*4);
 
    hbp = width * 0.3-hsp-hfp;
 
