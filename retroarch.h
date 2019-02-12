@@ -183,7 +183,10 @@ enum rarch_ctl_state
 
    /* HTTP server */
    RARCH_CTL_HTTPSERVER_INIT,
-   RARCH_CTL_HTTPSERVER_DESTROY
+   RARCH_CTL_HTTPSERVER_DESTROY,
+
+   RARCH_CTL_CONTENT_RUNTIME_LOG_INIT,
+   RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
 };
 
 enum rarch_capabilities
@@ -416,6 +419,8 @@ void runloop_msg_queue_unlock(void);
 #endif
 
 void rarch_force_video_driver_fallback(const char *driver);
+
+void rarch_core_runtime_tick(void);
 
 RETRO_END_DECLS
 
