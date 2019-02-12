@@ -177,7 +177,7 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
 
 void crt_switch_res_core(unsigned width, unsigned height,
       float hz, unsigned crt_mode,
-      int crt_switch_center_adjust, int monitor_index)
+      int crt_switch_center_adjust, int monitor_index, bool dynamic)
 {
    /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
@@ -185,6 +185,10 @@ void crt_switch_res_core(unsigned width, unsigned height,
    ra_core_width  = width;
    ra_core_height = height;
    ra_core_hz     = hz;
+
+   if (dynamic == true)
+      ra_core_width = crt_compute_dynamic_width(width);
+
    crt_center_adjust = crt_switch_center_adjust;
    crt_index  = monitor_index;
 
@@ -209,7 +213,7 @@ void crt_switch_res_core(unsigned width, unsigned height,
    ra_tmp_height  = ra_core_height;
    ra_tmp_width   = ra_core_width;
 
-   /* Check if aspect is correct, if notchange */
+   /* Check if aspect is correct, if not change */
    if (video_driver_get_aspect_ratio() != fly_aspect)
    {
       video_driver_set_aspect_ratio_value((float)fly_aspect);
@@ -223,6 +227,23 @@ void crt_video_restore(void)
       return;
 
    first_run = true;
+}
+
+static int crt_compute_dynamic_width(int width)
+{
+   double p_clock = 18000000;
+   int min_heught = 261;
+   #if defined(HAVE_VIDEOCORE)
+      double p_clock = 32000000;
+   #endif
+
+   for (int i =1; i < 10; i++)
+   {
+      if (((width*0.5*i) * min_height * ra_core_hz) > p_clock)
+         width = width*i;
+      break;         
+   }
+
 }
 
 #if defined(HAVE_VIDEOCORE)
