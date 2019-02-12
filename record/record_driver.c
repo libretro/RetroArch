@@ -526,14 +526,10 @@ void recording_driver_set_data_ptr(void *data)
    recording_data = data;
 }
 
-unsigned *recording_driver_get_width(void)
+void recording_driver_get_size(unsigned *width, unsigned *height)
 {
-   return &recording_width;
-}
-
-unsigned *recording_driver_get_height(void)
-{
-   return &recording_height;
+   *width  = recording_width;
+   *height = recording_height;
 }
 
 void recording_driver_update_streaming_url(void)

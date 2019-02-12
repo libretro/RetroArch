@@ -202,11 +202,9 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
-unsigned *recording_driver_get_width(void);
-
-unsigned *recording_driver_get_height(void);
-
 void recording_driver_free_state(void);
+
+void recording_driver_get_size(unsigned *width, unsigned *height);
 
 bool recording_is_enabled(void);
 
