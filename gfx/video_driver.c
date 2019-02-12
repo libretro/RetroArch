@@ -1365,31 +1365,6 @@ void video_driver_set_aspect_ratio_value(float value)
    video_driver_aspect_ratio = value;
 }
 
-static bool video_driver_frame_filter(
-      const void *data,
-      video_frame_info_t *video_info,
-      unsigned width, unsigned height,
-      size_t pitch,
-      unsigned *output_width, unsigned *output_height,
-      unsigned *output_pitch)
-{
-   rarch_softfilter_get_output_size(video_driver_state_filter,
-         output_width, output_height, width, height);
-
-   *output_pitch = (*output_width) * video_driver_state_out_bpp;
-
-   rarch_softfilter_process(video_driver_state_filter,
-         video_driver_state_buffer, *output_pitch,
-         data, width, height, pitch);
-
-   if (video_info->post_filter_record && recording_data)
-      recording_dump_frame(video_driver_state_buffer,
-            *output_width, *output_height, *output_pitch,
-            video_info->runloop_is_idle);
-
-   return true;
-}
-
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 {
    return video_driver_state_filter;
@@ -2554,10 +2529,22 @@ void video_driver_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height,
             pitch, video_info.runloop_is_idle);
 
-   if (data && video_driver_state_filter &&
-         video_driver_frame_filter(data, &video_info, width, height, pitch,
-            &output_width, &output_height, &output_pitch))
+   if (data && video_driver_state_filter)
    {
+      rarch_softfilter_get_output_size(video_driver_state_filter,
+            &output_width, &output_height, width, height);
+
+      output_pitch = (output_width) * video_driver_state_out_bpp;
+
+      rarch_softfilter_process(video_driver_state_filter,
+            video_driver_state_buffer, output_pitch,
+            data, width, height, pitch);
+
+      if (video_info.post_filter_record && recording_data)
+         recording_dump_frame(video_driver_state_buffer,
+               output_width, output_height, output_pitch,
+               video_info.runloop_is_idle);
+
       data   = video_driver_state_buffer;
       width  = output_width;
       height = output_height;
