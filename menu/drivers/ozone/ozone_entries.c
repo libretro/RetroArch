@@ -289,6 +289,10 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    size_t old_selection_y  = 0;
    int entry_padding       = ozone_get_entries_padding(ozone, old_list);
 
+   int16_t mouse_x   = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+
+   int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    entries_end    = file_list_get_size(selection_buf);
@@ -322,7 +326,11 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    {
       bool entry_selected     = selection == i;
       bool entry_old_selected = selection_old == i;
+
+      int border_start_x, border_start_y;
+
       ozone_node_t *node      = NULL;
+
       if (entry_selected)
          selection_y = y;
 
@@ -339,14 +347,27 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       else if (y + scroll_y - node->height - 20 > bottom_boundary)
          goto border_iterate;
 
+      border_start_x = ozone->dimensions.sidebar_width + x_offset + entry_padding;
+      border_start_y = y + scroll_y;
+
       menu_display_set_alpha(ozone->theme_dynamic.entries_border, alpha);
       menu_display_set_alpha(ozone->theme_dynamic.entries_checkmark, alpha);
 
       /* Borders */
-      menu_display_draw_quad(video_info, ozone->dimensions.sidebar_width + x_offset + entry_padding,
-         y + scroll_y, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
-      menu_display_draw_quad(video_info, ozone->dimensions.sidebar_width + x_offset + entry_padding,
-         y + button_height + scroll_y, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
+      menu_display_draw_quad(video_info, border_start_x,
+         border_start_y, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
+      menu_display_draw_quad(video_info, border_start_x,
+         border_start_y + button_height, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
+
+      /* Mouse click */
+#if OZONE_ENABLE_MOUSE
+      if (mouse_x >= border_start_x && mouse_x <= border_start_x + entry_width
+         && mouse_y >= border_start_y && mouse_y <= border_start_y + button_height)
+      {
+         selection_y = y;
+         menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
+      }
+#endif
 
 border_iterate:
       y += node->height;

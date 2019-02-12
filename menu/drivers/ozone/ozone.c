@@ -1226,6 +1226,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
 
    /* Cursor */
+#if OZONE_ENABLE_MOUSE
    if (ozone->show_cursor)
    {
       menu_display_set_alpha(ozone_pure_white, 1.0f);
@@ -1240,6 +1241,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_info->height
       );
    }
+#endif
 
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
@@ -1769,6 +1771,25 @@ static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_i
 }
 #endif
 
+#if OZONE_ENABLE_MOUSE
+static int ozone_pointer_tap(void *userdata,
+      unsigned x, unsigned y, unsigned ptr,
+      menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+
+   size_t selection         = menu_navigation_get_selection();
+   if (ptr == selection && cbs && cbs->action_select)
+      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+
+   menu_navigation_set_selection(ptr);
+   menu_driver_navigation_set(false);
+
+   return 0;
+}
+#endif
+
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
@@ -1803,7 +1824,11 @@ menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* load_image */
    "ozone",
    ozone_environ_cb,
-   NULL,                         /* pointer_tap */
+#if OZONE_ENABLE_MOUSE
+   ozone_pointer_tap,
+#else
+   NULL,
+#endif
    NULL,                         /* update_thumbnail_path */
    NULL,                         /* update_thumbnail_image */
    NULL,                         /* set_thumbnail_system */
