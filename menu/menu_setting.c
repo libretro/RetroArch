@@ -1198,6 +1198,11 @@ static void setting_get_string_representation_crt_switch_resolution_super(
       strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
    else
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      
+   if (*setting->value.target.unsigned_integer == 1)
+      strlcpy(s, msg_hash_to_str(MSG_DYNAMIC), len);
+   else
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
