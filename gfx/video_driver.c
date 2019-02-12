@@ -2738,7 +2738,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
-   video_info->crt_switch_custom_refresh_enable =settings->bools.crt_switch_custom_refresh_enable;
    video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
