@@ -232,7 +232,7 @@ void crt_video_restore(void)
 static int crt_compute_dynamic_width(int width)
 {
    double p_clock = 18000000;
-   int min_heught = 261;
+   int min_height = 261;
    #if defined(HAVE_VIDEOCORE)
       double p_clock = 32000000;
    #endif
@@ -241,9 +241,10 @@ static int crt_compute_dynamic_width(int width)
    {
       if (((width*0.5*i) * min_height * ra_core_hz) > p_clock)
          width = width*i;
-      break;         
+         return width;
+         break;        
    }
-
+  return 0;
 }
 
 #if defined(HAVE_VIDEOCORE)
