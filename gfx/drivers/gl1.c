@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 #include <gfx/video_frame.h>
+#include <gfx/scaler/pixconv.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -620,22 +621,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          }
       }
       else if (bits == 16)
-      {
-         /* change bit depth from 565 to 8888 */
-         for (y = 0; y < height; y++)
-         {
-            for (x = 0; x < width; x++)
-            {
-               unsigned pixel = ((unsigned short*)frame)[(pitch / (bits / 8)) * y + x];
-               unsigned *new_pixel = (unsigned*)gl1_video_buf + (pot_width * y + x);
-               unsigned r = (255.0f / 31.0f) * ((pixel & 0xF800) >> 11);
-               unsigned g = (255.0f / 63.0f) * ((pixel & 0x7E0) >> 5);
-               unsigned b = (255.0f / 31.0f) * ((pixel & 0x1F) >> 0);
-               /* copy pixels into top-left portion of larger (power-of-two) buffer */
-               *new_pixel = 0xFF000000 | (r << 16) | (g << 8) | b;
-            }
-         }
-      }
+         conv_rgb565_argb8888(gl1_video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
 
       frame_to_copy = gl1_video_buf;
    }
@@ -687,21 +673,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
       if (bits == 16 && gl1_menu_video_buf)
       {
-         /* change bit depth from 4444 to 8888 */
-         for (y = 0; y < height; y++)
-         {
-            for (x = 0; x < width; x++)
-            {
-               unsigned pixel = ((unsigned short*)gl1_menu_frame)[(pitch / (bits / 8)) * y + x];
-               unsigned *new_pixel = (unsigned*)gl1_menu_video_buf + (pot_width * y + x);
-               unsigned r = (255.0f / 15.0f) * ((pixel & 0xF000) >> 12);
-               unsigned g = (255.0f / 15.0f) * ((pixel & 0xF00) >> 8);
-               unsigned b = (255.0f / 15.0f) * ((pixel & 0xF0) >> 4);
-               unsigned a = (255.0f / 15.0f) * ((pixel & 0xF) >> 0);
-               /* copy pixels into top-left portion of larger (power-of-two) buffer */
-               *new_pixel = (a << 24) | (r << 16) | (g << 8) | b;
-            }
-         }
+         conv_rgba4444_argb8888(gl1_menu_video_buf, gl1_menu_frame, width, height, pot_width * sizeof(unsigned), pitch);
 
          frame_to_copy = gl1_menu_video_buf;
 
