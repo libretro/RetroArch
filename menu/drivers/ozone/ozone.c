@@ -327,6 +327,7 @@ static void ozone_free(void *data)
    }
 }
 
+/* TODO: Scale text */
 static void ozone_context_reset(void *data, bool is_threaded)
 {
    /* Fonts init */
@@ -334,7 +335,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
    unsigned size;
    char font_path[PATH_MAX_LENGTH];
 
-   float scale = 1;
+   float scale = 1; /*TODO: compute that from screen resolution and dpi */
 
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
@@ -476,15 +477,15 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       ozone_restart_cursor_animation(ozone);
 
-      /* UI dimensions */
+      /* Dimensions */
       ozone->dimensions.header_height = HEADER_HEIGHT * scale;
       ozone->dimensions.footer_height = FOOTER_HEIGHT * scale;
 
       ozone->dimensions.entry_padding_horizontal_half = ENTRY_PADDING_HORIZONTAL_HALF * scale;
       ozone->dimensions.entry_padding_horizontal_full = ENTRY_PADDING_HORIZONTAL_FULL * scale;
-      ozone->dimensions.entry_padding_vertical = ENTRY_PADDING_VERTRICAL * scale;
+      ozone->dimensions.entry_padding_vertical = ENTRY_PADDING_VERTICAL * scale;
       ozone->dimensions.entry_height = ENTRY_HEIGHT * scale;
-      ozone->dimensions.entry_padding = ENTRY_PADDING * scale;
+      ozone->dimensions.entry_spacing = ENTRY_SPACING * scale;
       ozone->dimensions.entry_icon_size = ENTRY_ICON_SIZE * scale;
       ozone->dimensions.entry_icon_padding = ENTRY_ICON_PADDING * scale;
 
@@ -807,157 +808,6 @@ static void ozone_list_free(file_list_t *list, size_t a, size_t b)
    ozone_list_clear(list);
 }
 
-/* Compute new scroll position
- * If the center of the currently selected entry is not in the middle
- * And if we can scroll so that it's in the middle
- * Then scroll
- */
-static void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node)
-{
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_animation_ctx_tag tag = (uintptr_t) selection_buf;
-   menu_animation_ctx_entry_t entry;
-   float new_scroll = 0, entries_middle;
-   float bottom_boundary, current_selection_middle_onscreen;
-   unsigned video_info_height;
-
-   video_driver_get_size(NULL, &video_info_height);
-
-   current_selection_middle_onscreen    = ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical + ozone->animations.scroll_y + node->position_y + node->height / 2;
-   bottom_boundary                      = video_info_height - ozone->dimensions.header_height - 1 - ozone->dimensions.footer_height;
-   entries_middle                       = video_info_height/2;
-
-   new_scroll = ozone->animations.scroll_y - (current_selection_middle_onscreen - entries_middle);
-
-   if (new_scroll + ozone->entries_height < bottom_boundary)
-      new_scroll = bottom_boundary - ozone->entries_height - ozone->dimensions.entry_padding_vertical * 2;
-
-   if (new_scroll > 0)
-      new_scroll = 0;
-
-   if (allow_animation)
-   {
-      /* Cursor animation */
-      ozone->animations.cursor_alpha = 0.0f;
-
-      entry.cb = NULL;
-      entry.duration = ANIMATION_CURSOR_DURATION;
-      entry.easing_enum = EASING_OUT_QUAD;
-      entry.subject = &ozone->animations.cursor_alpha;
-      entry.tag = tag;
-      entry.target_value = 1.0f;
-      entry.userdata = NULL;
-
-      menu_animation_push(&entry);
-
-      /* Scroll animation */
-      entry.cb = NULL;
-      entry.duration = ANIMATION_CURSOR_DURATION;
-      entry.easing_enum = EASING_OUT_QUAD;
-      entry.subject = &ozone->animations.scroll_y;
-      entry.tag = tag;
-      entry.target_value = new_scroll;
-      entry.userdata = NULL;
-
-      menu_animation_push(&entry);
-   }
-   else
-   {
-      ozone->selection_old = ozone->selection;
-      ozone->animations.scroll_y = new_scroll;
-   }
-}
-
-static unsigned ozone_count_lines(const char *str)
-{
-   unsigned c     = 0;
-   unsigned lines = 1;
-
-   for (c = 0; str[c]; c++)
-      lines += (str[c] == '\n');
-   return lines;
-}
-
-static void ozone_compute_entries_position(ozone_handle_t *ozone)
-{
-   /* Compute entries height and adjust scrolling if needed */
-   unsigned video_info_height;
-   unsigned video_info_width;
-   unsigned lines;
-   size_t i, entries_end;
-   file_list_t *selection_buf = NULL;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
-
-   entries_end   = menu_entries_get_size();
-   selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   video_driver_get_size(&video_info_width, &video_info_height);
-
-   ozone->entries_height = 0;
-
-   for (i = 0; i < entries_end; i++)
-   {
-      /* Entry */
-      menu_entry_t entry;
-      ozone_node_t *node     = NULL;
-
-      menu_entry_init(&entry);
-      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-
-      /* Empty playlist detection:
-         only one item which icon is
-         OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
-      if (ozone->is_playlist && entries_end == 1)
-      {
-         menu_texture_item tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
-         ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
-      }
-      else
-      {
-         ozone->empty_playlist = false;
-      }
-
-      /* Cache node */
-      node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, i);
-
-      if (!node)
-         continue;
-
-      node->height = ozone->dimensions.entry_height + ozone->dimensions.entry_padding + (entry.sublabel ? 40 : 0);
-      node->wrap   = false;
-
-      if (entry.sublabel)
-      {
-         char *sublabel_str = menu_entry_get_sublabel(&entry);
-
-         int sublable_max_width = video_info_width - ozone->dimensions.sidebar_width - 
-            ozone->dimensions.entry_padding_horizontal_half * 2 - ozone->dimensions.entry_icon_padding * 2;
-         word_wrap(sublabel_str, sublabel_str, sublable_max_width / ozone->sublabel_font_glyph_width, false);
-
-         lines = ozone_count_lines(sublabel_str);
-
-         if (lines > 1)
-         {
-            node->height += lines * 15;
-            node->wrap = true;
-         }
-
-         free(sublabel_str);
-      }
-
-      node->position_y = ozone->entries_height;
-
-      ozone->entries_height += node->height;
-
-      menu_entry_free(&entry);
-   }
-
-   /* Update scrolling */
-   ozone->selection = menu_navigation_get_selection();
-   ozone_update_scroll(ozone, false, (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, ozone->selection));
-}
-
 static void ozone_render(void *data, bool is_idle)
 {
    size_t i;
@@ -974,7 +824,7 @@ static void ozone_render(void *data, bool is_idle)
 
    ozone->selection = menu_navigation_get_selection();
 
-   /* TODO Handle pointer & mouse */
+   /* TODO: Handle pointer & mouse */
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -1461,7 +1311,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    {
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
-      /* TODO Update thumbnails */
+      /* TODO: Update thumbnails */
       ozone_selection_changed(ozone, false);
       return;
    }
@@ -1594,7 +1444,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
    return generic_menu_iterate(menu, userdata, new_action);
 }
 
-/* TODO Fancy toggle animation */
+/* TODO: Fancy toggle animation */
 
 static void ozone_toggle(void *userdata, bool menu_on)
 {

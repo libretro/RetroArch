@@ -249,7 +249,7 @@ void ozone_draw_icon(
 
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 {
-   /* TODO Replace this backdrop by a blur shader on the whole screen if available */
+   /* TODO: Replace this backdrop by a blur shader on the whole screen if available */
    ozone_color_alpha(ozone_backdrop, alpha);
    menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
 }
@@ -293,7 +293,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    menu_display_draw_quad(video_info, video_info->width - margin, margin, 1, bottom_end - margin*2, video_info->width, video_info->height, ozone->theme->entries_border);
 
    /* Backdrop */
-   /* TODO Remove the backdrop if blur shader is available */
+   /* TODO: Remove the backdrop if blur shader is available */
    menu_display_draw_quad(video_info, margin + 1, margin + 1, video_info->width - margin*2 - 2, bottom_end - margin*2 - 2, video_info->width, video_info->height, ozone_osk_backdrop);
 
    /* Placeholder & text*/

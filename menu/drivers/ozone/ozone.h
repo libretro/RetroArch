@@ -27,6 +27,10 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../menu_driver.h"
 #include "../../../retroarch.h"
 
+#define ANIMATION_PUSH_ENTRY_DURATION 10
+#define ANIMATION_CURSOR_DURATION 8
+#define ANIMATION_CURSOR_PULSE 30
+
 #define FONT_SIZE_FOOTER 18
 #define FONT_SIZE_TITLE 36
 #define FONT_SIZE_TIME 22
@@ -34,18 +38,14 @@ typedef struct ozone_handle ozone_handle_t;
 #define FONT_SIZE_ENTRIES_SUBLABEL 18
 #define FONT_SIZE_SIDEBAR 24
 
-#define ANIMATION_PUSH_ENTRY_DURATION 10
-#define ANIMATION_CURSOR_DURATION 8
-#define ANIMATION_CURSOR_PULSE 30
-
 #define HEADER_HEIGHT 87
 #define FOOTER_HEIGHT 78
 
 #define ENTRY_PADDING_HORIZONTAL_HALF 60
-#define ENTRY_PADDING_HORIZONTAL_FULL 100
-#define ENTRY_PADDING_VERTRICAL 20
+#define ENTRY_PADDING_HORIZONTAL_FULL 150
+#define ENTRY_PADDING_VERTICAL 20
 #define ENTRY_HEIGHT 50
-#define ENTRY_PADDING 0
+#define ENTRY_SPACING 8
 #define ENTRY_ICON_SIZE 46
 #define ENTRY_ICON_PADDING  15
 
@@ -177,10 +177,10 @@ struct ozone_handle
       int footer_height;
 
       int entry_padding_horizontal_half;
-      int entry_padding_horizontal_full; /* todo when sidebar is not visible */
+      int entry_padding_horizontal_full; /* TODO: when sidebar is not visible */
       int entry_padding_vertical;
       int entry_height;
-      int entry_padding;
+      int entry_spacing;
       int entry_icon_size;
       int entry_icon_padding;
 
@@ -246,5 +246,9 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type);
 void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
 bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
+
+void ozone_compute_entries_position(ozone_handle_t *ozone);
+
+void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
 #endif
