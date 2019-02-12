@@ -427,6 +427,7 @@ typedef struct
    uint32_t thumbnail_queue_size;
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char menu_title[255]; /* Must be a fixed length array... */
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -1616,20 +1617,17 @@ static void rgui_render(void *data, bool is_idle)
    else
    {
       /* No thumbnail - render usual text */
-      char title[255];
       char title_buf[255];
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
       bool show_core_name = settings->bools.menu_core_enable;
 
       /* Print title */
-      title[0] = title_buf[0] = '\0';
-
-      menu_entries_get_title(title, sizeof(title));
+      title_buf[0] = '\0';
 
       ticker.s        = title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.str      = title;
+      ticker.str      = rgui->menu_title;
       ticker.selected = true;
 
       menu_animation_ticker(&ticker);
@@ -1843,6 +1841,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata              = rgui;
+
+   rgui->menu_title[0] = '\0';
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0] = '\0';
@@ -2081,7 +2081,6 @@ static void rgui_update_thumbnail_content(void *userdata)
 {
    rgui_t *rgui = (rgui_t*)userdata;
    playlist_t *playlist = NULL;
-   char title[255];
    size_t selection = menu_navigation_get_selection();
 
    if (!rgui)
@@ -2090,11 +2089,9 @@ static void rgui_update_thumbnail_content(void *userdata)
    /* Check whether current selection is a playlist entry
     * (i.e. whether we should be looking for a thumbnail image) */
    rgui->is_playlist_entry = false;
-   title[0] = '\0';
-   menu_entries_get_title(title, sizeof(title));
    if (!string_is_empty(rgui->thumbnail_playlist))
    {
-      if (string_is_equal(path_basename(title), rgui->thumbnail_playlist))
+      if (string_is_equal(path_basename(rgui->menu_title), rgui->thumbnail_playlist))
       {
          /* Get label of currently selected playlist entry
           * > This is pretty nasty, but I can't see any other way of doing
@@ -2212,6 +2209,12 @@ static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
+   rgui_t *rgui = (rgui_t*)data;
+   
+   if (!rgui)
+      return;
+   
+   menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
    rgui_navigation_set(data, true);
 }
 

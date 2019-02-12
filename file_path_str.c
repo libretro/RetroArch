@@ -200,6 +200,9 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_CONTENT_HISTORY:
          str = "content_history.lpl";
          break;
+      case FILE_PATH_CONTENT_RUNTIME:
+         str = "content_runtime.lpl";
+         break;
       case FILE_PATH_CONTENT_FAVORITES:
          str = "content_favorites.lpl";
          break;

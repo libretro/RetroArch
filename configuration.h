@@ -307,6 +307,7 @@ typedef struct settings
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
+      bool content_runtime_log;
    } bools;
 
    struct
@@ -540,6 +541,7 @@ typedef struct settings
       char path_content_music_history[PATH_MAX_LENGTH];
       char path_content_image_history[PATH_MAX_LENGTH];
       char path_content_video_history[PATH_MAX_LENGTH];
+      char path_content_runtime[PATH_MAX_LENGTH];
       char path_libretro_info[PATH_MAX_LENGTH];
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];

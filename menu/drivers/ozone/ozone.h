@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2019      - Patrick Scheurenbrand
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -37,7 +38,24 @@ typedef struct ozone_handle ozone_handle_t;
 #define ANIMATION_CURSOR_DURATION 8
 #define ANIMATION_CURSOR_PULSE 30
 
-#define ENTRIES_START_Y 127
+#define HEADER_HEIGHT 87
+#define FOOTER_HEIGHT 78
+
+#define ENTRY_PADDING_HORIZONTAL_HALF 60
+#define ENTRY_PADDING_HORIZONTAL_FULL 100
+#define ENTRY_PADDING_VERTRICAL 20
+#define ENTRY_HEIGHT 50
+#define ENTRY_PADDING 0
+#define ENTRY_ICON_SIZE 46
+#define ENTRY_ICON_PADDING  15
+
+#define SIDEBAR_WIDTH 408
+#define SIDEBAR_X_PADDING 40
+#define SIDEBAR_Y_PADDING 20
+#define SIDEBAR_ENTRY_HEIGHT 50
+#define SIDEBAR_ENTRY_Y_PADDING 10
+#define SIDEBAR_ENTRY_ICON_SIZE 40
+#define SIDEBAR_ENTRY_ICON_PADDING 15
 
 #define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
 #define INTERVAL_OSK_CURSOR (0.5f * 1000000)
@@ -113,7 +131,8 @@ struct ozone_handle
    unsigned title_font_glyph_width;
    unsigned entry_font_glyph_width;
    unsigned sublabel_font_glyph_width;
-
+   unsigned sidebar_font_glyph_width;
+   
    ozone_theme_t *theme;
 
    struct {
@@ -152,6 +171,27 @@ struct ozone_handle
    unsigned old_list_offset_y;
 
    file_list_t *horizontal_list; /* console tabs */
+
+   struct {
+      int header_height;
+      int footer_height;
+
+      int entry_padding_horizontal_half;
+      int entry_padding_horizontal_full; /* todo when sidebar is not visible */
+      int entry_padding_vertical;
+      int entry_height;
+      int entry_padding;
+      int entry_icon_size;
+      int entry_icon_padding;
+
+      int sidebar_width;
+      int sidebar_padding_horizontal;
+      int sidebar_padding_vertical;
+      int sidebar_entry_padding_vertical;
+      int sidebar_entry_height;
+      int sidebar_entry_icon_size;
+      int sidebar_entry_icon_padding;
+   } dimensions;
 };
 
 /* If you change this struct, also

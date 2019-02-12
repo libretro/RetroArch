@@ -4833,9 +4833,25 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_autosave_interval;
 #endif
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.content_runtime_log,
+                  MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
+                  MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+                  content_runtime_log,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
+
          break;
       case SETTINGS_LIST_REWIND:
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS), parent_group);

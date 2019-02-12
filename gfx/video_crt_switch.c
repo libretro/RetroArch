@@ -251,8 +251,7 @@ int crt_compute_dynamic_width(int width)
       dynamic_width = (width*1.5)*i;
       if ((dynamic_width * min_height * ra_core_hz) > p_clock)
          break;
-      
-     
+
    }
   return dynamic_width;
 }

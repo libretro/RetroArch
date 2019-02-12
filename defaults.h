@@ -103,6 +103,7 @@ struct defaults
 #ifndef IS_SALAMANDER
    playlist_t *content_history;
    playlist_t *content_favorites;
+   playlist_t *content_runtime;
 #ifdef HAVE_IMAGEVIEWER
    playlist_t *image_history;
 #endif
