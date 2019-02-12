@@ -142,6 +142,7 @@ static unsigned            video_driver_state_scale      = 0;
 static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32      = false;
 static bool                video_driver_crt_switching_active = false;
+static bool                video_driver_crt_dynamic_super_width = false;
 
 static struct retro_system_av_info video_driver_av_info;
 
@@ -2647,7 +2648,12 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index);
+      if (video_info.crt_switch_resolution_super == 1)
+         video_driver_crt_dynamic_super_width = true;
+      else 
+         video_driver_crt_dynamic_super_width = false;
+
+      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index, video_driver_crt_dynamic_super_width);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;

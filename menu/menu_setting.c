@@ -1198,6 +1198,11 @@ static void setting_get_string_representation_crt_switch_resolution_super(
       strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
    else
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+/* TO DO make 1 read as DYNAMIC */
+   if (*setting->value.target.unsigned_integer == 1)
+      strlcpy(s, msg_hash_to_str(MSG_DYNAMIC), len);
+   else
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
 }
 
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
@@ -1300,8 +1305,10 @@ static int setting_uint_action_left_crt_switch_resolution_super(
       case 0:
          *setting->value.target.unsigned_integer = 3840;
          break;
-      case 1920:
+      case 1: /* for dynamic super resolution switching - best fit */
          *setting->value.target.unsigned_integer = 0;
+      case 1920:
+         *setting->value.target.unsigned_integer = 1;
          break;
       case 2560:
          *setting->value.target.unsigned_integer = 1920;
@@ -1565,8 +1572,10 @@ static int setting_uint_action_right_crt_switch_resolution_super(
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
-         *setting->value.target.unsigned_integer = 1920;
+         *setting->value.target.unsigned_integer = 1;
          break;
+      case 1: /* for dynamic super resolution switching - best fit */
+         *setting->value.target.unsigned_integer = 1920;
       case 1920:
          *setting->value.target.unsigned_integer = 2560;
          break;
