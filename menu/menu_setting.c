@@ -1307,6 +1307,7 @@ static int setting_uint_action_left_crt_switch_resolution_super(
          break;
       case 1: /* for dynamic super resolution switching - best fit */
          *setting->value.target.unsigned_integer = 0;
+         break;
       case 1920:
          *setting->value.target.unsigned_integer = 1;
          break;
