@@ -2648,9 +2648,9 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      if (video_info.crt_switch_resolution_super == 1920)
+      if (video_info.crt_switch_resolution_super == 1)
          video_driver_crt_dynamic_super_width = true;
-         
+
       crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index, video_driver_crt_dynamic_super_width);
    }
    else if (!video_info.crt_switch_resolution)
