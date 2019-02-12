@@ -120,7 +120,8 @@ static const QPixmap getInvader()
 }
 
 #ifdef HAVE_LIBRETRODB
-static void scan_finished_handler(void *task_data, void *user_data, const char *err)
+static void scan_finished_handler(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    bool dontAsk = false;
    bool answer = false;
@@ -130,10 +131,6 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
 #endif
-
-   (void)task_data;
-   (void)user_data;
-   (void)err;
 
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
@@ -3131,7 +3128,7 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
 
    if (!task_push_decompress(file, dir,
             NULL, NULL, NULL,
-            cb, this))
+            cb, this, NULL))
    {
       m_updateProgressDialog->cancel();
       return -1;

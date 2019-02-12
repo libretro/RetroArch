@@ -96,4 +96,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* osk_ptr_at_pos */
   NULL,  /* update_savestate_thumbnail_path */
   NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* pointer_down */
+  NULL,  /* pointer_up   */
+  NULL,  /* get_load_content_animation_data */
 };

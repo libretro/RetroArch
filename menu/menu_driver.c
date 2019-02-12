@@ -126,6 +126,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
+#ifdef HAVE_OPENGL1
+   &menu_display_ctx_gl1,
+#endif
 #endif
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
@@ -272,6 +275,10 @@ static bool menu_display_check_compatibility(
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (string_is_equal(video_driver, "gl"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL1:
+         if (string_is_equal(video_driver, "gl1"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
@@ -464,6 +471,7 @@ font_data_t *menu_display_font(
 font_data_t *menu_display_font_file(char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
+
    if (!menu_disp)
       return NULL;
 
@@ -780,7 +788,8 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
 
-   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
+   if (menu_disp && menu_disp->get_default_mvp)
+      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
 }
 
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
@@ -1252,7 +1261,8 @@ static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
    return false;
 }
 
-void menu_display_handle_thumbnail_upload(void *task_data,
+void menu_display_handle_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1268,7 +1278,8 @@ void menu_display_handle_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
-void menu_display_handle_left_thumbnail_upload(void *task_data,
+void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1284,7 +1295,8 @@ void menu_display_handle_left_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
-void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1303,7 +1315,8 @@ void menu_display_handle_savestate_thumbnail_upload(void *task_data,
 /* Function that gets called when we want to load in a
  * new menu wallpaper.
  */
-void menu_display_handle_wallpaper_upload(void *task_data,
+void menu_display_handle_wallpaper_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1603,7 +1616,8 @@ void menu_display_draw_text(
 
 bool menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type)
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
 {
    struct texture_image ti;
    char texpath[PATH_MAX_LENGTH] = {0};
@@ -1621,6 +1635,12 @@ bool menu_display_reset_textures_list(
 
    if (!image_texture_load(&ti, texpath))
       return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
 
    video_driver_texture_load(&ti,
          filter_type, item);
@@ -1688,7 +1708,8 @@ const char *config_get_menu_driver_options(void)
  * when we need to extract the APK contents/zip file. This
  * file contains assets which then get extracted to the
  * user's asset directories. */
-static void bundle_decompressed(void *task_data,
+static void bundle_decompressed(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
@@ -1759,7 +1780,7 @@ static bool menu_init(menu_handle_t *menu_data)
       task_push_decompress(settings->arrays.bundle_assets_src,
             settings->arrays.bundle_assets_dst,
             NULL, settings->arrays.bundle_assets_dst_subdir,
-            NULL, bundle_decompressed, NULL);
+            NULL, bundle_decompressed, NULL, NULL);
 #endif
    }
 
@@ -1892,6 +1913,12 @@ void menu_driver_frame(video_frame_info_t *video_info)
 {
    if (menu_driver_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
+}
+
+bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name)
+{
+   return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
+      && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
 bool menu_driver_render(bool is_idle, bool rarch_is_inited,
@@ -2667,7 +2694,17 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
+   char star_char[8];
    unsigned i = 0;
+   int n = 0;
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
+   
+   /* Select approriate 'star' marker for subsystem menu entries
+    * (i.e. RGUI does not support unicode, so use a 'standard'
+    * character fallback) */
+   snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : "\u2605");
+   
    if (subsystem && subsystem_current_count > 0)
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)
@@ -2680,8 +2717,41 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                snprintf(s, sizeof(s),
                   "Load %s %s",
                   subsystem->desc,
-                  i == content_get_subsystem()
-                  ? "\u2605" : " ");
+                  star_char);
+               
+               /* If using RGUI with sublabels disabled, add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui && !settings->bools.menu_show_sublabels)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  n = snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[content_get_subsystem_rom_id()].desc);
+
+                  /* Stupid gcc will warn about snprintf() truncation even though
+                   * we couldn't care less about it (if the menu entry label gets
+                   * truncated then the string will already be too long to view in
+                   * any usable manner on screen, so the fact that the end is
+                   * missing is irrelevant). There are two ways to silence this noise:
+                   * 1) Make the destination buffers large enough that text cannot be
+                   *    truncated. This is a waste of memory.
+                   * 2) Check the snprintf() return value (and take action). This is
+                   *    the most harmless option, so we just print a warning if anything
+                   *    is truncated.
+                   * To reiterate: The actual warning generated here is pointless, and
+                   * should be ignored. */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+
+                  strlcpy(s, tmp, sizeof(s));
+               }
+               
                menu_entries_append_enum(info->list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -2693,8 +2763,41 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                snprintf(s, sizeof(s),
                   "Start %s %s",
                   subsystem->desc,
-                  i == content_get_subsystem()
-                  ? "\u2605" : " ");
+                  star_char);
+               
+               /* If using RGUI with sublabels disabled, add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui && !settings->bools.menu_show_sublabels)
+               {
+                  unsigned j = 0;
+                  char rom_buff[PATH_MAX_LENGTH];
+                  char tmp[PATH_MAX_LENGTH];
+                  rom_buff[0] = '\0';
+
+                  for (j = 0; j < content_get_subsystem_rom_id(); j++)
+                  {
+                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     if (j != content_get_subsystem_rom_id() - 1)
+                        strlcat(rom_buff, "|", sizeof(rom_buff));
+                  }
+
+                  if (!string_is_empty(rom_buff))
+                  {
+                     n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
+                     
+                     /* More snprintf() gcc warning suppression... */
+                     if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                     {
+                        if (verbosity_is_enabled())
+                        {
+                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        }
+                     }
+                     
+                     strlcpy(s, tmp, sizeof(s));
+                  }
+               }
+               
                menu_entries_append_enum(info->list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
@@ -2705,10 +2808,37 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
          else
          {
             snprintf(s, sizeof(s),
-               "Load %s %s",
-               subsystem->desc,
-               i == content_get_subsystem()
-               ? "\u2605" : " ");
+               "Load %s",
+               subsystem->desc);
+            
+            /* If using RGUI with sublabels disabled, add the
+             * appropriate text to the menu entry itself... */
+            if (is_rgui && !settings->bools.menu_show_sublabels)
+            {
+               /* This check is probably not required (it's not done
+                * in menu_cbs_sublabel.c action_bind_sublabel_subsystem_add(),
+                * anyway), but no harm in being safe... */
+               if (subsystem->num_roms > 0)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  n = snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[0].desc);
+                  
+                  /* More snprintf() gcc warning suppression... */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+                  
+                  strlcpy(s, tmp, sizeof(s));
+               }
+            }
+            
             menu_entries_append_enum(info->list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),

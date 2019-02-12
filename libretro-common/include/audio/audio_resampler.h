@@ -190,14 +190,6 @@ const char *audio_resampler_driver_find_ident(int index);
 bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
       const char *ident, enum resampler_quality quality, double bw_ratio);
 
-void audio_resampler_lock_init(void);
-
-void audio_resampler_lock(void);
-
-void audio_resampler_unlock(void);
-
-void audio_resampler_lock_free(void);
-
 RETRO_END_DECLS
 
 #endif

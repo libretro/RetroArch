@@ -183,10 +183,12 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
 
    if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    else
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -817,6 +819,7 @@ static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
    }
 }
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -876,7 +879,9 @@ static void setting_get_string_representation_uint_xmb_icon_theme(
          break;
    }
 }
+#endif
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_layout(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -897,6 +902,7 @@ static void setting_get_string_representation_uint_xmb_layout(
          break;
    }
 }
+#endif
 
 #ifdef HAVE_MATERIALUI
 static void setting_get_string_representation_uint_materialui_menu_color_theme(
@@ -1064,7 +1070,7 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
 }
 #endif
 
-#ifdef HAVE_SHADERPIPELINE
+#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -7380,6 +7386,21 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.input_block_timeout,
+            MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
+            MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+            1,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = 1;
+         menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_throttle_framerate,
@@ -7956,6 +7977,22 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE
                      );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_lock_aspect,
+                  MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
 
             CONFIG_UINT(
                   list, list_info,
@@ -8905,6 +8942,24 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
+
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_sublabels,
+                  MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

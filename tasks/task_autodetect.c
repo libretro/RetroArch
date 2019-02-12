@@ -237,8 +237,12 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam                =
+#if defined(HAVE_LIBNX) && defined(HAVE_MENU_WIDGETS)
+      true;
+#else
       input_autoconfigured[params->idx]
       && !string_is_empty(params->name);
+#endif
 
    msg[0] = display_name[0] = device_type[0] = '\0';
 
@@ -651,7 +655,7 @@ found:
       if (hDeviceHandle == INVALID_HANDLE_VALUE)
       {
          RARCH_ERR("[Autoconf]: Can't open device for reading and writing: %d.", GetLastError());
-         runloop_msg_queue_push("Bliss-Box already in use. Please make sure other programs are not using it.", 2, 300, false);
+         runloop_msg_queue_push("Bliss-Box already in use. Please make sure other programs are not using it.", 2, 300, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto done;
       }
    }
@@ -910,7 +914,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
-   retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t         *task      = task_init();
    autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
    if (!state || !task)
@@ -987,7 +991,7 @@ bool input_autoconfigure_connect(
       unsigned pid)
 {
    unsigned i;
-   retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t         *task = task_init();
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
    const char *dir_autoconf   = settings ? settings->paths.directory_autoconfig : NULL;

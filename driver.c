@@ -306,7 +306,8 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
-            2, 180, false);
+            2, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       command_event(CMD_EVENT_RECORD_DEINIT, NULL);
       command_event(CMD_EVENT_RECORD_INIT, NULL);
    }
@@ -384,6 +385,7 @@ void drivers_init(int flags)
    core_info_init_current_core();
 
 #ifdef HAVE_MENU
+
    if (flags & DRIVER_VIDEO_MASK)
    {
       if (flags & DRIVER_MENU_MASK)

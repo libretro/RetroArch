@@ -699,6 +699,10 @@ ifeq ($(HAVE_MENU), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 
+   ifeq ($(HAVE_MENU_WIDGETS), 1)
+      DEFINES += -DHAVE_MENU_WIDGETS
+   endif
+
    ifeq ($(HAVE_RGUI), 1)
       OBJ += menu/drivers/rgui.o
       DEFINES += -DHAVE_RGUI
@@ -782,6 +786,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    ifeq ($(HAVE_MENU_COMMON),1)
 		OBJ += menu/drivers_display/menu_display_null.o
 	endif
+
+   ifeq ($(HAVE_MENU_WIDGETS), 1)
+      OBJ += menu/widgets/menu_widgets.o
+   endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -972,11 +980,6 @@ ifeq ($(HAVE_IOHIDMANAGER), 1)
    endif
 endif
 
-ifeq ($(HAVE_CORELOCATION), 1)
-   DEFINES += -DHAVE_CORELOCATION
-   LIBS += -framework CoreLocation
-endif
-
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_HID
    OBJ += input/drivers_joypad/hid_joypad.o \
@@ -1057,8 +1060,17 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
           gfx/drivers_font/gl_raster_font.o \
           $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
+   ifeq ($(HAVE_OPENGL1), 1)
+      OBJ += gfx/drivers/gl1.o \
+             gfx/drivers_font/gl1_raster_font.o
+   endif
+
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl.o
+
+      ifeq ($(HAVE_OPENGL1), 1)
+         OBJ += menu/drivers_display/menu_display_gl1.o
+      endif
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1645,8 +1657,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       ifeq ($(HAVE_NEW_CHEEVOS), 1)
          DEFINES += -DHAVE_NEW_CHEEVOS \
-            -Ideps/rcheevos/include \
-            -Ideps/lua/src
+            -Ideps/rcheevos/include
          OBJ += cheevos-new/cheevos.o \
             cheevos-new/badges.o \
             cheevos-new/fixup.o \
@@ -1784,15 +1795,6 @@ ifneq ($(findstring Win32,$(OS)),)
 		OBJ += menu/drivers_display/menu_display_gdi.o
 	endif
    LIBS += -lmsimg32 -lhid -lsetupapi
-endif
-
-ifeq ($(HAVE_AVFOUNDATION), 1)
-   ifeq ($(HAVE_COCOA), 1)
-      DEFINES += -DHAVE_AVFOUNDATION
-      LIBS += -framework AVFoundation
-      LIBS += -framework CoreVideo
-      LIBS += -framework CoreMedia
-   endif
 endif
 
 # Record

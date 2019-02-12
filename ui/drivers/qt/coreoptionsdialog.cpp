@@ -149,7 +149,10 @@ void CoreOptionsDialog::onSaveGameSpecificOptions()
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
-            1, 100, true);
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO
+            );
       path_set(RARCH_PATH_CORE_OPTIONS, game_path);
    }
 

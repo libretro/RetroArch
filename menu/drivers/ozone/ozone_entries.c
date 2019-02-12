@@ -227,11 +227,11 @@ border_iterate:
       /* Prepare text */
       entry_rich_label = menu_entry_get_rich_label(&entry);
 
-      ticker.idx = ozone->frame_count / 20;
-      ticker.s = rich_label;
-      ticker.str = entry_rich_label;
+      ticker.idx      = ozone->frame_count / 20;
+      ticker.s        = rich_label;
+      ticker.str      = entry_rich_label;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len = (entry_width - 60 - text_offset) / ozone->entry_font_glyph_width;
+      ticker.len      = (entry_width - 60 - text_offset) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
 
@@ -295,11 +295,11 @@ border_iterate:
          ozone_draw_text(video_info, ozone, sublabel_str, x_offset + 470, y + FONT_SIZE_ENTRIES_SUBLABEL + 80 - 20 - 3 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
-      ticker.idx = ozone->frame_count / 20;
-      ticker.s = entry_value_ticker;
-      ticker.str = entry_value;
+      ticker.idx      = ozone->frame_count / 20;
+      ticker.s        = entry_value_ticker;
+      ticker.str      = entry_value;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len = (entry_width - 60 - ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
+      ticker.len      = (entry_width - 60 - ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
 

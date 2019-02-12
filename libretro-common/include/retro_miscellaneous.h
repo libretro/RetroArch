@@ -159,14 +159,24 @@ typedef struct
 #  ifdef _WIN64
 #    define PRI_SIZET PRIu64
 #  else
-#if _MSC_VER == 1800
-#    define PRI_SIZET PRIu32
-#else
-#    define PRI_SIZET "u"
-#endif
+#    if _MSC_VER == 1800
+#      define PRI_SIZET PRIu32
+#    else
+#      define PRI_SIZET "u"
+#    endif
 #  endif
-#else
+#elif PS2
 #  define PRI_SIZET "lu"
+#else
+#  if (SIZE_MAX == 0xFFFF)
+#    define PRI_SIZET "hu"
+#  elif (SIZE_MAX == 0xFFFFFFFF)
+#    define PRI_SIZET "u"
+#  elif (SIZE_MAX == 0xFFFFFFFFFFFFFFFF)
+#    define PRI_SIZET "lu"
+#  else
+#    error PRI_SIZET: unknown SIZE_MAX
+#  endif
 #endif
 
 #endif

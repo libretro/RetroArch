@@ -142,6 +142,7 @@ typedef struct settings
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
+      bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
       bool menu_throttle;
       bool menu_mouse_enable;
@@ -170,6 +171,7 @@ typedef struct settings
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
+      bool menu_rgui_lock_aspect;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
@@ -355,6 +357,8 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
+
+      unsigned input_block_timeout;
 
       unsigned audio_resampler_quality;
 

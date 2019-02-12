@@ -38,11 +38,6 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
-#if defined(HAVE_AVFOUNDATION)
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-    &camera_avfoundation,
-#endif
-#endif
    &camera_null,
    NULL,
 };
@@ -206,7 +201,8 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
               return camera_driver->start(camera_data);
 
            runloop_msg_queue_push(
-                 "Camera is explicitly disabled.\n", 1, 180, false);
+                 "Camera is explicitly disabled.\n", 1, 180, false,
+                 NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
         }
         break;
       case RARCH_CAMERA_CTL_SET_CB:

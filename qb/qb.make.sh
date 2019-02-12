@@ -1,4 +1,5 @@
 # Creates config.mk and config.h.
+vars=''
 add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
 set -- $(set | grep ^HAVE_)
 while [ $# -gt 0 ]; do

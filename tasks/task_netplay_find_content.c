@@ -26,6 +26,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
+#include <queues/task_queue.h>
 
 #include "task_content.h"
 #include "tasks_internal.h"
@@ -53,8 +54,9 @@ typedef struct
    struct string_list *lpl_list;
 } netplay_crc_handle_t;
 
-static void netplay_crc_scan_callback(void *task_data,
-                               void *user_data, const char *error)
+static void netplay_crc_scan_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};
@@ -144,20 +146,23 @@ static void netplay_crc_scan_callback(void *task_data,
          string_is_empty(state->content_path) ? "content file" : "core");
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
-            1, 480, true);
+            1, 480, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    free(state);
 }
 
-static void begin_task(retro_task_t *task, const char *title) {
+static void begin_task(retro_task_t *task, const char *title)
+{
    task_set_progress(task, 0);
    task_free_title(task);
    task_set_title(task, strdup(title));
    task_set_finished(task, false);
 }
 
-static void finish_task(retro_task_t *task, const char *title) {
+static void finish_task(retro_task_t *task, const char *title)
+{
    task_set_progress(task, 100);
    task_free_title(task);
    task_set_title(task, strdup(title));
@@ -403,8 +408,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    struct string_list *lpl_list = NULL;
    core_info_list_t *info       = NULL;
    settings_t        *settings  = config_get_ptr();
-   retro_task_t          *task  = (retro_task_t *)
-      calloc(1, sizeof(*task));
+   retro_task_t          *task  = task_init();
    netplay_crc_handle_t *state  = (netplay_crc_handle_t*)
       calloc(1, sizeof(*state));
 

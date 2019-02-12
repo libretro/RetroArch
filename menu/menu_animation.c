@@ -67,6 +67,7 @@ static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static float delta_time         = 0.0f;
 static bool animation_is_active = false;
+static bool ticker_is_active    = false;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -563,14 +564,14 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
             PATH_MAX_LENGTH,
             ticker->str,
             ticker->len);
-      return true;
+      return false;
    }
 
    if (!ticker->selected)
    {
       utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
       strlcat(ticker->s, "...", PATH_MAX_LENGTH);
-      return true;
+      return false;
    }
 
    if (str_len > ticker->len)
@@ -586,16 +587,8 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
          utf8skip(ticker->str, offset),
          str_len);
 
-   animation_is_active = true;
+   ticker_is_active = true;
 
-   return true;
-}
-
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
-{
-   if (!delta)
-      return false;
-   delta->ideal = delta->current / IDEAL_DELTA_TIME;
    return true;
 }
 
@@ -611,6 +604,7 @@ void menu_animation_update_time(bool timedate_enable)
       delta_time            = IDEAL_DELTA_TIME * 4;
    if (delta_time <= IDEAL_DELTA_TIME / 4)
       delta_time            = IDEAL_DELTA_TIME / 4;
+
    old_time                 = cur_time;
 
    if (((cur_time - last_clock_update) > 1000000)
@@ -623,7 +617,7 @@ void menu_animation_update_time(bool timedate_enable)
 
 bool menu_animation_is_active(void)
 {
-   return animation_is_active;
+   return animation_is_active || ticker_is_active;
 }
 
 bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
@@ -685,9 +679,10 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    }
 }
 
-float menu_animation_get_delta_time(void)
+void menu_animation_get_time(menu_animation_ctx_delta_t *delta)
 {
-   return delta_time;
+   delta->current = delta_time;
+   delta->ideal   = delta_time / IDEAL_DELTA_TIME;
 }
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
@@ -715,9 +710,11 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          animation_is_active       = false;
+         ticker_is_active          = false;
          break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
          animation_is_active       = true;
+         ticker_is_active          = true;
          break;
       case MENU_ANIMATION_CTL_NONE:
       default:

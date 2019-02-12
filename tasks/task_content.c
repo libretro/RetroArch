@@ -97,7 +97,11 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
+#include "../discord/discord.h"
+
 #include "task_patch.c"
+
+extern bool discord_is_inited;
 
 #define MAX_ARGS 32
 
@@ -698,10 +702,14 @@ static bool content_file_load(
          }
 #endif
 
+/* It adds up to 10 seconds when loading large roms.
+ * It's mainly used for network play which isn't available for these platforms. */
+#if !defined(GEKKO)
          RARCH_LOG("%s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          content_rom_crc = file_crc32(0, path);
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+#endif
 
       }
    }
@@ -1141,7 +1149,7 @@ static bool firmware_update_status(
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FIRMWARE),
-            100, 500, true);
+            100, 500, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("Load content blocked. Reason: %s\n",
             msg_hash_to_str(MSG_FIRMWARE));
 
@@ -1219,7 +1227,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    {
       if (error_string)
       {
-         runloop_msg_queue_push(error_string, 2, 90, true);
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
@@ -1240,6 +1248,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 }
 
 #ifdef HAVE_MENU
+
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -1310,7 +1319,7 @@ bool task_push_load_content_from_playlist_from_menu(
    {
       if (error_string)
       {
-         runloop_msg_queue_push(error_string, 2, 90, true);
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
@@ -1410,7 +1419,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    {
       if (error_string)
       {
-         runloop_msg_queue_push(error_string, 2, 90, true);
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
@@ -1540,7 +1549,7 @@ bool task_push_load_content_with_new_core_from_menu(
    {
       if (error_string)
       {
-         runloop_msg_queue_push(error_string, 2, 90, true);
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
@@ -1649,6 +1658,17 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    if (firmware_update_status(&content_ctx))
       goto end;
 
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      userdata.status = DISCORD_PRESENCE_MENU;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
+
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
 end:
@@ -1669,7 +1689,7 @@ end:
    {
       if (error_string)
       {
-         runloop_msg_queue_push(error_string, 2, 90, true);
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
@@ -1820,7 +1840,6 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-
    pending_subsystem_init = true;
 
    /* Load content */
@@ -2112,7 +2131,7 @@ bool content_init(void)
       {
          RARCH_ERR("%s\n", error_string);
       }
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

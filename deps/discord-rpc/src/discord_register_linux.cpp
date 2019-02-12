@@ -43,7 +43,7 @@ extern "C" DISCORD_EXPORT void Discord_Register(const char* applicationId, const
 
     const char* destopFileFormat = "[Desktop Entry]\n"
                                    "Name=Game %s\n"
-                                   "Exec=%s %%u\n" // note: it really wants that %u in there
+                                   "Exec=%s\n" // note: it really wants that %u in there
                                    "Type=Application\n"
                                    "NoDisplay=true\n"
                                    "Categories=Discord;Games;\n"

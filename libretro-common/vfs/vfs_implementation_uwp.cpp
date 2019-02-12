@@ -720,7 +720,7 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 	return 0;
 }
 
-bool uwp_is_path_accessible_using_standard_io(char *path)
+bool uwp_is_path_accessible_using_standard_io(const char *path)
 {
 	char *relative_path_abbrev = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));

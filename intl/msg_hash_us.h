@@ -1078,6 +1078,10 @@ MSG_HASH(
     "Bind Hold"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+    "Input Block Timeout"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
     "Hide Unbound Core Input Descriptors"
     )
@@ -1667,6 +1671,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
     "Menu Linear Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+    "Adds a slight blur to the menu to take the edge off hard pixel edges."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -2947,6 +2955,10 @@ MSG_HASH(
     "Thumbnail Downscaling Method"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Resampling method used when shrinking large thumbnails to fit the screen."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
     "Nearest Neighbour (Fast)"
     )
@@ -3027,8 +3039,16 @@ MSG_HASH(
     "Menu Color Theme"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+    "Select a different color theme. Choosing 'Custom' enables the use of menu theme preset files."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
     "Custom Menu Theme Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+    "Select a menu theme preset from the file browser."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -4703,6 +4723,10 @@ MSG_HASH(
     "Taking screenshot."
     )
 MSG_HASH(
+    MSG_SCREENSHOT_SAVED,
+    "Screenshot saved"
+    )
+MSG_HASH(
     MSG_TO,
     "to"
     )
@@ -5008,6 +5032,14 @@ MSG_HASH(
     "Show battery level"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+    "Show menu sublabels"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+    "Shows additional information for the currently selected menu entry."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SELECT_FILE,
     "Select File"
     )
@@ -5234,6 +5266,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
     "The number of frames to run ahead. Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+    "The number of milliseconds to wait to get a complete input sample, use it if you have issues with simultaneous button presses (Android only)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -6629,12 +6665,32 @@ MSG_HASH(
     "Border filler"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Display menu border."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
     "Border filler thickness"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu border chequerboard pattern."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
     "Background filler thickness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu background chequerboard pattern."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
+    "Lock Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT,
+    "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,

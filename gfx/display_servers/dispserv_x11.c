@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>  // run pkg-config --static --libs xrandr
+#include <X11/extensions/Xrandr.h> /* run pkg-config --static --libs xrandr */
 #include <X11/extensions/randr.h>
 #include <X11/extensions/Xrender.h>
 
@@ -133,7 +133,6 @@ static bool x11_display_server_set_resolution(void *data,
    Window window;
    XRRScreenResources  *res = NULL;
    Display *dsp             = NULL;
-   Screen *scrn             = NULL;
    int i                    = 0;
    int hfp                  = 0;
    int hsp                  = 0;
@@ -154,7 +153,6 @@ static bool x11_display_server_set_resolution(void *data,
    snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
 
    dsp                      = XOpenDisplay(NULL);
-   scrn                     = DefaultScreenOfDisplay(dsp);
    screen                   = DefaultScreen ( dsp );
    window                   = RootWindow ( dsp, screen );
 
@@ -265,8 +263,8 @@ static bool x11_display_server_set_resolution(void *data,
 
    if (monitor_index == 0)
    {
-
-      for (int i = 0; i < res->noutput; i++)
+      int i;
+      for (i = 0; i < res->noutput; i++)
       {
 
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
@@ -290,7 +288,6 @@ static bool x11_display_server_set_resolution(void *data,
   }
  if (monitor_index > 0)
  {
-
     XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[monitor_index]);
     if (outputs->connection == RR_Connected)
     {

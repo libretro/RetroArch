@@ -116,7 +116,7 @@ typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM {
       UINT32 reserved  :10;
     } AdditionalSignalInfo;
     UINT32 videoStandard;
-  };
+  } dummyunionname;
   UINT32 scanLineOrdering;
 } DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM;
 
@@ -132,8 +132,8 @@ typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM {
     struct {
       UINT32 cloneGroupId  :16;
       UINT32 sourceModeInfoIdx  :16;
-    } DUMMYSTRUCTNAME;
-  } DUMMYUNIONNAME;
+    } dummystructname;
+  } dummyunionname;
   UINT32 statusFlags;
 } DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM;
 
@@ -158,7 +158,7 @@ typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM {
     DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
     DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
     DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
-  };
+  } dummyunionname;
 } DISPLAYCONFIG_MODE_INFO_CUSTOM;
 
 typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM {
@@ -169,8 +169,8 @@ typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM {
     struct {
       UINT32 desktopModeInfoIdx  :16;
       UINT32 targetModeInfoIdx  :16;
-    };
-  };
+    } dummystructname;
+  } dummyunionname;
   UINT32 outputTechnology;
   UINT32 rotation;
   UINT32 scaling;

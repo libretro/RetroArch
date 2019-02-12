@@ -199,12 +199,12 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone);
 
 void ozone_context_reset_horizontal_list(ozone_handle_t *ozone);
 
-ozone_node_t *ozone_alloc_node();
+ozone_node_t *ozone_alloc_node(void);
 
 size_t ozone_list_get_size(void *data, enum menu_list_type type);
 
 void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
-bool ozone_is_playlist(ozone_handle_t *ozone);
+bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 
 #endif

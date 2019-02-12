@@ -3,6 +3,8 @@
 TEMP_MOC=.moc.h
 TEMP_CPP=.moc.cpp
 
+MOC="${MOC:-}"
+
 # Checking for working moc
 cat << EOF > "$TEMP_MOC"
 #include <QTimeZone>

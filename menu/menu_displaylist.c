@@ -92,6 +92,7 @@
 #include "../core_info.h"
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
+#include "../dynamic.h"
 
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -3325,6 +3326,7 @@ static int menu_displaylist_parse_options_remappings(
    unsigned p, retro_id;
    settings_t        *settings = config_get_ptr();
    unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
 
    for (p = 0; p < max_users; p++)
    {
@@ -3423,9 +3425,9 @@ static int menu_displaylist_parse_options_remappings(
                strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
 
-            /* Add user index when display driver == rgui,
-             * but only if there is more than one user */
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            /* Add user index when display driver == rgui and sublabels
+             * are disabled, but only if there is more than one user */
+            if (is_rgui && (max_users > 1) && !settings->bools.menu_show_sublabels)
             {
                snprintf(desc_label, sizeof(desc_label),
                         "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
@@ -3462,9 +3464,9 @@ static int menu_displaylist_parse_options_remappings(
                strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
             }
 
-            /* Add user index when display driver == rgui,
-             * but only if there is more than one user */
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") && (max_users > 1))
+            /* Add user index when display driver == rgui and sublabels
+             * are disabled, but only if there is more than one user */
+            if (is_rgui && (max_users > 1) && !settings->bools.menu_show_sublabels)
             {
                snprintf(desc_label, sizeof(desc_label),
                         "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
@@ -4138,7 +4140,8 @@ static void menu_displaylist_parse_playlist_generic(
 }
 
 #ifdef HAVE_NETWORKING
-static void wifi_scan_callback(void *task_data,
+static void wifi_scan_callback(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *error)
 {
    unsigned i;
@@ -4373,7 +4376,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -4425,7 +4428,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          FILE *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          profile = popen("gpu-profile get", "r");
          fgets(current_profile, PATH_MAX_LENGTH, profile);
@@ -5900,6 +5903,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_CORE_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
                PARSE_ONLY_BOOL, false);
 
@@ -6009,6 +6015,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
@@ -7085,7 +7095,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
                PARSE_ONLY_BOOL, false) == 0)
             count++;
-
+#ifdef ANDROID
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
          if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
@@ -7507,6 +7522,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          {
             settings_t      *settings      = config_get_ptr();
             rarch_system_info_t *sys_info  = runloop_get_system_info();
+            const struct retro_subsystem_info* subsystem;
 
             if (sys_info)
             {
@@ -7529,22 +7545,43 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             if (frontend_driver_has_fork())
 #endif
             {
-            if (settings->bools.menu_show_load_core)
+               if (settings->bools.menu_show_load_core)
+               {
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false);
-            if (settings->bools.menu_show_load_core)
-                  menu_displaylist_parse_settings_enum(menu, info,
-                        MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, PARSE_ACTION, false);
+               }
             }
 
             if (settings->bools.menu_show_load_content)
+            {
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
                      PARSE_ACTION, false);
+
+               /* Core fully loaded, use the subsystem data */
+               if (sys_info->subsystem.data)
+                     subsystem = sys_info->subsystem.data;
+               /* Core not loaded completely, use the data we peeked on load core */
+               else
+                  subsystem = subsystem_data;
+
+               menu_subsystem_populate(subsystem, info);
+            }
+
             if (settings->bools.menu_content_show_history)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                      PARSE_ACTION, false);
+#ifdef HAVE_LIBRETRODB
+            if (string_is_equal(settings->arrays.menu_driver, "rgui") && settings->bools.menu_content_show_playlists)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+                     MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+#endif
             if (settings->bools.menu_content_show_add)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_ADD_CONTENT_LIST,

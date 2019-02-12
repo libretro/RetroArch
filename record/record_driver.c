@@ -37,10 +37,6 @@
 #include "../list_special.h"
 #include "../paths.h"
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
@@ -58,51 +54,6 @@ static bool streaming_enable                   = false;
 
 static const record_driver_t *recording_driver = NULL;
 void *recording_data                           = NULL;
-
-#ifdef HAVE_THREADS
-static slock_t *s_recording_driver_lock        = NULL;
-#endif
-
-bool recording_driver_lock_inited(void)
-{
-#ifdef HAVE_THREADS
-   return s_recording_driver_lock != NULL;
-#else
-   return false;
-#endif
-}
-
-void recording_driver_lock_init(void)
-{
-#ifdef HAVE_THREADS
-   s_recording_driver_lock = slock_new();
-#endif
-}
-
-void recording_driver_lock_free(void)
-{
-#ifdef HAVE_THREADS
-   if (s_recording_driver_lock)
-      slock_free(s_recording_driver_lock);
-   s_recording_driver_lock = NULL;
-#endif
-}
-
-void recording_driver_lock(void)
-{
-#ifdef HAVE_THREADS
-   if (s_recording_driver_lock)
-      slock_lock(s_recording_driver_lock);
-#endif
-}
-
-void recording_driver_unlock(void)
-{
-#ifdef HAVE_THREADS
-   if (s_recording_driver_lock)
-      slock_unlock(s_recording_driver_lock);
-#endif
-}
 
 /**
  * record_driver_find_ident:
@@ -280,7 +231,8 @@ void recording_dump_frame(const void *data, unsigned width,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
-               1, 180, true);
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          return;
       }
@@ -574,14 +526,10 @@ void recording_driver_set_data_ptr(void *data)
    recording_data = data;
 }
 
-unsigned *recording_driver_get_width(void)
+void recording_driver_get_size(unsigned *width, unsigned *height)
 {
-   return &recording_width;
-}
-
-unsigned *recording_driver_get_height(void)
-{
-   return &recording_height;
+   *width  = recording_width;
+   *height = recording_height;
 }
 
 void recording_driver_update_streaming_url(void)

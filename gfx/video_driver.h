@@ -807,6 +807,12 @@ typedef struct video_driver
 #endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   /* if set to true, will use menu widgets when applicable
+    * if set to false, will use OSD as a fallback */
+   bool (*menu_widgets_enabled)(void *data);
+#endif
 } video_driver_t;
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
@@ -875,6 +881,10 @@ bool video_driver_get_hw_render_interface(const struct
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 void video_driver_set_title_buf(void);
 void video_driver_monitor_adjust_system_rates(void);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+bool video_driver_has_widgets(void);
+#endif
 
 /**
  * video_driver_find_handle:
@@ -1198,7 +1208,8 @@ bool video_driver_is_threaded(void);
 bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
       enum display_flags flag);
 
-extern video_driver_t video_gl;
+extern video_driver_t video_gl2;
+extern video_driver_t video_gl1;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
 extern video_driver_t video_psp1;

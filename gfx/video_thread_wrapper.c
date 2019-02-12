@@ -1282,6 +1282,18 @@ static void video_thread_get_poke_interface(
       *iface = NULL;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool video_thread_wrapper_menu_widgets_enabled(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr && thr->driver)
+      return thr->driver->menu_widgets_enabled(thr->driver_data);
+
+   return false;
+}
+#endif
+
 static const video_driver_t video_thread = {
    video_thread_init_never_call, /* Should never be called directly. */
    video_thread_frame,
@@ -1302,6 +1314,10 @@ static const video_driver_t video_thread = {
    video_thread_get_overlay_interface, /* get_overlay_interface */
 #endif
    video_thread_get_poke_interface,
+   NULL,
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   video_thread_wrapper_menu_widgets_enabled
+#endif
 };
 
 static void video_thread_set_callbacks(

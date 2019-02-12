@@ -259,7 +259,10 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
-   &video_gl,
+   &video_gl2,
+#ifdef HAVE_OPENGL1
+   &video_gl1,
+#endif
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
@@ -424,7 +427,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_null,
    NULL
 };
-
 
 bool video_driver_started_fullscreen(void)
 {
@@ -852,7 +854,9 @@ static void video_driver_free_internal(void)
          && video_driver_data
          && current_video && current_video->free
       )
-      current_video->free(video_driver_data);
+      {
+         current_video->free(video_driver_data);
+      }
 
    video_driver_pixel_converter_free();
    video_driver_filter_free();
@@ -1278,7 +1282,7 @@ void video_monitor_set_refresh_rate(float hz)
 
    snprintf(msg, sizeof(msg),
          "Setting refresh rate to: %.3f Hz.", hz);
-   runloop_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg);
 
    configuration_set_float(settings,
@@ -1361,31 +1365,6 @@ void video_driver_set_aspect_ratio_value(float value)
    video_driver_aspect_ratio = value;
 }
 
-static bool video_driver_frame_filter(
-      const void *data,
-      video_frame_info_t *video_info,
-      unsigned width, unsigned height,
-      size_t pitch,
-      unsigned *output_width, unsigned *output_height,
-      unsigned *output_pitch)
-{
-   rarch_softfilter_get_output_size(video_driver_state_filter,
-         output_width, output_height, width, height);
-
-   *output_pitch = (*output_width) * video_driver_state_out_bpp;
-
-   rarch_softfilter_process(video_driver_state_filter,
-         video_driver_state_buffer, *output_pitch,
-         data, width, height, pitch);
-
-   if (video_info->post_filter_record && recording_data)
-      recording_dump_frame(video_driver_state_buffer,
-            *output_width, *output_height, *output_pitch,
-            video_info->runloop_is_idle);
-
-   return true;
-}
-
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 {
    return video_driver_state_filter;
@@ -1410,8 +1389,6 @@ bool video_driver_cached_frame(void)
 {
    void *recording  = recording_driver_get_data_ptr();
 
-   recording_driver_lock();
-
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
@@ -1422,8 +1399,6 @@ bool video_driver_cached_frame(void)
          frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
-
-   recording_driver_unlock();
 
    return true;
 }
@@ -1951,7 +1926,7 @@ bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-         current_video = &video_gl;
+         current_video = &video_gl2;
       }
 #endif
 
@@ -2554,10 +2529,22 @@ void video_driver_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height,
             pitch, video_info.runloop_is_idle);
 
-   if (data && video_driver_state_filter &&
-         video_driver_frame_filter(data, &video_info, width, height, pitch,
-            &output_width, &output_height, &output_pitch))
+   if (data && video_driver_state_filter)
    {
+      rarch_softfilter_get_output_size(video_driver_state_filter,
+            &output_width, &output_height, width, height);
+
+      output_pitch = (output_width) * video_driver_state_out_bpp;
+
+      rarch_softfilter_process(video_driver_state_filter,
+            video_driver_state_buffer, output_pitch,
+            data, width, height, pitch);
+
+      if (video_info.post_filter_record && recording_data)
+         recording_dump_frame(video_driver_state_buffer,
+               output_width, output_height, output_pitch,
+               video_info.runloop_is_idle);
+
       data   = video_driver_state_buffer;
       width  = output_width;
       height = output_height;
@@ -2647,7 +2634,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show || video_info.framecount_show)
-      runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
+      runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
@@ -3566,3 +3553,11 @@ float video_driver_get_refresh_rate(void)
 
    return 0.0f;
 }
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+bool video_driver_has_widgets(void)
+{
+   return current_video && current_video->menu_widgets_enabled 
+      && current_video->menu_widgets_enabled(video_driver_data);
+}
+#endif

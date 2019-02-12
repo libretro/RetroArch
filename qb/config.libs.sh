@@ -9,20 +9,22 @@ add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_dirs LIBRARY /opt/local/lib
 
-[ "$GLOBAL_CONFIG_DIR" ] || \
+[ "${GLOBAL_CONFIG_DIR:-}" ] ||
 {	case "$PREFIX" in
 		/usr*) GLOBAL_CONFIG_DIR=/etc ;;
 		*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
 	esac
 }
 
-DYLIB=-ldl;
+DYLIB=-ldl
 CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
 INCLUDES='usr/include usr/local/include'
 SORT='sort'
+EXTRA_GL_LIBS=''
+VC_PREFIX=''
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
@@ -117,7 +119,7 @@ else
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
@@ -433,11 +435,14 @@ check_pkgconf DBUS dbus-1
 check_val '' XEXT -lXext '' xext '' '' false
 check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
-if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
-   [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+   [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-    ./gfx/common/wayland/generate_wayland_protos.sh -c "$WAYLAND_SCANNER_VERSION" -s "$SHARE_DIR" ||
-       die 1 'Error: Failed generating wayland protocols.'
+      ./gfx/common/wayland/generate_wayland_protos.sh \
+         -c "$WAYLAND_SCANNER_VERSION" \
+         -p "$HAVE_WAYLAND_PROTOS" \
+         -s "$SHARE_DIR" ||
+         die 1 'Error: Failed generating wayland protocols.'
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
@@ -480,7 +485,7 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
-check_pkgconf PYTHON python3
+check_pkgconf PYTHON 'python3 python3 python-3.7 python-3.6 python-3.5 python-3.4 python-3.3 python-3.2'
 
 if [ "$HAVE_MENU" != 'no' ]; then
    if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
@@ -496,6 +501,7 @@ if [ "$HAVE_MENU" != 'no' ]; then
          HAVE_OZONE=no
          HAVE_XMB=no
          HAVE_STRIPES=no
+         HAVE_MENU_WIDGETS=no
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi
@@ -508,6 +514,7 @@ add_define MAKEFILE OS "$OS"
 if [ "$HAVE_DEBUG" = 'yes' ]; then
    add_define MAKEFILE DEBUG 1
    if [ "$HAVE_OPENGL" = 'yes' ] ||
+      [ "$HAVE_OPENGL1" = 'yes' ] ||
       [ "$HAVE_OPENGLES" = 'yes' ] ||
       [ "$HAVE_OPENGLES3" = 'yes' ]; then
       add_define MAKEFILE GL_DEBUG 1

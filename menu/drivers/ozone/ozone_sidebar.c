@@ -166,7 +166,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    y = ENTRIES_START_Y - 10;
    menu_display_blend_begin(video_info);
 
-   for (i = 0; i < ozone->system_tab_end+1; i++)
+   for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
       enum msg_hash_enums value_idx;
       const char *title = NULL;
@@ -206,7 +206,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             goto console_iterate;
 
          /* Icon */
-         ozone_draw_icon(video_info, 40, 40, node->icon, ozone->sidebar_offset + 41 + 10, y - 5 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+         ozone_draw_icon(video_info, 40, 40, node->icon, ozone->sidebar_offset + 41 + 10 - 3, y - 5 - 3 + ozone->animations.scroll_y_sidebar, video_info->width, video_info->height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
          /* Text */
          ticker.idx        = ozone->frame_count / 20;
@@ -224,7 +224,6 @@ console_iterate:
       }
 
       menu_display_blend_end(video_info);
-
    }
 
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.sidebar, video_info);
@@ -589,6 +588,9 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          else
             chr = title_noext;
 
+         if (node->console_name)
+            free(node->console_name);
+
          node->console_name = strdup(chr);
 
          free(sysname);
@@ -623,7 +625,7 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
    }
 }
 
-bool ozone_is_playlist(ozone_handle_t *ozone)
+bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 {
    bool is_playlist;
 
@@ -651,5 +653,8 @@ bool ozone_is_playlist(ozone_handle_t *ozone)
          break;
    }
 
-   return is_playlist && ozone->depth == 1;
+   if (depth)
+      return is_playlist && ozone->depth == 1;
+
+   return is_playlist;
 }

@@ -2654,7 +2654,6 @@ static void stripes_draw_items(
 static void stripes_render(void *data, bool is_idle)
 {
    size_t i;
-   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    stripes_handle_t *stripes        = (stripes_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -2663,11 +2662,6 @@ static void stripes_render(void *data, bool is_idle)
 
    if (!stripes)
       return;
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {
@@ -3621,7 +3615,7 @@ static void stripes_context_reset_textures(
    unsigned i;
 
    for (i = 0; i < STRIPES_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(stripes_texture_path(i), iconpath, &stripes->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+      menu_display_reset_textures_list(stripes_texture_path(i), iconpath, &stripes->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 
    menu_display_allocate_white_texture();
 
@@ -4457,5 +4451,8 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_set_thumbnail_content,
    stripes_osk_ptr_at_pos,
    stripes_update_savestate_thumbnail_path,
-   stripes_update_savestate_thumbnail_image
+   stripes_update_savestate_thumbnail_image,
+   NULL,                                     /* pointer_down */
+   NULL,                                     /* pointer_up   */
+   NULL                                      /* get_load_content_animation_data   */
 };

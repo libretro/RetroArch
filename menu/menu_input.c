@@ -235,10 +235,8 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      delay_count += delta.ideal;
+   menu_animation_get_time(&delta);
+   delay_count += delta.ideal;
 
    if (menu_input_dialog_get_display_kb())
    {

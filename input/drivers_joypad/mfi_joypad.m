@@ -182,6 +182,9 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
     ? desired_index : 0;
 
     /* prevent same controller getting set twice */
+    if ( [mfiControllers containsObject:controller] ) {
+        return;
+    }
     if (mfi_controllers[desired_index] != (uint32_t)controller.hash)
     {
         /* desired slot is unused, take it */

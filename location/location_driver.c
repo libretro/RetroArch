@@ -33,11 +33,6 @@ static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
 #endif
-#ifdef HAVE_CORELOCATION
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-   &location_corelocation,
-#endif
-#endif
    &location_null,
    NULL,
 };
@@ -143,7 +138,7 @@ bool driver_location_start(void)
       if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
-      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
+      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return false;
 }

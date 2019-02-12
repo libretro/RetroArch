@@ -32,6 +32,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "gfx/common/gx2_common.h"
@@ -1011,8 +1014,8 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
 }
 
 static bool wiiu_gfx_frame(void *data, const void *frame,
-                           unsigned width, unsigned height, uint64_t frame_count,
-                           unsigned pitch, const char *msg, video_frame_info_t *video_info)
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
 #if 0
    static float fps;
@@ -1342,6 +1345,12 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                (const struct font_params*)&video_info->osd_stat_params);
       }
    }
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
+#endif
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
@@ -1730,6 +1739,14 @@ static void wiiu_gfx_get_poke_interface(void *data,
    *iface = &wiiu_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool wiiu_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_wiiu =
 {
    wiiu_gfx_init,
@@ -1752,4 +1769,7 @@ video_driver_t video_wiiu =
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   wiiu_menu_widgets_enabled
+#endif
 };

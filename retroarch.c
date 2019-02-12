@@ -60,6 +60,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_animation.h"
 #include "menu/menu_input.h"
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_dialog.h"
@@ -434,7 +435,6 @@ static void retroarch_print_features(void)
                                               "(for OSX and/or iOS)");
 
    _PSUPP(qt,              "Qt",              "Qt UI companion support");
-   _PSUPP(avfoundation,    "AVFoundation",    "Camera driver");
    _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
 }
 #undef _PSUPP
@@ -679,6 +679,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       strlcat(launch_arguments, " ", sizeof(launch_arguments));
    }
    string_trim_whitespace_left(launch_arguments);
+   string_trim_whitespace_right(launch_arguments);
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
     * we handle it differently.
@@ -1072,13 +1073,21 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                break;
 
             case RA_OPT_SIZE:
-               if (sscanf(optarg, "%ux%u",
-                        recording_driver_get_width(),
-                        recording_driver_get_height()) != 2)
                {
-                  RARCH_ERR("Wrong format for --size.\n");
-                  retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
+                  unsigned recording_width  = 0;
+                  unsigned recording_height = 0;
+
+                  recording_driver_get_size(&recording_width,
+                        &recording_height);
+
+                  if (sscanf(optarg, "%ux%u",
+                           &recording_width,
+                           &recording_height) != 2)
+                  {
+                     RARCH_ERR("Wrong format for --size.\n");
+                     retroarch_print_help(argv[0]);
+                     retroarch_fail(1, "retroarch_parse_input()");
+                  }
                }
                break;
 
@@ -1404,10 +1413,6 @@ bool retroarch_main_init(int argc, char *argv[])
          goto error;
       }
    }
-
-   if (recording_driver_lock_inited())
-      recording_driver_lock_free();
-   recording_driver_lock_init();
 
    command_event(CMD_EVENT_CHEATS_INIT, NULL);
    drivers_init(DRIVERS_CMD_ALL);
@@ -1907,7 +1912,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool threaded_enable = false;
 #endif
             task_queue_deinit();
-            task_queue_init(threaded_enable, runloop_msg_queue_push);
+            task_queue_init(threaded_enable, runloop_task_msg_queue_push);
          }
          break;
       case RARCH_CTL_SET_CORE_SHUTDOWN:
@@ -2404,6 +2409,18 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
+
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_SHUTDOWN;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
+   discord_is_inited          = false;
+#endif
+
    if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
    {
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
@@ -2415,11 +2432,6 @@ bool retroarch_main_quit(void)
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    rarch_menu_running_finished();
 
-#ifdef HAVE_DISCORD
-   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
-   discord_is_inited          = false;
-#endif
-
    return true;
 }
 
@@ -2429,9 +2441,19 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-void runloop_msg_queue_push(const char *msg,
+void runloop_task_msg_queue_push(retro_task_t *task,
+      const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
+{
+   runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
 {
    runloop_ctx_msg_info_t msg_info;
 
@@ -2450,7 +2472,8 @@ void runloop_msg_queue_push(const char *msg,
    if (runloop_msg_queue)
    {
       msg_queue_push(runloop_msg_queue, msg_info.msg,
-            msg_info.prio, msg_info.duration);
+            msg_info.prio, msg_info.duration,
+            title, icon, category);
 
       ui_companion_driver_msg_queue_push(msg_info.msg,
             msg_info.prio, msg_info.duration, msg_info.flush);
@@ -2622,6 +2645,7 @@ static enum runloop_state runloop_check_state(
    bool rarch_is_initialized        = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
    bool fs_toggle_triggered         = false;
 #ifdef HAVE_MENU
+   menu_animation_ctx_delta_t delta;
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
    unsigned menu_toggle_gamepad_combo = settings->uints.input_menu_toggle_gamepad_combo;
@@ -2808,7 +2832,10 @@ static enum runloop_state runloop_check_state(
       }
    }
 
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU)
+   menu_animation_get_time(&delta);
+   menu_animation_update(delta.ideal);
+
    if (menu_is_alive)
    {
       enum menu_action action;
@@ -3223,8 +3250,10 @@ static enum runloop_state runloop_check_state(
 
       /* Display the fast forward state to the user, if needed. */
       if (runloop_fastmotion)
+      {
          runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
@@ -3266,7 +3295,7 @@ static enum runloop_state runloop_check_state(
                msg_hash_to_str(MSG_STATE_SLOT),
                settings->ints.state_slot);
 
-         runloop_msg_queue_push(msg, 2, 180, true);
+         runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          RARCH_LOG("%s\n", msg);
       }
@@ -3301,7 +3330,7 @@ static enum runloop_state runloop_check_state(
    if (cheevos_hardcore_active && cheevos_state_loaded_flag)
    {
       cheevos_hardcore_paused = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    if (!cheevos_hardcore_active)
@@ -3314,7 +3343,8 @@ static enum runloop_state runloop_check_state(
 
       if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
                settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
-         runloop_msg_queue_push(s, 0, t, true);
+         runloop_msg_queue_push(s, 0, t, true, NULL, 
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -3354,10 +3384,12 @@ static enum runloop_state runloop_check_state(
 
          if (state_manager_frame_is_reversed())
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false);
+                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL, 
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          else
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
+                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false, 
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       old_slowmotion_button_state                  = new_slowmotion_button_state;

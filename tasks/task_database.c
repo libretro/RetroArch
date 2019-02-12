@@ -148,7 +148,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
    if (!string_is_empty(msg))
    {
 #ifdef RARCH_INTERNAL
-      runloop_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -1260,7 +1260,7 @@ static void task_database_handler(retro_task_t *task)
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
 #ifdef RARCH_INTERNAL
-            runloop_msg_queue_push(msg, 0, 180, true);
+            runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif

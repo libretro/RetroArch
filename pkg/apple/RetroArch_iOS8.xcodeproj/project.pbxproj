@@ -347,7 +347,6 @@
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
                "-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_AVFOUNDATION",
                "-DHAVE_RUNAHEAD",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -358,7 +357,6 @@
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DHAVE_LIBRETRODB",
@@ -419,7 +417,6 @@
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
                "-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_AVFOUNDATION",
                "-DHAVE_RUNAHEAD",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -430,7 +427,6 @@
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DHAVE_LIBRETRODB",
@@ -497,7 +493,6 @@
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
                "-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_AVFOUNDATION",
                "-DHAVE_RUNAHEAD",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -508,7 +503,6 @@
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DHAVE_LIBRETRODB",
@@ -541,7 +535,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -586,7 +579,6 @@
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
                "-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_AVFOUNDATION",
                "-DHAVE_RUNAHEAD",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -597,7 +589,6 @@
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DHAVE_LIBRETRODB",
@@ -631,7 +622,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -641,7 +631,6 @@
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
                "-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_AVFOUNDATION",
                "-DHAVE_RUNAHEAD",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -652,7 +641,6 @@
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
 					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DHAVE_LIBRETRODB",
@@ -686,7 +674,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch8;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2018      - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,31 +14,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _COCOA_METAL_UI
-#define _COCOA_METAL_UI
+#include "menu_widgets.h"
 
-#include <stdint.h>
-#include <stddef.h>
+#include "../../verbosity.h"
+#include "../../retroarch.h"
+#include "../../configuration.h"
+#include "../../msg_hash.h"
 
-#include <boolean.h>
-#include <retro_common_api.h>
+#include "../../tasks/task_content.h"
+#include "../../ui/ui_companion_driver.h"
 
-#include "cocoa/cocoa_common_metal.h"
+#include "../menu_driver.h"
+#include "../menu_animation.h"
 
-#include "../ui_companion_driver.h"
+#include "../../gfx/font_driver.h"
 
-RETRO_BEGIN_DECLS
+#include <lists/file_list.h>
+#include <queues/fifo_queue.h>
+#include <file/file_path.h>
+#include <streams/file_stream.h>
+#include <formats/image.h>
+#include <string/stdstring.h>
 
-typedef struct ui_application_cocoa
-{
-   void *empty;
-} ui_application_cocoa_t;
-
-typedef struct ui_window_cocoa
-{
-    void *data;
-} ui_window_cocoa_t;
-
-RETRO_END_DECLS
-
-#endif

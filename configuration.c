@@ -547,8 +547,6 @@ static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
-#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
@@ -561,8 +559,6 @@ static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
-#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
-static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
@@ -1313,7 +1309,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 
 static struct config_bool_setting *populate_settings_bool(settings_t *settings, int *size)
 {
-   struct config_bool_setting  *tmp    = (struct config_bool_setting*)malloc((*size + 1) * sizeof(struct config_bool_setting));
+   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
@@ -1437,6 +1433,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, true, false);
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
+   SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, menu_show_sublabels, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
    SETTING_BOOL("quick_menu_show_recording",      &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
    SETTING_BOOL("quick_menu_show_streaming",      &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
@@ -1460,6 +1457,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_use_preferred_system_color_theme",         &settings->bools.menu_use_preferred_system_color_theme, true, menu_use_preferred_system_color_theme, false);
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
+   SETTING_BOOL("menu_rgui_lock_aspect",         &settings->bools.menu_rgui_lock_aspect, true, rgui_lock_aspect, false);
 #ifdef HAVE_IMAGEVIEWER
    SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif
@@ -1621,7 +1619,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 static struct config_uint_setting *populate_settings_uint(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
+   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(1, (*size + 1) * sizeof(struct config_uint_setting));
 
    if (!tmp)
       return NULL;
@@ -1639,6 +1637,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
+#ifdef ANDROID
+   SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, 1, false);
+#endif
    SETTING_UINT("rewind_granularity",           &settings->uints.rewind_granularity, true, rewind_granularity, false);
    SETTING_UINT("rewind_buffer_size_step",      &settings->uints.rewind_buffer_size_step, true, rewind_buffer_size_step, false);
    SETTING_UINT("autosave_interval",            &settings->uints.autosave_interval,  true, autosave_interval, false);
@@ -2485,6 +2486,7 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "d3d12")  ||
          string_is_equal(video_driver, "gdi")    ||
          string_is_equal(video_driver, "gl")     ||
+         string_is_equal(video_driver, "gl1")    ||
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
          string_is_equal(video_driver, "metal")  ||
@@ -3416,7 +3418,8 @@ bool config_load_override(void)
     * since it will be overwritten by the override when reloading. */
    path_set(RARCH_PATH_CORE, buf);
    runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-         1, 100, true);
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -3554,7 +3557,8 @@ bool config_load_remap(void)
       if (input_remapping_load_file(new_conf, game_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
+                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
@@ -3575,7 +3579,8 @@ bool config_load_remap(void)
       if (input_remapping_load_file(new_conf, content_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
+                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          goto success;
       }
@@ -3596,7 +3601,8 @@ bool config_load_remap(void)
       if (input_remapping_load_file(new_conf, core_path))
       {
          runloop_msg_queue_push(
-               msg_hash_to_str(MSG_CORE_REMAP_FILE_LOADED), 1, 100, true);
+               msg_hash_to_str(MSG_CORE_REMAP_FILE_LOADED), 1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }

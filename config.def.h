@@ -321,6 +321,7 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
+static bool menu_show_sublabels          = false;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
@@ -375,6 +376,8 @@ static unsigned menu_shader_pipeline = 2;
 static bool show_advanced_settings        = false;
 static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
 static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
+
+static bool rgui_lock_aspect = false;
 
 #else
 static bool default_block_config_read = false;

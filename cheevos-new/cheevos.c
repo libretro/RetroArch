@@ -414,7 +414,7 @@ error:
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static void cheevos_award_task_softcore(void* task_data, void* user_data,
+static void cheevos_award_task_softcore(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -445,7 +445,7 @@ static void cheevos_award_task_softcore(void* task_data, void* user_data,
    task_push_http_transfer(buffer, true, NULL, cheevos_award_task_softcore, user_data);
 }
 
-static void cheevos_award_task_hardcore(void* task_data, void* user_data,
+static void cheevos_award_task_hardcore(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -493,14 +493,14 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
    /* Show the OSD message. */
    snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
-   runloop_msg_queue_push(buffer, 0, 2 * 60, false);
-   runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false);
+   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Start the award task. */
    if ((mode & CHEEVOS_ACTIVE_HARDCORE) != 0)
-      cheevos_award_task_hardcore(NULL, cheevo, "");
+      cheevos_award_task_hardcore(NULL, NULL, cheevo, "");
    else
-      cheevos_award_task_softcore(NULL, cheevo, "");
+      cheevos_award_task_softcore(NULL, NULL, cheevo, "");
 
    /* Take a screenshot of the achievement. */
    if (settings && settings->bools.cheevos_auto_screenshot)
@@ -578,7 +578,7 @@ static void cheevos_test_cheevo_set(bool official)
    }
 }
 
-static void cheevos_lboard_submit_task(void* task_data, void* user_data,
+static void cheevos_lboard_submit_task(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
    settings_t *settings = config_get_ptr();
@@ -633,7 +633,7 @@ static void cheevos_lboard_submit(cheevos_lboard_t* lboard)
    if (lboard->last_value == 0)
    {
       CHEEVOS_ERR(CHEEVOS_TAG "Leaderboard %s tried to submit 0\n", lboard->info->title);
-      runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false);
+      runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return;
    }
 
@@ -642,10 +642,10 @@ static void cheevos_lboard_submit(cheevos_lboard_t* lboard)
 
    snprintf(buffer, sizeof(buffer), "Submitted %s for %s",
          value, lboard->info->title);
-   runloop_msg_queue_push(buffer, 0, 2 * 60, false);
+   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Start the submit task. */
-   cheevos_lboard_submit_task(NULL, lboard, "no error, first try");
+   cheevos_lboard_submit_task(NULL, NULL, lboard, "no error, first try");
 }
 
 static void cheevos_test_leaderboards(void)
@@ -674,7 +674,7 @@ static void cheevos_test_leaderboards(void)
             CHEEVOS_LOG(CHEEVOS_TAG "Cancel leaderboard %s\n", lboard->info->title);
             lboard->active = 0;
             runloop_msg_queue_push("Leaderboard attempt cancelled!",
-                  0, 2 * 60, false);
+                  0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
       }
       else
@@ -689,8 +689,8 @@ static void cheevos_test_leaderboards(void)
 
             snprintf(buffer, sizeof(buffer),
                   "Leaderboard Active: %s", lboard->info->title);
-            runloop_msg_queue_push(buffer, 0, 2 * 60, false);
-            runloop_msg_queue_push(lboard->info->description, 0, 3 * 60, false);
+            runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(lboard->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
       }
    }
@@ -698,21 +698,26 @@ static void cheevos_test_leaderboards(void)
 
 void cheevos_reset_game(void)
 {
-   cheevos_cheevo_t* cheevo = NULL;
-   int i, count;
+   cheevos_cheevo_t* cheevo;
+   cheevos_lboard_t* lboard;
+   unsigned i;
 
    cheevo = cheevos_locals.core;
-
-   for (i = 0, count = cheevos_locals.patchdata.core_count; i < count; i++, cheevo++)
+   for (i = 0; i < cheevos_locals.patchdata.core_count; i++, cheevo++)
    {
       cheevo->last = 1;
    }
 
    cheevo = cheevos_locals.unofficial;
-
-   for (i = 0, count = cheevos_locals.patchdata.unofficial_count; i < count; i++, cheevo++)
+   for (i = 0; i < cheevos_locals.patchdata.unofficial_count; i++, cheevo++)
    {
       cheevo->last = 1;
+   }
+
+   lboard = cheevos_locals.lboards;
+   for (i = 0; i < cheevos_locals.patchdata.lboard_count; i++, lboard++)
+   {
+      lboard->active = 0;
    }
 }
 
@@ -958,7 +963,7 @@ bool cheevos_toggle_hardcore_mode(void)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 
       CHEEVOS_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 0, 3 * 60, true);
+      runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
    {
@@ -1328,7 +1333,7 @@ found:
 
       if (!coro->json)
       {
-         runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
+         runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          CHEEVOS_ERR(CHEEVOS_TAG "error loading achievements\n");
          CORO_STOP();
       }
@@ -1355,7 +1360,7 @@ found:
       {
          runloop_msg_queue_push(
                "This game has no achievements.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          CORO_STOP();
       }
@@ -1393,7 +1398,7 @@ found:
                "You have %d of %d achievements unlocked.",
                number_of_unlocked, cheevos_locals.patchdata.core_count);
          msg[sizeof(msg) - 1] = 0;
-         runloop_msg_queue_push(msg, 0, 6 * 60, false);
+         runloop_msg_queue_push(msg, 0, 6 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       CORO_GOSUB(GET_BADGES);
@@ -1766,10 +1771,10 @@ found:
       {
          runloop_msg_queue_push(
                "Missing RetroAchievements account information.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          runloop_msg_queue_push(
                "Please fill in your account information in Settings.",
-               0, 5 * 60, false);
+               0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          CHEEVOS_ERR(CHEEVOS_TAG "login info not informed\n");
          CORO_STOP();
       }
@@ -1792,7 +1797,7 @@ found:
 
       if (!coro->json)
       {
-         runloop_msg_queue_push("RetroAchievements: Error contacting server.", 0, 5 * 60, false);
+         runloop_msg_queue_push("RetroAchievements: Error contacting server.", 0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          CHEEVOS_ERR(CHEEVOS_TAG "error getting user token\n");
 
          CORO_STOP();
@@ -1806,7 +1811,7 @@ found:
          snprintf(msg, sizeof(msg),
                "RetroAchievements: %s",
                tok);
-         runloop_msg_queue_push(msg, 0, 5 * 60, false);
+         runloop_msg_queue_push(msg, 0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          *coro->settings->arrays.cheevos_token = 0;
 
          CHEEVOS_FREE(coro->json);
@@ -1822,7 +1827,7 @@ found:
                "RetroAchievements: Logged in as \"%s\".",
                coro->settings->arrays.cheevos_username);
          msg[sizeof(msg) - 1] = 0;
-         runloop_msg_queue_push(msg, 0, 3 * 60, false);
+         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       strlcpy(cheevos_locals.token, tok,
@@ -2047,7 +2052,7 @@ bool cheevos_load(const void *data)
    if (!coro)
       return false;
 
-   task = (retro_task_t*)calloc(1, sizeof(*task));
+   task = task_init();
 
    if (!task)
    {

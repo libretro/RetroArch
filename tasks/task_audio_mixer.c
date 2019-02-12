@@ -26,6 +26,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
+#include <queues/task_queue.h>
 
 #include "../audio/audio_driver.h"
 
@@ -74,7 +75,7 @@ static void task_audio_mixer_load_free(retro_task_t *task)
       }
 
       if (mixer->cb)
-         mixer->cb(NULL, NULL, NULL);
+         mixer->cb(task, NULL, NULL, NULL);
    }
 
    if (!string_is_empty(nbio->path))
@@ -104,7 +105,8 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
    return 0;
 }
 
-static void task_audio_mixer_handle_upload_ogg(void *task_data,
+static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -134,7 +136,8 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_ogg_and_play(void *task_data,
+static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -165,7 +168,8 @@ static void task_audio_mixer_handle_upload_ogg_and_play(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_flac(void *task_data,
+static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -196,7 +200,8 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_flac_and_play(void *task_data,
+static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -227,7 +232,8 @@ static void task_audio_mixer_handle_upload_flac_and_play(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_mp3(void *task_data,
+static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -258,7 +264,8 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_mp3_and_play(void *task_data,
+static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -289,7 +296,8 @@ static void task_audio_mixer_handle_upload_mp3_and_play(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_mod(void *task_data,
+static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -320,7 +328,8 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_mod_and_play(void *task_data,
+static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -351,7 +360,8 @@ static void task_audio_mixer_handle_upload_mod_and_play(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_wav(void *task_data,
+static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -382,7 +392,8 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
    free(user_data);
 }
 
-static void task_audio_mixer_handle_upload_wav_and_play(void *task_data,
+static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    audio_mixer_stream_params_t params;
@@ -452,7 +463,7 @@ bool task_push_audio_mixer_load_and_play(
 {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
-   retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
+   retro_task_t                   *t  = task_init();
    struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
 
    if (!t || !user)
@@ -560,7 +571,7 @@ bool task_push_audio_mixer_load(
 {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
-   retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
+   retro_task_t                   *t  = task_init();
    struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
 
    if (!t || !user)

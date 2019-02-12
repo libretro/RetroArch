@@ -26,7 +26,12 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../command.h"
 #include "../../tasks/tasks_internal.h"
+
+#include "../../discord/discord.h"
+
+extern bool discord_is_inited;
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,
@@ -115,10 +120,18 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    else
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
+#ifdef HAVE_DISCORD
+      if (discord_is_inited)
+      {
+         discord_userdata_t userdata;
+         userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      }
+#endif
       netplay->is_connected = false;
    }
    RARCH_LOG("[netplay] %s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false);
+   runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -636,7 +649,7 @@ static void announce_play_spectate(netplay_t *netplay,
    if (msg[0])
    {
       RARCH_LOG("[netplay] %s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 
@@ -1469,7 +1482,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (dmsg)
             {
                RARCH_LOG("[netplay] %s\n", dmsg);
-               runloop_msg_queue_push(dmsg, 1, 180, false);
+               runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             break;
          }
@@ -1775,7 +1788,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
             }
             RARCH_LOG("[netplay] %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
+            runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
 
@@ -2014,7 +2027,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
    {
       snprintf(msg, sizeof(msg), "%s\n",
             msg_hash_to_str(MSG_UPNP_FAILED));
-      runloop_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("[netplay] %s\n", msg);
       return;
    }
@@ -2022,7 +2035,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
    snprintf(msg, sizeof(msg), "%s: %s:%s\n",
          msg_hash_to_str(MSG_PUBLIC_ADDRESS),
          host, port);
-   runloop_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[netplay] %s\n", msg);
 #endif
 }

@@ -6,15 +6,25 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "metal_common.h"
-#import "../../ui/drivers/cocoa/cocoa_common_metal.h"
-#import <memory.h>
-#import <gfx/video_frame.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
+
+#import <memory.h>
 #import <stddef.h>
 #include <simd/simd.h>
+
+#import <gfx/video_frame.h>
+
+#import "metal_common.h"
+#import "../../ui/drivers/cocoa/cocoa_common.h"
 #import "Context.h"
+
+#ifdef HAVE_MENU
+#import "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#import "../../menu/widgets/menu_widgets.h"
+#endif
+#endif
 
 #define STRUCT_ASSIGN(x, y) \
 { \
@@ -282,6 +292,12 @@
          [_overlay drawWithEncoder:rce];
          [rce popDebugGroup];
       }
+#endif
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+      menu_widgets_frame(video_info);
+#endif
 #endif
 
       if (msg && *msg)

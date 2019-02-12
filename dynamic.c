@@ -222,6 +222,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          {
             for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
             {
+               /* Nasty, but have to do it like this since
+                * the pointers are const char *
+                * (if we don't free them, we get a memory leak) */
+               if (!string_is_empty(subsystem_data[i].desc))
+                  free((char *)subsystem_data[i].desc);
+               if (!string_is_empty(subsystem_data[i].ident))
+                  free((char *)subsystem_data[i].ident);
                subsystem_data[i].desc = strdup(info[i].desc);
                subsystem_data[i].ident = strdup(info[i].ident);
                subsystem_data[i].id = info[i].id;
@@ -232,6 +239,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 
                for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
                {
+                  /* Nasty, but have to do it like this since
+                   * the pointers are const char *
+                   * (if we don't free them, we get a memory leak) */
+                  if (!string_is_empty(subsystem_data_roms[i][j].desc))
+                     free((char *)subsystem_data_roms[i][j].desc);
+                  if (!string_is_empty(subsystem_data_roms[i][j].valid_extensions))
+                     free((char *)subsystem_data_roms[i][j].valid_extensions);
                   subsystem_data_roms[i][j].desc = strdup(info[i].roms[j].desc);
                   subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
                   subsystem_data_roms[i][j].required = info[i].roms[j].required;
@@ -353,7 +367,7 @@ static bool load_dynamic_core(void)
          path_get(RARCH_PATH_CORE));
    RARCH_ERR("Error(s): %s\n", dylib_error());
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return false;
 }
@@ -1242,7 +1256,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
-         runloop_msg_queue_push(msg->msg, 3, msg->frames, true);
+         runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
       }
 

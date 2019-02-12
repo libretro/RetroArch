@@ -82,6 +82,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data);
 
 #ifdef HAVE_MENU
+
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,

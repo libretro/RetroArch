@@ -3070,7 +3070,7 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = xmb ? xmb->frame_count : 0;
+   uint64_t frame_count        = xmb->frame_count;
    const char *thumb_ident     = xmb_thumbnails_ident('R');
    const char *left_thumb_ident= xmb_thumbnails_ident('L');
 
@@ -3140,7 +3140,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
-   menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -3162,11 +3161,6 @@ static void xmb_render(void *data, bool is_idle)
             false);
 
    xmb->previous_scale_factor = scale_factor;
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    if (pointer_enable || mouse_enable)
    {
@@ -4906,7 +4900,7 @@ static void xmb_context_reset_textures(
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
-      if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR))
+      if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
          RARCH_WARN("[XMB] Asset missing: %s%s\n", iconpath, xmb_texture_path(i));
          /* If the icon is missing return the subsetting (because some themes are incomplete) */
@@ -4914,11 +4908,11 @@ static void xmb_context_reset_textures(
          {
             /* OSD Warning only if subsetting icon is missing */
             if (
-                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR)
+                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
                   && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
                )
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                /* Do not draw icons if subsetting is missing */
                goto error;
             }
@@ -5771,6 +5765,28 @@ static int xmb_pointer_tap(void *userdata,
    return 0;
 }
 
+#ifdef HAVE_MENU_WIDGETS
+static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*) userdata;
+
+   if (xmb->categories_selection_ptr > xmb->system_tab_end)
+   {
+      xmb_node_t *node = file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
+
+      *icon          = node->icon;
+      *playlist_name = xmb->title_name;
+   }
+   else
+   {
+      *icon          = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+      *playlist_name = "RetroArch";
+   }
+
+   return true;
+}
+#endif
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_messagebox,
@@ -5812,5 +5828,12 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_set_thumbnail_content,
    menu_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
-   xmb_update_savestate_thumbnail_image
+   xmb_update_savestate_thumbnail_image,
+   NULL, /* pointer_down */
+   NULL, /* pointer_up   */
+#ifdef HAVE_MENU_WIDGETS
+   xmb_get_load_content_animation_data
+#else
+   NULL
+#endif
 };

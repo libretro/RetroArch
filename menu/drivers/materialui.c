@@ -56,6 +56,8 @@
 
 #include "../../file_path_special.h"
 
+#include "../../dynamic.h"
+
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
@@ -308,7 +310,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
    free(iconpath);
 }
 
@@ -641,7 +643,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    with acceleration */
 static void materialui_render(void *data, bool is_idle)
 {
-   menu_animation_ctx_delta_t delta;
    unsigned bottom, width, height, header_height;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
@@ -659,11 +660,6 @@ static void materialui_render(void *data, bool is_idle)
          materialui_compute_entries_box(mui, width);
       mui->need_compute = false;
    }
-
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    menu_display_set_width(width);
    menu_display_set_height(height);
@@ -1994,6 +1990,7 @@ static int materialui_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
+   const struct retro_subsystem_info* subsystem;
 
    (void)userdata;
 
@@ -2076,6 +2073,15 @@ static int materialui_list_push(void *data, void *userdata,
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
+
+               /* Core fully loaded, use the subsystem data */
+               if (system->subsystem.data)
+                     subsystem = system->subsystem.data;
+               /* Core not loaded completely, use the data we peeked on load core */
+               else
+                  subsystem = subsystem_data;
+
+               menu_subsystem_populate(subsystem, info);
             }
 
             if (settings->bools.menu_content_show_history)
@@ -2492,6 +2498,8 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
                   ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
                   )
             {
                node->texture_switch2_index = MUI_TEXTURE_START_CORE;
@@ -2554,7 +2562,10 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_index = MUI_TEXTURE_CONFIGURATIONS;
                node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
+                  )
             {
                node->texture_switch2_index = MUI_TEXTURE_LOAD_CONTENT;
                node->texture_switch2_set   = true;
@@ -2773,8 +2784,9 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    menu_display_osk_ptr_at_pos,
-   NULL,
-   NULL,
+   NULL, /* update_savestate_thumbnail_path */
+   NULL, /* update_savestate_thumbnail_image */
    materialui_pointer_down,
    materialui_pointer_up,
+   NULL /* get_load_content_animation_data */
 };

@@ -1460,6 +1460,11 @@ static void rgui_render(void *data, bool is_idle)
    rgui_t *rgui                   = (rgui_t*)data;
    uint64_t frame_count           = rgui->frame_count;
 
+   static bool display_kb         = false;
+   bool current_display_cb        = false;
+
+   current_display_cb = menu_input_dialog_get_display_kb();
+
    if (!rgui->force_redraw)
    {
       msg_force = menu_display_get_msg_force();
@@ -1468,9 +1473,11 @@ static void rgui_render(void *data, bool is_idle)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (is_idle || !menu_display_get_update_pending())
+      if (!display_kb && !current_display_cb && (is_idle || !menu_display_get_update_pending()))
          return;
    }
+
+   display_kb = current_display_cb;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -1565,6 +1572,11 @@ static void rgui_render(void *data, bool is_idle)
       rgui_render_background(rgui);
    }
 
+   /* We use a single ticker for all text animations.
+    * The same 'idx' is used in all cases, so set it
+    * once at the beginning. */
+   ticker.idx = frame_count / RGUI_TERM_START_X(fb_width);
+
    /* If thumbnails are enabled and we are viewing a playlist,
     * switch to thumbnail view mode if either current thumbnail
     * is valid or we are waiting for current thumbnail to load
@@ -1574,7 +1586,6 @@ static void rgui_render(void *data, bool is_idle)
     * through a list...) */
    if (rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
-      menu_animation_ctx_ticker_t ticker;
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
       thumbnail_title_buf[0] = '\0';
@@ -1585,7 +1596,6 @@ static void rgui_render(void *data, bool is_idle)
       /* Format thumbnail title */
       ticker.s        = thumbnail_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
       ticker.str      = rgui->thumbnail_content;
       ticker.selected = true;
       menu_animation_ticker(&ticker);
@@ -1608,18 +1618,17 @@ static void rgui_render(void *data, bool is_idle)
       /* No thumbnail - render usual text */
       char title[255];
       char title_buf[255];
-      char core_title[64];
-      char core_title_buf[64];
-      /* Need this in two places, so cache here */
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
+      unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
+      bool show_core_name = settings->bools.menu_core_enable;
 
-      title[0] = title_buf[0] = core_title[0] = core_title_buf[0] = '\0';
+      /* Print title */
+      title[0] = title_buf[0] = '\0';
 
       menu_entries_get_title(title, sizeof(title));
 
       ticker.s        = title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
       ticker.str      = title;
       ticker.selected = true;
 
@@ -1634,44 +1643,7 @@ static void rgui_render(void *data, bool is_idle)
                RGUI_TERM_START_X(fb_width),
                title_buf, rgui->colors.title_color);
 
-      if (settings->bools.menu_core_enable &&
-            menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
-      {
-         ticker.s        = core_title_buf;
-         ticker.len      = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
-         ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
-         ticker.str      = core_title;
-         ticker.selected = true;
-
-         menu_animation_ticker(&ticker);
-
-         if (rgui_framebuf_data)
-            blit_line(
-                  RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-                  (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
-      }
-
-      if (settings->bools.menu_timedate_enable)
-      {
-         menu_display_ctx_datetime_t datetime;
-         char timedate[255];
-
-         timedate[0]        = '\0';
-
-         datetime.s         = timedate;
-         datetime.len       = sizeof(timedate);
-         datetime.time_mode = 4;
-
-         menu_display_timedate(&datetime);
-
-         if (rgui_framebuf_data)
-            blit_line(
-                  timedate_x,
-                  (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
-      }
-
+      /* Print menu entries */
       x = RGUI_TERM_START_X(fb_width);
       y = RGUI_TERM_START_Y(fb_height);
 
@@ -1680,7 +1652,6 @@ static void rgui_render(void *data, bool is_idle)
       for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
          menu_entry_t entry;
-         menu_animation_ctx_ticker_t ticker;
          char entry_value[255];
          char message[255];
          char entry_title_buf[255];
@@ -1709,7 +1680,6 @@ static void rgui_render(void *data, bool is_idle)
 
          ticker.s        = entry_title_buf;
          ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
-         ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
          ticker.str      = entry_path;
          ticker.selected = entry_selected;
 
@@ -1736,13 +1706,90 @@ static void rgui_render(void *data, bool is_idle)
             blit_line(x, y, message,
                   entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color);
 
-         menu_entry_free(&entry);
          if (!string_is_empty(entry_path))
             free(entry_path);
+
+         /* Print menu sublabel (if required) */
+         if (settings->bools.menu_show_sublabels && entry_selected)
+         {
+            if (!string_is_empty(entry.sublabel))
+            {
+               char *sublabel = NULL;
+               char sublabel_buf[255];
+               sublabel_buf[0] = '\0';
+
+               sublabel = menu_entry_get_sublabel(&entry);
+
+               ticker.s        = sublabel_buf;
+               ticker.len      = core_name_len;
+               ticker.str      = sublabel;
+               ticker.selected = true;
+
+               menu_animation_ticker(&ticker);
+
+               if (rgui_framebuf_data)
+                  blit_line(
+                        RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                        (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                        RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
+
+               if (!string_is_empty(sublabel))
+                  free(sublabel);
+
+               show_core_name = false;
+            }
+         }
+
+         menu_entry_free(&entry);
+      }
+
+      /* Print core name (if required) */
+      if (show_core_name)
+      {
+         char core_title[64];
+         char core_title_buf[64];
+         core_title[0] = core_title_buf[0] = '\0';
+
+         if (menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
+         {
+            ticker.s        = core_title_buf;
+            ticker.len      = core_name_len;
+            ticker.str      = core_title;
+            ticker.selected = true;
+
+            menu_animation_ticker(&ticker);
+
+            if (rgui_framebuf_data)
+               blit_line(
+                     RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                     (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                     RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
+         }
+      }
+
+      /* Print clock (if required) */
+      if (settings->bools.menu_timedate_enable)
+      {
+         menu_display_ctx_datetime_t datetime;
+         char timedate[255];
+
+         timedate[0]        = '\0';
+
+         datetime.s         = timedate;
+         datetime.len       = sizeof(timedate);
+         datetime.time_mode = 4;
+
+         menu_display_timedate(&datetime);
+
+         if (rgui_framebuf_data)
+            blit_line(
+                  timedate_x,
+                  (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                  RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
       }
    }
 
-   if (menu_input_dialog_get_display_kb())
+   if (current_display_cb)
    {
       char msg[255];
       const char *str   = menu_input_dialog_get_buffer();
@@ -1769,7 +1816,6 @@ static void rgui_render(void *data, bool is_idle)
       if (settings->bools.menu_mouse_enable && cursor_visible)
          rgui_blit_cursor();
    }
-
 }
 
 static void rgui_framebuffer_free(void)
@@ -1912,7 +1958,7 @@ static void rgui_navigation_clear(void *data, bool pending_push)
    rgui->scroll_y = 0;
 }
 
-static const char *rgui_thumbnail_ident()
+static const char *rgui_thumbnail_ident(void)
 {
    char folder = 0;
    settings_t *settings = config_get_ptr();
@@ -2222,6 +2268,37 @@ static int rgui_pointer_tap(void *data,
    return 0;
 }
 
+static void rgui_toggle(void *userdata, bool menu_on)
+{
+   settings_t *settings = config_get_ptr();
+   
+   /* TODO/FIXME - when we close RetroArch, this function
+    * gets called and settings is NULL at this point. 
+    * Maybe fundamentally change control flow so that on RetroArch
+    * exit, this doesn't get called. */
+   if (!settings)
+      return;
+
+   if (settings->bools.menu_rgui_lock_aspect)
+   {
+      if (menu_on)
+      {
+         if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
+         {
+            unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+            settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_4_3;
+            video_driver_set_aspect_ratio();
+            settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
+         }
+      }
+      else
+      {
+         if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
+            video_driver_set_aspect_ratio();
+      }
+   }
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
@@ -2233,7 +2310,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_populate_entries,
-   NULL,
+   rgui_toggle,
    rgui_navigation_clear,
    NULL,
    NULL,
@@ -2257,11 +2334,14 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
-   NULL,
+   NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
    rgui_set_thumbnail_system,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL,                               /* set_thumbnail_content */
+   NULL,                               /* osk_ptr_at_pos */
+   NULL,                               /* update_savestate_thumbnail_path */
+   NULL,                               /* update_savestate_thumbnail_image */
+   NULL,                               /* pointer_down */
+   NULL,                               /* pointer_up */
+   NULL,                               /* get_load_content_animation_data */
 };
