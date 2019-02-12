@@ -33,7 +33,7 @@ void crt_aspect_ratio_switch(unsigned width, unsigned height);
 
 void crt_video_restore(void);
 
-static int crt_compute_dynamic_width(int width);
+int crt_compute_dynamic_width(int width);
 
 RETRO_END_DECLS
 
