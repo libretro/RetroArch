@@ -1300,8 +1300,10 @@ static int setting_uint_action_left_crt_switch_resolution_super(
       case 0:
          *setting->value.target.unsigned_integer = 3840;
          break;
-      case 1920:
+      case 1: /* for dynamic super resolution switching - best fit */
          *setting->value.target.unsigned_integer = 0;
+      case 1920:
+         *setting->value.target.unsigned_integer = 1;
          break;
       case 2560:
          *setting->value.target.unsigned_integer = 1920;
@@ -1565,8 +1567,10 @@ static int setting_uint_action_right_crt_switch_resolution_super(
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
-         *setting->value.target.unsigned_integer = 1920;
+         *setting->value.target.unsigned_integer = 1;
          break;
+      case 1: /* for dynamic super resolution switching - best fit */
+         *setting->value.target.unsigned_integer = 1920;
       case 1920:
          *setting->value.target.unsigned_integer = 2560;
          break;
