@@ -182,12 +182,12 @@ check_pkgconf()
 		printf %s "$MSG $pkgnam$ECHOBUF"
 		eval "set -- $ver"
 		for pkgver do
-			if $PKG_CONF_PATH --atleast-version="$pkgver" "$pkgnam"; then
+			if "$PKG_CONF_PATH" --atleast-version="$pkgver" "$pkgnam"; then
 				answer='yes'
 				version="$("$PKG_CONF_PATH" --modversion "$pkgnam")"
 				eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" --cflags "$pkgnam")\""
 				eval "${val}_LIBS=\"$("$PKG_CONF_PATH" --libs "$pkgnam")\""
-				eval "${val#HAVE_}_VERSION=\"$pkgver\""
+				eval "${val}_VERSION=\"$pkgver\""
 				break
 			fi
 		done
