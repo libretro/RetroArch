@@ -1414,8 +1414,6 @@ bool video_driver_cached_frame(void)
 {
    void *recording  = recording_driver_get_data_ptr();
 
-   recording_driver_lock();
-
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
@@ -1426,8 +1424,6 @@ bool video_driver_cached_frame(void)
          frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
-
-   recording_driver_unlock();
 
    return true;
 }

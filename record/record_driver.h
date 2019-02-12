@@ -214,16 +214,6 @@ bool streaming_is_enabled(void);
 
 void recording_driver_update_streaming_url(void);
 
-bool recording_driver_lock_inited(void);
-
-void recording_driver_lock_init(void);
-
-void recording_driver_lock(void);
-
-void recording_driver_unlock(void);
-
-void recording_driver_lock_free(void);
-
 extern void *recording_data;
 
 RETRO_END_DECLS

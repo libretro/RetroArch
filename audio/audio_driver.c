@@ -634,12 +634,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
-   recording_driver_lock();
-
    if (recording_data)
       recording_push_audio(data, samples);
-
-   recording_driver_unlock();
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
