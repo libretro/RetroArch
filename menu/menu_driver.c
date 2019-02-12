@@ -531,6 +531,7 @@ bool menu_display_libretro(bool is_idle,
          input_driver_set_libretro_input_blocked();
 
       core_run();
+      rarch_core_runtime_tick();
       input_driver_unset_libretro_input_blocked();
 
       return true;

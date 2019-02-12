@@ -1369,6 +1369,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
       return false;
 
    rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
+   rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_INIT, NULL);
    return true;
 }
 
@@ -2215,6 +2216,13 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.music_history = NULL;
 
+         if (g_defaults.content_runtime)
+         {
+            playlist_write_runtime_file(g_defaults.content_runtime);
+            playlist_free(g_defaults.content_runtime);
+         }
+         g_defaults.content_runtime = NULL;
+
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
@@ -2265,6 +2273,13 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_music_history,
                   content_history_size);
 
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->paths.path_content_runtime);
+            g_defaults.content_runtime = playlist_init(
+                  settings->paths.path_content_runtime,
+                  content_history_size);
+
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
@@ -2311,6 +2326,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
+            rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
             content_reset_savestate_backups();
             hwr = video_driver_get_hw_context();
             command_event_deinit_core(true);

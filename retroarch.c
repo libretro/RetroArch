@@ -102,6 +102,8 @@
 #include "file_path_special.h"
 #include "ui/ui_companion_driver.h"
 #include "verbosity.h"
+#include "defaults.h"
+#include "playlist.h"
 
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
@@ -263,10 +265,19 @@ static unsigned fastforward_after_frames                        = 0;
 static retro_usec_t runloop_frame_time_last                     = 0;
 static retro_time_t frame_limit_minimum_time                    = 0.0;
 static retro_time_t frame_limit_last_time                       = 0.0;
+static retro_time_t libretro_core_runtime_usec                  = 0;
 
 extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
+
+void rarch_core_runtime_tick(void)
+{
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+
+   if (av_info && av_info->timing.fps)
+      libretro_core_runtime_usec += (1.0 / av_info->timing.fps) * 1000 * 1000;
+}
 
 #ifdef HAVE_THREADS
 void runloop_msg_queue_lock(void)
@@ -1809,6 +1820,82 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                   / (av_info->timing.fps * fastforward_ratio));
          }
          break;
+      case RARCH_CTL_CONTENT_RUNTIME_LOG_INIT:
+         libretro_core_runtime_usec = 0;
+         break;
+      case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
+      {
+         settings_t *settings = config_get_ptr();
+         unsigned seconds = libretro_core_runtime_usec / 1000 / 1000;
+         unsigned minutes = seconds / 60;
+         unsigned hours = minutes / 60;
+         char log[PATH_MAX_LENGTH] = {0};
+         size_t pos = 0;
+
+         seconds -= minutes * 60;
+         seconds -= hours * 60 *60;
+
+         pos = strlcpy(log, "Content ran for a total of", sizeof(log));
+
+         if (hours > 0)
+            pos += snprintf(log + pos, sizeof(log) - pos, ", %d hours", hours);
+
+         if (minutes > 0)
+            pos += snprintf(log + pos, sizeof(log) - pos, ", %d minutes", minutes);
+
+         pos += snprintf(log + pos, sizeof(log) - pos, ", %d seconds", seconds);
+
+         if (pos < sizeof(log) - 2)
+         {
+            log[pos++] = '.';
+            log[pos++] = '\n';
+         }
+
+         RARCH_LOG(log);
+
+         if (settings->bools.content_runtime_log && g_defaults.content_runtime)
+         {
+            const char *path = path_get(RARCH_PATH_CONTENT);
+            const char *core_path = path_get(RARCH_PATH_CORE);
+
+            if (!string_is_empty(path) && !string_is_empty(core_path))
+            {
+               playlist_push_runtime(g_defaults.content_runtime, path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE), 0, 0, 0);
+
+               /* if entry already existed, the runtime won't be updated, so manually update it again */
+               if (playlist_get_size(g_defaults.content_runtime) > 0)
+               {
+                  unsigned runtime_hours = 0;
+                  unsigned runtime_minutes = 0;
+                  unsigned runtime_seconds = 0;
+
+                  playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL, &runtime_hours, &runtime_minutes, &runtime_seconds);
+
+                  runtime_seconds += seconds;
+
+                  if (runtime_seconds >= 60)
+                  {
+                     runtime_minutes += runtime_seconds / 60;
+                     runtime_seconds -= runtime_minutes * 60;
+                  }
+
+                  runtime_minutes += minutes;
+
+                  if (runtime_minutes >= 60)
+                  {
+                     runtime_hours += runtime_minutes / 60;
+                     runtime_minutes -= runtime_hours * 60;
+                  }
+
+                  runtime_hours += hours;
+
+                  playlist_update_runtime(g_defaults.content_runtime, 0, path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE), runtime_hours, runtime_minutes, runtime_seconds);
+               }
+            }
+         }
+
+         break;
+      }
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -3681,10 +3768,16 @@ int runloop_iterate(unsigned *sleep_ms)
          )
          run_ahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
       else
+      {
          core_run();
+         rarch_core_runtime_tick();
+      }
    }
 #else
-   core_run();
+   {
+      core_run();
+      rarch_core_runtime_tick();
+   }
 #endif
 
 #ifdef HAVE_CHEEVOS
