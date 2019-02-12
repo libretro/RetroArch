@@ -345,11 +345,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->has_all_assets = true;
 
       fill_pathname_join(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
-      ozone->fonts.footer = menu_display_font_file(font_path, FONT_SIZE_FOOTER, is_threaded);
-      ozone->fonts.entries_label = menu_display_font_file(font_path, FONT_SIZE_ENTRIES_LABEL, is_threaded);
+      ozone->fonts.footer           = menu_display_font_file(font_path, FONT_SIZE_FOOTER, is_threaded);
+      ozone->fonts.entries_label    = menu_display_font_file(font_path, FONT_SIZE_ENTRIES_LABEL, is_threaded);
       ozone->fonts.entries_sublabel = menu_display_font_file(font_path, FONT_SIZE_ENTRIES_SUBLABEL, is_threaded);
-      ozone->fonts.time = menu_display_font_file(font_path, FONT_SIZE_TIME, is_threaded);
-      ozone->fonts.sidebar = menu_display_font_file(font_path, FONT_SIZE_SIDEBAR, is_threaded);
+      ozone->fonts.time             = menu_display_font_file(font_path, FONT_SIZE_TIME, is_threaded);
+      ozone->fonts.sidebar          = menu_display_font_file(font_path, FONT_SIZE_SIDEBAR, is_threaded);
 
       fill_pathname_join(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
       ozone->fonts.title = menu_display_font_file(font_path, FONT_SIZE_TITLE, is_threaded);
@@ -372,27 +372,27 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       ozone->dimensions.entry_padding_horizontal_half = ENTRY_PADDING_HORIZONTAL_HALF * scale;
       ozone->dimensions.entry_padding_horizontal_full = ENTRY_PADDING_HORIZONTAL_FULL * scale;
-      ozone->dimensions.entry_padding_vertical = ENTRY_PADDING_VERTICAL * scale;
-      ozone->dimensions.entry_height = ENTRY_HEIGHT * scale;
-      ozone->dimensions.entry_spacing = ENTRY_SPACING * scale;
-      ozone->dimensions.entry_icon_size = ENTRY_ICON_SIZE * scale;
-      ozone->dimensions.entry_icon_padding = ENTRY_ICON_PADDING * scale;
+      ozone->dimensions.entry_padding_vertical        = ENTRY_PADDING_VERTICAL * scale;
+      ozone->dimensions.entry_height                  = ENTRY_HEIGHT * scale;
+      ozone->dimensions.entry_spacing                 = ENTRY_SPACING * scale;
+      ozone->dimensions.entry_icon_size               = ENTRY_ICON_SIZE * scale;
+      ozone->dimensions.entry_icon_padding            = ENTRY_ICON_PADDING * scale;
 
-      ozone->dimensions.sidebar_width = SIDEBAR_WIDTH * scale;
-      ozone->dimensions.sidebar_entry_height = SIDEBAR_ENTRY_HEIGHT * scale;
-      ozone->dimensions.sidebar_padding_horizontal = SIDEBAR_X_PADDING * scale;
-      ozone->dimensions.sidebar_padding_vertical = SIDEBAR_Y_PADDING * scale;
-      ozone->dimensions.sidebar_entry_padding_vertical = SIDEBAR_ENTRY_Y_PADDING * scale;
-      ozone->dimensions.sidebar_entry_icon_size = SIDEBAR_ENTRY_ICON_SIZE * scale;
-      ozone->dimensions.sidebar_entry_icon_padding = SIDEBAR_ENTRY_ICON_PADDING * scale;
+      ozone->dimensions.sidebar_width                    = SIDEBAR_WIDTH * scale;
+      ozone->dimensions.sidebar_entry_height             = SIDEBAR_ENTRY_HEIGHT * scale;
+      ozone->dimensions.sidebar_padding_horizontal       = SIDEBAR_X_PADDING * scale;
+      ozone->dimensions.sidebar_padding_vertical         = SIDEBAR_Y_PADDING * scale;
+      ozone->dimensions.sidebar_entry_padding_vertical   = SIDEBAR_ENTRY_Y_PADDING * scale;
+      ozone->dimensions.sidebar_entry_icon_size          = SIDEBAR_ENTRY_ICON_SIZE * scale;
+      ozone->dimensions.sidebar_entry_icon_padding       = SIDEBAR_ENTRY_ICON_PADDING * scale;
 
       ozone->dimensions.cursor_size = CURSOR_SIZE * scale;
 
       /* Naive font size */
-      ozone->title_font_glyph_width = FONT_SIZE_TITLE * 3/4;
-      ozone->entry_font_glyph_width = FONT_SIZE_ENTRIES_LABEL * 3/4;
+      ozone->title_font_glyph_width    = FONT_SIZE_TITLE * 3/4;
+      ozone->entry_font_glyph_width    = FONT_SIZE_ENTRIES_LABEL * 3/4;
       ozone->sublabel_font_glyph_width = FONT_SIZE_ENTRIES_SUBLABEL * 3/4;
-      ozone->sidebar_font_glyph_width = FONT_SIZE_SIDEBAR * 3/4;
+      ozone->sidebar_font_glyph_width  = FONT_SIZE_SIDEBAR * 3/4;
 
       /* More realistic font size */
       size = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
