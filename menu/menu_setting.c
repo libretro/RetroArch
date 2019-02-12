@@ -1200,7 +1200,7 @@ static void setting_get_string_representation_crt_switch_resolution_super(
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 /* TO DO make 1 read as DYNAMIC */
    if (*setting->value.target.unsigned_integer == 1)
-      strlcpy(s, msg_hash_to_str(MSG_DYNAMIC), len);
+      strlcpy(s, "DYNAMIC", len);
    else
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
 }
