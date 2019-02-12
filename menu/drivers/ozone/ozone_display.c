@@ -122,8 +122,8 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   ozone_color_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
-   ozone_color_alpha(ozone->theme_dynamic.cursor_border, alpha);
+   menu_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
+   menu_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
    menu_display_blend_begin(video_info);
 
@@ -164,8 +164,8 @@ static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   ozone_color_alpha(ozone->theme_dynamic.selection_border, alpha);
-   ozone_color_alpha(ozone->theme_dynamic.selection, alpha);
+   menu_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
+   menu_display_set_alpha(ozone->theme_dynamic.selection, alpha);
 
    /* Fill */
    menu_display_draw_quad(video_info, x_offset, y, width, height - 5, video_info->width, video_info->height, ozone->theme_dynamic.selection);
@@ -195,11 +195,6 @@ void ozone_draw_cursor(ozone_handle_t *ozone,
       ozone_draw_cursor_slice(ozone, video_info, x_offset, width, height, y, alpha);
    else
       ozone_draw_cursor_fallback(ozone, video_info, x_offset, width, height, y, alpha);
-}
-
-void ozone_color_alpha(float *color, float alpha)
-{
-   color[3] = color[7] = color[11] = color[15] = alpha;
 }
 
 void ozone_draw_icon(
@@ -250,7 +245,7 @@ void ozone_draw_icon(
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 {
    /* TODO: Replace this backdrop by a blur shader on the whole screen if available */
-   ozone_color_alpha(ozone_backdrop, alpha);
+   menu_display_set_alpha(ozone_backdrop, alpha);
    menu_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
 }
 
@@ -390,7 +385,7 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
       }
    }
 
-   ozone_color_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
+   menu_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
    menu_display_blend_begin(video_info);
 

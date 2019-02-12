@@ -1228,7 +1228,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Cursor */
    if (ozone->show_cursor)
    {
-      ozone_color_alpha(ozone_pure_white, 1.0f);
+      menu_display_set_alpha(ozone_pure_white, 1.0f);
       menu_display_draw_cursor(
          video_info,
          ozone_pure_white,
