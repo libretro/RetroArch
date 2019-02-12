@@ -149,6 +149,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->is_playlist               = false;
    ozone->categories_selection_ptr  = 0;
    ozone->pending_message           = NULL;
+   ozone->show_cursor               = false;
 
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
@@ -365,6 +366,28 @@ static void ozone_context_reset(void *data, bool is_threaded)
          ozone->has_all_assets = false;
       }
 
+      /* Dimensions */
+      ozone->dimensions.header_height = HEADER_HEIGHT * scale;
+      ozone->dimensions.footer_height = FOOTER_HEIGHT * scale;
+
+      ozone->dimensions.entry_padding_horizontal_half = ENTRY_PADDING_HORIZONTAL_HALF * scale;
+      ozone->dimensions.entry_padding_horizontal_full = ENTRY_PADDING_HORIZONTAL_FULL * scale;
+      ozone->dimensions.entry_padding_vertical = ENTRY_PADDING_VERTICAL * scale;
+      ozone->dimensions.entry_height = ENTRY_HEIGHT * scale;
+      ozone->dimensions.entry_spacing = ENTRY_SPACING * scale;
+      ozone->dimensions.entry_icon_size = ENTRY_ICON_SIZE * scale;
+      ozone->dimensions.entry_icon_padding = ENTRY_ICON_PADDING * scale;
+
+      ozone->dimensions.sidebar_width = SIDEBAR_WIDTH * scale;
+      ozone->dimensions.sidebar_entry_height = SIDEBAR_ENTRY_HEIGHT * scale;
+      ozone->dimensions.sidebar_padding_horizontal = SIDEBAR_X_PADDING * scale;
+      ozone->dimensions.sidebar_padding_vertical = SIDEBAR_Y_PADDING * scale;
+      ozone->dimensions.sidebar_entry_padding_vertical = SIDEBAR_ENTRY_Y_PADDING * scale;
+      ozone->dimensions.sidebar_entry_icon_size = SIDEBAR_ENTRY_ICON_SIZE * scale;
+      ozone->dimensions.sidebar_entry_icon_padding = SIDEBAR_ENTRY_ICON_PADDING * scale;
+
+      ozone->dimensions.cursor_size = CURSOR_SIZE * scale;
+
       /* Naive font size */
       ozone->title_font_glyph_width = FONT_SIZE_TITLE * 3/4;
       ozone->entry_font_glyph_width = FONT_SIZE_ENTRIES_LABEL * 3/4;
@@ -476,26 +499,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       }
 
       ozone_restart_cursor_animation(ozone);
-
-      /* Dimensions */
-      ozone->dimensions.header_height = HEADER_HEIGHT * scale;
-      ozone->dimensions.footer_height = FOOTER_HEIGHT * scale;
-
-      ozone->dimensions.entry_padding_horizontal_half = ENTRY_PADDING_HORIZONTAL_HALF * scale;
-      ozone->dimensions.entry_padding_horizontal_full = ENTRY_PADDING_HORIZONTAL_FULL * scale;
-      ozone->dimensions.entry_padding_vertical = ENTRY_PADDING_VERTICAL * scale;
-      ozone->dimensions.entry_height = ENTRY_HEIGHT * scale;
-      ozone->dimensions.entry_spacing = ENTRY_SPACING * scale;
-      ozone->dimensions.entry_icon_size = ENTRY_ICON_SIZE * scale;
-      ozone->dimensions.entry_icon_padding = ENTRY_ICON_PADDING * scale;
-
-      ozone->dimensions.sidebar_width = SIDEBAR_WIDTH * scale;
-      ozone->dimensions.sidebar_entry_height = SIDEBAR_ENTRY_HEIGHT * scale;
-      ozone->dimensions.sidebar_padding_horizontal = SIDEBAR_X_PADDING * scale;
-      ozone->dimensions.sidebar_padding_vertical = SIDEBAR_Y_PADDING * scale;
-      ozone->dimensions.sidebar_entry_padding_vertical = SIDEBAR_ENTRY_Y_PADDING * scale;
-      ozone->dimensions.sidebar_entry_icon_size = SIDEBAR_ENTRY_ICON_SIZE * scale;
-      ozone->dimensions.sidebar_entry_icon_padding = SIDEBAR_ENTRY_ICON_PADDING * scale;
    }
 }
 
@@ -1222,6 +1225,22 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer, video_info);
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
 
+   /* Cursor */
+   if (ozone->show_cursor)
+   {
+      ozone_color_alpha(ozone_pure_white, 1.0f);
+      menu_display_draw_cursor(
+         video_info,
+         ozone_pure_white,
+         ozone->dimensions.cursor_size,
+         ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         video_info->width,
+         video_info->height
+      );
+   }
+
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
@@ -1655,6 +1674,12 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
 
    switch (type)
    {
+      case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
+         ozone->show_cursor = true;
+         break;
+      case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
+         ozone->show_cursor = false;
+         break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          if (!ozone)
             return -1;

@@ -57,6 +57,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_ENTRY_ICON_SIZE 40
 #define SIDEBAR_ENTRY_ICON_PADDING 15
 
+#define CURSOR_SIZE 64
+
 #define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
 #define INTERVAL_OSK_CURSOR (0.5f * 1000000)
 
@@ -191,7 +193,11 @@ struct ozone_handle
       int sidebar_entry_height;
       int sidebar_entry_icon_size;
       int sidebar_entry_icon_padding;
+
+      int cursor_size;
    } dimensions;
+
+   bool show_cursor;
 };
 
 /* If you change this struct, also
