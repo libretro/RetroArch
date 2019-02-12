@@ -166,8 +166,6 @@ static bool x11_display_server_set_resolution(void *data,
    video_monitor_set_refresh_rate(hz);
 
    /* following code is the mode line generator */
-   hsp    = (width * 1.140) - (xoffset*4);
-   hfp    = width * 1.055;
    pwidth = width;
 
    if (height < 400 && width > 400)
@@ -184,7 +182,18 @@ static bool x11_display_server_set_resolution(void *data,
    if (roundw < 1.20)
       roundw = 1.34;
 
-   hbp  = width * roundw - 8;
+   if (width < 700)
+   {
+      hfp    = width * 1.055;
+      hbp  = width * roundw - 8;
+   }else {
+      hfp    = (width * 1.055)+8;
+      hbp  = (width * roundw) + (width /16);
+      xoffset = xoffset*2;
+   }
+   
+   hsp    = (width * 1.140) - (xoffset*4);
+
    hmax = hbp;
 
    if (height < 241)
