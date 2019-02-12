@@ -242,9 +242,9 @@ int crt_compute_dynamic_width(int width)
    {
       dynamic_width = (width*0.5)*i;
       if ((dynamic_width * min_height * ra_core_hz) > p_clock)
-         return dynamic_width;   
+         break;
    }
-  return width;
+  return dynamic_width;
 }
 
 #if defined(HAVE_VIDEOCORE)
