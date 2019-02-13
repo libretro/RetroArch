@@ -37,11 +37,13 @@ static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
          return ozone->dimensions.entry_padding_horizontal_full;
       else
          return ozone->dimensions.entry_padding_horizontal_half;
-   else
-      if (old_list)
+   else if (ozone->depth == 2)
+      if (old_list && ozone->fade_direction == false) /* false = left to right */
          return ozone->dimensions.entry_padding_horizontal_half;
       else
          return ozone->dimensions.entry_padding_horizontal_full;
+   else
+      return ozone->dimensions.entry_padding_horizontal_full;
 }
 
 static void ozone_draw_entry_value(ozone_handle_t *ozone,
