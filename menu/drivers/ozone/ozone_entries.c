@@ -28,6 +28,8 @@
 #include "../../menu_driver.h"
 #include "../../menu_animation.h"
 
+#include "../../../configuration.h"
+
 static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
 {
    /* TODO: Once we have thumbnails this condition will no longer work
@@ -284,6 +286,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    size_t i, y, entries_end;
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, video_info_width, entry_width, button_height;
+   settings_t *settings = config_get_ptr();
 
    bool old_list           = selection_buf == ozone->selection_buf_old;
    int x_offset            = 0;
@@ -294,10 +297,10 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    int16_t cursor_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t cursor_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   if (!ozone->cursor_mode && (cursor_x != ozone->cursor_x_old || cursor_y != ozone->cursor_y_old))
-   {
+   if (settings->bools.menu_mouse_enable && !ozone->cursor_mode && (cursor_x != ozone->cursor_x_old || cursor_y != ozone->cursor_y_old))
       ozone->cursor_mode = true;
-   }
+   else if (!settings->bools.menu_mouse_enable)
+      ozone->cursor_mode = false; /* we need to disable it on the fly */
 
    ozone->cursor_x_old = cursor_x;
    ozone->cursor_y_old = cursor_y;
@@ -457,7 +460,7 @@ border_iterate:
                entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
             word_wrap(sublabel_str, sublabel_str, sublable_max_width / ozone->sublabel_font_glyph_width, false);
       }
-      
+
       /* Icon */
       tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, entry_selected);
       if (tex != ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING])
