@@ -27,38 +27,40 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../menu_driver.h"
 #include "../../../retroarch.h"
 
-#define FONT_SIZE_FOOTER 18
-#define FONT_SIZE_TITLE 36
-#define FONT_SIZE_TIME 22
-#define FONT_SIZE_ENTRIES_LABEL 24
-#define FONT_SIZE_ENTRIES_SUBLABEL 18
-#define FONT_SIZE_SIDEBAR 24
+#define ANIMATION_PUSH_ENTRY_DURATION  10
+#define ANIMATION_CURSOR_DURATION      8
+#define ANIMATION_CURSOR_PULSE         30
 
-#define ANIMATION_PUSH_ENTRY_DURATION 10
-#define ANIMATION_CURSOR_DURATION 8
-#define ANIMATION_CURSOR_PULSE 30
+#define FONT_SIZE_FOOTER            18
+#define FONT_SIZE_TITLE             36
+#define FONT_SIZE_TIME              22
+#define FONT_SIZE_ENTRIES_LABEL     24
+#define FONT_SIZE_ENTRIES_SUBLABEL  18
+#define FONT_SIZE_SIDEBAR           24
 
 #define HEADER_HEIGHT 87
 #define FOOTER_HEIGHT 78
 
-#define ENTRY_PADDING_HORIZONTAL_HALF 60
-#define ENTRY_PADDING_HORIZONTAL_FULL 100
-#define ENTRY_PADDING_VERTRICAL 20
-#define ENTRY_HEIGHT 50
-#define ENTRY_PADDING 0
-#define ENTRY_ICON_SIZE 46
-#define ENTRY_ICON_PADDING  15
+#define ENTRY_PADDING_HORIZONTAL_HALF  60
+#define ENTRY_PADDING_HORIZONTAL_FULL  150
+#define ENTRY_PADDING_VERTICAL         20
+#define ENTRY_HEIGHT                   50
+#define ENTRY_SPACING                  8
+#define ENTRY_ICON_SIZE                46
+#define ENTRY_ICON_PADDING             15
 
-#define SIDEBAR_WIDTH 408
-#define SIDEBAR_X_PADDING 40
-#define SIDEBAR_Y_PADDING 20
-#define SIDEBAR_ENTRY_HEIGHT 50
-#define SIDEBAR_ENTRY_Y_PADDING 10
-#define SIDEBAR_ENTRY_ICON_SIZE 40
-#define SIDEBAR_ENTRY_ICON_PADDING 15
+#define SIDEBAR_WIDTH               408
+#define SIDEBAR_X_PADDING           40
+#define SIDEBAR_Y_PADDING           20
+#define SIDEBAR_ENTRY_HEIGHT        50
+#define SIDEBAR_ENTRY_Y_PADDING     10
+#define SIDEBAR_ENTRY_ICON_SIZE     40
+#define SIDEBAR_ENTRY_ICON_PADDING  15
 
-#define INTERVAL_BATTERY_LEVEL_CHECK (30 * 1000000)
-#define INTERVAL_OSK_CURSOR (0.5f * 1000000)
+#define CURSOR_SIZE 64
+
+#define INTERVAL_BATTERY_LEVEL_CHECK   (30 * 1000000)
+#define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
 
 struct ozone_handle
 {
@@ -177,10 +179,10 @@ struct ozone_handle
       int footer_height;
 
       int entry_padding_horizontal_half;
-      int entry_padding_horizontal_full; /* todo when sidebar is not visible */
+      int entry_padding_horizontal_full; /* TODO: when sidebar is not visible */
       int entry_padding_vertical;
       int entry_height;
-      int entry_padding;
+      int entry_spacing;
       int entry_icon_size;
       int entry_icon_padding;
 
@@ -191,7 +193,15 @@ struct ozone_handle
       int sidebar_entry_height;
       int sidebar_entry_icon_size;
       int sidebar_entry_icon_padding;
+
+      int cursor_size;
    } dimensions;
+
+   bool show_cursor;
+   bool cursor_mode;
+
+   int16_t cursor_x_old;
+   int16_t cursor_y_old;
 };
 
 /* If you change this struct, also
@@ -246,5 +256,9 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type);
 void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
 bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
+
+void ozone_compute_entries_position(ozone_handle_t *ozone);
+
+void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
 #endif

@@ -36,10 +36,12 @@ add_dirs()
 check_compiler()
 {	if [ "$1" = cxx ]; then
 		COMPILER="$CXX"
+		FLAGS="$CXXFLAGS"
 		TEMP_CODE="$TEMP_CXX"
 		TEST_C="extern \"C\" { void $2(void); } int main() { $2(); }"
 	else
 		COMPILER="$CC"
+		FLAGS="$CFLAGS"
 		TEMP_CODE="$TEMP_C"
 		TEST_C="void $2(void); int main(void) { $2(); return 0; }"
 	fi
@@ -111,7 +113,7 @@ check_lib()
 	error="${8:-}"
 	answer='no'
 	printf %s "$MSG $lib"
-	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $lib"
+	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $FLAGS $LDFLAGS $lib"
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
 	printf %s\\n " ... $answer"
 

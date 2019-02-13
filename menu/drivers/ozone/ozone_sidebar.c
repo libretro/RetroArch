@@ -256,13 +256,13 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 }
@@ -281,13 +281,13 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 }
@@ -338,13 +338,13 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 
