@@ -517,6 +517,7 @@ default_sublabel_macro(action_bind_sublabel_rgui_menu_color_theme,              
 default_sublabel_macro(action_bind_sublabel_rgui_menu_theme_preset,                        MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_downscaler,                MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER)
 default_sublabel_macro(action_bind_sublabel_content_runtime_log,                           MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -2251,6 +2252,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_internal_upscale_level);
             break;
          default:
          case MSG_UNKNOWN:
