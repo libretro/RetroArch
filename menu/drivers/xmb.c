@@ -3156,7 +3156,7 @@ static void xmb_render(void *data, bool is_idle)
 
    scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
 
-   if (scale_factor != xmb->previous_scale_factor)
+   if (scale_factor >= 0.1f && scale_factor != xmb->previous_scale_factor)
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
             false);
 
