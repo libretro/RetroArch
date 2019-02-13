@@ -42,6 +42,7 @@ static unsigned orig_width        = 0;
 static unsigned orig_height       = 0;
 static int crt_center_adjust      = 0;
 static int crt_tmp_center_adjust  = 0;
+static double p_clock             = 0;
 
 static bool first_run             = true;
 
@@ -239,12 +240,12 @@ void crt_video_restore(void)
 
 int crt_compute_dynamic_width(int width)
 {
-   double p_clock    = 15000000;
+   p_clock    = 15000000;
 
    int min_height    = 261;
    int dynamic_width = 0;
    #if defined(HAVE_VIDEOCORE)
-      double p_clock = 32000000;
+      p_clock = 32000000;
    #endif
 
 
