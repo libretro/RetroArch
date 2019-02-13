@@ -27,8 +27,6 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../menu_driver.h"
 #include "../../../retroarch.h"
 
-#define OZONE_ENABLE_MOUSE 0 /* TODO: remove this define once it works */
-
 #define ANIMATION_PUSH_ENTRY_DURATION  10
 #define ANIMATION_CURSOR_DURATION      8
 #define ANIMATION_CURSOR_PULSE         30
@@ -200,6 +198,10 @@ struct ozone_handle
    } dimensions;
 
    bool show_cursor;
+   bool cursor_mode;
+
+   int16_t cursor_x_old;
+   int16_t cursor_y_old;
 };
 
 /* If you change this struct, also

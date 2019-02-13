@@ -151,6 +151,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->pending_message           = NULL;
    ozone->show_cursor               = false;
 
+   ozone->cursor_mode  = false;
+   ozone->cursor_x_old = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   ozone->cursor_y_old = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
    if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
@@ -1226,7 +1230,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
 
    /* Cursor */
-#if OZONE_ENABLE_MOUSE
    if (ozone->show_cursor)
    {
       menu_display_set_alpha(ozone_pure_white, 1.0f);
@@ -1241,7 +1244,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_info->height
       );
    }
-#endif
 
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
@@ -1264,7 +1266,8 @@ static void ozone_set_header(ozone_handle_t *ozone)
 static void ozone_animation_end(void *userdata)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-   ozone->draw_old_list = false;
+   ozone->draw_old_list             = false;
+   ozone->animations.cursor_alpha   = 1.0f;
 }
 
 static void ozone_list_open(ozone_handle_t *ozone)
@@ -1276,13 +1279,13 @@ static void ozone_list_open(ozone_handle_t *ozone)
    /* Left/right animation */
    ozone->animations.list_alpha = 0.0f;
 
-   entry.cb = ozone_animation_end;
-   entry.duration = ANIMATION_PUSH_ENTRY_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.list_alpha;
-   entry.tag = (uintptr_t) NULL;
-   entry.target_value = 1.0f;
-   entry.userdata = ozone;
+   entry.cb             = ozone_animation_end;
+   entry.duration       = ANIMATION_PUSH_ENTRY_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.list_alpha;
+   entry.tag            = (uintptr_t) NULL;
+   entry.target_value   = 1.0f;
+   entry.userdata       = ozone;
 
    menu_animation_push(&entry);
 
@@ -1379,6 +1382,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
    switch (action)
    {
       case MENU_ACTION_DOWN:
+         ozone->cursor_mode = false;
          if (!ozone->cursor_in_sidebar)
             break;
 
@@ -1394,6 +1398,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_UP:
+         ozone->cursor_mode = false;
          if (!ozone->cursor_in_sidebar)
             break;
 
@@ -1409,6 +1414,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_LEFT:
+         ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
             new_action = MENU_ACTION_NOOP;
@@ -1422,6 +1428,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_RIGHT:
+         ozone->cursor_mode = false;
          if (!ozone->cursor_in_sidebar)
          {
             if (ozone->depth == 1)
@@ -1434,6 +1441,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_OK:
+         ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
             ozone_leave_sidebar(ozone, tag);
@@ -1442,6 +1450,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          }
          break;
       case MENU_ACTION_CANCEL:
+         ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
             /* Go back to main menu tab */
@@ -1771,7 +1780,6 @@ static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_i
 }
 #endif
 
-#if OZONE_ENABLE_MOUSE
 static int ozone_pointer_tap(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
@@ -1788,7 +1796,6 @@ static int ozone_pointer_tap(void *userdata,
 
    return 0;
 }
-#endif
 
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
@@ -1824,11 +1831,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* load_image */
    "ozone",
    ozone_environ_cb,
-#if OZONE_ENABLE_MOUSE
    ozone_pointer_tap,
-#else
-   NULL,
-#endif
    NULL,                         /* update_thumbnail_path */
    NULL,                         /* update_thumbnail_image */
    NULL,                         /* set_thumbnail_system */

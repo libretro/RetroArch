@@ -155,24 +155,24 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
       /* Cursor animation */
       ozone->animations.cursor_alpha = 0.0f;
 
-      entry.cb = NULL;
-      entry.duration = ANIMATION_CURSOR_DURATION;
-      entry.easing_enum = EASING_OUT_QUAD;
-      entry.subject = &ozone->animations.cursor_alpha;
-      entry.tag = tag;
-      entry.target_value = 1.0f;
-      entry.userdata = NULL;
+      entry.cb             = NULL;
+      entry.duration       = ANIMATION_CURSOR_DURATION;
+      entry.easing_enum    = EASING_OUT_QUAD;
+      entry.subject        = &ozone->animations.cursor_alpha;
+      entry.tag            = tag;
+      entry.target_value   = 1.0f;
+      entry.userdata       = NULL;
 
       menu_animation_push(&entry);
 
       /* Scroll animation */
-      entry.cb = NULL;
-      entry.duration = ANIMATION_CURSOR_DURATION;
-      entry.easing_enum = EASING_OUT_QUAD;
-      entry.subject = &ozone->animations.scroll_y;
-      entry.tag = tag;
-      entry.target_value = new_scroll;
-      entry.userdata = NULL;
+      entry.cb             = NULL;
+      entry.duration       = ANIMATION_CURSOR_DURATION;
+      entry.easing_enum    = EASING_OUT_QUAD;
+      entry.subject        = &ozone->animations.scroll_y;
+      entry.tag            = tag;
+      entry.target_value   = new_scroll;
+      entry.userdata       = NULL;
 
       menu_animation_push(&entry);
    }
@@ -287,13 +287,20 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
 
    bool old_list           = selection_buf == ozone->selection_buf_old;
    int x_offset            = 0;
-   size_t selection_y      = 0;
+   size_t selection_y      = 0; /* 0 means no selection (we assume that no entry has y = 0) */
    size_t old_selection_y  = 0;
    int entry_padding       = ozone_get_entries_padding(ozone, old_list);
 
-   int16_t mouse_x   = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t cursor_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t cursor_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   if (!ozone->cursor_mode && (cursor_x != ozone->cursor_x_old || cursor_y != ozone->cursor_y_old))
+   {
+      ozone->cursor_mode = true;
+   }
+
+   ozone->cursor_x_old = cursor_x;
+   ozone->cursor_y_old = cursor_y;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -333,10 +340,10 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
 
       ozone_node_t *node      = NULL;
 
-      if (entry_selected)
+      if (entry_selected && selection_y == 0)
          selection_y = y;
 
-      if (entry_old_selected)
+      if (entry_old_selected && old_selection_y == 0)
          old_selection_y = y;
 
       node                    = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, i);
@@ -361,15 +368,17 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       menu_display_draw_quad(video_info, border_start_x,
          border_start_y + button_height, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
 
-      /* Mouse click */
-#if OZONE_ENABLE_MOUSE
-      if (mouse_x >= border_start_x && mouse_x <= border_start_x + entry_width
-         && mouse_y >= border_start_y && mouse_y <= border_start_y + button_height)
+      /* Cursor */
+      if (!old_list && ozone->cursor_mode)
       {
-         selection_y = y;
-         menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
+         if (  cursor_x >= border_start_x && cursor_x <= border_start_x + entry_width &&
+               cursor_y >= border_start_y && cursor_y <= border_start_y + button_height)
+         {
+            selection_y = y;
+            menu_navigation_set_selection(i);
+            menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
+         }
       }
-#endif
 
 border_iterate:
       y += node->height;
@@ -429,7 +438,7 @@ border_iterate:
       ticker.s        = rich_label;
       ticker.str      = entry_rich_label;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len      = (entry_width - 60 - text_offset) / ozone->entry_font_glyph_width;
+      ticker.len      = (entry_width - entry_padding - text_offset) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
 
