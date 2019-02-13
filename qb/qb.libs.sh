@@ -154,6 +154,7 @@ check_lib()
 # $2 = package ['package' or 'package package1 package2', $1 = name]
 # $3 = version [checked only if non-empty]
 # $4 = critical error message [checked only if non-empty]
+# $5 = force check_lib when true [checked only if non-empty, set by check_val]
 check_pkgconf()
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	eval "TMP_$1=\$tmpval"
@@ -175,6 +176,7 @@ check_pkgconf()
 	val="$1"
 	ver="${3:-0.0}"
 	err="${4:-}"
+	lib="${5:-}"
 	answer='no'
 	version='no'
 
@@ -199,6 +201,7 @@ check_pkgconf()
 	eval "HAVE_$val=\"$answer\""
 
 	if [ "$answer" = 'no' ]; then
+		[ "$lib" != 'true' ] || return 0
 		[ "$err" ] && die 1 "$err"
 		setval="$(eval "printf %s \"\$USER_$val\"")"
 		if [ "$setval" = 'yes' ]; then
@@ -303,13 +306,13 @@ check_switch()
 # $7 = critical error message [checked only if non-empty]
 # $8 = force check_lib when true [checked only if non-empty]
 check_val()
-{	check_pkgconf "$2" "$5" "${6:-}" "${7:-}"
+{	check_pkgconf "$2" "$5" "${6:-}" "${7:-}" "${8:-}"
 	[ "$PKG_CONF_PATH" = "none" ] || [ "${8:-}" = true ] || return 0
 	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
-		check_lib "$1" "$2" "$3" '' '' '' "$4" ''
+		check_lib "$1" "$2" "$3" '' '' '' "${4:-}" "${7:-}"
 	fi
 }
 
