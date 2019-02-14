@@ -411,7 +411,6 @@ typedef struct
    bool mouse_show;
    unsigned last_width;
    unsigned last_height;
-   unsigned frame_count;
    bool bg_thickness;
    bool border_thickness;
    float scroll_y;
@@ -1457,8 +1456,6 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          prepare_rgui_colors(rgui, settings);
       }
    }
-
-   rgui->frame_count++;
 }
 
 static void rgui_render(void *data, bool is_idle)
@@ -1473,7 +1470,6 @@ static void rgui_render(void *data, bool is_idle)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui->frame_count;
 
    static bool display_kb         = false;
    bool current_display_cb        = false;
@@ -1589,7 +1585,7 @@ static void rgui_render(void *data, bool is_idle)
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
-   ticker.idx = frame_count / RGUI_TERM_START_X(fb_width);
+   ticker.idx = menu_animation_get_ticker_idx();
    ticker.type_enum = settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 

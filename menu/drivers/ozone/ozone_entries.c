@@ -442,7 +442,7 @@ border_iterate:
       /* Prepare text */
       entry_rich_label = menu_entry_get_rich_label(&entry);
 
-      ticker.idx      = ozone->frame_count / 20;
+      ticker.idx      = menu_animation_get_ticker_idx();
       ticker.s        = rich_label;
       ticker.str      = entry_rich_label;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
@@ -518,7 +518,7 @@ border_iterate:
             y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
-      ticker.idx      = ozone->frame_count / 20;
+      ticker.idx      = menu_animation_get_ticker_idx();
       ticker.s        = entry_value_ticker;
       ticker.str      = entry_value;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
