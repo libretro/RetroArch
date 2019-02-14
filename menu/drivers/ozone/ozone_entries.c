@@ -408,6 +408,7 @@ border_iterate:
       menu_texture_item tex;
       menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
+      static const char ticker_spacer[] = "   |   ";
       char entry_value[255];
       char rich_label[255];
       char entry_value_ticker[255];
@@ -417,6 +418,10 @@ border_iterate:
       bool entry_selected     = false;
       int text_offset         = -ozone->dimensions.entry_icon_padding - ozone->dimensions.entry_icon_size;
       float *icon_color       = NULL;
+
+      /* Initial ticker configuration */
+      ticker.type_enum = settings->uints.menu_ticker_type;
+      ticker.spacer = ticker_spacer;
 
       entry_value[0]         = '\0';
       entry_selected         = selection == i;

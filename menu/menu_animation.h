@@ -84,6 +84,16 @@ enum menu_animation_easing_type
    EASING_LAST
 };
 
+/* TODO:
+ * Add a reverse loop ticker for languages
+ * that read right to left */
+enum menu_animation_ticker_type
+{
+   TICKER_TYPE_BOUNCE = 0,
+   TICKER_TYPE_LOOP,
+   TICKER_TYPE_LAST
+};
+
 typedef struct menu_animation_ctx_delta
 {
    float current;
@@ -114,8 +124,10 @@ typedef struct menu_animation_ctx_ticker
    bool selected;
    size_t len;
    uint64_t idx;
+   enum menu_animation_ticker_type type_enum;
    char *s;
    const char *str;
+   const char *spacer;
 } menu_animation_ctx_ticker_t;
 
 typedef float menu_timer_t;

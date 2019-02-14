@@ -891,6 +891,30 @@ static void setting_get_string_representation_uint_rgui_internal_upscale_level(
    }
 }
 
+static void setting_get_string_representation_uint_menu_ticker_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case TICKER_TYPE_BOUNCE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
+               len);
+         break;
+      case TICKER_TYPE_LOOP:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
+               len);
+         break;
+   }
+}
+
 #ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
@@ -8164,6 +8188,22 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_start  = NULL;
 #endif
          }
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_ticker_type,
+               MENU_ENUM_LABEL_MENU_TICKER_TYPE,
+               MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+               menu_ticker_type,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_ticker_type;
+         menu_settings_list_current_add_range(list, list_info, 0, TICKER_TYPE_LAST-1, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
