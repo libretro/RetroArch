@@ -1464,6 +1464,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
+   static const char ticker_spacer[] = " | ";
    unsigned x, y;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
@@ -1586,10 +1587,11 @@ static void rgui_render(void *data, bool is_idle)
       rgui_render_background(rgui);
    }
 
-   /* We use a single ticker for all text animations.
-    * The same 'idx' is used in all cases, so set it
-    * once at the beginning. */
+   /* We use a single ticker for all text animations,
+    * with the following configuration: */
    ticker.idx = frame_count / RGUI_TERM_START_X(fb_width);
+   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
 
    /* If thumbnails are enabled and we are viewing a playlist,
     * switch to thumbnail view mode if either current thumbnail

@@ -3075,6 +3075,22 @@ MSG_HASH(
      "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "Ticker Text Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+    "Select horizontal scrolling method used to display long menu text strings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+    "Bounce Left/Right"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+    "Scroll Left"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
     "Menu Color Theme"
     )

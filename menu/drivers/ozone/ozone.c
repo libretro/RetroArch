@@ -848,8 +848,13 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    char title[255];
    menu_animation_ctx_ticker_t ticker;
+   static const char ticker_spacer[] = "   |   ";
    settings_t *settings     = config_get_ptr();
    unsigned timedate_offset = 0;
+
+   /* Initial ticker configuration */
+   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
 
    /* Separator */
    menu_display_draw_quad(video_info, 30, ozone->dimensions.header_height, video_info->width - 60, 1, video_info->width, video_info->height, ozone->theme->header_footer_separator);

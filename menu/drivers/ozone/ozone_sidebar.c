@@ -109,6 +109,12 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    unsigned i, sidebar_height;
    char console_title[255];
    menu_animation_ctx_ticker_t ticker;
+   static const char ticker_spacer[] = "   |   ";
+   settings_t *settings = config_get_ptr();
+
+   /* Initial ticker configuration */
+   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
 
    unsigned selection_y          = 0;
    unsigned selection_old_y      = 0;

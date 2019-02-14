@@ -546,6 +546,7 @@ static void xui_render(void *data, bool is_idle)
    unsigned menu_type          = 0;
    uint64_t frame_count        = xui_frame_count;
    bool              msg_force = menu_display_get_msg_force();
+   settings_t *settings        = config_get_ptr();
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -565,9 +566,14 @@ static void xui_render(void *data, bool is_idle)
    if (XuiHandleIsValid(m_menutitle))
    {
       menu_animation_ctx_ticker_t ticker;
+      static const char ticker_spacer[] = " | ";
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
+
+      /* Initial ticker configuration */
+      ticker.type_enum = settings->uints.menu_ticker_type;
+      ticker.spacer = ticker_spacer;
 
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;

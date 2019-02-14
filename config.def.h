@@ -272,6 +272,7 @@ static const float default_input_overlay_opacity = 0.7f;
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_animation.h"
 
 static bool default_block_config_read    = true;
 
@@ -322,6 +323,8 @@ static bool menu_show_core_updater       = false;
 static bool menu_show_core_updater       = true;
 #endif
 static bool menu_show_sublabels          = false;
+
+static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
