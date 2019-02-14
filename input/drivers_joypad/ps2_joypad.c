@@ -37,13 +37,15 @@ static const char *ps2_joypad_name(unsigned pad)
 
 static bool ps2_joypad_init(void *data)
 {
-   unsigned ret, port;
-   bool init = true;
+   unsigned ret  = 0;
+   unsigned port = 0;
+   bool init     = true;
 
    printf("PortMax: %d\n", padGetPortMax());
    printf("SlotMax: %d\n", padGetSlotMax(port));
 
-   for (port = 0; port < PS2_MAX_PADS; port++) {
+   for (port = 0; port < PS2_MAX_PADS; port++)
+   {
       bool auto_configure = input_autoconfigure_connect( ps2_joypad_name(port),
                                                          NULL,
                                                          ps2_joypad.ident,
