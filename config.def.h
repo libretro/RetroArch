@@ -325,6 +325,7 @@ static bool menu_show_core_updater       = true;
 static bool menu_show_sublabels          = false;
 
 static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
+static float menu_ticker_speed           = 1.0f;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
