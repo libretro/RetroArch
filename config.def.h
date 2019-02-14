@@ -577,6 +577,9 @@ static const bool framecount_show = false;
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 static const bool memory_show = false;
 
+/* Enables displaying various timing statistics. */
+static const bool statistics_show = false;
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 static const bool rewind_enable = false;
