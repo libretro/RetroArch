@@ -1201,6 +1201,9 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
 
    if (!string_is_empty(xmb->thumbnail_system))
       free(xmb->thumbnail_system);
+   /* There is only one mame thumbnail repo */
+   if (strncmp("MAME", s, 4) == 0)
+      strcpy(s, "MAME");
    xmb->thumbnail_system = strdup(s);
 }
 
