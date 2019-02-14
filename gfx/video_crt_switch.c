@@ -240,26 +240,24 @@ void crt_video_restore(void)
 
 int crt_compute_dynamic_width(int width)
 {
-   p_clock    = 15000000;
+   unsigned i;
+   int dynamic_width   = 0;
+   unsigned min_height = 261;
 
-   int min_height    = 261;
-   int dynamic_width = 0;
-   #if defined(HAVE_VIDEOCORE)
-      p_clock = 32000000;
-   #endif
+#if defined(HAVE_VIDEOCORE)
+   p_clock             = 32000000;
+#else
+   p_clock             = 15000000;
+#endif
 
-
-   for (int i =0; i < 10; i++)
-
-
-
+   for (i = 0; i < 10; i++)
    {
       dynamic_width = (width*1.5)*i;
       if ((dynamic_width * min_height * ra_core_hz) > p_clock)
          break;
 
    }
-  return dynamic_width;
+   return dynamic_width;
 }
 
 #if defined(HAVE_VIDEOCORE)
@@ -373,19 +371,19 @@ static void crt_rpi_switch(int width, int height, float hz)
          width, hfp, hsp, hbp, height, vfp,vsp, vbp,
          hz, ip_flag, pixel_clock);
 
-   vcos_init ();
+   vcos_init();
 
-   vchi_initialise (&vchi_instance);
+   vchi_initialise(&vchi_instance);
 
-   vchi_connect (NULL, 0, vchi_instance);
+   vchi_connect(NULL, 0, vchi_instance);
 
-   vc_vchi_gencmd_init (vchi_instance, &vchi_connection, 1);
+   vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
 
-   vc_gencmd (buffer, sizeof (buffer), set_hdmi_timing);
+   vc_gencmd(buffer, sizeof(buffer), set_hdmi_timing);
 
-   vc_gencmd_stop ();
+   vc_gencmd_stop();
 
-   vchi_disconnect (vchi_instance);
+   vchi_disconnect(vchi_instance);
 
    snprintf(output1,  sizeof(output1),
          "tvservice -e \"DMT 87\" > /dev/null");
