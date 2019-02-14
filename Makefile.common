@@ -1900,6 +1900,19 @@ ifeq ($(HAVE_CLASSIC), 1)
   DEF_FLAGS += -DHAVE_CLASSIC
 endif
 
+ifeq ($(HAVE_PSCLASSIC), 1)
+  DEF_FLAGS += -DHAVE_PSCLASSIC
+endif
+
+ifeq ($(HAVE_C_A35), 1)
+   C_A35_OPT = -DHAVE_PSCLASSIC -Ofast \
+                -fno-stack-protector -fno-ident -fomit-frame-pointer \
+                -fmerge-all-constants -fno-math-errno \
+                -marm -mcpu=cortex-a35 -mtune=cortex-a35 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+   DEF_FLAGS += $(C_A35_OPT)
+   LDFLAGS += -marm -mcpu=cortex-a35 -mtune=cortex-a35 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+endif
+
 ifeq ($(HAVE_C_A7A7), 1)
    C_A7A7_OPT = -Ofast \
                 -fno-lto \
