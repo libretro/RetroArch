@@ -2971,6 +2971,46 @@ MSG_HASH(
     "Sinc/Lanczos3 (Slow)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+    "None"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+    "Auto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
+    "x2"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3,
+    "x3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4,
+    "x4"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5,
+    "x5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6,
+    "x6"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7,
+    "x7"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8,
+    "x8"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
+    "x9"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Thumbnails"
     )
@@ -6691,6 +6731,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT,
     "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Internal Upscaling"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,

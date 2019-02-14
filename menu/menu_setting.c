@@ -819,6 +819,78 @@ static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_internal_upscale_level(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_UPSCALE_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE),
+               len);
+         break;
+      case RGUI_UPSCALE_AUTO:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO),
+               len);
+         break;
+      case RGUI_UPSCALE_X2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2),
+               len);
+         break;
+      case RGUI_UPSCALE_X3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3),
+               len);
+         break;
+      case RGUI_UPSCALE_X4:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4),
+               len);
+         break;
+      case RGUI_UPSCALE_X5:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5),
+               len);
+         break;
+      case RGUI_UPSCALE_X6:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6),
+               len);
+         break;
+      case RGUI_UPSCALE_X7:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7),
+               len);
+         break;
+      case RGUI_UPSCALE_X8:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8),
+               len);
+         break;
+      case RGUI_UPSCALE_X9:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9),
+               len);
+         break;
+   }
+}
+
 #ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
@@ -7990,6 +8062,7 @@ static bool setting_append_list(
                   );
 
             if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+            {
                CONFIG_BOOL(
                      list, list_info,
                      &settings->bools.menu_linear_filter,
@@ -8005,6 +8078,24 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE
                      );
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.menu_rgui_internal_upscale_level,
+                     MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+                     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+                     rgui_internal_upscale_level,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_rgui_internal_upscale_level;
+               menu_settings_list_current_add_range(list, list_info, 0, RGUI_UPSCALE_LAST-1, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            }
 
             CONFIG_BOOL(
                   list, list_info,

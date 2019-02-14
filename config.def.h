@@ -379,6 +379,8 @@ static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 static bool rgui_lock_aspect = false;
 
+static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
+
 #else
 static bool default_block_config_read = false;
 static bool automatically_add_content_to_playlist = false;

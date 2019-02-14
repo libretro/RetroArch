@@ -426,6 +426,7 @@ typedef struct settings
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
+      unsigned menu_rgui_internal_upscale_level;
 
       unsigned camera_width;
       unsigned camera_height;
