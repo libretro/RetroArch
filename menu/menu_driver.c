@@ -1588,10 +1588,13 @@ void menu_display_draw_text(
 {
    struct font_params params;
 
+   if ((color & 0x000000FF) == 0)
+      return;
+
    /* Don't draw outside of the screen */
-   if (     ((x < -64 || x > width  + 64)
+   if (!draw_outside &&
+           ((x < -64 || x > width  + 64)
          || (y < -64 || y > height + 64))
-         && !draw_outside
       )
       return;
 
