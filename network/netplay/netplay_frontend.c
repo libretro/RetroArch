@@ -894,12 +894,12 @@ static void netplay_announce(void)
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
-   if (!string_is_empty(settings->paths.username))
-      net_http_urlencode(&username, settings->paths.username);
 #ifdef HAVE_DISCORD
-   else
+   if(discord_is_ready())
       net_http_urlencode(&username, discord_get_own_username());
+   else
 #endif
+   net_http_urlencode(&username, settings->paths.username);
    net_http_urlencode(&corename, system->library_name);
    net_http_urlencode(&coreversion, system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
@@ -1509,7 +1509,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          &cbs,
          settings->bools.netplay_nat_traversal,
 #ifdef HAVE_DISCORD
-         string_is_empty(settings->paths.username) ? discord_get_own_username() :
+         discord_get_own_username() ? discord_get_own_username() :
 #endif
          settings->paths.username,
          quirks);
