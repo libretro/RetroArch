@@ -462,6 +462,12 @@ const struct rarch_key_map rarch_key_map_sdl[] = {
    { SDLK_MENU, RETROK_MENU },
    { SDLK_POWER, RETROK_POWER },
 
+#ifdef HAVE_PSCLASSIC
+   { SDLK_SLEEP, RETROK_POWER },
+   { SDLK_AUDIOPLAY, RETROK_MENU },
+   { SDLK_EJECT, RETROK_TAB },
+#endif
+
 #ifndef HAVE_SDL2
    { SDLK_EURO, RETROK_EURO },
 #endif
