@@ -44,7 +44,9 @@ static char new_mode[250]       = {0};
 static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
 static char output[500]         = {0};
-static char output4[500]         = {0};
+static char output4[500]        = {0};
+static char crt_name[10]        = {0}; 
+static int crt_name_id          = 0;
 static bool crt_en              = false;
 static unsigned crtid           = 20;
 static XRRModeInfo crt_rrmode;
@@ -127,7 +129,7 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 }
 
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset)
 {
    int screen;
    Window window;
@@ -150,6 +152,9 @@ static bool x11_display_server_set_resolution(void *data,
    float pixel_clock        = 0;
 
    crt_en                   = true;
+   crt_name_id += 1;
+   snprintf(crt_name, sizeof(crt_name), "CRT%d", crt_name_id);
+
 
    snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
 
@@ -161,8 +166,6 @@ static bool x11_display_server_set_resolution(void *data,
    video_monitor_set_refresh_rate(hz);
 
    /* following code is the mode line generator */
-   hsp    = (width * 1.140) + x_offset;
-   hfp    = width * 1.055;
    pwidth = width;
 
    if (height < 400 && width > 400)
@@ -179,7 +182,18 @@ static bool x11_display_server_set_resolution(void *data,
    if (roundw < 1.20)
       roundw = 1.34;
 
-   hbp  = width * roundw - 8;
+   if (width < 700)
+   {
+      hfp    = width * 1.055;
+      hbp  = width * roundw - 8;
+   }else {
+      hfp  = (width * 1.055) + (width / 40);
+      hbp  = (width * roundw) + (width /24);
+      xoffset = xoffset*2;
+   }
+   
+   hsp    = (width * 1.140) - (xoffset*4);
+
    hmax = hbp;
 
    if (height < 241)
@@ -228,20 +242,20 @@ static bool x11_display_server_set_resolution(void *data,
    /* create interlaced newmode from modline variables */
    if (height < 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"CRT_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%s_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d -hsync -vsync",crt_name, width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
    {
-      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"CRT_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock,
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%s_%dx%d_%0.2f\" %f %d %d %d %d %d %d %d %d interlace -hsync -vsync",crt_name, width, height, hz, pixel_clock,
             width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
    }
 
    /* variable for new mode */
-   snprintf(new_mode, sizeof(new_mode), "CRT_%dx%d_%0.2f", width, height, hz);
+   snprintf(new_mode, sizeof(new_mode), "%s_%dx%d_%0.2f",crt_name, width, height, hz);
 
    /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
