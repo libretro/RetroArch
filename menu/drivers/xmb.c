@@ -454,6 +454,15 @@ float gradient_morning_blue[16] = {
    170/255.0, 200/255.0, 252/255.0, 1.00,
 };
 
+#ifdef HAVE_PSCLASSIC
+float gradient_psclassic[16] = {
+   128.0/255.0, 128.0/255.0, 130.0/255.0, 1.00,
+   147.0/255.0, 147.0/255.0, 149.0/255.0, 1.00,
+   165.0/255.0, 165.0/255.0, 168.0/255.0, 1.00,
+   184.0/255.0, 184.0/255.0, 187.0/255.0, 1.00,
+};
+#endif
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -611,6 +620,10 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_light[0];
       case XMB_THEME_MORNING_BLUE:
          return &gradient_morning_blue[0];
+#ifdef HAVE_PSCLASSIC
+      case XMB_THEME_PSCLASSIC:
+         return  &gradient_psclassic[0];
+#endif
       case XMB_THEME_LEGACY_RED:
       default:
          break;
