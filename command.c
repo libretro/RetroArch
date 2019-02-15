@@ -2145,6 +2145,12 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_OVERLAY_INIT:
          {
+#if defined(GEKKO)
+            /* Avoid a crash at startup or even when toggling overlay in rgui */
+						uint64_t memory_used       = frontend_driver_get_used_memory();
+						if(memory_used > (72 * 1024 * 1024))
+							break;
+#endif
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
