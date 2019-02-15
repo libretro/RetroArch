@@ -113,7 +113,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    settings_t *settings = config_get_ptr();
 
    /* Initial ticker configuration */
-   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
    unsigned selection_y          = 0;
