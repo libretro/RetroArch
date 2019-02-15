@@ -69,7 +69,7 @@
 #define STRIPES_RIBBON_VERTICES 2*STRIPES_RIBBON_COLS*STRIPES_RIBBON_ROWS-2*STRIPES_RIBBON_COLS
 
 #ifndef STRIPES_DELAY
-#define STRIPES_DELAY 10
+#define STRIPES_DELAY 166
 #endif
 
 #define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
@@ -248,8 +248,6 @@ typedef struct stripes_handle
    float categories_active_zoom;
    float categories_active_alpha;
    float categories_active_width;
-
-   uint64_t frame_count;
 
    char title_name[255];
    char *box_message;
@@ -2323,7 +2321,6 @@ static int stripes_draw_item(
       float *color,
       const char *thumb_ident,
       const char *left_thumb_ident,
-      uint64_t frame_count,
       size_t i,
       size_t current,
       unsigned width,
@@ -2455,7 +2452,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = frame_count / 20;
+   ticker.idx      = menu_animation_get_ticker_idx();
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2491,7 +2488,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * stripes_scale_mod[7];
-   ticker.idx      = frame_count / 20;
+   ticker.idx      = menu_animation_get_ticker_idx();
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
@@ -2592,7 +2589,6 @@ static void stripes_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    stripes_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = stripes ? stripes->frame_count : 0;
    const char *thumb_ident     = stripes_thumbnails_ident('R');
    const char *left_thumb_ident= stripes_thumbnails_ident('L');
 
@@ -2645,7 +2641,6 @@ static void stripes_draw_items(
             &mymat,
             stripes, core_node,
             list, color, thumb_ident, left_thumb_ident,
-            frame_count,
             i, current,
             width, height);
       menu_entry_free(&entry);
@@ -2827,8 +2822,6 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
    pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4;
-
-   stripes->frame_count++;
 
    msg[0]             = '\0';
    title_msg[0]       = '\0';

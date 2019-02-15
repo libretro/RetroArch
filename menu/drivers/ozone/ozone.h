@@ -27,9 +27,9 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../menu_driver.h"
 #include "../../../retroarch.h"
 
-#define ANIMATION_PUSH_ENTRY_DURATION  10
-#define ANIMATION_CURSOR_DURATION      8
-#define ANIMATION_CURSOR_PULSE         30
+#define ANIMATION_PUSH_ENTRY_DURATION  166
+#define ANIMATION_CURSOR_DURATION      133
+#define ANIMATION_CURSOR_PULSE         500
 
 #define FONT_SIZE_FOOTER            18
 #define FONT_SIZE_TITLE             36
@@ -64,8 +64,6 @@ typedef struct ozone_handle ozone_handle_t;
 
 struct ozone_handle
 {
-   uint64_t frame_count;
-
    struct
    {
       font_data_t *footer;

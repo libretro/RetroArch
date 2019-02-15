@@ -94,12 +94,6 @@ enum menu_animation_ticker_type
    TICKER_TYPE_LAST
 };
 
-typedef struct menu_animation_ctx_delta
-{
-   float current;
-   float ideal;
-} menu_animation_ctx_delta_t;
-
 typedef uintptr_t menu_animation_ctx_tag;
 
 typedef struct menu_animation_ctx_subject
@@ -153,13 +147,11 @@ void menu_animation_init(void);
 
 void menu_animation_free(void);
 
-bool menu_animation_update(float delta_time);
-
-void menu_animation_get_time(menu_animation_ctx_delta_t *delta);
+bool menu_animation_update(void);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 
-void menu_animation_update_time(bool timedate_enable);
+float menu_animation_get_delta_time(void);
 
 bool menu_animation_is_active(void);
 
@@ -172,6 +164,10 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry);
 void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
+
+uint64_t menu_animation_get_ticker_idx(void);
+
+uint64_t menu_animation_get_ticker_slow_idx(void);
 
 RETRO_END_DECLS
 

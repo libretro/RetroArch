@@ -226,7 +226,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
 
          /* Text */
-         ticker.idx        = ozone->frame_count / 20;
+         ticker.idx        = menu_animation_get_ticker_idx();
          ticker.len        = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 35) / ozone->sidebar_font_glyph_width;
          ticker.s          = console_title;
          ticker.selected   = selected;

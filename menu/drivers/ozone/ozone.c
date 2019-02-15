@@ -482,7 +482,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone_context_reset_horizontal_list(ozone);
 
       /* State reset */
-      ozone->frame_count                  = 0;
       ozone->fade_direction               = false;
       ozone->cursor_in_sidebar            = false;
       ozone->cursor_in_sidebar_old        = false;
@@ -862,7 +861,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Title */
    ticker.s = title;
    ticker.len = (video_info->width - 128 - 47 - 130) / ozone->title_font_glyph_width;
-   ticker.idx = ozone->frame_count / 20;
+   ticker.idx = menu_animation_get_ticker_idx();
    ticker.str = ozone->title;
    ticker.selected = true;
 
@@ -1100,8 +1099,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
    }
-
-   ozone->frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
 

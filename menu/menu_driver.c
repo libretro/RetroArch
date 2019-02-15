@@ -1588,10 +1588,13 @@ void menu_display_draw_text(
 {
    struct font_params params;
 
+   if ((color & 0x000000FF) == 0)
+      return;
+
    /* Don't draw outside of the screen */
-   if (     ((x < -64 || x > width  + 64)
+   if (!draw_outside &&
+           ((x < -64 || x > width  + 64)
          || (y < -64 || y > height + 64))
-         && !draw_outside
       )
       return;
 
@@ -1952,9 +1955,6 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
-      settings_t *settings = config_get_ptr();
-      menu_animation_update_time(settings->bools.menu_timedate_enable);
-
       if (menu_driver_ctx->render)
          menu_driver_ctx->render(menu_userdata, is_idle);
    }
