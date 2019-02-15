@@ -106,7 +106,8 @@ unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
 void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
    size_t y;
-   unsigned i, sidebar_height;
+   int entry_width;
+   unsigned i, sidebar_height, selection_y, selection_old_y, horizontal_list_size;
    char console_title[255];
    menu_animation_ctx_ticker_t ticker;
    static const char ticker_spacer[] = "\u2003\u2022\u2003"; /* <EM SPACE><BULLET><EM SPACE> */
@@ -116,11 +117,11 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    ticker.type_enum = settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
-   unsigned selection_y          = 0;
-   unsigned selection_old_y      = 0;
-   unsigned horizontal_list_size = 0;
+   selection_y          = 0;
+   selection_old_y      = 0;
+   horizontal_list_size = 0;
 
-   int entry_width = 0;
+   entry_width = 0;
 
    if (!ozone->draw_sidebar)
       return;
