@@ -1667,8 +1667,10 @@ static void rgui_render(void *data, bool is_idle)
          char type_str_buf[255];
          char *entry_path                      = NULL;
          unsigned entry_spacing                = 0;
+         size_t entry_title_max_len            = 0;
          size_t entry_title_buf_utf8len        = 0;
          size_t entry_title_buf_len            = 0;
+         bool has_value                        = false;
          bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
          size_t selection                      = menu_navigation_get_selection();
 
@@ -1680,36 +1682,59 @@ static void rgui_render(void *data, bool is_idle)
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
 
+         /* Get current entry */
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
+         /* Read entry parameters */
          entry_spacing = menu_entry_get_spacing(&entry);
          menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-         entry_path      = menu_entry_get_rich_label(&entry);
+         entry_path = menu_entry_get_rich_label(&entry);
+
+         /* Determine whether entry has a value component */
+         has_value = !string_is_empty(entry_value);
+
+         /* Format entry title string */
+         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
+         entry_title_max_len = has_value ? entry_title_max_len - entry_spacing : entry_title_max_len;
 
          ticker.s        = entry_title_buf;
-         ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
+         ticker.len      = entry_title_max_len;
          ticker.str      = entry_path;
          ticker.selected = entry_selected;
-
-         menu_animation_ticker(&ticker);
-
-         ticker.s        = type_str_buf;
-         ticker.len      = entry_spacing;
-         ticker.str      = entry_value;
 
          menu_animation_ticker(&ticker);
 
          entry_title_buf_utf8len = utf8len(entry_title_buf);
          entry_title_buf_len     = strlen(entry_title_buf);
 
-         snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
-               entry_selected ? '>' : ' ',
-               (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
-               (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
-               entry_title_buf,
-               entry_spacing,
-               type_str_buf);
+         if (has_value)
+         {
+            /* Format entry value string */
+            ticker.s        = type_str_buf;
+            ticker.len      = entry_spacing;
+            ticker.str      = entry_value;
+
+            menu_animation_ticker(&ticker);
+
+            /* Print entry title + value */
+            snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
+                  entry_selected ? '>' : ' ',
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  entry_title_buf,
+                  entry_spacing,
+                  type_str_buf);
+         }
+         else
+         {
+            /* No value - just print entry title */
+            snprintf(message, sizeof(message), "%c %-*.*s",
+                  entry_selected ? '>' : ' ',
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  entry_title_buf);
+         }
 
          if (rgui_framebuf_data)
             blit_line(x, y, message,
