@@ -2815,7 +2815,7 @@ static int xmb_draw_item(
    settings_t *settings              = config_get_ptr();
 
    /* Initial ticker configuration */
-   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
    if (!node)
