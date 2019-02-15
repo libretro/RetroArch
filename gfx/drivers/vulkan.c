@@ -974,7 +974,8 @@ static void vulkan_free(void *data)
       video_context_driver_free();
    }
 
-   scaler_ctx_gen_reset(&vk->readback.scaler);
+   scaler_ctx_gen_reset(&vk->readback.scaler_bgr);
+   scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
    free(vk);
 }
 
@@ -1122,15 +1123,29 @@ static void vulkan_init_readback(vk_t *vk)
    if (!vk->readback.streamed)
       return;
 
-   vk->readback.scaler.in_width    = vk->vp.width;
-   vk->readback.scaler.in_height   = vk->vp.height;
-   vk->readback.scaler.out_width   = vk->vp.width;
-   vk->readback.scaler.out_height  = vk->vp.height;
-   vk->readback.scaler.in_fmt      = SCALER_FMT_ARGB8888;
-   vk->readback.scaler.out_fmt     = SCALER_FMT_BGR24;
-   vk->readback.scaler.scaler_type = SCALER_TYPE_POINT;
+   vk->readback.scaler_bgr.in_width    = vk->vp.width;
+   vk->readback.scaler_bgr.in_height   = vk->vp.height;
+   vk->readback.scaler_bgr.out_width   = vk->vp.width;
+   vk->readback.scaler_bgr.out_height  = vk->vp.height;
+   vk->readback.scaler_bgr.in_fmt      = SCALER_FMT_ARGB8888;
+   vk->readback.scaler_bgr.out_fmt     = SCALER_FMT_BGR24;
+   vk->readback.scaler_bgr.scaler_type = SCALER_TYPE_POINT;
 
-   if (!scaler_ctx_gen_filter(&vk->readback.scaler))
+   vk->readback.scaler_rgb.in_width    = vk->vp.width;
+   vk->readback.scaler_rgb.in_height   = vk->vp.height;
+   vk->readback.scaler_rgb.out_width   = vk->vp.width;
+   vk->readback.scaler_rgb.out_height  = vk->vp.height;
+   vk->readback.scaler_rgb.in_fmt      = SCALER_FMT_ABGR8888;
+   vk->readback.scaler_rgb.out_fmt     = SCALER_FMT_BGR24;
+   vk->readback.scaler_rgb.scaler_type = SCALER_TYPE_POINT;
+
+   if (!scaler_ctx_gen_filter(&vk->readback.scaler_bgr))
+   {
+      vk->readback.streamed = false;
+      RARCH_ERR("[Vulkan]: Failed to initialize scaler context.\n");
+   }
+
+   if (!scaler_ctx_gen_filter(&vk->readback.scaler_rgb))
    {
       vk->readback.streamed = false;
       RARCH_ERR("[Vulkan]: Failed to initialize scaler context.\n");
@@ -1545,16 +1560,11 @@ static void vulkan_readback(vk_t *vk)
    region.imageExtent.height          = vp.height;
    region.imageExtent.depth           = 1;
 
-   /* FIXME: We won't actually get format conversion with vkCmdCopyImageToBuffer, so have to check
-    * properly for this. BGRA seems to be the default for all swapchains. */
-   if (vk->context->swapchain_format != VK_FORMAT_B8G8R8A8_UNORM)
-      RARCH_WARN("[Vulkan]: Backbuffer is not BGRA8888, readbacks might not work properly.\n");
-
    staging  = &vk->readback.staging[vk->context->current_swapchain_index];
    *staging = vulkan_create_texture(vk,
          staging->memory != VK_NULL_HANDLE ? staging : NULL,
          vk->vp.width, vk->vp.height,
-         VK_FORMAT_B8G8R8A8_UNORM,
+         VK_FORMAT_B8G8R8A8_UNORM, /* Formats don't matter for readback since it's a raw copy. */
          NULL, NULL, VULKAN_TEXTURE_READBACK);
 
    vkCmdCopyImageToBuffer(vk->cmd, vk->chain->backbuffer.image,
@@ -2460,23 +2470,39 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       const uint8_t *src     = NULL;
       struct scaler_ctx *ctx = NULL;
 
-      if (staging->memory == VK_NULL_HANDLE)
-         return false;
+      switch (vk->context->swapchain_format)
+      {
+         case VK_FORMAT_R8G8B8A8_UNORM:
+         case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+            ctx = &vk->readback.scaler_rgb;
+            break;
 
-      buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
-      vkMapMemory(vk->context->device, staging->memory,
-            staging->offset, staging->size, 0, (void**)&src);
+         case VK_FORMAT_B8G8R8A8_UNORM:
+            ctx = &vk->readback.scaler_bgr;
+            break;
 
-      vulkan_sync_texture_to_cpu(vk, staging);
+         default:
+            RARCH_ERR("[Vulkan]: Unexpected swapchain format. Cannot readback.\n");
+            break;
+      }
 
-      vk->readback.scaler.in_stride  = staging->stride;
-      vk->readback.scaler.out_stride = -(int)vk->vp.width * 3;
+      if (ctx)
+      {
+         if (staging->memory == VK_NULL_HANDLE)
+            return false;
 
-      ctx                            = &vk->readback.scaler;
+         buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
+         vkMapMemory(vk->context->device, staging->memory,
+               staging->offset, staging->size, 0, (void**)&src);
 
-      scaler_ctx_scale_direct(ctx, buffer, src);
+         vulkan_sync_texture_to_cpu(vk, staging);
 
-      vkUnmapMemory(vk->context->device, staging->memory);
+         ctx->in_stride  = staging->stride;
+         ctx->out_stride = -(int)vk->vp.width * 3;
+         scaler_ctx_scale_direct(ctx, buffer, src);
+
+         vkUnmapMemory(vk->context->device, staging->memory);
+      }
    }
    else
    {
@@ -2506,19 +2532,41 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       {
          unsigned x, y;
-         const uint8_t *src  = (const uint8_t*)staging->mapped;
-         buffer             += 3 * (vk->vp.height - 1)
-            * vk->vp.width;
+         const uint8_t *src = (const uint8_t*)staging->mapped;
+         buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
 
-         for (y = 0; y < vk->vp.height; y++,
-               src += staging->stride, buffer -= 3 * vk->vp.width)
+         switch (vk->context->swapchain_format)
          {
-            for (x = 0; x < vk->vp.width; x++)
-            {
-               buffer[3 * x + 0] = src[4 * x + 0];
-               buffer[3 * x + 1] = src[4 * x + 1];
-               buffer[3 * x + 2] = src[4 * x + 2];
-            }
+            case VK_FORMAT_B8G8R8A8_UNORM:
+               for (y = 0; y < vk->vp.height; y++,
+                     src += staging->stride, buffer -= 3 * vk->vp.width)
+               {
+                  for (x = 0; x < vk->vp.width; x++)
+                  {
+                     buffer[3 * x + 0] = src[4 * x + 0];
+                     buffer[3 * x + 1] = src[4 * x + 1];
+                     buffer[3 * x + 2] = src[4 * x + 2];
+                  }
+               }
+               break;
+
+            case VK_FORMAT_R8G8B8A8_UNORM:
+            case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+               for (y = 0; y < vk->vp.height; y++,
+                     src += staging->stride, buffer -= 3 * vk->vp.width)
+               {
+                  for (x = 0; x < vk->vp.width; x++)
+                  {
+                     buffer[3 * x + 2] = src[4 * x + 0];
+                     buffer[3 * x + 1] = src[4 * x + 1];
+                     buffer[3 * x + 0] = src[4 * x + 2];
+                  }
+               }
+               break;
+
+            default:
+               RARCH_ERR("[Vulkan]: Unexpected swapchain format.\n");
+               break;
          }
       }
       vulkan_destroy_texture(
