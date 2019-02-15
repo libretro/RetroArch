@@ -566,6 +566,12 @@ static void menu_animation_update_time(bool timedate_enable)
    static retro_time_t
       last_ticker_slow_update = 0;
 
+   /* Adjust ticker speed */
+   settings_t *settings = config_get_ptr();
+   float speed_factor = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
+   unsigned ticker_speed = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   unsigned ticker_slow_speed = (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
+
    cur_time                 = cpu_features_get_time_usec() / 1000;
    delta_time               = old_time == 0 ? 0 : cur_time - old_time;
 
@@ -579,14 +585,14 @@ static void menu_animation_update_time(bool timedate_enable)
    }
 
    if (ticker_is_active 
-      && cur_time - last_ticker_update >= TICKER_SPEED)
+      && cur_time - last_ticker_update >= ticker_speed)
    {
       ticker_idx++;
       last_ticker_update = cur_time;
    }
 
    if (ticker_is_active 
-      && cur_time - last_ticker_slow_update >= TICKER_SLOW_SPEED)
+      && cur_time - last_ticker_slow_update >= ticker_slow_speed)
    {
       ticker_slow_idx++;
       last_ticker_slow_update = cur_time;
