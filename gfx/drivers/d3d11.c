@@ -31,7 +31,7 @@
 
 #include "../../driver.h"
 #include "../../verbosity.h"
-#include "../configuration.h"
+#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../video_driver.h"
 #include "../font_driver.h"

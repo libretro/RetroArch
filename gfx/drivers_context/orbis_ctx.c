@@ -15,12 +15,16 @@
  */
 
 #include <stdlib.h>
+
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../configuration.h"
 
 static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
@@ -273,6 +277,26 @@ static float orbis_ctx_get_refresh_rate(void *data)
     return ctx_orbis->refresh_rate;
 }
 
+static void orbis_ctx_update_window_title(void *data, void *data2)
+{
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t* video_info = (video_frame_info_t*)data2;
+
+   if (settings->bools.video_memory_show)
+   {
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
+}
+
 const gfx_ctx_driver_t orbis_ctx = {
     orbis_ctx_init,
     orbis_ctx_destroy,
@@ -287,7 +311,7 @@ const gfx_ctx_driver_t orbis_ctx = {
     NULL, /* get_video_output_next */
     NULL, /* get_metrics */
     NULL,
-    NULL, /* update_title */
+    orbis_ctx_update_window_title,
     orbis_ctx_check_window,
     NULL, /* set_resize */
     orbis_ctx_has_focus,
