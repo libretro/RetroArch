@@ -754,7 +754,7 @@ static void materialui_render_label_value(
    settings_t *settings            = config_get_ptr();
 
    /* Initial ticker configuration */
-   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.type_enum = (menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
    label_str[0] = value_str[0]     = '\0';
@@ -1171,7 +1171,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       return;
 
    /* Initial ticker configuration */
-   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.type_enum = (menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
    usable_width                    = width - (mui->margin * 2);

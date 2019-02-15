@@ -420,7 +420,7 @@ border_iterate:
       float *icon_color       = NULL;
 
       /* Initial ticker configuration */
-      ticker.type_enum = settings->uints.menu_ticker_type;
+      ticker.type_enum = (menu_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker.spacer = ticker_spacer;
 
       entry_value[0]         = '\0';

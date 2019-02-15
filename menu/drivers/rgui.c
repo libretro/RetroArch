@@ -1586,7 +1586,7 @@ static void rgui_render(void *data, bool is_idle)
    /* We use a single ticker for all text animations,
     * with the following configuration: */
    ticker.idx = menu_animation_get_ticker_idx();
-   ticker.type_enum = settings->uints.menu_ticker_type;
+   ticker.type_enum = (menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
    /* If thumbnails are enabled and we are viewing a playlist,
