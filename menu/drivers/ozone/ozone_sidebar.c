@@ -109,7 +109,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    unsigned i, sidebar_height;
    char console_title[255];
    menu_animation_ctx_ticker_t ticker;
-   static const char ticker_spacer[] = "   |   ";
+   static const char ticker_spacer[] = "\u2003\u2022\u2003"; /* <EM SPACE><BULLET><EM SPACE> */
    settings_t *settings = config_get_ptr();
 
    /* Initial ticker configuration */
