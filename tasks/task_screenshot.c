@@ -92,13 +92,36 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    else
       scaler->in_fmt   = SCALER_FMT_RGB565;
 
-   video_frame_convert_to_bgr24(
-         scaler,
-         state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1)
-         * state->pitch,
-         state->width, state->height,
-         -state->pitch);
+#ifdef HAVE_PSCLASSIC
+   if(state->silence)
+   {
+      scaler->out_fmt = SCALER_FMT_BGR24;
+      scaler->scaler_type = SCALER_TYPE_POINT;
+      video_frame_scale(
+            scaler,
+            state->out_buffer,
+            (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch,
+            scaler->in_fmt,
+            160,
+            128,
+            160*3,
+            state->width,
+            state->height,
+            -state->pitch);
+      state->width = 160;
+      state->height = 128;
+   }
+   else
+#endif
+   {
+      video_frame_convert_to_bgr24(
+            scaler,
+            state->out_buffer,
+            (const uint8_t*)state->frame + ((int)state->height - 1)
+            * state->pitch,
+            state->width, state->height,
+            -state->pitch);
+   }
 
    scaler_ctx_gen_reset(&state->scaler);
 
