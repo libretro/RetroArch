@@ -62,6 +62,15 @@ typedef struct ozone_handle ozone_handle_t;
 #define INTERVAL_BATTERY_LEVEL_CHECK   (30 * 1000000)
 #define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
 
+#if defined(__APPLE__)
+/* UTF-8 support is currently broken on Apple devices... */
+#define TICKER_SPACER "   |   "
+#else
+/* <EM SPACE><BULLET><EM SPACE>
+ * UCN equivalent: "\u2003\u2022\u2003" */
+#define TICKER_SPACER "\xE2\x80\x83\xE2\x80\xA2\xE2\x80\x83"
+#endif
+
 struct ozone_handle
 {
    struct

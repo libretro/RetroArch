@@ -408,7 +408,7 @@ border_iterate:
       menu_texture_item tex;
       menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
-      static const char ticker_spacer[] = "\u2003\u2022\u2003"; /* <EM SPACE><BULLET><EM SPACE> */
+      static const char* const ticker_spacer = TICKER_SPACER;
       char entry_value[255];
       char rich_label[255];
       char entry_value_ticker[255];
