@@ -45,7 +45,7 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint16_t *output = (uint16_t*)output_;
 
-#if defined(__SSE2_)
+#if defined(__SSE2__)
    int max_width           = width - 7;
    const __m128i hi_mask   = _mm_set1_epi16(0x7fe0);
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
@@ -55,7 +55,7 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
          h++, output += out_stride >> 1, input += in_stride >> 1)
    {
       int w = 0;
-#if defined(__SSE2_)
+#if defined(__SSE2__)
       for (; w < max_width; w += 8)
       {
          const __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
