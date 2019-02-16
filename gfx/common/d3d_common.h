@@ -57,7 +57,7 @@ struct d3d_matrix
 typedef struct d3d_texture
 {
    void *data;
-   INT32 pool;
+   int32_t pool;
 } d3d_texture_t;
 
 typedef struct
