@@ -390,10 +390,54 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
+#if defined(__MMX__)
+   const __m64 pix_mask_r = _mm_set1_pi16(0xf << 10);
+   const __m64 pix_mask_g = _mm_set1_pi16(0xf << 8);
+   const __m64 pix_mask_b = _mm_set1_pi16(0xf << 8);
+   const __m64 mul16_r    = _mm_set1_pi16(0x0440);
+   const __m64 mul16_g    = _mm_set1_pi16(0x1100);
+   const __m64 mul16_b    = _mm_set1_pi16(0x1100);
+   const __m64 a          = _mm_set1_pi16(0x00ff);
+
+   int max_width            = width - 3;
+#endif
+
    for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 1)
    {
-      for (w = 0; w < width; w++)
+      int w = 0;
+#if defined(__MMX__)
+      for (; w < max_width; w += 4)
+      {
+         __m64 res_lo, res_hi;
+         __m64 res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
+         const __m64 in = _mm_cvtsi64_m64(*((int64_t*)(input + w)));
+         __m64          r = _mm_and_si64(_mm_srli_pi16(in, 2), pix_mask_r);
+         __m64          g = _mm_and_si64(in, pix_mask_g);
+         __m64          b = _mm_and_si64(_mm_slli_pi16(in, 4), pix_mask_b);
+
+         r                = _mm_mulhi_pi16(r, mul16_r);
+         g                = _mm_mulhi_pi16(g, mul16_g);
+         b                = _mm_mulhi_pi16(b, mul16_b);
+
+         res_lo_bg        = _mm_unpacklo_pi8(b, g);
+         res_hi_bg        = _mm_unpackhi_pi8(b, g);
+         res_lo_ra        = _mm_unpacklo_pi8(r, a);
+         res_hi_ra        = _mm_unpackhi_pi8(r, a);
+
+         res_lo           = _mm_or_si64(res_lo_bg,
+               _mm_slli_si64(res_lo_ra, 16));
+         res_hi           = _mm_or_si64(res_hi_bg,
+               _mm_slli_si64(res_hi_ra, 16));
+
+         *((int64_t*)(output + w + 0)) = _mm_cvtm64_si64(res_lo);
+         *((int64_t*)(output + w + 2)) = _mm_cvtm64_si64(res_hi);
+      }
+
+      _mm_empty();
+#endif
+
+      for (; w < width; w++)
       {
          uint32_t col = input[w];
          uint32_t r   = (col >> 12) & 0xf;
