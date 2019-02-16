@@ -552,7 +552,10 @@ endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o
-   OBJ += midi/drivers/alsa_midi.o
+
+   ifneq ($(HAVE_HAKCHI), 1)
+      OBJ += midi/drivers/alsa_midi.o
+   endif
 
    ifeq ($(HAVE_THREADS), 1)
       OBJ += audio/drivers/alsathread.o
