@@ -353,33 +353,33 @@ static void menu_animation_ticker_loop(uint64_t idx,
     */
    
    /* String 1 */
-   offset = phase < str_width ? phase : 0;
-   width = str_width - phase;
-   width = width < 0 ? 0 : width;
-   width = width > max_width ? max_width : width;
+   offset   = (phase < (int)str_width) ? phase : 0;
+   width    = str_width - phase;
+   width    = (width < 0) ? 0 : width;
+   width    = (width > (int)max_width) ? max_width : width;
    
    *offset1 = offset;
-   *width1 = width;
+   *width1  = width;
    
    /* String 2 */
-   offset = phase - str_width;
-   offset = offset < 0 ? 0 : offset;
-   width = max_width - *width1;
-   width = width > spacer_width ? spacer_width : width;
-   width = width - offset;
+   offset   = phase - str_width;
+   offset   = offset < 0 ? 0 : offset;
+   width    = max_width - *width1;
+   width    = (width > (int)spacer_width) ? spacer_width : width;
+   width    = width - offset;
    
    *offset2 = offset;
-   *width2 = width;
+   *width2  = width;
    
    /* String 3 */
-   width = max_width - (*width1 + *width2);
-   width = width < 0 ? 0 : width;
+   width    = max_width - (*width1 + *width2);
+   width    = width < 0 ? 0 : width;
    
    /* Note: offset is always zero here so offset3 is
     * unnecessary - but include it anyway to preserve
     * symmetry... */
    *offset3 = 0;
-   *width3 = width;
+   *width3  = width;
 }
 
 void menu_animation_init(void)
