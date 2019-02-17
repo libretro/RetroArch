@@ -417,12 +417,12 @@ typedef struct
    char *msgbox;
    unsigned color_theme;
    rgui_colors_t colors;
-   bool is_playlist_entry;
+   bool is_playlist;
+   bool entry_has_thumbnail;
    bool show_thumbnail;
    char *thumbnail_system;
    char *thumbnail_content;
    char *thumbnail_path;
-   char *thumbnail_playlist;
    uint32_t thumbnail_queue_size;
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
@@ -649,13 +649,13 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
    rgui->force_redraw = true;
 }
 
-static void request_thumbnail(rgui_t *rgui, const char *path)
+static bool request_thumbnail(rgui_t *rgui, const char *path)
 {
    /* Do nothing if current thumbnail path hasn't changed */
    if (!string_is_empty(path) && !string_is_empty(thumbnail.path))
    {
       if (string_is_equal(thumbnail.path, path))
-         return;
+         return true;
    }
 
    /* 'Reset' current thumbnail */
@@ -676,9 +676,12 @@ static void request_thumbnail(rgui_t *rgui, const char *path)
          if(task_push_image_load(thumbnail.path, menu_display_handle_thumbnail_upload, NULL))
          {
             rgui->thumbnail_queue_size++;
+            return true;
          }
       }
    }
+   
+   return false;
 }
 
 static bool downscale_thumbnail(rgui_t *rgui, struct texture_image *image_src, struct texture_image *image_dst)
@@ -1308,7 +1311,7 @@ static void rgui_render_background(rgui_t *rgui)
    }
 
    /* Skip drawing border if we are currently showing a thumbnail */
-   if (!(rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0))))
+   if (!(rgui->show_thumbnail && rgui->entry_has_thumbnail && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0))))
    {
       if (rgui_framebuf_data)
       {
@@ -1596,7 +1599,7 @@ static void rgui_render(void *data, bool is_idle)
     * this is better than switching back to the text playlist
     * view, which causes ugly flickering when scrolling quickly
     * through a list...) */
-   if (rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
+   if (rgui->show_thumbnail && rgui->entry_has_thumbnail && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
@@ -1632,6 +1635,15 @@ static void rgui_render(void *data, bool is_idle)
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
       bool show_core_name = settings->bools.menu_core_enable;
+      bool show_playlist_labels = !settings->bools.playlist_show_core_name && rgui->is_playlist;
+      playlist_t *playlist = NULL;
+
+      /* Get cached playlist, if required */
+      if (show_playlist_labels)
+      {
+         playlist = playlist_get_cached();
+         show_playlist_labels = show_playlist_labels && playlist;
+      }
 
       /* Print title */
       title_buf[0] = '\0';
@@ -1671,7 +1683,8 @@ static void rgui_render(void *data, bool is_idle)
          size_t entry_title_buf_utf8len        = 0;
          size_t entry_title_buf_len            = 0;
          bool has_value                        = false;
-         bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
+         bool entry_selected                   = menu_entry_is_currently_selected((unsigned)i);
+         bool show_playlist_label              = show_playlist_labels;
          size_t selection                      = menu_navigation_get_selection();
 
          if (i > (selection + 100))
@@ -1686,13 +1699,49 @@ static void rgui_render(void *data, bool is_idle)
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
-         /* Read entry parameters */
-         entry_spacing = menu_entry_get_spacing(&entry);
-         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-         entry_path = menu_entry_get_rich_label(&entry);
+         /* Get playlist label for current entry, if required */
+         if (show_playlist_label)
+         {
+            /* Ensure that we fallback to the normal entry label if
+             * any of the following playlist access fails... */
+            show_playlist_label = false;
 
-         /* Determine whether entry has a value component */
-         has_value = !string_is_empty(entry_value);
+            if (i < playlist_get_size(playlist))
+            {
+               const char *playlist_label = NULL;
+               playlist_get_index(playlist, i, NULL, &playlist_label, NULL, NULL, NULL, NULL);
+
+               if (!string_is_empty(playlist_label))
+               {
+                  entry_path = strdup(playlist_label);
+                  show_playlist_label = true;
+               }
+            }
+         }
+
+         if (show_playlist_label)
+         {
+            /* We are using the current playlist label as the entry title
+             * > We already have entry_path
+             * > entry_spacing is irrelevant (set to zero)
+             * > entry_value is irrelevant
+             * > has_value is false */
+            entry_spacing = 0;
+            has_value = false;
+         }
+         else
+         {
+            /* Either this is not a playlist entry, or we are ignoring
+             * playlists - extract all required info from entry itself */
+
+            /* Read entry parameters */
+            entry_spacing = menu_entry_get_spacing(&entry);
+            menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+            entry_path = menu_entry_get_rich_label(&entry);
+
+            /* Determine whether entry has a value component */
+            has_value = !string_is_empty(entry_value);
+         }
 
          /* Format entry title string */
          entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
@@ -1943,8 +1992,6 @@ static void rgui_free(void *data)
          free(rgui->thumbnail_content);
       if (!string_is_empty(rgui->thumbnail_path))
          free(rgui->thumbnail_path);
-      if (!string_is_empty(rgui->thumbnail_playlist))
-         free(rgui->thumbnail_playlist);
    }
 
    fb_font_inited = menu_display_get_font_data_init();
@@ -2106,7 +2153,7 @@ static const char *rgui_thumbnail_ident(void)
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 }
 
-static void rgui_update_thumbnail_path(void *userdata)
+static bool rgui_update_thumbnail_path(void *userdata)
 {
    rgui_t *rgui = (rgui_t*)userdata;
    settings_t *settings = config_get_ptr();
@@ -2173,75 +2220,74 @@ static void rgui_update_thumbnail_path(void *userdata)
                strlcat(new_path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(new_path));
 
                if (!string_is_empty(new_path))
+               {
                   rgui->thumbnail_path = strdup(new_path);
+                  return true;
+               }
             }
          }
       }
    }
+   
+   return false;
 }
 
 static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
 {
    rgui_t *rgui = (rgui_t*)userdata;
-   char tmp_path[PATH_MAX_LENGTH] = {0};
    if (!rgui)
       return;
    if (!string_is_empty(rgui->thumbnail_system))
       free(rgui->thumbnail_system);
-   if (!string_is_empty(rgui->thumbnail_playlist))
-      free(rgui->thumbnail_playlist);
    rgui->thumbnail_system = strdup(s);
-   /* Get associated playlist file name
-    * (i.e. <rgui->thumbnail_system>.lpl) */
-   if (!string_is_empty(rgui->thumbnail_system))
-   {
-      strlcpy(tmp_path, rgui->thumbnail_system, sizeof(tmp_path));
-      strlcat(tmp_path, file_path_str(FILE_PATH_LPL_EXTENSION), sizeof(tmp_path));
-      if (!string_is_empty(tmp_path))
-         rgui->thumbnail_playlist = strdup(tmp_path);
-   }
 }
 
-static void rgui_update_thumbnail_content(void *userdata)
+static bool rgui_update_thumbnail_content(void *userdata)
 {
    rgui_t *rgui = (rgui_t*)userdata;
    playlist_t *playlist = NULL;
    size_t selection = menu_navigation_get_selection();
 
    if (!rgui)
-      return;
+      return false;
 
-   /* Check whether current selection is a playlist entry
-    * (i.e. whether we should be looking for a thumbnail image) */
-   rgui->is_playlist_entry = false;
-   if (!string_is_empty(rgui->thumbnail_playlist))
+   /* Get label of currently selected playlist entry */
+   playlist = playlist_get_cached();
+   if (playlist)
    {
-      if (string_is_equal(path_basename(rgui->menu_title), rgui->thumbnail_playlist))
+      if (selection < playlist_get_size(playlist))
       {
-         /* Get label of currently selected playlist entry
-          * > This is pretty nasty, but I can't see any other way of doing
-          *   it (entry.path gives us almost what we need, but it's tainted
-          *   with the core name, which is too difficult to remove...) */
-         playlist = playlist_get_cached();
-         if (playlist)
+         const char *label = NULL;
+         playlist_get_index(playlist, selection, NULL, &label, NULL, NULL, NULL, NULL);
+
+         if (!string_is_empty(rgui->thumbnail_content))
          {
-            if (selection < playlist_get_size(playlist))
-            {
-               const char *label = NULL;
-               playlist_get_index(playlist, selection, NULL, &label, NULL, NULL, NULL, NULL);
+            free(rgui->thumbnail_content);
+            rgui->thumbnail_content = NULL;
+         }
 
-               if (!string_is_empty(rgui->thumbnail_content))
-               {
-                  free(rgui->thumbnail_content);
-                  rgui->thumbnail_content = NULL;
-               }
+         if (!string_is_empty(label))
+         {
+            rgui->thumbnail_content = strdup(label);
+            return true;
+         }
+      }
+   }
+   
+   return false;
+}
 
-               if (!string_is_empty(label))
-               {
-                  rgui->thumbnail_content = strdup(label);
-                  rgui->is_playlist_entry = true;
-               }
-            }
+static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui)
+{
+   rgui->entry_has_thumbnail = false;
+   
+   if (rgui->show_thumbnail && rgui->is_playlist)
+   {
+      if (rgui_update_thumbnail_content(rgui))
+      {
+         if (rgui_update_thumbnail_path(rgui))
+         {
+            rgui->entry_has_thumbnail = request_thumbnail(rgui, rgui->thumbnail_path);
          }
       }
    }
@@ -2255,15 +2301,7 @@ static void rgui_update_thumbnail_image(void *userdata)
 
    rgui->show_thumbnail = !rgui->show_thumbnail;
 
-   if (rgui->show_thumbnail)
-   {
-      rgui_update_thumbnail_content(rgui);
-      if (rgui->is_playlist_entry)
-      {
-         rgui_update_thumbnail_path(rgui);
-         request_thumbnail(rgui, rgui->thumbnail_path);
-      }
-   }
+   rgui_scan_selected_entry_thumbnail(rgui);
 }
 
 static void rgui_navigation_set(void *data, bool scroll)
@@ -2278,15 +2316,7 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!rgui)
       return;
 
-   if (rgui->show_thumbnail)
-   {
-      rgui_update_thumbnail_content(rgui);
-      if (rgui->is_playlist_entry)
-      {
-         rgui_update_thumbnail_path(rgui);
-         request_thumbnail(rgui, rgui->thumbnail_path);
-      }
-   }
+   rgui_scan_selected_entry_thumbnail(rgui);
 
    if (!scroll)
       return;
@@ -2340,6 +2370,10 @@ static void rgui_populate_entries(void *data,
       return;
    
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
+   
+   /* Check whether we are currently viewing a playlist */
+   rgui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST));
+   
    rgui_navigation_set(data, true);
 }
 

@@ -308,6 +308,8 @@ typedef struct settings
       bool sustained_performance_mode;
       bool playlist_use_old_format;
       bool content_runtime_log;
+
+      bool playlist_show_core_name;
    } bools;
 
    struct

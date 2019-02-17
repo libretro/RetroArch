@@ -8231,6 +8231,14 @@ MSG_HASH(
     "Save playlists using old format"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_CORE_NAME,
+    "Show associated cores in playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME,
+    "Labels each playlist entry with the currently associated core (if any)."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
     "Menu Sounds"
     )
