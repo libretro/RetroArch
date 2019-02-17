@@ -2719,17 +2719,17 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 #endif
 
+#ifdef HAVE_OVERLAY
+   if (gl->overlay_enable)
+      gl2_render_overlay(gl, video_info);
+#endif
+
    if (!string_is_empty(msg))
    {
       if (video_info->msg_bgcolor_enable)
          gl2_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
-
-#ifdef HAVE_OVERLAY
-   if (gl->overlay_enable)
-      gl2_render_overlay(gl, video_info);
-#endif
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
