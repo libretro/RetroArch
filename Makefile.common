@@ -9,17 +9,25 @@ endif
 
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
+	HAVE_GL_MODERN=0
 
    ifeq ($(HAVE_OPENGL), 1)
+      HAVE_GL_CONTEXT=1
+		HAVE_GL_MODERN=1
+   endif
+
+   ifeq ($(HAVE_OPENGL1), 1)
       HAVE_GL_CONTEXT=1
    endif
 
    ifeq ($(HAVE_OPENGLES), 1)
       HAVE_GL_CONTEXT=1
+		HAVE_GL_MODERN=1
    endif
 
    ifeq ($(HAVE_OPENGLES3), 1)
       HAVE_GL_CONTEXT=1
+		HAVE_GL_MODERN=1
    endif
 endif
 
@@ -1057,19 +1065,25 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
-   DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
-   OBJ += gfx/drivers/gl.o \
-          $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-          gfx/drivers_font/gl_raster_font.o \
-          $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
+   ifeq ($(HAVE_GL_MODERN), 1)
+      DEFINES += -DHAVE_OPENGL
+      OBJ += gfx/drivers/gl.o \
+             $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
+             gfx/drivers_font/gl_raster_font.o
+   endif
+
+   OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
    ifeq ($(HAVE_OPENGL1), 1)
+      DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
              gfx/drivers_font/gl1_raster_font.o
    endif
 
    ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_gl.o
+      ifeq ($(HAVE_GL_MODERN), 1)
+         OBJ += menu/drivers_display/menu_display_gl.o
+      endif
 
       ifeq ($(HAVE_OPENGL1), 1)
          OBJ += menu/drivers_display/menu_display_gl1.o
@@ -1107,7 +1121,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    ifeq ($(HAVE_OSMESA), 1)
-      OBJ += gfx/drivers_context/osmesa_ctx.o
+      OBJ  += gfx/drivers_context/osmesa_ctx.o
       LIBS += -lOSMesa
    endif
 
@@ -1164,7 +1178,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       LIBS += $(GL_LIBS)
    endif
 
-   OBJ += gfx/drivers_shader/shader_glsl.o
+   ifeq ($(HAVE_GL_MODERN), 1)
+      DEFINES += -DHAVE_GLSL
+      OBJ += gfx/drivers_shader/shader_glsl.o
+   endif
 endif
 
 ifeq ($(HAVE_EGL), 1)

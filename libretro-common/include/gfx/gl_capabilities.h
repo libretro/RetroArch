@@ -51,17 +51,17 @@ enum gl_capability_enum
    GL_CAPS_TEX_STORAGE_EXT
 };
 
-bool gl_check_error(char **error_string);
-
 bool gl_query_core_context_in_use(void);
 
 void gl_query_core_context_set(bool set);
 
 void gl_query_core_context_unset(void);
 
-bool gl_check_capability(enum gl_capability_enum enum_idx);
-
 bool gl_query_extension(const char *ext);
+
+bool gl_check_error(char **error_string);
+
+bool gl_check_capability(enum gl_capability_enum enum_idx);
 
 RETRO_END_DECLS
 

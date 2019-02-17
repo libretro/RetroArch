@@ -49,7 +49,6 @@
 
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
-#include <gfx/gl_capabilities.h>
 #endif
 
 #ifdef HAVE_VULKAN
