@@ -1783,3 +1783,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SOUND_BGM,
       "menu_sound_bgm")
 MSG_HASH(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
       "content_runtime_log")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
+      "playlist_show_core_name")

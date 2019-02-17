@@ -707,6 +707,10 @@ static const unsigned default_content_history_size = 100;
 /* File format to use when writing playlists to disk */
 static const bool playlist_use_old_format = false;
 
+/* Show currently associated core next to each playlist entry
+ * (RGUI only) */
+static const bool playlist_show_core_name = true;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
