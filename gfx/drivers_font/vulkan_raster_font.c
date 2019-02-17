@@ -435,6 +435,16 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
    return glyph;
 }
 
+static int vulkan_get_line_height(void *data)
+{
+   vulkan_raster_t *font = (vulkan_raster_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t vulkan_raster_font = {
    vulkan_raster_font_init_font,
    vulkan_raster_font_free_font,
@@ -443,5 +453,6 @@ font_renderer_t vulkan_raster_font = {
    vulkan_raster_font_get_glyph,
    NULL,                            /* bind_block */
    NULL,                            /* flush_block */
-   vulkan_get_message_width
+   vulkan_get_message_width,
+   vulkan_get_line_height
 };

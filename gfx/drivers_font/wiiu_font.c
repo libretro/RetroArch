@@ -374,6 +374,16 @@ static const struct font_glyph* wiiu_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int wiiu_font_get_line_height(void *data)
+{
+   wiiu_font_t* font = (wiiu_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t wiiu_font =
 {
    wiiu_font_init_font,
@@ -384,4 +394,5 @@ font_renderer_t wiiu_font =
    NULL,                   /* bind_block */
    NULL,                   /* flush */
    wiiu_font_get_message_width,
+   wiiu_font_get_line_height
 };

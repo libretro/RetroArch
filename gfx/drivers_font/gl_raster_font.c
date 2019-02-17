@@ -549,6 +549,16 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
+static int gl_get_line_height(void *data)
+{
+   gl_raster_t *font   = (gl_raster_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t gl_raster_font = {
    gl_raster_font_init_font,
    gl_raster_font_free_font,
@@ -557,5 +567,6 @@ font_renderer_t gl_raster_font = {
    gl_raster_font_get_glyph,
    gl_raster_font_bind_block,
    gl_raster_font_flush_block,
-   gl_get_message_width
+   gl_get_message_width,
+   gl_get_line_height
 };

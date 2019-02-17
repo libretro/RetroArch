@@ -362,6 +362,16 @@ static const struct font_glyph* d3d10_font_get_glyph(void *data, uint32_t code)
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int d3d10_font_get_line_height(void *data)
+{
+   d3d10_font_t* font = (d3d10_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t d3d10_font = {
    d3d10_font_init_font,
    d3d10_font_free_font,
@@ -371,4 +381,5 @@ font_renderer_t d3d10_font = {
    NULL, /* bind_block */
    NULL, /* flush */
    d3d10_font_get_message_width,
+   d3d10_font_get_line_height
 };
