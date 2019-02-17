@@ -25,6 +25,7 @@
 #define floor(x) ((double)floorf((float)x))
 #define sqrt(x) ((double)sqrtf((float)x))
 #define fabs(x) ((double)fabsf((float)(x)))
+#define round(x) ((double)roundf((float)(x)))
 
 #define fmaxf(a, b) (((a) > (b)) ? (a) : (b))
 #define fminf(a, b) (((a) < (b)) ? (a) : (b))
