@@ -34,8 +34,6 @@
 #include "../configuration.h"
 #include "../performance_counters.h"
 
-#define IDEAL_DELTA_TIME (1.0 / 60.0 * 1000000.0)
-
 struct tween
 {
    float       duration;
@@ -62,9 +60,14 @@ struct menu_animation
 
 typedef struct menu_animation menu_animation_t;
 
+#define TICKER_SPEED       333
+#define TICKER_SLOW_SPEED  1600
+
 static menu_animation_t anim;
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
+static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
+static uint64_t ticker_slow_idx = 0; /* updated every TICKER_SLOW_SPEED ms */
 static float delta_time         = 0.0f;
 static bool animation_is_active = false;
 static bool ticker_is_active    = false;
@@ -322,6 +325,63 @@ static void menu_animation_ticker_generic(uint64_t idx,
    *width = max_width;
 }
 
+static void menu_animation_ticker_loop(uint64_t idx,
+      size_t max_width, size_t str_width, size_t spacer_width,
+      size_t *offset1, size_t *width1,
+      size_t *offset2, size_t *width2,
+      size_t *offset3, size_t *width3)
+{
+   int ticker_period     = (int)(str_width + spacer_width);
+   int phase             = idx % ticker_period;
+   
+   /* Output offsets/widths are unsigned size_t, but it's
+    * easier to perform the required calculations with ints,
+    * so create some temporary variables... */
+   int offset;
+   int width;
+   
+   /* Looping text is composed of up to three strings,
+    * where string 1 and 2 are different regions of the
+    * source text and string 2 is a spacer:
+    * 
+    *     |-----max_width-----|
+    * [string 1][string 2][string 3]
+    * 
+    * The following implementation could probably be optimised,
+    * but any performance gains would be trivial compared with
+    * all the string manipulation that has to happen afterwards...
+    */
+   
+   /* String 1 */
+   offset   = (phase < (int)str_width) ? phase : 0;
+   width    = str_width - phase;
+   width    = (width < 0) ? 0 : width;
+   width    = (width > (int)max_width) ? max_width : width;
+   
+   *offset1 = offset;
+   *width1  = width;
+   
+   /* String 2 */
+   offset   = phase - str_width;
+   offset   = offset < 0 ? 0 : offset;
+   width    = max_width - *width1;
+   width    = (width > (int)spacer_width) ? spacer_width : width;
+   width    = width - offset;
+   
+   *offset2 = offset;
+   *width2  = width;
+   
+   /* String 3 */
+   width    = max_width - (*width1 + *width2);
+   width    = width < 0 ? 0 : width;
+   
+   /* Note: offset is always zero here so offset3 is
+    * unnecessary - but include it anyway to preserve
+    * symmetry... */
+   *offset3 = 0;
+   *width3  = width;
+}
+
 void menu_animation_init(void)
 {
    da_init(anim.list);
@@ -497,9 +557,54 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-bool menu_animation_update(float anim_delta_time)
+static void menu_animation_update_time(bool timedate_enable)
+{
+   static retro_time_t
+      last_clock_update       = 0;
+   static retro_time_t
+      last_ticker_update      = 0;
+   static retro_time_t
+      last_ticker_slow_update = 0;
+
+   /* Adjust ticker speed */
+   settings_t *settings = config_get_ptr();
+   float speed_factor = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
+   unsigned ticker_speed = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   unsigned ticker_slow_speed = (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
+
+   cur_time                 = cpu_features_get_time_usec() / 1000;
+   delta_time               = old_time == 0 ? 0 : cur_time - old_time;
+
+   old_time                 = cur_time;
+
+   if (((cur_time - last_clock_update) > 1000)
+         && timedate_enable)
+   {
+      animation_is_active   = true;
+      last_clock_update     = cur_time;
+   }
+
+   if (ticker_is_active 
+      && cur_time - last_ticker_update >= ticker_speed)
+   {
+      ticker_idx++;
+      last_ticker_update = cur_time;
+   }
+
+   if (ticker_is_active 
+      && cur_time - last_ticker_slow_update >= ticker_slow_speed)
+   {
+      ticker_slow_idx++;
+      last_ticker_slow_update = cur_time;
+   }
+}
+
+bool menu_animation_update(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   menu_animation_update_time(settings->bools.menu_timedate_enable);
 
    anim.in_update       = true;
    anim.pending_deletes = false;
@@ -507,7 +612,7 @@ bool menu_animation_update(float anim_delta_time)
    for(i = 0; i < da_count(anim.list); i++)
    {
       struct tween *tween   = da_getptr(anim.list, i);
-      tween->running_since += anim_delta_time;
+      tween->running_since += delta_time;
 
       *tween->subject = tween->easing(
             tween->running_since,
@@ -556,7 +661,6 @@ bool menu_animation_update(float anim_delta_time)
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
 {
    size_t str_len = utf8len(ticker->str);
-   size_t offset  = 0;
 
    if ((size_t)str_len <= ticker->len)
    {
@@ -574,45 +678,89 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
       return false;
    }
 
-   if (str_len > ticker->len)
-      menu_animation_ticker_generic(
-            ticker->idx,
-            ticker->len,
-            &offset,
-            &str_len);
-
-   utf8cpy(
-         ticker->s,
-         PATH_MAX_LENGTH,
-         utf8skip(ticker->str, offset),
-         str_len);
+   /* Note: If we reach this point then str_len > ticker->len
+    * (previously had an unecessary 'if (str_len > ticker->len)'
+    * check here...) */
+   switch (ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+      {
+         size_t offset1, offset2, offset3;
+         size_t width1, width2, width3;
+         
+         /* Horribly oversized temporary buffer
+          * > utf8 support makes this whole thing incredibly
+          *   ugly/inefficient. Not much we can do about it... */
+         char tmp[PATH_MAX_LENGTH];
+         
+         tmp[0] = '\0';
+         ticker->s[0] = '\0';
+         
+         menu_animation_ticker_loop(
+               ticker->idx,
+               ticker->len,
+               str_len, utf8len(ticker->spacer),
+               &offset1, &width1,
+               &offset2, &width2,
+               &offset3, &width3);
+         
+         if (width1 > 0)
+         {
+            utf8cpy(
+                  ticker->s,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset1),
+                  width1);
+         }
+         
+         if (width2 > 0)
+         {
+            utf8cpy(
+                  tmp,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->spacer, offset2),
+                  width2);
+            
+            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
+         }
+         
+         if (width3 > 0)
+         {
+            utf8cpy(
+                  tmp,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset3),
+                  width3);
+            
+            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
+         }
+         
+         break;
+      }
+      case TICKER_TYPE_BOUNCE:
+      default:
+      {
+         size_t offset  = 0;
+         
+         menu_animation_ticker_generic(
+               ticker->idx,
+               ticker->len,
+               &offset,
+               &str_len);
+         
+         utf8cpy(
+               ticker->s,
+               PATH_MAX_LENGTH,
+               utf8skip(ticker->str, offset),
+               str_len);
+         
+         break;
+      }
+   }
 
    ticker_is_active = true;
 
    return true;
-}
-
-void menu_animation_update_time(bool timedate_enable)
-{
-   static retro_time_t
-      last_clock_update     = 0;
-
-   cur_time                 = cpu_features_get_time_usec();
-   delta_time               = cur_time - old_time;
-
-   if (delta_time >= IDEAL_DELTA_TIME* 4)
-      delta_time            = IDEAL_DELTA_TIME * 4;
-   if (delta_time <= IDEAL_DELTA_TIME / 4)
-      delta_time            = IDEAL_DELTA_TIME / 4;
-
-   old_time                 = cur_time;
-
-   if (((cur_time - last_clock_update) > 1000000)
-         && timedate_enable)
-   {
-      animation_is_active   = true;
-      last_clock_update     = cur_time;
-   }
 }
 
 bool menu_animation_is_active(void)
@@ -679,10 +827,9 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    }
 }
 
-void menu_animation_get_time(menu_animation_ctx_delta_t *delta)
+float menu_animation_get_delta_time(void)
 {
-   delta->current = delta_time;
-   delta->ideal   = delta_time / IDEAL_DELTA_TIME;
+   return delta_time;
 }
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
@@ -748,4 +895,14 @@ void menu_timer_kill(menu_timer_t *timer)
 {
    menu_animation_ctx_tag tag = (uintptr_t) timer;
    menu_animation_kill_by_tag(&tag);
+}
+
+uint64_t menu_animation_get_ticker_idx(void)
+{
+   return ticker_idx;
+}
+
+uint64_t menu_animation_get_ticker_slow_idx(void)
+{
+   return ticker_slow_idx;
 }

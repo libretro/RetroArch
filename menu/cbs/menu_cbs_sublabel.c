@@ -309,6 +309,7 @@ default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_show_sublabels,           MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 default_sublabel_macro(action_bind_sublabel_audio_resampler_quality,       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 default_sublabel_macro(action_bind_sublabel_netplay_enable_host,           MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
@@ -506,6 +507,19 @@ default_sublabel_macro(action_bind_sublabel_switch_cpu_profile,             MENU
 default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE)
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
+
+default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_background_filler_thickness_enable,  MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_linear_filter,                            MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_lock_aspect,                         MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT)
+default_sublabel_macro(action_bind_sublabel_rgui_menu_color_theme,                         MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME)
+default_sublabel_macro(action_bind_sublabel_rgui_menu_theme_preset,                        MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_downscaler,                MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER)
+default_sublabel_macro(action_bind_sublabel_content_runtime_log,                           MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
+default_sublabel_macro(action_bind_sublabel_menu_ticker_type,                              MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE)
+default_sublabel_macro(action_bind_sublabel_menu_ticker_speed,                             MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -1445,6 +1459,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_battery_level_enable);
             break;
+         case MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_sublabels);
+            break;
          case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_enable);
             break;
@@ -2210,6 +2227,42 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DISCORD_ALLOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_discord_allow);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_border_filler_enable);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_border_filler_thickness_enable);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_background_filler_thickness_enable);
+            break;
+         case MENU_ENUM_LABEL_MENU_LINEAR_FILTER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_linear_filter);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_lock_aspect);
+            break;
+         case MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_menu_color_theme);
+            break;
+         case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_menu_theme_preset);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_thumbnail_downscaler);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log);
+            break;
+         case MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_internal_upscale_level);
+            break;
+         case MENU_ENUM_LABEL_MENU_TICKER_TYPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ticker_type);
+            break;
+         case MENU_ENUM_LABEL_MENU_TICKER_SPEED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ticker_speed);
             break;
          default:
          case MSG_UNKNOWN:

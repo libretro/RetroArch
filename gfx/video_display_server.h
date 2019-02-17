@@ -41,7 +41,7 @@ typedef struct video_display_server
    bool (*set_window_progress)(void *data, int progress, bool finished);
    bool (*set_window_decorations)(void *data, bool on);
    bool (*set_resolution)(void *data, unsigned width,
-         unsigned height, int int_hz, float hz, int center, int monitor_index);
+         unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset);
    void *(*get_resolution_list)(void *data,
          unsigned *size);
    const char *(*get_output_options)(void *data);
@@ -60,7 +60,7 @@ bool video_display_server_set_window_decorations(bool on);
 
 bool video_display_server_set_resolution(
       unsigned width, unsigned height,
-      int int_hz, float hz, int center, int monitor_index);
+      int int_hz, float hz, int center, int monitor_index, int xoffset);
 
 void *video_display_server_get_resolution_list(unsigned *size);
 

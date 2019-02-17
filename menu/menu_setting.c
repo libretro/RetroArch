@@ -819,6 +819,102 @@ static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_internal_upscale_level(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_UPSCALE_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE),
+               len);
+         break;
+      case RGUI_UPSCALE_AUTO:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO),
+               len);
+         break;
+      case RGUI_UPSCALE_X2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2),
+               len);
+         break;
+      case RGUI_UPSCALE_X3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3),
+               len);
+         break;
+      case RGUI_UPSCALE_X4:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4),
+               len);
+         break;
+      case RGUI_UPSCALE_X5:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5),
+               len);
+         break;
+      case RGUI_UPSCALE_X6:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6),
+               len);
+         break;
+      case RGUI_UPSCALE_X7:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7),
+               len);
+         break;
+      case RGUI_UPSCALE_X8:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8),
+               len);
+         break;
+      case RGUI_UPSCALE_X9:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9),
+               len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_menu_ticker_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case TICKER_TYPE_BOUNCE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
+               len);
+         break;
+      case TICKER_TYPE_LOOP:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
+               len);
+         break;
+   }
+}
+
 #ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
@@ -1195,9 +1291,11 @@ static void setting_get_string_representation_crt_switch_resolution_super(
       return;
 
    if (*setting->value.target.unsigned_integer == 0)
-      strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
+      strlcpy(s, "NATIVE", len);
+   else if (*setting->value.target.unsigned_integer == 1)
+      strlcpy(s, "DYNAMIC", len);
    else
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
 }
 
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
@@ -1300,8 +1398,11 @@ static int setting_uint_action_left_crt_switch_resolution_super(
       case 0:
          *setting->value.target.unsigned_integer = 3840;
          break;
-      case 1920:
+      case 1: /* for dynamic super resolution switching - best fit */
          *setting->value.target.unsigned_integer = 0;
+         break;
+      case 1920:
+         *setting->value.target.unsigned_integer = 1;
          break;
       case 2560:
          *setting->value.target.unsigned_integer = 1920;
@@ -1565,6 +1666,9 @@ static int setting_uint_action_right_crt_switch_resolution_super(
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
+         *setting->value.target.unsigned_integer = 1;
+         break;
+      case 1: /* for dynamic super resolution switching - best fit */
          *setting->value.target.unsigned_integer = 1920;
          break;
       case 1920:
@@ -4821,9 +4925,25 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_autosave_interval;
 #endif
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.content_runtime_log,
+                  MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
+                  MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+                  content_runtime_log,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
+
          break;
       case SETTINGS_LIST_REWIND:
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS), parent_group);
@@ -5384,7 +5504,7 @@ static bool setting_append_list(
                   &settings->bools.video_statistics_show,
                   MENU_ENUM_LABEL_STATISTICS_SHOW,
                   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-                  fps_show,
+                  statistics_show,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -5399,7 +5519,7 @@ static bool setting_append_list(
                &settings->bools.video_framecount_show,
                MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
                MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-               fps_show,
+               framecount_show,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -7962,6 +8082,7 @@ static bool setting_append_list(
                   );
 
             if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+            {
                CONFIG_BOOL(
                      list, list_info,
                      &settings->bools.menu_linear_filter,
@@ -7977,6 +8098,24 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE
                      );
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.menu_rgui_internal_upscale_level,
+                     MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+                     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+                     rgui_internal_upscale_level,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_rgui_internal_upscale_level;
+               menu_settings_list_current_add_range(list, list_info, 0, RGUI_UPSCALE_LAST-1, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            }
 
             CONFIG_BOOL(
                   list, list_info,
@@ -8049,6 +8188,37 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_start  = NULL;
 #endif
          }
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_ticker_type,
+               MENU_ENUM_LABEL_MENU_TICKER_TYPE,
+               MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+               menu_ticker_type,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_ticker_type;
+         menu_settings_list_current_add_range(list, list_info, 0, TICKER_TYPE_LAST-1, 1, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.menu_ticker_speed,
+               MENU_ENUM_LABEL_MENU_TICKER_SPEED,
+               MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+               menu_ticker_speed,
+               "%.1fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -8942,6 +9112,24 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
+
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_sublabels,
+                  MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

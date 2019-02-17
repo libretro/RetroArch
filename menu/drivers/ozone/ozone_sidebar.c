@@ -106,15 +106,22 @@ unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
 void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
    size_t y;
-   unsigned i, sidebar_height;
+   int entry_width;
+   unsigned i, sidebar_height, selection_y, selection_old_y, horizontal_list_size;
    char console_title[255];
    menu_animation_ctx_ticker_t ticker;
+   static const char* const ticker_spacer = TICKER_SPACER;
+   settings_t *settings = config_get_ptr();
 
-   unsigned selection_y          = 0;
-   unsigned selection_old_y      = 0;
-   unsigned horizontal_list_size = 0;
+   /* Initial ticker configuration */
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
 
-   int entry_width = 0;
+   selection_y          = 0;
+   selection_old_y      = 0;
+   horizontal_list_size = 0;
+
+   entry_width = 0;
 
    if (!ozone->draw_sidebar)
       return;
@@ -171,7 +178,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    y = ozone->dimensions.header_height + 1 + ozone->dimensions.sidebar_padding_vertical;
    menu_display_blend_begin(video_info);
 
-   for (i = 0; i < ozone->system_tab_end+1; i++)
+   for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
       enum msg_hash_enums value_idx;
       const char *title = NULL;
@@ -220,7 +227,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
 
          /* Text */
-         ticker.idx        = ozone->frame_count / 20;
+         ticker.idx        = menu_animation_get_ticker_idx();
          ticker.len        = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 35) / ozone->sidebar_font_glyph_width;
          ticker.s          = console_title;
          ticker.selected   = selected;
@@ -256,13 +263,13 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 }
@@ -281,13 +288,13 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 }
@@ -338,13 +345,13 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
-   entry.cb = NULL;
-   entry.duration = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.subject = &ozone->animations.cursor_alpha;
-   entry.tag = tag;
-   entry.target_value = 1.0f;
-   entry.userdata = NULL;
+   entry.cb             = NULL;
+   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &ozone->animations.cursor_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 1.0f;
+   entry.userdata       = NULL;
 
    menu_animation_push(&entry);
 

@@ -26,10 +26,6 @@
 #include <formats/rwav.h>
 #include <memalign.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -191,10 +187,6 @@ struct audio_mixer_voice
 static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {{0}};
 static unsigned s_rate = 0;
 
-#ifdef HAVE_THREADS
-static slock_t* s_locker = NULL;
-#endif
-
 static bool wav2float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
    size_t i;
@@ -316,23 +308,11 @@ void audio_mixer_init(unsigned rate)
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
-
-#ifdef HAVE_THREADS
-   if (s_locker)
-      slock_free(s_locker);
-   s_locker = slock_new();
-#endif
 }
 
 void audio_mixer_done(void)
 {
    unsigned i;
-
-#ifdef HAVE_THREADS
-   /* Dont call audio mixer functions after this point */
-   slock_free(s_locker);
-   s_locker = NULL;
-#endif
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
@@ -801,12 +781,6 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
    if (!sound)
       return NULL;
 
-#ifdef HAVE_THREADS
-   slock_lock(s_locker);
-#endif
-
-   audio_resampler_lock();
-
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       if (voice->type != AUDIO_MIXER_TYPE_NONE)
@@ -855,12 +829,6 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
    else
       voice = NULL;
 
-   audio_resampler_unlock();
-
-#ifdef HAVE_THREADS
-   slock_unlock(s_locker);
-#endif
-
    return voice;
 }
 
@@ -871,18 +839,10 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
 
    if (voice)
    {
-#ifdef HAVE_THREADS
-      slock_lock(s_locker);
-#endif
-
       stop_cb = voice->stop_cb;
       sound   = voice->sound;
 
       voice->type = AUDIO_MIXER_TYPE_NONE;
-
-#ifdef HAVE_THREADS
-      slock_unlock(s_locker);
-#endif
 
       if (stop_cb)
          stop_cb(sound, AUDIO_MIXER_SOUND_STOPPED);
@@ -1239,12 +1199,6 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
    float* sample              = NULL;
    audio_mixer_voice_t* voice = s_voices;
 
-#ifdef HAVE_THREADS
-   slock_lock(s_locker);
-#endif
-
-   audio_resampler_lock();
-
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       float volume = (override) ? volume_override : voice->volume;
@@ -1286,12 +1240,6 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
       else if (*sample > 1.0f)
          *sample = 1.0f;
    }
-
-   audio_resampler_unlock();
-
-#ifdef HAVE_THREADS
-   slock_unlock(s_locker);
-#endif
 }
 
 float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)

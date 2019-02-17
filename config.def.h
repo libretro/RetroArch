@@ -272,6 +272,7 @@ static const float default_input_overlay_opacity = 0.7f;
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_animation.h"
 
 static bool default_block_config_read    = true;
 
@@ -321,6 +322,10 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
+static bool menu_show_sublabels          = false;
+
+static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
+static float menu_ticker_speed           = 1.0f;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
@@ -377,6 +382,8 @@ static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
 static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 
 static bool rgui_lock_aspect = false;
+
+static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
 
 #else
 static bool default_block_config_read = false;
@@ -576,6 +583,9 @@ static const bool framecount_show = false;
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 static const bool memory_show = false;
 
+/* Enables displaying various timing statistics. */
+static const bool statistics_show = false;
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 static const bool rewind_enable = false;
@@ -770,6 +780,9 @@ static const bool ui_companion_toggle = false;
 
 /* Only init the WIMP UI for this session if this is enabled */
 static const bool desktop_menu_enable = true;
+
+/* Keep track of how long each core+content has been running for over time */
+static const bool content_runtime_log = false;
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;

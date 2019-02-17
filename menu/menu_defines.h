@@ -233,6 +233,21 @@ enum rgui_thumbnail_scaler
    RGUI_THUMB_SCALE_LAST
 };
 
+enum rgui_upscale_level
+{
+   RGUI_UPSCALE_NONE = 0,
+   RGUI_UPSCALE_AUTO,
+   RGUI_UPSCALE_X2,
+   RGUI_UPSCALE_X3,
+   RGUI_UPSCALE_X4,
+   RGUI_UPSCALE_X5,
+   RGUI_UPSCALE_X6,
+   RGUI_UPSCALE_X7,
+   RGUI_UPSCALE_X8,
+   RGUI_UPSCALE_X9, /* All the way to 4k */
+   RGUI_UPSCALE_LAST
+};
+
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,

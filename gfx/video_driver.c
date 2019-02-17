@@ -142,6 +142,7 @@ static unsigned            video_driver_state_scale      = 0;
 static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32      = false;
 static bool                video_driver_crt_switching_active = false;
+static bool                video_driver_crt_dynamic_super_width = false;
 
 static struct retro_system_av_info video_driver_av_info;
 
@@ -260,9 +261,9 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl2,
+#endif
 #ifdef HAVE_OPENGL1
    &video_gl1,
-#endif
 #endif
 #ifdef HAVE_VULKAN
    &video_vulkan,
@@ -1365,31 +1366,6 @@ void video_driver_set_aspect_ratio_value(float value)
    video_driver_aspect_ratio = value;
 }
 
-static bool video_driver_frame_filter(
-      const void *data,
-      video_frame_info_t *video_info,
-      unsigned width, unsigned height,
-      size_t pitch,
-      unsigned *output_width, unsigned *output_height,
-      unsigned *output_pitch)
-{
-   rarch_softfilter_get_output_size(video_driver_state_filter,
-         output_width, output_height, width, height);
-
-   *output_pitch = (*output_width) * video_driver_state_out_bpp;
-
-   rarch_softfilter_process(video_driver_state_filter,
-         video_driver_state_buffer, *output_pitch,
-         data, width, height, pitch);
-
-   if (video_info->post_filter_record && recording_data)
-      recording_dump_frame(video_driver_state_buffer,
-            *output_width, *output_height, *output_pitch,
-            video_info->runloop_is_idle);
-
-   return true;
-}
-
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 {
    return video_driver_state_filter;
@@ -1414,8 +1390,6 @@ bool video_driver_cached_frame(void)
 {
    void *recording  = recording_driver_get_data_ptr();
 
-   recording_driver_lock();
-
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
@@ -1426,8 +1400,6 @@ bool video_driver_cached_frame(void)
          frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
-
-   recording_driver_unlock();
 
    return true;
 }
@@ -2558,10 +2530,22 @@ void video_driver_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height,
             pitch, video_info.runloop_is_idle);
 
-   if (data && video_driver_state_filter &&
-         video_driver_frame_filter(data, &video_info, width, height, pitch,
-            &output_width, &output_height, &output_pitch))
+   if (data && video_driver_state_filter)
    {
+      rarch_softfilter_get_output_size(video_driver_state_filter,
+            &output_width, &output_height, width, height);
+
+      output_pitch = (output_width) * video_driver_state_out_bpp;
+
+      rarch_softfilter_process(video_driver_state_filter,
+            video_driver_state_buffer, output_pitch,
+            data, width, height, pitch);
+
+      if (video_info.post_filter_record && recording_data)
+         recording_dump_frame(video_driver_state_buffer,
+               output_width, output_height, output_pitch,
+               video_info.runloop_is_idle);
+
       data   = video_driver_state_buffer;
       width  = output_width;
       height = output_height;
@@ -2664,7 +2648,13 @@ void video_driver_frame(const void *data, unsigned width,
          width = 3840;
       if (video_info.crt_switch_resolution_super == 1920)
          width = 1920;
-      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index);
+      
+      if (video_info.crt_switch_resolution_super == 1)
+         video_driver_crt_dynamic_super_width = true;
+      else 
+         video_driver_crt_dynamic_super_width = false;
+      
+      crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index, video_driver_crt_dynamic_super_width);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;

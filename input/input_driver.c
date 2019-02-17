@@ -664,7 +664,10 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t res = 0, res_overlay = 0;
+   int16_t res         = 0;
+#ifdef HAVE_OVERLAY
+   int16_t res_overlay = 0;
+#endif
 
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
@@ -709,7 +712,8 @@ int16_t input_state(unsigned port, unsigned device,
 
 #ifdef HAVE_OVERLAY
       if (overlay_ptr)
-         input_state_overlay(overlay_ptr, &res_overlay, port, device, idx, id);
+         input_state_overlay(overlay_ptr,
+               &res_overlay, port, device, idx, id);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD

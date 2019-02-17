@@ -39,6 +39,7 @@
 #include "../../dynamic.h"
 #include "../video_driver.h"
 #include "../../ui/ui_companion_driver.h"
+#include "../../frontend/frontend_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -1562,23 +1563,27 @@ static void d3d9_get_overlay_interface(void *data,
 
 static void d3d9_update_title(video_frame_info_t *video_info)
 {
+   const settings_t *settings = config_get_ptr();
 #ifdef _XBOX
    const ui_window_t *window      = NULL;
 #else
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
-   if (video_info->fps_show)
+   if (settings->bools.video_memory_show)
    {
-      MEMORYSTATUS stat;
-      char mem[128];
+#ifndef __WINRT__
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
 
       mem[0] = '\0';
 
-      GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
-            stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+#endif
    }
 
 #ifndef _XBOX

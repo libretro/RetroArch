@@ -69,6 +69,7 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../tasks/task_content.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../version_git.h"
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
@@ -3013,7 +3014,8 @@ void MainWindow::showAbout()
    QString text = QString("RetroArch ") + PACKAGE_VERSION +
          "<br><br>" + "<a href=\"http://www.libretro.com/\">www.libretro.com</a>"
          "<br><br>" + "<a href=\"http://www.retroarch.com/\">www.retroarch.com</a>"
-         "<br>";
+         "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + ": " + retroarch_git_version +
+         "<br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE) + ": " + __DATE__;
    QLabel *label = new QLabel(text, dialog.data());
    QPixmap pix = getInvader();
    QLabel *pixLabel = new QLabel(dialog.data());

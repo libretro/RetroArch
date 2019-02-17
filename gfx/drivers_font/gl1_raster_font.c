@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -409,22 +409,13 @@ static void gl1_raster_font_render_message(
 static void gl1_raster_font_setup_viewport(unsigned width, unsigned height,
       gl1_raster_t *font, bool full_screen)
 {
-   video_shader_ctx_info_t shader_info;
-
    video_driver_set_viewport(width, height, full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   /*glBlendEquation(GL_FUNC_ADD);*/
 
    glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, font->tex);
-
-   /*shader_info.data       = NULL;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);*/
 }
 
 static void gl1_raster_font_render_msg(

@@ -74,7 +74,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 #ifdef UNICODE
    strlcpy(desc.FaceName, T(L"Verdana"), sizeof(desc.FaceName));
 #else
-   strlcpy(desc.FaceName, _T("Verdana"), sizeof(desc.FaceName));
+   strlcpy(desc.FaceName, (const char*)_T("Verdana"), sizeof(desc.FaceName));
 #endif
 
    d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */

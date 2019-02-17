@@ -510,7 +510,6 @@ bool libretro_get_system_info(const char *path,
  **/
 bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
-   dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
@@ -519,64 +518,67 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
    switch (type)
    {
       case CORE_TYPE_PLAIN:
+         {
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_RUNAHEAD
-         if (!lib_path || !lib_handle_p)
+            dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
+            if (!lib_path || !lib_handle_p)
 #endif
-         {
-            if (!load_dynamic_core())
-               return false;
-            lib_handle_local = lib_handle;
-         }
+            {
+               if (!load_dynamic_core())
+                  return false;
+               lib_handle_local = lib_handle;
+            }
 #ifdef HAVE_RUNAHEAD
-         else
-         {
-            /* for a secondary core, we already have a
-             * primary library loaded, so we can skip
-             * some checks and just load the library */
-            retro_assert(lib_path != NULL && lib_handle_p != NULL);
-            lib_handle_local = dylib_load(lib_path);
+            else
+            {
+               /* for a secondary core, we already have a
+                * primary library loaded, so we can skip
+                * some checks and just load the library */
+               retro_assert(lib_path != NULL && lib_handle_p != NULL);
+               lib_handle_local = dylib_load(lib_path);
 
-            if (!lib_handle_local)
-               return false;
-            *lib_handle_p = lib_handle_local;
+               if (!lib_handle_local)
+                  return false;
+               *lib_handle_p = lib_handle_local;
+            }
+#endif
+#endif
+
+            SYMBOL(retro_init);
+            SYMBOL(retro_deinit);
+
+            SYMBOL(retro_api_version);
+            SYMBOL(retro_get_system_info);
+            SYMBOL(retro_get_system_av_info);
+
+            SYMBOL(retro_set_environment);
+            SYMBOL(retro_set_video_refresh);
+            SYMBOL(retro_set_audio_sample);
+            SYMBOL(retro_set_audio_sample_batch);
+            SYMBOL(retro_set_input_poll);
+            SYMBOL(retro_set_input_state);
+
+            SYMBOL(retro_set_controller_port_device);
+
+            SYMBOL(retro_reset);
+            SYMBOL(retro_run);
+
+            SYMBOL(retro_serialize_size);
+            SYMBOL(retro_serialize);
+            SYMBOL(retro_unserialize);
+
+            SYMBOL(retro_cheat_reset);
+            SYMBOL(retro_cheat_set);
+
+            SYMBOL(retro_load_game);
+            SYMBOL(retro_load_game_special);
+
+            SYMBOL(retro_unload_game);
+            SYMBOL(retro_get_region);
+            SYMBOL(retro_get_memory_data);
+            SYMBOL(retro_get_memory_size);
          }
-#endif
-#endif
-
-         SYMBOL(retro_init);
-         SYMBOL(retro_deinit);
-
-         SYMBOL(retro_api_version);
-         SYMBOL(retro_get_system_info);
-         SYMBOL(retro_get_system_av_info);
-
-         SYMBOL(retro_set_environment);
-         SYMBOL(retro_set_video_refresh);
-         SYMBOL(retro_set_audio_sample);
-         SYMBOL(retro_set_audio_sample_batch);
-         SYMBOL(retro_set_input_poll);
-         SYMBOL(retro_set_input_state);
-
-         SYMBOL(retro_set_controller_port_device);
-
-         SYMBOL(retro_reset);
-         SYMBOL(retro_run);
-
-         SYMBOL(retro_serialize_size);
-         SYMBOL(retro_serialize);
-         SYMBOL(retro_unserialize);
-
-         SYMBOL(retro_cheat_reset);
-         SYMBOL(retro_cheat_set);
-
-         SYMBOL(retro_load_game);
-         SYMBOL(retro_load_game_special);
-
-         SYMBOL(retro_unload_game);
-         SYMBOL(retro_get_region);
-         SYMBOL(retro_get_memory_data);
-         SYMBOL(retro_get_memory_size);
          break;
       case CORE_TYPE_DUMMY:
          SYMBOL_DUMMY(retro_init);

@@ -1673,6 +1673,10 @@ MSG_HASH(
     "Menu Linear Filter"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+    "Adds a slight blur to the menu to take the edge off hard pixel edges."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
     "Horizontal Animation"
     )
@@ -2951,6 +2955,10 @@ MSG_HASH(
     "Thumbnail Downscaling Method"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Resampling method used when shrinking large thumbnails to fit the screen."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
     "Nearest Neighbour (Fast)"
     )
@@ -2961,6 +2969,46 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
     "Sinc/Lanczos3 (Slow)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+    "None"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+    "Auto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
+    "x2"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3,
+    "x3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4,
+    "x4"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5,
+    "x5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6,
+    "x6"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7,
+    "x7"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8,
+    "x8"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
+    "x9"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
@@ -3027,12 +3075,44 @@ MSG_HASH(
      "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "Ticker Text Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+    "Select horizontal scrolling method used to display long menu text strings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+    "Bounce Left/Right"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+    "Scroll Left"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+    "Ticker Text Speed"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+    "Animation speed when scrolling long menu text strings."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
     "Menu Color Theme"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+    "Select a different color theme. Choosing 'Custom' enables the use of menu theme preset files."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
     "Custom Menu Theme Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+    "Select a menu theme preset from the file browser."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -5016,6 +5096,14 @@ MSG_HASH(
     "Show battery level"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+    "Show menu sublabels"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+    "Shows additional information for the currently selected menu entry."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SELECT_FILE,
     "Select File"
     )
@@ -6641,16 +6729,40 @@ MSG_HASH(
     "Border filler"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Display menu border."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
     "Border filler thickness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu border chequerboard pattern."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
     "Background filler thickness"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu background chequerboard pattern."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
     "Lock Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT,
+    "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Internal Upscaling"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
@@ -8153,4 +8265,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
     "CoreAudio V3 support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+    "Save content runtime log"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+    "Keeps track of how long your content has been running over time."
     )

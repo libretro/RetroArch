@@ -411,7 +411,6 @@ typedef struct
    bool mouse_show;
    unsigned last_width;
    unsigned last_height;
-   unsigned frame_count;
    bool bg_thickness;
    bool border_thickness;
    float scroll_y;
@@ -427,6 +426,7 @@ typedef struct
    uint32_t thumbnail_queue_size;
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char menu_title[255]; /* Must be a fixed length array... */
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -466,6 +466,19 @@ static wallpaper_t wallpaper = {
    false,
    NULL,
    {0}
+};
+
+typedef struct
+{
+   unsigned width;
+   unsigned height;
+   uint16_t *data;
+} upscale_buf_t;
+
+static upscale_buf_t upscale_buf = {
+   0,
+   0,
+   NULL
 };
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -1443,13 +1456,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          prepare_rgui_colors(rgui, settings);
       }
    }
-
-   rgui->frame_count++;
 }
 
 static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
+   static const char ticker_spacer[] = " | ";
    unsigned x, y;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
@@ -1458,7 +1470,6 @@ static void rgui_render(void *data, bool is_idle)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui->frame_count;
 
    static bool display_kb         = false;
    bool current_display_cb        = false;
@@ -1572,6 +1583,12 @@ static void rgui_render(void *data, bool is_idle)
       rgui_render_background(rgui);
    }
 
+   /* We use a single ticker for all text animations,
+    * with the following configuration: */
+   ticker.idx = menu_animation_get_ticker_idx();
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
+
    /* If thumbnails are enabled and we are viewing a playlist,
     * switch to thumbnail view mode if either current thumbnail
     * is valid or we are waiting for current thumbnail to load
@@ -1581,7 +1598,6 @@ static void rgui_render(void *data, bool is_idle)
     * through a list...) */
    if (rgui->show_thumbnail && rgui->is_playlist_entry && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
-      menu_animation_ctx_ticker_t ticker;
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
       thumbnail_title_buf[0] = '\0';
@@ -1592,7 +1608,6 @@ static void rgui_render(void *data, bool is_idle)
       /* Format thumbnail title */
       ticker.s        = thumbnail_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
       ticker.str      = rgui->thumbnail_content;
       ticker.selected = true;
       menu_animation_ticker(&ticker);
@@ -1613,21 +1628,17 @@ static void rgui_render(void *data, bool is_idle)
    else
    {
       /* No thumbnail - render usual text */
-      char title[255];
       char title_buf[255];
-      char core_title[64];
-      char core_title_buf[64];
-      /* Need this in two places, so cache here */
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
+      unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
+      bool show_core_name = settings->bools.menu_core_enable;
 
-      title[0] = title_buf[0] = core_title[0] = core_title_buf[0] = '\0';
-
-      menu_entries_get_title(title, sizeof(title));
+      /* Print title */
+      title_buf[0] = '\0';
 
       ticker.s        = title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);;
-      ticker.str      = title;
+      ticker.str      = rgui->menu_title;
       ticker.selected = true;
 
       menu_animation_ticker(&ticker);
@@ -1641,24 +1652,156 @@ static void rgui_render(void *data, bool is_idle)
                RGUI_TERM_START_X(fb_width),
                title_buf, rgui->colors.title_color);
 
-      if (settings->bools.menu_core_enable &&
-            menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
+      /* Print menu entries */
+      x = RGUI_TERM_START_X(fb_width);
+      y = RGUI_TERM_START_Y(fb_height);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+
+      for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
-         ticker.s        = core_title_buf;
-         ticker.len      = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
-         ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
-         ticker.str      = core_title;
-         ticker.selected = true;
+         menu_entry_t entry;
+         char entry_value[255];
+         char message[255];
+         char entry_title_buf[255];
+         char type_str_buf[255];
+         char *entry_path                      = NULL;
+         unsigned entry_spacing                = 0;
+         size_t entry_title_max_len            = 0;
+         size_t entry_title_buf_utf8len        = 0;
+         size_t entry_title_buf_len            = 0;
+         bool has_value                        = false;
+         bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
+         size_t selection                      = menu_navigation_get_selection();
+
+         if (i > (selection + 100))
+            continue;
+
+         entry_value[0]     = '\0';
+         message[0]         = '\0';
+         entry_title_buf[0] = '\0';
+         type_str_buf[0]    = '\0';
+
+         /* Get current entry */
+         menu_entry_init(&entry);
+         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+
+         /* Read entry parameters */
+         entry_spacing = menu_entry_get_spacing(&entry);
+         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+         entry_path = menu_entry_get_rich_label(&entry);
+
+         /* Determine whether entry has a value component */
+         has_value = !string_is_empty(entry_value);
+
+         /* Format entry title string */
+         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
+         entry_title_max_len = has_value ? entry_title_max_len - entry_spacing : entry_title_max_len;
+
+         ticker.s        = entry_title_buf;
+         ticker.len      = entry_title_max_len;
+         ticker.str      = entry_path;
+         ticker.selected = entry_selected;
 
          menu_animation_ticker(&ticker);
 
+         entry_title_buf_utf8len = utf8len(entry_title_buf);
+         entry_title_buf_len     = strlen(entry_title_buf);
+
+         if (has_value)
+         {
+            /* Format entry value string */
+            ticker.s        = type_str_buf;
+            ticker.len      = entry_spacing;
+            ticker.str      = entry_value;
+
+            menu_animation_ticker(&ticker);
+
+            /* Print entry title + value */
+            snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
+                  entry_selected ? '>' : ' ',
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  entry_title_buf,
+                  entry_spacing,
+                  type_str_buf);
+         }
+         else
+         {
+            /* No value - just print entry title */
+            snprintf(message, sizeof(message), "%c %-*.*s",
+                  entry_selected ? '>' : ' ',
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
+                  entry_title_buf);
+         }
+
          if (rgui_framebuf_data)
-            blit_line(
-                  RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-                  (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
+            blit_line(x, y, message,
+                  entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color);
+
+         if (!string_is_empty(entry_path))
+            free(entry_path);
+
+         /* Print menu sublabel (if required) */
+         if (settings->bools.menu_show_sublabels && entry_selected)
+         {
+            if (!string_is_empty(entry.sublabel))
+            {
+               char *sublabel = NULL;
+               char sublabel_buf[255];
+               sublabel_buf[0] = '\0';
+
+               sublabel = menu_entry_get_sublabel(&entry);
+
+               ticker.s        = sublabel_buf;
+               ticker.len      = core_name_len;
+               ticker.str      = sublabel;
+               ticker.selected = true;
+
+               menu_animation_ticker(&ticker);
+
+               if (rgui_framebuf_data)
+                  blit_line(
+                        RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                        (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                        RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
+
+               if (!string_is_empty(sublabel))
+                  free(sublabel);
+
+               show_core_name = false;
+            }
+         }
+
+         menu_entry_free(&entry);
       }
 
+      /* Print core name (if required) */
+      if (show_core_name)
+      {
+         char core_title[64];
+         char core_title_buf[64];
+         core_title[0] = core_title_buf[0] = '\0';
+
+         if (menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
+         {
+            ticker.s        = core_title_buf;
+            ticker.len      = core_name_len;
+            ticker.str      = core_title;
+            ticker.selected = true;
+
+            menu_animation_ticker(&ticker);
+
+            if (rgui_framebuf_data)
+               blit_line(
+                     RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                     (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                     RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
+         }
+      }
+
+      /* Print clock (if required) */
       if (settings->bools.menu_timedate_enable)
       {
          menu_display_ctx_datetime_t datetime;
@@ -1677,75 +1820,6 @@ static void rgui_render(void *data, bool is_idle)
                   timedate_x,
                   (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
-      }
-
-      x = RGUI_TERM_START_X(fb_width);
-      y = RGUI_TERM_START_Y(fb_height);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
-
-      for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
-      {
-         menu_entry_t entry;
-         menu_animation_ctx_ticker_t ticker;
-         char entry_value[255];
-         char message[255];
-         char entry_title_buf[255];
-         char type_str_buf[255];
-         char *entry_path                      = NULL;
-         unsigned entry_spacing                = 0;
-         size_t entry_title_buf_utf8len        = 0;
-         size_t entry_title_buf_len            = 0;
-         bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
-         size_t selection                      = menu_navigation_get_selection();
-
-         if (i > (selection + 100))
-            continue;
-
-         entry_value[0]     = '\0';
-         message[0]         = '\0';
-         entry_title_buf[0] = '\0';
-         type_str_buf[0]    = '\0';
-
-         menu_entry_init(&entry);
-         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-
-         entry_spacing = menu_entry_get_spacing(&entry);
-         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-         entry_path      = menu_entry_get_rich_label(&entry);
-
-         ticker.s        = entry_title_buf;
-         ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
-         ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
-         ticker.str      = entry_path;
-         ticker.selected = entry_selected;
-
-         menu_animation_ticker(&ticker);
-
-         ticker.s        = type_str_buf;
-         ticker.len      = entry_spacing;
-         ticker.str      = entry_value;
-
-         menu_animation_ticker(&ticker);
-
-         entry_title_buf_utf8len = utf8len(entry_title_buf);
-         entry_title_buf_len     = strlen(entry_title_buf);
-
-         snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
-               entry_selected ? '>' : ' ',
-               (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
-               (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
-               entry_title_buf,
-               entry_spacing,
-               type_str_buf);
-
-         if (rgui_framebuf_data)
-            blit_line(x, y, message,
-                  entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color);
-
-         menu_entry_free(&entry);
-         if (!string_is_empty(entry_path))
-            free(entry_path);
       }
    }
 
@@ -1776,7 +1850,6 @@ static void rgui_render(void *data, bool is_idle)
       if (settings->bools.menu_mouse_enable && cursor_visible)
          rgui_blit_cursor();
    }
-
 }
 
 static void rgui_framebuffer_free(void)
@@ -1804,6 +1877,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata              = rgui;
+
+   rgui->menu_title[0] = '\0';
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0] = '\0';
@@ -1888,12 +1963,19 @@ static void rgui_free(void *data)
 
    if (!string_is_empty(wallpaper.path))
       free(wallpaper.path);
+
+   if (upscale_buf.data)
+   {
+      free(upscale_buf.data);
+      upscale_buf.data = NULL;
+   }
 }
 
 static void rgui_set_texture(void)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
+   settings_t *settings = config_get_ptr();
 
    if (!menu_display_get_framebuffer_dirty_flag())
       return;
@@ -1903,8 +1985,90 @@ static void rgui_set_texture(void)
 
    menu_display_unset_framebuffer_dirty_flag();
 
-   video_driver_set_texture_frame(rgui_framebuf_data,
+   if (settings->uints.menu_rgui_internal_upscale_level == RGUI_UPSCALE_NONE)
+   {
+      video_driver_set_texture_frame(rgui_framebuf_data,
          false, fb_width, fb_height, 1.0f);
+   }
+   else
+   {
+      /* Get viewport dimensions */
+      struct video_viewport vp;
+      video_driver_get_viewport_info(&vp);
+      
+      /* If viewport is currently the same size (or smaller)
+       * than the menu framebuffer, no scaling is required */
+      if ((vp.width <= fb_width) && (vp.height <= fb_height))
+      {
+         video_driver_set_texture_frame(rgui_framebuf_data,
+            false, fb_width, fb_height, 1.0f);
+      }
+      else
+      {
+         unsigned out_width;
+         unsigned out_height;
+         uint32_t x_ratio, y_ratio;
+         unsigned x_src, y_src;
+         unsigned x_dst, y_dst;
+         
+         /* Determine output size */
+         if (settings->uints.menu_rgui_internal_upscale_level == RGUI_UPSCALE_AUTO)
+         {
+            out_width = ((vp.width / fb_width) + 1) * fb_width;
+            out_height = ((vp.height / fb_height) + 1) * fb_height;
+         }
+         else
+         {
+            out_width = settings->uints.menu_rgui_internal_upscale_level * fb_width;
+            out_height = settings->uints.menu_rgui_internal_upscale_level * fb_height;
+         }
+         
+         /* Allocate upscaling buffer, if required */
+         if ((upscale_buf.width != out_width) || (upscale_buf.height != out_height) || !upscale_buf.data)
+         {
+            upscale_buf.width = out_width;
+            upscale_buf.height = out_height;
+            
+            if (upscale_buf.data)
+            {
+               free(upscale_buf.data);
+               upscale_buf.data = NULL;
+            }
+            
+            upscale_buf.data = (uint16_t*)calloc(out_width * out_height, sizeof(uint16_t));
+            if (!upscale_buf.data)
+            {
+               /* Uh oh... This could mean we don't have enough
+                * memory, so disable upscaling and draw the usual
+                * framebuffer... */
+               settings->uints.menu_rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
+               video_driver_set_texture_frame(rgui_framebuf_data,
+                  false, fb_width, fb_height, 1.0f);
+               return;
+            }
+         }
+         
+         /* Perform nearest neighbour upscaling
+          * NB: We're duplicating code here, but trying to handle
+          * this with a polymorphic function is too much of a drag... */
+         x_ratio = ((fb_width  << 16) / out_width);
+         y_ratio = ((fb_height << 16) / out_height);
+
+         for (y_dst = 0; y_dst < out_height; y_dst++)
+         {
+            y_src = (y_dst * y_ratio) >> 16;
+            for (x_dst = 0; x_dst < out_width; x_dst++)
+            {
+               x_src = (x_dst * x_ratio) >> 16;
+               upscale_buf.data[(y_dst * out_width) + x_dst] = rgui_framebuf_data[(y_src * fb_width) + x_src];
+            }
+         }
+         
+         /* Draw upscaled texture */
+         video_driver_set_texture_frame(upscale_buf.data,
+            false, out_width, out_height, 1.0f);
+      }
+   }
 }
 
 static void rgui_navigation_clear(void *data, bool pending_push)
@@ -2042,7 +2206,6 @@ static void rgui_update_thumbnail_content(void *userdata)
 {
    rgui_t *rgui = (rgui_t*)userdata;
    playlist_t *playlist = NULL;
-   char title[255];
    size_t selection = menu_navigation_get_selection();
 
    if (!rgui)
@@ -2051,11 +2214,9 @@ static void rgui_update_thumbnail_content(void *userdata)
    /* Check whether current selection is a playlist entry
     * (i.e. whether we should be looking for a thumbnail image) */
    rgui->is_playlist_entry = false;
-   title[0] = '\0';
-   menu_entries_get_title(title, sizeof(title));
    if (!string_is_empty(rgui->thumbnail_playlist))
    {
-      if (string_is_equal(path_basename(title), rgui->thumbnail_playlist))
+      if (string_is_equal(path_basename(rgui->menu_title), rgui->thumbnail_playlist))
       {
          /* Get label of currently selected playlist entry
           * > This is pretty nasty, but I can't see any other way of doing
@@ -2173,6 +2334,12 @@ static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
+   rgui_t *rgui = (rgui_t*)data;
+   
+   if (!rgui)
+      return;
+   
+   menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
    rgui_navigation_set(data, true);
 }
 
@@ -2257,6 +2424,15 @@ static void rgui_toggle(void *userdata, bool menu_on)
          if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
             video_driver_set_aspect_ratio();
       }
+   }
+   
+   /* Upscaling buffer is only required while menu is on. Save
+    * memory by freeing it whenever we switch back to the current
+    * content */
+   if (!menu_on && upscale_buf.data)
+   {
+      free(upscale_buf.data);
+      upscale_buf.data = NULL;
    }
 }
 

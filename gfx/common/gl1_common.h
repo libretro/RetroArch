@@ -35,6 +35,10 @@
 
 #include "../video_driver.h"
 
+#define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
+#define RARCH_GL1_TEXTURE_TYPE32 GL_BGRA_EXT
+#define RARCH_GL1_FORMAT32 GL_UNSIGNED_BYTE
+
 struct string_list;
 
 typedef struct gl1
@@ -72,17 +76,6 @@ typedef struct gl1
    bool menu_smooth;
    void *readback_buffer_screenshot;
 } gl1_t;
-
-typedef struct gl1_texture
-{
-   int width;
-   int height;
-   int active_width;
-   int active_height;
-
-   enum texture_filter_type type;
-   void* data;
-} gl1_texture_t;
 
 static INLINE void gl1_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
       GLint min_filter)

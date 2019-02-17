@@ -349,7 +349,8 @@ typedef struct vk
    {
       bool pending;
       bool streamed;
-      struct scaler_ctx scaler;
+      struct scaler_ctx scaler_bgr;
+      struct scaler_ctx scaler_rgb;
       struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
    } readback;
 

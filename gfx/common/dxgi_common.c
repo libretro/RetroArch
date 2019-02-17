@@ -28,6 +28,7 @@
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../video_driver.h"
+#include "../frontend/frontend_driver.h"
 #include "win32_common.h"
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
@@ -310,15 +311,15 @@ void dxgi_update_title(video_frame_info_t* video_info)
    if (settings->bools.video_memory_show)
    {
 #ifndef __WINRT__
-      MEMORYSTATUS stat;
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
       char         mem[128];
 
       mem[0] = '\0';
 
-      GlobalMemoryStatus(&stat);
       snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", stat.dwAvailPhys / (1024.0f * 1024.0f),
-            stat.dwTotalPhys / (1024.0f * 1024.0f));
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
 #endif
    }

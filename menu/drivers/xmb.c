@@ -71,7 +71,7 @@
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
 #ifndef XMB_DELAY
-#define XMB_DELAY 10
+#define XMB_DELAY 166
 #endif
 
 #define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
@@ -303,8 +303,6 @@ typedef struct xmb_handle
    float categories_passive_zoom;
    float categories_active_zoom;
    float categories_active_alpha;
-
-   uint64_t frame_count;
 
    char title_name[255];
    char *box_message;
@@ -1201,6 +1199,9 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
 
    if (!string_is_empty(xmb->thumbnail_system))
       free(xmb->thumbnail_system);
+   /* There is only one mame thumbnail repo */
+   if (strncmp("MAME", s, 4) == 0)
+      strcpy(s, "MAME");
    xmb->thumbnail_system = strdup(s);
 }
 
@@ -2793,7 +2794,6 @@ static int xmb_draw_item(
       float *color,
       const char *thumb_ident,
       const char *left_thumb_ident,
-      uint64_t frame_count,
       size_t i,
       size_t current,
       unsigned width,
@@ -2803,6 +2803,7 @@ static int xmb_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
+   static const char ticker_spacer[] = "   |   ";
    char *ticker_str                  = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
@@ -2812,6 +2813,10 @@ static int xmb_draw_item(
    xmb_node_t *   node               = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
+
+   /* Initial ticker configuration */
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer = ticker_spacer;
 
    if (!node)
       goto iterate;
@@ -2923,7 +2928,7 @@ static int xmb_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = frame_count / 20;
+   ticker.idx      = menu_animation_get_ticker_idx();
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2959,7 +2964,7 @@ static int xmb_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * scale_mod[7];
-   ticker.idx      = frame_count / 20;
+   ticker.idx      = menu_animation_get_ticker_idx();
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
@@ -3070,7 +3075,6 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = xmb->frame_count;
    const char *thumb_ident     = xmb_thumbnails_ident('R');
    const char *left_thumb_ident= xmb_thumbnails_ident('L');
 
@@ -3123,7 +3127,6 @@ static void xmb_draw_items(
             &mymat,
             xmb, core_node,
             list, color, thumb_ident, left_thumb_ident,
-            frame_count,
             i, current,
             width, height);
       menu_entry_free(&entry);
@@ -3156,7 +3159,7 @@ static void xmb_render(void *data, bool is_idle)
 
    scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
 
-   if (scale_factor != xmb->previous_scale_factor)
+   if (scale_factor >= 0.1f && scale_factor != xmb->previous_scale_factor)
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
             false);
 
@@ -3389,8 +3392,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
-
-   xmb->frame_count++;
 
    msg[0]             = '\0';
    title_msg[0]       = '\0';

@@ -25,7 +25,6 @@
 
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
-#include <gfx/gl_capabilities.h>
 
 #ifndef GLX_SAMPLE_BUFFERS
 #define GLX_SAMPLE_BUFFERS 100000

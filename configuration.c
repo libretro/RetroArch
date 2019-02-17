@@ -439,7 +439,7 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 
 #ifdef HAVE_WINMM
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
-#elif defined HAVE_ALSA
+#elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI)
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
@@ -1228,6 +1228,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.path_content_video_history, false, NULL, true);
    SETTING_PATH("content_image_history_path",
          settings->paths.path_content_image_history, false, NULL, true);
+   SETTING_PATH("content_runtime_path",
+         settings->paths.path_content_runtime, false, NULL, true);
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
@@ -1353,10 +1355,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, check_firmware_before_loading, false);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->bools.multimedia_builtin_mediaplayer_enable, false, false /* TODO */, false);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->bools.multimedia_builtin_imageviewer_enable, true, true, false);
-   SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, false, false);
-   SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, false, false);
-   SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, false, false);
-   SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, false, false);
+   SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, fps_show, false);
+   SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, statistics_show, false);
+   SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, framecount_show, false);
+   SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, memory_show, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, rewind_enable, false);
@@ -1433,6 +1435,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, true, false);
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
+   SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, menu_show_sublabels, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
    SETTING_BOOL("quick_menu_show_recording",      &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
    SETTING_BOOL("quick_menu_show_streaming",      &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
@@ -1570,6 +1573,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #endif
 
    SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, playlist_use_old_format, false);
+   SETTING_BOOL("content_runtime_log",              &settings->bools.content_runtime_log, true, content_runtime_log, false);
 
    *size = count;
 
@@ -1601,6 +1605,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("menu_framebuffer_opacity", &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
    SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
    SETTING_FLOAT("menu_header_opacity",      &settings->floats.menu_header_opacity,    true, menu_header_opacity, false);
+   SETTING_FLOAT("menu_ticker_speed",        &settings->floats.menu_ticker_speed,      true, menu_ticker_speed,   false);
 #endif
    SETTING_FLOAT("video_message_pos_x",      &settings->floats.video_msg_pos_x,      true, message_pos_offset_x, false);
    SETTING_FLOAT("video_message_pos_y",      &settings->floats.video_msg_pos_y,      true, message_pos_offset_y, false);
@@ -1662,9 +1667,11 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_timedate_style", &settings->uints.menu_timedate_style, true, menu_timedate_style, false);
+   SETTING_UINT("menu_ticker_type",             &settings->uints.menu_ticker_type, true, menu_ticker_type, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, rgui_color_theme, false);
    SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
+   SETTING_UINT("rgui_internal_upscale_level",  &settings->uints.menu_rgui_internal_upscale_level, true, rgui_internal_upscale_level, false);
 #endif
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
@@ -2065,6 +2072,7 @@ void config_set_defaults(void)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_image_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
+   *settings->paths.path_content_runtime         = '\0';
    *settings->paths.path_cheat_settings    = '\0';
    *settings->paths.path_shader            = '\0';
 #ifndef IOS
@@ -2485,7 +2493,7 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "d3d12")  ||
          string_is_equal(video_driver, "gdi")    ||
          string_is_equal(video_driver, "gl")     ||
-         /*string_is_equal(video_driver, "gl1")    ||*/
+         string_is_equal(video_driver, "gl1")    ||
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
          string_is_equal(video_driver, "metal")  ||
@@ -3045,6 +3053,25 @@ static bool config_load_file(const char *path, bool set_defaults,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
+      }
+   }
+
+   if (string_is_empty(settings->paths.path_content_runtime))
+   {
+      if (string_is_empty(settings->paths.directory_content_history))
+      {
+         fill_pathname_resolve_relative(
+               settings->paths.path_content_runtime,
+               path_config,
+               file_path_str(FILE_PATH_CONTENT_RUNTIME),
+               sizeof(settings->paths.path_content_runtime));
+      }
+      else
+      {
+         fill_pathname_join(settings->paths.path_content_runtime,
+               settings->paths.directory_content_history,
+               file_path_str(FILE_PATH_CONTENT_RUNTIME),
+               sizeof(settings->paths.path_content_runtime));
       }
    }
 

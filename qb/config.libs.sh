@@ -119,7 +119,7 @@ else
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
@@ -409,11 +409,7 @@ if [ "$HAVE_EGL" = "yes" ]; then
          add_define MAKEFILE OPENGLES_LIBS "$OPENGLES_LIBS"
          add_define MAKEFILE OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
-         HAVE_OPENGLES=auto; check_pkgconf OPENGLES "$VC_PREFIX"glesv2
-         if [ "$HAVE_OPENGLES" = "no" ]; then
-            HAVE_OPENGLES=auto; check_lib '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
-            add_define MAKEFILE OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
-         fi
+         check_val '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS" '' "${VC_PREFIX}glesv2" '' '' true
       fi
    fi
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
@@ -435,12 +431,14 @@ check_pkgconf DBUS dbus-1
 check_val '' XEXT -lXext '' xext '' '' false
 check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
-if [ "$HAVE_WAYLAND_PROTOS" = yes ] &&
-   [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-    ./gfx/common/wayland/generate_wayland_protos.sh -c "$WAYLAND_SCANNER_VERSION" -s "$SHARE_DIR" ||
-       die 1 'Error: Failed generating wayland protocols.'
+      ./gfx/common/wayland/generate_wayland_protos.sh \
+         -c "$WAYLAND_SCANNER_VERSION" \
+         -p "$HAVE_WAYLAND_PROTOS" \
+         -s "$SHARE_DIR" ||
+         die 1 'Error: Failed generating wayland protocols.'
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
@@ -483,7 +481,7 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
-check_pkgconf PYTHON python3
+check_pkgconf PYTHON 'python3 python3 python-3.7 python-3.6 python-3.5 python-3.4 python-3.3 python-3.2'
 
 if [ "$HAVE_MENU" != 'no' ]; then
    if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then

@@ -69,7 +69,6 @@ HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue = NULL;
-static uint64_t xui_frame_count   = 0;
 
 class CRetroArch : public CXuiModule
 {
@@ -366,8 +365,6 @@ static void xui_free(void *data)
    (void)data;
    app.Uninit();
 
-   xui_frame_count = 0;
-
    if (xui_msg_queue)
       msg_queue_free(xui_msg_queue);
 }
@@ -421,8 +418,6 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    if (!d3d)
       return;
-
-   xui_frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
 
@@ -544,8 +539,8 @@ static void xui_render(void *data, bool is_idle)
    const char *dir             = NULL;
    const char *label           = NULL;
    unsigned menu_type          = 0;
-   uint64_t frame_count        = xui_frame_count;
    bool              msg_force = menu_display_get_msg_force();
+   settings_t *settings        = config_get_ptr();
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -565,13 +560,18 @@ static void xui_render(void *data, bool is_idle)
    if (XuiHandleIsValid(m_menutitle))
    {
       menu_animation_ctx_ticker_t ticker;
+      static const char ticker_spacer[] = " | ";
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
 
+      /* Initial ticker configuration */
+      ticker.type_enum = settings->uints.menu_ticker_type;
+      ticker.spacer = ticker_spacer;
+
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
-	  ticker.idx      = (unsigned int)frame_count / 15;
+	  ticker.idx      = menu_animation_get_ticker_idx();
 	  ticker.str      = title;
 	  ticker.selected = true;
 

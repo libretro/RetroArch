@@ -142,6 +142,7 @@ typedef struct settings
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
+      bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
       bool menu_throttle;
       bool menu_mouse_enable;
@@ -306,6 +307,7 @@ typedef struct settings
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
+      bool content_runtime_log;
    } bools;
 
    struct
@@ -327,6 +329,7 @@ typedef struct settings
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
       float menu_header_opacity;
+      float menu_ticker_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -424,6 +427,8 @@ typedef struct settings
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
+      unsigned menu_rgui_internal_upscale_level;
+      unsigned menu_ticker_type;
 
       unsigned camera_width;
       unsigned camera_height;
@@ -539,6 +544,7 @@ typedef struct settings
       char path_content_music_history[PATH_MAX_LENGTH];
       char path_content_image_history[PATH_MAX_LENGTH];
       char path_content_video_history[PATH_MAX_LENGTH];
+      char path_content_runtime[PATH_MAX_LENGTH];
       char path_libretro_info[PATH_MAX_LENGTH];
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
