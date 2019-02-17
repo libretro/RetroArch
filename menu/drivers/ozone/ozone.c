@@ -34,6 +34,7 @@
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <formats/image.h>
+#include <math/float_minmax.h>
 
 #include "../menu_generic.h"
 
@@ -1213,7 +1214,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          menu_animation_push(&entry);
       }
 
-      ozone_draw_backdrop(video_info, fmin(ozone->animations.messagebox_alpha, 0.75f));
+      ozone_draw_backdrop(video_info, float_min(ozone->animations.messagebox_alpha, 0.75f));
 
       if (draw_osk)
       {

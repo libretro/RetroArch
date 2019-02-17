@@ -254,7 +254,7 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
       {
          __m64 res_lo, res_hi;
          __m64 res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
-         const __m64 in = _mm_cvtsi64_m64(*((int64_t*)(input + w)));
+         const __m64 in = *((__m64*)(input + w));
          __m64          r = _mm_and_si64(_mm_srli_pi16(in, 1), pix_mask_r);
          __m64          g = _mm_and_si64(in, pix_mask_g);
          __m64          b = _mm_and_si64(_mm_slli_pi16(in, 5), pix_mask_b);
@@ -273,8 +273,8 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
          res_hi           = _mm_or_si64(res_hi_bg,
                _mm_slli_si64(res_hi_ra, 16));
 
-         *((int64_t*)(output + w + 0)) = _mm_cvtm64_si64(res_lo);
-         *((int64_t*)(output + w + 2)) = _mm_cvtm64_si64(res_hi);
+         *((__m64*)(output + w + 0)) = res_lo;
+         *((__m64*)(output + w + 2)) = res_hi;
       }
 
       _mm_empty();
@@ -411,7 +411,7 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
       {
          __m64 res_lo, res_hi;
          __m64 res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
-         const __m64 in = _mm_cvtsi64_m64(*((int64_t*)(input + w)));
+         const __m64 in = *((__m64*)(input + w));
          __m64          r = _mm_and_si64(_mm_srli_pi16(in, 2), pix_mask_r);
          __m64          g = _mm_and_si64(in, pix_mask_g);
          __m64          b = _mm_and_si64(_mm_slli_pi16(in, 4), pix_mask_b);
@@ -430,8 +430,8 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
          res_hi           = _mm_or_si64(res_hi_bg,
                _mm_slli_si64(res_hi_ra, 16));
 
-         *((int64_t*)(output + w + 0)) = _mm_cvtm64_si64(res_lo);
-         *((int64_t*)(output + w + 2)) = _mm_cvtm64_si64(res_hi);
+         *((__m64*)(output + w + 0)) = res_lo;
+         *((__m64*)(output + w + 2)) = res_hi;
       }
 
       _mm_empty();
