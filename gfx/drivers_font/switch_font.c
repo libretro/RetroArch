@@ -341,6 +341,15 @@ static void switch_font_bind_block(void *data, void *userdata)
       (void)data;
 }
 
+static int switch_font_get_line_height(void *data)
+{
+      switch_font_t *font = (switch_font_t *)data;
+      if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+      return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t switch_font =
     {
         switch_font_init_font,
@@ -351,4 +360,5 @@ font_renderer_t switch_font =
         switch_font_bind_block,
         NULL, /* flush_block */
         switch_font_get_message_width,
+        switch_font_get_line_height
 };

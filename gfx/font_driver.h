@@ -96,6 +96,7 @@ typedef struct font_renderer
          video_frame_info_t *video_info);
 
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
+   int (*get_line_height)(void* data);
 } font_renderer_t;
 
 typedef struct font_renderer_driver
@@ -155,6 +156,8 @@ void font_driver_init_osd(
       bool is_threaded,
       enum font_driver_render_api api);
 void font_driver_free_osd(void);
+
+int font_driver_get_line_height(void *font_data, float scale);
 
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t gl1_raster_font;

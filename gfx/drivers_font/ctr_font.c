@@ -446,6 +446,16 @@ static const struct font_glyph* ctr_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int ctr_font_get_line_height(void *data)
+{
+   ctr_font_t* font = (ctr_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t ctr_font =
 {
    ctr_font_init_font,
@@ -456,4 +466,5 @@ font_renderer_t ctr_font =
    NULL,                         /* bind_block */
    NULL,                         /* flush_block */
    ctr_font_get_message_width,
+   ctr_font_get_line_height
 };
