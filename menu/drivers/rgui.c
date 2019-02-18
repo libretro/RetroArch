@@ -2364,15 +2364,29 @@ static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
+   bool title_set = false;
    rgui_t *rgui = (rgui_t*)data;
    
    if (!rgui)
       return;
    
-   menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
-   
    /* Check whether we are currently viewing a playlist */
    rgui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST));
+   
+   /* Set menu title */
+   if (rgui->is_playlist)
+   {
+      if (!string_is_empty(rgui->thumbnail_system))
+      {
+         /* Note: rgui->thumbnail_system is *always* the basename (without
+          * extension) of the currently loaded playlist */
+         memcpy(rgui->menu_title, rgui->thumbnail_system, sizeof(rgui->menu_title));
+         title_set = true;
+      }
+   }
+   
+   if (!title_set)
+      menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
    
    rgui_navigation_set(data, true);
 }
