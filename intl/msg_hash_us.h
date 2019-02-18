@@ -8239,6 +8239,14 @@ MSG_HASH(
     "Labels each playlist entry with the currently associated core (if any)."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+    "Sort playlists alphabetically"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+    "Sorts content playlists in alphabetical order. Note that 'history' playlists of recently used games, images, music and videos are excluded."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
     "Menu Sounds"
     )

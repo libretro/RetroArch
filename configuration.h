@@ -310,6 +310,7 @@ typedef struct settings
       bool content_runtime_log;
 
       bool playlist_show_core_name;
+      bool playlist_sort_alphabetical;
    } bools;
 
    struct

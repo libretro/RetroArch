@@ -704,6 +704,9 @@ static const uint16_t network_remote_base_port = 55400;
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
 
+/* Sort all playlists (apart from histories) alphabetically */
+static const bool playlist_sort_alphabetical = true;
+
 /* File format to use when writing playlists to disk */
 static const bool playlist_use_old_format = false;
 

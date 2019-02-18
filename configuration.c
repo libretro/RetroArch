@@ -1576,6 +1576,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, playlist_use_old_format, false);
    SETTING_BOOL("content_runtime_log",              &settings->bools.content_runtime_log, true, content_runtime_log, false);
 
+   SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, playlist_sort_alphabetical, false);
+
    *size = count;
 
    return tmp;
