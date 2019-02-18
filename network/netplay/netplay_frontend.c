@@ -500,16 +500,23 @@ static bool netplay_poll(void)
          /* Stalled out! */
          if (netplay_data->is_server)
          {
+            bool fixed = false;
             for (i = 0; i < netplay_data->connections_size; i++)
             {
                struct netplay_connection *connection = &netplay_data->connections[i];
                if (connection->active &&
                    connection->mode == NETPLAY_CONNECTION_PLAYING &&
-                   connection->stall &&
-                   now - connection->stall_time >= MAX_SERVER_STALL_TIME_USEC)
+                   connection->stall)
                {
                   netplay_hangup(netplay_data, connection);
+                  fixed = true;
                }
+            }
+
+            if (fixed) {
+               /* Not stalled now :) */
+               netplay_data->stall = NETPLAY_STALL_NONE;
+               return true;
             }
          }
          else
