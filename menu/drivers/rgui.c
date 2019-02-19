@@ -429,6 +429,7 @@ typedef struct
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
+   char menu_sublabel[255]; /* Must be a fixed length array... */
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -1636,7 +1637,6 @@ static void rgui_render(void *data, bool is_idle)
       char title_buf[255];
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
-      bool show_core_name = settings->bools.menu_core_enable;
       bool show_playlist_labels = !settings->bools.playlist_show_core_name && rgui->is_playlist;
       playlist_t *playlist = NULL;
 
@@ -1674,7 +1674,6 @@ static void rgui_render(void *data, bool is_idle)
 
       for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
-         menu_entry_t entry;
          char entry_value[255];
          char message[255];
          char entry_title_buf[255];
@@ -1696,10 +1695,6 @@ static void rgui_render(void *data, bool is_idle)
          message[0]         = '\0';
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
-
-         /* Get current entry */
-         menu_entry_init(&entry);
-         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
          /* Get playlist label for current entry, if required */
          if (show_playlist_label)
@@ -1735,6 +1730,9 @@ static void rgui_render(void *data, bool is_idle)
          {
             /* Either this is not a playlist entry, or we are ignoring
              * playlists - extract all required info from entry itself */
+            menu_entry_t entry;
+            menu_entry_init(&entry);
+            menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
             /* Read entry parameters */
             entry_spacing = menu_entry_get_spacing(&entry);
@@ -1743,6 +1741,8 @@ static void rgui_render(void *data, bool is_idle)
 
             /* Determine whether entry has a value component */
             has_value = !string_is_empty(entry_value);
+
+            menu_entry_free(&entry);
          }
 
          /* Format entry title string */
@@ -1793,68 +1793,28 @@ static void rgui_render(void *data, bool is_idle)
 
          if (!string_is_empty(entry_path))
             free(entry_path);
-
-         /* Print menu sublabel (if required) */
-         if (settings->bools.menu_show_sublabels && entry_selected)
-         {
-            if (!string_is_empty(entry.sublabel))
-            {
-               char sublabel[255];
-               char sublabel_buf[255];
-               static const char* const sublabel_spacer = TICKER_SPACER;
-               struct string_list *list = NULL;
-               size_t line_index;
-               bool prev_line_empty = true;
-
-               sublabel[0] = '\0';
-               sublabel_buf[0] = '\0';
-
-               /* Sanitise sublabel
-                * > Replace newline characters with standard delimiter
-                * > Remove whitespace surrounding each sublabel line */
-               list = string_split(entry.sublabel, "\n");
-               if (list)
-               {
-                  for (line_index = 0; line_index < list->size; line_index++)
-                  {
-                     const char *line = string_trim_whitespace(list->elems[line_index].data);
-                     if (!string_is_empty(line))
-                     {
-                        if (!prev_line_empty)
-                           strlcat(sublabel, sublabel_spacer, sizeof(sublabel));
-                        strlcat(sublabel, line, sizeof(sublabel));
-                        prev_line_empty = false;
-                     }
-                  }
-
-                  string_list_free(list);
-
-                  if (!string_is_empty(sublabel))
-                  {
-                     ticker.s        = sublabel_buf;
-                     ticker.len      = core_name_len;
-                     ticker.str      = sublabel;
-                     ticker.selected = true;
-
-                     menu_animation_ticker(&ticker);
-
-                     if (rgui_framebuf_data)
-                        blit_line(
-                              RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-                              (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                              RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
-
-                     show_core_name = false;
-                  }
-               }
-            }
-         }
-
-         menu_entry_free(&entry);
       }
 
-      /* Print core name (if required) */
-      if (show_core_name)
+      /* Print menu sublabel/core name (if required) */
+      if (settings->bools.menu_show_sublabels && !string_is_empty(rgui->menu_sublabel))
+      {
+         char sublabel_buf[255];
+         sublabel_buf[0] = '\0';
+
+         ticker.s        = sublabel_buf;
+         ticker.len      = core_name_len;
+         ticker.str      = rgui->menu_sublabel;
+         ticker.selected = true;
+
+         menu_animation_ticker(&ticker);
+
+         if (rgui_framebuf_data)
+            blit_line(
+                  RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                  (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                  RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
+      }
+      else if (settings->bools.menu_core_enable)
       {
          char core_title[64];
          char core_title_buf[64];
@@ -1955,6 +1915,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    *userdata              = rgui;
 
    rgui->menu_title[0] = '\0';
+   rgui->menu_sublabel[0] = '\0';
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0] = '\0';
@@ -2331,6 +2292,52 @@ static void rgui_update_thumbnail_image(void *userdata)
    rgui_scan_selected_entry_thumbnail(rgui);
 }
 
+static void rgui_update_menu_sublabel(rgui_t *rgui)
+{
+   size_t selection = menu_navigation_get_selection();
+   settings_t *settings = config_get_ptr();
+   
+   rgui->menu_sublabel[0] = '\0';
+   
+   if (settings->bools.menu_show_sublabels && selection < menu_entries_get_size())
+   {
+      menu_entry_t entry;
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
+      
+      if (!string_is_empty(entry.sublabel))
+      {
+         static const char* const sublabel_spacer = TICKER_SPACER;
+         struct string_list *list = NULL;
+         size_t line_index;
+         bool prev_line_empty = true;
+
+         /* Sanitise sublabel
+          * > Replace newline characters with standard delimiter
+          * > Remove whitespace surrounding each sublabel line */
+         list = string_split(entry.sublabel, "\n");
+         if (list)
+         {
+            for (line_index = 0; line_index < list->size; line_index++)
+            {
+               const char *line = string_trim_whitespace(list->elems[line_index].data);
+               if (!string_is_empty(line))
+               {
+                  if (!prev_line_empty)
+                     strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
+                  strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
+                  prev_line_empty = false;
+               }
+            }
+            
+            string_list_free(list);
+         }
+      }
+      
+      menu_entry_free(&entry);
+   }
+}
+
 static void rgui_navigation_set(void *data, bool scroll)
 {
    size_t start, fb_pitch;
@@ -2344,6 +2351,7 @@ static void rgui_navigation_set(void *data, bool scroll)
       return;
 
    rgui_scan_selected_entry_thumbnail(rgui);
+   rgui_update_menu_sublabel(rgui);
 
    if (!scroll)
       return;
