@@ -30,6 +30,10 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#ifdef VITA
+#include <psp2/rtc.h>
+#endif
+
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
 #endif
@@ -356,7 +360,17 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
    if (!datetime)
       return;
 
+#ifdef VITA
+   SceRtcTick tick;
+   SceDateTime time_local;
+
+   sceRtcGetCurrentTick(&tick);
+   sceRtcConvertUtcToLocalTime(&tick, &tick);
+   sceRtcSetTick(&time_local, &tick);
+   sceRtcGetTime_t(&time_local, &time_);
+#else
    time(&time_);
+#endif
 
    setlocale(LC_TIME, "");
 
