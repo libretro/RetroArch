@@ -62,6 +62,8 @@
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
 
+#define TICKER_SPACER " | "
+
 typedef struct
 {
    uint32_t hover_color;
@@ -1464,7 +1466,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
-   static const char ticker_spacer[] = " | ";
+   static const char* const ticker_spacer = TICKER_SPACER;
    unsigned x, y;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
@@ -1797,29 +1799,54 @@ static void rgui_render(void *data, bool is_idle)
          {
             if (!string_is_empty(entry.sublabel))
             {
-               char *sublabel = NULL;
+               char sublabel[255];
                char sublabel_buf[255];
+               static const char* const sublabel_spacer = TICKER_SPACER;
+               struct string_list *list = NULL;
+               size_t line_index;
+               bool prev_line_empty = true;
+
+               sublabel[0] = '\0';
                sublabel_buf[0] = '\0';
 
-               sublabel = menu_entry_get_sublabel(&entry);
+               /* Sanitise sublabel
+                * > Replace newline characters with standard delimiter
+                * > Remove whitespace surrounding each sublabel line */
+               list = string_split(entry.sublabel, "\n");
+               if (list)
+               {
+                  for (line_index = 0; line_index < list->size; line_index++)
+                  {
+                     const char *line = string_trim_whitespace(list->elems[line_index].data);
+                     if (!string_is_empty(line))
+                     {
+                        if (!prev_line_empty)
+                           strlcat(sublabel, sublabel_spacer, sizeof(sublabel));
+                        strlcat(sublabel, line, sizeof(sublabel));
+                        prev_line_empty = false;
+                     }
+                  }
 
-               ticker.s        = sublabel_buf;
-               ticker.len      = core_name_len;
-               ticker.str      = sublabel;
-               ticker.selected = true;
+                  string_list_free(list);
 
-               menu_animation_ticker(&ticker);
+                  if (!string_is_empty(sublabel))
+                  {
+                     ticker.s        = sublabel_buf;
+                     ticker.len      = core_name_len;
+                     ticker.str      = sublabel;
+                     ticker.selected = true;
 
-               if (rgui_framebuf_data)
-                  blit_line(
-                        RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-                        (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-                        RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
+                     menu_animation_ticker(&ticker);
 
-               if (!string_is_empty(sublabel))
-                  free(sublabel);
+                     if (rgui_framebuf_data)
+                        blit_line(
+                              RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+                              (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+                              RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
 
-               show_core_name = false;
+                     show_core_name = false;
+                  }
+               }
             }
          }
 

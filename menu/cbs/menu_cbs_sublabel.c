@@ -776,7 +776,9 @@ static int action_bind_sublabel_netplay_room(
          {
             strlcat(buf, "   ", sizeof(buf));
             strlcat(buf, list->elems[i].data, sizeof(buf));
-            strlcat(buf, "\n", sizeof(buf));
+            /* Never terminate a UI string with a newline */
+            if (i != list->size - 1)
+               strlcat(buf, "\n", sizeof(buf));
          }
          snprintf(s, len,
             "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGames:\n%s",
