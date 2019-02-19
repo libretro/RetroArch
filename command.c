@@ -2508,6 +2508,9 @@ TODO: Add a setting for these tweaks */
             bool is_idle              = false;
             bool is_slowmotion        = false;
             bool is_perfcnt_enable    = false;
+#ifdef HAVE_DISCORD
+            discord_userdata_t userdata;
+#endif
 
             runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
                   &is_perfcnt_enable);
@@ -2525,9 +2528,7 @@ TODO: Add a setting for these tweaks */
                   video_driver_cached_frame();
 
 #ifdef HAVE_DISCORD
-               discord_userdata_t userdata;
                userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
             }
