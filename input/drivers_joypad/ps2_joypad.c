@@ -23,12 +23,22 @@
 
 #define PS2_MAX_PADS 2
 #define PS2_PAD_SLOT 0 /* Always zero if not using multitap */
+#define PS2_ANALOG_STICKS 2
+#define PS2_ANALOG_AXIS 2
 
 static unsigned char padBuf[2][256] ALIGNED(64);
 
 static uint64_t pad_state[PS2_MAX_PADS];
+static int16_t analog_state[PS2_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
 
 extern uint64_t lifecycle_state;
+
+static INLINE int16_t convert_u8_to_s16(uint8_t val)
+{
+   if (val == 0)
+      return -0x7fff;
+   return val * 0x0101 - 0x8000;
+}
 
 static const char *ps2_joypad_name(unsigned pad)
 {
@@ -114,6 +124,12 @@ static void ps2_joypad_poll(void)
             pad_state[player] |= (state_tmp & PAD_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
             pad_state[player] |= (state_tmp & PAD_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
             pad_state[player] |= (state_tmp & PAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+
+            /* Analog */
+            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
+            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
+            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rjoy_h);;
+            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.rjoy_v);;
 
          }
       }
