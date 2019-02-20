@@ -27,7 +27,8 @@ typedef struct ps2_audio
 {
    fifo_buffer_t* buffer;
    bool nonblocking;
-   volatile bool running;
+   bool running;
+   bool audio_stopped;
    int worker_thread;
    int lock;
    int cond_lock;
@@ -49,20 +50,24 @@ static void audioMainLoop(void *data)
    ps2_audio_t* ps2 = backup_ps2;
 
    while (ps2->running)
-   {
-      size_t size;
+   {  
+      if (ps2->audio_stopped) {
+         audsrv_stop_audio();
+      } else {
+         size_t size;
+         WaitSema(ps2->lock);
+         size = MIN(fifo_read_avail(ps2->buffer), sizeof(out_tmp));
+         fifo_read(ps2->buffer, out_tmp, size);
+         iSignalSema(ps2->lock);
+         iSignalSema(ps2->cond_lock);
 
-      WaitSema(ps2->lock);
-      size = MIN(fifo_read_avail(ps2->buffer), sizeof(out_tmp));
-      fifo_read(ps2->buffer, out_tmp, size);
-      iSignalSema(ps2->lock);
-      iSignalSema(ps2->cond_lock);
-
-      audsrv_wait_audio(size);
-      audsrv_play_audio(out_tmp, size);
+         audsrv_wait_audio(size);
+         audsrv_play_audio(out_tmp, size);
+      }
    }
 
    audsrv_stop_audio();
+   ps2->worker_thread = 0;
    ExitDeleteThread();
 }
 
@@ -175,7 +180,10 @@ static void ps2_audio_free(void *data)
       }
 
    }
+
+   audsrv_stop_audio();
    fifo_free(ps2->buffer);
+   backup_ps2 = NULL;
    free(ps2);
 }
 
@@ -220,7 +228,7 @@ static bool ps2_audio_stop(void *data)
 
    if (ps2)
    {
-      audioStopNDeleteThread(ps2);
+      ps2->audio_stopped = true;
       audsrv_stop_audio();
    }
 
@@ -236,6 +244,8 @@ static bool ps2_audio_start(void *data, bool is_shutdown)
    {
       if (!ps2->running && !ps2->worker_thread)
          audioCreateThread(ps2);
+
+      ps2->audio_stopped = false;
    }
 
    return start;
