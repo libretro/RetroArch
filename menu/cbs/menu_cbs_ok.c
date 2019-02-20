@@ -3299,15 +3299,17 @@ static int generic_action_ok_network(const char *path,
       enum msg_hash_enums enum_idx)
 {
    char url_path[PATH_MAX_LENGTH];
+   char url_path_encoded[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
-   file_transfer_t *transf   = NULL;
+   file_transfer_t *transf        = NULL;
    const char *url_label          = NULL;
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
    bool suppress_msg              = false;
 
-   url_path[0] = '\0';
+   url_path[0]         = '\0';
+   url_path_encoded[0] = '\0';
 
    switch (enum_idx)
    {
@@ -3376,7 +3378,8 @@ static int generic_action_ok_network(const char *path,
    transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
-   task_push_http_transfer(url_path, suppress_msg, url_label, callback, transf);
+   net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
+   task_push_http_transfer(url_path_encoded, suppress_msg, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
@@ -3676,7 +3679,11 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   net_http_urlencode_full(s3, s2, sizeof(s));
+   if (string_is_equal_fast(path, s, sizeof(path))) {
+      net_http_urlencode_full(s3, s, sizeof(s3));
+   } else {
+      net_http_urlencode_full(s3, s2, sizeof(s3));
+   }
 
    task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
