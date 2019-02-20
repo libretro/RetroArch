@@ -182,7 +182,6 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int heig
    }
 
    if (ps2->clearVRAM) {
-      gsKit_clear(ps2->gsGlobal, GS_BLACK);
       gsKit_vram_clear(ps2->gsGlobal);
    }
 }
@@ -266,6 +265,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 #endif
 
    clearVRAMIfNeeded(ps2, frame, width, height);
+   gsKit_clear(ps2->gsGlobal, GS_BLACK);
 
    if (frame) {
       bool sendPalette = false;
@@ -277,7 +277,6 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          ps2->iface.updatedPalette = false;
          padding = ps2->iface.padding;
          if (ps2->iface.clearTexture) {
-            gsKit_clear(ps2->gsGlobal, GS_BLACK);
             ps2->iface.clearTexture = false;
          }
       }
@@ -434,6 +433,8 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    if (ps2->menuVisible != enable) {
       /* If Menu change status, CLEAR VRAM */
       ps2->clearVRAM = true;
+      ps2->iface.clearTexture = true;
+      ps2->iface.updatedPalette = true;
    }
    ps2->menuVisible = enable;
    ps2->fullscreen = fullscreen;
