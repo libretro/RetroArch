@@ -3679,11 +3679,10 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   if (string_is_equal(path, s)) {
+   if (string_is_equal(path, s))
       net_http_urlencode_full(s3, s, sizeof(s3));
-   } else {
+   else
       net_http_urlencode_full(s3, s2, sizeof(s3));
-   }
 
    task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
