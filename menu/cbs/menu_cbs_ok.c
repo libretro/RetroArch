@@ -3679,7 +3679,7 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   if (string_is_equal_fast(path, s, sizeof(path))) {
+   if (string_is_equal(path, s)) {
       net_http_urlencode_full(s3, s, sizeof(s3));
    } else {
       net_http_urlencode_full(s3, s2, sizeof(s3));
