@@ -1862,9 +1862,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             const char *path = path_get(RARCH_PATH_CONTENT);
             const char *core_path = path_get(RARCH_PATH_CORE);
 
-            if (!string_is_empty(path) && !string_is_empty(core_path))
+            if (!string_is_empty(path) && !string_is_empty(core_path) && !string_is_equal(core_path, "builtin"))
             {
-               playlist_push_runtime(g_defaults.content_runtime, path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE), 0, 0, 0);
+               playlist_push_runtime(g_defaults.content_runtime, path, core_path, 0, 0, 0);
 
                /* if entry already existed, the runtime won't be updated, so manually update it again */
                if (playlist_get_size(g_defaults.content_runtime) > 0)
@@ -1893,7 +1893,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
                   runtime_hours += hours;
 
-                  playlist_update_runtime(g_defaults.content_runtime, 0, path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE), runtime_hours, runtime_minutes, runtime_seconds);
+                  playlist_update_runtime(g_defaults.content_runtime, 0, path, core_path, runtime_hours, runtime_minutes, runtime_seconds);
                }
             }
          }

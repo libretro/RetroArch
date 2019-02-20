@@ -5309,6 +5309,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             ret = menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
                   PARSE_ONLY_BOOL, false);
+            ret = menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
+                  PARSE_ONLY_BOOL, false);
             if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                ret = menu_displaylist_parse_settings_enum(menu, info,

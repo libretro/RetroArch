@@ -47,6 +47,8 @@
 #include "../input/input_driver.h"
 #include "../tasks/tasks_internal.h"
 
+#include "../../defaults.h"
+
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
 { \
@@ -509,6 +511,7 @@ default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
+default_sublabel_macro(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_background_filler_thickness_enable,  MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE)
@@ -808,6 +811,104 @@ static int action_bind_sublabel_netplay_room(
    return 0;
 }
 #endif
+
+static int action_bind_sublabel_playlist_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   playlist_t *playlist = NULL;
+   const char *playlist_path = NULL;
+   const char *core_path = NULL;
+   const char *core_name = NULL;
+   
+   if (!settings->bools.playlist_show_sublabels)
+      return 0;
+   
+   /* Get current playlist */
+   playlist = playlist_get_cached();
+   if (!playlist)
+      return 0;
+   if (i >= playlist_get_size(playlist))
+      return 0;
+
+   /* Read playlist entry */
+   playlist_get_index(playlist, i, &playlist_path, NULL, &core_path, &core_name, NULL, NULL);
+   
+   /* Only add sublabel if a core is currently assigned */
+   if (string_is_empty(core_name) || string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+      return 0;
+   
+   /* Add core name */
+   snprintf(s, len, "%s %s",
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+      core_name);
+   
+   /* Get runtime *if* 'content_runtime_log' is enabled
+    * NB: Runtime is currently stored in an independent
+    * 'content_runtime.lpl' file, similar to the content
+    * history. It therefore only really makes sense to
+    * check runtime when viewing the content history
+    * playlist. If runtime were added to all playlists
+    * (would be nice), we could do this trivially for all
+    * content. */
+   if (!settings->bools.content_runtime_log)
+      return 0;
+   
+   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+      return 0;
+   
+   /* Check that 'content_runtime.lpl' exists, and playlist has
+    * non-null path/core_path values... */
+   if (g_defaults.content_runtime && !string_is_empty(playlist_path) && !string_is_empty(core_path))
+   {
+      unsigned runtime_hours;
+      unsigned runtime_minutes;
+      unsigned runtime_seconds;
+      unsigned j;
+      
+      /* This is lame, but unless runtime is added to all playlists
+       * we can't really do it any other way...
+       * Search 'content_runtime.lpl' until we find the current
+       * content+core combo. */
+      for (j = 0; j < playlist_get_size(g_defaults.content_runtime); j++)
+      {
+         const char *runtime_path = NULL;
+         const char *runtime_core_path = NULL;
+         
+         playlist_get_runtime_index(g_defaults.content_runtime, j, &runtime_path, &runtime_core_path,
+            &runtime_hours, &runtime_minutes, &runtime_seconds);
+         
+         if (string_is_equal(playlist_path, runtime_path) && string_is_equal(core_path, runtime_core_path))
+         {
+            int n = 0;
+            char tmp[64];
+            tmp[0] = '\0';
+            
+            n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+               runtime_hours, runtime_minutes, runtime_seconds);
+            
+            /* Stupid nonsense... GCC will generate warnings if we
+             * don't do something here... */
+            if ((n < 0) || (n >= 64))
+            {
+               n = 0;
+            }
+            
+            if (!string_is_empty(tmp))
+               strlcat(s, tmp, len);
+            
+            break;
+         }
+      }
+   }
+   
+   return 0;
+}
 
 static int action_bind_sublabel_generic(
       file_list_t *list,
@@ -2235,6 +2336,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DISCORD_ALLOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_discord_allow);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_entry);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_sublabels);
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_border_filler_enable);

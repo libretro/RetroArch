@@ -1789,3 +1789,5 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
       "playlist_show_core_name")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,
       "playlist_sort_alphabetical")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
+      "playlist_show_sublabels")
