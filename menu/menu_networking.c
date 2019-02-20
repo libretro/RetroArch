@@ -268,9 +268,11 @@ finish:
    if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
       char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *parent_dir_encoded         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       file_transfer_t *transf     = NULL;
 
-      parent_dir[0] = '\0';
+      parent_dir[0]         = '\0';
+      parent_dir_encoded[0] = '\0';
 
       fill_pathname_parent_dir(parent_dir,
             state->path, PATH_MAX_LENGTH * sizeof(char));
@@ -283,10 +285,12 @@ finish:
       transf->enum_idx = MSG_UNKNOWN;
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
 
-      task_push_http_transfer(parent_dir, true,
+      net_http_urlencode_full(parent_dir_encoded, parent_dir, PATH_MAX_LENGTH * sizeof(char));
+      task_push_http_transfer(parent_dir_encoded, true,
             "index_dirs", cb_net_generic_subdir, transf);
 
       free(parent_dir);
+      free(parent_dir_encoded);
    }
 
    if (state)
