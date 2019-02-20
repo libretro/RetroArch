@@ -521,6 +521,7 @@ default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,   
 default_sublabel_macro(action_bind_sublabel_menu_ticker_type,                              MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_speed,                             MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED)
 default_sublabel_macro(action_bind_sublabel_playlist_show_core_name,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME)
+default_sublabel_macro(action_bind_sublabel_playlist_sort_alphabetical,                    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -2269,6 +2270,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_core_name);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_sort_alphabetical);
             break;
          default:
          case MSG_UNKNOWN:
