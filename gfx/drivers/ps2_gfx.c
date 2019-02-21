@@ -183,6 +183,7 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int heig
 
    if (ps2->clearVRAM) {
       gsKit_vram_clear(ps2->gsGlobal);
+      ps2->iface.updatedPalette = true;
    }
 }
 
