@@ -26,6 +26,10 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "dynamic.h"
@@ -385,6 +389,13 @@ void drivers_init(int flags)
    core_info_init_current_core();
 
 #ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   if (video_driver_has_widgets())
+   {
+      menu_widgets_init(video_is_threaded);
+      menu_widgets_context_reset(video_is_threaded);
+   }
+#endif
 
    if (flags & DRIVER_VIDEO_MASK)
    {
@@ -486,6 +497,15 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_DRIVER_CTL_DEINIT:
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         /* Tear down menu widgets no matter what
+          * in case the handle is lost in the threaded
+          * video driver in the meantime
+          * (breaking video_driver_has_widgets) */
+         menu_widgets_context_destroy();
+         menu_widgets_free();
+
+#endif
          video_driver_destroy();
          audio_driver_destroy();
          input_driver_destroy();
