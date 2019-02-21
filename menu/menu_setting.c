@@ -87,6 +87,7 @@
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
 #include "../managers/cheat_manager.h"
+#include "../verbosity.h"
 
 #include "../tasks/tasks_internal.h"
 
