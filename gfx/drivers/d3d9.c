@@ -55,6 +55,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -1708,6 +1711,12 @@ static bool d3d9_frame(void *data, const void *frame,
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
+#endif
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
 #endif
 
    if (msg && *msg)
