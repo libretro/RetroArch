@@ -669,42 +669,42 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
-               strlcat(tmp2, " ", sizeof(tmp));
+               strlcat(tmp2, " ", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp));
+                        MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
-                     sizeof(tmp));
-               strlcat(tmp2, ")", sizeof(tmp));
+                     sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGING:
-               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING),
-                     sizeof(tmp));
-               strlcat(tmp2, ")", sizeof(tmp));
+                     sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGED:
-               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED),
-                     sizeof(tmp));
-               strlcat(tmp2, ")", sizeof(tmp));
+                     sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING),
-                     sizeof(tmp));
-               strlcat(tmp2, ")", sizeof(tmp));
+                     sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
          }
 
