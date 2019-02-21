@@ -608,7 +608,7 @@ void fill_dated_filename(char *out_filename,
    time_t cur_time = time(NULL);
 
    strftime(out_filename, size,
-         "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
+         "RetroArch-%m%d-%H%M%S", localtime(&cur_time));
    strlcat(out_filename, ext, size);
 }
 
