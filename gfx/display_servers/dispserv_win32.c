@@ -355,5 +355,6 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_set_resolution,
    win32_display_server_get_resolution_list,
    NULL, /* get_output_options */
+   NULL, /* set_screen_orientation */
    "win32"
 };

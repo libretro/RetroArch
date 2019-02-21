@@ -358,6 +358,11 @@ const char *x11_display_server_get_output_options(void *data)
 #endif
 }
 
+static void x11_display_server_set_screen_orientation(enum rotation rotation)
+{
+   (void)rotation;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -367,5 +372,6 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_set_resolution,
    NULL, /* get_resolution_list */
    x11_display_server_get_output_options,
+   x11_display_server_set_screen_orientation,
    "x11"
 };

@@ -49,7 +49,11 @@ void* video_display_server_init(void)
 #endif
          break;
       default:
+#if defined(ANDROID)
+         current_display_server = &dispserv_android;
+#else
          current_display_server = &dispserv_null;
+#endif
          break;
    }
 
@@ -109,4 +113,20 @@ const char *video_display_server_get_output_options(void)
    if (current_display_server && current_display_server->get_output_options)
       return current_display_server->get_output_options(current_display_server_data);
    return NULL;
+}
+
+void video_display_server_set_screen_orientation(enum rotation rotation)
+{
+   if (current_display_server && current_display_server->set_screen_orientation)
+   {
+      RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
+      current_display_server->set_screen_orientation(rotation);
+   }
+}
+
+bool video_display_server_can_set_screen_orientation(void)
+{
+   if (current_display_server && current_display_server->set_screen_orientation)
+      return true;
+   return false;
 }

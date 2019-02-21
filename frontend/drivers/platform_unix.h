@@ -162,6 +162,7 @@ struct android_app
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
+   jmethodID setScreenOrientation;
 };
 
 enum

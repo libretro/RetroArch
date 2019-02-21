@@ -17,25 +17,26 @@
 
 #include <stddef.h>
 #include "../video_display_server.h"
+#include "../../frontend/drivers/platform_unix.h"
 
-static void* null_display_server_init(void)
+static void* android_display_server_init(void)
 {
    return NULL;
 }
 
-static void null_display_server_destroy(void *data)
+static void android_display_server_destroy(void *data)
 {
    (void)data;
 }
 
-static bool null_display_server_set_window_opacity(void *data, unsigned opacity)
+static bool android_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    (void)data;
    (void)opacity;
    return true;
 }
 
-static bool null_display_server_set_window_progress(void *data, int progress, bool finished)
+static bool android_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    (void)data;
    (void)progress;
@@ -43,15 +44,27 @@ static bool null_display_server_set_window_progress(void *data, int progress, bo
    return true;
 }
 
-const video_display_server_t dispserv_null = {
-   null_display_server_init,
-   null_display_server_destroy,
-   null_display_server_set_window_opacity,
-   null_display_server_set_window_progress,
+static void android_display_server_set_screen_orientation(enum rotation rotation)
+{
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return;
+
+   if (g_android->setScreenOrientation)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->setScreenOrientation, rotation);
+}
+
+const video_display_server_t dispserv_android = {
+   android_display_server_init,
+   android_display_server_destroy,
+   android_display_server_set_window_opacity,
+   android_display_server_set_window_progress,
    NULL, /* set_window_decorations */
    NULL, /* set_resolution */
    NULL, /* get_resolution_list */
    NULL, /* get_output_options */
-   NULL, /* set_screen_orientation */
-   "null"
+   android_display_server_set_screen_orientation,
+   "android"
 };

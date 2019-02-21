@@ -2032,6 +2032,8 @@ static void frontend_unix_init(void *data)
          "getBatteryLevel", "()I");
    GET_METHOD_ID(env, android_app->setSustainedPerformanceMode, class,
          "setSustainedPerformanceMode", "(Z)V");
+   GET_METHOD_ID(env, android_app->setScreenOrientation, class,
+         "setScreenOrientation", "(I)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
