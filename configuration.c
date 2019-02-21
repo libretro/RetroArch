@@ -1715,6 +1715,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_max_swapchain_images",   &settings->uints.video_max_swapchain_images, true, max_swapchain_images, false);
    SETTING_UINT("video_swap_interval",          &settings->uints.video_swap_interval, true, swap_interval, false);
    SETTING_UINT("video_rotation",               &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
+   SETTING_UINT("screen_orientation",           &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("aspect_ratio_index",           &settings->uints.video_aspect_ratio_idx, true, aspect_ratio_idx, false);
 #ifdef HAVE_NETWORKING
    SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_DEFAULT_PORT, false);

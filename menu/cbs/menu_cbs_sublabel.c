@@ -212,6 +212,7 @@ default_sublabel_macro(action_bind_sublabel_content_collection_list,       MENU_
 default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 default_sublabel_macro(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
 default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
+default_sublabel_macro(action_bind_sublabel_screen_orientation,            MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION)
 default_sublabel_macro(action_bind_sublabel_video_force_srgb_enable,       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE)
 default_sublabel_macro(action_bind_sublabel_video_fullscreen,              MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN)
 default_sublabel_macro(action_bind_sublabel_video_windowed_fullscreen,     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN)
@@ -1753,6 +1754,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_ROTATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_rotation);
+            break;
+         case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screen_orientation);
             break;
          case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_screenshot);

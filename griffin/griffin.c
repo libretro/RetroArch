@@ -222,6 +222,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
+#include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)

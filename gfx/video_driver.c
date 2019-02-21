@@ -1114,6 +1114,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_display_server_init();
 
+   if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
+      video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
+
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    return true;

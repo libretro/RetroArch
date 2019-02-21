@@ -3492,7 +3492,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-    "Rotation"
+    "Video Rotation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+    "Screen Orientation"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -5289,7 +5293,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-    "Forces a certain rotation of the screen. The rotation is added to rotations which the core sets."
+    "Forces a certain rotation of the video. The rotation is added to rotations which the core sets."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+    "Forces a certain orientation of the screen from the operating system."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,

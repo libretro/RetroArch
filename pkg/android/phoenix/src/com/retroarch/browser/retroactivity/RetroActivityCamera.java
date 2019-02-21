@@ -206,6 +206,7 @@ public class RetroActivityCamera extends RetroActivityCommon
       edit.apply();
       camera_service_running = false;
     }
+
     super.onResume();
   }
 

@@ -71,7 +71,6 @@
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"
-#include "../verbosity.h"
 #include "../camera/camera_driver.h"
 #include "../wifi/wifi_driver.h"
 #include "../location/location_driver.h"
@@ -1982,6 +1981,24 @@ static void setting_get_string_representation_uint_video_rotation(rarch_setting_
    }
 }
 
+static void setting_get_string_representation_uint_screen_orientation(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+   {
+      char rotation_lut[4][32] =
+      {
+         "Normal",
+         "90 deg",
+         "180 deg",
+         "270 deg"
+      };
+
+      strlcpy(s, rotation_lut[*setting->value.target.unsigned_integer],
+            len);
+   }
+}
+
 static void setting_get_string_representation_uint_aspect_ratio_index(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -3193,6 +3210,15 @@ void general_write_handler(rarch_setting_t *setting)
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
+         }
+         break;
+      case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
+         {
+#ifndef ANDROID
+             /* FIXME: Changing at runtime on Android causes setting to somehow be incremented again, many times */
+             video_display_server_set_screen_orientation(
+                   (enum rotation)(*setting->value.target.unsigned_integer));
+#endif
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
@@ -6023,6 +6049,23 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_video_rotation;
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.screen_orientation,
+                  MENU_ENUM_LABEL_SCREEN_ORIENTATION,
+                  MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_screen_orientation;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
             END_SUB_GROUP(list, list_info, parent_group);
