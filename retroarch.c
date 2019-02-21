@@ -1837,17 +1837,17 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          size_t pos = 0;
 
          seconds -= minutes * 60;
-         seconds -= hours * 60 *60;
+         minutes -= hours * 60;
 
          pos = strlcpy(log, "Content ran for a total of", sizeof(log));
 
          if (hours > 0)
-            pos += snprintf(log + pos, sizeof(log) - pos, ", %d hours", hours);
+            pos += snprintf(log + pos, sizeof(log) - pos, ", %u hours", hours);
 
          if (minutes > 0)
-            pos += snprintf(log + pos, sizeof(log) - pos, ", %d minutes", minutes);
+            pos += snprintf(log + pos, sizeof(log) - pos, ", %u minutes", minutes);
 
-         pos += snprintf(log + pos, sizeof(log) - pos, ", %d seconds", seconds);
+         pos += snprintf(log + pos, sizeof(log) - pos, ", %u seconds", seconds);
 
          if (pos < sizeof(log) - 2)
          {
@@ -1873,22 +1873,25 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                   unsigned runtime_minutes = 0;
                   unsigned runtime_seconds = 0;
 
-                  playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL, &runtime_hours, &runtime_minutes, &runtime_seconds);
+                  playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL,
+                     &runtime_hours, &runtime_minutes, &runtime_seconds);
 
                   runtime_seconds += seconds;
 
                   if (runtime_seconds >= 60)
                   {
-                     runtime_minutes += runtime_seconds / 60;
-                     runtime_seconds -= runtime_minutes * 60;
+                     unsigned new_minutes = runtime_seconds / 60;
+                     runtime_minutes += new_minutes;
+                     runtime_seconds -= new_minutes * 60;
                   }
 
                   runtime_minutes += minutes;
 
                   if (runtime_minutes >= 60)
                   {
-                     runtime_hours += runtime_minutes / 60;
-                     runtime_minutes -= runtime_hours * 60;
+                     unsigned new_hours = runtime_minutes / 60;
+                     runtime_hours += new_hours;
+                     runtime_minutes -= new_hours * 60;
                   }
 
                   runtime_hours += hours;

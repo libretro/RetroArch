@@ -47,7 +47,7 @@
 #include "../input/input_driver.h"
 #include "../tasks/tasks_internal.h"
 
-#include "../../defaults.h"
+#include "../../playlist.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -820,9 +820,10 @@ static int action_bind_sublabel_playlist_entry(
 {
    settings_t *settings = config_get_ptr();
    playlist_t *playlist = NULL;
-   const char *playlist_path = NULL;
-   const char *core_path = NULL;
    const char *core_name = NULL;
+   unsigned runtime_hours = 0;
+   unsigned runtime_minutes = 0;
+   unsigned runtime_seconds = 0;
    
    if (!settings->bools.playlist_show_sublabels)
       return 0;
@@ -835,7 +836,7 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Read playlist entry */
-   playlist_get_index(playlist, i, &playlist_path, NULL, &core_path, &core_name, NULL, NULL);
+   playlist_get_index(playlist, i, NULL, NULL, NULL, &core_name, NULL, NULL);
    
    /* Only add sublabel if a core is currently assigned */
    if (string_is_empty(core_name) || string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -861,50 +862,31 @@ static int action_bind_sublabel_playlist_entry(
          && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
       return 0;
    
-   /* Check that 'content_runtime.lpl' exists, and playlist has
-    * non-null path/core_path values... */
-   if (g_defaults.content_runtime && !string_is_empty(playlist_path) && !string_is_empty(core_path))
-   {
-      unsigned runtime_hours;
-      unsigned runtime_minutes;
-      unsigned runtime_seconds;
-      unsigned j;
-      
-      /* This is lame, but unless runtime is added to all playlists
-       * we can't really do it any other way...
-       * Search 'content_runtime.lpl' until we find the current
-       * content+core combo. */
-      for (j = 0; j < playlist_get_size(g_defaults.content_runtime); j++)
-      {
-         const char *runtime_path = NULL;
-         const char *runtime_core_path = NULL;
-         
-         playlist_get_runtime_index(g_defaults.content_runtime, j, &runtime_path, &runtime_core_path,
+   /* Any available runtime values are now copied to the content
+    * history playlist when it is parsed by menu_displaylist, so
+    * we can extract them directly via index */
+   playlist_get_runtime_index(playlist, i, NULL, NULL,
             &runtime_hours, &runtime_minutes, &runtime_seconds);
-         
-         if (string_is_equal(playlist_path, runtime_path) && string_is_equal(core_path, runtime_core_path))
-         {
-            int n = 0;
-            char tmp[64];
-            tmp[0] = '\0';
-            
-            n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-               runtime_hours, runtime_minutes, runtime_seconds);
-            
-            /* Stupid nonsense... GCC will generate warnings if we
-             * don't do something here... */
-            if ((n < 0) || (n >= 64))
-            {
-               n = 0;
-            }
-            
-            if (!string_is_empty(tmp))
-               strlcat(s, tmp, len);
-            
-            break;
-         }
+   
+   if ((runtime_hours > 0) || (runtime_minutes > 0) || (runtime_seconds > 0))
+   {
+      int n = 0;
+      char tmp[64];
+      tmp[0] = '\0';
+      
+      n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+         runtime_hours, runtime_minutes, runtime_seconds);
+      
+      /* Stupid nonsense... GCC will generate warnings if we
+       * don't do something here... */
+      if ((n < 0) || (n >= 64))
+      {
+         n = 0;
       }
+      
+      if (!string_is_empty(tmp))
+         strlcat(s, tmp, len);
    }
    
    return 0;

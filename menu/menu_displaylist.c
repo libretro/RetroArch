@@ -1310,6 +1310,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t selection = menu_navigation_get_selection();
    size_t list_size = playlist_size(playlist);
    settings_t *settings = config_get_ptr();
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
+   bool get_runtime = string_is_equal(path_playlist, "history") && g_defaults.content_runtime && settings->bools.content_runtime_log;
 
    if (list_size == 0)
       goto error;
@@ -1333,6 +1335,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
       char *path_copy                 = (char*)malloc(path_size);
       char *fill_buf                  = (char*)malloc(path_size);
+      const char *core_path           = NULL;
       const char *core_name           = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
@@ -1345,7 +1348,36 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       path                            = path_copy;
 
       playlist_get_index(playlist, i,
-            &path, &label, NULL, &core_name, NULL, NULL);
+            &path, &label, &core_path, &core_name, NULL, NULL);
+
+      /* If this is the content history playlist and runtime logging
+       * is enabled, extract any available runtime values */
+      if (get_runtime)
+      {
+         unsigned j;
+
+         /* Search 'content_runtime.lpl' until we find the current
+          * content+core combo */
+         for (j = 0; j < playlist_get_size(g_defaults.content_runtime); j++)
+         {
+            const char *runtime_path = NULL;
+            const char *runtime_core_path = NULL;
+            unsigned runtime_hours;
+            unsigned runtime_minutes;
+            unsigned runtime_seconds;
+
+            playlist_get_runtime_index(g_defaults.content_runtime, j, &runtime_path, &runtime_core_path,
+               &runtime_hours, &runtime_minutes, &runtime_seconds);
+
+            if (string_is_equal(path, runtime_path) && string_is_equal(core_path, runtime_core_path))
+            {
+               playlist_update_runtime(playlist, i, NULL, NULL,
+                  runtime_hours, runtime_minutes, runtime_seconds);
+
+               break;
+            }
+         }
+      }
 
       if (core_name)
          strlcpy(fill_buf, core_name, path_size);
@@ -1355,7 +1387,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
        * But if it ever were then we must ensure that thumbnail
        * updates are omitted (since this functionality is
        * handled elsewhere). */
-      if (!is_history && i == selection && !string_is_empty(label) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
+      if (!is_history && i == selection && !string_is_empty(label) && !is_rgui)
       {
          char *content_basename = strdup(label);
 
