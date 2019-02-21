@@ -26,13 +26,13 @@ public class RetroActivityCommon extends RetroActivityLocation
   public static int FRONTEND_POWERSTATE_ON_POWER_SOURCE = 4;
   public boolean sustainedPerformanceMode = true;
 
-	// Exiting cleanly from NDK seems to be nearly impossible.
-	// Have to use exit(0) to avoid weird things happening, even with runOnUiThread() approaches.
-	// Use a separate JNI function to explicitly trigger the readback.
-	public void onRetroArchExit()
-	{
+  // Exiting cleanly from NDK seems to be nearly impossible.
+  // Have to use exit(0) to avoid weird things happening, even with runOnUiThread() approaches.
+  // Use a separate JNI function to explicitly trigger the readback.
+  public void onRetroArchExit()
+  {
       finish();
-	}
+  }
 
   @TargetApi(24)
   public void setSustainedPerformanceMode(boolean on)
@@ -75,7 +75,6 @@ public class RetroActivityCommon extends RetroActivityLocation
       if (powerManager.isSustainedPerformanceModeSupported())
         supported = true;
     }
-
 
     Log.i("RetroActivity", "isSustainedPerformanceModeSupported? " + supported);
 
