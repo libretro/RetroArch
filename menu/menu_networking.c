@@ -27,7 +27,7 @@
 #include <string/stdstring.h>
 
 #ifdef HAVE_NETWORKING
-#include <net/net_http_parse.h>
+#include <net/net_http.h>
 #endif
 
 #include "menu_driver.h"
