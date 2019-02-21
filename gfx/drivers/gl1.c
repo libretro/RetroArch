@@ -613,7 +613,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       if (bits == 32)
       {
          unsigned y;
-		 /* copy lines into top-left portion of larger (power-of-two) buffer */
+         /* copy lines into top-left portion of larger (power-of-two) buffer */
          for (y = 0; y < height; y++)
             memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
       }
@@ -1028,7 +1028,6 @@ static unsigned gl1_wrap_type_to_enum(enum gfx_wrap_type type)
          return GL_REPEAT;
       default:
          return GL_CLAMP;
-	 break;
    }
 
    return 0;
