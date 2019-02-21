@@ -3329,7 +3329,11 @@ static void *gl2_init(const video_info_t *video,
 #ifdef _WIN32
    if (string_is_equal(vendor, "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
+#ifdef HAVE_OPENGL1
+         rarch_force_video_driver_fallback("gl1");
+#else
          rarch_force_video_driver_fallback("gdi");
+#endif
 #endif
 
    hwr = video_driver_get_hw_context();
