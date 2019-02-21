@@ -1045,13 +1045,13 @@ int font_driver_get_message_width(void *font_data,
 
 int font_driver_get_line_height(void *font_data, float scale)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    int line_height;
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
 
    /* First try the line height implementation */
    if (font && font->renderer && font->renderer->get_line_height)
       if ((line_height = font->renderer->get_line_height(font->renderer_data)) != -1)
-         return line_height * round(scale);
+         return (int)(line_height * roundf(scale));
 
    /* Else return an approximation (width of 'a') */
    return font_driver_get_message_width(font_data, "a", 1, scale);
