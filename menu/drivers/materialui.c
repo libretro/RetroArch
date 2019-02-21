@@ -737,7 +737,6 @@ static void materialui_render_label_value(
 {
    menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
-   static const char ticker_spacer[] = "   |   ";
    char label_str[255];
    char value_str[255];
    char *sublabel_str              = NULL;
@@ -755,7 +754,7 @@ static void materialui_render_label_value(
 
    /* Initial ticker configuration */
    ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.spacer = NULL;
 
    label_str[0] = value_str[0]     = '\0';
 
@@ -1066,7 +1065,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    menu_display_ctx_clearcolor_t clearcolor;
 
    menu_animation_ctx_ticker_t ticker;
-   static const char ticker_spacer[] = "   |   ";
    menu_display_ctx_draw_t draw;
    char msg[255];
    char title_buf[255];
@@ -1172,7 +1170,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Initial ticker configuration */
    ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.spacer = NULL;
 
    usable_width                    = width - (mui->margin * 2);
 

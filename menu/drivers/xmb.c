@@ -2803,7 +2803,6 @@ static int xmb_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
-   static const char ticker_spacer[] = "   |   ";
    char *ticker_str                  = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
@@ -2816,7 +2815,7 @@ static int xmb_draw_item(
 
    /* Initial ticker configuration */
    ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.spacer = NULL;
 
    if (!node)
       goto iterate;

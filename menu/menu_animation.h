@@ -25,6 +25,8 @@
 
 RETRO_BEGIN_DECLS
 
+#define TICKER_SPACER_DEFAULT "   |   ";
+
 typedef float (*easing_cb) (float, float, float, float);
 typedef void  (*tween_cb)  (void*);
 
@@ -149,7 +151,7 @@ void menu_animation_free(void);
 
 bool menu_animation_update(void);
 
-bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
+bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
 
 float menu_animation_get_delta_time(void);
 

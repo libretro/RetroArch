@@ -560,14 +560,13 @@ static void xui_render(void *data, bool is_idle)
    if (XuiHandleIsValid(m_menutitle))
    {
       menu_animation_ctx_ticker_t ticker;
-      static const char ticker_spacer[] = " | ";
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
 
       /* Initial ticker configuration */
       ticker.type_enum = settings->uints.menu_ticker_type;
-      ticker.spacer = ticker_spacer;
+      ticker.spacer = NULL;
 
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;

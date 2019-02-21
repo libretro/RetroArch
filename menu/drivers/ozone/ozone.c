@@ -848,7 +848,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    char title[255];
    menu_animation_ctx_ticker_t ticker;
-   static const char* const ticker_spacer = TICKER_SPACER;
+   static const char* const ticker_spacer = OZONE_TICKER_SPACER;
    settings_t *settings     = config_get_ptr();
    unsigned timedate_offset = 0;
 
