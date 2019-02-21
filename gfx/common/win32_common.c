@@ -80,6 +80,11 @@
 #define DragQueryFileR DragQueryFileW
 #endif
 
+/* For some reason this is missing from mingw winuser.h */
+#ifndef EDS_ROTATEDMODE
+#define EDS_ROTATEDMODE 4
+#endif
+
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
 static HDEVNOTIFY notification_handler;
@@ -1568,10 +1573,15 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
    memset(dm, 0, len);
    dm->dmSize  = len;
-
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   if (EnumDisplaySettingsEx(NULL,
+            (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm, EDS_ROTATEDMODE) == 0)
+      return false;
+#else
    if (EnumDisplaySettings(NULL,
             (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm) == 0)
       return false;
+#endif
 
    return true;
 }

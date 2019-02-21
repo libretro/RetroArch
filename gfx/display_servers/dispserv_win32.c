@@ -31,6 +31,10 @@
 #undef COBJMACROS
 #endif
 
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601 /* Windows 7 */
+#endif
+
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
 #include "../../verbosity.h"
@@ -346,6 +350,78 @@ void *win32_display_server_get_resolution_list(void *data,
    return conf;
 }
 
+#if _WIN32_WINNT >= 0x0500
+void win32_display_server_set_screen_orientation(enum rotation rotation)
+{
+   DEVMODE dm = {0};
+
+   win32_get_video_output(&dm, -1, sizeof(dm));
+
+   switch (rotation)
+   {
+      case ORIENTATION_NORMAL:
+      default:
+      {
+         int width = dm.dmPelsWidth;
+
+         if ((dm.dmDisplayOrientation == DMDO_90 || dm.dmDisplayOrientation == DMDO_270) && width != dm.dmPelsHeight)
+         {
+            /* device is changing orientations, swap the aspect */
+            dm.dmPelsWidth = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
+         }
+
+         dm.dmDisplayOrientation = DMDO_DEFAULT;
+         break;
+      }
+      case ORIENTATION_VERTICAL:
+      {
+         int width = dm.dmPelsWidth;
+
+         if ((dm.dmDisplayOrientation == DMDO_DEFAULT || dm.dmDisplayOrientation == DMDO_180) && width != dm.dmPelsHeight)
+         {
+            /* device is changing orientations, swap the aspect */
+            dm.dmPelsWidth = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
+         }
+
+         dm.dmDisplayOrientation = DMDO_270;
+         break;
+      }
+      case ORIENTATION_FLIPPED:
+      {
+         int width = dm.dmPelsWidth;
+
+         if ((dm.dmDisplayOrientation == DMDO_90 || dm.dmDisplayOrientation == DMDO_270) && width != dm.dmPelsHeight)
+         {
+            /* device is changing orientations, swap the aspect */
+            dm.dmPelsWidth = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
+         }
+
+         dm.dmDisplayOrientation = DMDO_180;
+         break;
+      }
+      case ORIENTATION_FLIPPED_ROTATED:
+      {
+         int width = dm.dmPelsWidth;
+
+         if ((dm.dmDisplayOrientation == DMDO_DEFAULT || dm.dmDisplayOrientation == DMDO_180) && width != dm.dmPelsHeight)
+         {
+            /* device is changing orientations, swap the aspect */
+            dm.dmPelsWidth = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
+         }
+
+         dm.dmDisplayOrientation = DMDO_90;
+         break;
+      }
+   }
+
+   win32_change_display_settings(NULL, &dm, 0);
+}
+#endif
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -355,6 +431,10 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_set_resolution,
    win32_display_server_get_resolution_list,
    NULL, /* get_output_options */
-   NULL, /* set_screen_orientation */
+#if _WIN32_WINNT >= 0x0500
+   win32_display_server_set_screen_orientation,
+#else
+   NULL,
+#endif
    "win32"
 };
