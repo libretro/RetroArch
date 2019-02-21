@@ -3831,20 +3831,20 @@ static void parse_config_file(void)
 {
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
-      RARCH_LOG("[Config]: Loading default config.\n");
+      RARCH_LOG("[config] Loading default config.\n");
       if (!path_is_empty(RARCH_PATH_CONFIG))
-         RARCH_LOG("[Config]: found default config: %s.\n",
+         RARCH_LOG("[config] found default config: %s.\n",
                path_get(RARCH_PATH_CONFIG));
    }
 
-   RARCH_LOG("[Config]: loading config from: %s.\n",
+   RARCH_LOG("[config] loading config from: %s.\n",
          path_get(RARCH_PATH_CONFIG));
 
    if (config_load_file(path_get(RARCH_PATH_CONFIG),
             false, config_get_ptr()))
       return;
 
-   RARCH_ERR("[Config]: couldn't find config at path: \"%s\"\n",
+   RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
          path_get(RARCH_PATH_CONFIG));
 }
 

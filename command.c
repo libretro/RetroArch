@@ -1447,16 +1447,18 @@ static bool command_event_save_config(
       const char *config_path,
       char *s, size_t len)
 {
+   char log[PATH_MAX_LENGTH];
    bool path_exists = !string_is_empty(config_path);
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
    if (path_exists && config_save_file(config_path))
    {
-      snprintf(s, len, "[Config]: %s \"%s\".",
+      snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
-      RARCH_LOG("%s\n", s);
+      snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
+      RARCH_LOG("%s\n", log);
       return true;
    }
 
@@ -1465,7 +1467,8 @@ static bool command_event_save_config(
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
-      RARCH_ERR("%s\n", s);
+      snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
+      RARCH_ERR("%s\n", log);
    }
 
    return false;
@@ -1506,7 +1509,7 @@ static bool command_event_save_core_config(void)
    if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       free (config_dir);
       return false;
    }
@@ -1557,7 +1560,7 @@ static bool command_event_save_core_config(void)
    if (!found_path)
    {
       /* Fallback to system time... */
-      RARCH_WARN("[Config]: %s\n",
+      RARCH_WARN("[config] %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
@@ -1607,7 +1610,7 @@ static void command_event_save_current_config(enum override_type type)
    {
       case OVERRIDE_NONE:
          if (path_is_empty(RARCH_PATH_CONFIG))
-            strlcpy(msg, "[Config]: Config directory not set, cannot save configuration.",
+            strlcpy(msg, "[config] Config directory not set, cannot save configuration.",
                   sizeof(msg));
          else
             command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
@@ -1618,7 +1621,7 @@ static void command_event_save_current_config(enum override_type type)
          if (config_save_overrides(type))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
-            RARCH_LOG("[Config]: [overrides] %s\n", msg);
+            RARCH_LOG("[config] [overrides] %s\n", msg);
 
             /* set overrides to active so the original config can be
                restored after closing content */
@@ -1627,7 +1630,7 @@ static void command_event_save_current_config(enum override_type type)
          else
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
-            RARCH_ERR("[Config]: [overrides] %s\n", msg);
+            RARCH_ERR("[config] [overrides] %s\n", msg);
          }
          break;
    }
