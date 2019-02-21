@@ -610,15 +610,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (draw && gl1_video_buf)
    {
-      unsigned x, y;
-
       if (bits == 32)
       {
+         unsigned y;
+		 /* copy lines into top-left portion of larger (power-of-two) buffer */
          for (y = 0; y < height; y++)
-         {
-            /* copy lines into top-left portion of larger (power-of-two) buffer */
             memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
-         }
       }
       else if (bits == 16)
          conv_rgb565_argb8888(gl1_video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
@@ -647,7 +644,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (gl1_menu_frame && video_info->menu_is_alive)
    {
-      unsigned x, y;
       frame_to_copy = NULL;
       width         = gl1_menu_width;
       height        = gl1_menu_height;

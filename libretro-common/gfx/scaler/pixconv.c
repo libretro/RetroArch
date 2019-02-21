@@ -386,7 +386,7 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w;
+   int h;
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
