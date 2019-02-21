@@ -714,6 +714,8 @@ static const bool playlist_use_old_format = false;
  * (RGUI only) */
 static const bool playlist_show_core_name = true;
 
+static const bool playlist_show_sublabels = false;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 

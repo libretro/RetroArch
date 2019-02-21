@@ -1961,6 +1961,7 @@ bool command_event(enum event_command cmd, void *data)
 
             content_get_status(&contentless, &is_inited);
 
+            rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
