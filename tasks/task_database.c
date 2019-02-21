@@ -732,6 +732,9 @@ static int database_info_list_iterate_end_no_match(
    if (db_state->crc != 0)
       db_state->crc = 0;
 
+   if (db_state->archive_crc != 0)
+      db_state->archive_crc = 0;
+
    return 0;
 }
 
@@ -857,6 +860,7 @@ static int database_info_list_iterate_found_match(
 
    db_state->info = NULL;
    db_state->crc  = 0;
+   db_state->archive_crc = 0;
 
    free(entry_path_str);
    free(db_playlist_path);
