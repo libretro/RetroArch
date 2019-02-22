@@ -45,7 +45,7 @@ static char xrandr[250]         = {0};
 static char fbset[150]          = {0};
 static char output[500]         = {0};
 static char output4[500]        = {0};
-static char crt_name[10]        = {0}; 
+static char crt_name[10]        = {0};
 static int crt_name_id          = 0;
 static bool crt_en              = false;
 static unsigned crtid           = 20;
@@ -191,7 +191,7 @@ static bool x11_display_server_set_resolution(void *data,
       hbp  = (width * roundw) + (width /24);
       xoffset = xoffset*2;
    }
-   
+
    hsp    = (width * 1.140) - (xoffset*4);
 
    hmax = hbp;
@@ -259,7 +259,7 @@ static bool x11_display_server_set_resolution(void *data,
 
    /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
-    crt_rrmode.id = crtid;
+   crt_rrmode.id = crtid;
    crt_rrmode.width = width;
    crt_rrmode.height = height;
    crt_rrmode.dotClock = pixel_clock;
@@ -279,47 +279,47 @@ static bool x11_display_server_set_resolution(void *data,
    if (monitor_index == 0)
    {
       int i;
+
       for (i = 0; i < res->noutput; i++)
       {
-
          XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[i]);
 
          if (outputs->connection == RR_Connected)
          {
-            snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
+            snprintf(orig_output, sizeof(orig_output), "%s", outputs->name);
 
-            snprintf(output4, sizeof(output4),"xrandr --addmode %s %s",outputs->name ,new_mode);
+            snprintf(output4, sizeof(output4), "xrandr --addmode %s %s",outputs->name ,new_mode);
             system(output4);
-            snprintf(output4, sizeof(output4),"xrandr --output %s --mode %s", outputs->name, new_mode);
+            snprintf(output4, sizeof(output4), "xrandr --output %s --mode %s", outputs->name, new_mode);
             system(output4);
 
-            snprintf(output4, sizeof(output4),"xrandr --delmode %s %s", outputs->name,old_mode);
+            snprintf(output4, sizeof(output4), "xrandr --delmode %s %s", outputs->name,old_mode);
             system(output4);
-            snprintf(output4, sizeof(output4),"xrandr --rmmode %s", old_mode);
-	        system(output4);
-
+            snprintf(output4, sizeof(output4), "xrandr --rmmode %s", old_mode);
+            system(output4);
          }
       }
-  }
- if (monitor_index > 0)
- {
-    XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[monitor_index]);
-    if (outputs->connection == RR_Connected)
-    {
-		snprintf(orig_output, sizeof(orig_output),"%s", outputs->name);
+   }
+   else if (monitor_index > 0)
+   {
+      XRROutputInfo *outputs = XRRGetOutputInfo (dsp, res, res->outputs[monitor_index]);
 
-        snprintf(output4, sizeof(output4),"xrandr --addmode %s %s",outputs->name ,new_mode);
-        system(output4);
-        snprintf(output4, sizeof(output4),"xrandr --output %s --mode %s", outputs->name, new_mode);
-        system(output4);
+      if (outputs->connection == RR_Connected)
+      {
+         snprintf(orig_output, sizeof(orig_output), "%s", outputs->name);
 
-        snprintf(output4, sizeof(output4),"xrandr --delmode %s %s", outputs->name, old_mode);
-        system(output4);
-        snprintf(output4, sizeof(output4),"xrandr --rmmode %s", old_mode);
-	    system(output4);
+         snprintf(output4, sizeof(output4), "xrandr --addmode %s %s",outputs->name ,new_mode);
+         system(output4);
+         snprintf(output4, sizeof(output4), "xrandr --output %s --mode %s", outputs->name, new_mode);
+         system(output4);
 
-    }
- }
+         snprintf(output4, sizeof(output4), "xrandr --delmode %s %s", outputs->name, old_mode);
+         system(output4);
+         snprintf(output4, sizeof(output4), "xrandr --rmmode %s", old_mode);
+         system(output4);
+      }
+   }
+
    return true;
 }
 
