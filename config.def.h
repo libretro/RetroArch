@@ -760,7 +760,7 @@ static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
-static const unsigned input_max_users = 5;
+static const unsigned input_max_users = 2;
 
 static const unsigned input_poll_type_behavior = 2;
 

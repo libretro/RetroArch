@@ -4253,6 +4253,7 @@ bool config_save_file(const char *path)
    int size_settings_size                            = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
    int array_settings_size                           = sizeof(settings->arrays)/ sizeof(settings->arrays.placeholder);
    int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+   int max_users                                     = *input_driver_get_uint(INPUT_ACTION_MAX_USERS);
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -4357,7 +4358,7 @@ bool config_save_file(const char *path)
       free(size_settings);
    }
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < max_users; i++)
    {
       char cfg[64];
 
@@ -4438,7 +4439,7 @@ bool config_save_file(const char *path)
       filestream_delete(LAKKA_BLUETOOTH_PATH);
 #endif
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < max_users; i++)
       save_keybinds_user(conf, i);
 
    ret = config_file_write(conf, path, true);
