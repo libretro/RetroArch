@@ -371,7 +371,7 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
-#ifdef HAVE_COMMAND
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -412,9 +412,7 @@ static bool command_get_arg(const char *tok,
 
    return false;
 }
-#endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
    struct addrinfo *res  = NULL;
@@ -467,7 +465,6 @@ static bool command_verify(const char *cmd)
    return false;
 }
 
-#ifdef HAVE_COMMAND
 static void command_parse_sub_msg(command_t *handle, const char *tok)
 {
    const char *arg = NULL;
@@ -544,7 +541,6 @@ static void command_network_poll(command_t *handle)
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
-#endif
 #endif
 
 bool command_network_send(const char *cmd_)
