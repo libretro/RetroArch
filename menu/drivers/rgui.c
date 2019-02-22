@@ -1637,15 +1637,6 @@ static void rgui_render(void *data, bool is_idle)
       char title_buf[255];
       unsigned timedate_x = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
-      bool show_playlist_labels = !settings->bools.playlist_show_core_name && rgui->is_playlist;
-      playlist_t *playlist = NULL;
-
-      /* Get cached playlist, if required */
-      if (show_playlist_labels)
-      {
-         playlist = playlist_get_cached();
-         show_playlist_labels = show_playlist_labels && playlist;
-      }
 
       /* Print title */
       title_buf[0] = '\0';
@@ -1685,7 +1676,6 @@ static void rgui_render(void *data, bool is_idle)
          size_t entry_title_buf_len            = 0;
          bool has_value                        = false;
          bool entry_selected                   = menu_entry_is_currently_selected((unsigned)i);
-         bool show_playlist_label              = show_playlist_labels;
          size_t selection                      = menu_navigation_get_selection();
 
          if (i > (selection + 100))
@@ -1696,54 +1686,20 @@ static void rgui_render(void *data, bool is_idle)
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
 
-         /* Get playlist label for current entry, if required */
-         if (show_playlist_label)
-         {
-            /* Ensure that we fallback to the normal entry label if
-             * any of the following playlist access fails... */
-            show_playlist_label = false;
+         /* Get current entry */
+         menu_entry_t entry;
+         menu_entry_init(&entry);
+         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
-            if (i < playlist_get_size(playlist))
-            {
-               const char *playlist_label = NULL;
-               playlist_get_index(playlist, i, NULL, &playlist_label, NULL, NULL, NULL, NULL);
+         /* Read entry parameters */
+         entry_spacing = menu_entry_get_spacing(&entry);
+         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+         entry_path = menu_entry_get_rich_label(&entry);
 
-               if (!string_is_empty(playlist_label))
-               {
-                  entry_path = strdup(playlist_label);
-                  show_playlist_label = true;
-               }
-            }
-         }
+         /* Determine whether entry has a value component */
+         has_value = !string_is_empty(entry_value);
 
-         if (show_playlist_label)
-         {
-            /* We are using the current playlist label as the entry title
-             * > We already have entry_path
-             * > entry_spacing is irrelevant (set to zero)
-             * > entry_value is irrelevant
-             * > has_value is false */
-            entry_spacing = 0;
-            has_value = false;
-         }
-         else
-         {
-            /* Either this is not a playlist entry, or we are ignoring
-             * playlists - extract all required info from entry itself */
-            menu_entry_t entry;
-            menu_entry_init(&entry);
-            menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-
-            /* Read entry parameters */
-            entry_spacing = menu_entry_get_spacing(&entry);
-            menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-            entry_path = menu_entry_get_rich_label(&entry);
-
-            /* Determine whether entry has a value component */
-            has_value = !string_is_empty(entry_value);
-
-            menu_entry_free(&entry);
-         }
+         menu_entry_free(&entry);
 
          /* Format entry title string */
          entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);

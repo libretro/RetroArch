@@ -710,9 +710,8 @@ static const bool playlist_sort_alphabetical = true;
 /* File format to use when writing playlists to disk */
 static const bool playlist_use_old_format = false;
 
-/* Show currently associated core next to each playlist entry
- * (RGUI only) */
-static const bool playlist_show_core_name = true;
+/* Always show currently associated core next to each playlist entry */
+static const bool playlist_show_core_name = false;
 
 static const bool playlist_show_sublabels = false;
 
