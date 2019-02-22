@@ -170,6 +170,8 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
 
    if (!m_pixmap || m_pixmap->isNull())
    {
+      if (m_pixmap)
+         delete m_pixmap;
       m_pixmap = new QPixmap(sizeHint());
       m_pixmap->fill(QColor(0, 0, 0, 0));
    }

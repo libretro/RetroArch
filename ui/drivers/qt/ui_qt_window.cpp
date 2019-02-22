@@ -710,6 +710,8 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   if (m_proxyFileModel)
+      delete m_proxyFileModel;
 }
 
 void MainWindow::startTimer() {
