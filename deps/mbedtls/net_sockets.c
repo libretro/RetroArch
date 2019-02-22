@@ -19,7 +19,7 @@
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
 
-/* Modifications Copyright (C) 2017 - Brad Parker
+/* Modifications Copyright (C) 2016-2019 - Brad Parker
  * - added socket functions for PS3/Vita/WiiU
  */
 
