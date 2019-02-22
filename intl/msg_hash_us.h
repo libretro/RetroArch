@@ -8240,7 +8240,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_CORE_NAME,
-    "Show associated cores in playlists"
+    "Always show associated cores in playlists"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME,

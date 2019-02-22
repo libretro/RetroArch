@@ -1501,7 +1501,6 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("rgui_background_filler_thickness_enable",     &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",     &settings->bools.menu_rgui_border_filler_enable, true, true, false);
-   SETTING_BOOL("playlist_show_core_name",     &settings->bools.playlist_show_core_name, true, playlist_show_core_name, false);
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
@@ -1576,7 +1575,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, playlist_use_old_format, false);
    SETTING_BOOL("content_runtime_log",              &settings->bools.content_runtime_log, true, content_runtime_log, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, playlist_show_sublabels, false);
-
+   SETTING_BOOL("playlist_show_core_name",       &settings->bools.playlist_show_core_name, true, playlist_show_core_name, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, playlist_sort_alphabetical, false);
 
    *size = count;
