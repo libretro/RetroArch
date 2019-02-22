@@ -2081,6 +2081,14 @@ static bool d3d9_has_windowed(void *data)
 #endif
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool d3d9_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
@@ -2100,5 +2108,9 @@ video_driver_t video_d3d9 = {
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif
-   d3d9_get_poke_interface
+   d3d9_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   d3d9_menu_widgets_enabled
+#endif
 };
