@@ -1186,121 +1186,121 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 
    /* Paths */
 #ifdef HAVE_XMB
-   SETTING_PATH("xmb_font",                   settings->paths.path_menu_xmb_font, false, NULL, true);
+   SETTING_PATH("path_xmb_font",                   settings->paths.path_menu_xmb_font, false, NULL, true);
 #endif
    SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
    SETTING_PATH("kiosk_mode_password",        settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("netplay_nickname",           settings->paths.username, false, NULL, true);
-   SETTING_PATH("video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
-   SETTING_PATH("audio_dsp_plugin",           settings->paths.path_audio_dsp_plugin, false, NULL, true);
-   SETTING_PATH("core_updater_buildbot_url", settings->paths.network_buildbot_url, false, NULL, true);
-   SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
+   SETTING_PATH("path_video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
+   SETTING_PATH("path_audio_dsp_plugin",           settings->paths.path_audio_dsp_plugin, false, NULL, true);
+   SETTING_PATH("path_core_updater_buildbot_url", settings->paths.network_buildbot_url, false, NULL, true);
+   SETTING_PATH("path_core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",       settings->paths.netplay_server, false, NULL, true);
    SETTING_PATH("netplay_password",           settings->paths.netplay_password, false, NULL, true);
    SETTING_PATH("netplay_spectate_password",  settings->paths.netplay_spectate_password, false, NULL, true);
 #endif
-   SETTING_PATH("libretro_directory",
+   SETTING_PATH("path_libretro_dir",
          settings->paths.directory_libretro, false, NULL, false);
-   SETTING_PATH("core_options_path",
+   SETTING_PATH("path_core_options_dir",
          settings->paths.path_core_options, false, NULL, true);
-   SETTING_PATH("libretro_info_path",
+   SETTING_PATH("path_libretro_info_dir",
          settings->paths.path_libretro_info, false, NULL, true);
-   SETTING_PATH("video_shader",
+   SETTING_PATH("path_video_shader",
          settings->paths.path_shader, false, NULL, true);
-   SETTING_PATH("content_database_path",
+   SETTING_PATH("path_content_database_dir",
          settings->paths.path_content_database, false, NULL, true);
-   SETTING_PATH("cheat_database_path",
+   SETTING_PATH("path_cheat_database_dir",
          settings->paths.path_cheat_database, false, NULL, true);
 #ifdef HAVE_MENU
-   SETTING_PATH("menu_wallpaper",
+   SETTING_PATH("path_menu_wallpaper",
          settings->paths.path_menu_wallpaper, false, NULL, true);
-   SETTING_PATH("rgui_menu_theme_preset",
+   SETTING_PATH("path_rgui_menu_theme_preset",
          settings->paths.path_rgui_theme_preset, false, NULL, true);
 #endif
-   SETTING_PATH("content_history_path",
+   SETTING_PATH("path_content_history",
          settings->paths.path_content_history, false, NULL, true);
-   SETTING_PATH("content_favorites_path",
+   SETTING_PATH("path_content_favorites",
          settings->paths.path_content_favorites, false, NULL, true);
-   SETTING_PATH("content_music_history_path",
+   SETTING_PATH("path_content_music_history",
          settings->paths.path_content_music_history, false, NULL, true);
-   SETTING_PATH("content_video_history_path",
+   SETTING_PATH("path_content_video_history",
          settings->paths.path_content_video_history, false, NULL, true);
-   SETTING_PATH("content_image_history_path",
+   SETTING_PATH("path_content_image_history",
          settings->paths.path_content_image_history, false, NULL, true);
-   SETTING_PATH("content_runtime_path",
+   SETTING_PATH("path_content_runtime",
          settings->paths.path_content_runtime, false, NULL, true);
 #ifdef HAVE_OVERLAY
-   SETTING_PATH("input_overlay",
+   SETTING_PATH("path_input_overlay",
          settings->paths.path_overlay, false, NULL, true);
 #endif
-   SETTING_PATH("video_record_config",
+   SETTING_PATH("path_video_record_config",
          settings->paths.path_record_config, false, NULL, true);
-   SETTING_PATH("video_stream_config",
+   SETTING_PATH("path_video_stream_config",
          settings->paths.path_stream_config, false, NULL, true);
-   SETTING_PATH("video_stream_url",
+   SETTING_PATH("path_video_stream_url",
          settings->paths.path_stream_url, false, NULL, true);
-   SETTING_PATH("video_font_path",
+   SETTING_PATH("path_video_font",
          settings->paths.path_font, false, NULL, true);
-   SETTING_PATH("cursor_directory",
+   SETTING_PATH("path_cursor_dir",
          settings->paths.directory_cursor, false, NULL, true);
-   SETTING_PATH("content_history_dir",
+   SETTING_PATH("path_content_history_dir",
          settings->paths.directory_content_history, false, NULL, true);
-   SETTING_PATH("screenshot_directory",
+   SETTING_PATH("path_screenshot_dir",
          settings->paths.directory_screenshot, true, NULL, true);
-   SETTING_PATH("system_directory",
+   SETTING_PATH("path_system_dir",
          settings->paths.directory_system, true, NULL, true);
-   SETTING_PATH("cache_directory",
+   SETTING_PATH("path_cache_dir",
          settings->paths.directory_cache, false, NULL, true);
-   SETTING_PATH("input_remapping_directory",
+   SETTING_PATH("path_input_remapping_dir",
          settings->paths.directory_input_remapping, false, NULL, true);
-   SETTING_PATH("resampler_directory",
+   SETTING_PATH("path_resampler_dir",
          settings->paths.directory_resampler, false, NULL, true);
-   SETTING_PATH("video_shader_dir",
+   SETTING_PATH("path_video_shader_dir",
          settings->paths.directory_video_shader, true, NULL, true);
-   SETTING_PATH("video_filter_dir",
+   SETTING_PATH("path_video_filter_dir",
          settings->paths.directory_video_filter, true, NULL, true);
-   SETTING_PATH("core_assets_directory",
+   SETTING_PATH("path_core_assets_dir",
          settings->paths.directory_core_assets, true, NULL, true);
-   SETTING_PATH("assets_directory",
+   SETTING_PATH("path_assets_dir",
          settings->paths.directory_assets, true, NULL, true);
-   SETTING_PATH("dynamic_wallpapers_directory",
+   SETTING_PATH("path_dynamic_wallpapers_dir",
          settings->paths.directory_dynamic_wallpapers, true, NULL, true);
-   SETTING_PATH("thumbnails_directory",
+   SETTING_PATH("path_thumbnails_dir",
          settings->paths.directory_thumbnails, true, NULL, true);
-   SETTING_PATH("playlist_directory",
+   SETTING_PATH("path_playlist_dir",
          settings->paths.directory_playlist, true, NULL, true);
-   SETTING_PATH("joypad_autoconfig_dir",
+   SETTING_PATH("path_joypad_autoconfig_dir",
          settings->paths.directory_autoconfig, false, NULL, true);
-   SETTING_PATH("audio_filter_dir",
+   SETTING_PATH("path_audio_filter_dir",
          settings->paths.directory_audio_filter, true, NULL, true);
-   SETTING_PATH("savefile_directory",
+   SETTING_PATH("path_savefile_dir",
          dir_get_ptr(RARCH_DIR_SAVEFILE), true, NULL, false);
-   SETTING_PATH("savestate_directory",
+   SETTING_PATH("path_savestate_dir",
          dir_get_ptr(RARCH_DIR_SAVESTATE), true, NULL, false);
 #ifdef HAVE_MENU
-   SETTING_PATH("rgui_browser_directory",
+   SETTING_PATH("path_rgui_browser_dir",
          settings->paths.directory_menu_content, true, NULL, true);
-   SETTING_PATH("rgui_config_directory",
+   SETTING_PATH("path_rgui_config_dir",
          settings->paths.directory_menu_config, true, NULL, true);
 #endif
 #ifdef HAVE_OVERLAY
-   SETTING_PATH("overlay_directory",
+   SETTING_PATH("path_overlay_dir",
          settings->paths.directory_overlay, true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
-   SETTING_PATH("libretro_path",
+   SETTING_PATH("path_libretro_path",
          path_get_ptr(RARCH_PATH_CORE), false, NULL, false);
 #endif
    SETTING_PATH(
-         "screenshot_directory",
+         "screenshot_dir",
          settings->paths.directory_screenshot, true, NULL, false);
 
    if (global)
    {
-      SETTING_PATH("recording_output_directory",
+      SETTING_PATH("path_recording_output_dir",
             global->record.output_dir, false, NULL, true);
-      SETTING_PATH("recording_config_directory",
+      SETTING_PATH("path_recording_config_dir",
             global->record.config_dir, false, NULL, true);
    }
 
