@@ -63,7 +63,7 @@ typedef struct menu_animation menu_animation_t;
 #define TICKER_SPEED       333
 #define TICKER_SLOW_SPEED  1600
 
-static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
+static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT
 
 static menu_animation_t anim;
 static retro_time_t cur_time    = 0;
