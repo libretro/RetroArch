@@ -73,7 +73,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
          return midi_drivers[i];
    }
 
-   RARCH_ERR("[MIDI]: Unknown driver \"%s\", falling back to \"null\" driver.\n");
+   RARCH_ERR("[MIDI]: Unknown driver \"%s\", falling back to \"null\" driver.\n", ident);
 
    return &midi_null;
 }
