@@ -830,7 +830,7 @@ uint64_t cpu_features_get(void)
 
 void cpu_features_get_model_name(char *name, int len)
 {
-#ifdef CPU_X86
+#if defined(CPU_X86) && !defined(__MACH__)
    union {
       int i[4];
       unsigned char s[16];
