@@ -505,7 +505,7 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
    /* Take a screenshot of the achievement. */
    if (settings && settings->bools.cheevos_auto_screenshot)
    {
-      char shotname[256];
+      char shotname[8192];
 
       snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
       settings->paths.directory_screenshot,
@@ -1807,7 +1807,7 @@ found:
 
       if (ret != 0)
       {
-         char msg[256];
+         char msg[512];
          snprintf(msg, sizeof(msg),
                "RetroAchievements: %s",
                tok);
@@ -1943,12 +1943,12 @@ found:
 
       CORO_GOSUB(LOGIN);
       {
-         int i, ret;
+         int ret;
          unsigned mode;
 
-         for (i = 0; i < 2; i++)
+         for (coro->i = 0; coro->i < 2; coro->i++)
          {
-            ret = rc_url_get_unlock_list(coro->url, sizeof(coro->url), coro->settings->arrays.cheevos_username, cheevos_locals.token, coro->gameid, i);
+            ret = rc_url_get_unlock_list(coro->url, sizeof(coro->url), coro->settings->arrays.cheevos_username, cheevos_locals.token, coro->gameid, coro->i);
 
             if (ret < 0)
             {
@@ -1961,7 +1961,7 @@ found:
 
             if (coro->json)
             {
-               mode = i == 0 ? CHEEVOS_ACTIVE_SOFTCORE : CHEEVOS_ACTIVE_HARDCORE;
+               mode = coro->i == 0 ? CHEEVOS_ACTIVE_SOFTCORE : CHEEVOS_ACTIVE_HARDCORE;
                cheevos_deactivate_unlocks(coro->json, cheevos_unlock_cb, &mode);
                CHEEVOS_FREE(coro->json);
             }
