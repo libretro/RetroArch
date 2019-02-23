@@ -362,19 +362,20 @@ const char *x11_display_server_get_output_options(void *data)
 #ifdef HAVE_XRANDR
 static void x11_display_server_set_screen_orientation(enum rotation rotation)
 {
-   int i, j, num_sizes = 0;
+   int i, j;
    XRRScreenResources *screen;
-   XRRScreenConfiguration *config = XRRGetScreenInfo(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
-   XRRScreenSize *sizes = XRRConfigSizes(config, &num_sizes);
-   double dpi = (25.4 * DisplayHeight(g_x11_dpy, DefaultScreen(g_x11_dpy))) / DisplayHeightMM(g_x11_dpy, DefaultScreen(g_x11_dpy));
+   /* switched to using XOpenDisplay() due to deinit order issue with g_x11_dpy when restoring original rotation on exit */
+   Display *dpy = XOpenDisplay(0);
+   XRRScreenConfiguration *config = XRRGetScreenInfo(dpy, DefaultRootWindow(dpy));
+   double dpi = (25.4 * DisplayHeight(dpy, DefaultScreen(dpy))) / DisplayHeightMM(dpy, DefaultScreen(dpy));
 
-   XGrabServer(g_x11_dpy);
+   XGrabServer(dpy);
 
-   screen = XRRGetScreenResources(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
 
    for (i = 0; i < screen->noutput; i++)
    {
-      XRROutputInfo *info = XRRGetOutputInfo(g_x11_dpy, screen, screen->outputs[i]);
+      XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
 
       if (info->connection != RR_Connected)
       {
@@ -384,7 +385,7 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
 
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(g_x11_dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
          Rotation new_rotation = RR_Rotate_0;
 
          if (crtc->width == 0 || crtc->height == 0)
@@ -414,7 +415,7 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
                break;
          }
 
-         XRRSetCrtcConfig(g_x11_dpy, screen, screen->crtcs[j], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
 
          if ((crtc->rotation & RR_Rotate_0 || crtc->rotation & RR_Rotate_180) && (rotation == ORIENTATION_VERTICAL || rotation == ORIENTATION_FLIPPED_ROTATED))
          {
@@ -431,9 +432,9 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
 
          crtc->rotation = new_rotation;
 
-         XRRSetScreenSize(g_x11_dpy, DefaultRootWindow(g_x11_dpy), crtc->width, crtc->height, (25.4 * crtc->width) / dpi, (25.4 * crtc->height) / dpi);
+         XRRSetScreenSize(dpy, DefaultRootWindow(dpy), crtc->width, crtc->height, (25.4 * crtc->width) / dpi, (25.4 * crtc->height) / dpi);
 
-         XRRSetCrtcConfig(g_x11_dpy, screen, screen->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
 
          XRRFreeCrtcInfo(crtc);
       }
@@ -443,9 +444,68 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
 
    XRRFreeScreenResources(screen);
 
-   XUngrabServer(g_x11_dpy);
-   XSync(g_x11_dpy, False);
+   XUngrabServer(dpy);
+   XSync(dpy, False);
    XRRFreeScreenConfigInfo(config);
+   XCloseDisplay(dpy);
+}
+#endif
+
+#ifdef HAVE_XRANDR
+static enum rotation x11_display_server_get_screen_orientation(void)
+{
+   int i, j;
+   XRRScreenResources *screen = XRRGetScreenResources(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+   XRRScreenConfiguration *config = XRRGetScreenInfo(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+   enum rotation rotation = ORIENTATION_NORMAL;
+
+   for (i = 0; i < screen->noutput; i++)
+   {
+      XRROutputInfo *info = XRRGetOutputInfo(g_x11_dpy, screen, screen->outputs[i]);
+
+      if (info->connection != RR_Connected)
+      {
+         XRRFreeOutputInfo(info);
+         continue;
+      }
+
+      for (j = 0; j < info->ncrtc; j++)
+      {
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(g_x11_dpy, screen, screen->crtcs[j]);
+
+         if (crtc->width == 0 || crtc->height == 0)
+         {
+            XRRFreeCrtcInfo(crtc);
+            continue;
+         }
+
+         switch (crtc->rotation)
+         {
+            case RR_Rotate_0:
+            default:
+               rotation = ORIENTATION_NORMAL;
+               break;
+            case RR_Rotate_270:
+               rotation = ORIENTATION_VERTICAL;
+               break;
+            case RR_Rotate_180:
+               rotation = ORIENTATION_FLIPPED;
+               break;
+            case RR_Rotate_90:
+               rotation = ORIENTATION_FLIPPED_ROTATED;
+               break;
+         }
+
+         XRRFreeCrtcInfo(crtc);
+      }
+
+      XRRFreeOutputInfo(info);
+   }
+
+   XRRFreeScreenResources(screen);
+   XRRFreeScreenConfigInfo(config);
+
+   return rotation;
 }
 #endif
 
@@ -460,7 +520,9 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_get_output_options,
 #ifdef HAVE_XRANDR
    x11_display_server_set_screen_orientation,
+   x11_display_server_get_screen_orientation,
 #else
+   NULL,
    NULL,
 #endif
    "x11"

@@ -351,6 +351,33 @@ void *win32_display_server_get_resolution_list(void *data,
 }
 
 #if _WIN32_WINNT >= 0x0500
+enum rotation win32_display_server_get_screen_orientation(void)
+{
+   DEVMODE dm = {0};
+   enum rotation rotation;
+
+   win32_get_video_output(&dm, -1, sizeof(dm));
+
+   switch (dm.dmDisplayOrientation)
+   {
+      case DMDO_DEFAULT:
+      default:
+         rotation = ORIENTATION_NORMAL;
+         break;
+      case DMDO_90:
+         rotation = ORIENTATION_FLIPPED_ROTATED;
+         break;
+      case DMDO_180:
+         rotation = ORIENTATION_FLIPPED;
+         break;
+      case DMDO_270:
+         rotation = ORIENTATION_VERTICAL;
+         break;
+   }
+
+   return rotation;
+}
+
 void win32_display_server_set_screen_orientation(enum rotation rotation)
 {
    DEVMODE dm = {0};
@@ -433,7 +460,9 @@ const video_display_server_t dispserv_win32 = {
    NULL, /* get_output_options */
 #if _WIN32_WINNT >= 0x0500
    win32_display_server_set_screen_orientation,
+   win32_display_server_get_screen_orientation,
 #else
+   NULL,
    NULL,
 #endif
    "win32"

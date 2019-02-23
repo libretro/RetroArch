@@ -22,6 +22,8 @@
 
 static const video_display_server_t *current_display_server = &dispserv_null;
 static void                    *current_display_server_data = NULL;
+static enum rotation initial_screen_orientation          = ORIENTATION_NORMAL;
+static enum rotation current_screen_orientation          = ORIENTATION_NORMAL;
 
 const char *video_display_server_get_ident(void)
 {
@@ -62,11 +64,16 @@ void* video_display_server_init(void)
    RARCH_LOG("[Video]: Found display server: %s\n",
 		   current_display_server->ident);
 
+   initial_screen_orientation = video_display_server_get_screen_orientation();
+
    return current_display_server_data;
 }
 
 void video_display_server_destroy(void)
 {
+   if (initial_screen_orientation != current_screen_orientation)
+      video_display_server_set_screen_orientation(initial_screen_orientation);
+
    if (current_display_server && current_display_server->destroy)
       if (current_display_server_data)
          current_display_server->destroy(current_display_server_data);
@@ -120,6 +127,7 @@ void video_display_server_set_screen_orientation(enum rotation rotation)
    if (current_display_server && current_display_server->set_screen_orientation)
    {
       RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
+      current_screen_orientation = rotation;
       current_display_server->set_screen_orientation(rotation);
    }
 }
@@ -129,4 +137,11 @@ bool video_display_server_can_set_screen_orientation(void)
    if (current_display_server && current_display_server->set_screen_orientation)
       return true;
    return false;
+}
+
+enum rotation video_display_server_get_screen_orientation(void)
+{
+   if (current_display_server && current_display_server->get_screen_orientation)
+      return current_display_server->get_screen_orientation();
+   return ORIENTATION_NORMAL;
 }

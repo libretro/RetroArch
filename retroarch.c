@@ -2502,7 +2502,6 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
-
 #ifdef HAVE_DISCORD
       if (discord_is_inited)
    {

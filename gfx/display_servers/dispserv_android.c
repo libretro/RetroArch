@@ -66,5 +66,6 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_resolution_list */
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
+   NULL, /* get_screen_orientation */
    "android"
 };

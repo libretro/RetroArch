@@ -48,6 +48,7 @@ typedef struct video_display_server
          unsigned *size);
    const char *(*get_output_options)(void *data);
    void (*set_screen_orientation)(enum rotation rotation);
+   enum rotation (*get_screen_orientation)(void);
    const char *ident;
 } video_display_server_t;
 
@@ -74,6 +75,8 @@ const char *video_display_server_get_ident(void);
 void video_display_server_set_screen_orientation(enum rotation rotation);
 
 bool video_display_server_can_set_screen_orientation(void);
+
+enum rotation video_display_server_get_screen_orientation(void);
 
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_x11;
