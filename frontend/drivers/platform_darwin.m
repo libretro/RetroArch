@@ -110,6 +110,8 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
+static char darwin_cpu_model_name[64] = {0};
+
 static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
 {
    switch (flags)
@@ -736,6 +738,12 @@ static uint64_t frontend_darwin_get_mem_used(void)
     return 0;
 }
 
+static const char* frontend_darwin_get_cpu_model_name(void)
+{
+   cpu_features_get_model_name(darwin_cpu_model_name, sizeof(darwin_cpu_model_name));
+   return darwin_cpu_model_name;
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
@@ -763,6 +771,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
-   NULL,                         /* get_cpu_model_name */
+   frontend_darwin_get_cpu_model_name,
    "darwin",
 };

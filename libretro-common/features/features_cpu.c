@@ -873,6 +873,10 @@ end:
    /* terminate our string */
    if (pos < len)
       name[pos] = '\0';
+#elif defined(__MACH__)
+   if (!name)
+      return;
+   sysctlbyname("machdep.cpu.brand_string", name, &len, NULL, 0);
 #else
    if (!name)
       return;
