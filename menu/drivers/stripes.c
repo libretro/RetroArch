@@ -2329,7 +2329,6 @@ static int stripes_draw_item(
 {
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
-   static const char ticker_spacer[] = " | ";
    char tmp[255];
    char *ticker_str                  = NULL;
    unsigned entry_type               = 0;
@@ -2343,7 +2342,7 @@ static int stripes_draw_item(
 
    /* Initial ticker configuration */
    ticker.type_enum = settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.spacer = NULL;
 
    if (!node)
       goto iterate;

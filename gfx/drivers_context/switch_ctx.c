@@ -82,9 +82,10 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 
     nx_ctx_ptr = ctx_nx;
 
-#if 0
+    /* Comment below to enable error checking */
     setenv("MESA_NO_ERROR", "1", 1);
 
+#if 0
     /* Uncomment below to enable Mesa logging: */
     setenv("EGL_LOG_LEVEL", "debug", 1);
     setenv("MESA_VERBOSE", "all", 1);

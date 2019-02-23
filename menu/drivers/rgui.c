@@ -62,7 +62,7 @@
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
 
-#define TICKER_SPACER " | "
+#define RGUI_TICKER_SPACER " | "
 
 typedef struct
 {
@@ -1467,7 +1467,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
-   static const char* const ticker_spacer = TICKER_SPACER;
+   static const char* const ticker_spacer = RGUI_TICKER_SPACER;
    unsigned x, y;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
@@ -2263,7 +2263,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
       
       if (!string_is_empty(entry.sublabel))
       {
-         static const char* const sublabel_spacer = TICKER_SPACER;
+         static const char* const sublabel_spacer = RGUI_TICKER_SPACER;
          struct string_list *list = NULL;
          size_t line_index;
          bool prev_line_empty = true;

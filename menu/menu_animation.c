@@ -63,6 +63,8 @@ typedef struct menu_animation menu_animation_t;
 #define TICKER_SPEED       333
 #define TICKER_SLOW_SPEED  1600
 
+static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
+
 static menu_animation_t anim;
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
@@ -658,9 +660,12 @@ bool menu_animation_update(void)
    return animation_is_active;
 }
 
-bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
+bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 {
    size_t str_len = utf8len(ticker->str);
+
+   if (!ticker->spacer)
+      ticker->spacer = ticker_spacer_default;
 
    if ((size_t)str_len <= ticker->len)
    {
