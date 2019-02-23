@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,19 +15,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* We are targeting XRandR 1.2 here. */
+
 #include <compat/strl.h>
 
 #include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h> /* run pkg-config --static --libs xrandr */
-#include <X11/extensions/randr.h>
-#include <X11/extensions/Xrender.h>
 
 #include "../../config.h"
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/randr.h>
+#include <X11/extensions/Xrender.h>
 #endif
 
 #include "../video_display_server.h"
@@ -358,10 +359,95 @@ const char *x11_display_server_get_output_options(void *data)
 #endif
 }
 
+#ifdef HAVE_XRANDR
 static void x11_display_server_set_screen_orientation(enum rotation rotation)
 {
-   (void)rotation;
+   int i, j, num_sizes = 0;
+   XRRScreenResources *screen;
+   XRRScreenConfiguration *config = XRRGetScreenInfo(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+   XRRScreenSize *sizes = XRRConfigSizes(config, &num_sizes);
+   double dpi = (25.4 * DisplayHeight(g_x11_dpy, DefaultScreen(g_x11_dpy))) / DisplayHeightMM(g_x11_dpy, DefaultScreen(g_x11_dpy));
+
+   XGrabServer(g_x11_dpy);
+
+   screen = XRRGetScreenResources(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+
+   for (i = 0; i < screen->noutput; i++)
+   {
+      XRROutputInfo *info = XRRGetOutputInfo(g_x11_dpy, screen, screen->outputs[i]);
+
+      if (info->connection != RR_Connected)
+      {
+         XRRFreeOutputInfo(info);
+         continue;
+      }
+
+      for (j = 0; j < info->ncrtc; j++)
+      {
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(g_x11_dpy, screen, screen->crtcs[j]);
+         Rotation new_rotation = RR_Rotate_0;
+
+         if (crtc->width == 0 || crtc->height == 0)
+         {
+            XRRFreeCrtcInfo(crtc);
+            continue;
+         }
+
+         switch (rotation)
+         {
+            case ORIENTATION_NORMAL:
+            default:
+               if (crtc->rotations & RR_Rotate_0)
+                  new_rotation = RR_Rotate_0;
+               break;
+            case ORIENTATION_VERTICAL:
+               if (crtc->rotations & RR_Rotate_270)
+                  new_rotation = RR_Rotate_270;
+               break;
+            case ORIENTATION_FLIPPED:
+               if (crtc->rotations & RR_Rotate_180)
+                  new_rotation = RR_Rotate_180;
+               break;
+            case ORIENTATION_FLIPPED_ROTATED:
+               if (crtc->rotations & RR_Rotate_90)
+                  new_rotation = RR_Rotate_90;
+               break;
+         }
+
+         XRRSetCrtcConfig(g_x11_dpy, screen, screen->crtcs[j], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+
+         if ((crtc->rotation & RR_Rotate_0 || crtc->rotation & RR_Rotate_180) && (rotation == ORIENTATION_VERTICAL || rotation == ORIENTATION_FLIPPED_ROTATED))
+         {
+            unsigned width = crtc->width;
+            crtc->width = crtc->height;
+            crtc->height = width;
+         }
+         else if ((crtc->rotation & RR_Rotate_90 || crtc->rotation & RR_Rotate_270) && (rotation == ORIENTATION_NORMAL || rotation == ORIENTATION_FLIPPED))
+         {
+            unsigned width = crtc->width;
+            crtc->width = crtc->height;
+            crtc->height = width;
+         }
+
+         crtc->rotation = new_rotation;
+
+         XRRSetScreenSize(g_x11_dpy, DefaultRootWindow(g_x11_dpy), crtc->width, crtc->height, (25.4 * crtc->width) / dpi, (25.4 * crtc->height) / dpi);
+
+         XRRSetCrtcConfig(g_x11_dpy, screen, screen->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+
+         XRRFreeCrtcInfo(crtc);
+      }
+
+      XRRFreeOutputInfo(info);
+   }
+
+   XRRFreeScreenResources(screen);
+
+   XUngrabServer(g_x11_dpy);
+   XSync(g_x11_dpy, False);
+   XRRFreeScreenConfigInfo(config);
 }
+#endif
 
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
@@ -372,6 +458,10 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_set_resolution,
    NULL, /* get_resolution_list */
    x11_display_server_get_output_options,
+#ifdef HAVE_XRANDR
    x11_display_server_set_screen_orientation,
+#else
+   NULL,
+#endif
    "x11"
 };
