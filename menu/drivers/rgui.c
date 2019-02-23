@@ -1665,6 +1665,7 @@ static void rgui_render(void *data, bool is_idle)
 
       for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
+         menu_entry_t entry;
          char entry_value[255];
          char message[255];
          char entry_title_buf[255];
@@ -1687,7 +1688,6 @@ static void rgui_render(void *data, bool is_idle)
          type_str_buf[0]    = '\0';
 
          /* Get current entry */
-         menu_entry_t entry;
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
