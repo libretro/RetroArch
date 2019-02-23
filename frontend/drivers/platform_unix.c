@@ -68,6 +68,7 @@
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+#include <features/features_cpu.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
@@ -113,6 +114,7 @@ static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
 static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/ACAD";
 static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
+static char unix_cpu_model_name[64] = {0};
 #endif
 
 static volatile sig_atomic_t unix_sighandler_quit;
@@ -2466,6 +2468,16 @@ static void frontend_unix_set_sustained_performance_mode(bool on)
 #endif
 }
 
+static const char* frontend_unix_get_cpu_model_name(void)
+{
+#ifdef ANDROID
+   return NULL;
+#else
+   cpu_features_get_model_name(unix_cpu_model_name, sizeof(unix_cpu_model_name));
+   return unix_cpu_model_name;
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2510,6 +2522,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_watch_path_for_changes,
    frontend_unix_check_for_path_changes,
    frontend_unix_set_sustained_performance_mode,
+   frontend_unix_get_cpu_model_name,
 #ifdef ANDROID
    "android"
 #else

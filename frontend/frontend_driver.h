@@ -106,6 +106,7 @@ typedef struct frontend_ctx_driver
    void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
    bool (*check_for_path_changes)(path_change_data_t *change_data);
    void (*set_sustained_performance_mode)(bool on);
+   const char* (*get_cpu_model_name)(void);
 
    const char *ident;
 
@@ -210,6 +211,8 @@ void frontend_driver_watch_path_for_changes(struct string_list *list, int flags,
 bool frontend_driver_check_for_path_changes(path_change_data_t *change_data);
 
 void frontend_driver_set_sustained_performance_mode(bool on);
+
+const char* frontend_driver_get_cpu_model_name(void);
 
 RETRO_END_DECLS
 

@@ -1262,6 +1262,10 @@ static void retroarch_validate_cpu_features(void)
    uint64_t cpu = cpu_features_get();
    (void)cpu;
 
+#ifdef __MMX__
+   if (!(cpu & RETRO_SIMD_MMX))
+      FAIL_CPU("MMX");
+#endif
 #ifdef __SSE__
    if (!(cpu & RETRO_SIMD_SSE))
       FAIL_CPU("SSE");
@@ -1367,9 +1371,16 @@ bool retroarch_main_init(int argc, char *argv[])
    if (verbosity_is_enabled())
    {
       char str[128];
+      const char *cpu_model = NULL;
       str[0] = '\0';
 
+      cpu_model = frontend_driver_get_cpu_model_name();
+
       RARCH_LOG_OUTPUT("=== Build =======================================\n");
+
+      if (!string_is_empty(cpu_model))
+         RARCH_LOG_OUTPUT("CPU Model Name: %s\n", cpu_model);
+
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
       fprintf(stderr, "%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
       fprintf(stderr, "Built: %s\n", __DATE__);

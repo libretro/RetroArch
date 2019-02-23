@@ -457,4 +457,11 @@ void frontend_driver_set_sustained_performance_mode(bool on)
    frontend->set_sustained_performance_mode(on);
 }
 
+const char* frontend_driver_get_cpu_model_name(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_cpu_model_name)
+      return NULL;
+   return frontend->get_cpu_model_name();
+}
 #endif

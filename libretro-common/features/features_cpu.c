@@ -255,7 +255,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 }
 
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86)  && _MSC_VER > 1310)
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
 #endif
 
@@ -826,4 +826,56 @@ uint64_t cpu_features_get(void)
    if (cpu & RETRO_SIMD_ASIMD)  strlcat(buf, " ASIMD", sizeof(buf));
 
    return cpu;
+}
+
+void cpu_features_get_model_name(char *name, int len)
+{
+#ifdef CPU_X86
+   union {
+      int i[4];
+      unsigned char s[16];
+   } flags;
+   int i, j;
+   size_t pos = 0;
+   bool start = false;
+
+   if (!name)
+      return;
+
+   x86_cpuid(0x80000000, flags.i);
+
+   if (flags.i[0] < 0x80000004)
+      return;
+
+   for (i = 0; i < 3; i++)
+   {
+      memset(flags.i, 0, sizeof(flags.i));
+      x86_cpuid(0x80000002 + i, flags.i);
+
+      for (j = 0; j < sizeof(flags.s); j++)
+      {
+         if (!start && flags.s[j] == ' ')
+            continue;
+         else
+            start = true;
+
+         if (pos == len - 1)
+         {
+            /* truncate if we ran out of room */
+            name[pos] = '\0';
+            goto end;
+         }
+
+         name[pos++] = flags.s[j];
+      }
+   }
+end:
+   /* terminate our string */
+   if (pos < len)
+      name[pos] = '\0';
+#else
+   if (!name)
+      return;
+   return;
+#endif
 }

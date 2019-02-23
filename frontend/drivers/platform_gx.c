@@ -574,5 +574,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
+   NULL,                            /* get_cpu_model_name */
    "gx",
 };
