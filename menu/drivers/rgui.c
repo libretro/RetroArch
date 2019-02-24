@@ -1669,6 +1669,7 @@ static void rgui_render(void *data, bool is_idle)
          char message[255];
          char entry_title_buf[255];
          char type_str_buf[255];
+         menu_entry_t entry;
          char *entry_path                      = NULL;
          unsigned entry_spacing                = 0;
          size_t entry_title_max_len            = 0;
@@ -1687,7 +1688,6 @@ static void rgui_render(void *data, bool is_idle)
          type_str_buf[0]    = '\0';
 
          /* Get current entry */
-         menu_entry_t entry;
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
