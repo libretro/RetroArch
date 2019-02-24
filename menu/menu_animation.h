@@ -25,7 +25,7 @@
 
 RETRO_BEGIN_DECLS
 
-#define TICKER_SPACER_DEFAULT "   |   ";
+#define TICKER_SPACER_DEFAULT "   |   "
 
 typedef float (*easing_cb) (float, float, float, float);
 typedef void  (*tween_cb)  (void*);
