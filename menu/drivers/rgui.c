@@ -432,6 +432,7 @@ typedef struct
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
    char menu_sublabel[255]; /* Must be a fixed length array... */
+   unsigned content_aspect_ratio;
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -2441,29 +2442,44 @@ static int rgui_pointer_tap(void *data,
 
 static void rgui_toggle(void *userdata, bool menu_on)
 {
+   rgui_t *rgui = (rgui_t*)userdata;
    settings_t *settings = config_get_ptr();
    
    /* TODO/FIXME - when we close RetroArch, this function
     * gets called and settings is NULL at this point. 
     * Maybe fundamentally change control flow so that on RetroArch
     * exit, this doesn't get called. */
-   if (!settings)
+   if (!rgui || !settings)
       return;
-
+   
    if (settings->bools.menu_rgui_lock_aspect)
    {
       if (menu_on)
       {
-         if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
+         /* Cache last used content aspect ratio */
+         rgui->content_aspect_ratio = settings->uints.video_aspect_ratio_idx;
+         
+         /* Check if aspect ratio needs to change */
+         if (rgui->content_aspect_ratio != ASPECT_RATIO_4_3)
          {
-            unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
             settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_4_3;
             video_driver_set_aspect_ratio();
-            settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
+            
+            /* If content is using a custom aspect ratio, we
+             * have to stop here - otherwise, restore content
+             * aspect ratio setting */
+            if (rgui->content_aspect_ratio != ASPECT_RATIO_CUSTOM)
+               settings->uints.video_aspect_ratio_idx = rgui->content_aspect_ratio;
          }
       }
       else
       {
+         /* If content is using a custom aspect ratio, this
+          * must be restored */
+         if (rgui->content_aspect_ratio == ASPECT_RATIO_CUSTOM
+               && settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_4_3)
+            settings->uints.video_aspect_ratio_idx = rgui->content_aspect_ratio;
+         
          if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_4_3)
             video_driver_set_aspect_ratio();
       }
