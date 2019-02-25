@@ -432,6 +432,8 @@ static bool menu_swap_ok_cancel_buttons = true;
 static bool menu_swap_ok_cancel_buttons = false;
 #endif
 
+static bool quit_press_twice = false;
+
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
 

@@ -336,9 +336,6 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_event_kb_set_internal(RETROK_F11, 0);
    }
 
-   if (BIT256_GET_PTR(p_trigger_input, RARCH_QUIT_KEY))
-      return MENU_ACTION_QUIT;
-
    mouse_enabled                      = settings->bools.menu_mouse_enable;
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)

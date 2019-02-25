@@ -4795,6 +4795,10 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+    MSG_PRESS_AGAIN_TO_QUIT,
+    "Press again to quit..."
+    )
+MSG_HASH(
     MSG_TO,
     "to"
     )
@@ -5086,6 +5090,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
     "Use the same controls for both the menu and the game. Applies to the keyboard."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+    "Press quit twice"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+    "Press the quit hotkey twice to exit RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
