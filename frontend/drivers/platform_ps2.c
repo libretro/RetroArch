@@ -23,49 +23,59 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
+#include <libmc.h>
+#include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
 #include <ps2_devices.h>
 
 
-extern unsigned char poweroff_irx_start[];
-extern unsigned int poweroff_irx_size;
+// #ifdef SOUND_ON
+  #include <audsrv.h>
+  extern unsigned char audsrv_irx;
+  extern unsigned int size_audsrv_irx;
+  extern unsigned char freesd_irx;
+  extern unsigned int size_freesd_irx;
+// #endif
 
-extern unsigned char ps2dev9_irx_start[];
-extern unsigned int ps2dev9_irx_size;
 
-extern unsigned char ps2atad_irx_start[];
-extern unsigned int ps2atad_irx_size;
+// Input
+// #define NEW_PADMAN
+#include <libpad.h>
+#include <libmtap.h>
+extern unsigned char freesio2_irx;
+extern unsigned int size_freesio2_irx;
+extern unsigned char mcman_irx;
+extern unsigned int size_mcman_irx;
+extern unsigned char mcserv_irx;
+extern unsigned int size_mcserv_irx;
+extern unsigned char freemtap_irx;
+extern unsigned int size_freemtap_irx;
+extern unsigned char freepad_irx;
+extern unsigned int size_freepad_irx;
 
-extern unsigned char ps2hdd_irx_start[];
-extern unsigned int ps2hdd_irx_size;
-
-extern unsigned char ps2fs_irx_start[];
-extern unsigned int ps2fs_irx_size;
-
-extern unsigned char iomanX_irx_start[];
-extern unsigned int iomanX_irx_size;
-
-extern unsigned char fileXio_irx_start[];
-extern unsigned int fileXio_irx_size;
-
-extern unsigned char freesd_irx_start[];
-extern unsigned int freesd_irx_size;
-
-extern unsigned char audsrv_irx_start[];
-extern unsigned int audsrv_irx_size;
-
-extern unsigned char usbd_irx_start[];
-extern unsigned int usbd_irx_size;
-
-extern unsigned char usbhdfsd_irx_start[];
-extern unsigned int usbhdfsd_irx_size;
-
-extern unsigned char mcman_irx_start[];
-extern unsigned int mcman_irx_size;
-
-extern unsigned char mcserv_irx_start[];
-extern unsigned int mcserv_irx_size;
+extern unsigned char poweroff_irx;
+extern unsigned int size_poweroff_irx;
+extern unsigned char iomanX_irx;
+extern unsigned int size_iomanX_irx;
+extern unsigned char fileXio_irx;
+extern unsigned int size_fileXio_irx;
+extern unsigned char ps2dev9_irx;
+extern unsigned int size_ps2dev9_irx;
+extern unsigned char ps2atad_irx;
+extern unsigned int size_ps2atad_irx;
+extern unsigned char ps2hdd_irx;
+extern unsigned int size_ps2hdd_irx;
+extern unsigned char ps2fs_irx;
+extern unsigned int size_ps2fs_irx;
+extern unsigned char usbd_irx;
+extern unsigned int size_usbd_irx;
+extern unsigned char usbhdfsd_irx;
+extern unsigned int size_usbhdfsd_irx;
+// #ifdef CDSUPPORT
+extern unsigned char cdvd_irx;
+extern unsigned int size_cdvd_irx;
+// #endif
 
 char eboot_path[512];
 char user_path[512];
@@ -196,35 +206,51 @@ static void frontend_ps2_init(void *data)
    SifInitRpc(0);
    sbv_patch_enable_lmb();
 
-   /* Controllers */
-   SifLoadModule("rom0:SIO2MAN", 0, NULL);
-   SifLoadModule("rom0:PADMAN", 0, NULL);
-
    /* I/O Files */
-   SifExecModuleBuffer(iomanX_irx_start, iomanX_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(fileXio_irx_start, fileXio_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&freesio2_irx, size_freesio2_irx, 0, NULL, NULL);
 
    /* Memory Card */
-   SifExecModuleBuffer(mcman_irx_start, mcman_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(mcserv_irx_start, mcserv_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
+
+   /* Controllers */
+   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
 
    /* USB */
-   SifExecModuleBuffer(usbd_irx_start, usbd_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(usbhdfsd_irx_start, usbhdfsd_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
    /* Audio */
-   SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+
+   for (i = 0; i < 3; i++) { // Taken from ulaunchelf
+      sometime = 0x01000000;
+      while (sometime--) asm("nop\nnop\nnop\nnop");
+   }
+
+   if (mcInit(MC_TYPE_XMC)) {
+      RARCH_ERR("mcInit library not initalizated\n");
+   }
 
    /* Initializes audsrv library */
    if (audsrv_init()) {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad library
+   /* Initializes pad libraries
       Must be init with 0 as parameter*/
+   if (mtapInit() != 1) {
+      RARCH_ERR("mtapInit library not initalizated\n");
+   }
    if (padInit(0) != 1) {
       RARCH_ERR("padInit library not initalizated\n");
+   }
+   if (mtapPortOpen(0) != 1) {
+      RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 
    /* Prepare device */

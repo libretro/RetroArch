@@ -1,5 +1,5 @@
 BUILD_PRX          = 0
-DEBUG              = 0
+DEBUG              = 1
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
@@ -9,7 +9,7 @@ MUTE_WARNINGS      = 0
 PS2_IP = 192.168.1.150
 
 #Configuration for IRX
-EE_BIN2O = bin2o
+EE_BIN2C = bin2c
 IRX_DIR = $(PS2SDK)/iop/irx
 
 TARGET = retroarchps2.elf
@@ -39,12 +39,14 @@ RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -
 
 LIBDIR =
 LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
-LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
+LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
-IRX = iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
-IRX_OBJ = $(IRX:.irx=.o)
+IRX_FILES = freemtap.irx freepad.irx freesio2.irx iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
+IRX_C_FILES = $(IRX_FILES:.irx=_irx.c)
+IRX_OBJ = $(IRX_FILES:.irx=_irx.o)
+# Add into the EE_OBJS the irx.c files
 EE_OBJS += $(IRX_OBJ)
 
 ifeq ($(HAVE_THREADS), 1)
@@ -77,14 +79,18 @@ EE_LDFLAGS = $(LDFLAGS)
 EE_LIBS = $(LIBS)
 EE_ASFLAGS = $(ASFLAGS)
 EE_INCS = $(INCDIR)
-EE_IRX_OBJ = $(IRX_OBJ)
 EE_BIN = $(TARGET)
 EE_GPVAL = $(GPVAL)
 
-all: $(EE_IRX_OBJ) $(EE_BIN)
+# Specific file name and output per IRX Module
+%.irx:
+	$(EE_BIN2C) $(IRX_DIR)/$@ $(@:.irx=_irx.c) $(@:.irx=_irx)
+
+
+all: $(IRX_FILES) $(EE_BIN)
 
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS)
+	rm -f $(EE_BIN) $(EE_OBJS) $(IRX_C_FILES)
 
 prepare:
 	ps2client -h $(PS2_IP) reset
@@ -99,10 +105,6 @@ package:
 	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
 
 release: clean all package
-
-#Specific file name and output per IRX Module
-$(EE_IRX_OBJ):
-	$(EE_BIN2O) $(EE_GPVAL) $(IRX_DIR)/$(@:.o=.irx) $@ $(@:.o=_irx)
 
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref
