@@ -28,54 +28,7 @@
 #include <audsrv.h>
 #include <libpad.h>
 #include <ps2_devices.h>
-
-
-// #ifdef SOUND_ON
-  #include <audsrv.h>
-  extern unsigned char audsrv_irx;
-  extern unsigned int size_audsrv_irx;
-  extern unsigned char freesd_irx;
-  extern unsigned int size_freesd_irx;
-// #endif
-
-
-// Input
-// #define NEW_PADMAN
-#include <libpad.h>
-#include <libmtap.h>
-extern unsigned char freesio2_irx;
-extern unsigned int size_freesio2_irx;
-extern unsigned char mcman_irx;
-extern unsigned int size_mcman_irx;
-extern unsigned char mcserv_irx;
-extern unsigned int size_mcserv_irx;
-extern unsigned char freemtap_irx;
-extern unsigned int size_freemtap_irx;
-extern unsigned char freepad_irx;
-extern unsigned int size_freepad_irx;
-
-extern unsigned char poweroff_irx;
-extern unsigned int size_poweroff_irx;
-extern unsigned char iomanX_irx;
-extern unsigned int size_iomanX_irx;
-extern unsigned char fileXio_irx;
-extern unsigned int size_fileXio_irx;
-extern unsigned char ps2dev9_irx;
-extern unsigned int size_ps2dev9_irx;
-extern unsigned char ps2atad_irx;
-extern unsigned int size_ps2atad_irx;
-extern unsigned char ps2hdd_irx;
-extern unsigned int size_ps2hdd_irx;
-extern unsigned char ps2fs_irx;
-extern unsigned int size_ps2fs_irx;
-extern unsigned char usbd_irx;
-extern unsigned int size_usbd_irx;
-extern unsigned char usbhdfsd_irx;
-extern unsigned int size_usbhdfsd_irx;
-// #ifdef CDSUPPORT
-extern unsigned char cdvd_irx;
-extern unsigned int size_cdvd_irx;
-// #endif
+#include <ps2_irx_variables.h>
 
 char eboot_path[512];
 char user_path[512];
@@ -226,11 +179,6 @@ static void frontend_ps2_init(void *data)
    /* Audio */
    SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
-
-   for (i = 0; i < 3; i++) { // Taken from ulaunchelf
-      sometime = 0x01000000;
-      while (sometime--) asm("nop\nnop\nnop\nnop");
-   }
 
    if (mcInit(MC_TYPE_XMC)) {
       RARCH_ERR("mcInit library not initalizated\n");

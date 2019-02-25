@@ -1,5 +1,5 @@
 BUILD_PRX          = 0
-DEBUG              = 1
+DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
@@ -8,12 +8,12 @@ BIG_STACK          = 0
 MUTE_WARNINGS      = 0
 PS2_IP = 192.168.1.150
 
-#Configuration for IRX
-EE_BIN2C = bin2c
-IRX_DIR = $(PS2SDK)/iop/irx
-
 TARGET = retroarchps2.elf
 TARGET_RELEASE = retroarchps2-release.elf
+
+# Compile the IRXs first
+IRX_DIR = ps2/irx
+IRX_FILES = $(wildcard ps2/irx/*.c)
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
@@ -41,13 +41,6 @@ LIBDIR =
 LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
-#IRX modules
-# IRX modules - modules have to be in IRX_DIR
-IRX_FILES = freemtap.irx freepad.irx freesio2.irx iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx freesd.irx audsrv.irx poweroff.irx ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx
-IRX_C_FILES = $(IRX_FILES:.irx=_irx.c)
-IRX_OBJ = $(IRX_FILES:.irx=_irx.o)
-# Add into the EE_OBJS the irx.c files
-EE_OBJS += $(IRX_OBJ)
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
@@ -67,6 +60,11 @@ endif
 
 CFLAGS += $(RARCH_DEFINES)
 
+# All the IRX objects
+EE_OBJS += $(IRX_DIR)/freemtap_irx.o $(IRX_DIR)/freepad_irx.o $(IRX_DIR)/freesio2_irx.o $(IRX_DIR)/iomanX_irx.o
+EE_OBJS += $(IRX_DIR)/fileXio_irx.o $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o
+EE_OBJS += $(IRX_DIR)/usbhdfsd_irx.o $(IRX_DIR)/freesd_irx.o $(IRX_DIR)/audsrv_irx.o $(IRX_DIR)/poweroff_irx.o
+
 # Missing objecst on the PS2SDK
 EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o ps2/compat_files/ps2_devices.o
 
@@ -82,15 +80,15 @@ EE_INCS = $(INCDIR)
 EE_BIN = $(TARGET)
 EE_GPVAL = $(GPVAL)
 
-# Specific file name and output per IRX Module
-%.irx:
-	$(EE_BIN2C) $(IRX_DIR)/$@ $(@:.irx=_irx.c) $(@:.irx=_irx)
 
+all: irxdir $(EE_BIN)
 
-all: $(IRX_FILES) $(EE_BIN)
+irxdir:
+	$(MAKE) -C $(IRX_DIR)
 
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS) $(IRX_C_FILES)
+	rm -f $(EE_BIN) $(EE_OBJS)
+	$(MAKE) -C $(IRX_DIR) clean
 
 prepare:
 	ps2client -h $(PS2_IP) reset

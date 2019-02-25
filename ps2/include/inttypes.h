@@ -19,4 +19,4 @@
 #define PRIu64 "lu"
 #define PRIuPTR "lu"
 
-#endif //INTTYPES_H
+#endif /* INTTYPES_H */
