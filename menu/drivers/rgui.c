@@ -62,6 +62,8 @@
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
 
+#define RGUI_ENTRY_VALUE_MAXLEN 19
+
 #define RGUI_TICKER_SPACER " | "
 
 typedef struct
@@ -1671,11 +1673,10 @@ static void rgui_render(void *data, bool is_idle)
          char type_str_buf[255];
          menu_entry_t entry;
          char *entry_path                      = NULL;
-         unsigned entry_spacing                = 0;
          size_t entry_title_max_len            = 0;
          size_t entry_title_buf_utf8len        = 0;
          size_t entry_title_buf_len            = 0;
-         bool has_value                        = false;
+         unsigned entry_value_len              = 0;
          bool entry_selected                   = menu_entry_is_currently_selected((unsigned)i);
          size_t selection                      = menu_navigation_get_selection();
 
@@ -1692,19 +1693,34 @@ static void rgui_render(void *data, bool is_idle)
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
          /* Read entry parameters */
-         entry_spacing = menu_entry_get_spacing(&entry);
-         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
          entry_path = menu_entry_get_rich_label(&entry);
+         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+
+         /* Get base width of entry title field */
+         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
 
          /* Determine whether entry has a value component */
-         has_value = !string_is_empty(entry_value);
+         if (!string_is_empty(entry_value))
+         {
+            if (settings->bools.menu_rgui_full_width_layout)
+            {
+               /* Resize fields according to actual length of value string */
+               entry_value_len = strlen(entry_value);
+               entry_value_len = entry_value_len > RGUI_ENTRY_VALUE_MAXLEN ? RGUI_ENTRY_VALUE_MAXLEN : entry_value_len;
+            }
+            else
+            {
+               /* Use classic fixed width layout */
+               entry_value_len = menu_entry_get_spacing(&entry);
+            }
+
+            /* Update width of entry title field */
+            entry_title_max_len -= entry_value_len + 2;
+         }
 
          menu_entry_free(&entry);
 
          /* Format entry title string */
-         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
-         entry_title_max_len = has_value ? entry_title_max_len - entry_spacing : entry_title_max_len;
-
          ticker.s        = entry_title_buf;
          ticker.len      = entry_title_max_len;
          ticker.str      = entry_path;
@@ -1715,22 +1731,22 @@ static void rgui_render(void *data, bool is_idle)
          entry_title_buf_utf8len = utf8len(entry_title_buf);
          entry_title_buf_len     = strlen(entry_title_buf);
 
-         if (has_value)
+         if (entry_value_len > 0)
          {
             /* Format entry value string */
             ticker.s        = type_str_buf;
-            ticker.len      = entry_spacing;
+            ticker.len      = entry_value_len;
             ticker.str      = entry_value;
 
             menu_animation_ticker(&ticker);
 
             /* Print entry title + value */
-            snprintf(message, sizeof(message), "%c %-*.*s %-.*s",
+            snprintf(message, sizeof(message), "%c %-*.*s  %-.*s",
                   entry_selected ? '>' : ' ',
                   (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
                   (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
                   entry_title_buf,
-                  entry_spacing,
+                  entry_value_len,
                   type_str_buf);
          }
          else

@@ -6773,6 +6773,14 @@ MSG_HASH(
     "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+    "Use Full-Width Layout"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+    "Resize and position menu entries to make best use of available screen space. Disable this to use classic fixed-width two column layout."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
     "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )
