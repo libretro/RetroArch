@@ -1142,6 +1142,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
 
    rgui->bg_modified = true;
+   rgui->force_redraw = true;
 }
 
 static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
