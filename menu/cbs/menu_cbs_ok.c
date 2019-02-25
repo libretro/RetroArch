@@ -4559,6 +4559,10 @@ static int action_ok_push_dropdown_setting_string_options_item_special(const cha
 
    strlcpy(setting->value.target.string, path,
          setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4573,6 +4577,10 @@ static int action_ok_push_dropdown_setting_int_item_special(const char *path,
       return -1;
 
    *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4588,6 +4596,10 @@ static int action_ok_push_dropdown_setting_float_item_special(const char *path,
       return -1;
 
    *setting->value.target.fraction = (float)val;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4611,6 +4623,10 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
    }
 
    *setting->value.target.unsigned_integer = value;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4640,6 +4656,10 @@ static int action_ok_push_dropdown_setting_string_options_item(const char *path,
 
    strlcpy(setting->value.target.string, path,
          setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4653,6 +4673,10 @@ static int action_ok_push_dropdown_setting_int_item(const char *path,
       return -1;
 
    *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4667,6 +4691,10 @@ static int action_ok_push_dropdown_setting_float_item(const char *path,
       return -1;
 
    *setting->value.target.fraction = (float)val;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4692,6 +4720,10 @@ static int action_ok_push_dropdown_setting_uint_item(const char *path,
 #endif
 
    *setting->value.target.unsigned_integer = value;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
