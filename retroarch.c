@@ -147,6 +147,8 @@
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
 #define HOLD_START_DELAY_SEC 2
 
+#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -2743,24 +2745,25 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    static input_bits_t last_input   = {{0}};
 #endif
-   static bool old_quit_key         = false;
-   static bool quit_key             = false;
-   static bool trig_quit_key        = false;
-   static bool runloop_exec         = false;
-   static bool old_focus            = true;
-   bool is_focused                  = false;
-   bool is_alive                    = false;
-   uint64_t frame_count             = 0;
-   bool focused                     = true;
-   bool pause_nonactive             = settings->bools.pause_nonactive;
-   bool rarch_is_initialized        = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
-   bool fs_toggle_triggered         = false;
+   static bool old_quit_key            = false;
+   static bool quit_key                = false;
+   static bool trig_quit_key           = false;
+   static retro_time_t quit_key_time   = 0;
+   static bool runloop_exec            = false;
+   static bool old_focus               = true;
+   bool is_focused                     = false;
+   bool is_alive                       = false;
+   uint64_t frame_count                = 0;
+   bool focused                        = true;
+   bool pause_nonactive                = settings->bools.pause_nonactive;
+   bool rarch_is_initialized           = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
+   bool fs_toggle_triggered            = false;
 #ifdef HAVE_MENU
-   bool menu_driver_binding_state   = menu_driver_is_binding_state();
-   bool menu_is_alive               = menu_driver_is_alive();
-   unsigned menu_toggle_gamepad_combo = settings->uints.input_menu_toggle_gamepad_combo;
+   bool menu_driver_binding_state      = menu_driver_is_binding_state();
+   bool menu_is_alive                  = menu_driver_is_alive();
+   unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
 #ifdef HAVE_EASTEREGG
-   static uint64_t seq              = 0;
+   static uint64_t seq                 = 0;
 #endif
 #endif
 
@@ -2888,6 +2891,17 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       old_quit_key             = quit_key;
+
+      /* Check double press if enabled */
+      if (trig_quit_key && settings->bools.quit_press_twice)
+      {
+         retro_time_t cur_time = cpu_features_get_time_usec();
+         trig_quit_key = trig_quit_key && (cur_time - quit_key_time < QUIT_DELAY_USEC);
+         quit_key_time = cur_time;
+
+         if (!trig_quit_key)
+            runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1, QUIT_DELAY_USEC * 60 / 1000000, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       if (time_to_exit(trig_quit_key))
       {
@@ -3062,9 +3076,6 @@ static enum runloop_state runloop_check_state(
 
       if (!focused)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
-
-      if (action == MENU_ACTION_QUIT && !menu_driver_binding_state)
-         return RUNLOOP_STATE_QUIT;
 
       if (runloop_idle)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;

@@ -185,6 +185,7 @@ default_sublabel_macro(action_bind_sublabel_video_smooth,                  MENU_
 default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE)
 default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
+default_sublabel_macro(action_bind_sublabel_quit_press_twice,              MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
 default_sublabel_macro(action_bind_sublabel_video_filter,                  MENU_ENUM_SUBLABEL_VIDEO_FILTER)
@@ -1937,6 +1938,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_unified_controls);
+            break;
+         case MENU_ENUM_LABEL_QUIT_PRESS_TWICE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_press_twice);
             break;
          case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_max_timing_skew);

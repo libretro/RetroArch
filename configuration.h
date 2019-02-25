@@ -313,6 +313,8 @@ typedef struct settings
       bool playlist_show_core_name;
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
+
+      bool quit_press_twice;
    } bools;
 
    struct
