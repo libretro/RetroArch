@@ -195,17 +195,15 @@ static void create_path_names(void)
 {
    char cwd[FILENAME_MAX];
    getcwd(cwd, sizeof(cwd));
-   
-   strcat(cwd, "app");
+   if (strncmp(cwd, "mc0:", 4) || strncmp(cwd, "mc1:", 4)) {
+      /* For now the save and load states just working in MCs */
+      strlcpy(cwd, "mc0:/", sizeof(cwd));
+   }
+   strcat(cwd, "RETROARCH");
+
    strlcpy(eboot_path, cwd, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-
-   strcat(cwd, "/data/retroarch");
-   strlcpy(user_path, cwd, sizeof(user_path));
-
-   // strlcpy(eboot_path, "mc0:/RETROARCH", sizeof(eboot_path));
-   // strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   // strlcpy(user_path, "mc0:/RETROARCH/data/retroarch", sizeof(user_path));
+   strlcpy(user_path, eboot_path, sizeof(user_path));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
          "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
