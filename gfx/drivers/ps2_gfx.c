@@ -35,6 +35,7 @@ typedef struct ps2_video
    GSTEXTURE *menuTexture;
    GSTEXTURE *coreTexture;
    bool clearVRAM;
+   bool clearVRAM_font; /* I need to create this additional field to be used in the font driver*/
    struct retro_hw_render_interface_gskit_ps2 iface; /* Palette in the cores */
 
    bool menuVisible;
@@ -184,6 +185,7 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int heig
    if (ps2->clearVRAM) {
       gsKit_vram_clear(ps2->gsGlobal);
       ps2->iface.updatedPalette = true;
+      ps2->clearVRAM_font = true; /* we need to upload also palette in the font driver */
    }
 }
 
@@ -194,6 +196,8 @@ static void refreshScreen(ps2_video_t *ps2)
    }
    gsKit_queue_exec(ps2->gsGlobal);
 
+   /* Here we are just puting in false the ps2->clearVRAM field
+      however, the ps2->clearVRAM_font should be done in the ps2_font driver */
    ps2->clearVRAM = false;
 }
 

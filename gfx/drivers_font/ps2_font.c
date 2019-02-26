@@ -108,8 +108,9 @@ static void ps2_font_render_msg(
    if (ps2) {
       int x = FONTM_TEXTURE_LEFT_MARGIN;
       int y = ps2->ps2_video->gsGlobal->Height - FONTM_TEXTURE_BOTTOM_MARGIN;
-      if (ps2->ps2_video->clearVRAM) {
+      if (ps2->ps2_video->clearVRAM_font) {
          ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
+         ps2->ps2_video->clearVRAM_font = false;
       }
       gsKit_fontm_print_scaled(ps2->ps2_video->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION,
                                  FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
