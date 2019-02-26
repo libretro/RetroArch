@@ -163,7 +163,9 @@ void d3d_input_driver(const char* input_name, const char* joypad_name, const inp
    }
 #endif
 
+#ifdef HAVE_DINPUT
    *input_data = input_dinput.init(joypad_name);
    *input = *input_data ? &input_dinput : NULL;
+#endif
 #endif
 }

@@ -98,6 +98,12 @@ extern void *dinput_wgl;
 extern void *dinput;
 #endif
 
+#if defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
+#ifndef MAX_PADS
+#define MAX_PADS 4
+#endif
+#endif
+
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
   UINT32 Numerator;
   UINT32 Denominator;
@@ -600,6 +606,10 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
                /* extended keys will map to dinput if the high bit is set */
                if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
                   keysym |= 0x80;
+            }
+#else
+            {
+               /* fix key binding issues on winraw when DirectInput is not available */
             }
 #endif
             /* Key released? */

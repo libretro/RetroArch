@@ -238,6 +238,7 @@ enum input_driver_enum
    INPUT_QNX,
    INPUT_RWEBINPUT,
    INPUT_DOS,
+   INPUT_WINRAW,
    INPUT_NULL
 };
 
@@ -457,8 +458,10 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(HAVE_DINPUT)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
+#elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
 #elif defined(ORBIS)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
 #elif defined(__CELLOS_LV2__)
@@ -875,6 +878,8 @@ const char *config_get_default_input(void)
          return "sdl2";
       case INPUT_DINPUT:
          return "dinput";
+      case INPUT_WINRAW:
+         return "raw";
       case INPUT_X:
          return "x";
       case INPUT_WAYLAND:
