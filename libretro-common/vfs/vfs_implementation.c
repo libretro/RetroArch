@@ -222,7 +222,12 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 #elif defined(__CELLOS_LV2__) || defined(_MSC_VER) && _MSC_VER <= 1310
       return fseek(stream->fp, (long)offset, whence);
 #elif defined(PS2)
-      return fioLseek(fileno(stream->fp), (off_t)offset, whence);
+      int64_t ret = fioLseek(fileno(stream->fp), (off_t)offset, whence);
+      /* fioLseek could return positive numbers */
+      if (ret > 0) {
+         ret = 0;
+      }
+      return ret;
 #elif defined(ORBIS)
       int ret = orbisLseek(stream->fd, offset, whence);
       if (ret < 0)
@@ -924,9 +929,9 @@ int retro_vfs_mkdir_impl(const char *dir)
 #elif defined(VITA) || defined(PSP)
    int ret = sceIoMkdir(dir, 0777);
 #elif defined(PS2)
-   int ret =fileXioMkdir(dir, 0777);
+   int ret = fileXioMkdir(dir, 0777);
 #elif defined(ORBIS)
-   int ret =orbisMkdir(dir, 0755);
+   int ret = orbisMkdir(dir, 0755);
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
 #else
