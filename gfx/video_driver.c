@@ -2627,8 +2627,8 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a lower priority. */
    if (video_info.timedate_show)
-      runloop_msg_queue_push(video_info.timedate_text, 1, 1, false);
-
+      runloop_msg_queue_push(video_info.timedate_text, 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
