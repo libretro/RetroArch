@@ -159,6 +159,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->sidebar_collapsed               = false;
    ozone->animations.sidebar_text_alpha   = 1.0f;
 
+   ozone->animations.thumbnail_bar_position  = 0.0f;
+   ozone->show_thumbnail_bar                 = false;
+
    ozone_sidebar_update_collapse(ozone, false);
 
    ozone->system_tab_end                = 0;
@@ -395,13 +398,14 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->dimensions.sidebar_entry_icon_size          = SIDEBAR_ENTRY_ICON_SIZE * scale;
       ozone->dimensions.sidebar_entry_icon_padding       = SIDEBAR_ENTRY_ICON_PADDING * scale;
 
-
       ozone->dimensions.sidebar_width_normal             = SIDEBAR_WIDTH * scale;
       ozone->dimensions.sidebar_width_collapsed          = ozone->dimensions.sidebar_entry_icon_size 
          + ozone->dimensions.sidebar_entry_icon_padding * 2
          + ozone->dimensions.sidebar_padding_horizontal * 2;
 
       ozone->dimensions.sidebar_width                    = (float) ozone->dimensions.sidebar_width_normal;
+
+      ozone->dimensions.thumbnail_bar_width              = ozone->dimensions.sidebar_width_normal/2;
 
       ozone->dimensions.cursor_size = CURSOR_SIZE * scale;
 

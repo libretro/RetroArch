@@ -395,6 +395,8 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          ozone->sidebar_collapsed               = false;
       }
    }
+
+   ozone_entries_update_thumbnail_bar(ozone, is_playlist, allow_animation);
 }
 
 void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)

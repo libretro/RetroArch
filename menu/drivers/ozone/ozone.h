@@ -124,6 +124,7 @@ struct ozone_handle
       float messagebox_alpha;
 
       float sidebar_text_alpha;
+      float thumbnail_bar_position; /* 0 = hidden */
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -143,7 +144,7 @@ struct ozone_handle
    unsigned entry_font_glyph_width;
    unsigned sublabel_font_glyph_width;
    unsigned sidebar_font_glyph_width;
-   
+
    ozone_theme_t *theme;
 
    struct {
@@ -207,6 +208,8 @@ struct ozone_handle
       int sidebar_entry_icon_padding;
 
       int cursor_size;
+
+      int thumbnail_bar_width;
    } dimensions;
 
    bool show_cursor;
@@ -216,6 +219,8 @@ struct ozone_handle
    int16_t cursor_y_old;
 
    bool sidebar_collapsed;
+
+   bool show_thumbnail_bar;
 };
 
 /* If you change this struct, also
@@ -276,5 +281,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone);
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
+
+void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 
 #endif
