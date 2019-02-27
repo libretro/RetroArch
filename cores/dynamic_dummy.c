@@ -91,12 +91,23 @@ void libretro_dummy_retro_get_system_info(
    info->valid_extensions = ""; /* Nothing. */
 }
 
+static retro_video_refresh_t dummy_video_cb;
+static retro_audio_sample_t dummy_audio_cb;
+static retro_audio_sample_batch_t dummy_audio_batch_cb;
+static retro_environment_t dummy_environ_cb;
+static retro_input_poll_t dummy_input_poll_cb;
+static retro_input_state_t dummy_input_state_cb;
+
 /* Doesn't really matter, but need something sane. */
 void libretro_dummy_retro_get_system_av_info(
       struct retro_system_av_info *info)
 {
-   info->timing.fps = 60.0;
-   info->timing.sample_rate = 30000.0;
+   float refresh_rate = 0.0;
+   if (!dummy_environ_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &refresh_rate))
+      refresh_rate    = 60.0;
+
+   info->timing.fps           = refresh_rate;
+   info->timing.sample_rate   = 30000.0;
 
    info->geometry.base_width  = 320;
    info->geometry.base_height = 240;
@@ -104,13 +115,6 @@ void libretro_dummy_retro_get_system_av_info(
    info->geometry.max_height  = 240;
    info->geometry.aspect_ratio = 4.0 / 3.0;
 }
-
-static retro_video_refresh_t dummy_video_cb;
-static retro_audio_sample_t dummy_audio_cb;
-static retro_audio_sample_batch_t dummy_audio_batch_cb;
-static retro_environment_t dummy_environ_cb;
-static retro_input_poll_t dummy_input_poll_cb;
-static retro_input_state_t dummy_input_state_cb;
 
 void libretro_dummy_retro_set_environment(retro_environment_t cb)
 {

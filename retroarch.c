@@ -2563,10 +2563,13 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_icon icon, enum message_queue_category category)
 {
    runloop_ctx_msg_info_t msg_info;
-
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   /* People have 60FPS in mind when they use runloop_msg_queue_push */
-   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg, duration / 60 * 1000, title, icon, category, prio, flush))
+   float target_hz = 0.0;
+
+   rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
+
+   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg,
+            duration / target_hz * 1000, title, icon, category, prio, flush))
       return;
 #endif
 
@@ -2895,12 +2898,19 @@ static enum runloop_state runloop_check_state(
       /* Check double press if enabled */
       if (trig_quit_key && settings->bools.quit_press_twice)
       {
-         retro_time_t cur_time = cpu_features_get_time_usec();
+         retro_time_t cur_time;
+         float target_hz = 0.0;
+
+         rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
+
+         cur_time      = cpu_features_get_time_usec();
          trig_quit_key = trig_quit_key && (cur_time - quit_key_time < QUIT_DELAY_USEC);
          quit_key_time = cur_time;
 
          if (!trig_quit_key)
-            runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1, QUIT_DELAY_USEC * 60 / 1000000, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1,
+                  QUIT_DELAY_USEC * target_hz / 1000000,
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       if (time_to_exit(trig_quit_key))

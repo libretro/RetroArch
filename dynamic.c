@@ -2051,6 +2051,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
+      {
+         /* Try to use the polled refresh rate first.  */
+         float target_refresh_rate = video_driver_get_refresh_rate();
+
+         /* If the above function failed [possibly because it is not
+          * implemented], use the refresh rate set in the config instead. */
+         if (target_refresh_rate == 0.0 && settings)
+            target_refresh_rate = settings->floats.video_refresh_rate;
+
+         *(float *)data = target_refresh_rate;
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

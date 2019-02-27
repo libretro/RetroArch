@@ -1079,10 +1079,19 @@ enum retro_mod
                                             * fastforwarding mode.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* float * --
+                                            * Float value that lets us know what target refresh rate 
+                                            * is curently in use by the frontend.
+                                            *
+                                            * The core can use the returned value to set an ideal 
+                                            * refresh rate/framerate.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
- * File paths passed as parameters when using this api shall be well formed unix-style,
+ * File paths passed as parameters when using this api shall be well formed UNIX-style,
  * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
  * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
  * Other than the directory separator, cores shall not make assumptions about path format:
