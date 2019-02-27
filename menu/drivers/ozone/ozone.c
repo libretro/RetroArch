@@ -156,6 +156,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->cursor_x_old = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    ozone->cursor_y_old = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
+   ozone->sidebar_collapsed               = false;
+   ozone->animations.sidebar_text_alpha   = 1.0f;
+
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
    if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
@@ -383,13 +386,20 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->dimensions.entry_icon_size               = ENTRY_ICON_SIZE * scale;
       ozone->dimensions.entry_icon_padding            = ENTRY_ICON_PADDING * scale;
 
-      ozone->dimensions.sidebar_width                    = SIDEBAR_WIDTH * scale;
       ozone->dimensions.sidebar_entry_height             = SIDEBAR_ENTRY_HEIGHT * scale;
       ozone->dimensions.sidebar_padding_horizontal       = SIDEBAR_X_PADDING * scale;
       ozone->dimensions.sidebar_padding_vertical         = SIDEBAR_Y_PADDING * scale;
       ozone->dimensions.sidebar_entry_padding_vertical   = SIDEBAR_ENTRY_Y_PADDING * scale;
       ozone->dimensions.sidebar_entry_icon_size          = SIDEBAR_ENTRY_ICON_SIZE * scale;
       ozone->dimensions.sidebar_entry_icon_padding       = SIDEBAR_ENTRY_ICON_PADDING * scale;
+
+
+      ozone->dimensions.sidebar_width_normal             = SIDEBAR_WIDTH * scale;
+      ozone->dimensions.sidebar_width_collapsed          = ozone->dimensions.sidebar_entry_icon_size 
+         + ozone->dimensions.sidebar_entry_icon_padding * 2
+         + ozone->dimensions.sidebar_padding_horizontal * 2;
+
+      ozone->dimensions.sidebar_width                    = (float) ozone->dimensions.sidebar_width_normal;
 
       ozone->dimensions.cursor_size = CURSOR_SIZE * scale;
 
@@ -1133,7 +1143,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_draw_sidebar(ozone, video_info);
 
    /* Menu entries */
-   menu_display_scissor_begin(video_info, ozone->sidebar_offset + ozone->dimensions.sidebar_width, ozone->dimensions.header_height, video_info->width - ozone->dimensions.sidebar_width + (-ozone->sidebar_offset), video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
+   menu_display_scissor_begin(video_info, ozone->sidebar_offset + (unsigned) ozone->dimensions.sidebar_width, ozone->dimensions.header_height, video_info->width - (unsigned) ozone->dimensions.sidebar_width + (-ozone->sidebar_offset), video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
 
    /* Current list */
    ozone_draw_entries(ozone,
@@ -1498,6 +1508,8 @@ static void ozone_toggle(void *userdata, bool menu_on)
    {
       ozone->draw_sidebar = true;
       ozone->sidebar_offset = 0.0f;
+
+      ozone_sidebar_update_collapse(ozone, false);
    }
 }
 

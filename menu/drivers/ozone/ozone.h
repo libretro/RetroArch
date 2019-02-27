@@ -122,6 +122,8 @@ struct ozone_handle
       float list_alpha;
 
       float messagebox_alpha;
+
+      float sidebar_text_alpha;
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -186,14 +188,17 @@ struct ozone_handle
       int footer_height;
 
       int entry_padding_horizontal_half;
-      int entry_padding_horizontal_full; /* TODO: when sidebar is not visible */
+      int entry_padding_horizontal_full;
       int entry_padding_vertical;
       int entry_height;
       int entry_spacing;
       int entry_icon_size;
       int entry_icon_padding;
 
-      int sidebar_width;
+      int sidebar_width_normal;
+      int sidebar_width_collapsed;
+
+      float sidebar_width;
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
@@ -209,6 +214,8 @@ struct ozone_handle
 
    int16_t cursor_x_old;
    int16_t cursor_y_old;
+
+   bool sidebar_collapsed;
 };
 
 /* If you change this struct, also
@@ -267,5 +274,7 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 void ozone_compute_entries_position(ozone_handle_t *ozone);
 
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
+
+void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
 
 #endif

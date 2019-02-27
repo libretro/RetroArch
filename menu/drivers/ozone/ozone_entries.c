@@ -250,7 +250,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       {
          char *sublabel_str = menu_entry_get_sublabel(&entry);
 
-         int sublabel_max_width = video_info_width - ozone->dimensions.sidebar_width - 
+         int sublabel_max_width = video_info_width - (unsigned) ozone->dimensions.sidebar_width - 
             entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
          word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
 
@@ -310,7 +310,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    entries_end    = file_list_get_size(selection_buf);
    y              = ozone->dimensions.header_height + 1 + ozone->dimensions.entry_padding_vertical;
    sidebar_offset = ozone->sidebar_offset;
-   entry_width    = video_info->width - ozone->dimensions.sidebar_width - ozone->sidebar_offset - entry_padding * 2;
+   entry_width    = video_info->width - (unsigned) ozone->dimensions.sidebar_width - ozone->sidebar_offset - entry_padding * 2;
    button_height  = ozone->dimensions.entry_height; /* height of the button (entry minus sublabel) */
 
    video_driver_get_size(&video_info_width, &video_info_height);
@@ -359,7 +359,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       else if (y + scroll_y - node->height - 20 > bottom_boundary)
          goto border_iterate;
 
-      border_start_x = ozone->dimensions.sidebar_width + x_offset + entry_padding;
+      border_start_x = (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding;
       border_start_y = y + scroll_y;
 
       menu_display_set_alpha(ozone->theme_dynamic.entries_border, alpha);
@@ -389,12 +389,12 @@ border_iterate:
 
    /* Cursor(s) layer - current */
    if (!ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone, video_info, ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
+      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
          entry_width - 5, button_height + 2, selection_y + scroll_y + 1, ozone->animations.cursor_alpha * alpha);
 
    /* Old*/
    if (!ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
+      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
          entry_width - 5, button_height + 2, old_selection_y + scroll_y + 1, (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
@@ -453,7 +453,7 @@ border_iterate:
       if (ozone->empty_playlist)
       {
          unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label, rich_label, (unsigned)strlen(rich_label), 1);
-         x_offset = (video_info_width - ozone->dimensions.sidebar_width - entry_padding * 2) / 2 - text_width / 2 - 60;
+         x_offset = (video_info_width - (unsigned) ozone->dimensions.sidebar_width - entry_padding * 2) / 2 - text_width / 2 - 60;
          y = video_info_height / 2 - 60;
       }
 
@@ -461,7 +461,7 @@ border_iterate:
 
       if (node->wrap && sublabel_str)
       {
-            int sublable_max_width = video_info_width - ozone->dimensions.sidebar_width - 
+            int sublable_max_width = video_info_width - (unsigned) ozone->dimensions.sidebar_width - 
                entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
             word_wrap(sublabel_str, sublabel_str, sublable_max_width / ozone->sublabel_font_glyph_width, false);
       }
@@ -500,7 +500,7 @@ border_iterate:
 
          menu_display_blend_begin(video_info);
          ozone_draw_icon(video_info, ozone->dimensions.entry_icon_size, ozone->dimensions.entry_icon_size, texture,
-            ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
+            (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
             y + scroll_y + ozone->dimensions.entry_height / 2 - ozone->dimensions.entry_icon_size / 2, video_info->width, video_info->height, 0, 1, icon_color);
          menu_display_blend_end(video_info);
 
@@ -511,10 +511,10 @@ border_iterate:
       }
 
       /* Draw text */
-      ozone_draw_text(video_info, ozone, rich_label, text_offset + ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
+      ozone_draw_text(video_info, ozone, rich_label, text_offset + (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
          y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
       if (sublabel_str)
-         ozone_draw_text(video_info, ozone, sublabel_str, ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
+         ozone_draw_text(video_info, ozone, sublabel_str, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
             y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
@@ -527,7 +527,7 @@ border_iterate:
 
       menu_animation_ticker(&ticker);
 
-      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
+      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
          y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, alpha_uint32, &entry);
 
       free(entry_rich_label);
