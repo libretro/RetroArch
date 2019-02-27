@@ -9123,6 +9123,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ozone_collapse_sidebar,
+                  MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+                  ozone_collapse_sidebar,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
          }
 #endif
 

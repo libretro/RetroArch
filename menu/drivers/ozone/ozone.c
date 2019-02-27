@@ -159,6 +159,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->sidebar_collapsed               = false;
    ozone->animations.sidebar_text_alpha   = 1.0f;
 
+   ozone_sidebar_update_collapse(ozone, false);
+
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
    if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
@@ -1305,6 +1307,8 @@ static void ozone_list_open(ozone_handle_t *ozone)
    /* Sidebar animation */
    if (ozone->depth == 1)
    {
+      ozone_sidebar_update_collapse(ozone, false);
+
       ozone->draw_sidebar = true;
 
       entry.cb = NULL;

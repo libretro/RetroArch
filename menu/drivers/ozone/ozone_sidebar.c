@@ -31,8 +31,6 @@
 
 #include "../../../configuration.h"
 
-/* TODO Add an always collapsed sidebar setting */
-
 enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
@@ -334,6 +332,7 @@ static void ozone_sidebar_collapse_end(void *userdata)
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
 {
    /* Collapse sidebar if needed */
+   settings_t *settings = config_get_ptr();
    bool is_playlist = ozone_is_playlist(ozone, false);
    menu_animation_ctx_tag tag = (uintptr_t)NULL;
 
@@ -344,7 +343,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    entry.userdata       = ozone;
    entry.duration       = ANIMATION_CURSOR_DURATION;
 
-   if (is_playlist && !ozone->sidebar_collapsed)
+   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->sidebar_collapsed))
    {
       if (allow_animation)
       {
@@ -393,6 +392,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
       {
          ozone->animations.sidebar_text_alpha   = 1.0f;
          ozone->dimensions.sidebar_width        = ozone->dimensions.sidebar_width_normal;
+         ozone->sidebar_collapsed               = false;
       }
    }
 }
