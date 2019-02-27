@@ -855,7 +855,6 @@ DRIVERS
 #include "../libretro-common/audio/audio_mixer.c"
 #include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
-#include "../driver.c"
 
 /*============================================================
 SCALERS

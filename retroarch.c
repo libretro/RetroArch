@@ -58,6 +58,8 @@
 #include "config.h"
 #endif
 
+#include <audio/audio_resampler.h>
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_animation.h"
@@ -110,8 +112,13 @@
 
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
+#include "gfx/video_driver.h"
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
+#include "location/location_driver.h"
+#include "wifi/wifi_driver.h"
+#include "led/led_driver.h"
+#include "midi/midi_driver.h"
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
@@ -238,6 +245,7 @@ static bool rarch_ups_pref                                      = false;
 static bool rarch_bps_pref                                      = false;
 static bool rarch_ips_pref                                      = false;
 
+static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
 static bool runloop_idle                                        = false;
 static bool runloop_slowmotion                                  = false;
@@ -275,6 +283,530 @@ static retro_time_t libretro_core_runtime_usec                  = 0;
 extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
+
+/**
+ * find_driver_nonempty:
+ * @label              : string of driver type to be found.
+ * @i                  : index of driver.
+ * @str                : identifier name of the found driver
+ *                       gets written to this string.
+ * @len                : size of @str.
+ *
+ * Find driver based on @label.
+ *
+ * Returns: NULL if no driver based on @label found, otherwise
+ * pointer to driver.
+ **/
+static const void *find_driver_nonempty(const char *label, int i,
+      char *s, size_t len)
+{
+   const void *drv = NULL;
+
+   if (string_is_equal(label, "camera_driver"))
+   {
+      drv = camera_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, camera_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "location_driver"))
+   {
+      drv = location_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, location_driver_find_ident(i), len);
+   }
+#ifdef HAVE_MENU
+   else if (string_is_equal(label, "menu_driver"))
+   {
+      drv = menu_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, menu_driver_find_ident(i), len);
+   }
+#endif
+   else if (string_is_equal(label, "input_driver"))
+   {
+      drv = input_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, input_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "input_joypad_driver"))
+   {
+      drv = joypad_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, joypad_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "video_driver"))
+   {
+      drv = video_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, video_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_driver"))
+   {
+      drv = audio_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "record_driver"))
+   {
+      drv = record_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, record_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "midi_driver"))
+   {
+      drv = midi_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, midi_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_resampler_driver"))
+   {
+      drv = audio_resampler_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_resampler_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "wifi_driver"))
+   {
+      drv = wifi_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, wifi_driver_find_ident(i), len);
+   }
+
+   return drv;
+}
+
+/**
+ * driver_find_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
+ *
+ * Find index of the driver, based on @label.
+ *
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
+ **/
+static int driver_find_index(const char * label, const char *drv)
+{
+   unsigned i;
+   char str[256];
+
+   str[0] = '\0';
+
+   for (i = 0;
+         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
+   {
+      if (string_is_empty(str))
+         break;
+      if (string_is_equal_noncase(drv, str))
+         return i;
+   }
+
+   return -1;
+}
+
+static bool driver_find_first(const char *label, char *s, size_t len)
+{
+   find_driver_nonempty(label, 0, s, len);
+   return true;
+}
+
+/**
+ * driver_find_last:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find last driver in driver array.
+ **/
+static bool driver_find_last(const char *label, char *s, size_t len)
+{
+   unsigned i;
+
+   for (i = 0;
+         find_driver_nonempty(label, i, s, len) != NULL; i++)
+   {}
+
+   if (i)
+      find_driver_nonempty(label, i-1, s, len);
+   else
+      driver_find_first(label, s, len);
+
+   return true;
+}
+
+/**
+ * driver_find_prev:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find previous driver in driver array.
+ **/
+static bool driver_find_prev(const char *label, char *s, size_t len)
+{
+   int i = driver_find_index(label, s);
+
+   if (i > 0)
+   {
+      find_driver_nonempty(label, i - 1, s, len);
+      return true;
+   }
+
+   RARCH_WARN(
+         "Couldn't find any previous driver (current one: \"%s\").\n", s);
+   return false;
+}
+
+/**
+ * driver_find_next:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find next driver in driver array.
+ **/
+bool driver_find_next(const char *label, char *s, size_t len)
+{
+   int i = driver_find_index(label, s);
+
+   if (i >= 0 && string_is_not_equal(s, "null"))
+   {
+      find_driver_nonempty(label, i + 1, s, len);
+      return true;
+   }
+
+   RARCH_WARN("%s (current one: \"%s\").\n",
+         msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
+         s);
+   return false;
+}
+
+static void driver_adjust_system_rates(void)
+{
+   audio_driver_monitor_adjust_system_rates();
+   video_driver_monitor_adjust_system_rates();
+
+   if (!video_driver_get_ptr(false))
+      return;
+
+   if (runloop_force_nonblock)
+      command_event(CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE, NULL);
+   else
+      driver_set_nonblock_state();
+}
+
+/**
+ * driver_set_nonblock_state:
+ *
+ * Sets audio and video drivers to nonblock state (if enabled).
+ *
+ * If nonblock state is false, sets
+ * blocking state for both audio and video drivers instead.
+ **/
+void driver_set_nonblock_state(void)
+{
+   bool                 enable = input_driver_is_nonblock_state();
+
+   /* Only apply non-block-state for video if we're using vsync. */
+   if (video_driver_is_active() && video_driver_get_ptr(false))
+   {
+      settings_t *settings = config_get_ptr();
+      bool video_nonblock  = enable;
+
+      if (!settings->bools.video_vsync || runloop_force_nonblock)
+         video_nonblock = true;
+      video_driver_set_nonblock_state(video_nonblock);
+   }
+
+   audio_driver_set_nonblocking_state(enable);
+}
+
+/**
+ * driver_update_system_av_info:
+ * @data               : pointer to new A/V info
+ *
+ * Update the system Audio/Video information.
+ * Will reinitialize audio/video drivers.
+ * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+static bool driver_update_system_av_info(const struct retro_system_av_info *info)
+{
+   struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
+   settings_t *settings = config_get_ptr();
+
+   memcpy(av_info, info, sizeof(*av_info));
+   command_event(CMD_EVENT_REINIT, NULL);
+
+   /* Cannot continue recording with different parameters.
+    * Take the easiest route out and just restart the recording. */
+   if (recording_driver_get_data_ptr())
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
+            2, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+      command_event(CMD_EVENT_RECORD_INIT, NULL);
+   }
+
+   /* Hide mouse cursor in fullscreen after
+    * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
+   if (settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
+
+   return true;
+}
+
+/**
+ * drivers_init:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
+void drivers_init(int flags)
+{
+   bool video_is_threaded = false;
+
+   if (flags & DRIVER_VIDEO_MASK)
+      video_driver_unset_own_driver();
+   if (flags & DRIVER_AUDIO_MASK)
+      audio_driver_unset_own_driver();
+   if (flags & DRIVER_INPUT_MASK)
+      input_driver_unset_own_driver();
+   if (flags & DRIVER_CAMERA_MASK)
+      camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
+   if (flags & DRIVER_LOCATION_MASK)
+      location_driver_ctl(RARCH_LOCATION_CTL_UNSET_OWN_DRIVER, NULL);
+   if (flags & DRIVER_WIFI_MASK)
+      wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_OWN_DRIVER, NULL);
+
+#ifdef HAVE_MENU
+   /* By default, we want the menu to persist through driver reinits. */
+   menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
+#endif
+
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
+      driver_adjust_system_rates();
+
+   if (flags & DRIVER_VIDEO_MASK)
+   {
+      struct retro_hw_render_callback *hwr =
+         video_driver_get_hw_context();
+
+      video_driver_monitor_reset();
+      video_driver_init(&video_is_threaded);
+
+      if (!video_driver_is_video_cache_context_ack()
+            && hwr->context_reset)
+         hwr->context_reset();
+      video_driver_unset_video_cache_context_ack();
+
+      runloop_frame_time_last        = 0;
+   }
+
+   if (flags & DRIVER_AUDIO_MASK)
+   {
+      audio_driver_init();
+      audio_driver_new_devices_list();
+   }
+
+   /* Only initialize camera driver if we're ever going to use it. */
+   if ((flags & DRIVER_CAMERA_MASK) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
+      camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
+
+   /* Only initialize location driver if we're ever going to use it. */
+   if ((flags & DRIVER_LOCATION_MASK) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
+      init_location();
+
+   core_info_init_current_core();
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   if (video_driver_has_widgets())
+   {
+      menu_widgets_init(video_is_threaded);
+      menu_widgets_context_reset(video_is_threaded);
+   }
+#endif
+
+   if (flags & DRIVER_VIDEO_MASK)
+   {
+      if (flags & DRIVER_MENU_MASK)
+         menu_driver_init(video_is_threaded);
+   }
+#else
+   /* Qt uses core info, even if the menu is disabled */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+#endif
+
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
+   {
+      /* Keep non-throttled state as good as possible. */
+      if (input_driver_is_nonblock_state())
+         driver_set_nonblock_state();
+   }
+
+   if (flags & DRIVER_LED_MASK)
+      led_driver_init();
+
+   if (flags & DRIVER_MIDI_MASK)
+      midi_driver_init();
+}
+
+/**
+ * uninit_drivers:
+ * @flags              : Bitmask of drivers to deinitialize.
+ *
+ * Deinitializes drivers.
+ *
+ *
+ * @flags determines which drivers get deinitialized.
+ **/
+
+/**
+ * Driver ownership - set this to true if the platform in question needs to 'own'
+ * the respective handle and therefore skip regular RetroArch
+ * driver teardown/reiniting procedure.
+ *
+ * If  to true, the 'free' function will get skipped. It is
+ * then up to the driver implementation to properly handle
+ * 'reiniting' inside the 'init' function and make sure it
+ * returns the existing handle instead of allocating and
+ * returning a pointer to a new handle.
+ *
+ * Typically, if a driver intends to make use of this, it should
+ * set this to true at the end of its 'init' function.
+ **/
+void driver_uninit(int flags)
+{
+   core_info_deinit_list();
+   core_info_free_current_core();
+
+#ifdef HAVE_MENU
+   if (flags & DRIVER_MENU_MASK)
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+      menu_driver_free();
+   }
+#endif
+
+   if ((flags & DRIVER_LOCATION_MASK) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
+      location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
+
+   if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
+      camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
+
+   if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
+      wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
+
+   if (flags & DRIVER_LED)
+      led_driver_free();
+
+   if (flags & DRIVERS_VIDEO_INPUT)
+      video_driver_free();
+
+   if (flags & DRIVER_AUDIO_MASK)
+      audio_driver_deinit();
+
+   if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
+      video_driver_destroy_data();
+
+   if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
+      input_driver_destroy_data();
+
+   if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
+      audio_driver_destroy_data();
+
+   if (flags & DRIVER_MIDI_MASK)
+      midi_driver_free();
+}
+
+bool driver_ctl(enum driver_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case RARCH_DRIVER_CTL_DEINIT:
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         /* Tear down menu widgets no matter what
+          * in case the handle is lost in the threaded
+          * video driver in the meantime
+          * (breaking video_driver_has_widgets) */
+         menu_widgets_context_destroy();
+         menu_widgets_free();
+
+#endif
+         video_driver_destroy();
+         audio_driver_destroy();
+         input_driver_destroy();
+#ifdef HAVE_MENU
+         menu_driver_destroy();
+#endif
+         location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
+         camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
+         wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
+         core_uninit_libretro_callbacks();
+         break;
+      case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
+         {
+            float *hz = (float*)data;
+            video_monitor_set_refresh_rate(*hz);
+            audio_driver_monitor_set_rate();
+            driver_adjust_system_rates();
+         }
+         break;
+      case RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO:
+         {
+            const struct retro_system_av_info **info = (const struct retro_system_av_info**)data;
+            if (info)
+               return driver_update_system_av_info(*info);
+         }
+         return false;
+      case RARCH_DRIVER_CTL_FIND_FIRST:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_first(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_LAST:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_last(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_PREV:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_prev(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_NEXT:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_next(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_INDEX:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            drv->len = driver_find_index(drv->label, drv->s);
+         }
+         break;
+      case RARCH_DRIVER_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
 
 void rarch_core_runtime_tick(void)
 {
@@ -1212,7 +1744,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
 }
 
-static bool retroarch_init_state(void)
+static bool drivers_set_active(void)
 {
    video_driver_set_active();
    audio_driver_set_active();
@@ -1355,7 +1887,7 @@ bool retroarch_main_init(int argc, char *argv[])
    char log_file_name[128];
 #endif
 
-   retroarch_init_state();
+   drivers_set_active();
 
    if (setjmp(error_sjlj_context) > 0)
    {
@@ -1407,7 +1939,19 @@ bool retroarch_main_init(int argc, char *argv[])
 
    retroarch_main_init_media();
 
-   driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
+   /* Pre-initialize all drivers 
+    * Attempts to find a default driver for
+    * all driver types.
+    */
+   audio_driver_find_driver();
+   video_driver_find_driver();
+   input_driver_find_driver();
+   camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
+   wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
+   find_location_driver();
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL);
+#endif
 
    /* Attempt to initialize core */
    if (has_set_core)
@@ -1574,7 +2118,6 @@ error:
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool runloop_force_nonblock  = false;
    static bool has_set_username        = false;
    static bool rarch_block_config_read = false;
    static bool rarch_patch_blocked     = false;
@@ -1643,7 +2186,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          global_free();
          break;
       case RARCH_CTL_MAIN_DEINIT:
-         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+         if (!rarch_is_inited)
             return false;
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
@@ -1674,14 +2217,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          break;
       case RARCH_CTL_INIT:
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+         if (rarch_is_inited)
             driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
          sthread_tls_create(&rarch_tls);
          sthread_tls_set(&rarch_tls, MAGIC_POINTER);
 #endif
-         retroarch_init_state();
+         drivers_set_active();
          {
             uint8_t i;
             for (i = 0; i < MAX_USERS; i++)
@@ -2759,7 +3302,7 @@ static enum runloop_state runloop_check_state(
    uint64_t frame_count                = 0;
    bool focused                        = true;
    bool pause_nonactive                = settings->bools.pause_nonactive;
-   bool rarch_is_initialized           = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
+   bool rarch_is_initialized           = rarch_is_inited;
    bool fs_toggle_triggered            = false;
 #ifdef HAVE_MENU
    bool menu_driver_binding_state      = menu_driver_is_binding_state();
