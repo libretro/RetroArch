@@ -662,8 +662,12 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
-   vid->video.force_aspect = true;
-   vid->should_resize = true;
+   /* FIXME: Why is vid NULL here when starting content? */
+   if (vid)
+   {
+      vid->video.force_aspect = true;
+      vid->should_resize = true;
+   }
 }
 
 static void sdl2_poke_apply_state_changes(void *data)
