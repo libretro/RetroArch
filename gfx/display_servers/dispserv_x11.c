@@ -47,6 +47,7 @@ static char orig_output[256]    = {0};
 static char old_mode[256]       = {0};
 static char new_mode[256]       = {0};
 static XRRModeInfo crt_rrmode;
+static bool x11_display_server_using_global_dpy = false;
 #endif
 
 typedef struct
@@ -54,6 +55,30 @@ typedef struct
    unsigned opacity;
    bool decorations;
 } dispserv_x11_t;
+
+static Display* x11_display_server_open_display(void)
+{
+   Display *dpy = g_x11_dpy;
+
+   if (dpy)
+      x11_display_server_using_global_dpy = true;
+   else
+   {
+      /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
+      dpy = XOpenDisplay(0);
+      x11_display_server_using_global_dpy = false;
+   }
+
+   return dpy;
+}
+
+static void x11_display_server_close_display(Display *dpy)
+{
+   if (!dpy || x11_display_server_using_global_dpy || dpy == g_x11_dpy)
+      return;
+
+   XCloseDisplay(dpy);
+}
 
 static void* x11_display_server_init(void)
 {
@@ -461,19 +486,18 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
    XRRFreeScreenConfigInfo(config);
    XCloseDisplay(dpy);
 }
-#endif
 
-#ifdef HAVE_XRANDR
 static enum rotation x11_display_server_get_screen_orientation(void)
 {
    int i, j;
-   XRRScreenResources *screen = XRRGetScreenResources(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
-   XRRScreenConfiguration *config = XRRGetScreenInfo(g_x11_dpy, DefaultRootWindow(g_x11_dpy));
+   Display *dpy = x11_display_server_open_display();
+   XRRScreenResources *screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+   XRRScreenConfiguration *config = XRRGetScreenInfo(dpy, DefaultRootWindow(dpy));
    enum rotation rotation = ORIENTATION_NORMAL;
 
    for (i = 0; i < screen->noutput; i++)
    {
-      XRROutputInfo *info = XRRGetOutputInfo(g_x11_dpy, screen, screen->outputs[i]);
+      XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
 
       if (info->connection != RR_Connected)
       {
@@ -483,7 +507,7 @@ static enum rotation x11_display_server_get_screen_orientation(void)
 
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(g_x11_dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
 
          if (crtc->width == 0 || crtc->height == 0)
          {
@@ -516,6 +540,8 @@ static enum rotation x11_display_server_get_screen_orientation(void)
 
    XRRFreeScreenResources(screen);
    XRRFreeScreenConfigInfo(config);
+
+   x11_display_server_close_display(dpy);
 
    return rotation;
 }
