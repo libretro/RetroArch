@@ -53,6 +53,7 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 #include <features/features_cpu.h>
+#include <file/runtime_file.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -2387,73 +2388,105 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
       {
          settings_t *settings = config_get_ptr();
-         unsigned seconds = libretro_core_runtime_usec / 1000 / 1000;
-         unsigned minutes = seconds / 60;
-         unsigned hours = minutes / 60;
+         unsigned hours = 0;
+         unsigned minutes = 0;
+         unsigned seconds = 0;
          char log[PATH_MAX_LENGTH] = {0};
-         size_t pos = 0;
+         int n = 0;
 
-         seconds -= minutes * 60;
-         minutes -= hours * 60;
+         runtime_log_convert_usec2hms(libretro_core_runtime_usec, &hours, &minutes, &seconds);
 
-         pos = strlcpy(log, "Content ran for a total of", sizeof(log));
-
-         if (hours > 0)
-            pos += snprintf(log + pos, sizeof(log) - pos, ", %u hours", hours);
-
-         if (minutes > 0)
-            pos += snprintf(log + pos, sizeof(log) - pos, ", %u minutes", minutes);
-
-         pos += snprintf(log + pos, sizeof(log) - pos, ", %u seconds", seconds);
-
-         if (pos < sizeof(log) - 2)
-         {
-            log[pos++] = '.';
-            log[pos++] = '\n';
-         }
-
+         n = snprintf(log, sizeof(log),
+               "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.\n ",
+               hours, minutes, seconds);
+         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+            n = 0; /* Just silence any potential gcc warnings... */
          RARCH_LOG(log);
 
-         if (settings->bools.content_runtime_log && g_defaults.content_runtime)
+         if (settings->bools.content_runtime_log)
          {
-            const char *path = path_get(RARCH_PATH_CONTENT);
+            const char *content_path = path_get(RARCH_PATH_CONTENT);
             const char *core_path = path_get(RARCH_PATH_CORE);
 
-            if (!string_is_empty(path) && !string_is_empty(core_path) && !string_is_equal(core_path, "builtin"))
+            if (!string_is_empty(content_path) && !string_is_empty(core_path) && !string_is_equal(core_path, "builtin"))
             {
-               playlist_push_runtime(g_defaults.content_runtime, path, core_path, 0, 0, 0);
+               unsigned playlist_hours = 0;
+               unsigned playlist_minutes = 0;
+               unsigned playlist_seconds = 0;
+               runtime_log_t *runtime_log = NULL;
+               bool playlist_file_is_valid = false;
+               bool runtime_log_file_is_valid = false;
 
-               /* if entry already existed, the runtime won't be updated, so manually update it again */
-               if (playlist_get_size(g_defaults.content_runtime) > 0)
+               /* Intialise content_runtime playlist entry and get
+                * existing values */
+               if (g_defaults.content_runtime)
                {
-                  unsigned runtime_hours = 0;
-                  unsigned runtime_minutes = 0;
-                  unsigned runtime_seconds = 0;
+                  /* Push current entry to the top (does not update runtime
+                   * values), or create new entry if it does not already exist */
+                  playlist_push_runtime(g_defaults.content_runtime, content_path, core_path, 0, 0, 0);
 
-                  playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL,
-                     &runtime_hours, &runtime_minutes, &runtime_seconds);
-
-                  runtime_seconds += seconds;
-
-                  if (runtime_seconds >= 60)
+                  /* Get current runtime */
+                  if (playlist_get_size(g_defaults.content_runtime) > 0)
                   {
-                     unsigned new_minutes = runtime_seconds / 60;
-                     runtime_minutes += new_minutes;
-                     runtime_seconds -= new_minutes * 60;
+                     playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL,
+                        &playlist_hours, &playlist_minutes, &playlist_seconds);
+
+                     playlist_file_is_valid = true;
+                  }
+               }
+
+               /* Initialise runtime log file */
+               runtime_log = runtime_log_init(content_path, core_path);
+               if (runtime_log)
+               {
+                  /* If runtime log file is empty, populate it with values
+                   * from content_runtime playlist */
+                  if (!runtime_log_has_runtime(runtime_log))
+                  {
+                     runtime_log_set_runtime_hms(runtime_log,
+                           playlist_hours, playlist_minutes, playlist_seconds);
                   }
 
-                  runtime_minutes += minutes;
+                  /* Add additional runtime */
+                  runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
 
-                  if (runtime_minutes >= 60)
+                  /* Read back current runtime, so we can copy it
+                   * to content_runtime playlist */
+                  runtime_log_get_runtime_hms(runtime_log,
+                        &playlist_hours, &playlist_minutes, &playlist_seconds);
+
+                  /* Update 'last played' entry */
+                  runtime_log_set_last_played_now(runtime_log);
+
+                  /* Save runtime log file */
+                  runtime_log_save(runtime_log);
+
+                  /* Clean up */
+                  free(runtime_log);
+
+                  runtime_log_file_is_valid = true;
+               }
+
+               /* Update content_runtime playlist */
+               if (playlist_file_is_valid)
+               {
+                  /* If something went wrong with the runtime log
+                   * file (can't happen...), then playlist_hours/minutes/seconds
+                   * still contains original (old) values. Have to update them
+                   * manually... */
+                  if (!runtime_log_file_is_valid)
                   {
-                     unsigned new_hours = runtime_minutes / 60;
-                     runtime_hours += new_hours;
-                     runtime_minutes -= new_hours * 60;
+                     retro_time_t usec_old;
+
+                     runtime_log_convert_hms2usec(
+                           playlist_hours, playlist_minutes, playlist_seconds, &usec_old);
+
+                     runtime_log_convert_usec2hms(usec_old + libretro_core_runtime_usec,
+                           &playlist_hours, &playlist_minutes, &playlist_seconds);
                   }
 
-                  runtime_hours += hours;
-
-                  playlist_update_runtime(g_defaults.content_runtime, 0, path, core_path, runtime_hours, runtime_minutes, runtime_seconds);
+                  playlist_update_runtime(g_defaults.content_runtime, 0, content_path, core_path,
+                           playlist_hours, playlist_minutes, playlist_seconds);
                }
             }
          }
