@@ -277,9 +277,60 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
    ozone_update_scroll(ozone, false, (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, ozone->selection));
 }
 
+static void ozone_thumbnail_bar_hide_end(void *userdata)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+   ozone->show_thumbnail_bar = false;
+}
+
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation)
 {
-   /* TODO Animate it and draw it */
+   struct menu_animation_ctx_entry entry;
+   menu_animation_ctx_tag tag = (uintptr_t) &ozone->show_thumbnail_bar;
+
+   entry.duration    = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum = EASING_OUT_QUAD;
+   entry.tag         = tag;
+   entry.subject     = &ozone->animations.thumbnail_bar_position;
+
+   menu_animation_kill_by_tag(&tag);
+
+   /* Show it */
+   if (is_playlist && !ozone->cursor_in_sidebar && !ozone->show_thumbnail_bar && ozone->depth == 1)
+   {
+      if (allow_animation)
+      {
+         ozone->show_thumbnail_bar = true;
+
+         entry.cb             = NULL;
+         entry.userdata       = NULL;
+         entry.target_value   = ozone->dimensions.thumbnail_bar_width;
+
+         menu_animation_push(&entry);
+      }
+      else
+      {
+         ozone->animations.thumbnail_bar_position = ozone->dimensions.thumbnail_bar_width;
+         ozone->show_thumbnail_bar = true;
+      }
+   }
+   /* Hide it */
+   else
+   {
+      if (allow_animation)
+      {
+         entry.cb             = ozone_thumbnail_bar_hide_end;
+         entry.userdata       = ozone;
+         entry.target_value   = 0.0f;
+
+         menu_animation_push(&entry);
+      }
+      else
+      {
+         ozone->animations.thumbnail_bar_position = 0.0f;
+         ozone_thumbnail_bar_hide_end(ozone);
+      }
+   }
 }
 
 void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
@@ -531,7 +582,7 @@ border_iterate:
       ticker.s        = entry_value_ticker;
       ticker.str      = entry_value;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len      = (entry_width - ozone->dimensions.entry_icon_size - ozone->dimensions.entry_icon_padding * 2 - 
+      ticker.len      = (entry_width - ozone->dimensions.entry_icon_size - ozone->dimensions.entry_icon_padding * 2 -
          ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
@@ -553,3 +604,71 @@ icons_iterate:
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_sublabel, video_info);
 }
+
+void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
+{
+   unsigned sidebar_height = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
+   unsigned sidebar_width  = ozone->dimensions.thumbnail_bar_width;
+   unsigned x_position     = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;
+
+   bool thumbnail;
+   bool left_thumbnail;
+
+   //Background
+   if (!video_info->libretro_running)
+   {
+      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
+      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + 1 + 55/2, (unsigned) ozone->animations.thumbnail_bar_position, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
+      menu_display_draw_quad(video_info, x_position, video_info->height - ozone->dimensions.footer_height - 55/2 - 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2 + 1, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
+   }
+
+   //Thumbnails
+   thumbnail = ozone->thumbnail &&
+      !string_is_equal(ozone_thumbnails_ident('R'),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+   left_thumbnail = ozone->left_thumbnail &&
+      !string_is_equal(ozone_thumbnails_ident('L'),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+
+   if (thumbnail)
+   {
+      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
+
+      thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
+
+      ozone_draw_icon(video_info,
+         ozone->dimensions.thumbnail_width,
+         ozone->dimensions.thumbnail_height,
+         ozone->thumbnail,
+         thumb_x_position,
+         thumb_y_position,
+         video_info->width, video_info->height,
+         0, 1,
+         ozone_pure_white
+      );
+   }
+
+   if (left_thumbnail)
+   {
+      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.left_thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_y_position = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
+
+      ozone_draw_icon(video_info,
+         ozone->dimensions.left_thumbnail_width,
+         ozone->dimensions.left_thumbnail_height,
+         ozone->left_thumbnail,
+         thumb_x_position,
+         thumb_y_position,
+         video_info->width, video_info->height,
+         0, 1,
+         ozone_pure_white
+      );
+   }
+   else
+   {
+      /* TODO: Content metadata */
+   }
+}
+
+

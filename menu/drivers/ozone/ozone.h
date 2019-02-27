@@ -124,7 +124,7 @@ struct ozone_handle
       float messagebox_alpha;
 
       float sidebar_text_alpha;
-      float thumbnail_bar_position; /* 0 = hidden */
+      float thumbnail_bar_position;
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -210,6 +210,11 @@ struct ozone_handle
       int cursor_size;
 
       int thumbnail_bar_width;
+
+      float thumbnail_width; /* set at layout time */
+      float thumbnail_height; /* set later to thumbnail_width * image aspect ratio */
+      float left_thumbnail_width; /* set at layout time */
+      float left_thumbnail_height; /* set later to left_thumbnail_width * image aspect ratio */
    } dimensions;
 
    bool show_cursor;
@@ -220,7 +225,16 @@ struct ozone_handle
 
    bool sidebar_collapsed;
 
+   /* Thumbnails data */
    bool show_thumbnail_bar;
+
+   char *thumbnail_content;
+   char *thumbnail_system;
+   char *thumbnail_file_path;
+   char *left_thumbnail_file_path; /* name taken from xmb for consistency but not actually on the left */
+
+   uintptr_t thumbnail;
+   uintptr_t left_thumbnail;
 };
 
 /* If you change this struct, also
@@ -232,6 +246,7 @@ typedef struct ozone_node
    unsigned height;
    unsigned position_y;
    bool wrap;
+   char *fullpath;
 
    /* Console tabs */
    char *console_name;
@@ -283,5 +298,9 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
 
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
+
+void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
+
+const char *ozone_thumbnails_ident(char pos);
 
 #endif

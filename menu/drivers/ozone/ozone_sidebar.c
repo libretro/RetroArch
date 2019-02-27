@@ -338,7 +338,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    /* Collapse sidebar if needed */
    settings_t *settings = config_get_ptr();
    bool is_playlist = ozone_is_playlist(ozone, false);
-   menu_animation_ctx_tag tag = (uintptr_t)NULL;
+   menu_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
 
    struct menu_animation_ctx_entry entry;
 
@@ -347,7 +347,10 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    entry.userdata       = ozone;
    entry.duration       = ANIMATION_CURSOR_DURATION;
 
-   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar && !ozone->sidebar_collapsed))
+   menu_animation_kill_by_tag(&tag);
+
+   //Collapse it
+   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       if (allow_animation)
       {
@@ -372,7 +375,8 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          ozone_sidebar_collapse_end(ozone);
       }
    }
-   else if (ozone->cursor_in_sidebar && ozone->sidebar_collapsed)
+   //Show it
+   else if (ozone->cursor_in_sidebar)
    {
       if (allow_animation)
       {
