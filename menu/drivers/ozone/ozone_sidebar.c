@@ -281,6 +281,8 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    entry.userdata       = NULL;
 
    menu_animation_push(&entry);
+
+   ozone_sidebar_update_collapse(ozone, true);
 }
 
 void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
@@ -306,6 +308,8 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    entry.userdata       = NULL;
 
    menu_animation_push(&entry);
+
+   ozone_sidebar_update_collapse(ozone, true);
 }
 
 unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
@@ -343,7 +347,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    entry.userdata       = ozone;
    entry.duration       = ANIMATION_CURSOR_DURATION;
 
-   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->sidebar_collapsed))
+   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar && !ozone->sidebar_collapsed))
    {
       if (allow_animation)
       {
@@ -368,7 +372,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          ozone_sidebar_collapse_end(ozone);
       }
    }
-   else if (!is_playlist && ozone->sidebar_collapsed)
+   else if (ozone->cursor_in_sidebar && ozone->sidebar_collapsed)
    {
       if (allow_animation)
       {
@@ -476,8 +480,6 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    {
       ozone_change_tab(ozone, ozone_system_tabs_idx[ozone->tabs[new_selection]], ozone_system_tabs_type[ozone->tabs[new_selection]]);
    }
-
-   ozone_sidebar_update_collapse(ozone, true);
 }
 
 void ozone_change_tab(ozone_handle_t *ozone,
