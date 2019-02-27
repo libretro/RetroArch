@@ -59,4 +59,3 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
 RETRO_END_DECLS
 
 #endif
-

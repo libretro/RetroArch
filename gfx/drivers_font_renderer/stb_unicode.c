@@ -32,10 +32,10 @@
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STBTT_STATIC
 #define STBRP_STATIC
-#define static static INLINE
+#define STATIC static INLINE
 #include "../../deps/stb/stb_rect_pack.h"
 #include "../../deps/stb/stb_truetype.h"
-#undef static
+#undef STATIC
 #endif
 
 #define STB_UNICODE_ATLAS_ROWS 16
@@ -145,7 +145,6 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
          + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
 
-
    stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
          self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
 
@@ -158,7 +157,6 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    /* atlas_slot->glyph.advance_y   = 0 ; */
    atlas_slot->glyph.draw_offset_x  = x0 * self->scale_factor;
    atlas_slot->glyph.draw_offset_y  = -y1 * self->scale_factor;
-
 
    self->atlas.dirty = true;
    atlas_slot->last_used = self->usage_counter++;
@@ -262,7 +260,7 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
    return "";
 #else
    static const char *paths[] = {
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__WINRT__)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",
 #elif defined(__APPLE__)
@@ -283,7 +281,7 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
       "vs0:data/external/font/pvf/k006004ds.ttf",
       "vs0:data/external/font/pvf/n023055ms.ttf",
       "vs0:data/external/font/pvf/n023055ts.ttf",
-#else
+#elif !defined(__WINRT__)
       "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
       "/usr/share/fonts/TTF/DejaVuSans.ttf",
       "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",

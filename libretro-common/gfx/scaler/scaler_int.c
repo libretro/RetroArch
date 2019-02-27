@@ -162,7 +162,13 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
          const uint32_t *input_base_x = input + ctx->horiz.filter_pos[w];
 #if defined(__SSE2__)
          __m128i res = _mm_setzero_si128();
-
+#ifndef __x86_64__
+         union
+         {
+            uint32_t *u32;
+            uint64_t *u64;
+         } u;
+#endif
          for (x = 0; (x + 1) < ctx->horiz.filter_len; x += 2)
          {
             __m128i coeff = _mm_set_epi64x(filter_horiz[x + 1] * 0x0001000100010001ll, filter_horiz[x + 0] * 0x0001000100010001ll);
@@ -188,11 +194,6 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 #ifdef __x86_64__
          output[w]        = _mm_cvtsi128_si64(res);
 #else /* 32-bit doesn't have si64. Do it in two steps. */
-         union
-         {
-            uint32_t *u32;
-            uint64_t *u64;
-         } u;
          u.u64    = output + w;
          u.u32[0] = _mm_cvtsi128_si32(res);
          u.u32[1] = _mm_cvtsi128_si32(_mm_srli_si128(res, 4));
@@ -258,4 +259,3 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
          output[w] = inp[x >> 16];
    }
 }
-

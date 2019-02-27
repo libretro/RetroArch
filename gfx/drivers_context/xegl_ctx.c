@@ -25,6 +25,7 @@
 
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
@@ -172,7 +173,7 @@ static void *gfx_ctx_xegl_init(video_frame_info_t *video_info, void *video_drive
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&xegl->egl, EGL_PLATFORM_X11_KHR,
-            (EGLNativeDisplayType)g_x11_dpy, &major, &minor, &n, attrib_ptr))
+            (EGLNativeDisplayType)g_x11_dpy, &major, &minor, &n, attrib_ptr, egl_default_accept_config_cb))
    {
       egl_report_error();
       goto error;
@@ -449,7 +450,6 @@ error:
    gfx_ctx_xegl_destroy(data);
    return false;
 }
-
 
 static void gfx_ctx_xegl_input_driver(void *data,
       const char *joypad_name,

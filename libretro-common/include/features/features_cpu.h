@@ -68,6 +68,8 @@ uint64_t cpu_features_get(void);
  **/
 unsigned cpu_features_get_core_amount(void);
 
+void cpu_features_get_model_name(char *name, int len);
+
 RETRO_END_DECLS
 
 #endif

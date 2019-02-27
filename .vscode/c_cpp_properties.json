@@ -29,7 +29,9 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceFolder}/libretro-common/include",
+                "${workspaceRoot}/libretro-common/include"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -50,7 +52,8 @@
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceFolder}/libretro-common/include"
             ],
             "defines": [
                 "_DEBUG",

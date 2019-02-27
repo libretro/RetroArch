@@ -33,6 +33,10 @@ struct queue_elem
    unsigned duration;
    unsigned prio;
    char *msg;
+
+   char *title;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
 };
 
 struct msg_queue
@@ -93,7 +97,6 @@ void msg_queue_free(msg_queue_t *queue)
    free(queue);
 }
 
-
 /**
  * msg_queue_push:
  * @queue             : pointer to queue object
@@ -106,7 +109,9 @@ void msg_queue_free(msg_queue_t *queue)
  * Push a new message onto the queue.
  **/
 void msg_queue_push(msg_queue_t *queue, const char *msg,
-      unsigned prio, unsigned duration)
+      unsigned prio, unsigned duration,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
 {
    size_t tmp_ptr = 0;
    struct queue_elem *new_elem = NULL;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -211,6 +211,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_JPEG_CAPS                                              0x7c87010bU
 #define MENU_VALUE_FILE_PNG                                                    0x0b889deaU
 #define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
+#define MENU_VALUE_FILE_GONG                                                   0x7c977150U
+#define MENU_VALUE_FILE_GONG_CAPS                                              0x7c8558d0U
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
 
@@ -390,6 +392,11 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_TGA;
       case MENU_VALUE_FILE_BMP:
          return FILE_TYPE_BMP;
+#endif
+#ifdef HAVE_EASTEREGG
+      case MENU_VALUE_FILE_GONG:
+      case MENU_VALUE_FILE_GONG_CAPS:
+         return FILE_TYPE_GONG;
 #endif
       case HASH_EXTENSION_CUE:
       case HASH_EXTENSION_CUE_UPPERCASE:

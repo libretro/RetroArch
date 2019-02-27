@@ -55,7 +55,6 @@ typedef struct rarch_CC_resampler
    void (*process)(void *re, struct resampler_data *data);
 } rarch_CC_resampler_t;
 
-
 #ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
@@ -115,7 +114,6 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
                "vadd.q  c720, c720, c620           \n"
 
-
                "vadd.s  s730, s730, s730[1]  \n"
                "mfv     %0,   s730           \n"
 
@@ -151,7 +149,7 @@ done:
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, 
+      double bandwidth_mod,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {
@@ -215,7 +213,6 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 #if (CC_RESAMPLER_PRECISION > 0)
       vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
       vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
-
 
       vec_ww1 = _mm_mul_ps(vec_ww1, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
       vec_ww2 = _mm_mul_ps(vec_ww2, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww2));
@@ -307,7 +304,6 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
          vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
          vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
 
-
          vec_ww1 = _mm_mul_ps(vec_ww1,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
          vec_ww2 = _mm_mul_ps(vec_ww2,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww2));
 
@@ -348,7 +344,6 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
-
 
 #elif defined (__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)
 
@@ -492,9 +487,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
       re->process(re_, data);
 }
 
-
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, 
+      double bandwidth_mod,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {

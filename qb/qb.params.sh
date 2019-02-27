@@ -1,14 +1,3 @@
-die() # $1 = exit code, use : to not exit when printing warnings $@ = exit or warning messages
-{
-	ret="$1"
-	shift 1
-	printf %s\\n "$@" >&2
-	case "$ret" in
-		: ) return 0 ;;
-		* ) exit "$ret" ;;
-	esac
-}
-
 print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
@@ -43,16 +32,15 @@ EOF
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
 
-	echo ""
-	echo "Custom options:"
+	printf %s\\n '' 'Custom options:'
 
 	while read -r VAR COMMENT; do
 		TMPVAR="${VAR%=*}"
 		COMMENT="${COMMENT#*#}"
 		VAL="${VAR#*=}"
-		VAR="$(echo "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
+		VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 		case "$VAR" in
-			'c89_'*) continue;;
+			'c89_'*|'cxx_'*) continue;;
 			*)
 			case "$VAL" in
 				'yes'*)
@@ -70,7 +58,7 @@ EOF
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+{	opt="$(printf %s "$1" | tr '[:lower:]' '[:upper:]')"
 	err="$2"
 	eval "set -- $OPTS"
 	for OPT do [ "$opt" = "$OPT" ] && return; done
@@ -78,14 +66,18 @@ opt_exists() # $opt is returned if exists in OPTS
 }
 
 parse_input() # Parse stuff :V
-{	OPTS=; while read -r VAR _; do
+{	BUILD=''
+	OPTS=''
+	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
-		OPTS="$OPTS ${TMPVAR##HAVE_}"
+		NEWVAR="${TMPVAR##HAVE_}"
+		OPTS="$OPTS $NEWVAR"
+		eval "USER_$NEWVAR=no"
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
-	
-	while [ "$1" ]; do
+
+	while [ $# -gt 0 ]; do
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
 			--global-config-dir=*|--sysconfdir=*) GLOBAL_CONFIG_DIR="${1#*=}";;
@@ -98,6 +90,7 @@ parse_input() # Parse stuff :V
 			--enable-*)
 				opt_exists "${1##--enable-}" "$1"
 				eval "HAVE_$opt=yes"
+				eval "USER_$opt=yes"
 			;;
 			--disable-*)
 				opt_exists "${1##--disable-}" "$1"
@@ -111,6 +104,8 @@ parse_input() # Parse stuff :V
 				eval "$opt=\"$val\""
 			;;
 			-h|--help) print_help; exit 0;;
+			--) break ;;
+			'') : ;;
 			*) die 1 "Unknown option $1";;
 		esac
 		shift

@@ -56,7 +56,6 @@ Abstract:
 #error xnamath.h only supports x86, x64, or XBox 360 targets
 #endif
 
-
 #if defined(_XM_SSE_INTRINSICS_)
 #ifndef _XM_NO_INTRINSICS_
 #include <xmmintrin.h>
@@ -110,7 +109,6 @@ Abstract:
 #else
 #define _DECLSPEC_ALIGN_16_
 #endif
-
 
 #if defined(_MSC_VER) && (_MSC_VER<1500) && (_MSC_VER>=1400)
 #define _XM_ISVS2005_
@@ -169,7 +167,6 @@ XMFINLINE FLOAT XMConvertToDegrees(FLOAT fRadians) { return fRadians * (180.0f /
 #define XMComparisonAllInBounds(CR)        (((CR) & XM_CRMASK_CR6BOUNDS) == XM_CRMASK_CR6BOUNDS)
 #define XMComparisonAnyOutOfBounds(CR)     (((CR) & XM_CRMASK_CR6BOUNDS) != XM_CRMASK_CR6BOUNDS)
 
-
 #define XMMin(a, b) (((a) < (b)) ? (a) : (b))
 #define XMMax(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -217,7 +214,7 @@ typedef UINT __vector4i[4];
 typedef __declspec(align(16)) UINT __vector4i[4];
 #endif
 
-// Vector intrinsic: Four 32 bit floating point components aligned on a 16 byte 
+// Vector intrinsic: Four 32 bit floating point components aligned on a 16 byte
 // boundary and mapped to hardware vector registers
 #if defined(_XM_SSE_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
 typedef __m128 XMVECTOR;
@@ -380,7 +377,7 @@ typedef const XMMATRIX& CXMMATRIX;
 typedef const XMMATRIX CXMMATRIX;
 #endif
 
-// 16 bit floating point number consisting of a sign bit, a 5 bit biased 
+// 16 bit floating point number consisting of a sign bit, a 5 bit biased
 // exponent, and a 10 bit mantissa
 //typedef WORD HALF;
 typedef USHORT HALF;
@@ -547,13 +544,13 @@ __declspec(align(16)) struct XMFLOAT3A : public XMFLOAT3
     XMFLOAT3A& operator= (CONST XMFLOAT3A& Float3);
 };
 #else
-typedef __declspec(align(16)) XMFLOAT3 XMFLOAT3A; 
+typedef __declspec(align(16)) XMFLOAT3 XMFLOAT3A;
 #endif // __cplusplus
 
 // 3D Vector; 11-11-10 bit normalized components packed into a 32 bit integer
-// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit signed, 
-// normalized integer for the z component and 11 bit signed, normalized 
-// integers for the x and y components.  The z component is stored in the 
+// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit signed,
+// normalized integer for the z component and 11 bit signed, normalized
+// integers for the x and y components.  The z component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z10Y11X11): [32] zzzzzzzz zzyyyyyy yyyyyxxx xxxxxxxx [0]
 typedef struct _XMHENDN3
@@ -586,9 +583,9 @@ typedef struct _XMHENDN3
 } XMHENDN3;
 
 // 3D Vector; 11-11-10 bit components packed into a 32 bit integer
-// The 3D Vector is packed into 32 bits as follows: a 10 bit signed, 
-// integer for the z component and 11 bit signed integers for the 
-// x and y components.  The z component is stored in the 
+// The 3D Vector is packed into 32 bits as follows: a 10 bit signed,
+// integer for the z component and 11 bit signed integers for the
+// x and y components.  The z component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z10Y11X11): [32] zzzzzzzz zzyyyyyy yyyyyxxx xxxxxxxx [0]
 typedef struct _XMHEND3
@@ -621,9 +618,9 @@ typedef struct _XMHEND3
 } XMHEND3;
 
 // 3D Vector; 11-11-10 bit normalized components packed into a 32 bit integer
-// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit unsigned, 
-// normalized integer for the z component and 11 bit unsigned, normalized 
-// integers for the x and y components.  The z component is stored in the 
+// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit unsigned,
+// normalized integer for the z component and 11 bit unsigned, normalized
+// integers for the x and y components.  The z component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z10Y11X11): [32] zzzzzzzz zzyyyyyy yyyyyxxx xxxxxxxx [0]
 typedef struct _XMUHENDN3
@@ -657,8 +654,8 @@ typedef struct _XMUHENDN3
 
 // 3D Vector; 11-11-10 bit components packed into a 32 bit integer
 // The 3D Vector is packed into 32 bits as follows: a 10 bit unsigned
-// integer for the z component and 11 bit unsigned integers 
-// for the x and y components.  The z component is stored in the 
+// integer for the z component and 11 bit unsigned integers
+// for the x and y components.  The z component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z10Y11X11): [32] zzzzzzzz zzyyyyyy yyyyyxxx xxxxxxxx [0]
 typedef struct _XMUHEND3
@@ -691,9 +688,9 @@ typedef struct _XMUHEND3
 } XMUHEND3;
 
 // 3D Vector; 10-11-11 bit normalized components packed into a 32 bit integer
-// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit signed, 
-// normalized integer for the x component and 11 bit signed, normalized 
-// integers for the y and z components.  The z component is stored in the 
+// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit signed,
+// normalized integer for the x component and 11 bit signed, normalized
+// integers for the y and z components.  The z component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z11Y11X10): [32] zzzzzzzz zzzyyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMDHENN3
@@ -726,9 +723,9 @@ typedef struct _XMDHENN3
 } XMDHENN3;
 
 // 3D Vector; 10-11-11 bit components packed into a 32 bit integer
-// The 3D Vector is packed into 32 bits as follows: a 10 bit signed, 
-// integer for the x component and 11 bit signed integers for the 
-// y and z components.  The w component is stored in the 
+// The 3D Vector is packed into 32 bits as follows: a 10 bit signed,
+// integer for the x component and 11 bit signed integers for the
+// y and z components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z11Y11X10): [32] zzzzzzzz zzzyyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMDHEN3
@@ -761,9 +758,9 @@ typedef struct _XMDHEN3
 } XMDHEN3;
 
 // 3D Vector; 10-11-11 bit normalized components packed into a 32 bit integer
-// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit unsigned, 
-// normalized integer for the x component and 11 bit unsigned, normalized 
-// integers for the y and z components.  The w component is stored in the 
+// The normalized 3D Vector is packed into 32 bits as follows: a 10 bit unsigned,
+// normalized integer for the x component and 11 bit unsigned, normalized
+// integers for the y and z components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z11Y11X10): [32] zzzzzzzz zzzyyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMUDHENN3
@@ -796,9 +793,9 @@ typedef struct _XMUDHENN3
 } XMUDHENN3;
 
 // 3D Vector; 10-11-11 bit components packed into a 32 bit integer
-// The 3D Vector is packed into 32 bits as follows: a 10 bit unsigned, 
-// integer for the x component and 11 bit unsigned integers 
-// for the y and z components.  The w component is stored in the 
+// The 3D Vector is packed into 32 bits as follows: a 10 bit unsigned,
+// integer for the x component and 11 bit unsigned integers
+// for the y and z components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (Z11Y11X10): [32] zzzzzzzz zzzyyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMUDHEN3
@@ -967,7 +964,7 @@ __declspec(align(16)) struct XMFLOAT4A : public XMFLOAT4
     XMFLOAT4A(FLOAT _x, FLOAT _y, FLOAT _z, FLOAT _w) : XMFLOAT4(_x, _y, _z, _w) {};
     XMFLOAT4A(CONST FLOAT *pArray) : XMFLOAT4(pArray) {};
 
-    XMFLOAT4A& operator= (CONST XMFLOAT4A& Float4);   
+    XMFLOAT4A& operator= (CONST XMFLOAT4A& Float4);
 };
 #else
 typedef __declspec(align(16)) XMFLOAT4 XMFLOAT4A;
@@ -1084,9 +1081,9 @@ typedef struct _XMUSHORT4
 } XMUSHORT4;
 
 // 4D Vector; 10-10-10-2 bit normalized components packed into a 32 bit integer
-// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit unsigned, 
-// normalized integer for the w component and 10 bit signed, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit unsigned,
+// normalized integer for the w component and 10 bit signed, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMXDECN4
@@ -1121,8 +1118,8 @@ typedef struct _XMXDECN4
 
 // 4D Vector; 10-10-10-2 bit components packed into a 32 bit integer
 // The normalized 4D Vector is packed into 32 bits as follows: a 2 bit unsigned
-// integer for the w component and 10 bit signed integers for the 
-// z, y, and x components.  The w component is stored in the 
+// integer for the w component and 10 bit signed integers for the
+// z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMXDEC4
@@ -1156,9 +1153,9 @@ typedef struct _XMXDEC4
 } XMXDEC4;
 
 // 4D Vector; 10-10-10-2 bit normalized components packed into a 32 bit integer
-// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit signed, 
-// normalized integer for the w component and 10 bit signed, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit signed,
+// normalized integer for the w component and 10 bit signed, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMDECN4
@@ -1192,9 +1189,9 @@ typedef struct _XMDECN4
 } XMDECN4;
 
 // 4D Vector; 10-10-10-2 bit components packed into a 32 bit integer
-// The 4D Vector is packed into 32 bits as follows: a 2 bit signed, 
-// integer for the w component and 10 bit signed integers for the 
-// z, y, and x components.  The w component is stored in the 
+// The 4D Vector is packed into 32 bits as follows: a 2 bit signed,
+// integer for the w component and 10 bit signed integers for the
+// z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMDEC4
@@ -1228,9 +1225,9 @@ typedef struct _XMDEC4
 } XMDEC4;
 
 // 4D Vector; 10-10-10-2 bit normalized components packed into a 32 bit integer
-// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit unsigned, 
-// normalized integer for the w component and 10 bit unsigned, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 32 bits as follows: a 2 bit unsigned,
+// normalized integer for the w component and 10 bit unsigned, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMUDECN4
@@ -1264,9 +1261,9 @@ typedef struct _XMUDECN4
 } XMUDECN4;
 
 // 4D Vector; 10-10-10-2 bit components packed into a 32 bit integer
-// The 4D Vector is packed into 32 bits as follows: a 2 bit unsigned, 
-// integer for the w component and 10 bit unsigned integers 
-// for the z, y, and x components.  The w component is stored in the 
+// The 4D Vector is packed into 32 bits as follows: a 2 bit unsigned,
+// integer for the w component and 10 bit unsigned integers
+// for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W2Z10Y10X10): [32] wwzzzzzz zzzzyyyy yyyyyyxx xxxxxxxx [0]
 typedef struct _XMUDEC4
@@ -1300,9 +1297,9 @@ typedef struct _XMUDEC4
 } XMUDEC4;
 
 // 4D Vector; 20-20-20-4 bit normalized components packed into a 64 bit integer
-// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit unsigned, 
-// normalized integer for the w component and 20 bit signed, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit unsigned,
+// normalized integer for the w component and 20 bit signed, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMXICON4
@@ -1337,8 +1334,8 @@ typedef struct _XMXICON4
 
 // 4D Vector; 20-20-20-4 bit components packed into a 64 bit integer
 // The 4D Vector is packed into 64 bits as follows: a 4 bit unsigned
-// integer for the w component and 20 bit signed integers for the 
-// z, y, and x components.  The w component is stored in the 
+// integer for the w component and 20 bit signed integers for the
+// z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMXICO4
@@ -1372,9 +1369,9 @@ typedef struct _XMXICO4
 } XMXICO4;
 
 // 4D Vector; 20-20-20-4 bit normalized components packed into a 64 bit integer
-// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit signed, 
-// normalized integer for the w component and 20 bit signed, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit signed,
+// normalized integer for the w component and 20 bit signed, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMICON4
@@ -1408,9 +1405,9 @@ typedef struct _XMICON4
 } XMICON4;
 
 // 4D Vector; 20-20-20-4 bit components packed into a 64 bit integer
-// The 4D Vector is packed into 64 bits as follows: a 4 bit signed, 
-// integer for the w component and 20 bit signed integers for the 
-// z, y, and x components.  The w component is stored in the 
+// The 4D Vector is packed into 64 bits as follows: a 4 bit signed,
+// integer for the w component and 20 bit signed integers for the
+// z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMICO4
@@ -1444,9 +1441,9 @@ typedef struct _XMICO4
 } XMICO4;
 
 // 4D Vector; 20-20-20-4 bit normalized components packed into a 64 bit integer
-// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit unsigned, 
-// normalized integer for the w component and 20 bit unsigned, normalized 
-// integers for the z, y, and x components.  The w component is stored in the 
+// The normalized 4D Vector is packed into 64 bits as follows: a 4 bit unsigned,
+// normalized integer for the w component and 20 bit unsigned, normalized
+// integers for the z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMUICON4
@@ -1480,9 +1477,9 @@ typedef struct _XMUICON4
 } XMUICON4;
 
 // 4D Vector; 20-20-20-4 bit components packed into a 64 bit integer
-// The 4D Vector is packed into 64 bits as follows: a 4 bit unsigned 
-// integer for the w component and 20 bit unsigned integers for the 
-// z, y, and x components.  The w component is stored in the 
+// The 4D Vector is packed into 64 bits as follows: a 4 bit unsigned
+// integer for the w component and 20 bit unsigned integers for the
+// z, y, and x components.  The w component is stored in the
 // most significant bits and the x component in the least significant bits
 // (W4Z20Y20X20): [64] wwwwzzzz zzzzzzzz zzzzzzzz yyyyyyyy yyyyyyyy yyyyxxxx xxxxxxxx xxxxxxxx [0]
 typedef struct _XMUICO4
@@ -1882,7 +1879,6 @@ typedef __declspec(align(16)) XMFLOAT4X4 XMFLOAT4X4A;
 
 #pragma warning(pop)
 
-
 /****************************************************************************
  *
  * Data conversion operations
@@ -2246,7 +2242,6 @@ XMVECTOR        XMVectorBaryCentricV(FXMVECTOR Position0, FXMVECTOR Position1, F
  *
  ****************************************************************************/
 
-
 BOOL            XMVector2Equal(FXMVECTOR V1, FXMVECTOR V2);
 UINT            XMVector2EqualR(FXMVECTOR V1, FXMVECTOR V2);
 BOOL            XMVector2EqualInt(FXMVECTOR V1, FXMVECTOR V2);
@@ -2312,7 +2307,6 @@ XMFLOAT2*       XMVector2TransformNormalStream(_Out_bytecap_x_(sizeof(XMFLOAT2)+
  *
  ****************************************************************************/
 
-
 BOOL            XMVector3Equal(FXMVECTOR V1, FXMVECTOR V2);
 UINT            XMVector3EqualR(FXMVECTOR V1, FXMVECTOR V2);
 BOOL            XMVector3EqualInt(FXMVECTOR V1, FXMVECTOR V2);
@@ -2373,21 +2367,21 @@ XMFLOAT3*       XMVector3TransformNormalStream(_Out_bytecap_x_(sizeof(XMFLOAT3)+
                                                _In_ UINT OutputStride,
                                                _In_bytecount_x_(sizeof(XMFLOAT3)+InputStride*(VectorCount-1)) CONST XMFLOAT3* pInputStream,
                                                _In_ UINT InputStride, _In_ UINT VectorCount, CXMMATRIX M);
-XMVECTOR        XMVector3Project(FXMVECTOR V, FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ, 
+XMVECTOR        XMVector3Project(FXMVECTOR V, FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ,
                     CXMMATRIX Projection, CXMMATRIX View, CXMMATRIX World);
 XMFLOAT3*       XMVector3ProjectStream(_Out_bytecap_x_(sizeof(XMFLOAT3)+OutputStride*(VectorCount-1)) XMFLOAT3* pOutputStream,
                                        _In_ UINT OutputStride,
                                        _In_bytecount_x_(sizeof(XMFLOAT3)+InputStride*(VectorCount-1)) CONST XMFLOAT3* pInputStream,
-                                       _In_ UINT InputStride, _In_ UINT VectorCount, 
-                    FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ, 
+                                       _In_ UINT InputStride, _In_ UINT VectorCount,
+                    FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ,
                     CXMMATRIX Projection, CXMMATRIX View, CXMMATRIX World);
-XMVECTOR        XMVector3Unproject(FXMVECTOR V, FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ, 
+XMVECTOR        XMVector3Unproject(FXMVECTOR V, FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ,
                     CXMMATRIX Projection, CXMMATRIX View, CXMMATRIX World);
 XMFLOAT3*       XMVector3UnprojectStream(_Out_bytecap_x_(sizeof(XMFLOAT3)+OutputStride*(VectorCount-1)) XMFLOAT3* pOutputStream,
                                          _In_ UINT OutputStride,
                                          _In_bytecount_x_(sizeof(XMFLOAT3)+InputStride*(VectorCount-1)) CONST XMFLOAT3* pInputStream,
-                                         _In_ UINT InputStride, _In_ UINT VectorCount, 
-                    FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ, 
+                                         _In_ UINT InputStride, _In_ UINT VectorCount,
+                    FLOAT ViewportX, FLOAT ViewportY, FLOAT ViewportWidth, FLOAT ViewportHeight, FLOAT ViewportMinZ, FLOAT ViewportMaxZ,
                     CXMMATRIX Projection, CXMMATRIX View, CXMMATRIX World);
 
 /****************************************************************************
@@ -2473,9 +2467,9 @@ XMMATRIX        XMMatrixRotationRollPitchYawFromVector(FXMVECTOR Angles);
 XMMATRIX        XMMatrixRotationNormal(FXMVECTOR NormalAxis, FLOAT Angle);
 XMMATRIX        XMMatrixRotationAxis(FXMVECTOR Axis, FLOAT Angle);
 XMMATRIX        XMMatrixRotationQuaternion(FXMVECTOR Quaternion);
-XMMATRIX        XMMatrixTransformation2D(FXMVECTOR ScalingOrigin, FLOAT ScalingOrientation, FXMVECTOR Scaling, 
+XMMATRIX        XMMatrixTransformation2D(FXMVECTOR ScalingOrigin, FLOAT ScalingOrientation, FXMVECTOR Scaling,
                     FXMVECTOR RotationOrigin, FLOAT Rotation, CXMVECTOR Translation);
-XMMATRIX        XMMatrixTransformation(FXMVECTOR ScalingOrigin, FXMVECTOR ScalingOrientationQuaternion, FXMVECTOR Scaling, 
+XMMATRIX        XMMatrixTransformation(FXMVECTOR ScalingOrigin, FXMVECTOR ScalingOrientationQuaternion, FXMVECTOR Scaling,
                     CXMVECTOR RotationOrigin, CXMVECTOR RotationQuaternion, CXMVECTOR Translation);
 XMMATRIX        XMMatrixAffineTransformation2D(FXMVECTOR Scaling, FXMVECTOR RotationOrigin, FLOAT Rotation, FXMVECTOR Translation);
 XMMATRIX        XMMatrixAffineTransformation(FXMVECTOR Scaling, FXMVECTOR RotationOrigin, FXMVECTOR RotationQuaternion, CXMVECTOR Translation);
@@ -2619,12 +2613,12 @@ FLOAT           XMScalarACosEst(FLOAT Value);
  *
  ****************************************************************************/
 
-// The purpose of the following global constants is to prevent redundant 
+// The purpose of the following global constants is to prevent redundant
 // reloading of the constants when they are referenced by more than one
 // separate inline math routine called within the same function.  Declaring
 // a constant locally within a routine is sufficient to prevent redundant
 // reloads of that constant when that single routine is called multiple
-// times in a function, but if the constant is used (and declared) in a 
+// times in a function, but if the constant is used (and declared) in a
 // separate math routine it would be reloaded.
 
 #define XMGLOBALCONST extern CONST __declspec(selectany)
@@ -2935,4 +2929,3 @@ XMFINLINE XMVECTOR XMVectorInsert(FXMVECTOR VD, FXMVECTOR VS, UINT VSLeftRotateE
 #pragma warning(pop)
 
 #endif // __XNAMATH_H__
-

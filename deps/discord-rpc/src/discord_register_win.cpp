@@ -77,22 +77,22 @@ static void Discord_RegisterW(const wchar_t* applicationId, const wchar_t* comma
     wchar_t openCommand[1024];
 
     if (command && command[0]) {
-        StringCbPrintfW(openCommand, sizeof(openCommand), L"%s", command);
+        StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", command);
     }
     else {
         // StringCbCopyW(openCommand, sizeof(openCommand), exeFilePath);
-        StringCbPrintfW(openCommand, sizeof(openCommand), L"%s", exeFilePath);
+        StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", exeFilePath);
     }
 
     wchar_t protocolName[64];
-    StringCbPrintfW(protocolName, sizeof(protocolName), L"discord-%s", applicationId);
+    StringCbPrintfW(protocolName, sizeof(protocolName), L"discord-%S", applicationId);
     wchar_t protocolDescription[128];
     StringCbPrintfW(
-      protocolDescription, sizeof(protocolDescription), L"URL:Run game %s protocol", applicationId);
+      protocolDescription, sizeof(protocolDescription), L"URL:Run game %S protocol", applicationId);
     wchar_t urlProtocol = 0;
 
     wchar_t keyName[256];
-    StringCbPrintfW(keyName, sizeof(keyName), L"Software\\Classes\\%s", protocolName);
+    StringCbPrintfW(keyName, sizeof(keyName), L"Software\\Classes\\%S", protocolName);
     HKEY key;
     auto status =
       RegCreateKeyExW(HKEY_CURRENT_USER, keyName, 0, nullptr, 0, KEY_WRITE, nullptr, &key, nullptr);

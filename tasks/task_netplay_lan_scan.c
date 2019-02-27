@@ -18,6 +18,7 @@
 #include <string/stdstring.h>
 #include "../paths.h"
 
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 
 #ifdef HAVE_CONFIG_H
@@ -45,7 +46,7 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
 
 bool task_push_netplay_lan_scan(retro_task_callback_t cb)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task = task_init();
 
    if (!task)
       return false;
@@ -62,7 +63,7 @@ bool task_push_netplay_lan_scan(retro_task_callback_t cb)
 
 bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task = task_init();
 
    if (!task)
       return false;

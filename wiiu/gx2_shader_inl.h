@@ -47,7 +47,6 @@
 #define CF_ALLOC_EXPORT_WORD1_BUF(arraySize, writeMask, inst) \
    to_LE(arraySize | (writeMask << 12) | (inst << 23) | (1 << 31))
 
-
 #define ALU_SRC_KCACHE0_BASE  0x80
 #define ALU_SRC_KCACHE1_BASE  0xA0
 #define CF_KCACHE_BANK_LOCK_1 0x1
@@ -68,7 +67,6 @@
 #define ELEM_SIZE(x)    x
 #define KCACHE0(bank, mode) | to_QWORD(CF_ALU_WORD0(0, bank, 0, mode), 0)
 #define KCACHE1(bank, mode) | to_QWORD(CF_ALU_WORD0(0, 0, bank, 0), CF_ALU_WORD1(mode,0, 0, 0, 0, 0))
-
 
 #define DEACTIVATE               1
 #define UPDATE_EXEC_MASK(mode)   | to_QWORD(0, to_LE(mode << 2))
@@ -176,7 +174,6 @@
 #define SCL_212               | to_QWORD(0, to_LE(ALU_SCL_212 << 18))
 #define SCL_221               | to_QWORD(0, to_LE(ALU_SCL_221 << 18))
 
-
 #define FETCH_TYPE(x) x
 #define MINI(x) ((x) - 1)
 #define MEGA(x) (MINI(x) | 0x80000000)
@@ -185,7 +182,6 @@
 #define VERTEX_DATA     0
 #define INSTANCE_DATA   1
 #define NO_INDEX_OFFSET 2
-
 
 /* CF defines */
 #define CF_COND_ACTIVE      0x0
@@ -295,7 +291,6 @@
 #define _R126    _R(0x7E)
 #define _R127    _R(0x7F)
 
-
 /* texture */
 #define _t(x)  x
 #define _t0    _t(0x0)
@@ -305,7 +300,6 @@
 #define _s0    _s(0x0)
 
 #define _b(x)  x
-
 
 #define CALL_FS to_QWORD(CF_DWORD0(0), CF_DWORD1(0,0,0,0,0,CF_INST_CALL_FS))
 
@@ -457,7 +451,6 @@
    to_QWORD(TEX_WORD0(TEX_INST_GET_GRADIENTS_V, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \
    TEX_WORD1(dstReg, 0x0, dstSelX, dstSelY, dstSelZ, dstSelW, 0x0, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED)), \
    to_QWORD(TEX_WORD2(0x0, 0x0, 0x0, samplerID, _x, _y, _z, _x), 0x00000000)
-
 
 #define VTX_FETCH(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, buffer_id, type, mega, offset) \
    to_QWORD(VTX_WORD0(VTX_INST_FETCH, type, buffer_id, srcReg, srcSelX, mega), VTX_WORD1(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW)) , \

@@ -3,7 +3,7 @@ LIBAVFORMAT_SOURCE :=
 LIBAVUTIL_SOURCE   :=
 DEPS_SOURCE        :=
 DEFINES            := -DHAVE_SWRESAMPLE
-LIBRETRO_SOURCE    := 
+LIBRETRO_SOURCE    :=
 GL_SOURCE          :=
 
 CPUOPTS            :=
@@ -15,7 +15,6 @@ AVCODEC_DIR    	 := $(BASE_DIR)/libavcodec
 AVUTIL_DIR     	 := $(BASE_DIR)/libavutil
 SWSCALE_DIR    	 := $(BASE_DIR)/libswscale
 SWRESAMPLE_DIR 	 := $(BASE_DIR)/libswresample
-
 
 INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/include/compat
 

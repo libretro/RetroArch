@@ -368,7 +368,7 @@ void network_deinit(void)
    net_deinit();
 #elif defined(_3DS)
    socExit();
-   
+
    if(_net_compat_net_memory)
    {
 	  free(_net_compat_net_memory);
@@ -446,7 +446,6 @@ error:
    errno = ENOSPC;
    return NULL;
 }
-
 
 /* convert presentation format to network format */
 static const char *

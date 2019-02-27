@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #ifndef __LIBRETRO_SDK_CONFIG_FILE_H
 #define __LIBRETRO_SDK_CONFIG_FILE_H
 
@@ -63,7 +62,6 @@ struct config_file
 
    struct config_include_list *includes;
 };
-
 
 typedef struct config_file config_file_t;
 
@@ -181,15 +179,18 @@ void config_set_bool(config_file_t *conf, const char *entry, bool val);
 void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
 /* Write the current config to a file. */
-bool config_file_write(config_file_t *conf, const char *path);
+bool config_file_write(config_file_t *conf, const char *path, bool val);
 
 /* Dump the current config to an already opened file.
  * Does not close the file. */
-void config_file_dump(config_file_t *conf, FILE *file);
+void config_file_dump(config_file_t *conf, FILE *file, bool val);
+
+#ifdef ORBIS
+void config_file_dump_orbis(config_file_t *conf, int fd);
+#endif
 
 bool config_file_exists(const char *path);
 
 RETRO_END_DECLS
 
 #endif
-

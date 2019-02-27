@@ -1,7 +1,6 @@
 
 Program <- (Function / Comment / Line)* EndOfFile
 
-
 Function <- _ ReturnType _ '(' _ FunctionName _ ')'_ Parameters
 Parameters <- '('_ This _ ','? _ ( _ Param _ ','?)*_ ');'
 FunctionName <- CallType _ '*' _ <Name>
@@ -27,4 +26,3 @@ End <- EndOfLine / EndOfFile
 Indent  <-  [ \t]
 ~Space  <-  [ \t]
 Comment <- [ \t]*<('/*' (!'*/' .)* '*/' / '//') Line>
-

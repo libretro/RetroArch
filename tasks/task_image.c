@@ -28,6 +28,7 @@
 #include "../file_path_special.h"
 #include "../verbosity.h"
 
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 
 enum image_status_enum
@@ -290,7 +291,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
 {
    nbio_handle_t             *nbio   = NULL;
    struct nbio_image_handle   *image = NULL;
-   retro_task_t                   *t = (retro_task_t*)calloc(1, sizeof(*t));
+   retro_task_t                   *t = task_init();
 
    if (!t)
       goto error_msg;

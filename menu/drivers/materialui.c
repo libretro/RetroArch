@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -55,6 +55,8 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../file_path_special.h"
+
+#include "../../dynamic.h"
 
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
@@ -165,9 +167,9 @@ typedef struct materialui_handle
    float textures_arrow_alpha;
    float categories_x_pos;
 
-   uint64_t frame_count;
-
    char *box_message;
+
+   char menu_title[255];
 
    struct
    {
@@ -182,14 +184,6 @@ typedef struct materialui_handle
    video_font_raster_block_t raster_block2;
 
 } materialui_handle_t;
-
-static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
-{
-   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
-   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
-   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
-   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
-}
 
 static const char *materialui_texture_path(unsigned id)
 {
@@ -316,7 +310,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+      menu_display_reset_textures_list(materialui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
    free(iconpath);
 }
 
@@ -567,7 +561,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
                mui->font, msg,
                x - longest_width/2.0,
                y + i * line_height + mui->font->size / 3,
-               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    }
 
@@ -576,7 +570,8 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
             mui->font,
             video_info,
-            menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+            menu_event_get_osk_grid(), menu_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    if (list)
@@ -615,7 +610,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
 
-
       sublabel_str = menu_entry_get_sublabel(&entry);
       menu_entry_free(&entry);
 
@@ -649,8 +643,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    with acceleration */
 static void materialui_render(void *data, bool is_idle)
 {
-   menu_animation_ctx_delta_t delta;
-   float delta_time;
    unsigned bottom, width, height, header_height;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
@@ -668,13 +660,6 @@ static void materialui_render(void *data, bool is_idle)
          materialui_compute_entries_box(mui, width);
       mui->need_compute = false;
    }
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-
-   delta.current = delta_time;
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      menu_animation_update(delta.ideal);
 
    menu_display_set_width(width);
    menu_display_set_height(height);
@@ -765,6 +750,11 @@ static void materialui_render_label_value(
    int icon_margin                 = 0;
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
+   settings_t *settings            = config_get_ptr();
+
+   /* Initial ticker configuration */
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer = NULL;
 
    label_str[0] = value_str[0]     = '\0';
 
@@ -874,7 +864,7 @@ static void materialui_render_label_value(
                mui->margin + icon_margin,
                y + (scale_factor / 4) + mui->font->size,
                width, height, sublabel_color, TEXT_ALIGN_LEFT,
-               1.0f, false, 0);
+               1.0f, false, 0, false);
       }
       free(sublabel_str);
    }
@@ -882,13 +872,13 @@ static void materialui_render_label_value(
    menu_display_draw_text(mui->font, label_str,
          mui->margin + icon_margin,
          y + (scale_factor / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
             y + (scale_factor / 5),
-            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
+            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
       materialui_draw_icon(video_info,
@@ -943,7 +933,6 @@ static void materialui_render_menu_list(
    float sum                               = 0;
    size_t entries_end                      = 0;
    file_list_t *list                       = NULL;
-   uint64_t frame_count                    = mui->frame_count;
    unsigned header_height                  =
       menu_display_get_header_height();
 
@@ -994,7 +983,7 @@ static void materialui_render_menu_list(
             y,
             width,
             height,
-            frame_count / 20,
+            menu_animation_get_ticker_idx(),
             font_hover_color,
             entry_selected,
             rich_label,
@@ -1007,7 +996,6 @@ static void materialui_render_menu_list(
       free(rich_label);
    }
 }
-
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 {
@@ -1027,22 +1015,12 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 static int materialui_get_core_title(char *s, size_t len)
 {
    settings_t *settings              = config_get_ptr();
-   rarch_system_info_t *info         = runloop_get_system_info();
-   struct retro_system_info *system  = &info->info;
-
-   const char *core_name             = system->library_name;
-   const char *core_version          = system->library_version;
+   struct retro_system_info *system  = runloop_get_libretro_system_info();
+   const char *core_name             = system ? system->library_name : NULL;
+   const char *core_version          = system ? system->library_version : NULL;
 
    if (!settings->bools.menu_core_enable)
       return -1;
-
-   if (info)
-   {
-      if (string_is_empty(core_name))
-         core_name = info->info.library_name;
-      if (!core_version)
-         core_version = info->info.library_version;
-   }
 
    if (string_is_empty(core_name))
       core_name    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
@@ -1089,7 +1067,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
    char msg[255];
-   char title[255];
    char title_buf[255];
    char title_msg[255];
 
@@ -1185,16 +1162,19 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    bool background_rendered        = false;
    bool libretro_running           = video_info->libretro_running;
 
+   settings_t *settings            = config_get_ptr();
    materialui_handle_t *mui        = (materialui_handle_t*)data;
 
    if (!mui)
       return;
 
+   /* Initial ticker configuration */
+   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer = NULL;
+
    usable_width                    = width - (mui->margin * 2);
 
-   mui->frame_count++;
-
-   msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
+   msg[0] = title_buf[0] = title_msg[0] = '\0';
 
    switch (video_info->materialui_color_theme)
    {
@@ -1410,8 +1390,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   menu_entries_get_title(title, sizeof(title));
-
    selection = menu_navigation_get_selection();
 
    if (background_rendered || libretro_running)
@@ -1547,8 +1525,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
-   ticker.idx      = mui->frame_count / 100;
-   ticker.str      = title;
+   ticker.idx      = menu_animation_get_ticker_slow_idx();
+   ticker.str      = mui->menu_title;
    ticker.selected = true;
 
    menu_animation_ticker(&ticker);
@@ -1569,7 +1547,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
-      ticker.idx      = mui->frame_count / 20;
+      ticker.idx      = menu_animation_get_ticker_idx();
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 
@@ -1582,7 +1560,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       menu_display_draw_text(mui->font, title_buf,
             title_margin,
             header_height / 2 + mui->font->size / 3,
-            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    materialui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
 
@@ -1711,6 +1689,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->cursor_size  = scale_factor / 3;
    mui->need_compute = false;
 
+   mui->menu_title[0] = '\0';
+
    return menu;
 error:
    if (menu)
@@ -1823,7 +1803,7 @@ static void materialui_navigation_set(void *data, bool scroll)
    if (!mui || !scroll)
       return;
 
-   entry.duration     = 10;
+   entry.duration     = 166;
    entry.target_value = scroll_pos;
    entry.subject      = &mui->scroll_y;
    entry.easing_enum  = EASING_IN_OUT_QUAD;
@@ -1871,6 +1851,7 @@ static void materialui_populate_entries(
    if (!mui)
       return;
 
+   menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
    mui->need_compute = true;
    mui->scroll_y = materialui_get_scroll(mui);
 }
@@ -2016,6 +1997,7 @@ static int materialui_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
+   const struct retro_subsystem_info* subsystem;
 
    (void)userdata;
 
@@ -2074,7 +2056,13 @@ static int materialui_list_push(void *data, void *userdata,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
+            }
+
+            if (system->load_no_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+               menu_displaylist_setting(&entry);
             }
 
 #ifndef HAVE_DYNAMIC
@@ -2084,39 +2072,41 @@ static int materialui_list_push(void *data, void *userdata,
                if (settings->bools.menu_show_load_core)
                {
                   entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+                  menu_displaylist_setting(&entry);
                }
-            }
-
-            if (system->load_no_content)
-            {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             if (settings->bools.menu_show_load_content)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
+
+               /* Core fully loaded, use the subsystem data */
+               if (system->subsystem.data)
+                     subsystem = system->subsystem.data;
+               /* Core not loaded completely, use the data we peeked on load core */
+               else
+                  subsystem = subsystem_data;
+
+               menu_subsystem_populate(subsystem, info);
             }
 
             if (settings->bools.menu_content_show_history)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
             entry.enum_idx      = MENU_ENUM_LABEL_UPDATE_LAKKA;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #else
             {
-               settings_t *settings      = config_get_ptr();
                if (settings->bools.menu_show_online_updater)
                {
                   entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+                  menu_displaylist_setting(&entry);
                }
             }
 #endif
@@ -2124,44 +2114,44 @@ static int materialui_list_push(void *data, void *userdata,
             if (settings->bools.menu_content_show_netplay)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #endif
             if (settings->bools.menu_show_information)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #endif
             if (settings->bools.menu_show_configurations)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_help)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #if !defined(IOS)
             entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #endif
 #if defined(HAVE_LAKKA)
             if (settings->bools.menu_show_reboot)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_shutdown)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #endif
             info->need_push    = true;
@@ -2224,7 +2214,6 @@ static int materialui_pointer_down(void *userdata,
             )
             menu_navigation_set_selection(ii);
       }
-
 
    }
 
@@ -2372,7 +2361,6 @@ static void materialui_list_insert(void *userdata,
             node->texture_switch2_index = MUI_TEXTURE_DATABASE;
             node->texture_switch2_set   = true;
             break;
-         case 32: /* TODO: Need to find out what this is */
          case FILE_TYPE_RDB_ENTRY:
             node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
             node->texture_switch2_set   = true;
@@ -2517,6 +2505,8 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
                   ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
                   )
             {
                node->texture_switch2_index = MUI_TEXTURE_START_CORE;
@@ -2579,7 +2569,10 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_index = MUI_TEXTURE_CONFIGURATIONS;
                node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
+                  )
             {
                node->texture_switch2_index = MUI_TEXTURE_LOAD_CONTENT;
                node->texture_switch2_set   = true;
@@ -2752,7 +2745,7 @@ static void materialui_list_clear(file_list_t *list)
       subject.count = 2;
       subject.data  = subjects;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);
+      menu_animation_kill_by_subject(&subject);
 
       file_list_free_userdata(list, i);
    }
@@ -2798,8 +2791,9 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    menu_display_osk_ptr_at_pos,
-   NULL,
-   NULL,
+   NULL, /* update_savestate_thumbnail_path */
+   NULL, /* update_savestate_thumbnail_image */
    materialui_pointer_down,
    materialui_pointer_up,
+   NULL /* get_load_content_animation_data */
 };

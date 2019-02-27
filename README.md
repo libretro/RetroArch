@@ -31,7 +31,7 @@ Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [Discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
 
@@ -148,7 +148,7 @@ Instructions for compiling and installing RetroArch can be found in the [Libretr
 
 ## CRT 15Khz Resolution Switching
 
-CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.  
+CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.
 
 If you are running Windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelines for all games to switch correctly are:
 
@@ -189,46 +189,46 @@ The default super resolution is 2560. It is displayed just under the CRT switch 
 
 If native resolutions are activated you will need a whole new set of modelines:
 
-- 512 x 240 @ 50.006977 SNESpal
+- 256 x 240 @ 50.006977 SNESpal
+- 256 x 448 @ 50.006977 SNESpal
 - 512 x 224 @ 50.006977 SNESpal
+- 512 x 240 @ 50.006977 SNESpal
 - 512 x 448 @ 50.006977 SNESpal
+- 256 x 240 @ 60.098812 SNESntsc
+- 256 x 448 @ 60.098812 SNESntsc
 - 512 x 240 @ 60.098812 SNESntsc
 - 512 x 224 @ 60.098812 SNESntsc
 - 512 x 448 @ 60.098812 SNESntsc
-- 256 x 240 @ 50.006977 SNESpal
-- 256 x 448 @ 50.006977 SNESpal
-- 256 x 240 @ 60.098812 SNESntsc
-- 256 x 448 @ 60.098812 SNESntsc
-- 320 x 240 @ 59.922745 MDntsc
-- 320 x 448 @ 59.922745 MDntp
-- 320 x 480 @ 59.922745 MDntsc
 - 256 x 192 @ 59.922745 MDntsc
-- 320 x 224 @ 59.922745 MDntsc
 - 256 x 224 @ 59.922745 MDntsc
-- 320 x 288 @ 49.701458 MDpal
-- 320 x 576 @ 49.701458 MDpal
+- 320 x 224 @ 59.922745 MDntsc
+- 320 x 240 @ 59.922745 MDntsc
+- 320 x 448 @ 59.922745 MDntsc
+- 320 x 480 @ 59.922745 MDntsc
 - 256 x 192 @ 49.701458 MDpal
+- 256 x 224 @ 49.701458 MDpal
 - 320 x 224 @ 49.701458 MDpal
 - 320 x 240 @ 49.701458 MDpal
+- 320 x 288 @ 49.701458 MDpal
 - 320 x 448 @ 49.701458 MDpal
 - 320 x 480 @ 49.701458 MDpal
-- 256 x 224 @ 49.701458 MDpal
+- 320 x 576 @ 49.701458 MDpal
 - 256 x 288 @ 49.701458 MSYSpal
 - 256 x 240 @ 60.098812 NESntsc
 - 256 x 240 @ 50.006977 NESpal
 
-- 640 x 480 @ 60.130001 N64ntsc
 - 640 x 237 @ 60.130001 N64ntsc
 - 640 x 240 @ 60.130001 N64ntsc
+- 640 x 480 @ 60.130001 N64ntsc
+- 640 x 288 @ 50.000000 N64pal
 - 640 x 480 @ 50.000000 N64pal
-- 640 x 576 @ 50.000000 n64pal
-- 640 x 288 @ 50.000000 n64pal
+- 640 x 576 @ 50.000000 N64pal
 
 - 256 x 252 @ 49.759998 PSXpal
-- 384 x 252 @ 49.759998 PSXpal
-- 640 x 540 @ 49.759998 PSXpal
 - 320 x 252 @ 49.759998 PSXpal
+- 384 x 252 @ 49.759998 PSXpal
 - 640 x 252 @ 49.759998 PSXpal
+- 640 x 540 @ 49.759998 PSXpal
 
 - 384 x 240 @ 59.941002 PSXntsc
 - 256 x 480 @ 59.941002 PSXntsc

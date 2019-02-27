@@ -82,13 +82,6 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
 
-   /* Attempts to find a default driver for
-    * all driver types.
-    *
-    * Should be run before RARCH_DRIVER_CTL_INIT.
-    */
-   RARCH_DRIVER_CTL_INIT_PRE,
-
    /* Sets monitor refresh rate to new value by calling
     * video_monitor_set_refresh_rate(). Subsequently
     * calls audio_monitor_set_refresh_rate(). */

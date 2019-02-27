@@ -70,7 +70,6 @@ CACHE* _FAT_cache_constructor (unsigned int numberOfPages, unsigned int sectorsP
 	cache->sectorsPerPage = sectorsPerPage;
 	cache->bytesPerSector = bytesPerSector;
 
-
 	cacheEntries = (CACHE_ENTRY*) _FAT_mem_allocate ( sizeof(CACHE_ENTRY) * numberOfPages);
 	if (cacheEntries == NULL) {
 		_FAT_mem_free (cache);
@@ -103,14 +102,12 @@ void _FAT_cache_destructor (CACHE* cache) {
 	_FAT_mem_free (cache);
 }
 
-
 static u32 accessCounter = 0;
 
 static u32 accessTime(){
 	accessCounter++;
 	return accessCounter;
 }
-
 
 static CACHE_ENTRY* _FAT_cache_getPage(CACHE *cache,sec_t sector)
 {
@@ -264,7 +261,6 @@ bool _FAT_cache_eraseWritePartialSector (CACHE* cache, const void* buffer, sec_t
 	entry->dirty = true;
 	return true;
 }
-
 
 bool _FAT_cache_writeSectors (CACHE* cache, sec_t sector, sec_t numSectors, const void* buffer)
 {

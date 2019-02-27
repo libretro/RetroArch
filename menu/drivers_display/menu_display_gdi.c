@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -50,7 +50,7 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 {
    struct gdi_texture *texture = NULL;
    gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
-   BITMAPINFO info = {0};
+   BITMAPINFO info = {{0}};
 
    if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
       return;
@@ -75,22 +75,20 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 #endif
 
       if (!gdi->texDC)
-         gdi->texDC = CreateCompatibleDC(gdi->winDC);
+         gdi->texDC        = CreateCompatibleDC(gdi->winDC);
 
       if (texture->bmp)
-      {
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
-      }
+         texture->bmp_old  = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
       else
       {
          /* scale texture data into a bitmap we can easily blit later */
-         texture->bmp = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
-         texture->bmp_old = SelectObject(gdi->texDC, texture->bmp);
+         texture->bmp     = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
+         texture->bmp_old = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
 
          StretchDIBits(gdi->texDC, 0, 0, draw->width, draw->height, 0, 0, texture->width, texture->height, texture->data, &info, DIB_RGB_COLORS, SRCCOPY);
       }
 
-      gdi->bmp_old = SelectObject(gdi->memDC, gdi->bmp);
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #if _WIN32_WINNT >= 0x0410 /* Win98 */
       blend.BlendOp = AC_SRC_OVER;
@@ -137,12 +135,12 @@ static void menu_display_gdi_clear_color(
 
 static bool menu_display_gdi_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float gdi_font_size,
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, gdi_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_GDI)))
       return false;

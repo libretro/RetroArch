@@ -118,10 +118,10 @@ XMFINLINE FLOAT XMConvertHalfToFloat
 
 XMINLINE FLOAT* XMConvertHalfToFloatStream
 (
-    FLOAT*      pOutputStream, 
-    UINT        OutputStride, 
-    CONST HALF* pInputStream, 
-    UINT        InputStride, 
+    FLOAT*      pOutputStream,
+    UINT        OutputStride,
+    CONST HALF* pInputStream,
+    UINT        InputStride,
     UINT        HalfCount
 )
 {
@@ -138,7 +138,7 @@ XMINLINE FLOAT* XMConvertHalfToFloatStream
     {
         *(FLOAT*)pFloat = XMConvertHalfToFloat(*(HALF*)pHalf);
         pHalf += InputStride;
-        pFloat += OutputStride; 
+        pFloat += OutputStride;
     }
 
     return pOutputStream;
@@ -181,7 +181,7 @@ XMFINLINE HALF XMConvertFloatToHalf
             IValue += 0xC8000000U;
         }
 
-        Result = ((IValue + 0x0FFFU + ((IValue >> 13U) & 1U)) >> 13U)&0x7FFFU; 
+        Result = ((IValue + 0x0FFFU + ((IValue >> 13U) & 1U)) >> 13U)&0x7FFFU;
     }
     return (HALF)(Result|Sign);
 
@@ -193,10 +193,10 @@ XMFINLINE HALF XMConvertFloatToHalf
 
 XMINLINE HALF* XMConvertFloatToHalfStream
 (
-    HALF*        pOutputStream, 
-    UINT         OutputStride, 
-    CONST FLOAT* pInputStream, 
-    UINT         InputStride, 
+    HALF*        pOutputStream,
+    UINT         OutputStride,
+    CONST FLOAT* pInputStream,
+    UINT         InputStride,
     UINT         FloatCount
 )
 {
@@ -212,7 +212,7 @@ XMINLINE HALF* XMConvertFloatToHalfStream
     for (i = 0; i < FloatCount; i++)
     {
         *(HALF*)pHalf = XMConvertFloatToHalf(*(FLOAT*)pFloat);
-        pFloat += InputStride; 
+        pFloat += InputStride;
         pHalf += OutputStride;
     }
     return pOutputStream;
@@ -571,7 +571,7 @@ XMFINLINE XMVECTOR XMLoadFloat2A
 #else // _XM_VMX128_INTRINSICS_
 #endif // _XM_VMX128_INTRINSICS_
 }
-    
+
 //------------------------------------------------------------------------------
 
 XMFINLINE XMVECTOR XMLoadHalf2
@@ -1336,20 +1336,20 @@ XMFINLINE XMVECTOR XMLoadFloat3PK
         {
             // Normalize the value in the resulting float
             Exponent = 1;
-    
+
             do
             {
                 Exponent--;
                 Mantissa <<= 1;
             } while ((Mantissa & 0x40) == 0);
-    
+
             Mantissa &= 0x3F;
         }
         else // The value is zero
         {
             Exponent = (UINT)-112;
         }
-    
+
         Result[0] = ((Exponent + 112) << 23) | (Mantissa << 17);
     }
 
@@ -1370,20 +1370,20 @@ XMFINLINE XMVECTOR XMLoadFloat3PK
         {
             // Normalize the value in the resulting float
             Exponent = 1;
-    
+
             do
             {
                 Exponent--;
                 Mantissa <<= 1;
             } while ((Mantissa & 0x40) == 0);
-    
+
             Mantissa &= 0x3F;
         }
         else // The value is zero
         {
             Exponent = (UINT)-112;
         }
-    
+
         Result[1] = ((Exponent + 112) << 23) | (Mantissa << 17);
     }
 
@@ -1404,13 +1404,13 @@ XMFINLINE XMVECTOR XMLoadFloat3PK
         {
             // Normalize the value in the resulting float
             Exponent = 1;
-    
+
             do
             {
                 Exponent--;
                 Mantissa <<= 1;
             } while ((Mantissa & 0x20) == 0);
-    
+
             Mantissa &= 0x1F;
         }
         else // The value is zero
@@ -2173,7 +2173,6 @@ XMFINLINE XMVECTOR XMLoadIco4
 #endif // _XM_VMX128_INTRINSICS_
 }
 
-
 //------------------------------------------------------------------------------
 
 XMFINLINE XMVECTOR XMLoadXDecN4
@@ -2811,7 +2810,7 @@ XMFINLINE XMMATRIX XMLoadFloat3x3
 	T2 = _mm_unpacklo_ps( V2, Z );
 	T3 = _mm_shuffle_ps( V3, T2, _MM_SHUFFLE( 0, 1, 0, 0 ) );
 	T4 = _mm_movehl_ps( T2, T3 );
-	T5 = _mm_movehl_ps( Z, T1 );  
+	T5 = _mm_movehl_ps( Z, T1 );
 
 	M.r[0] = _mm_movelh_ps( V1, T1 );
 	M.r[1] = _mm_add_ps( T4, T5 );
@@ -2858,7 +2857,7 @@ XMFINLINE XMMATRIX XMLoadFloat4x3
 
 #elif defined(_XM_SSE_INTRINSICS_)
     XMASSERT(pSource);
-    // Use unaligned load instructions to 
+    // Use unaligned load instructions to
     // load the 12 floats
     // vTemp1 = x1,y1,z1,x2
     XMVECTOR vTemp1 = _mm_loadu_ps(&pSource->m[0][0]);
@@ -2929,7 +2928,7 @@ XMFINLINE XMMATRIX XMLoadFloat4x3A
 
 #elif defined(_XM_SSE_INTRINSICS_)
 	XMASSERT(pSource);
-    // Use aligned load instructions to 
+    // Use aligned load instructions to
     // load the 12 floats
     // vTemp1 = x1,y1,z1,x2
     XMVECTOR vTemp1 = _mm_load_ps(&pSource->m[0][0]);
@@ -3116,7 +3115,7 @@ XMFINLINE VOID XMStoreFloat
 
 XMFINLINE VOID XMStoreInt2
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -3143,7 +3142,7 @@ XMFINLINE VOID XMStoreInt2
 
 XMFINLINE VOID XMStoreInt2A
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -3170,7 +3169,7 @@ XMFINLINE VOID XMStoreInt2A
 
 XMFINLINE VOID XMStoreFloat2
 (
-    XMFLOAT2* pDestination, 
+    XMFLOAT2* pDestination,
     FXMVECTOR  V
 )
 {
@@ -3197,7 +3196,7 @@ XMFINLINE VOID XMStoreFloat2
 
 XMFINLINE VOID XMStoreFloat2A
 (
-    XMFLOAT2A*   pDestination, 
+    XMFLOAT2A*   pDestination,
     FXMVECTOR     V
 )
 {
@@ -3224,7 +3223,7 @@ XMFINLINE VOID XMStoreFloat2A
 
 XMFINLINE VOID XMStoreHalf2
 (
-    XMHALF2* pDestination, 
+    XMHALF2* pDestination,
     FXMVECTOR V
 )
 {
@@ -3247,7 +3246,7 @@ XMFINLINE VOID XMStoreHalf2
 
 XMFINLINE VOID XMStoreShortN2
 (
-    XMSHORTN2* pDestination, 
+    XMSHORTN2* pDestination,
     FXMVECTOR   V
 )
 {
@@ -3283,7 +3282,7 @@ XMFINLINE VOID XMStoreShortN2
 
 XMFINLINE VOID XMStoreShort2
 (
-    XMSHORT2* pDestination, 
+    XMSHORT2* pDestination,
     FXMVECTOR  V
 )
 {
@@ -3321,7 +3320,7 @@ XMFINLINE VOID XMStoreShort2
 
 XMFINLINE VOID XMStoreUShortN2
 (
-    XMUSHORTN2* pDestination, 
+    XMUSHORTN2* pDestination,
     FXMVECTOR    V
 )
 {
@@ -3360,7 +3359,7 @@ XMFINLINE VOID XMStoreUShortN2
 
 XMFINLINE VOID XMStoreUShort2
 (
-    XMUSHORT2* pDestination, 
+    XMUSHORT2* pDestination,
     FXMVECTOR   V
 )
 {
@@ -3397,7 +3396,7 @@ XMFINLINE VOID XMStoreUShort2
 
 XMFINLINE VOID XMStoreInt3
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -3429,7 +3428,7 @@ XMFINLINE VOID XMStoreInt3
 
 XMFINLINE VOID XMStoreInt3A
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -3459,7 +3458,7 @@ XMFINLINE VOID XMStoreInt3A
 
 XMFINLINE VOID XMStoreFloat3
 (
-    XMFLOAT3* pDestination, 
+    XMFLOAT3* pDestination,
     FXMVECTOR V
 )
 {
@@ -3491,7 +3490,7 @@ XMFINLINE VOID XMStoreFloat3
 
 XMFINLINE VOID XMStoreFloat3A
 (
-    XMFLOAT3A*   pDestination, 
+    XMFLOAT3A*   pDestination,
     FXMVECTOR     V
 )
 {
@@ -3521,7 +3520,7 @@ XMFINLINE VOID XMStoreFloat3A
 
 XMFINLINE VOID XMStoreUHenDN3
 (
-    XMUHENDN3* pDestination, 
+    XMUHENDN3* pDestination,
     FXMVECTOR   V
 )
 {
@@ -3571,7 +3570,7 @@ XMFINLINE VOID XMStoreUHenDN3
 
 XMFINLINE VOID XMStoreUHenD3
 (
-    XMUHEND3* pDestination, 
+    XMUHEND3* pDestination,
     FXMVECTOR  V
 )
 {
@@ -3621,7 +3620,7 @@ XMFINLINE VOID XMStoreUHenD3
 
 XMFINLINE VOID XMStoreHenDN3
 (
-    XMHENDN3* pDestination, 
+    XMHENDN3* pDestination,
     FXMVECTOR V
 )
 {
@@ -3665,7 +3664,7 @@ XMFINLINE VOID XMStoreHenDN3
 
 XMFINLINE VOID XMStoreHenD3
 (
-    XMHEND3* pDestination, 
+    XMHEND3* pDestination,
     FXMVECTOR V
 )
 {
@@ -3711,7 +3710,7 @@ XMFINLINE VOID XMStoreHenD3
 
 XMFINLINE VOID XMStoreUDHenN3
 (
-    XMUDHENN3* pDestination, 
+    XMUDHENN3* pDestination,
     FXMVECTOR   V
 )
 {
@@ -3761,7 +3760,7 @@ XMFINLINE VOID XMStoreUDHenN3
 
 XMFINLINE VOID XMStoreUDHen3
 (
-    XMUDHEN3* pDestination, 
+    XMUDHEN3* pDestination,
     FXMVECTOR  V
 )
 {
@@ -3811,7 +3810,7 @@ XMFINLINE VOID XMStoreUDHen3
 
 XMFINLINE VOID XMStoreDHenN3
 (
-    XMDHENN3* pDestination, 
+    XMDHENN3* pDestination,
     FXMVECTOR V
 )
 {
@@ -3855,7 +3854,7 @@ XMFINLINE VOID XMStoreDHenN3
 
 XMFINLINE VOID XMStoreDHen3
 (
-    XMDHEN3* pDestination, 
+    XMDHEN3* pDestination,
     FXMVECTOR V
 )
 {
@@ -3995,7 +3994,7 @@ XMFINLINE VOID XMStoreFloat3PK
                 // Rebias the exponent to represent the value as a normalized float11
                 I += 0xC8000000U;
             }
-     
+
             Result[j] = ((I + 0xFFFFU + ((I >> 17U) & 1U)) >> 17U)&0x7ffU;
         }
     }
@@ -4042,7 +4041,7 @@ XMFINLINE VOID XMStoreFloat3PK
             // Rebias the exponent to represent the value as a normalized float10
             I += 0xC8000000U;
         }
-     
+
         Result[2] = ((I + 0x1FFFFU + ((I >> 18U) & 1U)) >> 18U)&0x3ffU;
     }
 
@@ -4051,7 +4050,6 @@ XMFINLINE VOID XMStoreFloat3PK
                       | ( (Result[1] & 0x7ff) << 11 )
                       | ( (Result[2] & 0x3ff) << 22 );
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -4065,7 +4063,6 @@ XMFINLINE VOID XMStoreFloat3SE
     UINT I, Sign, j, T;
     UINT Frac[3];
     UINT Exp[3];
-    
 
     XMASSERT(pDestination);
 
@@ -4116,7 +4113,7 @@ XMFINLINE VOID XMStoreFloat3SE
                 // Rebias the exponent to represent the value as a normalized float11
                 I += 0xC8000000U;
             }
-     
+
             T = ((I + 0x1FFFU + ((I >> 14U) & 1U)) >> 14U)&0x3fffU;
 
             Exp[j] = (T & 0x3E00) >> 9;
@@ -4142,7 +4139,7 @@ XMFINLINE VOID XMStoreFloat3SE
 
 XMFINLINE VOID XMStoreInt4
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -4157,7 +4154,7 @@ XMFINLINE VOID XMStoreInt4
 
 #elif defined(_XM_SSE_INTRINSICS_)
     XMASSERT(pDestination);
-    
+
     _mm_storeu_si128( (__m128i*)pDestination, reinterpret_cast<const __m128i *>(&V)[0] );
 
 #else // _XM_VMX128_INTRINSICS_
@@ -4168,7 +4165,7 @@ XMFINLINE VOID XMStoreInt4
 
 XMFINLINE VOID XMStoreInt4A
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -4196,7 +4193,7 @@ XMFINLINE VOID XMStoreInt4A
 
 XMFINLINE VOID XMStoreInt4NC
 (
-    UINT*    pDestination, 
+    UINT*    pDestination,
     FXMVECTOR V
 )
 {
@@ -4204,7 +4201,7 @@ XMFINLINE VOID XMStoreInt4NC
 
     XMASSERT(pDestination);
     XMASSERT(((UINT_PTR)pDestination & 3) == 0);
-    
+
     pDestination[0] = V.vector4_u32[0];
     pDestination[1] = V.vector4_u32[1];
     pDestination[2] = V.vector4_u32[2];
@@ -4213,7 +4210,7 @@ XMFINLINE VOID XMStoreInt4NC
 #elif defined(_XM_SSE_INTRINSICS_)
     XMASSERT(pDestination);
     XMASSERT(((UINT_PTR)pDestination & 3) == 0);
-    
+
     _mm_storeu_si128( (__m128i*)pDestination, reinterpret_cast<const __m128i *>(&V)[0] );
 
 #else // _XM_VMX128_INTRINSICS_
@@ -4224,14 +4221,14 @@ XMFINLINE VOID XMStoreInt4NC
 
 XMFINLINE VOID XMStoreFloat4
 (
-    XMFLOAT4* pDestination, 
+    XMFLOAT4* pDestination,
     FXMVECTOR  V
 )
 {
 #if defined(_XM_NO_INTRINSICS_)
 
     XMASSERT(pDestination);
-    
+
     pDestination->x = V.vector4_f32[0];
     pDestination->y = V.vector4_f32[1];
     pDestination->z = V.vector4_f32[2];
@@ -4239,7 +4236,7 @@ XMFINLINE VOID XMStoreFloat4
 
 #elif defined(_XM_SSE_INTRINSICS_)
     XMASSERT(pDestination);
-    
+
     _mm_storeu_ps( &pDestination->x, V );
 
 #else // _XM_VMX128_INTRINSICS_
@@ -4250,7 +4247,7 @@ XMFINLINE VOID XMStoreFloat4
 
 XMFINLINE VOID XMStoreFloat4A
 (
-    XMFLOAT4A*   pDestination, 
+    XMFLOAT4A*   pDestination,
     FXMVECTOR     V
 )
 {
@@ -4277,7 +4274,7 @@ XMFINLINE VOID XMStoreFloat4A
 
 XMFINLINE VOID XMStoreFloat4NC
 (
-    XMFLOAT4* pDestination, 
+    XMFLOAT4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -4285,7 +4282,7 @@ XMFINLINE VOID XMStoreFloat4NC
 
     XMASSERT(pDestination);
     XMASSERT(((UINT_PTR)pDestination & 3) == 0);
-    
+
     pDestination->x = V.vector4_f32[0];
     pDestination->y = V.vector4_f32[1];
     pDestination->z = V.vector4_f32[2];
@@ -4294,7 +4291,7 @@ XMFINLINE VOID XMStoreFloat4NC
 #elif defined(_XM_SSE_INTRINSICS_)
     XMASSERT(pDestination);
     XMASSERT(((UINT_PTR)pDestination & 3) == 0);
-    
+
     _mm_storeu_ps( &pDestination->x, V );
 
 #else // _XM_VMX128_INTRINSICS_
@@ -4305,11 +4302,11 @@ XMFINLINE VOID XMStoreFloat4NC
 
 XMFINLINE VOID XMStoreHalf4
 (
-    XMHALF4* pDestination, 
+    XMHALF4* pDestination,
     FXMVECTOR V
 )
 {
-#if defined(_XM_NO_INTRINSICS_) 
+#if defined(_XM_NO_INTRINSICS_)
 
     XMASSERT(pDestination);
 
@@ -4332,7 +4329,7 @@ XMFINLINE VOID XMStoreHalf4
 
 XMFINLINE VOID XMStoreShortN4
 (
-    XMSHORTN4* pDestination, 
+    XMSHORTN4* pDestination,
     FXMVECTOR   V
 )
 {
@@ -4370,7 +4367,7 @@ XMFINLINE VOID XMStoreShortN4
 
 XMFINLINE VOID XMStoreShort4
 (
-    XMSHORT4* pDestination, 
+    XMSHORT4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -4410,7 +4407,7 @@ XMFINLINE VOID XMStoreShort4
 
 XMFINLINE VOID XMStoreUShortN4
 (
-    XMUSHORTN4* pDestination, 
+    XMUSHORTN4* pDestination,
     FXMVECTOR    V
 )
 {
@@ -4453,7 +4450,7 @@ XMFINLINE VOID XMStoreUShortN4
 
 XMFINLINE VOID XMStoreUShort4
 (
-    XMUSHORT4* pDestination, 
+    XMUSHORT4* pDestination,
     FXMVECTOR   V
 )
 {
@@ -4494,7 +4491,7 @@ XMFINLINE VOID XMStoreUShort4
 
 XMFINLINE VOID XMStoreXIcoN4
 (
-    XMXICON4*  pDestination, 
+    XMXICON4*  pDestination,
     FXMVECTOR   V
 )
 {
@@ -4551,7 +4548,7 @@ XMFINLINE VOID XMStoreXIcoN4
 
 XMFINLINE VOID XMStoreXIco4
 (
-    XMXICO4*  pDestination, 
+    XMXICO4*  pDestination,
     FXMVECTOR  V
 )
 {
@@ -4604,7 +4601,7 @@ XMFINLINE VOID XMStoreXIco4
 
 XMFINLINE VOID XMStoreUIcoN4
 (
-    XMUICON4*  pDestination, 
+    XMUICON4*  pDestination,
     FXMVECTOR   V
 )
 {
@@ -4676,7 +4673,7 @@ XMFINLINE VOID XMStoreUIcoN4
 
 XMFINLINE VOID XMStoreUIco4
 (
-    XMUICO4*  pDestination, 
+    XMUICO4*  pDestination,
     FXMVECTOR  V
 )
 {
@@ -4737,7 +4734,7 @@ XMFINLINE VOID XMStoreUIco4
 
 XMFINLINE VOID XMStoreIcoN4
 (
-    XMICON4*  pDestination, 
+    XMICON4*  pDestination,
     FXMVECTOR  V
 )
 {
@@ -4799,7 +4796,7 @@ XMFINLINE VOID XMStoreIcoN4
 
 XMFINLINE VOID XMStoreIco4
 (
-    XMICO4*  pDestination, 
+    XMICO4*  pDestination,
     FXMVECTOR V
 )
 {
@@ -4859,7 +4856,7 @@ XMFINLINE VOID XMStoreIco4
 
 XMFINLINE VOID XMStoreXDecN4
 (
-    XMXDECN4* pDestination, 
+    XMXDECN4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -4912,7 +4909,7 @@ XMFINLINE VOID XMStoreXDecN4
 
 XMFINLINE VOID XMStoreXDec4
 (
-    XMXDEC4* pDestination, 
+    XMXDEC4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -4965,7 +4962,7 @@ XMFINLINE VOID XMStoreXDec4
 
 XMFINLINE VOID XMStoreUDecN4
 (
-    XMUDECN4* pDestination, 
+    XMUDECN4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -5016,7 +5013,7 @@ XMFINLINE VOID XMStoreUDecN4
 
 XMFINLINE VOID XMStoreUDec4
 (
-    XMUDEC4* pDestination, 
+    XMUDEC4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -5067,7 +5064,7 @@ XMFINLINE VOID XMStoreUDec4
 
 XMFINLINE VOID XMStoreDecN4
 (
-    XMDECN4* pDestination, 
+    XMDECN4* pDestination,
     FXMVECTOR V
 )
 {
@@ -5116,7 +5113,7 @@ XMFINLINE VOID XMStoreDecN4
 
 XMFINLINE VOID XMStoreDec4
 (
-    XMDEC4*  pDestination, 
+    XMDEC4*  pDestination,
     FXMVECTOR V
 )
 {
@@ -5167,7 +5164,7 @@ XMFINLINE VOID XMStoreDec4
 
 XMFINLINE VOID XMStoreUByteN4
 (
-    XMUBYTEN4* pDestination, 
+    XMUBYTEN4* pDestination,
     FXMVECTOR V
 )
 {
@@ -5206,7 +5203,7 @@ XMFINLINE VOID XMStoreUByteN4
     vResulti = _mm_or_si128(vResulti,vResulti2);
     // Move Z to the x position
     vResulti2 = _mm_shuffle_epi32(vResulti,_MM_SHUFFLE(1,1,1,1));
-    // Perform a single bit left shift to fix y|w 
+    // Perform a single bit left shift to fix y|w
     vResulti2 = _mm_add_epi32(vResulti2,vResulti2);
     // i = x|y|z|w
     vResulti = _mm_or_si128(vResulti,vResulti2);
@@ -5219,7 +5216,7 @@ XMFINLINE VOID XMStoreUByteN4
 
 XMFINLINE VOID XMStoreUByte4
 (
-    XMUBYTE4* pDestination, 
+    XMUBYTE4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -5258,7 +5255,7 @@ XMFINLINE VOID XMStoreUByte4
     vResulti = _mm_or_si128(vResulti,vResulti2);
     // Move Z to the x position
     vResulti2 = _mm_shuffle_epi32(vResulti,_MM_SHUFFLE(1,1,1,1));
-    // Perform a single bit left shift to fix y|w 
+    // Perform a single bit left shift to fix y|w
     vResulti2 = _mm_add_epi32(vResulti2,vResulti2);
     // i = x|y|z|w
     vResulti = _mm_or_si128(vResulti,vResulti2);
@@ -5271,7 +5268,7 @@ XMFINLINE VOID XMStoreUByte4
 
 XMFINLINE VOID XMStoreByteN4
 (
-    XMBYTEN4* pDestination, 
+    XMBYTEN4* pDestination,
     FXMVECTOR  V
 )
 {
@@ -5320,7 +5317,7 @@ XMFINLINE VOID XMStoreByteN4
 
 XMFINLINE VOID XMStoreByte4
 (
-    XMBYTE4*  pDestination, 
+    XMBYTE4*  pDestination,
     FXMVECTOR  V
 )
 {
@@ -5453,7 +5450,7 @@ XMFINLINE VOID XMStoreU555(
 
 XMFINLINE VOID XMStoreColor
 (
-    XMCOLOR* pDestination, 
+    XMCOLOR* pDestination,
     FXMVECTOR V
 )
 {
@@ -5484,7 +5481,7 @@ XMFINLINE VOID XMStoreColor
     vResult = _mm_mul_ps(vResult,Scale);
     // Shuffle RGBA to ARGB
     vResult = _mm_shuffle_ps(vResult,vResult,_MM_SHUFFLE(3,0,1,2));
-    // Convert to int 
+    // Convert to int
     __m128i vInt = _mm_cvtps_epi32(vResult);
     // Mash to shorts
     vInt = _mm_packs_epi32(vInt,vInt);
@@ -5500,7 +5497,7 @@ XMFINLINE VOID XMStoreColor
 
 XMFINLINE VOID XMStoreFloat3x3
 (
-    XMFLOAT3X3*	pDestination, 
+    XMFLOAT3X3*	pDestination,
     CXMMATRIX	M
 )
 {
@@ -5516,7 +5513,7 @@ XMFINLINE VOID XMStoreFloat3x3
 
 XMFINLINE VOID XMStoreFloat3x3NC
 (
-    XMFLOAT3X3* pDestination, 
+    XMFLOAT3X3* pDestination,
     CXMMATRIX M
 )
 {
@@ -5556,7 +5553,7 @@ XMFINLINE VOID XMStoreFloat3x3NC
 
 XMFINLINE VOID XMStoreFloat4x3
 (
-    XMFLOAT4X3* pDestination, 
+    XMFLOAT4X3* pDestination,
     CXMMATRIX M
 )
 {
@@ -5572,7 +5569,7 @@ XMFINLINE VOID XMStoreFloat4x3
 
 XMFINLINE VOID XMStoreFloat4x3A
 (
-    XMFLOAT4X3A*	pDestination, 
+    XMFLOAT4X3A*	pDestination,
     CXMMATRIX		M
 )
 {
@@ -5630,7 +5627,7 @@ XMFINLINE VOID XMStoreFloat4x3A
 
 XMFINLINE VOID XMStoreFloat4x3NC
 (
-    XMFLOAT4X3* pDestination, 
+    XMFLOAT4X3* pDestination,
     CXMMATRIX M
 )
 {
@@ -5676,7 +5673,7 @@ XMFINLINE VOID XMStoreFloat4x3NC
 
 XMFINLINE VOID XMStoreFloat4x4
 (
-    XMFLOAT4X4* pDestination, 
+    XMFLOAT4X4* pDestination,
     CXMMATRIX M
 )
 {
@@ -5699,7 +5696,7 @@ XMFINLINE VOID XMStoreFloat4x4
 
 XMFINLINE VOID XMStoreFloat4x4A
 (
-    XMFLOAT4X4A*	pDestination, 
+    XMFLOAT4X4A*	pDestination,
     CXMMATRIX		M
 )
 {
@@ -5743,7 +5740,7 @@ XMFINLINE VOID XMStoreFloat4x4A
 
 XMFINLINE VOID XMStoreFloat4x4NC
 (
-    XMFLOAT4X4* pDestination, 
+    XMFLOAT4X4* pDestination,
     CXMMATRIX M
 )
 {
@@ -5782,4 +5779,3 @@ XMFINLINE VOID XMStoreFloat4x4NC
 }
 
 #endif // __XNAMATHCONVERT_INL__
-

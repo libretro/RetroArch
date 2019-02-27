@@ -30,7 +30,6 @@
 
 #define sqr(a) ((a) * (a))
 
-
 const float BASE_DELAY_SEC = 0.002; // 2 ms
 const float VIBRATO_FREQUENCY_DEFAULT_HZ = 2;
 const float VIBRATO_FREQUENCY_MAX_HZ = 14;
@@ -80,7 +79,7 @@ static void vibratocore_init(struct vibrato_core *core,float depth,int samplerat
 	core->freq = freq;
 	core->depth = depth;
 	core->phase = 0;
-	core->writeindex = 0;		
+	core->writeindex = 0;
 }
 
 float vibratocore_core(struct vibrato_core *core,float in)
@@ -166,4 +165,3 @@ const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_si
 }
 
 #undef dspfilter_get_implementation
-

@@ -16,12 +16,11 @@
 #include <d2d1effects.h>
 #endif // #ifndef _D2D1_EFFECTS_
 
-           
 /*#include <winapifamily.h>*/
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-           
+
 // Built in effect CLSIDs
 DEFINE_GUID(CLSID_D2D1YCbCr,                    0x99503cc1, 0x66c7, 0x45c9, 0xa8, 0x75, 0x8a, 0xd8, 0xa7, 0x91, 0x44, 0x01);
 
@@ -30,19 +29,19 @@ DEFINE_GUID(CLSID_D2D1YCbCr,                    0x99503cc1, 0x66c7, 0x45c9, 0xa8
 /// </summary>
 typedef enum D2D1_YCBCR_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "ChromaSubsampling"
     /// Property Type: D2D1_YCBCR_CHROMA_SUBSAMPLING
     /// </summary>
     D2D1_YCBCR_PROP_CHROMA_SUBSAMPLING = 0,
-    
+
     /// <summary>
     /// Property Name: "TransformMatrix"
     /// Property Type: D2D1_MATRIX_3X2_F
     /// </summary>
     D2D1_YCBCR_PROP_TRANSFORM_MATRIX = 1,
-    
+
     /// <summary>
     /// Property Name: "InterpolationMode"
     /// Property Type: D2D1_YCBCR_INTERPOLATION_MODE
@@ -74,7 +73,6 @@ typedef enum D2D1_YCBCR_INTERPOLATION_MODE
     D2D1_YCBCR_INTERPOLATION_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_YCBCR_INTERPOLATION_MODE;
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

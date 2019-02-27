@@ -952,7 +952,7 @@ chd_error chd_open(const char *filename, int mode, chd_file *parent, chd_file **
 	}
 
 	/* open the file */
-	file = filestream_open(filename, 
+	file = filestream_open(filename,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -986,7 +986,7 @@ chd_error chd_precache(chd_file *chd)
 		size = filestream_tell(chd->file);
 		if (size <= 0)
 			return CHDERR_INVALID_DATA;
-		chd->file_cache = malloc(size);
+		chd->file_cache = (UINT8*)malloc(size);
 		if (chd->file_cache == NULL)
 			return CHDERR_OUT_OF_MEMORY;
 		filestream_seek(chd->file, 0, SEEK_SET);
@@ -1544,8 +1544,6 @@ static chd_error read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UI
       return CHDERR_READ_ERROR;
    return CHDERR_NONE;
 }
-
-
 
 /*-------------------------------------------------
     hunk_read_into_memory - read a hunk into

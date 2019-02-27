@@ -27,7 +27,6 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #include "file_allocation_table.h"
 #include "partition.h"
 #include "mem_allocate.h"
@@ -57,7 +56,6 @@ uint32_t _FAT_fat_nextCluster(PARTITION* partition, uint32_t cluster)
 			u32 nextCluster_h;
 			sector = partition->fat.fatStart + (((cluster * 3) / 2) / partition->bytesPerSector);
 			offset = ((cluster * 3) / 2) % partition->bytesPerSector;
-
 
 			_FAT_cache_readLittleEndianValue (partition->cache, &nextCluster, sector, offset, sizeof(u8));
 
@@ -294,7 +292,6 @@ uint32_t _FAT_fat_linkFreeClusterCleared (PARTITION* partition, uint32_t cluster
 	return newCluster;
 }
 
-
 /*-----------------------------------------------------------------
 _FAT_fat_clearLinks
 frees any cluster used by a file
@@ -390,4 +387,3 @@ unsigned int _FAT_fat_freeClusterCount (PARTITION* partition) {
 
 	return count;
 }
-

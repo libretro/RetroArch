@@ -108,4 +108,3 @@ int rarch_timer_get_timeout(rarch_timer_t *timer);
 RETRO_END_DECLS
 
 #endif
-

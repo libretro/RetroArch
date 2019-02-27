@@ -27,30 +27,38 @@
 #include "../frontend/drivers/platform_darwin.m"
 #endif
 
-#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
-#include "../gfx/drivers_context/macos_ctx.m"
+#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#include "../gfx/drivers_context/cocoa_gl_ctx.m"
 
 #if defined(HAVE_COCOATOUCH)
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 #include "../ui/drivers/cocoa/cocoatouch_menu.m"
-
+#endif
 #include "../ui/drivers/ui_cocoatouch.m"
+
+#else
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#include "../ui/drivers/cocoa/ui_cocoa_window.m"
+#include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
+#include "../ui/drivers/cocoa/ui_cocoa_application.m"
+#include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
+#include "../ui/drivers/ui_cocoa.m"
 #endif
 
-#elif defined(HAVE_COCOA)
-#include "../ui/drivers/ui_cocoa.m"
-#include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
-#include "../ui/drivers/cocoa/ui_cocoa_window.m"
-#include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
-#include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #endif
 
 #endif
 
 #ifdef HAVE_MFI
 #include "../input/drivers_joypad/mfi_joypad.m"
+#endif
+
+#ifdef HAVE_COREAUDIO3
+#include "../audio/drivers/coreaudio3.m"
 #endif
 
 #if defined(HAVE_DISCORD)

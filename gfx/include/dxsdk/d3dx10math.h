@@ -62,8 +62,6 @@ typedef struct _D3DMATRIX {
 #define D3DXToRadian( degree ) ((degree) * (D3DX_PI / 180.0))
 #define D3DXToDegree( radian ) ((radian) * (180.0 / D3DX_PI))
 
-
-
 //===========================================================================
 //
 // 16 bit floating point numbers
@@ -105,14 +103,11 @@ protected:
     WORD value;
 } D3DXFLOAT16, *LPD3DXFLOAT16;
 
-
-
 //===========================================================================
 //
 // Vectors
 //
 //===========================================================================
-
 
 //--------------------------
 // 2D Vector
@@ -151,13 +146,10 @@ public:
     BOOL operator == ( CONST D3DXVECTOR2& ) const;
     BOOL operator != ( CONST D3DXVECTOR2& ) const;
 
-
 public:
 #endif //__cplusplus
     FLOAT x, y;
 } D3DXVECTOR2, *LPD3DXVECTOR2;
-
-
 
 //--------------------------
 // 2D Vector (16 bit)
@@ -185,8 +177,6 @@ public:
     D3DXFLOAT16 x, y;
 
 } D3DXVECTOR2_16F, *LPD3DXVECTOR2_16F;
-
-
 
 //--------------------------
 // 3D Vector
@@ -232,8 +222,6 @@ public:
 typedef struct _D3DVECTOR D3DXVECTOR3, *LPD3DXVECTOR3;
 #endif //!__cplusplus
 
-
-
 //--------------------------
 // 3D Vector (16 bit)
 //--------------------------
@@ -260,8 +248,6 @@ public:
     D3DXFLOAT16 x, y, z;
 
 } D3DXVECTOR3_16F, *LPD3DXVECTOR3_16F;
-
-
 
 //--------------------------
 // 4D Vector
@@ -306,7 +292,6 @@ public:
     FLOAT x, y, z, w;
 } D3DXVECTOR4, *LPD3DXVECTOR4;
 
-
 //--------------------------
 // 4D Vector (16 bit)
 //--------------------------
@@ -334,8 +319,6 @@ public:
 
 } D3DXVECTOR4_16F, *LPD3DXVECTOR4_16F;
 
-
-
 //===========================================================================
 //
 // Matrices
@@ -353,7 +336,6 @@ public:
                 FLOAT _21, FLOAT _22, FLOAT _23, FLOAT _24,
                 FLOAT _31, FLOAT _32, FLOAT _33, FLOAT _34,
                 FLOAT _41, FLOAT _42, FLOAT _43, FLOAT _44 );
-
 
     // access grants
     FLOAT& operator () ( UINT Row, UINT Col );
@@ -392,14 +374,13 @@ public:
 typedef struct _D3DMATRIX D3DXMATRIX, *LPD3DXMATRIX;
 #endif //!__cplusplus
 
-
 //---------------------------------------------------------------------------
 // Aligned Matrices
 //
 // This class helps keep matrices 16-byte aligned as preferred by P4 cpus.
 // It aligns matrices on the stack and on the heap or in global scope.
 // It does this using __declspec(align(16)) which works on VC7 and on VC 6
-// with the processor pack. Unfortunately there is no way to detect the 
+// with the processor pack. Unfortunately there is no way to detect the
 // latter so this is turned on only on VC7. On other compilers this is the
 // the same as D3DXMATRIX.
 //
@@ -426,9 +407,9 @@ typedef struct _D3DXMATRIXA16 : public D3DXMATRIX
     void* operator new[] ( size_t );
 
     // delete operators
-    void operator delete   ( void* );   // These are NOT virtual; Do not 
+    void operator delete   ( void* );   // These are NOT virtual; Do not
     void operator delete[] ( void* );   // cast to D3DXMATRIX and delete.
-    
+
     // assignment operators
     _D3DXMATRIXA16& operator = ( CONST D3DXMATRIX& );
 
@@ -438,8 +419,6 @@ typedef struct _D3DXMATRIXA16 : public D3DXMATRIX
 typedef D3DXMATRIX  _D3DXMATRIXA16;
 #endif //!__cplusplus
 
-
-
 #if _MSC_VER >= 1300  // VC7
 #define D3DX_ALIGN16 __declspec(align(16))
 #else
@@ -447,8 +426,6 @@ typedef D3DXMATRIX  _D3DXMATRIXA16;
 #endif
 
 typedef D3DX_ALIGN16 _D3DXMATRIXA16 D3DXMATRIXA16, *LPD3DXMATRIXA16;
-
-
 
 //===========================================================================
 //
@@ -495,7 +472,6 @@ public:
     FLOAT x, y, z, w;
 } D3DXQUATERNION, *LPD3DXQUATERNION;
 
-
 //===========================================================================
 //
 // Planes
@@ -534,7 +510,6 @@ public:
 #endif //__cplusplus
     FLOAT a, b, c, d;
 } D3DXPLANE, *LPD3DXPLANE;
-
 
 //===========================================================================
 //
@@ -583,8 +558,6 @@ public:
     FLOAT r, g, b, a;
 } D3DXCOLOR, *LPD3DXCOLOR;
 
-
-
 //===========================================================================
 //
 // D3DX math functions:
@@ -617,7 +590,6 @@ FLOAT* WINAPI D3DXFloat16To32Array
 #ifdef __cplusplus
 }
 #endif
-
 
 //--------------------------
 // 2D Vector
@@ -695,7 +667,7 @@ D3DXVECTOR2* WINAPI D3DXVec2TransformCoord
 // Transform (x, y, 0, 0) by matrix.
 D3DXVECTOR2* WINAPI D3DXVec2TransformNormal
     ( D3DXVECTOR2 *pOut, CONST D3DXVECTOR2 *pV, CONST D3DXMATRIX *pM );
-     
+
 // Transform Array (x, y, 0, 1) by matrix.
 D3DXVECTOR4* WINAPI D3DXVec2TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR2 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n);
@@ -707,13 +679,10 @@ D3DXVECTOR2* WINAPI D3DXVec2TransformCoordArray
 // Transform Array (x, y, 0, 0) by matrix.
 D3DXVECTOR2* WINAPI D3DXVec2TransformNormalArray
     ( D3DXVECTOR2 *pOut, UINT OutStride, CONST D3DXVECTOR2 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
-    
-    
 
 #ifdef __cplusplus
 }
 #endif
-
 
 //--------------------------
 // 3D Vector
@@ -787,14 +756,13 @@ D3DXVECTOR4* WINAPI D3DXVec3Transform
 D3DXVECTOR3* WINAPI D3DXVec3TransformCoord
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
 
-// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a 
-// non-affine matrix, the matrix you pass to this function should be the 
+// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a
+// non-affine matrix, the matrix you pass to this function should be the
 // transpose of the inverse of the matrix you would use to transform a coord.
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormal
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
-    
-    
-// Transform Array (x, y, z, 1) by matrix. 
+
+// Transform Array (x, y, z, 1) by matrix.
 D3DXVECTOR4* WINAPI D3DXVec3TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
 
@@ -802,8 +770,8 @@ D3DXVECTOR4* WINAPI D3DXVec3TransformArray
 D3DXVECTOR3* WINAPI D3DXVec3TransformCoordArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
 
-// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a 
-// non-affine matrix, the matrix you pass to this function should be the 
+// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a
+// non-affine matrix, the matrix you pass to this function should be the
 // transpose of the inverse of the matrix you would use to transform a coord.
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormalArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
@@ -817,7 +785,7 @@ D3DXVECTOR3* WINAPI D3DXVec3Project
 D3DXVECTOR3* WINAPI D3DXVec3Unproject
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3D10_VIEWPORT *pViewport,
       CONST D3DXMATRIX *pProjection, CONST D3DXMATRIX *pView, CONST D3DXMATRIX *pWorld);
-      
+
 // Project vector Array from object space into screen space
 D3DXVECTOR3* WINAPI D3DXVec3ProjectArray
     ( D3DXVECTOR3 *pOut, UINT OutStride,CONST D3DXVECTOR3 *pV, UINT VStride,CONST D3D10_VIEWPORT *pViewport,
@@ -828,12 +796,9 @@ D3DXVECTOR3* WINAPI D3DXVec3UnprojectArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3D10_VIEWPORT *pViewport,
       CONST D3DXMATRIX *pProjection, CONST D3DXMATRIX *pView, CONST D3DXMATRIX *pWorld, UINT n);
 
-
 #ifdef __cplusplus
 }
 #endif
-
-
 
 //--------------------------
 // 4D Vector
@@ -904,7 +869,7 @@ D3DXVECTOR4* WINAPI D3DXVec4BaryCentric
 // Transform vector by matrix.
 D3DXVECTOR4* WINAPI D3DXVec4Transform
     ( D3DXVECTOR4 *pOut, CONST D3DXVECTOR4 *pV, CONST D3DXMATRIX *pM );
-    
+
 // Transform vector array by matrix.
 D3DXVECTOR4* WINAPI D3DXVec4TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR4 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
@@ -912,7 +877,6 @@ D3DXVECTOR4* WINAPI D3DXVec4TransformArray
 #ifdef __cplusplus
 }
 #endif
-
 
 //--------------------------
 // 4D Matrix
@@ -926,7 +890,6 @@ D3DXMATRIX* D3DXMatrixIdentity
 BOOL D3DXMatrixIsIdentity
     ( CONST D3DXMATRIX *pM );
 
-
 // non-inline
 #ifdef __cplusplus
 extern "C" {
@@ -936,7 +899,7 @@ FLOAT WINAPI D3DXMatrixDeterminant
     ( CONST D3DXMATRIX *pM );
 
 HRESULT WINAPI D3DXMatrixDecompose
-    ( D3DXVECTOR3 *pOutScale, D3DXQUATERNION *pOutRotation, 
+    ( D3DXVECTOR3 *pOutScale, D3DXQUATERNION *pOutRotation,
 	  D3DXVECTOR3 *pOutTranslation, CONST D3DXMATRIX *pM );
 
 D3DXMATRIX* WINAPI D3DXMatrixTranspose
@@ -1001,9 +964,9 @@ D3DXMATRIX* WINAPI D3DXMatrixTransformation
 // Build 2D transformation matrix in XY plane.  NULL arguments are treated as identity.
 // Mout = Msc-1 * Msr-1 * Ms * Msr * Msc * Mrc-1 * Mr * Mrc * Mt
 D3DXMATRIX* WINAPI D3DXMatrixTransformation2D
-    ( D3DXMATRIX *pOut, CONST D3DXVECTOR2* pScalingCenter, 
-      FLOAT ScalingRotation, CONST D3DXVECTOR2* pScaling, 
-      CONST D3DXVECTOR2* pRotationCenter, FLOAT Rotation, 
+    ( D3DXMATRIX *pOut, CONST D3DXVECTOR2* pScalingCenter,
+      FLOAT ScalingRotation, CONST D3DXVECTOR2* pScaling,
+      CONST D3DXVECTOR2* pRotationCenter, FLOAT Rotation,
       CONST D3DXVECTOR2* pTranslation);
 
 // Build affine transformation matrix.  NULL arguments are treated as identity.
@@ -1015,7 +978,7 @@ D3DXMATRIX* WINAPI D3DXMatrixAffineTransformation
 // Build 2D affine transformation matrix in XY plane.  NULL arguments are treated as identity.
 // Mout = Ms * Mrc-1 * Mr * Mrc * Mt
 D3DXMATRIX* WINAPI D3DXMatrixAffineTransformation2D
-    ( D3DXMATRIX *pOut, FLOAT Scaling, CONST D3DXVECTOR2* pRotationCenter, 
+    ( D3DXMATRIX *pOut, FLOAT Scaling, CONST D3DXVECTOR2* pRotationCenter,
       FLOAT Rotation, CONST D3DXVECTOR2* pTranslation);
 
 // Build a lookat matrix. (right-handed)
@@ -1086,7 +1049,6 @@ D3DXMATRIX* WINAPI D3DXMatrixReflect
 }
 #endif
 
-
 //--------------------------
 // Quaternion
 //--------------------------
@@ -1113,7 +1075,6 @@ BOOL D3DXQuaternionIsIdentity
 // (-x, -y, -z, w)
 D3DXQUATERNION* D3DXQuaternionConjugate
     ( D3DXQUATERNION *pOut, CONST D3DXQUATERNION *pQ );
-
 
 // non-inline
 #ifdef __cplusplus
@@ -1159,7 +1120,7 @@ D3DXQUATERNION* WINAPI D3DXQuaternionLn
 // if q = (0, theta * v); exp(q) = (cos(theta), sin(theta) * v)
 D3DXQUATERNION* WINAPI D3DXQuaternionExp
     ( D3DXQUATERNION *pOut, CONST D3DXQUATERNION *pQ );
-      
+
 // Spherical linear interpolation between Q1 (t == 0) and Q2 (t == 1).
 // Expects unit quaternions.
 D3DXQUATERNION* WINAPI D3DXQuaternionSlerp
@@ -1174,11 +1135,11 @@ D3DXQUATERNION* WINAPI D3DXQuaternionSquad
       CONST D3DXQUATERNION *pC, FLOAT t );
 
 // Setup control points for spherical quadrangle interpolation
-// from Q1 to Q2.  The control points are chosen in such a way 
+// from Q1 to Q2.  The control points are chosen in such a way
 // to ensure the continuity of tangents with adjacent segments.
 void WINAPI D3DXQuaternionSquadSetup
     ( D3DXQUATERNION *pAOut, D3DXQUATERNION *pBOut, D3DXQUATERNION *pCOut,
-      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1, 
+      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1,
       CONST D3DXQUATERNION *pQ2, CONST D3DXQUATERNION *pQ3 );
 
 // Barycentric interpolation.
@@ -1191,7 +1152,6 @@ D3DXQUATERNION* WINAPI D3DXQuaternionBaryCentric
 #ifdef __cplusplus
 }
 #endif
-
 
 //--------------------------
 // Plane
@@ -1242,7 +1202,7 @@ D3DXPLANE* WINAPI D3DXPlaneFromPoints
 // M should be the inverse transpose of the transformation desired.
 D3DXPLANE* WINAPI D3DXPlaneTransform
     ( D3DXPLANE *pOut, CONST D3DXPLANE *pP, CONST D3DXMATRIX *pM );
-    
+
 // Transform an array of planes by a matrix.  The vectors (a,b,c) must be normal.
 // M should be the inverse transpose of the transformation desired.
 D3DXPLANE* WINAPI D3DXPlaneTransformArray
@@ -1251,7 +1211,6 @@ D3DXPLANE* WINAPI D3DXPlaneTransformArray
 #ifdef __cplusplus
 }
 #endif
-
 
 //--------------------------
 // Color
@@ -1298,9 +1257,6 @@ D3DXCOLOR* WINAPI D3DXColorAdjustContrast
 }
 #endif
 
-
-
-
 //--------------------------
 // Misc
 //--------------------------
@@ -1312,13 +1268,11 @@ extern "C" {
 // Calculate Fresnel term given the cosine of theta (likely obtained by
 // taking the dot of two normals), and the refraction index of the material.
 FLOAT WINAPI D3DXFresnelTerm
-    (FLOAT CosTheta, FLOAT RefractionIndex);     
+    (FLOAT CosTheta, FLOAT RefractionIndex);
 
 #ifdef __cplusplus
 }
 #endif
-
-
 
 //===========================================================================
 //
@@ -1330,9 +1284,8 @@ typedef interface ID3DXMatrixStack ID3DXMatrixStack;
 typedef interface ID3DXMatrixStack *LPD3DXMATRIXSTACK;
 
 // {C7885BA7-F990-4fe7-922D-8515E477DD85}
-DEFINE_GUID(IID_ID3DXMatrixStack, 
+DEFINE_GUID(IID_ID3DXMatrixStack,
 0xc7885ba7, 0xf990, 0x4fe7, 0x92, 0x2d, 0x85, 0x15, 0xe4, 0x77, 0xdd, 0x85);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXMatrixStack
@@ -1425,9 +1378,9 @@ DECLARE_INTERFACE_(ID3DXMatrixStack, IUnknown)
 extern "C" {
 #endif
 
-HRESULT WINAPI 
-    D3DXCreateMatrixStack( 
-        UINT                Flags, 
+HRESULT WINAPI
+    D3DXCreateMatrixStack(
+        UINT                Flags,
         LPD3DXMATRIXSTACK*  ppStack);
 
 #ifdef __cplusplus
@@ -1467,7 +1420,7 @@ extern "C" {
 
 FLOAT* WINAPI D3DXSHEvalDirection
     (  FLOAT *pOut, UINT Order, CONST D3DXVECTOR3 *pDir );
-    
+
 //============================================================================
 //
 //  D3DXSHRotate:
@@ -1490,7 +1443,7 @@ FLOAT* WINAPI D3DXSHEvalDirection
 
 FLOAT* WINAPI D3DXSHRotate
     ( __out_ecount(Order*Order) FLOAT *pOut, UINT Order, CONST D3DXMATRIX *pMatrix, CONST FLOAT *pIn );
-    
+
 //============================================================================
 //
 //  D3DXSHRotateZ:
@@ -1510,10 +1463,9 @@ FLOAT* WINAPI D3DXSHRotate
 //
 //============================================================================
 
-
 FLOAT* WINAPI D3DXSHRotateZ
     ( FLOAT *pOut, UINT Order, FLOAT Angle, CONST FLOAT *pIn );
-    
+
 //============================================================================
 //
 //  D3DXSHAdd:
@@ -1557,7 +1509,7 @@ FLOAT* WINAPI D3DXSHAdd
 
 FLOAT* WINAPI D3DXSHScale
     ( __out_ecount(Order*Order) FLOAT *pOut, UINT Order, CONST FLOAT *pIn, CONST FLOAT Scale );
-    
+
 //============================================================================
 //
 //  D3DXSHDot:
@@ -1584,10 +1536,10 @@ FLOAT WINAPI D3DXSHDot
 //  Computes the product of two functions represented using SH (f and g), where:
 //  pOut[i] = int(y_i(s) * f(s) * g(s)), where y_i(s) is the ith SH basis
 //  function, f(s) and g(s) are SH functions (sum_i(y_i(s)*c_i)).  The order O
-//  determines the lengths of the arrays, where there should always be O^2 
+//  determines the lengths of the arrays, where there should always be O^2
 //  coefficients.  In general the product of two SH functions of order O generates
 //  and SH function of order 2*O - 1, but we truncate the result.  This means
-//  that the product commutes (f*g == g*f) but doesn't associate 
+//  that the product commutes (f*g == g*f) but doesn't associate
 //  (f*(g*h) != (f*g)*h.
 //
 //  Parameters:
@@ -1607,7 +1559,6 @@ __out_ecount(16) FLOAT* WINAPI D3DXSHMultiply4(__out_ecount(16) FLOAT *pOut,__in
 __out_ecount(25) FLOAT* WINAPI D3DXSHMultiply5(__out_ecount(25) FLOAT *pOut,__in_ecount(25) CONST FLOAT *pF,__in_ecount(25) CONST FLOAT *pG);
 __out_ecount(36) FLOAT* WINAPI D3DXSHMultiply6(__out_ecount(36) FLOAT *pOut,__in_ecount(36) CONST FLOAT *pF,__in_ecount(36) CONST FLOAT *pG);
 
-
 //============================================================================
 //
 //  Basic Spherical Harmonic lighting routines
@@ -1618,7 +1569,7 @@ __out_ecount(36) FLOAT* WINAPI D3DXSHMultiply6(__out_ecount(36) FLOAT *pOut,__in
 //
 //  D3DXSHEvalDirectionalLight:
 //  --------------------
-//  Evaluates a directional light and returns spectral SH data.  The output 
+//  Evaluates a directional light and returns spectral SH data.  The output
 //  vector is computed so that if the intensity of R/G/B is unit the resulting
 //  exit radiance of a point directly under the light on a diffuse object with
 //  an albedo of 1 would be 1.0.  This will compute 3 spectral samples, pROut
@@ -1640,25 +1591,25 @@ __out_ecount(36) FLOAT* WINAPI D3DXSHMultiply6(__out_ecount(36) FLOAT *pOut,__in
 //   pGOut
 //      Output SH vector for Green (optional.)
 //   pBOut
-//      Output SH vector for Blue (optional.)        
+//      Output SH vector for Blue (optional.)
 //
 //============================================================================
 
 HRESULT WINAPI D3DXSHEvalDirectionalLight
-    ( UINT Order, CONST D3DXVECTOR3 *pDir, 
+    ( UINT Order, CONST D3DXVECTOR3 *pDir,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
-      __out_ecount_opt(Order*Order) FLOAT *pROut, 
-      __out_ecount_opt(Order*Order) FLOAT *pGOut, 
+      __out_ecount_opt(Order*Order) FLOAT *pROut,
+      __out_ecount_opt(Order*Order) FLOAT *pGOut,
       __out_ecount_opt(Order*Order) FLOAT *pBOut );
 
 //============================================================================
 //
 //  D3DXSHEvalSphericalLight:
 //  --------------------
-//  Evaluates a spherical light and returns spectral SH data.  There is no 
+//  Evaluates a spherical light and returns spectral SH data.  There is no
 //  normalization of the intensity of the light like there is for directional
-//  lights, care has to be taken when specifiying the intensities.  This will 
-//  compute 3 spectral samples, pROut has to be specified, while pGout and 
+//  lights, care has to be taken when specifiying the intensities.  This will
+//  compute 3 spectral samples, pROut has to be specified, while pGout and
 //  pBout are optional.
 //
 //  Parameters:
@@ -1679,15 +1630,15 @@ HRESULT WINAPI D3DXSHEvalDirectionalLight
 //   pGOut
 //      Output SH vector for Green (optional.)
 //   pBOut
-//      Output SH vector for Blue (optional.)        
+//      Output SH vector for Blue (optional.)
 //
 //============================================================================
 
 HRESULT WINAPI D3DXSHEvalSphericalLight
     ( UINT Order, CONST D3DXVECTOR3 *pPos, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
-      __out_ecount_opt(Order*Order) FLOAT *pROut, 
-      __out_ecount_opt(Order*Order) FLOAT *pGOut, 
+      __out_ecount_opt(Order*Order) FLOAT *pROut,
+      __out_ecount_opt(Order*Order) FLOAT *pGOut,
       __out_ecount_opt(Order*Order) FLOAT *pBOut );
 
 //============================================================================
@@ -1719,17 +1670,17 @@ HRESULT WINAPI D3DXSHEvalSphericalLight
 //   pGOut
 //      Output SH vector for Green (optional.)
 //   pBOut
-//      Output SH vector for Blue (optional.)        
+//      Output SH vector for Blue (optional.)
 //
 //============================================================================
 
 HRESULT WINAPI D3DXSHEvalConeLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
-      __out_ecount_opt(Order*Order) FLOAT *pROut, 
-      __out_ecount_opt(Order*Order) FLOAT *pGOut, 
+      __out_ecount_opt(Order*Order) FLOAT *pROut,
+      __out_ecount_opt(Order*Order) FLOAT *pGOut,
       __out_ecount_opt(Order*Order) FLOAT *pBOut );
-      
+
 //============================================================================
 //
 //  D3DXSHEvalHemisphereLight:
@@ -1741,7 +1692,7 @@ HRESULT WINAPI D3DXSHEvalConeLight
 //  is normalized so that a point on a perfectly diffuse surface with no
 //  shadowing and a normal pointed in the direction pDir would result in exit
 //  radiance with a value of 1 if the top color was white and the bottom color
-//  was black.  This is a very simple model where Top represents the intensity 
+//  was black.  This is a very simple model where Top represents the intensity
 //  of the "sky" and Bottom represents the intensity of the "ground".
 //
 //  Parameters:
@@ -1758,19 +1709,19 @@ HRESULT WINAPI D3DXSHEvalConeLight
 //   pGOut
 //      Output SH vector for Green
 //   pBOut
-//      Output SH vector for Blue        
+//      Output SH vector for Blue
 //
 //============================================================================
 
 HRESULT WINAPI D3DXSHEvalHemisphereLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, D3DXCOLOR Top, D3DXCOLOR Bottom,
-      __out_ecount_opt(Order*Order) FLOAT *pROut, 
-      __out_ecount_opt(Order*Order) FLOAT *pGOut, 
+      __out_ecount_opt(Order*Order) FLOAT *pROut,
+      __out_ecount_opt(Order*Order) FLOAT *pGOut,
       __out_ecount_opt(Order*Order) FLOAT *pBOut );
 
 // Math intersection functions
 
-BOOL WINAPI D3DXIntersectTri 
+BOOL WINAPI D3DXIntersectTri
 (
     CONST D3DXVECTOR3 *p0,           // Triangle vertex 0 position
     CONST D3DXVECTOR3 *p1,           // Triangle vertex 1 position
@@ -1788,29 +1739,28 @@ BOOL WINAPI
         CONST D3DXVECTOR3 *pRayPosition,
         CONST D3DXVECTOR3 *pRayDirection);
 
-BOOL WINAPI 
+BOOL WINAPI
     D3DXBoxBoundProbe(
-        CONST D3DXVECTOR3 *pMin, 
+        CONST D3DXVECTOR3 *pMin,
         CONST D3DXVECTOR3 *pMax,
         CONST D3DXVECTOR3 *pRayPosition,
         CONST D3DXVECTOR3 *pRayDirection);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXComputeBoundingSphere(
         CONST D3DXVECTOR3 *pFirstPosition,	// pointer to first position
-        DWORD NumVertices, 
+        DWORD NumVertices,
         DWORD dwStride,							// count in bytes to subsequent position vectors
-        D3DXVECTOR3 *pCenter, 
+        D3DXVECTOR3 *pCenter,
         FLOAT *pRadius);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXComputeBoundingBox(
         CONST D3DXVECTOR3 *pFirstPosition,	// pointer to first position
-        DWORD NumVertices, 
+        DWORD NumVertices,
         DWORD dwStride,							// count in bytes to subsequent position vectors
-        D3DXVECTOR3 *pMin, 
+        D3DXVECTOR3 *pMin,
         D3DXVECTOR3 *pMax);
-
 
 ///////////////////////////////////////////////////////////////////////////
 // CPU Optimization:
@@ -1825,7 +1775,6 @@ HRESULT WINAPI
 // D3DX_SSE2_OPTIMIZED      Use Intel Pentium IV SSE2 optimizations
 //-------------------------------------------------------------------------
 
-
 typedef enum _D3DX_CPU_OPTIMIZATION
 {
     D3DX_NOT_OPTIMIZED = 0,
@@ -1834,11 +1783,10 @@ typedef enum _D3DX_CPU_OPTIMIZATION
     D3DX_SSE_OPTIMIZED
 } D3DX_CPU_OPTIMIZATION;
 
-
 //-------------------------------------------------------------------------
 // D3DXCpuOptimizations:
 // ---------------------
-// Enables or disables CPU optimizations. Returns the type of CPU, which 
+// Enables or disables CPU optimizations. Returns the type of CPU, which
 // was detected, and for which optimizations exist.
 //
 // Parameters:
@@ -1846,13 +1794,12 @@ typedef enum _D3DX_CPU_OPTIMIZATION
 //      TRUE to enable CPU optimizations. FALSE to disable.
 //-------------------------------------------------------------------------
 
-D3DX_CPU_OPTIMIZATION WINAPI 
+D3DX_CPU_OPTIMIZATION WINAPI
     D3DXCpuOptimizations(BOOL Enable);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #include "d3dx10math.inl"
 
@@ -1863,4 +1810,3 @@ D3DX_CPU_OPTIMIZATION WINAPI
 #endif
 
 #endif // __D3DX9MATH_H__
-

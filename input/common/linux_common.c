@@ -71,7 +71,6 @@ bool linux_terminal_init(void)
    if (tcsetattr(0, TCSAFLUSH, &newTerm) < 0)
       return false;
 
-
    return true;
 }
 

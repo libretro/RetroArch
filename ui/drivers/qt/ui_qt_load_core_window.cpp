@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,7 +20,10 @@
 #include <QFileDialog>
 #include <QDesktopWidget>
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../../core_info.h"
 #include "../../../verbosity.h"
 #include "../../../configuration.h"
@@ -31,7 +34,10 @@ extern "C" {
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-};
+
+#ifndef CXX_BUILD
+}
+#endif
 
 #define CORE_NAME_COLUMN 0
 #define CORE_VERSION_COLUMN 1
@@ -205,32 +211,36 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
    m_table->setSortingEnabled(false);
-   m_table->setRowCount(cores->count);
    m_table->setColumnCount(2);
    m_table->setHorizontalHeaderLabels(horizontal_header_labels);
 
-   for (i = 0; i < cores->count; i++)
+   if (cores)
    {
-      core_info_t *core = core_info_get(cores, i);
-      QTableWidgetItem *name_item = NULL;
-      QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
-      QVariantHash hash;
-      const char *name = core->display_name;
+      m_table->setRowCount(cores->count);
 
-      if (string_is_empty(name))
-         name = path_basename(core->path);
+      for (i = 0; i < cores->count; i++)
+      {
+         core_info_t *core = core_info_get(cores, i);
+         QTableWidgetItem *name_item = NULL;
+         QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
+         QVariantHash hash;
+         const char *name = core->display_name;
 
-      name_item = new QTableWidgetItem(name);
+         if (string_is_empty(name))
+            name = path_basename(core->path);
 
-      hash["path"] = core->path;
-      hash["extensions"] = QString(core->supported_extensions).split("|");
+         name_item = new QTableWidgetItem(name);
 
-      name_item->setData(Qt::UserRole, hash);
-      name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
-      version_item->setFlags(version_item->flags() & ~Qt::ItemIsEditable);
+         hash["path"] = core->path;
+         hash["extensions"] = QString(core->supported_extensions).split("|");
 
-      m_table->setItem(i, CORE_NAME_COLUMN, name_item);
-      m_table->setItem(i, CORE_VERSION_COLUMN, version_item);
+         name_item->setData(Qt::UserRole, hash);
+         name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
+         version_item->setFlags(version_item->flags() & ~Qt::ItemIsEditable);
+
+         m_table->setItem(i, CORE_NAME_COLUMN, name_item);
+         m_table->setItem(i, CORE_VERSION_COLUMN, version_item);
+      }
    }
 
    if (!extensionFilters.isEmpty())

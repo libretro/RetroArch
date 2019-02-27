@@ -20,7 +20,7 @@
 #include "d3d10_common.h"
 #include "d3dcompiler_common.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
 typedef HRESULT(WINAPI* PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)(
@@ -246,7 +246,7 @@ bool d3d10_init_shader(
 
    if (vs_code && input_element_descs)
       D3D10CreateInputLayout(
-            device, 
+            device,
             (D3D10_INPUT_ELEMENT_DESC*)input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
             D3DGetBufferSize(vs_code), &out->layout);
 

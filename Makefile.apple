@@ -19,6 +19,6 @@ $(foreach x,$(join $(addsuffix :,$(MOC_SRC)),$(MOC_HEADERS)),$(eval $x))
 
 generate: $(MOC_SRC)
 	@echo $(MOC_SRC)
-	
+
 print-%:
 	@echo '$*=$($*)'

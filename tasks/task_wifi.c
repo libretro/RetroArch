@@ -21,6 +21,8 @@
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
+
+#include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../wifi/wifi_driver.h"
 
@@ -36,7 +38,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
 
 bool task_push_wifi_scan(retro_task_callback_t cb)
 {
-   retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
+   retro_task_t   *task = task_init();
 
    if (!task)
       return false;

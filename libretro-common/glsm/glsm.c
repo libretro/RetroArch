@@ -131,7 +131,6 @@ struct gl_cached_state
       GLenum func;
    } depthfunc;
 
-
    struct
    {
       bool used;
@@ -168,7 +167,7 @@ struct gl_cached_state
       GLenum mode;
    } frontface;
 
-   struct 
+   struct
    {
       bool used;
       GLenum mode;
@@ -194,7 +193,7 @@ struct gl_cached_state
    GLuint vao;
    GLuint framebuf;
    GLuint array_buffer;
-   GLuint program; 
+   GLuint program;
    GLenum active_texture;
    int cap_state[SGL_CAP_MAX];
    int cap_translate[SGL_CAP_MAX];
@@ -335,7 +334,6 @@ void rglTexSubImage2D(
          width, height, format, type, pixels);
 }
 
-
 void rglGetBufferSubData(	GLenum target,
  	GLintptr offset,
  	GLsizeiptr size,
@@ -470,7 +468,7 @@ void rglFrontFace(GLenum mode)
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
    glFrontFace(mode);
    gl_state.frontface.used = true;
-   gl_state.frontface.mode = mode; 
+   gl_state.frontface.mode = mode;
 }
 
 /*
@@ -664,7 +662,7 @@ void rglBlendFuncSeparate(GLenum sfactor, GLenum dfactor)
  * Category: Textures
  *
  * Core in:
- * OpenGL    : 1.3 
+ * OpenGL    : 1.3
  */
 void rglActiveTexture(GLenum texture)
 {
@@ -725,7 +723,7 @@ void rglEnable(GLenum cap)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUseProgram(GLuint program)
 {
@@ -830,7 +828,7 @@ void rglLinkProgram(GLuint program)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 2.0
  */
 void rglFramebufferTexture2D(GLenum target, GLenum attachment,
@@ -894,10 +892,9 @@ void rglCompressedTexImage2D(GLenum target, GLint level,
 #ifdef GLSM_DEBUG
    log_cb(RETRO_LOG_INFO, "glCompressedTexImage2D.\n");
 #endif
-   glCompressedTexImage2D(target, level, internalformat, 
+   glCompressedTexImage2D(target, level, internalformat,
          width, height, border, imageSize, data);
 }
-
 
 void rglDeleteFramebuffers(GLsizei n, const GLuint *framebuffers)
 {
@@ -918,7 +915,7 @@ void rglDeleteTextures(GLsizei n, const GLuint *textures)
 /*
  *
  * Core in:
- * OpenGLES    : 2.0 
+ * OpenGLES    : 2.0
  */
 void rglRenderbufferStorage(GLenum target, GLenum internalFormat,
       GLsizei width, GLsizei height)
@@ -934,7 +931,7 @@ void rglRenderbufferStorage(GLenum target, GLenum internalFormat,
  * Core in:
  *
  * OpenGL      : 3.0
- * OpenGLES    : 2.0 
+ * OpenGLES    : 2.0
  */
 void rglBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
@@ -948,7 +945,7 @@ void rglBindRenderbuffer(GLenum target, GLuint renderbuffer)
  *
  * Core in:
  *
- * OpenGLES    : 2.0 
+ * OpenGLES    : 2.0
  */
 void rglDeleteRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
@@ -963,7 +960,7 @@ void rglDeleteRenderbuffers(GLsizei n, GLuint *renderbuffers)
  * Core in:
  *
  * OpenGL      : 3.0
- * OpenGLES    : 2.0 
+ * OpenGLES    : 2.0
  */
 void rglGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
@@ -978,7 +975,7 @@ void rglGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
  * Core in:
  *
  * OpenGL      : 3.0
- * OpenGLES    : 2.0 
+ * OpenGLES    : 2.0
  */
 void rglGenerateMipmap(GLenum target)
 {
@@ -992,7 +989,7 @@ void rglGenerateMipmap(GLenum target)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  */
 GLenum rglCheckFramebufferStatus(GLenum target)
 {
@@ -1006,7 +1003,7 @@ GLenum rglCheckFramebufferStatus(GLenum target)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 2.0
  */
 void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
@@ -1022,7 +1019,7 @@ void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  */
 void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
                                    const char * name)
@@ -1035,12 +1032,11 @@ void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
 #endif
 }
 
-
 /*
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
 {
@@ -1054,7 +1050,7 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 4.1 
+ * OpenGL    : 4.1
  * OpenGLES  : 3.0
  */
 void rglProgramParameteri( 	GLuint program,
@@ -1074,7 +1070,7 @@ void rglProgramParameteri( 	GLuint program,
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
       GLsizei *length, GLint *size, GLenum *type, GLchar *name)
@@ -1140,13 +1136,12 @@ void rglEndQuery(	GLenum target)
 #endif
 }
 
-
 /*
  * Category: UBO
  *
  * Core in:
  *
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglGetActiveUniformBlockiv(GLuint program,
@@ -1278,7 +1273,7 @@ void rglUniformBlockBinding( 	GLuint program,
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglUniform1ui(GLint location, GLuint v)
@@ -1294,7 +1289,7 @@ void rglUniform1ui(GLint location, GLuint v)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglUniform2ui(GLint location, GLuint v0, GLuint v1)
@@ -1310,7 +1305,7 @@ void rglUniform2ui(GLint location, GLuint v0, GLuint v1)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2)
@@ -1326,7 +1321,7 @@ void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3)
@@ -1342,7 +1337,7 @@ void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
       const GLfloat *value)
@@ -1357,7 +1352,7 @@ void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglDetachShader(GLuint program, GLuint shader)
 {
@@ -1371,7 +1366,7 @@ void rglDetachShader(GLuint program, GLuint shader)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params)
 {
@@ -1385,7 +1380,7 @@ void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglAttachShader(GLuint program, GLuint shader)
 {
@@ -1398,7 +1393,7 @@ void rglAttachShader(GLuint program, GLuint shader)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 GLint rglGetAttribLocation(GLuint program, const GLchar *name)
 {
@@ -1412,7 +1407,7 @@ GLint rglGetAttribLocation(GLuint program, const GLchar *name)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglShaderSource(GLuint shader, GLsizei count,
       const GLchar **string, const GLint *length)
@@ -1427,7 +1422,7 @@ void rglShaderSource(GLuint shader, GLsizei count,
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglCompileShader(GLuint shader)
 {
@@ -1441,7 +1436,7 @@ void rglCompileShader(GLuint shader)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 GLuint rglCreateProgram(void)
 {
@@ -1454,7 +1449,7 @@ GLuint rglCreateProgram(void)
 /*
  *
  * Core in:
- * OpenGL    : 1.1 
+ * OpenGL    : 1.1
  */
 void rglGenTextures(GLsizei n, GLuint *textures)
 {
@@ -1467,7 +1462,7 @@ void rglGenTextures(GLsizei n, GLuint *textures)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglGetShaderInfoLog(GLuint shader, GLsizei maxLength,
       GLsizei *length, GLchar *infoLog)
@@ -1481,7 +1476,7 @@ void rglGetShaderInfoLog(GLuint shader, GLsizei maxLength,
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglGetProgramInfoLog(GLuint shader, GLsizei maxLength,
       GLsizei *length, GLchar *infoLog)
@@ -1495,7 +1490,7 @@ void rglGetProgramInfoLog(GLuint shader, GLsizei maxLength,
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 GLboolean rglIsProgram(GLuint program)
 {
@@ -1504,7 +1499,6 @@ GLboolean rglIsProgram(GLuint program)
 #endif
    return glIsProgram(program);
 }
-
 
 void rglTexCoord2f(GLfloat s, GLfloat t)
 {
@@ -1520,7 +1514,7 @@ void rglTexCoord2f(GLfloat s, GLfloat t)
  * Category: Generic vertex attributes
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  *
  */
 void rglDisableVertexAttribArray(GLuint index)
@@ -1536,7 +1530,7 @@ void rglDisableVertexAttribArray(GLuint index)
  * Category: Generic vertex attributes
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglEnableVertexAttribArray(GLuint index)
 {
@@ -1552,7 +1546,7 @@ void rglEnableVertexAttribArray(GLuint index)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglVertexAttribIPointer(
       GLuint index,
@@ -1588,7 +1582,7 @@ void rglVertexAttribLPointer(
  * Category: Generic vertex attributes
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglVertexAttribPointer(GLuint name, GLint size,
       GLenum type, GLboolean normalized, GLsizei stride,
@@ -1611,7 +1605,7 @@ void rglVertexAttribPointer(GLuint name, GLint size,
  * Category: Generic vertex attributes
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglBindAttribLocation(GLuint program, GLuint index, const GLchar *name)
 {
@@ -1624,7 +1618,7 @@ void rglBindAttribLocation(GLuint program, GLuint index, const GLchar *name)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglVertexAttrib4f(GLuint name, GLfloat x, GLfloat y,
       GLfloat z, GLfloat w)
@@ -1638,7 +1632,7 @@ void rglVertexAttrib4f(GLuint name, GLfloat x, GLfloat y,
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglVertexAttrib4fv(GLuint name, GLfloat* v)
 {
@@ -1652,7 +1646,7 @@ void rglVertexAttrib4fv(GLuint name, GLfloat* v)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 GLuint rglCreateShader(GLenum shaderType)
 {
@@ -1666,7 +1660,7 @@ GLuint rglCreateShader(GLenum shaderType)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglDeleteProgram(GLuint program)
 {
@@ -1680,7 +1674,7 @@ void rglDeleteProgram(GLuint program)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglDeleteShader(GLuint shader)
 {
@@ -1694,7 +1688,7 @@ void rglDeleteShader(GLuint shader)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 GLint rglGetUniformLocation(GLuint program, const GLchar *name)
 {
@@ -1708,7 +1702,7 @@ GLint rglGetUniformLocation(GLuint program, const GLchar *name)
  * Category: VBO and PBO
  *
  * Core in:
- * OpenGL    : 1.5 
+ * OpenGL    : 1.5
  */
 void rglDeleteBuffers(GLsizei n, const GLuint *buffers)
 {
@@ -1722,7 +1716,7 @@ void rglDeleteBuffers(GLsizei n, const GLuint *buffers)
  * Category: VBO and PBO
  *
  * Core in:
- * OpenGL    : 1.5 
+ * OpenGL    : 1.5
  */
 void rglGenBuffers(GLsizei n, GLuint *buffers)
 {
@@ -1736,7 +1730,7 @@ void rglGenBuffers(GLsizei n, GLuint *buffers)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform1f(GLint location, GLfloat v0)
 {
@@ -1750,7 +1744,7 @@ void rglUniform1f(GLint location, GLfloat v0)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform1fv(GLint location,  GLsizei count,  const GLfloat *value)
 {
@@ -1764,7 +1758,7 @@ void rglUniform1fv(GLint location,  GLsizei count,  const GLfloat *value)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform1iv(GLint location,  GLsizei count,  const GLint *value)
 {
@@ -1799,7 +1793,7 @@ void rglTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 const GLubyte* rglGetStringi(GLenum name, GLuint index)
@@ -1830,7 +1824,7 @@ void rglClearBufferfi( 	GLenum buffer,
 /*
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 3.0
  */
 void rglRenderbufferStorageMultisample( 	GLenum target,
@@ -1851,7 +1845,7 @@ void rglRenderbufferStorageMultisample( 	GLenum target,
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform1i(GLint location, GLint v0)
 {
@@ -1865,7 +1859,7 @@ void rglUniform1i(GLint location, GLint v0)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform2f(GLint location, GLfloat v0, GLfloat v1)
 {
@@ -1879,7 +1873,7 @@ void rglUniform2f(GLint location, GLfloat v0, GLfloat v1)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform2i(GLint location, GLint v0, GLint v1)
 {
@@ -1893,7 +1887,7 @@ void rglUniform2i(GLint location, GLint v0, GLint v1)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value)
 {
@@ -1907,7 +1901,7 @@ void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2)
 {
@@ -1921,7 +1915,7 @@ void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value)
 {
@@ -1949,7 +1943,7 @@ void rglUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3)
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 {
@@ -1963,7 +1957,7 @@ void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3
  * Category: Shaders
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
 {
@@ -1973,11 +1967,10 @@ void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
    glUniform4fv(location, count, value);
 }
 
-
 /*
  *
  * Core in:
- * OpenGL    : 1.0 
+ * OpenGL    : 1.0
  */
 void rglPolygonOffset(GLfloat factor, GLfloat units)
 {
@@ -1995,7 +1988,7 @@ void rglPolygonOffset(GLfloat factor, GLfloat units)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  */
 void rglGenFramebuffers(GLsizei n, GLuint *ids)
 {
@@ -2009,7 +2002,7 @@ void rglGenFramebuffers(GLsizei n, GLuint *ids)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  */
 void rglBindFramebuffer(GLenum target, GLuint framebuffer)
 {
@@ -2025,7 +2018,7 @@ void rglBindFramebuffer(GLenum target, GLuint framebuffer)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void rglDrawBuffers(GLsizei n, const GLenum *bufs)
@@ -2042,7 +2035,7 @@ void rglDrawBuffers(GLsizei n, const GLenum *bufs)
  * Category: FBO
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.0
  */
 void *rglMapBufferRange( 	GLenum target,
@@ -2111,7 +2104,7 @@ void rglDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsiz
 /*
  *
  * Core in:
- * OpenGL    : 4.2 
+ * OpenGL    : 4.2
  * OpenGLES  : 3.1
  */
 void rglMemoryBarrier( 	GLbitfield barriers)
@@ -2129,7 +2122,7 @@ void rglMemoryBarrier( 	GLbitfield barriers)
 /*
  *
  * Core in:
- * OpenGL    : 4.2 
+ * OpenGL    : 4.2
  * OpenGLES  : 3.1
  */
 void rglBindImageTexture( 	GLuint unit,
@@ -2208,7 +2201,6 @@ void rglTexImage2DMultisample( 	GLenum target,
 #endif
 }
 
-
 void rglTexImage3D(	GLenum target,
  	GLint level,
  	GLint internalFormat,
@@ -2231,7 +2223,7 @@ void rglTexImage3D(	GLenum target,
 /*
  *
  * Core in:
- * OpenGL    : 1.5 
+ * OpenGL    : 1.5
  */
 void * rglMapBuffer(	GLenum target, GLenum access)
 {
@@ -2248,7 +2240,7 @@ void * rglMapBuffer(	GLenum target, GLenum access)
 /*
  *
  * Core in:
- * OpenGL    : 1.5 
+ * OpenGL    : 1.5
  */
 GLboolean rglUnmapBuffer( 	GLenum target)
 {
@@ -2282,7 +2274,7 @@ void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
  * Category: Blending
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  */
 void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
 {
@@ -2295,7 +2287,7 @@ void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
 /*
  *
  * Core in:
- * OpenGL    : 2.0 
+ * OpenGL    : 2.0
  * OpenGLES  : 3.2
  */
 void rglCopyImageSubData( 	GLuint srcName,
@@ -2340,7 +2332,7 @@ void rglCopyImageSubData( 	GLuint srcName,
  * Category: VAO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 3.0
  */
 void rglBindVertexArray(GLuint array)
@@ -2357,7 +2349,7 @@ void rglBindVertexArray(GLuint array)
  * Category: VAO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 3.0
  */
 void rglGenVertexArrays(GLsizei n, GLuint *arrays)
@@ -2374,7 +2366,7 @@ void rglGenVertexArrays(GLsizei n, GLuint *arrays)
  * Category: VAO
  *
  * Core in:
- * OpenGL    : 3.0 
+ * OpenGL    : 3.0
  * OpenGLES  : 3.0
  */
 void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays)
@@ -2601,7 +2593,7 @@ static void glsm_state_setup(void)
    default_framebuffer                  = glsm_get_current_framebuffer();
    gl_state.framebuf                    = default_framebuffer;
    gl_state.cullface.mode               = GL_BACK;
-   gl_state.frontface.mode              = GL_CCW; 
+   gl_state.frontface.mode              = GL_CCW;
 
    gl_state.blendfunc_separate.used     = false;
    gl_state.blendfunc_separate.srcRGB   = GL_ONE;
@@ -2610,7 +2602,7 @@ static void glsm_state_setup(void)
    gl_state.blendfunc_separate.dstAlpha = GL_ZERO;
 
    gl_state.depthfunc.used              = false;
-   
+
    gl_state.colormask.used              = false;
    gl_state.colormask.red               = GL_TRUE;
    gl_state.colormask.green             = GL_TRUE;

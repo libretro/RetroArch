@@ -140,7 +140,6 @@ typedef struct _D3DXWELDEPSILONS
 
 typedef D3DXWELDEPSILONS* LPD3DXWELDEPSILONS;
 
-
 #undef INTERFACE
 #define INTERFACE ID3DXBaseMesh
 
@@ -176,7 +175,6 @@ DECLARE_INTERFACE_(ID3DXBaseMesh, IUnknown)
     STDMETHOD(ConvertAdjacencyToPointReps)(THIS_ CONST DWORD* pAdjacency, DWORD* pPRep) PURE;
     STDMETHOD(GenerateAdjacency)(THIS_ FLOAT Epsilon, DWORD* pAdjacency) PURE;
 };
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXMesh
@@ -223,7 +221,6 @@ DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
                      DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap) PURE;
 
 };
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXPMesh
@@ -284,7 +281,6 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
     STDMETHOD(GetAdjacency)(THIS_ DWORD* pAdjacency) PURE;
 };
 
-
 #undef INTERFACE
 #define INTERFACE ID3DXSPMesh
 
@@ -342,7 +338,6 @@ typedef struct _D3DXBONECOMBINATION
     DWORD VertexCount;
     DWORD* BoneId;
 } D3DXBONECOMBINATION, *LPD3DXBONECOMBINATION;
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXSkinMesh
@@ -498,7 +493,6 @@ HRESULT WINAPI
         DWORD NumBytes,
         LPD3DXBUFFER *ppBuffer);
 
-
 HRESULT WINAPI
     D3DXLoadMeshFromX(
         LPSTR pFilename,
@@ -638,7 +632,6 @@ typedef struct _D3DXINTERSECTINFO
     FLOAT Dist;                     /* Ray-Intersection Parameter Distance */
 } D3DXINTERSECTINFO, *LPD3DXINTERSECTINFO;
 
-
 HRESULT WINAPI
     D3DXIntersect(
         LPD3DXBASEMESH pMesh,
@@ -665,7 +658,6 @@ HRESULT WINAPI
         FLOAT   *pDist,             /* Ray-Intersection Parameter Distance */
         LPD3DXBUFFER *ppAllHits,    /* Array of D3DXINTERSECTINFOs for all hits (not just closest) */
         DWORD   *pCountOfHits);     /* Number of entries in AllHits array */
-
 
 HRESULT WINAPI D3DXSplitMesh
     (
@@ -715,7 +707,6 @@ enum _D3DXERR {
     D3DXERR_LOADEDMESHASNODATA          = MAKE_DDHRESULT(2906),
 };
 
-
 #define D3DX_COMP_TANGENT_NONE 0xFFFFFFFF
 
 HRESULT WINAPI D3DXComputeTangent(LPD3DXMESH InMesh,
@@ -748,11 +739,8 @@ D3DXConvertMeshSubsetToStrips
     DWORD *pNumStrips
 );
 
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
 #endif /* __D3DX8MESH_H__ */
-
-

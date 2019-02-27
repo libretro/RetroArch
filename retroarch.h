@@ -24,17 +24,19 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
+#include <queues/task_queue.h>
+#include <queues/message_queue.h>
+
 #include "core_type.h"
 #include "core.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_input.h"
+#include "menu/menu_defines.h"
 #endif
 
 RETRO_BEGIN_DECLS
 
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
-
 
 #define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* bool * --
@@ -146,6 +148,7 @@ enum rarch_ctl_state
    RARCH_CTL_SET_CORE_SHUTDOWN,
 
    RARCH_CTL_SET_SHUTDOWN,
+   RARCH_CTL_UNSET_SHUTDOWN,
    RARCH_CTL_IS_SHUTDOWN,
 
    /* Runloop state */
@@ -159,6 +162,7 @@ enum rarch_ctl_state
 
    /* Key event */
    RARCH_CTL_FRONTEND_KEY_EVENT_GET,
+   RARCH_CTL_UNSET_KEY_EVENT,
    RARCH_CTL_KEY_EVENT_GET,
    RARCH_CTL_DATA_DEINIT,
 
@@ -179,7 +183,10 @@ enum rarch_ctl_state
 
    /* HTTP server */
    RARCH_CTL_HTTPSERVER_INIT,
-   RARCH_CTL_HTTPSERVER_DESTROY
+   RARCH_CTL_HTTPSERVER_DESTROY,
+
+   RARCH_CTL_CONTENT_RUNTIME_LOG_INIT,
+   RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
 };
 
 enum rarch_capabilities
@@ -330,6 +337,12 @@ void retroarch_unset_shader_preset(void);
 
 char* retroarch_get_shader_preset(void);
 
+bool retroarch_is_switching_display_mode(void);
+
+void retroarch_set_switching_display_mode(void);
+
+void retroarch_unset_switching_display_mode(void);
+
 /**
  * retroarch_fail:
  * @error_code  : Error code.
@@ -367,8 +380,16 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void runloop_msg_queue_push(const char *msg, unsigned prio,
-      unsigned duration, bool flush);
+void runloop_task_msg_queue_push(retro_task_t *task,
+      const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush);
+
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category);
 
 bool runloop_msg_queue_pull(const char **ret);
 
@@ -385,7 +406,11 @@ void rarch_menu_running_finished(void);
 
 bool retroarch_is_on_main_thread(void);
 
+char *get_retroarch_launch_arguments(void);
+
 rarch_system_info_t *runloop_get_system_info(void);
+
+struct retro_system_info *runloop_get_libretro_system_info(void);
 
 #ifdef HAVE_THREADS
 void runloop_msg_queue_lock(void);
@@ -393,9 +418,9 @@ void runloop_msg_queue_lock(void);
 void runloop_msg_queue_unlock(void);
 #endif
 
-#ifdef HAVE_DYNAMIC
-bool retroarch_core_set_on_cmdline(void);
-#endif
+void rarch_force_video_driver_fallback(const char *driver);
+
+void rarch_core_runtime_tick(void);
 
 RETRO_END_DECLS
 

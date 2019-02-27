@@ -29,39 +29,39 @@ typedef interface ID2D1SvgElement ID2D1SvgElement;
 /// </summary>
 typedef enum D2D1_SVG_PAINT_TYPE
 {
-    
+
     /// <summary>
     /// The fill or stroke is not rendered.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_NONE = 0,
-    
+
     /// <summary>
     /// A solid color is rendered.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_COLOR = 1,
-    
+
     /// <summary>
     /// The current color is rendered.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_CURRENT_COLOR = 2,
-    
+
     /// <summary>
     /// A paint server, defined by another element in the SVG document, is used.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_URI = 3,
-    
+
     /// <summary>
     /// A paint server, defined by another element in the SVG document, is used. If the
     /// paint server reference is invalid, fall back to D2D1_SVG_PAINT_TYPE_NONE.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_URI_NONE = 4,
-    
+
     /// <summary>
     /// A paint server, defined by another element in the SVG document, is used. If the
     /// paint server reference is invalid, fall back to D2D1_SVG_PAINT_TYPE_COLOR.
     /// </summary>
     D2D1_SVG_PAINT_TYPE_URI_COLOR = 5,
-    
+
     /// <summary>
     /// A paint server, defined by another element in the SVG document, is used. If the
     /// paint server reference is invalid, fall back to
@@ -72,18 +72,17 @@ typedef enum D2D1_SVG_PAINT_TYPE
 
 } D2D1_SVG_PAINT_TYPE;
 
-
 /// <summary>
 /// Specifies the units for an SVG length.
 /// </summary>
 typedef enum D2D1_SVG_LENGTH_UNITS
 {
-    
+
     /// <summary>
     /// The length is unitless.
     /// </summary>
     D2D1_SVG_LENGTH_UNITS_NUMBER = 0,
-    
+
     /// <summary>
     /// The length is a percentage value.
     /// </summary>
@@ -92,18 +91,17 @@ typedef enum D2D1_SVG_LENGTH_UNITS
 
 } D2D1_SVG_LENGTH_UNITS;
 
-
 /// <summary>
 /// Specifies a value for the SVG display property.
 /// </summary>
 typedef enum D2D1_SVG_DISPLAY
 {
-    
+
     /// <summary>
     /// The element uses the default display behavior.
     /// </summary>
     D2D1_SVG_DISPLAY_INLINE = 0,
-    
+
     /// <summary>
     /// The element and all children are not rendered directly.
     /// </summary>
@@ -112,18 +110,17 @@ typedef enum D2D1_SVG_DISPLAY
 
 } D2D1_SVG_DISPLAY;
 
-
 /// <summary>
 /// Specifies a value for the SVG visibility property.
 /// </summary>
 typedef enum D2D1_SVG_VISIBILITY
 {
-    
+
     /// <summary>
     /// The element is visible.
     /// </summary>
     D2D1_SVG_VISIBILITY_VISIBLE = 0,
-    
+
     /// <summary>
     /// The element is invisible.
     /// </summary>
@@ -132,18 +129,17 @@ typedef enum D2D1_SVG_VISIBILITY
 
 } D2D1_SVG_VISIBILITY;
 
-
 /// <summary>
 /// Specifies a value for the SVG overflow property.
 /// </summary>
 typedef enum D2D1_SVG_OVERFLOW
 {
-    
+
     /// <summary>
     /// The element is not clipped to its viewport.
     /// </summary>
     D2D1_SVG_OVERFLOW_VISIBLE = 0,
-    
+
     /// <summary>
     /// The element is clipped to its viewport.
     /// </summary>
@@ -152,23 +148,22 @@ typedef enum D2D1_SVG_OVERFLOW
 
 } D2D1_SVG_OVERFLOW;
 
-
 /// <summary>
 /// Specifies a value for the SVG stroke-linecap property.
 /// </summary>
 typedef enum D2D1_SVG_LINE_CAP
 {
-    
+
     /// <summary>
     /// The property is set to SVG's 'butt' value.
     /// </summary>
     D2D1_SVG_LINE_CAP_BUTT = D2D1_CAP_STYLE_FLAT,
-    
+
     /// <summary>
     /// The property is set to SVG's 'square' value.
     /// </summary>
     D2D1_SVG_LINE_CAP_SQUARE = D2D1_CAP_STYLE_SQUARE,
-    
+
     /// <summary>
     /// The property is set to SVG's 'round' value.
     /// </summary>
@@ -177,24 +172,23 @@ typedef enum D2D1_SVG_LINE_CAP
 
 } D2D1_SVG_LINE_CAP;
 
-
 /// <summary>
 /// Specifies a value for the SVG stroke-linejoin property.
 /// </summary>
 typedef enum D2D1_SVG_LINE_JOIN
 {
-    
+
     /// <summary>
     /// The property is set to SVG's 'bevel' value.
     /// </summary>
     D2D1_SVG_LINE_JOIN_BEVEL = D2D1_LINE_JOIN_BEVEL,
-    
+
     /// <summary>
     /// The property is set to SVG's 'miter' value. Note that this is equivalent to
     /// D2D1_LINE_JOIN_MITER_OR_BEVEL, not D2D1_LINE_JOIN_MITER.
     /// </summary>
     D2D1_SVG_LINE_JOIN_MITER = D2D1_LINE_JOIN_MITER_OR_BEVEL,
-    
+
     /// <summary>
     /// \ The property is set to SVG's 'round' value.
     /// </summary>
@@ -203,58 +197,57 @@ typedef enum D2D1_SVG_LINE_JOIN
 
 } D2D1_SVG_LINE_JOIN;
 
-
 /// <summary>
 /// The alignment portion of the SVG preserveAspectRatio attribute.
 /// </summary>
 typedef enum D2D1_SVG_ASPECT_ALIGN
 {
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'none' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_NONE = 0,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMinYMin' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MIN_Y_MIN = 1,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMidYMin' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MID_Y_MIN = 2,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMaxYMin' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MAX_Y_MIN = 3,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMinYMid' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MIN_Y_MID = 4,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMidYMid' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MID_Y_MID = 5,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMaxYMid' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MAX_Y_MID = 6,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMinYMax' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MIN_Y_MAX = 7,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMidYMax' value.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN_X_MID_Y_MAX = 8,
-    
+
     /// <summary>
     /// The alignment is set to SVG's 'xMaxYMax' value.
     /// </summary>
@@ -263,19 +256,18 @@ typedef enum D2D1_SVG_ASPECT_ALIGN
 
 } D2D1_SVG_ASPECT_ALIGN;
 
-
 /// <summary>
 /// The meetOrSlice portion of the SVG preserveAspectRatio attribute.
 /// </summary>
 typedef enum D2D1_SVG_ASPECT_SCALING
 {
-    
+
     /// <summary>
     /// Scale the viewBox up as much as possible such that the entire viewBox is visible
     /// within the viewport.
     /// </summary>
     D2D1_SVG_ASPECT_SCALING_MEET = 0,
-    
+
     /// <summary>
     /// Scale the viewBox down as much as possible such that the entire viewport is
     /// covered by the viewBox.
@@ -285,7 +277,6 @@ typedef enum D2D1_SVG_ASPECT_SCALING
 
 } D2D1_SVG_ASPECT_SCALING;
 
-
 /// <summary>
 /// Represents a path commmand. Each command may reference floats from the segment
 /// data. Commands ending in _ABSOLUTE interpret data as absolute coordinate.
@@ -294,110 +285,110 @@ typedef enum D2D1_SVG_ASPECT_SCALING
 /// </summary>
 typedef enum D2D1_SVG_PATH_COMMAND
 {
-    
+
     /// <summary>
     /// Closes the current subpath. Uses no segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_CLOSE_PATH = 0,
-    
+
     /// <summary>
     /// Starts a new subpath at the coordinate (x y). Uses 2 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_MOVE_ABSOLUTE = 1,
-    
+
     /// <summary>
     /// Starts a new subpath at the coordinate (x y). Uses 2 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_MOVE_RELATIVE = 2,
-    
+
     /// <summary>
     /// Draws a line to the coordinate (x y). Uses 2 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_LINE_ABSOLUTE = 3,
-    
+
     /// <summary>
     /// Draws a line to the coordinate (x y). Uses 2 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_LINE_RELATIVE = 4,
-    
+
     /// <summary>
     /// Draws a cubic Bezier curve (x1 y1 x2 y2 x y). The curve ends at (x, y) and is
     /// defined by the two control points (x1, y1) and (x2, y2). Uses 6 floats of
     /// segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_CUBIC_ABSOLUTE = 5,
-    
+
     /// <summary>
     /// Draws a cubic Bezier curve (x1 y1 x2 y2 x y). The curve ends at (x, y) and is
     /// defined by the two control points (x1, y1) and (x2, y2). Uses 6 floats of
     /// segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_CUBIC_RELATIVE = 6,
-    
+
     /// <summary>
     /// Draws a quadratic Bezier curve (x1 y1 x y). The curve ends at (x, y) and is
     /// defined by the control point (x1 y1). Uses 4 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_QUADRADIC_ABSOLUTE = 7,
-    
+
     /// <summary>
     /// Draws a quadratic Bezier curve (x1 y1 x y). The curve ends at (x, y) and is
     /// defined by the control point (x1 y1). Uses 4 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_QUADRADIC_RELATIVE = 8,
-    
+
     /// <summary>
     /// Draws an elliptical arc (rx ry x-axis-rotation large-arc-flag sweep-flag x y).
     /// The curve ends at (x, y) and is defined by the arc parameters. The two flags are
     /// considered set if their values are non-zero. Uses 7 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_ARC_ABSOLUTE = 9,
-    
+
     /// <summary>
     /// Draws an elliptical arc (rx ry x-axis-rotation large-arc-flag sweep-flag x y).
     /// The curve ends at (x, y) and is defined by the arc parameters. The two flags are
     /// considered set if their values are non-zero. Uses 7 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_ARC_RELATIVE = 10,
-    
+
     /// <summary>
     /// Draws a horizontal line to the coordinate (x). Uses 1 float of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_HORIZONTAL_ABSOLUTE = 11,
-    
+
     /// <summary>
     /// Draws a horizontal line to the coordinate (x). Uses 1 float of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_HORIZONTAL_RELATIVE = 12,
-    
+
     /// <summary>
     /// Draws a vertical line to the coordinate (y). Uses 1 float of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_VERTICAL_ABSOLUTE = 13,
-    
+
     /// <summary>
     /// Draws a vertical line to the coordinate (y). Uses 1 float of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_VERTICAL_RELATIVE = 14,
-    
+
     /// <summary>
     /// Draws a smooth cubic Bezier curve (x2 y2 x y). The curve ends at (x, y) and is
     /// defined by the control point (x2, y2). Uses 4 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_CUBIC_SMOOTH_ABSOLUTE = 15,
-    
+
     /// <summary>
     /// Draws a smooth cubic Bezier curve (x2 y2 x y). The curve ends at (x, y) and is
     /// defined by the control point (x2, y2). Uses 4 floats of segment data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_CUBIC_SMOOTH_RELATIVE = 16,
-    
+
     /// <summary>
     /// Draws a smooth quadratic Bezier curve ending at (x, y). Uses 2 floats of segment
     /// data.
     /// </summary>
     D2D1_SVG_PATH_COMMAND_QUADRADIC_SMOOTH_ABSOLUTE = 17,
-    
+
     /// <summary>
     /// Draws a smooth quadratic Bezier curve ending at (x, y). Uses 2 floats of segment
     /// data.
@@ -407,18 +398,17 @@ typedef enum D2D1_SVG_PATH_COMMAND
 
 } D2D1_SVG_PATH_COMMAND;
 
-
 /// <summary>
 /// Defines the coordinate system used for SVG gradient or clipPath elements.
 /// </summary>
 typedef enum D2D1_SVG_UNIT_TYPE
 {
-    
+
     /// <summary>
     /// The property is set to SVG's 'userSpaceOnUse' value.
     /// </summary>
     D2D1_SVG_UNIT_TYPE_USER_SPACE_ON_USE = 0,
-    
+
     /// <summary>
     /// The property is set to SVG's 'objectBoundingBox' value.
     /// </summary>
@@ -427,22 +417,21 @@ typedef enum D2D1_SVG_UNIT_TYPE
 
 } D2D1_SVG_UNIT_TYPE;
 
-
 /// <summary>
 /// Defines the type of SVG string attribute to set or get.
 /// </summary>
 typedef enum D2D1_SVG_ATTRIBUTE_STRING_TYPE
 {
-    
+
     /// <summary>
     /// The attribute is a string in the same form as it would appear in the SVG XML.
-    /// 
+    ///
     /// Note that when getting values of this type, the value returned may not exactly
     /// match the value that was set. Instead, the output value is a normalized version
     /// of the value. For example, an input color of 'red' may be output as '#FF0000'.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_STRING_TYPE_SVG = 0,
-    
+
     /// <summary>
     /// The attribute is an element ID.
     /// </summary>
@@ -451,78 +440,77 @@ typedef enum D2D1_SVG_ATTRIBUTE_STRING_TYPE
 
 } D2D1_SVG_ATTRIBUTE_STRING_TYPE;
 
-
 /// <summary>
 /// Defines the type of SVG POD attribute to set or get.
 /// </summary>
 typedef enum D2D1_SVG_ATTRIBUTE_POD_TYPE
 {
-    
+
     /// <summary>
     /// The attribute is a FLOAT.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_FLOAT = 0,
-    
+
     /// <summary>
     /// The attribute is a D2D1_COLOR_F.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_COLOR = 1,
-    
+
     /// <summary>
     /// The attribute is a D2D1_FILL_MODE.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_FILL_MODE = 2,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_DISPLAY.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_DISPLAY = 3,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_OVERFLOW.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_OVERFLOW = 4,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_LINE_CAP.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_CAP = 5,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_LINE_JOIN.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_JOIN = 6,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_VISIBILITY.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_VISIBILITY = 7,
-    
+
     /// <summary>
     /// The attribute is a D2D1_MATRIX_3X2_F.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_MATRIX = 8,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_UNIT_TYPE.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_UNIT_TYPE = 9,
-    
+
     /// <summary>
     /// The attribute is a D2D1_EXTEND_MODE.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_EXTEND_MODE = 10,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_PRESERVE_ASPECT_RATIO.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_PRESERVE_ASPECT_RATIO = 11,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_VIEWBOX.
     /// </summary>
     D2D1_SVG_ATTRIBUTE_POD_TYPE_VIEWBOX = 12,
-    
+
     /// <summary>
     /// The attribute is a D2D1_SVG_LENGTH.
     /// </summary>
@@ -530,7 +518,6 @@ typedef enum D2D1_SVG_ATTRIBUTE_POD_TYPE
     D2D1_SVG_ATTRIBUTE_POD_TYPE_FORCE_DWORD = 0xffffffff
 
 } D2D1_SVG_ATTRIBUTE_POD_TYPE;
-
 
 /// <summary>
 /// Represents an SVG length.
@@ -542,32 +529,30 @@ typedef struct D2D1_SVG_LENGTH
 
 } D2D1_SVG_LENGTH;
 
-
 /// <summary>
 /// Represents all SVG preserveAspectRatio settings.
 /// </summary>
 typedef struct D2D1_SVG_PRESERVE_ASPECT_RATIO
 {
-    
+
     /// <summary>
     /// Sets the 'defer' portion of the preserveAspectRatio settings. This field only
     /// has an effect on an 'image' element that references another SVG document. As
     /// this is not currently supported, the field has no impact on rendering.
     /// </summary>
     BOOL defer;
-    
+
     /// <summary>
     /// Sets the align portion of the preserveAspectRatio settings.
     /// </summary>
     D2D1_SVG_ASPECT_ALIGN align;
-    
+
     /// <summary>
     /// Sets the meetOrSlice portion of the preserveAspectRatio settings.
     /// </summary>
     D2D1_SVG_ASPECT_SCALING meetOrSlice;
 
 } D2D1_SVG_PRESERVE_ASPECT_RATIO;
-
 
 /// <summary>
 /// Represents an SVG viewBox.
@@ -581,7 +566,6 @@ typedef struct D2D1_SVG_VIEWBOX
 
 } D2D1_SVG_VIEWBOX;
 
-
 EXTERN_C CONST IID IID_ID2D1SvgAttribute;
 EXTERN_C CONST IID IID_ID2D1SvgPaint;
 EXTERN_C CONST IID IID_ID2D1SvgStrokeDashArray;
@@ -589,7 +573,6 @@ EXTERN_C CONST IID IID_ID2D1SvgPointCollection;
 EXTERN_C CONST IID IID_ID2D1SvgPathData;
 EXTERN_C CONST IID IID_ID2D1SvgElement;
 EXTERN_C CONST IID IID_ID2D1SvgDocument;
-
 
 #ifndef D2D_USE_C_DEFINITIONS
 
@@ -600,77 +583,76 @@ EXTERN_C CONST IID IID_ID2D1SvgDocument;
 /// </summary>
 interface DX_DECLARE_INTERFACE("c9cdb0dd-f8c9-4e70-b7c2-301c80292c5e") ID2D1SvgAttribute  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Returns the element on which this attribute is set. Returns null if the
     /// attribute is not set on any element.
     /// </summary>
     STDMETHOD_(void, GetElement)(
-        _Outptr_result_maybenull_ ID2D1SvgElement **element 
+        _Outptr_result_maybenull_ ID2D1SvgElement **element
         ) PURE;
-    
+
     /// <summary>
     /// Creates a clone of this attribute value. On creation, the cloned attribute is
     /// not set on any element.
     /// </summary>
     STDMETHOD(Clone)(
-        _COM_Outptr_ ID2D1SvgAttribute **attribute 
+        _COM_Outptr_ ID2D1SvgAttribute **attribute
         ) PURE;
 }; // interface ID2D1SvgAttribute
-
 
 /// <summary>
 /// Interface describing an SVG 'fill' or 'stroke' value.
 /// </summary>
 interface DX_DECLARE_INTERFACE("d59bab0a-68a2-455b-a5dc-9eb2854e2490") ID2D1SvgPaint  : public ID2D1SvgAttribute
 {
-    
+
     /// <summary>
     /// Sets the paint type.
     /// </summary>
     STDMETHOD(SetPaintType)(
-        D2D1_SVG_PAINT_TYPE paintType 
+        D2D1_SVG_PAINT_TYPE paintType
         ) PURE;
-    
+
     /// <summary>
     /// Gets the paint type.
     /// </summary>
     STDMETHOD_(D2D1_SVG_PAINT_TYPE, GetPaintType)(
         ) PURE;
-    
+
     /// <summary>
     /// Sets the paint color that is used if the paint type is
     /// D2D1_SVG_PAINT_TYPE_COLOR.
     /// </summary>
     STDMETHOD(SetColor)(
-        _In_ CONST D2D1_COLOR_F *color 
+        _In_ CONST D2D1_COLOR_F *color
         ) PURE;
-    
+
     /// <summary>
     /// Gets the paint color that is used if the paint type is
     /// D2D1_SVG_PAINT_TYPE_COLOR.
     /// </summary>
     STDMETHOD_(void, GetColor)(
-        _Out_ D2D1_COLOR_F *color 
+        _Out_ D2D1_COLOR_F *color
         ) PURE;
-    
+
     /// <summary>
     /// Sets the element id which acts as the paint server. This id is used if the paint
     /// type is D2D1_SVG_PAINT_TYPE_URI.
     /// </summary>
     STDMETHOD(SetId)(
-        _In_ PCWSTR id 
+        _In_ PCWSTR id
         ) PURE;
-    
+
     /// <summary>
     /// Gets the element id which acts as the paint server. This id is used if the paint
     /// type is D2D1_SVG_PAINT_TYPE_URI.
     /// </summary>
     STDMETHOD(GetId)(
         _Out_writes_(idCount) PWSTR id,
-        UINT32 idCount 
+        UINT32 idCount
         ) PURE;
-    
+
     /// <summary>
     /// Gets the string length of the element id which acts as the paint server. This id
     /// is used if the paint type is D2D1_SVG_PAINT_TYPE_URI. The returned string length
@@ -678,7 +660,7 @@ interface DX_DECLARE_INTERFACE("d59bab0a-68a2-455b-a5dc-9eb2854e2490") ID2D1SvgP
     /// </summary>
     STDMETHOD_(UINT32, GetIdLength)(
         ) PURE;
-    
+
     /// <summary>
     /// Sets the paint color that is used if the paint type is
     /// D2D1_SVG_PAINT_TYPE_COLOR.
@@ -686,28 +668,27 @@ interface DX_DECLARE_INTERFACE("d59bab0a-68a2-455b-a5dc-9eb2854e2490") ID2D1SvgP
     COM_DECLSPEC_NOTHROW
     HRESULT
     SetColor(
-        CONST D2D1_COLOR_F &color 
-        )  
+        CONST D2D1_COLOR_F &color
+        )
     {
         return SetColor(&color);
     }
 }; // interface ID2D1SvgPaint
-
 
 /// <summary>
 /// Interface describing an SVG 'stroke-dasharray' value.
 /// </summary>
 interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgStrokeDashArray  : public ID2D1SvgAttribute
 {
-    
+
     /// <summary>
     /// Removes dashes from the end of the array.
     /// </summary>
     /// <param name="dashesCount">Specifies how many dashes to remove.</param>
     STDMETHOD(RemoveDashesAtEnd)(
-        UINT32 dashesCount 
+        UINT32 dashesCount
         ) PURE;
-    
+
     /// <summary>
     /// Updates the array. Existing dashes not updated by this method are preserved. The
     /// array is resized larger if necessary to accomodate the new dashes.
@@ -719,9 +700,9 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
     STDMETHOD(UpdateDashes)(
         _In_reads_(dashesCount) CONST FLOAT *dashes,
         UINT32 dashesCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Updates the array. Existing dashes not updated by this method are preserved. The
     /// array is resized larger if necessary to accomodate the new dashes.
@@ -733,9 +714,9 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
     STDMETHOD(UpdateDashes)(
         _In_reads_(dashesCount) CONST D2D1_SVG_LENGTH *dashes,
         UINT32 dashesCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets dashes from the array.
     /// </summary>
@@ -745,9 +726,9 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
     STDMETHOD(GetDashes)(
         _Out_writes_(dashesCount) FLOAT *dashes,
         UINT32 dashesCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets dashes from the array.
     /// </summary>
@@ -757,9 +738,9 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
     STDMETHOD(GetDashes)(
         _Out_writes_(dashesCount) D2D1_SVG_LENGTH *dashes,
         UINT32 dashesCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets the number of the dashes in the array.
     /// </summary>
@@ -767,21 +748,20 @@ interface DX_DECLARE_INTERFACE("f1c0ca52-92a3-4f00-b4ce-f35691efd9d9") ID2D1SvgS
         ) PURE;
 }; // interface ID2D1SvgStrokeDashArray
 
-
 /// <summary>
 /// Interface describing an SVG 'points' value in a 'polyline' or 'polygon' element.
 /// </summary>
 interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgPointCollection  : public ID2D1SvgAttribute
 {
-    
+
     /// <summary>
     /// Removes points from the end of the array.
     /// </summary>
     /// <param name="pointsCount">Specifies how many points to remove.</param>
     STDMETHOD(RemovePointsAtEnd)(
-        UINT32 pointsCount 
+        UINT32 pointsCount
         ) PURE;
-    
+
     /// <summary>
     /// Updates the points array. Existing points not updated by this method are
     /// preserved. The array is resized larger if necessary to accomodate the new
@@ -794,9 +774,9 @@ interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgP
     STDMETHOD(UpdatePoints)(
         _In_reads_(pointsCount) CONST D2D1_POINT_2F *points,
         UINT32 pointsCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets points from the points array.
     /// </summary>
@@ -806,9 +786,9 @@ interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgP
     STDMETHOD(GetPoints)(
         _Out_writes_(pointsCount) D2D1_POINT_2F *points,
         UINT32 pointsCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets the number of points in the array.
     /// </summary>
@@ -816,11 +796,10 @@ interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgP
         ) PURE;
 }; // interface ID2D1SvgPointCollection
 
-
 /// <summary>
 /// Interface describing SVG path data. Path data can be set as the 'd' attribute on
 /// a 'path' element.
-/// 
+///
 /// The path data set is factored into two arrays. The segment data array stores all
 /// numbers and the commands array stores the set of commands. Unlike the string
 /// data set in the d attribute, each command in this representation uses a fixed
@@ -831,15 +810,15 @@ interface DX_DECLARE_INTERFACE("9dbe4c0d-3572-4dd9-9825-5530813bb712") ID2D1SvgP
 /// </summary>
 interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgPathData  : public ID2D1SvgAttribute
 {
-    
+
     /// <summary>
     /// Removes data from the end of the segment data array.
     /// </summary>
     /// <param name="dataCount">Specifies how much data to remove.</param>
     STDMETHOD(RemoveSegmentDataAtEnd)(
-        UINT32 dataCount 
+        UINT32 dataCount
         ) PURE;
-    
+
     /// <summary>
     /// Updates the segment data array. Existing segment data not updated by this method
     /// are preserved. The array is resized larger if necessary to accomodate the new
@@ -852,9 +831,9 @@ interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgP
     STDMETHOD(UpdateSegmentData)(
         _In_reads_(dataCount) CONST FLOAT *data,
         UINT32 dataCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets data from the segment data array.
     /// </summary>
@@ -865,23 +844,23 @@ interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgP
     STDMETHOD(GetSegmentData)(
         _Out_writes_(dataCount) FLOAT *data,
         UINT32 dataCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets the size of the segment data array.
     /// </summary>
     STDMETHOD_(UINT32, GetSegmentDataCount)(
         ) PURE;
-    
+
     /// <summary>
     /// Removes commands from the end of the commands array.
     /// </summary>
     /// <param name="commandsCount">Specifies how many commands to remove.</param>
     STDMETHOD(RemoveCommandsAtEnd)(
-        UINT32 commandsCount 
+        UINT32 commandsCount
         ) PURE;
-    
+
     /// <summary>
     /// Updates the commands array. Existing commands not updated by this method are
     /// preserved. The array is resized larger if necessary to accomodate the new
@@ -894,9 +873,9 @@ interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgP
     STDMETHOD(UpdateCommands)(
         _In_reads_(commandsCount) CONST D2D1_SVG_PATH_COMMAND *commands,
         UINT32 commandsCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets commands from the commands array.
     /// </summary>
@@ -906,88 +885,87 @@ interface DX_DECLARE_INTERFACE("c095e4f4-bb98-43d6-9745-4d1b84ec9888") ID2D1SvgP
     STDMETHOD(GetCommands)(
         _Out_writes_(commandsCount) D2D1_SVG_PATH_COMMAND *commands,
         UINT32 commandsCount,
-        UINT32 startIndex = 0 
+        UINT32 startIndex = 0
         ) PURE;
-    
+
     /// <summary>
     /// Gets the size of the commands array.
     /// </summary>
     STDMETHOD_(UINT32, GetCommandsCount)(
         ) PURE;
-    
+
     /// <summary>
     /// Creates a path geometry object representing the path data.
     /// </summary>
     STDMETHOD(CreatePathGeometry)(
         D2D1_FILL_MODE fillMode,
-        _COM_Outptr_ ID2D1PathGeometry1 **pathGeometry 
+        _COM_Outptr_ ID2D1PathGeometry1 **pathGeometry
         ) PURE;
 }; // interface ID2D1SvgPathData
-
 
 /// <summary>
 /// Interface for all SVG elements.
 /// </summary>
 interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgElement  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Gets the document that contains this element. Returns null if the element has
     /// been removed from the tree.
     /// </summary>
     STDMETHOD_(void, GetDocument)(
-        _Outptr_result_maybenull_ ID2D1SvgDocument **document 
+        _Outptr_result_maybenull_ ID2D1SvgDocument **document
         ) PURE;
-    
+
     /// <summary>
     /// Gets the tag name.
     /// </summary>
     STDMETHOD(GetTagName)(
         _Out_writes_(nameCount) PWSTR name,
-        UINT32 nameCount 
+        UINT32 nameCount
         ) PURE;
-    
+
     /// <summary>
     /// Gets the string length of the tag name. The returned string length does not
     /// include room for the null terminator.
     /// </summary>
     STDMETHOD_(UINT32, GetTagNameLength)(
         ) PURE;
-    
+
     /// <summary>
     /// Returns TRUE if this element represents text content, e.g. the content of a
     /// 'title' or 'desc' element. Text content does not have a tag name.
     /// </summary>
     STDMETHOD_(BOOL, IsTextContent)(
         ) PURE;
-    
+
     /// <summary>
     /// Gets the parent element.
     /// </summary>
     STDMETHOD_(void, GetParent)(
-        _Outptr_result_maybenull_ ID2D1SvgElement **parent 
+        _Outptr_result_maybenull_ ID2D1SvgElement **parent
         ) PURE;
-    
+
     /// <summary>
     /// Returns whether this element has children.
     /// </summary>
     STDMETHOD_(BOOL, HasChildren)(
         ) PURE;
-    
+
     /// <summary>
     /// Gets the first child of this element.
     /// </summary>
     STDMETHOD_(void, GetFirstChild)(
-        _Outptr_result_maybenull_ ID2D1SvgElement **child 
+        _Outptr_result_maybenull_ ID2D1SvgElement **child
         ) PURE;
-    
+
     /// <summary>
     /// Gets the last child of this element.
     /// </summary>
     STDMETHOD_(void, GetLastChild)(
-        _Outptr_result_maybenull_ ID2D1SvgElement **child 
+        _Outptr_result_maybenull_ ID2D1SvgElement **child
         ) PURE;
-    
+
     /// <summary>
     /// Gets the previous sibling of the referenceChild element.
     /// </summary>
@@ -998,9 +976,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// child, the output is null.</param>
     STDMETHOD(GetPreviousChild)(
         _In_ ID2D1SvgElement *referenceChild,
-        _COM_Outptr_result_maybenull_ ID2D1SvgElement **previousChild 
+        _COM_Outptr_result_maybenull_ ID2D1SvgElement **previousChild
         ) PURE;
-    
+
     /// <summary>
     /// Gets the next sibling of the referenceChild element.
     /// </summary>
@@ -1011,9 +989,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// output is null.</param>
     STDMETHOD(GetNextChild)(
         _In_ ID2D1SvgElement *referenceChild,
-        _COM_Outptr_result_maybenull_ ID2D1SvgElement **nextChild 
+        _COM_Outptr_result_maybenull_ ID2D1SvgElement **nextChild
         ) PURE;
-    
+
     /// <summary>
     /// Inserts newChild as a child of this element, before the referenceChild element.
     /// If the newChild element already has a parent, it is removed from this parent as
@@ -1028,9 +1006,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// </param>
     STDMETHOD(InsertChildBefore)(
         _In_ ID2D1SvgElement *newChild,
-        _In_opt_ ID2D1SvgElement *referenceChild = NULL 
+        _In_opt_ ID2D1SvgElement *referenceChild = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Appends newChild to the list of children. If the newChild element already has a
     /// parent, it is removed from this parent as part of the append operation. Returns
@@ -1039,9 +1017,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// </summary>
     /// <param name="newChild">The element to be appended.</param>
     STDMETHOD(AppendChild)(
-        _In_ ID2D1SvgElement *newChild 
+        _In_ ID2D1SvgElement *newChild
         ) PURE;
-    
+
     /// <summary>
     /// Replaces the oldChild element with the newChild. This operation removes the
     /// oldChild from the tree. If the newChild element already has a parent, it is
@@ -1054,9 +1032,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// must be an immediate child of this element.</param>
     STDMETHOD(ReplaceChild)(
         _In_ ID2D1SvgElement *newChild,
-        _In_ ID2D1SvgElement *oldChild 
+        _In_ ID2D1SvgElement *oldChild
         ) PURE;
-    
+
     /// <summary>
     /// Removes the oldChild from the tree. Children of oldChild remain children of
     /// oldChild.
@@ -1064,9 +1042,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// <param name="oldChild">The child element to be removed. The oldChild element
     /// must be an immediate child of this element.</param>
     STDMETHOD(RemoveChild)(
-        _In_ ID2D1SvgElement *oldChild 
+        _In_ ID2D1SvgElement *oldChild
         ) PURE;
-    
+
     /// <summary>
     /// Creates an element from a tag name. The element is appended to the list of
     /// children. Returns an error if this element cannot accept children of the
@@ -1077,9 +1055,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// <param name="newChild">The new child element.</param>
     STDMETHOD(CreateChild)(
         _In_ PCWSTR tagName,
-        _COM_Outptr_ ID2D1SvgElement **newChild 
+        _COM_Outptr_ ID2D1SvgElement **newChild
         ) PURE;
-    
+
     /// <summary>
     /// Returns true if the attribute is explicitly set on the element or if it is
     /// present within an inline style. Returns FALSE if the attribute is not a valid
@@ -1090,9 +1068,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// value.</param>
     STDMETHOD_(BOOL, IsAttributeSpecified)(
         _In_ PCWSTR name,
-        _Out_opt_ BOOL *inherited = NULL 
+        _Out_opt_ BOOL *inherited = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Returns the number of specified attributes on this element. Attributes are only
     /// considered specified if they are explicitly set on the element or present within
@@ -1102,7 +1080,7 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// </summary>
     STDMETHOD_(UINT32, GetSpecifiedAttributeCount)(
         ) PURE;
-    
+
     /// <summary>
     /// Gets the name of the specified attribute at the given index.
     /// </summary>
@@ -1114,9 +1092,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
         UINT32 index,
         _Out_writes_(nameCount) PWSTR name,
         UINT32 nameCount,
-        _Out_opt_ BOOL *inherited = NULL 
+        _Out_opt_ BOOL *inherited = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Gets the string length of the name of the specified attribute at the given
     /// index. The output string length does not include room for the null terminator.
@@ -1129,41 +1107,41 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     STDMETHOD(GetSpecifiedAttributeNameLength)(
         UINT32 index,
         _Out_ UINT32 *nameLength,
-        _Out_opt_ BOOL *inherited = NULL 
+        _Out_opt_ BOOL *inherited = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Removes the attribute from this element. Also removes this attribute from within
     /// an inline style if present. Returns an error if the attribute name is not valid
     /// on this element.
     /// </summary>
     STDMETHOD(RemoveAttribute)(
-        _In_ PCWSTR name 
+        _In_ PCWSTR name
         ) PURE;
-    
+
     /// <summary>
     /// Sets the value of a text content element.
     /// </summary>
     STDMETHOD(SetTextValue)(
         _In_reads_(nameCount) CONST WCHAR *name,
-        UINT32 nameCount 
+        UINT32 nameCount
         ) PURE;
-    
+
     /// <summary>
     /// Gets the value of a text content element.
     /// </summary>
     STDMETHOD(GetTextValue)(
         _Out_writes_(nameCount) PWSTR name,
-        UINT32 nameCount 
+        UINT32 nameCount
         ) PURE;
-    
+
     /// <summary>
     /// Gets the length of the text content value. The returned string length does not
     /// include room for the null terminator.
     /// </summary>
     STDMETHOD_(UINT32, GetTextValueLength)(
         ) PURE;
-    
+
     /// <summary>
     /// Sets an attribute of this element using a string. Returns an error if the
     /// attribute name is not valid on this element. Returns an error if the attribute
@@ -1172,9 +1150,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     STDMETHOD(SetAttributeValue)(
         _In_ PCWSTR name,
         D2D1_SVG_ATTRIBUTE_STRING_TYPE type,
-        _In_ PCWSTR value 
+        _In_ PCWSTR value
         ) PURE;
-    
+
     /// <summary>
     /// Gets an attribute of this element as a string. Returns an error if the attribute
     /// is not specified. Returns an error if the attribute name is not valid on this
@@ -1185,9 +1163,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
         _In_ PCWSTR name,
         D2D1_SVG_ATTRIBUTE_STRING_TYPE type,
         _Out_writes_(valueCount) PWSTR value,
-        UINT32 valueCount 
+        UINT32 valueCount
         ) PURE;
-    
+
     /// <summary>
     /// Gets the string length of an attribute of this element. The returned string
     /// length does not include room for the null terminator. Returns an error if the
@@ -1198,9 +1176,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     STDMETHOD(GetAttributeValueLength)(
         _In_ PCWSTR name,
         D2D1_SVG_ATTRIBUTE_STRING_TYPE type,
-        _Out_ UINT32 *valueLength 
+        _Out_ UINT32 *valueLength
         ) PURE;
-    
+
     /// <summary>
     /// Sets an attribute of this element using a POD type. Returns an error if the
     /// attribute name is not valid on this element. Returns an error if the attribute
@@ -1210,9 +1188,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
         _In_ PCWSTR name,
         D2D1_SVG_ATTRIBUTE_POD_TYPE type,
         _In_reads_bytes_(valueSizeInBytes) CONST void *value,
-        UINT32 valueSizeInBytes 
+        UINT32 valueSizeInBytes
         ) PURE;
-    
+
     /// <summary>
     /// Gets an attribute of this element as a POD type. Returns an error if the
     /// attribute is not specified. Returns an error if the attribute name is not valid
@@ -1223,9 +1201,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
         _In_ PCWSTR name,
         D2D1_SVG_ATTRIBUTE_POD_TYPE type,
         _Out_writes_bytes_(valueSizeInBytes) void *value,
-        UINT32 valueSizeInBytes 
+        UINT32 valueSizeInBytes
         ) PURE;
-    
+
     /// <summary>
     /// Sets an attribute of this element using an interface. Returns an error if the
     /// attribute name is not valid on this element. Returns an error if the attribute
@@ -1235,9 +1213,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     /// </summary>
     STDMETHOD(SetAttributeValue)(
         _In_ PCWSTR name,
-        _In_ ID2D1SvgAttribute *value 
+        _In_ ID2D1SvgAttribute *value
         ) PURE;
-    
+
     /// <summary>
     /// Gets an attribute of this element as an interface type. Returns an error if the
     /// attribute is not specified. Returns an error if the attribute name is not valid
@@ -1248,9 +1226,9 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     STDMETHOD(GetAttributeValue)(
         _In_ PCWSTR name,
         _In_ REFIID riid,
-        _COM_Outptr_result_maybenull_ void **value 
+        _COM_Outptr_result_maybenull_ void **value
         ) PURE;
-    
+
     /// <summary>
     /// Sets an attribute of this element using a float.
     /// </summary>
@@ -1258,12 +1236,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        FLOAT value 
-        )  
+        FLOAT value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_FLOAT, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a float.
     /// </summary>
@@ -1271,12 +1249,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ FLOAT *value 
-        )  
+        _Out_ FLOAT *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_FLOAT, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a color.
     /// </summary>
@@ -1284,12 +1262,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        CONST D2D1_COLOR_F &value 
-        )  
+        CONST D2D1_COLOR_F &value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_COLOR, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a color.
     /// </summary>
@@ -1297,12 +1275,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_COLOR_F *value 
-        )  
+        _Out_ D2D1_COLOR_F *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_COLOR, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a fill mode. This method can be used to set
     /// the value of the 'fill-rule' or 'clip-rule' properties.
@@ -1311,12 +1289,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_FILL_MODE value 
-        )  
+        D2D1_FILL_MODE value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_FILL_MODE, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a fill mode. This method can be used to get
     /// the value of the 'fill-rule' or 'clip-rule' properties.
@@ -1325,12 +1303,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_FILL_MODE *value 
-        )  
+        _Out_ D2D1_FILL_MODE *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_FILL_MODE, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a display value. This method can be used to
     /// set the value of the 'display' property.
@@ -1339,12 +1317,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_DISPLAY value 
-        )  
+        D2D1_SVG_DISPLAY value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_DISPLAY, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a display value. This method can be used to
     /// get the value of the 'display' property.
@@ -1353,12 +1331,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_DISPLAY *value 
-        )  
+        _Out_ D2D1_SVG_DISPLAY *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_DISPLAY, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as an overflow value. This method can be used
     /// to set the value of the 'overflow' property.
@@ -1367,12 +1345,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_OVERFLOW value 
-        )  
+        D2D1_SVG_OVERFLOW value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_OVERFLOW, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as an overflow value. This method can be used
     /// to get the value of the 'overflow' property.
@@ -1381,12 +1359,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_OVERFLOW *value 
-        )  
+        _Out_ D2D1_SVG_OVERFLOW *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_OVERFLOW, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a line join value. This method can be used
     /// to set the value of the 'stroke-linejoin' property.
@@ -1395,12 +1373,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_LINE_JOIN value 
-        )  
+        D2D1_SVG_LINE_JOIN value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_JOIN, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a line join value. This method can be used
     /// to get the value of the 'stroke-linejoin' property.
@@ -1409,12 +1387,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_LINE_JOIN *value 
-        )  
+        _Out_ D2D1_SVG_LINE_JOIN *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_JOIN, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a line cap value. This method can be used
     /// to set the value of the 'stroke-linecap' property.
@@ -1423,12 +1401,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_LINE_CAP value 
-        )  
+        D2D1_SVG_LINE_CAP value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_CAP, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a line cap value. This method can be used
     /// to get the value of the 'stroke-linecap' property.
@@ -1437,12 +1415,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_LINE_CAP *value 
-        )  
+        _Out_ D2D1_SVG_LINE_CAP *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LINE_CAP, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a visibility value. This method can be used
     /// to set the value of the 'visibility' property.
@@ -1451,12 +1429,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_VISIBILITY value 
-        )  
+        D2D1_SVG_VISIBILITY value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_VISIBILITY, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a visibility value. This method can be used
     /// to get the value of the 'visibility' property.
@@ -1465,12 +1443,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_VISIBILITY *value 
-        )  
+        _Out_ D2D1_SVG_VISIBILITY *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_VISIBILITY, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a matrix value. This method can be used to
     /// set the value of a 'transform' or 'gradientTransform' attribute.
@@ -1479,12 +1457,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        CONST D2D1_MATRIX_3X2_F &value 
-        )  
+        CONST D2D1_MATRIX_3X2_F &value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_MATRIX, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a matrix value. This method can be used to
     /// get the value of a 'transform' or 'gradientTransform' attribute.
@@ -1493,12 +1471,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_MATRIX_3X2_F *value 
-        )  
+        _Out_ D2D1_MATRIX_3X2_F *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_MATRIX, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a unit type value. This method can be used
     /// to set the value of a 'gradientUnits' or 'clipPathUnits' attribute.
@@ -1507,12 +1485,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_SVG_UNIT_TYPE value 
-        )  
+        D2D1_SVG_UNIT_TYPE value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_UNIT_TYPE, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a unit type value. This method can be used
     /// to get the value of a 'gradientUnits' or 'clipPathUnits' attribute.
@@ -1521,12 +1499,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_UNIT_TYPE *value 
-        )  
+        _Out_ D2D1_SVG_UNIT_TYPE *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_UNIT_TYPE, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as an extend mode value. This method can be
     /// used to set the value of a 'spreadMethod' attribute.
@@ -1535,12 +1513,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        D2D1_EXTEND_MODE value 
-        )  
+        D2D1_EXTEND_MODE value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_EXTEND_MODE, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a extend mode value. This method can be
     /// used to get the value of a 'spreadMethod' attribute.
@@ -1549,12 +1527,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_EXTEND_MODE *value 
-        )  
+        _Out_ D2D1_EXTEND_MODE *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_EXTEND_MODE, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a preserve aspect ratio value. This method
     /// can be used to set the value of a 'preserveAspectRatio' attribute.
@@ -1563,12 +1541,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        CONST D2D1_SVG_PRESERVE_ASPECT_RATIO &value 
-        )  
+        CONST D2D1_SVG_PRESERVE_ASPECT_RATIO &value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_PRESERVE_ASPECT_RATIO, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a preserve aspect ratio value. This method
     /// can be used to get the value of a 'preserveAspectRatio' attribute.
@@ -1577,12 +1555,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_PRESERVE_ASPECT_RATIO *value 
-        )  
+        _Out_ D2D1_SVG_PRESERVE_ASPECT_RATIO *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_PRESERVE_ASPECT_RATIO, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Sets an attribute of this element as a length value.
     /// </summary>
@@ -1590,12 +1568,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     SetAttributeValue(
         _In_ PCWSTR name,
-        CONST D2D1_SVG_LENGTH &value 
-        )  
+        CONST D2D1_SVG_LENGTH &value
+        )
     {
         return SetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LENGTH, &value, sizeof(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as length value.
     /// </summary>
@@ -1603,12 +1581,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _Out_ D2D1_SVG_LENGTH *value 
-        )  
+        _Out_ D2D1_SVG_LENGTH *value
+        )
     {
         return GetAttributeValue(name, D2D1_SVG_ATTRIBUTE_POD_TYPE_LENGTH, value, sizeof(*value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element.
     /// </summary>
@@ -1616,12 +1594,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _COM_Outptr_result_maybenull_ ID2D1SvgAttribute **value 
-        )  
+        _COM_Outptr_result_maybenull_ ID2D1SvgAttribute **value
+        )
     {
         return GetAttributeValue(name, IID_ID2D1SvgAttribute, reinterpret_cast<void **>(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a paint. This method can be used to get the
     /// value of the 'fill' or 'stroke' properties.
@@ -1630,12 +1608,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _COM_Outptr_result_maybenull_ ID2D1SvgPaint **value 
-        )  
+        _COM_Outptr_result_maybenull_ ID2D1SvgPaint **value
+        )
     {
         return GetAttributeValue(name, IID_ID2D1SvgPaint, reinterpret_cast<void **>(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as a stroke dash array. This method can be
     /// used to get the value of the 'stroke-dasharray' property.
@@ -1644,12 +1622,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _COM_Outptr_result_maybenull_ ID2D1SvgStrokeDashArray **value 
-        )  
+        _COM_Outptr_result_maybenull_ ID2D1SvgStrokeDashArray **value
+        )
     {
         return GetAttributeValue(name, IID_ID2D1SvgStrokeDashArray, reinterpret_cast<void **>(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as points. This method can be used to get the
     /// value of the 'points' attribute on a 'polygon' or 'polyline' element.
@@ -1658,12 +1636,12 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _COM_Outptr_result_maybenull_ ID2D1SvgPointCollection **value 
-        )  
+        _COM_Outptr_result_maybenull_ ID2D1SvgPointCollection **value
+        )
     {
         return GetAttributeValue(name, IID_ID2D1SvgPointCollection, reinterpret_cast<void **>(value));
     }
-    
+
     /// <summary>
     /// Gets an attribute of this element as path data. This method can be used to get
     /// the value of the 'd' attribute on a 'path' element.
@@ -1672,54 +1650,53 @@ interface DX_DECLARE_INTERFACE("ac7b67a6-183e-49c1-a823-0ebe40b0db29") ID2D1SvgE
     HRESULT
     GetAttributeValue(
         _In_ PCWSTR name,
-        _COM_Outptr_result_maybenull_ ID2D1SvgPathData **value 
-        )  
+        _COM_Outptr_result_maybenull_ ID2D1SvgPathData **value
+        )
     {
         return GetAttributeValue(name, IID_ID2D1SvgPathData, reinterpret_cast<void **>(value));
     }
 }; // interface ID2D1SvgElement
 
-
 interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgDocument  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Sets the size of the initial viewport.
     /// </summary>
     STDMETHOD(SetViewportSize)(
-        D2D1_SIZE_F viewportSize 
+        D2D1_SIZE_F viewportSize
         ) PURE;
-    
+
     /// <summary>
     /// Returns the size of the initial viewport.
     /// </summary>
     STDMETHOD_(D2D1_SIZE_F, GetViewportSize)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Sets the root element of the document. The root element must be an 'svg'
     /// element. If the element already exists within an svg tree, it is first removed.
     /// </summary>
     STDMETHOD(SetRoot)(
-        _In_opt_ ID2D1SvgElement *root 
+        _In_opt_ ID2D1SvgElement *root
         ) PURE;
-    
+
     /// <summary>
     /// Gets the root element of the document.
     /// </summary>
     STDMETHOD_(void, GetRoot)(
-        _Outptr_result_maybenull_ ID2D1SvgElement **root 
+        _Outptr_result_maybenull_ ID2D1SvgElement **root
         ) PURE;
-    
+
     /// <summary>
     /// Gets the SVG element with the specified ID. If the element cannot be found, the
     /// returned element will be null.
     /// </summary>
     STDMETHOD(FindElementById)(
         _In_ PCWSTR id,
-        _COM_Outptr_result_maybenull_ ID2D1SvgElement **svgElement 
+        _COM_Outptr_result_maybenull_ ID2D1SvgElement **svgElement
         ) PURE;
-    
+
     /// <summary>
     /// Serializes an element and its subtree to XML. The output XML is encoded as
     /// UTF-8.
@@ -1730,9 +1707,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
     /// serialized.</param>
     STDMETHOD(Serialize)(
         _In_ IStream *outputXmlStream,
-        _In_opt_ ID2D1SvgElement *subtree = NULL 
+        _In_opt_ ID2D1SvgElement *subtree = NULL
         ) PURE;
-    
+
     /// <summary>
     /// Deserializes a subtree from the stream. The stream must have only one root
     /// element, but that root element need not be an 'svg' element. The output element
@@ -1743,9 +1720,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
     /// <param name="subtree">The root of the subtree.</param>
     STDMETHOD(Deserialize)(
         _In_ IStream *inputXmlStream,
-        _COM_Outptr_ ID2D1SvgElement **subtree 
+        _COM_Outptr_ ID2D1SvgElement **subtree
         ) PURE;
-    
+
     /// <summary>
     /// Creates a paint object which can be used to set the 'fill' or 'stroke'
     /// properties.
@@ -1758,9 +1735,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
         D2D1_SVG_PAINT_TYPE paintType,
         _In_opt_ CONST D2D1_COLOR_F *color,
         _In_opt_ PCWSTR id,
-        _COM_Outptr_ ID2D1SvgPaint **paint 
+        _COM_Outptr_ ID2D1SvgPaint **paint
         ) PURE;
-    
+
     /// <summary>
     /// Creates a dash array object which can be used to set the 'stroke-dasharray'
     /// property.
@@ -1768,9 +1745,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
     STDMETHOD(CreateStrokeDashArray)(
         _In_reads_opt_(dashesCount) CONST D2D1_SVG_LENGTH *dashes,
         UINT32 dashesCount,
-        _COM_Outptr_ ID2D1SvgStrokeDashArray **strokeDashArray 
+        _COM_Outptr_ ID2D1SvgStrokeDashArray **strokeDashArray
         ) PURE;
-    
+
     /// <summary>
     /// Creates a points object which can be used to set a 'points' attribute on a
     /// 'polygon' or 'polyline' element.
@@ -1778,9 +1755,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
     STDMETHOD(CreatePointCollection)(
         _In_reads_opt_(pointsCount) CONST D2D1_POINT_2F *points,
         UINT32 pointsCount,
-        _COM_Outptr_ ID2D1SvgPointCollection **pointCollection 
+        _COM_Outptr_ ID2D1SvgPointCollection **pointCollection
         ) PURE;
-    
+
     /// <summary>
     /// Creates a path data object which can be used to set a 'd' attribute on a 'path'
     /// element.
@@ -1790,9 +1767,9 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
         UINT32 segmentDataCount,
         _In_reads_opt_(commandsCount) CONST D2D1_SVG_PATH_COMMAND *commands,
         UINT32 commandsCount,
-        _COM_Outptr_ ID2D1SvgPathData **pathData 
+        _COM_Outptr_ ID2D1SvgPathData **pathData
         ) PURE;
-    
+
     /// <summary>
     /// Creates a paint object which can be used to set the 'fill' or 'stroke'
     /// properties.
@@ -1807,25 +1784,20 @@ interface DX_DECLARE_INTERFACE("86b88e4d-afa4-4d7b-88e4-68a51c4a0aec") ID2D1SvgD
         D2D1_SVG_PAINT_TYPE paintType,
         CONST D2D1_COLOR_F &color,
         _In_opt_ PCWSTR id,
-        _COM_Outptr_ ID2D1SvgPaint **paint 
-        )  
+        _COM_Outptr_ ID2D1SvgPaint **paint
+        )
     {
         return CreatePaint(paintType, &color, id, paint);
     }
 }; // interface ID2D1SvgDocument
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
 
-
 #endif
-
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

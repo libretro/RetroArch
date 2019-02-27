@@ -99,7 +99,6 @@ void __console_vipostcb(u32 retraceCnt)
 	do_xfb_copy = FALSE;
 }
 
-
 static void __console_drawc(int c)
 {
 	console_data_s *con;
@@ -641,4 +640,3 @@ void CON_EnableGecko(int channel,int safe)
 		}
 	}
 }
-

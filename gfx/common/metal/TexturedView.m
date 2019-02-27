@@ -15,7 +15,7 @@
    CGSize _size; // size of view in pixels
    CGRect _frame;
    NSUInteger _bpp;
-   
+
    id<MTLTexture> _src;    // source texture
    bool _srcDirty;
 }
@@ -50,9 +50,9 @@
    {
       return;
    }
-   
+
    _size = size;
-   
+
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
                                                                                     width:(NSUInteger)size.width
@@ -61,7 +61,7 @@
       td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
       _texture = [_context.device newTextureWithDescriptor:td];
    }
-   
+
    if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
@@ -83,23 +83,19 @@
    {
       return;
    }
-   
+
    _frame = frame;
-   
-   // update vertices
-   CGPoint o = frame.origin;
-   CGSize s = frame.size;
-   
-   float l = o.x;
-   float t = o.y;
-   float r = o.x + s.width;
-   float b = o.y + s.height;
-   
+
+   float l = (float)CGRectGetMinX(frame);
+   float t = (float)CGRectGetMinY(frame);
+   float r = (float)CGRectGetMaxX(frame);
+   float b = (float)CGRectGetMaxY(frame);
+
    Vertex v[4] = {
-      {{l, b, 0}, {0, 1}},
-      {{r, b, 0}, {1, 1}},
-      {{l, t, 0}, {0, 0}},
-      {{r, t, 0}, {1, 0}},
+      {simd_make_float3(l, b, 0), simd_make_float2(0, 1)},
+      {simd_make_float3(r, b, 0), simd_make_float2(1, 1)},
+      {simd_make_float3(l, t, 0), simd_make_float2(0, 0)},
+      {simd_make_float3(r, t, 0), simd_make_float2(1, 0)},
    };
    memcpy(_v, v, sizeof(_v));
 }
@@ -113,10 +109,10 @@
 {
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
       return;
-   
+
    if (!_srcDirty)
       return;
-   
+
    [_context convertFormat:_format from:_src to:_texture];
    _srcDirty = NO;
 }

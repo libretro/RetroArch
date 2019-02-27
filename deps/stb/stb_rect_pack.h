@@ -45,7 +45,7 @@
 #define STB_RECT_PACK_VERSION  1
 
 #ifdef STBRP_STATIC
-#define STBRP_DEF static
+#define STBRP_DEF STATIC
 #else
 #define STBRP_DEF extern
 #endif
@@ -498,7 +498,7 @@ static int rect_height_compare(const void *a, const void *b)
    return (p->w > q->w) ? -1 : (p->w < q->w);
 }
 
-static int rect_width_compare(const void *a, const void *b)
+STBRP_DEF int rect_width_compare(const void *a, const void *b)
 {
    stbrp_rect *p = (stbrp_rect *) a;
    stbrp_rect *q = (stbrp_rect *) b;

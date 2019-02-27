@@ -79,6 +79,12 @@ void playlist_get_index(playlist_t *playlist,
       const char **db_name,
       const char **crc32);
 
+void playlist_get_runtime_index(playlist_t *playlist,
+      size_t idx,
+      const char **path, const char **core_path,
+      unsigned *runtime_hours, unsigned *runtime_minutes,
+      unsigned *runtime_seconds);
+
 /**
  * playlist_delete_index:
  * @playlist               : Playlist handle.
@@ -104,11 +110,21 @@ bool playlist_push(playlist_t *playlist,
       const char *crc32,
       const char *db_name);
 
+bool playlist_push_runtime(playlist_t *playlist,
+      const char *path, const char *core_path,
+      unsigned runtime_hours, unsigned runtime_minutes,
+      unsigned runtime_seconds);
+
 void playlist_update(playlist_t *playlist, size_t idx,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
       const char *db_name);
+
+void playlist_update_runtime(playlist_t *playlist, size_t idx,
+      const char *path, const char *core_path,
+      unsigned runtime_hours, unsigned runtime_minutes,
+      unsigned runtime_seconds);
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
@@ -127,6 +143,8 @@ uint32_t playlist_get_size(playlist_t *playlist);
 
 void playlist_write_file(playlist_t *playlist);
 
+void playlist_write_runtime_file(playlist_t *playlist);
+
 void playlist_qsort(playlist_t *playlist);
 
 void playlist_free_cached(void);
@@ -134,6 +152,23 @@ void playlist_free_cached(void);
 playlist_t *playlist_get_cached(void);
 
 bool playlist_init_cached(const char *path, size_t size);
+
+void command_playlist_push_write(
+      playlist_t *playlist,
+      const char *path,
+      const char *label,
+      const char *core_path,
+      const char *core_name);
+
+void command_playlist_update_write(
+      playlist_t *playlist,
+      size_t idx,
+      const char *path,
+      const char *label,
+      const char *core_path,
+      const char *core_display_name,
+      const char *crc32,
+      const char *db_name);
 
 RETRO_END_DECLS
 

@@ -60,9 +60,9 @@ static void *runahead_save_state_alloc(void)
    return savestate;
 }
 
-static void runahead_save_state_free(void *state)
+static void runahead_save_state_free(void *data)
 {
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)state;
+   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)data;
    if (!savestate)
       return;
    free(savestate->data);
@@ -130,7 +130,6 @@ static void unload_hook(void)
       current_core.retro_unload_game();
 }
 
-
 static void deinit_hook(void)
 {
    remove_hooks();
@@ -155,7 +154,6 @@ static void add_hooks(void)
    }
    add_input_state_hook();
 }
-
 
 /* Runahead Code */
 
@@ -183,7 +181,6 @@ static uint64_t runahead_get_frame_count()
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
    return frame_count;
 }
-
 
 static void runahead_check_for_gui(void)
 {
@@ -221,7 +218,7 @@ void run_ahead(int runahead_count, bool useSecondary)
          settings_t *settings = config_get_ptr();
          if (!settings->bools.run_ahead_hide_warnings)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          core_run();
          runahead_force_input_dirty = true;
@@ -233,7 +230,7 @@ void run_ahead(int runahead_count, bool useSecondary)
 
    if (!useSecondary || !have_dynamic || !runahead_secondary_core_available)
    {
-      /* TODO: multiple savestates for higher performance 
+      /* TODO: multiple savestates for higher performance
        * when not using secondary core */
       for (frame_number = 0; frame_number <= runahead_count; frame_number++)
       {
@@ -261,7 +258,7 @@ void run_ahead(int runahead_count, bool useSecondary)
          {
             if (!runahead_save_state())
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return;
             }
          }
@@ -270,7 +267,7 @@ void run_ahead(int runahead_count, bool useSecondary)
          {
             if (!runahead_load_state())
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return;
             }
          }
@@ -282,7 +279,7 @@ void run_ahead(int runahead_count, bool useSecondary)
       if (!secondary_core_ensure_exists())
       {
          runahead_secondary_core_available = false;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          core_run();
          runahead_force_input_dirty = true;
          return;
@@ -299,13 +296,13 @@ void run_ahead(int runahead_count, bool useSecondary)
 
          if (!runahead_save_state())
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return;
          }
 
          if (!runahead_load_state_secondary())
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return;
          }
 
@@ -389,7 +386,7 @@ static bool runahead_load_state(void)
    bool last_dirty                            = input_is_dirty;
 
    set_fast_savestate();
-   /* calling core_unserialize has side effects with 
+   /* calling core_unserialize has side effects with
     * netplay (it triggers transmitting your save state)
       call retro_unserialize directly from the core instead */
    okay = current_core.retro_unserialize(
@@ -466,7 +463,6 @@ void runahead_destroy(void)
 
 static bool request_fast_savestate;
 static bool hard_disable_audio;
-
 
 bool want_fast_savestate(void)
 {

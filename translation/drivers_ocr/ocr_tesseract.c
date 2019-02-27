@@ -36,7 +36,7 @@ static void* ocr_tesseract_init(int game_character_set)
 
    return NULL;
 }
-	
+
 static void ocr_tesseract_free(void* data)
 {
 }
@@ -44,30 +44,30 @@ static void ocr_tesseract_free(void* data)
 char* ocr_tesseract_get_text(void* data, struct ocr_image_info image)
 {
 	tess_image temp_image;
-	
+
 	temp_image.width  = image.width;
 	temp_image.height = image.height;
 	temp_image.data   = image.data;
-	
+
 	switch (image.pixel_format)
 	{
 		case RETRO_PIXEL_FORMAT_0RGB1555:
 		case RETRO_PIXEL_FORMAT_RGB565:
 			temp_image.bytes_per_pixel = 2;
 			break
-		
+
 		case RETRO_PIXEL_FORMAT_XRGB8888:
 			temp_image.bytes_per_pixel = 4;
 			break;
-			
+
 		default:
 			/* unsupported format */
 			return "";
 	}
-	
+
 	return tess_get_text(temp_image);
 }
-	
+
 const ocr_driver_t ocr_tesseract = {
    ocr_tesseract_init,
    ocr_tesseract_free,

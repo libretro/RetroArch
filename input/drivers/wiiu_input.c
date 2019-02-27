@@ -71,7 +71,6 @@ void kb_key_callback(KBDKeyEvent *key)
    if (code < RETROK_LAST)
       keyboardState[code] = pressed;
 
-
    if (key->modifier & KBD_WIIU_SHIFT)
       mod |= RETROKMOD_SHIFT;
 

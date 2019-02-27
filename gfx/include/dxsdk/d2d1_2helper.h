@@ -45,10 +45,10 @@ namespace D2D1
     {
         D2D1_MATRIX_3X2_F dpiDependentTransform =
             matrix * D2D1::Matrix3x2F::Scale(dpiX / 96.0f, dpiY / 96.0f);
- 
+
         FLOAT absMaxZoomFactor = (maxZoomFactor > 0) ? maxZoomFactor : -maxZoomFactor;
 
-        return D2D1_DEFAULT_FLATTENING_TOLERANCE / 
+        return D2D1_DEFAULT_FLATTENING_TOLERANCE /
             (absMaxZoomFactor * D2D1ComputeMaximumScaleFactor(&dpiDependentTransform));
     }
 
@@ -62,4 +62,3 @@ namespace D2D1
 #endif // #if NTDDI_VERSION >= NTDDI_WINBLUE
 
 #endif // #ifndef _D2D1_HELPER_H_
-

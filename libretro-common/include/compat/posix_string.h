@@ -29,6 +29,10 @@
 #include <compat/msvc.h>
 #endif
 
+#if defined(PS2)
+#include <compat_ctype.h>
+#endif
+
 RETRO_BEGIN_DECLS
 
 #ifdef _WIN32
@@ -54,7 +58,6 @@ int isblank(int c);
 #endif
 
 #endif
-
 
 RETRO_END_DECLS
 

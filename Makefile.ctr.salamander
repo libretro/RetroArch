@@ -27,6 +27,7 @@ OBJ := ctr/ctr_system.o \
 		 frontend/drivers/platform_null.o \
 		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/compat_strcasestr.o \
+		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
@@ -39,7 +40,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o
-		 
+
 OBJ += ctr/exec-3dsx/exec_cia.o \
 	ctr/exec-3dsx/exec_3dsx.o \
 	ctr/exec-3dsx/mini-hb-menu/launch.o \
@@ -94,9 +95,7 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
-
 LIBS	:= -lctru -lm
-
 
 ifeq ($(BUILD_3DSX), 1)
 TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
@@ -220,5 +219,3 @@ clean:
 	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
-
-

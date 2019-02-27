@@ -37,7 +37,6 @@ typedef struct _D3DXEFFECT_DESC
 
 } D3DXEFFECT_DESC;
 
-
 /*
  * D3DXPARAMETER_DESC:
  */
@@ -58,7 +57,6 @@ typedef struct _D3DXPARAMETER_DESC
 
 } D3DXPARAMETER_DESC;
 
-
 /*
  * D3DXTECHNIQUE_DESC:
  */
@@ -70,7 +68,6 @@ typedef struct _D3DXTECHNIQUE_DESC
     UINT Annotations;                   /* Number of annotations */
 
 } D3DXTECHNIQUE_DESC;
-
 
 /*
  * D3DXPASS_DESC:
@@ -86,7 +83,6 @@ typedef struct _D3DXPASS_DESC
 
 } D3DXPASS_DESC;
 
-
 /*
  * D3DXFUNCTION_DESC:
  */
@@ -98,7 +94,6 @@ typedef struct _D3DXFUNCTION_DESC
 
 } D3DXFUNCTION_DESC;
 
-
 /*
  * ID3DXEffectPool
 */
@@ -109,7 +104,6 @@ typedef interface ID3DXEffectPool *LPD3DXEFFECTPOOL;
 /* {9537AB04-3250-412e-8213-FCD2F8677933} */
 DEFINE_GUID(IID_ID3DXEffectPool,
 0x9537ab04, 0x3250, 0x412e, 0x82, 0x13, 0xfc, 0xd2, 0xf8, 0x67, 0x79, 0x33);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXEffectPool
@@ -124,7 +118,6 @@ DECLARE_INTERFACE_(ID3DXEffectPool, IUnknown)
     /* No public methods */
 };
 
-
 /*
  * ID3DXBaseEffect
 */
@@ -135,7 +128,6 @@ typedef interface ID3DXBaseEffect *LPD3DXBASEEFFECT;
 /* {017C18AC-103F-4417-8C51-6BF6EF1E56BE} */
 DEFINE_GUID(IID_ID3DXBaseEffect,
 0x17c18ac, 0x103f, 0x4417, 0x8c, 0x51, 0x6b, 0xf6, 0xef, 0x1e, 0x56, 0xbe);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXBaseEffect
@@ -207,7 +199,7 @@ DECLARE_INTERFACE_(ID3DXBaseEffect, IUnknown)
     STDMETHOD(GetVertexShader)(THIS_ D3DXHANDLE hParameter, LPDIRECT3DVERTEXSHADER9 *ppVShader) PURE;
 
     /* Set Range of an Array to pass to device
-     * Useful for sending only a subrange of an 
+     * Useful for sending only a subrange of an
      * array down to the device
      */
     STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE;
@@ -267,7 +259,6 @@ DECLARE_INTERFACE_(ID3DXEffectStateManager, IUnknown)
     STDMETHOD(SetPixelShaderConstantI)(THIS_ UINT RegisterIndex, CONST INT *pConstantData, UINT RegisterCount) PURE;
     STDMETHOD(SetPixelShaderConstantB)(THIS_ UINT RegisterIndex, CONST BOOL *pConstantData, UINT RegisterCount) PURE;
 };
-
 
 /*
  * ID3DXEffect
@@ -411,7 +402,6 @@ typedef interface ID3DXEffectCompiler *LPD3DXEFFECTCOMPILER;
 DEFINE_GUID(IID_ID3DXEffectCompiler,
 0x51b8a949, 0x1a31, 0x47e6, 0xbe, 0xa0, 0x4b, 0x30, 0xdb, 0x53, 0xf1, 0xe0);
 
-
 #undef INTERFACE
 #define INTERFACE ID3DXEffectCompiler
 
@@ -498,7 +488,6 @@ DECLARE_INTERFACE_(ID3DXEffectCompiler, ID3DXBaseEffect)
         LPD3DXBUFFER* ppShader, LPD3DXBUFFER* ppErrorMsgs, LPD3DXCONSTANTTABLE* ppConstantTable) PURE;
 };
 
-
 /*
  * APIs
  */
@@ -539,7 +528,6 @@ HRESULT WINAPI
 #define D3DXCreateEffectFromFile D3DXCreateEffectFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateEffectFromResourceA(
         LPDIRECT3DDEVICE9               pDevice,
@@ -569,7 +557,6 @@ HRESULT WINAPI
 #else
 #define D3DXCreateEffectFromResource D3DXCreateEffectFromResourceA
 #endif
-
 
 HRESULT WINAPI
     D3DXCreateEffect(
@@ -613,7 +600,6 @@ HRESULT WINAPI
 #define D3DXCreateEffectFromFileEx D3DXCreateEffectFromFileExA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateEffectFromResourceExA(
         LPDIRECT3DDEVICE9               pDevice,
@@ -645,7 +631,6 @@ HRESULT WINAPI
 #else
 #define D3DXCreateEffectFromResourceEx D3DXCreateEffectFromResourceExA
 #endif
-
 
 HRESULT WINAPI
     D3DXCreateEffectEx(
@@ -684,7 +669,6 @@ HRESULT WINAPI
 #define D3DXCreateEffectCompilerFromFile D3DXCreateEffectCompilerFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateEffectCompilerFromResourceA(
         HMODULE                         hSrcModule,
@@ -710,7 +694,6 @@ HRESULT WINAPI
 #else
 #define D3DXCreateEffectCompilerFromResource D3DXCreateEffectCompilerFromResourceA
 #endif
-
 
 HRESULT WINAPI
     D3DXCreateEffectCompiler(

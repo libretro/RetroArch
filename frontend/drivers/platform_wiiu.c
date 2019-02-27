@@ -133,7 +133,6 @@ static void frontend_wiiu_init(void *data)
    DEBUG_LINE();
 }
 
-
 static int frontend_wiiu_get_rating(void)
 {
    return 10;
@@ -167,7 +166,6 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
 #endif
    return 0;
 }
-
 
 static void frontend_wiiu_exec(const char *path, bool should_load_game)
 {
@@ -269,7 +267,6 @@ static void frontend_wiiu_exitspawn(char *s, size_t len)
    frontend_wiiu_exec(s, should_load_game);
 }
 
-
 frontend_ctx_driver_t frontend_ctx_wiiu =
 {
    frontend_wiiu_get_environment_settings,
@@ -302,6 +299,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
    "wiiu",
    NULL,                         /* get_video_driver */
 };

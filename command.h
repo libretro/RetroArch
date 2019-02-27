@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,8 +26,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "playlist.h"
 
 RETRO_BEGIN_DECLS
 
@@ -85,6 +83,8 @@ enum event_command
    CMD_EVENT_AUDIO_START,
    /* Mutes audio. */
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
+   /* Toggles FPS counter. */
+   CMD_EVENT_FPS_TOGGLE,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Deinitializes overlay. */
@@ -269,23 +269,6 @@ bool command_free(command_t *handle);
  * Returns: true (1) on success, otherwise false (0).
  **/
 bool command_event(enum event_command action, void *data);
-
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name);
-
-void command_playlist_update_write(
-      playlist_t *playlist,
-      size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name);
 
 RETRO_END_DECLS
 

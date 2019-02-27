@@ -195,7 +195,6 @@ extern void __console_init_ex(void *conbuffer,int tgt_xstart,int tgt_ystart,int 
 extern int clock_gettime(struct timespec *tp);
 extern void timespec_subtract(const struct timespec *tp_start,const struct timespec *tp_end,struct timespec *result);
 
-
 extern int __libogc_lock_init(int *lock,int recursive);
 extern int __libogc_lock_close(int *lock);
 extern int __libogc_lock_release(int *lock);
@@ -1409,7 +1408,6 @@ void SYS_ProtectRange(u32 chan,void *addr,u32 bytes,u32 cntrl)
 
 		if(cntrl==SYS_PROTECTRDWR)
 			__MaskIrq(IRQMASK(chan));
-
 
 		_CPU_ISR_Restore(level);
 	}

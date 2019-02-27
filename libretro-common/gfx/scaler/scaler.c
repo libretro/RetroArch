@@ -185,7 +185,14 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
                }
                break;
             case SCALER_FMT_ABGR8888:
-               /* FIXME/TODO */
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_BGR24:
+                     ctx->direct_pixconv = conv_abgr8888_bgr24;
+                     break;
+                  default:
+                     break;
+               }
                break;
          }
 
@@ -245,7 +252,7 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
          case SCALER_FMT_ABGR8888:
             ctx->out_pixconv = conv_argb8888_abgr8888;
             break;
-            
+
          default:
             return false;
       }

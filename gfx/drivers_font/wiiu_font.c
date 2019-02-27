@@ -87,7 +87,6 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
                  sizeof(*font->ubo_tex));
 
-
    return font;
 }
 
@@ -215,7 +214,6 @@ static void wiiu_font_render_line(
    if (!count)
       return;
 
-
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.v + wiiu->vertex_cache.current, count * sizeof(wiiu->vertex_cache.v));
 
    if(font->atlas->dirty)
@@ -228,7 +226,6 @@ static void wiiu_font_render_line(
                     font->texture.surface.imageSize);
       font->atlas->dirty = false;
    }
-
 
    GX2SetPixelTexture(&font->texture, sprite_shader.ps.samplerVars[0].location);
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, font->ubo_tex);
@@ -377,6 +374,16 @@ static const struct font_glyph* wiiu_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int wiiu_font_get_line_height(void *data)
+{
+   wiiu_font_t* font = (wiiu_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t wiiu_font =
 {
    wiiu_font_init_font,
@@ -387,4 +394,5 @@ font_renderer_t wiiu_font =
    NULL,                   /* bind_block */
    NULL,                   /* flush */
    wiiu_font_get_message_width,
+   wiiu_font_get_line_height
 };

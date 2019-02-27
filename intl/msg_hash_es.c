@@ -319,7 +319,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
 
             if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
-               strlcpy(s, 
+               strlcpy(s,
                      "Implementación windowed SINC.", len);
             else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
                strlcpy(s,

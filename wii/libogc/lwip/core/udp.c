@@ -35,7 +35,6 @@
  *
  */
 
-
 /* udp.c
  *
  * The code for the User Datagram Protocol UDP.
@@ -624,7 +623,6 @@ udp_new(void) {
     pcb->ttl = UDP_TTL;
   }
 
-
   return pcb;
 }
 
@@ -644,12 +642,3 @@ udp_debug_print(struct udp_hdr *udphdr)
 #endif /* UDP_DEBUG */
 
 #endif /* LWIP_UDP */
-
-
-
-
-
-
-
-
-

@@ -162,8 +162,6 @@ void menu_event_kb_set(bool down, enum retro_key key)
  */
 unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
-   menu_animation_ctx_delta_t delta;
-   float delta_time;
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
@@ -177,7 +175,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
    bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool input_swap_override                = 
+   bool input_swap_override                =
       input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                    = (!input_swap_override &&
       swap_ok_cancel_btns) ?
@@ -199,7 +197,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
           * for old_input_state. */
 
          first_held  = true;
-         delay_timer = initial_held ? 12 : 6;
+         delay_timer = initial_held ? 200 : 100;
          delay_count = 0;
       }
 
@@ -236,12 +234,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-
-   delta.current = delta_time;
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      delay_count += delta.ideal;
+   delay_count += menu_animation_get_delta_time();
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -250,14 +243,14 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (menu_event_get_osk_ptr() < 33)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   + OSK_CHARS_PER_LINE);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   - OSK_CHARS_PER_LINE);
       }
 
@@ -342,9 +335,6 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       menu_event_kb_set_internal(RETROK_F11, 0);
    }
-
-   if (BIT256_GET_PTR(p_trigger_input, RARCH_QUIT_KEY))
-      return MENU_ACTION_QUIT;
 
    mouse_enabled                      = settings->bools.menu_mouse_enable;
 #ifdef HAVE_OVERLAY
@@ -654,7 +644,6 @@ static int menu_input_mouse_frame(
    return ret;
 }
 
-
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 {
    menu_input_t *menu_input = &menu_input_state;
@@ -793,15 +782,13 @@ static int menu_input_pointer_post_iterate(
          if (abs(pointer_x - start_x) > (dpi / 10)
                || abs(pointer_y - start_y) > (dpi / 10))
          {
-            float s, delta_time;
+            float s;
 
             menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
             menu_input->pointer.dx            = pointer_x - pointer_old_x;
             menu_input->pointer.dy            = pointer_y - pointer_old_y;
             pointer_old_x                     = pointer_x;
             pointer_old_y                     = pointer_y;
-
-            menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
             s = menu_input->pointer.dy;
             menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
@@ -898,4 +885,3 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_free(&entry);
 }
-

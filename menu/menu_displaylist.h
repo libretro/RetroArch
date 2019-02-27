@@ -55,12 +55,13 @@ enum menu_displaylist_ctl_state
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_DROPDOWN_LIST,
+   DISPLAYLIST_DROPDOWN_LIST_SPECIAL,
+   DISPLAYLIST_DROPDOWN_LIST_RESOLUTION,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
    DISPLAYLIST_HELP_SCREEN_LIST,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
-   DISPLAYLIST_SETTING_ENUM,
    DISPLAYLIST_SETTINGS_ALL,
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
@@ -77,6 +78,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_FILE_BROWSER_SCAN_DIR,
    DISPLAYLIST_FILE_BROWSER_SELECT_FILE,
    DISPLAYLIST_FILE_BROWSER_SELECT_CORE,
+   DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE,
    DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION,
    DISPLAYLIST_CORES,
    DISPLAYLIST_CORES_SUPPORTED,
@@ -103,6 +105,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_REMAP_FILES,
    DISPLAYLIST_RECORD_CONFIG_FILES,
    DISPLAYLIST_STREAM_CONFIG_FILES,
+   DISPLAYLIST_RGUI_THEME_PRESETS,
    DISPLAYLIST_CONFIG_FILES,
    DISPLAYLIST_CONTENT_HISTORY,
    DISPLAYLIST_IMAGES,
@@ -141,6 +144,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_MENU_SETTINGS_LIST,
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST,
+   DISPLAYLIST_MENU_SOUNDS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    DISPLAYLIST_UPDATER_SETTINGS_LIST,
    DISPLAYLIST_WIFI_SETTINGS_LIST,
@@ -182,6 +186,8 @@ enum menu_displaylist_ctl_state
 #ifdef HAVE_LAKKA_SWITCH
    DISPLAYLIST_SWITCH_GPU_PROFILE,
    DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    DISPLAYLIST_SWITCH_CPU_PROFILE,
 #endif
    DISPLAYLIST_PENDING_CLEAR
@@ -206,6 +212,8 @@ typedef struct menu_displaylist_info
    bool download_core;
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
+
+   unsigned count;
 
    char *path;
    char *path_b;
@@ -245,7 +253,9 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
+
+bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);

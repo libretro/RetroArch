@@ -61,7 +61,6 @@ static void  ethernetif_input(struct netif *netif);
 static err_t ethernetif_output(struct netif *netif, struct pbuf *p,
              struct ip_addr *ipaddr);
 
-
 static void
 low_level_init(struct netif *netif)
 {
@@ -94,7 +93,6 @@ low_level_init(struct netif *netif)
  * might be chained.
  *
  */
-
 
 static err_t
 low_level_output(struct ethernetif *ethernetif, struct pbuf *p)
@@ -299,4 +297,3 @@ ethernetif_init(struct netif *netif)
 
   sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
 }
-

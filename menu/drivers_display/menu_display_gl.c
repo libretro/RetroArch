@@ -79,16 +79,13 @@ static GLenum menu_display_prim_to_gl_enum(
 
 static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
 {
-   video_shader_ctx_info_t shader_info;
+   gl_t             *gl          = (gl_t*)video_info->userdata;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   shader_info.data       = NULL;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
+   gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND,
+         true);
 }
 
 static void menu_display_gl_blend_end(video_frame_info_t *video_info)
@@ -108,8 +105,7 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   gl_t             *gl          = video_info ? 
-      (gl_t*)video_info->userdata : NULL;
+   gl_t             *gl          = (gl_t*)video_info->userdata;
 
    if (!gl || !draw)
       return;
@@ -146,8 +142,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
-   video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
+   gl_t             *gl             = (gl_t*)video_info->userdata;
    static float t                   = 0;
    video_coord_array_t *ca          = menu_display_get_coords_array();
 
@@ -175,11 +171,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         shader_info.data       = NULL;
-         shader_info.idx        = draw->pipeline.id;
-         shader_info.set_active = true;
-
-         video_shader_driver_use(&shader_info);
+         gl->shader->use(gl, gl->shader_data, draw->pipeline.id,
+               true);
 
          t += 0.01;
 
@@ -196,7 +189,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         gl->shader->set_uniform_parameter(gl->shader_data,
+               &uniform_param, NULL);
          break;
    }
 
@@ -212,7 +206,8 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
          uniform_param.result.f.v0       = draw->width;
          uniform_param.result.f.v1       = draw->height;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         gl->shader->set_uniform_parameter(gl->shader_data,
+               &uniform_param, NULL);
 #endif
          break;
    }
@@ -238,12 +233,12 @@ static void menu_display_gl_clear_color(
 
 static bool menu_display_gl_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float menu_font_size,
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
+         font_path, menu_font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_OPENGL_API)))
 		 return false;
@@ -259,6 +254,7 @@ static void menu_display_gl_scissor_begin(video_frame_info_t *video_info, int x,
 
 static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
 {
+   glScissor(0, 0, video_info->width, video_info->height);
    glDisable(GL_SCISSOR_TEST);
 }
 

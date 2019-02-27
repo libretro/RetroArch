@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <dynamic/dylib.h>
 
 RETRO_BEGIN_DECLS
 
@@ -37,4 +38,3 @@ void mylist_pop_front(MyList *list);
 RETRO_END_DECLS
 
 #endif
-

@@ -42,7 +42,6 @@ typedef enum D2D1_INK_NIB_SHAPE
 
 } D2D1_INK_NIB_SHAPE;
 
-
 /// <summary>
 /// Specifies the orientation of an image.
 /// </summary>
@@ -60,7 +59,6 @@ typedef enum D2D1_ORIENTATION
 
 } D2D1_ORIENTATION;
 
-
 /// <summary>
 /// Option flags controlling how images sources are loaded during
 /// CreateImageSourceFromWic.
@@ -76,7 +74,6 @@ typedef enum D2D1_IMAGE_SOURCE_LOADING_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_IMAGE_SOURCE_LOADING_OPTIONS);
 
-
 /// <summary>
 /// Option flags controlling primary conversion performed by
 /// CreateImageSourceFromDxgi, if any.
@@ -91,14 +88,13 @@ typedef enum D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS);
 
-
 /// <summary>
 /// Option flags for transformed image sources.
 /// </summary>
 typedef enum D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS
 {
     D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS_NONE = 0,
-    
+
     /// <summary>
     /// Prevents the image source from being automatically scaled (by a ratio of the
     /// context DPI divided by 96) while drawn.
@@ -110,41 +106,39 @@ typedef enum D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS);
 
-
 /// <summary>
 /// Properties of a transformed image source.
 /// </summary>
 typedef struct D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES
 {
-    
+
     /// <summary>
     /// The orientation at which the image source is drawn.
     /// </summary>
     D2D1_ORIENTATION orientation;
-    
+
     /// <summary>
     /// The horizontal scale factor at which the image source is drawn.
     /// </summary>
     FLOAT scaleX;
-    
+
     /// <summary>
     /// The vertical scale factor at which the image source is drawn.
     /// </summary>
     FLOAT scaleY;
-    
+
     /// <summary>
     /// The interpolation mode used when the image source is drawn.  This is ignored if
     /// the image source is drawn using the DrawImage method, or using an image brush.
     /// </summary>
     D2D1_INTERPOLATION_MODE interpolationMode;
-    
+
     /// <summary>
     /// Option flags.
     /// </summary>
     D2D1_TRANSFORMED_IMAGE_SOURCE_OPTIONS options;
 
 } D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES;
-
 
 /// <summary>
 /// Represents a point, radius pair that makes up part of a D2D1_INK_BEZIER_SEGMENT.
@@ -156,7 +150,6 @@ typedef struct D2D1_INK_POINT
     FLOAT radius;
 
 } D2D1_INK_POINT;
-
 
 /// <summary>
 /// Represents a Bezier segment to be used in the creation of an ID2D1Ink object.
@@ -171,19 +164,18 @@ typedef struct D2D1_INK_BEZIER_SEGMENT
 
 } D2D1_INK_BEZIER_SEGMENT;
 
-
 /// <summary>
 /// Defines the general pen tip shape and the transform used in an ID2D1InkStyle
 /// object.
 /// </summary>
 typedef struct D2D1_INK_STYLE_PROPERTIES
 {
-    
+
     /// <summary>
     /// The general shape of the nib used to draw a given ink object.
     /// </summary>
     D2D1_INK_NIB_SHAPE nibShape;
-    
+
     /// <summary>
     /// The transform applied to shape of the nib. _31 and _32 are ignored.
     /// </summary>
@@ -191,23 +183,22 @@ typedef struct D2D1_INK_STYLE_PROPERTIES
 
 } D2D1_INK_STYLE_PROPERTIES;
 
-
 /// <summary>
 /// Specifies how to render gradient mesh edges.
 /// </summary>
 typedef enum D2D1_PATCH_EDGE_MODE
 {
-    
+
     /// <summary>
     /// Render this edge aliased.
     /// </summary>
     D2D1_PATCH_EDGE_MODE_ALIASED = 0,
-    
+
     /// <summary>
     /// Render this edge antialiased.
     /// </summary>
     D2D1_PATCH_EDGE_MODE_ANTIALIASED = 1,
-    
+
     /// <summary>
     /// Render this edge aliased and inflated out slightly.
     /// </summary>
@@ -215,7 +206,6 @@ typedef enum D2D1_PATCH_EDGE_MODE
     D2D1_PATCH_EDGE_MODE_FORCE_DWORD = 0xffffffff
 
 } D2D1_PATCH_EDGE_MODE;
-
 
 /// <summary>
 /// Represents a tensor patch with 16 control points, 4 corner colors, and boundary
@@ -225,122 +215,122 @@ typedef enum D2D1_PATCH_EDGE_MODE
 /// </summary>
 typedef struct D2D1_GRADIENT_MESH_PATCH
 {
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 00.
     /// </summary>
     D2D1_POINT_2F point00;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 01.
     /// </summary>
     D2D1_POINT_2F point01;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 02.
     /// </summary>
     D2D1_POINT_2F point02;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 03.
     /// </summary>
     D2D1_POINT_2F point03;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 10.
     /// </summary>
     D2D1_POINT_2F point10;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 11.
     /// </summary>
     D2D1_POINT_2F point11;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 12.
     /// </summary>
     D2D1_POINT_2F point12;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 13.
     /// </summary>
     D2D1_POINT_2F point13;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 20.
     /// </summary>
     D2D1_POINT_2F point20;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 21.
     /// </summary>
     D2D1_POINT_2F point21;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 22.
     /// </summary>
     D2D1_POINT_2F point22;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 23.
     /// </summary>
     D2D1_POINT_2F point23;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 30.
     /// </summary>
     D2D1_POINT_2F point30;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 31.
     /// </summary>
     D2D1_POINT_2F point31;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 32.
     /// </summary>
     D2D1_POINT_2F point32;
-    
+
     /// <summary>
     /// The gradient mesh patch control point at position 33.
     /// </summary>
     D2D1_POINT_2F point33;
-    
+
     /// <summary>
     /// The color associated with control point at position 00.
     /// </summary>
     D2D1_COLOR_F color00;
-    
+
     /// <summary>
     /// The color associated with control point at position 03.
     /// </summary>
     D2D1_COLOR_F color03;
-    
+
     /// <summary>
     /// The color associated with control point at position 30.
     /// </summary>
     D2D1_COLOR_F color30;
-    
+
     /// <summary>
     /// The color associated with control point at position 33.
     /// </summary>
     D2D1_COLOR_F color33;
-    
+
     /// <summary>
     /// The edge mode for the top edge of the patch.
     /// </summary>
     D2D1_PATCH_EDGE_MODE topEdgeMode;
-    
+
     /// <summary>
     /// The edge mode for the left edge of the patch.
     /// </summary>
     D2D1_PATCH_EDGE_MODE leftEdgeMode;
-    
+
     /// <summary>
     /// The edge mode for the bottom edge of the patch.
     /// </summary>
     D2D1_PATCH_EDGE_MODE bottomEdgeMode;
-    
+
     /// <summary>
     /// The edge mode for the right edge of the patch.
     /// </summary>
@@ -350,12 +340,12 @@ typedef struct D2D1_GRADIENT_MESH_PATCH
 
 typedef enum D2D1_SPRITE_OPTIONS
 {
-    
+
     /// <summary>
     /// Use default sprite rendering behavior.
     /// </summary>
     D2D1_SPRITE_OPTIONS_NONE = 0,
-    
+
     /// <summary>
     /// Bitmap interpolation will be clamped to the sprite's source rectangle.
     /// </summary>
@@ -366,19 +356,18 @@ typedef enum D2D1_SPRITE_OPTIONS
 
 DEFINE_ENUM_FLAG_OPERATORS(D2D1_SPRITE_OPTIONS);
 
-
 /// <summary>
 /// Specifies the pixel snapping policy when rendering color bitmap glyphs.
 /// </summary>
 typedef enum D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION
 {
-    
+
     /// <summary>
     /// Color bitmap glyph positions are snapped to the nearest pixel if the bitmap
     /// resolution matches that of the device context.
     /// </summary>
     D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION_DEFAULT = 0,
-    
+
     /// <summary>
     /// Color bitmap glyph positions are not snapped.
     /// </summary>
@@ -387,23 +376,22 @@ typedef enum D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION
 
 } D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION;
 
-
 /// <summary>
 /// This determines what gamma is used for interpolation/blending.
 /// </summary>
 typedef enum D2D1_GAMMA1
 {
-    
+
     /// <summary>
     /// Colors are manipulated in 2.2 gamma color space.
     /// </summary>
     D2D1_GAMMA1_G22 = D2D1_GAMMA_2_2,
-    
+
     /// <summary>
     /// Colors are manipulated in 1.0 gamma color space.
     /// </summary>
     D2D1_GAMMA1_G10 = D2D1_GAMMA_1_0,
-    
+
     /// <summary>
     /// Colors are manipulated in ST.2084 PQ gamma color space.
     /// </summary>
@@ -412,41 +400,39 @@ typedef enum D2D1_GAMMA1
 
 } D2D1_GAMMA1;
 
-
 /// <summary>
 /// Simple description of a color space.
 /// </summary>
 typedef struct D2D1_SIMPLE_COLOR_PROFILE
 {
-    
+
     /// <summary>
     /// The XY coordinates of the red primary in CIEXYZ space.
     /// </summary>
     D2D1_POINT_2F redPrimary;
-    
+
     /// <summary>
     /// The XY coordinates of the green primary in CIEXYZ space.
     /// </summary>
     D2D1_POINT_2F greenPrimary;
-    
+
     /// <summary>
     /// The XY coordinates of the blue primary in CIEXYZ space.
     /// </summary>
     D2D1_POINT_2F bluePrimary;
-    
+
     /// <summary>
     /// The X/Z tristimulus values for the whitepoint, normalized for relative
     /// luminance.
     /// </summary>
     D2D1_POINT_2F whitePointXZ;
-    
+
     /// <summary>
     /// The gamma encoding to use for this color space.
     /// </summary>
     D2D1_GAMMA1 gamma;
 
 } D2D1_SIMPLE_COLOR_PROFILE;
-
 
 /// <summary>
 /// Specifies which way a color profile is defined.
@@ -459,7 +445,6 @@ typedef enum D2D1_COLOR_CONTEXT_TYPE
     D2D1_COLOR_CONTEXT_TYPE_FORCE_DWORD = 0xffffffff
 
 } D2D1_COLOR_CONTEXT_TYPE;
-
 
 EXTERN_C CONST IID IID_ID2D1InkStyle;
 EXTERN_C CONST IID IID_ID2D1Ink;
@@ -493,9 +478,7 @@ EXTERN_C CONST IID IID_ID2D1DeviceContext6;
 EXTERN_C CONST IID IID_ID2D1Device6;
 EXTERN_C CONST IID IID_ID2D1Factory7;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// Represents a collection of style properties to be used by methods like
@@ -504,32 +487,31 @@ EXTERN_C CONST IID IID_ID2D1Factory7;
 /// </summary>
 interface DX_DECLARE_INTERFACE("bae8b344-23fc-4071-8cb5-d05d6f073848") ID2D1InkStyle  : public ID2D1Resource
 {
-    
+
     STDMETHOD_(void, SetNibTransform)(
-        _In_ CONST D2D1_MATRIX_3X2_F *transform 
+        _In_ CONST D2D1_MATRIX_3X2_F *transform
         ) PURE;
-    
+
     STDMETHOD_(void, GetNibTransform)(
-        _Out_ D2D1_MATRIX_3X2_F *transform 
+        _Out_ D2D1_MATRIX_3X2_F *transform
         ) CONST PURE;
-    
+
     STDMETHOD_(void, SetNibShape)(
-        D2D1_INK_NIB_SHAPE nibShape 
+        D2D1_INK_NIB_SHAPE nibShape
         ) PURE;
-    
+
     STDMETHOD_(D2D1_INK_NIB_SHAPE, GetNibShape)(
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     void
     SetNibTransform(
-        CONST D2D1_MATRIX_3X2_F &transform 
-        )  
+        CONST D2D1_MATRIX_3X2_F &transform
+        )
     {
         SetNibTransform(&transform);
     }
 }; // interface ID2D1InkStyle
-
 
 /// <summary>
 /// Represents a single continuous stroke of variable-width ink, as defined by a
@@ -537,66 +519,66 @@ interface DX_DECLARE_INTERFACE("bae8b344-23fc-4071-8cb5-d05d6f073848") ID2D1InkS
 /// </summary>
 interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Resets the ink start point.
     /// </summary>
     STDMETHOD_(void, SetStartPoint)(
-        _In_ CONST D2D1_INK_POINT *startPoint 
+        _In_ CONST D2D1_INK_POINT *startPoint
         ) PURE;
-    
+
     /// <summary>
     /// Retrieve the start point with which the ink was initialized.
     /// </summary>
     STDMETHOD_(D2D1_INK_POINT, GetStartPoint)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Add one or more segments to the end of the ink.
     /// </summary>
     STDMETHOD(AddSegments)(
         _In_reads_(segmentsCount) CONST D2D1_INK_BEZIER_SEGMENT *segments,
-        UINT32 segmentsCount 
+        UINT32 segmentsCount
         ) PURE;
-    
+
     /// <summary>
     /// Remove one or more segments from the end of the ink.
     /// </summary>
     STDMETHOD(RemoveSegmentsAtEnd)(
-        UINT32 segmentsCount 
+        UINT32 segmentsCount
         ) PURE;
-    
+
     /// <summary>
     /// Updates the specified segments with new control points.
     /// </summary>
     STDMETHOD(SetSegments)(
         UINT32 startSegment,
         _In_reads_(segmentsCount) CONST D2D1_INK_BEZIER_SEGMENT *segments,
-        UINT32 segmentsCount 
+        UINT32 segmentsCount
         ) PURE;
-    
+
     /// <summary>
     /// Update the last segment with new control points.
     /// </summary>
     STDMETHOD(SetSegmentAtEnd)(
-        _In_ CONST D2D1_INK_BEZIER_SEGMENT *segment 
+        _In_ CONST D2D1_INK_BEZIER_SEGMENT *segment
         ) PURE;
-    
+
     /// <summary>
     /// Returns the number of segments the ink is composed of.
     /// </summary>
     STDMETHOD_(UINT32, GetSegmentCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieve the segments stored in the ink.
     /// </summary>
     STDMETHOD(GetSegments)(
         UINT32 startSegment,
         _Out_writes_(segmentsCount) D2D1_INK_BEZIER_SEGMENT *segments,
-        UINT32 segmentsCount 
+        UINT32 segmentsCount
         ) CONST PURE;
-    
+
     /// <summary>
     /// Construct a geometric representation of the ink.
     /// </summary>
@@ -604,39 +586,39 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
         _In_opt_ ID2D1InkStyle *inkStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieve the bounds of the ink, with an optional applied transform.
     /// </summary>
     STDMETHOD(GetBounds)(
         _In_opt_ ID2D1InkStyle *inkStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _Out_ D2D1_RECT_F *bounds 
+        _Out_ D2D1_RECT_F *bounds
         ) CONST PURE;
-    
+
     /// <summary>
     /// Resets the ink start point.
     /// </summary>
     COM_DECLSPEC_NOTHROW
     void
     SetStartPoint(
-        CONST D2D1_INK_POINT &startPoint 
-        )  
+        CONST D2D1_INK_POINT &startPoint
+        )
     {
         SetStartPoint(&startPoint);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     SetSegmentAtEnd(
-        CONST D2D1_INK_BEZIER_SEGMENT &segment 
-        )  
+        CONST D2D1_INK_BEZIER_SEGMENT &segment
+        )
     {
         return SetSegmentAtEnd(&segment);
     }
-    
+
     /// <summary>
     /// Construct a geometric representation of the ink.
     /// </summary>
@@ -646,12 +628,12 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
         _In_opt_ ID2D1InkStyle *inkStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
         FLOAT flatteningTolerance,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return StreamAsGeometry(inkStyle,&worldTransform, flatteningTolerance, geometrySink);
     }
-    
+
     /// <summary>
     /// Construct a geometric representation of the ink.
     /// </summary>
@@ -660,12 +642,12 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
     StreamAsGeometry(
         _In_opt_ ID2D1InkStyle *inkStyle,
         _In_opt_ CONST D2D1_MATRIX_3X2_F *worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return StreamAsGeometry(inkStyle,worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
-    
+
     /// <summary>
     /// Construct a geometric representation of the ink.
     /// </summary>
@@ -674,13 +656,12 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
     StreamAsGeometry(
         _In_opt_ ID2D1InkStyle *inkStyle,
         CONST D2D1_MATRIX_3X2_F &worldTransform,
-        _In_ ID2D1SimplifiedGeometrySink *geometrySink 
-        ) CONST  
+        _In_ ID2D1SimplifiedGeometrySink *geometrySink
+        ) CONST
     {
         return StreamAsGeometry(inkStyle,&worldTransform, D2D1_DEFAULT_FLATTENING_TOLERANCE, geometrySink);
     }
 }; // interface ID2D1Ink
-
 
 /// <summary>
 /// Represents a device-dependent representation of a gradient mesh composed of
@@ -689,92 +670,88 @@ interface DX_DECLARE_INTERFACE("b499923b-7029-478f-a8b3-432c7c5f5312") ID2D1Ink 
 /// </summary>
 interface DX_DECLARE_INTERFACE("f292e401-c050-4cde-83d7-04962d3b23c2") ID2D1GradientMesh  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Returns the number of patches of the gradient mesh.
     /// </summary>
     STDMETHOD_(UINT32, GetPatchCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieve the patch data stored in the gradient mesh.
     /// </summary>
     STDMETHOD(GetPatches)(
         UINT32 startIndex,
         _Out_writes_(patchesCount) D2D1_GRADIENT_MESH_PATCH *patches,
-        UINT32 patchesCount 
+        UINT32 patchesCount
         ) CONST PURE;
 }; // interface ID2D1GradientMesh
-
 
 /// <summary>
 /// Represents a producer of pixels that can fill an arbitrary 2D plane.
 /// </summary>
 interface DX_DECLARE_INTERFACE("c9b664e5-74a1-4378-9ac2-eefc37a3f4d8") ID2D1ImageSource  : public ID2D1Image
 {
-    
+
     STDMETHOD(OfferResources)(
         ) PURE;
-    
+
     STDMETHOD(TryReclaimResources)(
-        _Out_ BOOL *resourcesDiscarded 
+        _Out_ BOOL *resourcesDiscarded
         ) PURE;
 }; // interface ID2D1ImageSource
-
 
 /// <summary>
 /// Produces 2D pixel data that has been sourced from WIC.
 /// </summary>
 interface DX_DECLARE_INTERFACE("77395441-1c8f-4555-8683-f50dab0fe792") ID2D1ImageSourceFromWic  : public ID2D1ImageSource
 {
-    
+
     STDMETHOD(EnsureCached)(
-        _In_opt_ CONST D2D1_RECT_U *rectangleToFill 
+        _In_opt_ CONST D2D1_RECT_U *rectangleToFill
         ) PURE;
-    
+
     STDMETHOD(TrimCache)(
-        _In_opt_ CONST D2D1_RECT_U *rectangleToPreserve 
+        _In_opt_ CONST D2D1_RECT_U *rectangleToPreserve
         ) PURE;
-    
+
     STDMETHOD_(void, GetSource)(
-        _Outptr_result_maybenull_ IWICBitmapSource **wicBitmapSource 
+        _Outptr_result_maybenull_ IWICBitmapSource **wicBitmapSource
         ) CONST PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     EnsureCached(
-        CONST D2D1_RECT_U &rectangleToFill 
-        )  
+        CONST D2D1_RECT_U &rectangleToFill
+        )
     {
         return EnsureCached(&rectangleToFill);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     TrimCache(
-        CONST D2D1_RECT_U &rectangleToPreserve 
-        )  
+        CONST D2D1_RECT_U &rectangleToPreserve
+        )
     {
         return TrimCache(&rectangleToPreserve);
     }
 }; // interface ID2D1ImageSourceFromWic
-
 
 /// <summary>
 /// Represents an image source which shares resources with an original image source.
 /// </summary>
 interface DX_DECLARE_INTERFACE("7f1f79e5-2796-416c-8f55-700f911445e5") ID2D1TransformedImageSource  : public ID2D1Image
 {
-    
+
     STDMETHOD_(void, GetSource)(
-        _Outptr_result_maybenull_ ID2D1ImageSource **imageSource 
+        _Outptr_result_maybenull_ ID2D1ImageSource **imageSource
         ) CONST PURE;
-    
+
     STDMETHOD_(void, GetProperties)(
-        _Out_ D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES *properties 
+        _Out_ D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES *properties
         ) CONST PURE;
 }; // interface ID2D1TransformedImageSource
-
 
 /// <summary>
 /// A container for 3D lookup table data that can be passed to the LookupTable3D
@@ -784,7 +761,6 @@ interface DX_DECLARE_INTERFACE("53dd9855-a3b0-4d5b-82e1-26e25c5e5797") ID2D1Look
 {
 }; // interface ID2D1LookupTable3D
 
-
 /// <summary>
 /// This interface performs all the same functions as the ID2D1DeviceContext1
 /// interface, plus it enables functionality such as ink rendering, gradient mesh
@@ -792,33 +768,33 @@ interface DX_DECLARE_INTERFACE("53dd9855-a3b0-4d5b-82e1-26e25c5e5797") ID2D1Look
 /// </summary>
 interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1DeviceContext2  : public ID2D1DeviceContext1
 {
-    
+
     STDMETHOD(CreateInk)(
         _In_ CONST D2D1_INK_POINT *startPoint,
-        _COM_Outptr_ ID2D1Ink **ink 
+        _COM_Outptr_ ID2D1Ink **ink
         ) PURE;
-    
+
     /// <summary>
     /// Creates a new ink style.
     /// </summary>
     STDMETHOD(CreateInkStyle)(
         _In_opt_ CONST D2D1_INK_STYLE_PROPERTIES *inkStyleProperties,
-        _COM_Outptr_ ID2D1InkStyle **inkStyle 
+        _COM_Outptr_ ID2D1InkStyle **inkStyle
         ) PURE;
-    
+
     STDMETHOD(CreateGradientMesh)(
         _In_reads_(patchesCount) CONST D2D1_GRADIENT_MESH_PATCH *patches,
         UINT32 patchesCount,
-        _COM_Outptr_ ID2D1GradientMesh **gradientMesh 
+        _COM_Outptr_ ID2D1GradientMesh **gradientMesh
         ) PURE;
-    
+
     STDMETHOD(CreateImageSourceFromWic)(
         _In_ IWICBitmapSource *wicBitmapSource,
         D2D1_IMAGE_SOURCE_LOADING_OPTIONS loadingOptions,
         D2D1_ALPHA_MODE alphaMode,
-        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource 
+        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource
         ) PURE;
-    
+
     /// <summary>
     /// Creates a 3D lookup table for mapping a 3-channel input to a 3-channel output.
     /// The table data must be provided in 4-channel format.
@@ -829,66 +805,66 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
         _In_reads_(dataCount) CONST BYTE *data,
         UINT32 dataCount,
         _In_reads_(2) CONST UINT32 *strides,
-        _COM_Outptr_ ID2D1LookupTable3D **lookupTable 
+        _COM_Outptr_ ID2D1LookupTable3D **lookupTable
         ) PURE;
-    
+
     STDMETHOD(CreateImageSourceFromDxgi)(
         _In_reads_(surfaceCount) IDXGISurface **surfaces,
         UINT32 surfaceCount,
         DXGI_COLOR_SPACE_TYPE colorSpace,
         D2D1_IMAGE_SOURCE_FROM_DXGI_OPTIONS options,
-        _COM_Outptr_ ID2D1ImageSource **imageSource 
+        _COM_Outptr_ ID2D1ImageSource **imageSource
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves the world-space bounds in DIPs of the gradient mesh using the device
     /// context DPI.
     /// </summary>
     STDMETHOD(GetGradientMeshWorldBounds)(
         _In_ ID2D1GradientMesh *gradientMesh,
-        _Out_ D2D1_RECT_F *pBounds 
+        _Out_ D2D1_RECT_F *pBounds
         ) CONST PURE;
-    
+
     STDMETHOD_(void, DrawInk)(
         _In_ ID2D1Ink *ink,
         _In_ ID2D1Brush *brush,
-        _In_opt_ ID2D1InkStyle *inkStyle 
+        _In_opt_ ID2D1InkStyle *inkStyle
         ) PURE;
-    
+
     STDMETHOD_(void, DrawGradientMesh)(
-        _In_ ID2D1GradientMesh *gradientMesh 
+        _In_ ID2D1GradientMesh *gradientMesh
         ) PURE;
-    
+
     /// <summary>
     /// Draw a metafile to the device context.
     /// </summary>
     STDMETHOD_(void, DrawGdiMetafile)(
         _In_ ID2D1GdiMetafile *gdiMetafile,
         _In_opt_ CONST D2D1_RECT_F *destinationRectangle,
-        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL 
+        _In_opt_ CONST D2D1_RECT_F *sourceRectangle = NULL
         ) PURE;
-    
+
     using ID2D1DeviceContext::DrawGdiMetafile;
-    
+
     /// <summary>
     /// Creates an image source which shares resources with an original.
     /// </summary>
     STDMETHOD(CreateTransformedImageSource)(
         _In_ ID2D1ImageSource *imageSource,
         _In_ CONST D2D1_TRANSFORMED_IMAGE_SOURCE_PROPERTIES *properties,
-        _COM_Outptr_ ID2D1TransformedImageSource **transformedImageSource 
+        _COM_Outptr_ ID2D1TransformedImageSource **transformedImageSource
         ) PURE;
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateInk(
         CONST D2D1_INK_POINT &startPoint,
-        _COM_Outptr_ ID2D1Ink **ink 
-        )  
+        _COM_Outptr_ ID2D1Ink **ink
+        )
     {
         return CreateInk(&startPoint, ink);
     }
-    
+
     /// <summary>
     /// Creates a new ink style.
     /// </summary>
@@ -896,33 +872,33 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
     HRESULT
     CreateInkStyle(
         CONST D2D1_INK_STYLE_PROPERTIES &inkStyleProperties,
-        _COM_Outptr_ ID2D1InkStyle **inkStyle 
-        )  
+        _COM_Outptr_ ID2D1InkStyle **inkStyle
+        )
     {
         return CreateInkStyle(&inkStyleProperties, inkStyle);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateImageSourceFromWic(
         _In_ IWICBitmapSource *wicBitmapSource,
         D2D1_IMAGE_SOURCE_LOADING_OPTIONS loadingOptions,
-        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource 
-        )  
+        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource
+        )
     {
         return CreateImageSourceFromWic(wicBitmapSource, loadingOptions, D2D1_ALPHA_MODE_UNKNOWN, imageSource);
     }
-    
+
     COM_DECLSPEC_NOTHROW
     HRESULT
     CreateImageSourceFromWic(
         _In_ IWICBitmapSource *wicBitmapSource,
-        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource 
-        )  
+        _COM_Outptr_ ID2D1ImageSourceFromWic **imageSource
+        )
     {
         return CreateImageSourceFromWic(wicBitmapSource, D2D1_IMAGE_SOURCE_LOADING_OPTIONS_NONE, D2D1_ALPHA_MODE_UNKNOWN, imageSource);
     }
-    
+
     /// <summary>
     /// Draw a metafile to the device context.
     /// </summary>
@@ -931,12 +907,12 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
     DrawGdiMetafile(
         _In_ ID2D1GdiMetafile *gdiMetafile,
         CONST D2D1_RECT_F &destinationRectangle,
-        CONST D2D1_RECT_F &sourceRectangle 
-        )  
+        CONST D2D1_RECT_F &sourceRectangle
+        )
     {
         return DrawGdiMetafile(gdiMetafile, &destinationRectangle, &sourceRectangle);
     }
-    
+
     /// <summary>
     /// Draw a metafile to the device context.
     /// </summary>
@@ -945,13 +921,12 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
     DrawGdiMetafile(
         _In_ ID2D1GdiMetafile *gdiMetafile,
         CONST D2D1_RECT_F &destinationRectangle,
-        _In_ CONST D2D1_RECT_F *sourceRectangle = NULL 
-        )  
+        _In_ CONST D2D1_RECT_F *sourceRectangle = NULL
+        )
     {
         return DrawGdiMetafile(gdiMetafile, &destinationRectangle, sourceRectangle);
     }
 }; // interface ID2D1DeviceContext2
-
 
 /// <summary>
 /// Represents a resource domain whose objects and device contexts can be used
@@ -961,34 +936,33 @@ interface DX_DECLARE_INTERFACE("394ea6a3-0c34-4321-950b-6ca20f0be6c7") ID2D1Devi
 /// </summary>
 interface DX_DECLARE_INTERFACE("a44472e1-8dfb-4e60-8492-6e2861c9ca8b") ID2D1Device2  : public ID2D1Device1
 {
-    
+
     /// <summary>
     /// Creates a new device context with no initially assigned target.
     /// </summary>
     STDMETHOD(CreateDeviceContext)(
         D2D1_DEVICE_CONTEXT_OPTIONS options,
-        _COM_Outptr_ ID2D1DeviceContext2 **deviceContext2 
+        _COM_Outptr_ ID2D1DeviceContext2 **deviceContext2
         ) PURE;
-    
+
     using ID2D1Device1::CreateDeviceContext;
-    
+
     using ID2D1Device::CreateDeviceContext;
-    
+
     /// <summary>
     /// Flush all device contexts that reference a given bitmap.
     /// </summary>
     STDMETHOD_(void, FlushDeviceContexts)(
-        _In_ ID2D1Bitmap *bitmap 
+        _In_ ID2D1Bitmap *bitmap
         ) PURE;
-    
+
     /// <summary>
     /// Returns the DXGI device associated with this D2D device.
     /// </summary>
     STDMETHOD(GetDxgiDevice)(
-        _COM_Outptr_ IDXGIDevice **dxgiDevice 
+        _COM_Outptr_ IDXGIDevice **dxgiDevice
         ) PURE;
 }; // interface ID2D1Device2
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -996,20 +970,19 @@ interface DX_DECLARE_INTERFACE("a44472e1-8dfb-4e60-8492-6e2861c9ca8b") ID2D1Devi
 /// </summary>
 interface DX_DECLARE_INTERFACE("0869759f-4f00-413f-b03e-2bda45404d0f") ID2D1Factory3  : public ID2D1Factory2
 {
-    
+
     /// <summary>
     /// This creates a new Direct2D device from the given IDXGIDevice.
     /// </summary>
     STDMETHOD(CreateDevice)(
         _In_ IDXGIDevice *dxgiDevice,
-        _COM_Outptr_ ID2D1Device2 **d2dDevice2 
+        _COM_Outptr_ ID2D1Device2 **d2dDevice2
         ) PURE;
-    
+
     using ID2D1Factory2::CreateDevice;
-    
+
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory3
-
 
 /// <summary>
 /// This interface performs all the same functions as the existing ID2D1CommandSink1
@@ -1017,57 +990,55 @@ interface DX_DECLARE_INTERFACE("0869759f-4f00-413f-b03e-2bda45404d0f") ID2D1Fact
 /// </summary>
 interface DX_DECLARE_INTERFACE("3bab440e-417e-47df-a2e2-bc0be6a00916") ID2D1CommandSink2  : public ID2D1CommandSink1
 {
-    
+
     STDMETHOD(DrawInk)(
         _In_ ID2D1Ink *ink,
         _In_ ID2D1Brush *brush,
-        _In_opt_ ID2D1InkStyle *inkStyle 
+        _In_opt_ ID2D1InkStyle *inkStyle
         ) PURE;
-    
+
     STDMETHOD(DrawGradientMesh)(
-        _In_ ID2D1GradientMesh *gradientMesh 
+        _In_ ID2D1GradientMesh *gradientMesh
         ) PURE;
-    
+
     STDMETHOD(DrawGdiMetafile)(
         _In_ ID2D1GdiMetafile *gdiMetafile,
         _In_opt_ CONST D2D1_RECT_F *destinationRectangle,
-        _In_opt_ CONST D2D1_RECT_F *sourceRectangle 
+        _In_opt_ CONST D2D1_RECT_F *sourceRectangle
         ) PURE;
-    
+
     using ID2D1CommandSink::DrawGdiMetafile;
 }; // interface ID2D1CommandSink2
-
 
 /// <summary>
 /// Interface encapsulating a GDI/GDI+ metafile.
 /// </summary>
 interface DX_DECLARE_INTERFACE("2e69f9e8-dd3f-4bf9-95ba-c04f49d788df") ID2D1GdiMetafile1  : public ID2D1GdiMetafile
 {
-    
+
     /// <summary>
     /// Returns the DPI reported by the metafile.
     /// </summary>
     STDMETHOD(GetDpi)(
         _Out_ FLOAT *dpiX,
-        _Out_ FLOAT *dpiY 
+        _Out_ FLOAT *dpiY
         ) PURE;
-    
+
     /// <summary>
     /// Gets the bounds (in DIPs) of the metafile (as specified by the frame rect
     /// declared in the metafile).
     /// </summary>
     STDMETHOD(GetSourceBounds)(
-        _Out_ D2D1_RECT_F *bounds 
+        _Out_ D2D1_RECT_F *bounds
         ) PURE;
 }; // interface ID2D1GdiMetafile1
-
 
 /// <summary>
 /// User-implementable interface for introspecting on a metafile.
 /// </summary>
 interface DX_DECLARE_INTERFACE("fd0ecb6b-91e6-411e-8655-395e760f91b4") ID2D1GdiMetafileSink1  : public ID2D1GdiMetafileSink
 {
-    
+
     /// <summary>
     /// Callback for examining a metafile record.
     /// </summary>
@@ -1075,18 +1046,17 @@ interface DX_DECLARE_INTERFACE("fd0ecb6b-91e6-411e-8655-395e760f91b4") ID2D1GdiM
         DWORD recordType,
         _In_opt_ CONST void *recordData,
         DWORD recordDataSize,
-        UINT32 flags 
+        UINT32 flags
         ) PURE;
-    
+
     using ID2D1GdiMetafileSink::ProcessRecord;
 }; // interface ID2D1GdiMetafileSink1
-
 
 #if NTDDI_VERSION >= NTDDI_WIN10_TH2
 
 interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1SpriteBatch  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Adds sprites to the end of the sprite batch.
     /// </summary>
@@ -1099,9 +1069,9 @@ interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1Spri
         UINT32 destinationRectanglesStride = sizeof(D2D1_RECT_F),
         UINT32 sourceRectanglesStride = sizeof(D2D1_RECT_U),
         UINT32 colorsStride = sizeof(D2D1_COLOR_F),
-        UINT32 transformsStride = sizeof(D2D1_MATRIX_3X2_F) 
+        UINT32 transformsStride = sizeof(D2D1_MATRIX_3X2_F)
         ) PURE;
-    
+
     /// <summary>
     /// Set properties for existing sprites. All properties not specified are
     /// unmodified.
@@ -1116,9 +1086,9 @@ interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1Spri
         UINT32 destinationRectanglesStride = sizeof(D2D1_RECT_F),
         UINT32 sourceRectanglesStride = sizeof(D2D1_RECT_U),
         UINT32 colorsStride = sizeof(D2D1_COLOR_F),
-        UINT32 transformsStride = sizeof(D2D1_MATRIX_3X2_F) 
+        UINT32 transformsStride = sizeof(D2D1_MATRIX_3X2_F)
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves sprite properties.
     /// </summary>
@@ -1128,15 +1098,15 @@ interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1Spri
         _Out_writes_opt_(spriteCount) D2D1_RECT_F *destinationRectangles = NULL,
         _Out_writes_opt_(spriteCount) D2D1_RECT_U *sourceRectangles = NULL,
         _Out_writes_opt_(spriteCount) D2D1_COLOR_F *colors = NULL,
-        _Out_writes_opt_(spriteCount) D2D1_MATRIX_3X2_F *transforms = NULL 
+        _Out_writes_opt_(spriteCount) D2D1_MATRIX_3X2_F *transforms = NULL
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieves the number of sprites in the sprite batch.
     /// </summary>
     STDMETHOD_(UINT32, GetSpriteCount)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Removes all sprites from the sprite batch.
     /// </summary>
@@ -1144,17 +1114,16 @@ interface DX_DECLARE_INTERFACE("4dc583bf-3a10-438a-8722-e9765224f1f1") ID2D1Spri
         ) PURE;
 }; // interface ID2D1SpriteBatch
 
-
 interface DX_DECLARE_INTERFACE("235a7496-8351-414c-bcd4-6672ab2d8e00") ID2D1DeviceContext3  : public ID2D1DeviceContext2
 {
-    
+
     /// <summary>
     /// Creates a new sprite batch.
     /// </summary>
     STDMETHOD(CreateSpriteBatch)(
-        _COM_Outptr_ ID2D1SpriteBatch **spriteBatch 
+        _COM_Outptr_ ID2D1SpriteBatch **spriteBatch
         ) PURE;
-    
+
     /// <summary>
     /// Draws sprites in a sprite batch.
     /// </summary>
@@ -1164,9 +1133,9 @@ interface DX_DECLARE_INTERFACE("235a7496-8351-414c-bcd4-6672ab2d8e00") ID2D1Devi
         UINT32 spriteCount,
         _In_ ID2D1Bitmap *bitmap,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-        D2D1_SPRITE_OPTIONS spriteOptions = D2D1_SPRITE_OPTIONS_NONE 
+        D2D1_SPRITE_OPTIONS spriteOptions = D2D1_SPRITE_OPTIONS_NONE
         ) PURE;
-    
+
     /// <summary>
     /// Draws all sprites in a sprite batch.
     /// </summary>
@@ -1176,32 +1145,30 @@ interface DX_DECLARE_INTERFACE("235a7496-8351-414c-bcd4-6672ab2d8e00") ID2D1Devi
         _In_ ID2D1SpriteBatch *spriteBatch,
         _In_ ID2D1Bitmap *bitmap,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-        D2D1_SPRITE_OPTIONS spriteOptions = D2D1_SPRITE_OPTIONS_NONE 
-        )  
+        D2D1_SPRITE_OPTIONS spriteOptions = D2D1_SPRITE_OPTIONS_NONE
+        )
     {
         return DrawSpriteBatch(spriteBatch, 0, spriteBatch->GetSpriteCount(), bitmap, interpolationMode, spriteOptions);
     }
 }; // interface ID2D1DeviceContext3
 
-
 interface DX_DECLARE_INTERFACE("852f2087-802c-4037-ab60-ff2e7ee6fc01") ID2D1Device3  : public ID2D1Device2
 {
-    
+
     /// <summary>
     /// Creates a new device context with no initially assigned target.
     /// </summary>
     STDMETHOD(CreateDeviceContext)(
         D2D1_DEVICE_CONTEXT_OPTIONS options,
-        _COM_Outptr_ ID2D1DeviceContext3 **deviceContext3 
+        _COM_Outptr_ ID2D1DeviceContext3 **deviceContext3
         ) PURE;
-    
+
     using ID2D1Device2::CreateDeviceContext;
-    
+
     using ID2D1Device1::CreateDeviceContext;
-    
+
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device3
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1209,36 +1176,34 @@ interface DX_DECLARE_INTERFACE("852f2087-802c-4037-ab60-ff2e7ee6fc01") ID2D1Devi
 /// </summary>
 interface DX_DECLARE_INTERFACE("bd4ec2d2-0662-4bee-ba8e-6f29f032e096") ID2D1Factory4  : public ID2D1Factory3
 {
-    
+
     /// <summary>
     /// This creates a new Direct2D device from the given IDXGIDevice.
     /// </summary>
     STDMETHOD(CreateDevice)(
         _In_ IDXGIDevice *dxgiDevice,
-        _COM_Outptr_ ID2D1Device3 **d2dDevice3 
+        _COM_Outptr_ ID2D1Device3 **d2dDevice3
         ) PURE;
-    
+
     using ID2D1Factory3::CreateDevice;
-    
+
     using ID2D1Factory2::CreateDevice;
-    
+
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory4
 
-
 interface DX_DECLARE_INTERFACE("18079135-4cf3-4868-bc8e-06067e6d242d") ID2D1CommandSink3  : public ID2D1CommandSink2
 {
-    
+
     STDMETHOD(DrawSpriteBatch)(
         _In_ ID2D1SpriteBatch *spriteBatch,
         UINT32 startIndex,
         UINT32 spriteCount,
         _In_ ID2D1Bitmap *bitmap,
         D2D1_BITMAP_INTERPOLATION_MODE interpolationMode,
-        D2D1_SPRITE_OPTIONS spriteOptions 
+        D2D1_SPRITE_OPTIONS spriteOptions
         ) PURE;
 }; // interface ID2D1CommandSink3
-
 
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_TH2
 #if NTDDI_VERSION >= NTDDI_WIN10_RS1
@@ -1249,7 +1214,7 @@ interface DX_DECLARE_INTERFACE("18079135-4cf3-4868-bc8e-06067e6d242d") ID2D1Comm
 /// </summary>
 interface DX_DECLARE_INTERFACE("af671749-d241-4db8-8e41-dcc2e5c1a438") ID2D1SvgGlyphStyle  : public ID2D1Resource
 {
-    
+
     /// <summary>
     /// Provides values to an SVG glyph for fill. The brush with opacity set to 1 is
     /// used as the 'context-fill'. The opacity of the brush is used as the
@@ -1259,16 +1224,16 @@ interface DX_DECLARE_INTERFACE("af671749-d241-4db8-8e41-dcc2e5c1a438") ID2D1SvgG
     /// the defaultFillBrush. If the defaultFillBrush is also null, the context-fill
     /// value will be 'none'.</param>
     STDMETHOD(SetFill)(
-        _In_opt_ ID2D1Brush *brush 
+        _In_opt_ ID2D1Brush *brush
         ) PURE;
-    
+
     /// <summary>
     /// Returns the requested fill parameters.
     /// </summary>
     STDMETHOD_(void, GetFill)(
-        _Outptr_result_maybenull_ ID2D1Brush **brush 
+        _Outptr_result_maybenull_ ID2D1Brush **brush
         ) PURE;
-    
+
     /// <summary>
     /// Provides values to an SVG glyph for stroke properties. The brush with opacity
     /// set to 1 is used as the 'context-stroke'. The opacity of the brush is used as
@@ -1288,15 +1253,15 @@ interface DX_DECLARE_INTERFACE("af671749-d241-4db8-8e41-dcc2e5c1a438") ID2D1SvgG
         FLOAT strokeWidth = 1.0f,
         _In_reads_opt_(dashesCount) CONST FLOAT *dashes = NULL,
         UINT32 dashesCount = 0,
-        FLOAT dashOffset = 1.0f 
+        FLOAT dashOffset = 1.0f
         ) PURE;
-    
+
     /// <summary>
     /// Returns the number of dashes in the dash array.
     /// </summary>
     STDMETHOD_(UINT32, GetStrokeDashesCount)(
         ) PURE;
-    
+
     /// <summary>
     /// Returns the requested stroke parameters.
     /// </summary>
@@ -1305,21 +1270,20 @@ interface DX_DECLARE_INTERFACE("af671749-d241-4db8-8e41-dcc2e5c1a438") ID2D1SvgG
         _Out_opt_ FLOAT *strokeWidth = NULL,
         _Out_writes_opt_(dashesCount) FLOAT *dashes = NULL,
         UINT32 dashesCount = 0,
-        _Out_opt_ FLOAT *dashOffset = NULL 
+        _Out_opt_ FLOAT *dashOffset = NULL
         ) PURE;
 }; // interface ID2D1SvgGlyphStyle
 
-
 interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1DeviceContext4  : public ID2D1DeviceContext3
 {
-    
+
     /// <summary>
     /// Creates an SVG glyph style object.
     /// </summary>
     STDMETHOD(CreateSvgGlyphStyle)(
-        _COM_Outptr_ ID2D1SvgGlyphStyle **svgGlyphStyle 
+        _COM_Outptr_ ID2D1SvgGlyphStyle **svgGlyphStyle
         ) PURE;
-    
+
     /// <summary>
     /// Draws the text within the given layout rectangle. By default, this method
     /// performs baseline snapping and renders color versions of glyphs in color fonts.
@@ -1336,11 +1300,11 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         _In_opt_ ID2D1SvgGlyphStyle *svgGlyphStyle,
         UINT32 colorPaletteIndex = 0,
         D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
         ) PURE;
-    
+
     using ID2D1RenderTarget::DrawText;
-    
+
     /// <summary>
     /// Draw a text layout object. If the layout is not subsequently changed, this can
     /// be more efficient than DrawText when drawing the same layout repeatedly.
@@ -1358,11 +1322,11 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         _In_opt_ ID2D1Brush *defaultFillBrush,
         _In_opt_ ID2D1SvgGlyphStyle *svgGlyphStyle,
         UINT32 colorPaletteIndex = 0,
-        D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT 
+        D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT
         ) PURE;
-    
+
     using ID2D1RenderTarget::DrawTextLayout;
-    
+
     /// <summary>
     /// Draws a color glyph run using one (and only one) of the bitmap formats-
     /// DWRITE_GLYPH_IMAGE_FORMATS_PNG, DWRITE_GLYPH_IMAGE_FORMATS_JPEG,
@@ -1374,9 +1338,9 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         D2D1_POINT_2F baselineOrigin,
         _In_ CONST DWRITE_GLYPH_RUN *glyphRun,
         DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL,
-        D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION bitmapSnapOption = D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION_DEFAULT 
+        D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION bitmapSnapOption = D2D1_COLOR_BITMAP_GLYPH_SNAP_OPTION_DEFAULT
         ) PURE;
-    
+
     /// <summary>
     /// Draws a color glyph run that has the format of DWRITE_GLYPH_IMAGE_FORMATS_SVG.
     /// </summary>
@@ -1390,9 +1354,9 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         _In_opt_ ID2D1Brush *defaultFillBrush = NULL,
         _In_opt_ ID2D1SvgGlyphStyle *svgGlyphStyle = NULL,
         UINT32 colorPaletteIndex = 0,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves an image of the color bitmap glyph from the color glyph cache. If the
     /// cache does not already contain the requested resource, it will be created. This
@@ -1417,9 +1381,9 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         FLOAT dpiX,
         FLOAT dpiY,
         _Out_ D2D1_MATRIX_3X2_F *glyphTransform,
-        _COM_Outptr_ ID2D1Image **glyphImage 
+        _COM_Outptr_ ID2D1Image **glyphImage
         ) PURE;
-    
+
     /// <summary>
     /// Retrieves an image of the SVG glyph from the color glyph cache. If the cache
     /// does not already contain the requested resource, it will be created. This method
@@ -1447,9 +1411,9 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         _In_opt_ ID2D1SvgGlyphStyle *svgGlyphStyle,
         UINT32 colorPaletteIndex,
         _Out_ D2D1_MATRIX_3X2_F *glyphTransform,
-        _COM_Outptr_ ID2D1CommandList **glyphImage 
+        _COM_Outptr_ ID2D1CommandList **glyphImage
         ) PURE;
-    
+
     /// <summary>
     /// Draws the text within the given layout rectangle. By default, this method
     /// performs baseline snapping and renders color versions of glyphs in color fonts.
@@ -1468,33 +1432,32 @@ interface DX_DECLARE_INTERFACE("8c427831-3d90-4476-b647-c4fae349e4db") ID2D1Devi
         _In_opt_ ID2D1SvgGlyphStyle *svgGlyphStyle,
         UINT32 colorPaletteIndex = 0,
         D2D1_DRAW_TEXT_OPTIONS options = D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT,
-        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL 
-        )  
+        DWRITE_MEASURING_MODE measuringMode = DWRITE_MEASURING_MODE_NATURAL
+        )
     {
         return DrawText(string, stringLength, textFormat, &layoutRect, defaultFillBrush, svgGlyphStyle, colorPaletteIndex, options, measuringMode);
     }
 }; // interface ID2D1DeviceContext4
 
-
 interface DX_DECLARE_INTERFACE("d7bdb159-5683-4a46-bc9c-72dc720b858b") ID2D1Device4  : public ID2D1Device3
 {
-    
+
     /// <summary>
     /// Creates a new device context with no initially assigned target.
     /// </summary>
     STDMETHOD(CreateDeviceContext)(
         D2D1_DEVICE_CONTEXT_OPTIONS options,
-        _COM_Outptr_ ID2D1DeviceContext4 **deviceContext4 
+        _COM_Outptr_ ID2D1DeviceContext4 **deviceContext4
         ) PURE;
-    
+
     using ID2D1Device3::CreateDeviceContext;
-    
+
     using ID2D1Device2::CreateDeviceContext;
-    
+
     using ID2D1Device1::CreateDeviceContext;
-    
+
     using ID2D1Device::CreateDeviceContext;
-    
+
     /// <summary>
     /// Sets the maximum capacity of the color glyph cache. This cache is used to store
     /// color bitmap glyphs and SVG glyphs, enabling faster performance if the same
@@ -1503,9 +1466,9 @@ interface DX_DECLARE_INTERFACE("d7bdb159-5683-4a46-bc9c-72dc720b858b") ID2D1Devi
     /// glyph does not count toward the cache capacity.
     /// </summary>
     STDMETHOD_(void, SetMaximumColorGlyphCacheMemory)(
-        UINT64 maximumInBytes 
+        UINT64 maximumInBytes
         ) PURE;
-    
+
     /// <summary>
     /// Gets the maximum capacity of the color glyph cache.
     /// </summary>
@@ -1513,87 +1476,83 @@ interface DX_DECLARE_INTERFACE("d7bdb159-5683-4a46-bc9c-72dc720b858b") ID2D1Devi
         ) CONST PURE;
 }; // interface ID2D1Device4
 
-
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
 /// ID2D1Device4 objects.
 /// </summary>
 interface DX_DECLARE_INTERFACE("c4349994-838e-4b0f-8cab-44997d9eeacc") ID2D1Factory5  : public ID2D1Factory4
 {
-    
+
     /// <summary>
     /// This creates a new Direct2D device from the given IDXGIDevice.
     /// </summary>
     STDMETHOD(CreateDevice)(
         _In_ IDXGIDevice *dxgiDevice,
-        _COM_Outptr_ ID2D1Device4 **d2dDevice4 
+        _COM_Outptr_ ID2D1Device4 **d2dDevice4
         ) PURE;
-    
+
     using ID2D1Factory4::CreateDevice;
-    
+
     using ID2D1Factory3::CreateDevice;
-    
+
     using ID2D1Factory2::CreateDevice;
-    
+
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory5
-
 
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2
 
 interface DX_DECLARE_INTERFACE("c78a6519-40d6-4218-b2de-beeeb744bb3e") ID2D1CommandSink4  : public ID2D1CommandSink3
 {
-    
+
     /// <summary>
     /// A new function to set blend mode that respects the new MAX blend.
-    /// 
+    ///
     /// Implementers of SetPrimitiveBlend2 should expect and handle blend mode:
     /// D2D1_PRIMITIVE_BLEND_MAX
-    /// 
+    ///
     /// Implementers of SetPrimitiveBlend1 should expect and handle blend modes:
     /// D2D1_PRIMITIVE_BLEND_MIN and D2D1_PRIMITIVE_BLEND_ADD
-    /// 
+    ///
     /// Implementers of SetPrimitiveBlend should expect and handle blend modes:
     /// D2D1_PRIMITIVE_BLEND_SOURCE_OVER and D2D1_PRIMITIVE_BLEND_COPY
     /// </summary>
     STDMETHOD(SetPrimitiveBlend2)(
-        D2D1_PRIMITIVE_BLEND primitiveBlend 
+        D2D1_PRIMITIVE_BLEND primitiveBlend
         ) PURE;
 }; // interface ID2D1CommandSink4
-
 
 /// <summary>
 /// Represents a color context to be used with the Color Management Effect.
 /// </summary>
 interface DX_DECLARE_INTERFACE("1ab42875-c57f-4be9-bd85-9cd78d6f55ee") ID2D1ColorContext1  : public ID2D1ColorContext
 {
-    
+
     /// <summary>
     /// Retrieves the color context type.
     /// </summary>
     STDMETHOD_(D2D1_COLOR_CONTEXT_TYPE, GetColorContextType)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieves the DXGI color space of this context. Returns DXGI_COLOR_SPACE_CUSTOM
     /// when color context type is ICC.
     /// </summary>
     STDMETHOD_(DXGI_COLOR_SPACE_TYPE, GetDXGIColorSpace)(
         ) CONST PURE;
-    
+
     /// <summary>
     /// Retrieves a set simple color profile.
     /// </summary>
     STDMETHOD(GetSimpleColorProfile)(
-        _Out_ D2D1_SIMPLE_COLOR_PROFILE *simpleProfile 
+        _Out_ D2D1_SIMPLE_COLOR_PROFILE *simpleProfile
         ) CONST PURE;
 }; // interface ID2D1ColorContext1
 
-
 interface DX_DECLARE_INTERFACE("7836d248-68cc-4df6-b9e8-de991bf62eb7") ID2D1DeviceContext5  : public ID2D1DeviceContext4
 {
-    
+
     /// <summary>
     /// Creates an SVG document from a stream.
     /// </summary>
@@ -1605,34 +1564,34 @@ interface DX_DECLARE_INTERFACE("7836d248-68cc-4df6-b9e8-de991bf62eb7") ID2D1Devi
     STDMETHOD(CreateSvgDocument)(
         _In_opt_ IStream *inputXmlStream,
         D2D1_SIZE_F viewportSize,
-        _COM_Outptr_ ID2D1SvgDocument **svgDocument 
+        _COM_Outptr_ ID2D1SvgDocument **svgDocument
         ) PURE;
-    
+
     /// <summary>
     /// Draw an SVG document.
     /// </summary>
     STDMETHOD_(void, DrawSvgDocument)(
-        _In_ ID2D1SvgDocument *svgDocument 
+        _In_ ID2D1SvgDocument *svgDocument
         ) PURE;
-    
+
     /// <summary>
     /// Creates a color context from a DXGI color space type. It is only valid to use
     /// this with the Color Management Effect in 'Best' mode.
     /// </summary>
     STDMETHOD(CreateColorContextFromDxgiColorSpace)(
         DXGI_COLOR_SPACE_TYPE colorSpace,
-        _COM_Outptr_ ID2D1ColorContext1 **colorContext 
+        _COM_Outptr_ ID2D1ColorContext1 **colorContext
         ) PURE;
-    
+
     /// <summary>
     /// Creates a color context from a simple color profile. It is only valid to use
     /// this with the Color Management Effect in 'Best' mode.
     /// </summary>
     STDMETHOD(CreateColorContextFromSimpleColorProfile)(
         _In_ CONST D2D1_SIMPLE_COLOR_PROFILE *simpleProfile,
-        _COM_Outptr_ ID2D1ColorContext1 **colorContext 
+        _COM_Outptr_ ID2D1ColorContext1 **colorContext
         ) PURE;
-    
+
     /// <summary>
     /// Creates a color context from a simple color profile.
     /// </summary>
@@ -1640,36 +1599,34 @@ interface DX_DECLARE_INTERFACE("7836d248-68cc-4df6-b9e8-de991bf62eb7") ID2D1Devi
     HRESULT
     CreateColorContextFromSimpleColorProfile(
         CONST D2D1_SIMPLE_COLOR_PROFILE &simpleProfile,
-        _COM_Outptr_ ID2D1ColorContext1 **colorContext 
-        )  
+        _COM_Outptr_ ID2D1ColorContext1 **colorContext
+        )
     {
         return CreateColorContextFromSimpleColorProfile(&simpleProfile, colorContext);
     }
 }; // interface ID2D1DeviceContext5
 
-
 interface DX_DECLARE_INTERFACE("d55ba0a4-6405-4694-aef5-08ee1a4358b4") ID2D1Device5  : public ID2D1Device4
 {
-    
+
     /// <summary>
     /// Creates a new device context with no initially assigned target.
     /// </summary>
     STDMETHOD(CreateDeviceContext)(
         D2D1_DEVICE_CONTEXT_OPTIONS options,
-        _COM_Outptr_ ID2D1DeviceContext5 **deviceContext5 
+        _COM_Outptr_ ID2D1DeviceContext5 **deviceContext5
         ) PURE;
-    
+
     using ID2D1Device4::CreateDeviceContext;
-    
+
     using ID2D1Device3::CreateDeviceContext;
-    
+
     using ID2D1Device2::CreateDeviceContext;
-    
+
     using ID2D1Device1::CreateDeviceContext;
-    
+
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device5
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1677,46 +1634,44 @@ interface DX_DECLARE_INTERFACE("d55ba0a4-6405-4694-aef5-08ee1a4358b4") ID2D1Devi
 /// </summary>
 interface DX_DECLARE_INTERFACE("f9976f46-f642-44c1-97ca-da32ea2a2635") ID2D1Factory6  : public ID2D1Factory5
 {
-    
+
     /// <summary>
     /// This creates a new Direct2D device from the given IDXGIDevice.
     /// </summary>
     STDMETHOD(CreateDevice)(
         _In_ IDXGIDevice *dxgiDevice,
-        _COM_Outptr_ ID2D1Device5 **d2dDevice5 
+        _COM_Outptr_ ID2D1Device5 **d2dDevice5
         ) PURE;
-    
+
     using ID2D1Factory5::CreateDevice;
-    
+
     using ID2D1Factory4::CreateDevice;
-    
+
     using ID2D1Factory3::CreateDevice;
-    
+
     using ID2D1Factory2::CreateDevice;
-    
+
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory6
-
 
 #endif
 #if NTDDI_VERSION >= NTDDI_WIN10_RS3
 
 interface DX_DECLARE_INTERFACE("7047dd26-b1e7-44a7-959a-8349e2144fa8") ID2D1CommandSink5  : public ID2D1CommandSink4
 {
-    
+
     STDMETHOD(BlendImage)(
         _In_ ID2D1Image *image,
         D2D1_BLEND_MODE blendMode,
         _In_opt_ CONST D2D1_POINT_2F *targetOffset,
         _In_opt_ CONST D2D1_RECT_F *imageRectangle,
-        D2D1_INTERPOLATION_MODE interpolationMode 
+        D2D1_INTERPOLATION_MODE interpolationMode
         ) PURE;
 }; // interface ID2D1CommandSink5
 
-
 interface DX_DECLARE_INTERFACE("985f7e37-4ed0-4a19-98a3-15b0edfde306") ID2D1DeviceContext6  : public ID2D1DeviceContext5
 {
-    
+
     /// <summary>
     /// Draw an image to the device context.
     /// </summary>
@@ -1725,35 +1680,33 @@ interface DX_DECLARE_INTERFACE("985f7e37-4ed0-4a19-98a3-15b0edfde306") ID2D1Devi
         D2D1_BLEND_MODE blendMode,
         _In_opt_ CONST D2D1_POINT_2F *targetOffset = NULL,
         _In_opt_ CONST D2D1_RECT_F *imageRectangle = NULL,
-        D2D1_INTERPOLATION_MODE interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR 
+        D2D1_INTERPOLATION_MODE interpolationMode = D2D1_INTERPOLATION_MODE_LINEAR
         ) PURE;
 }; // interface ID2D1DeviceContext6
 
-
 interface DX_DECLARE_INTERFACE("7bfef914-2d75-4bad-be87-e18ddb077b6d") ID2D1Device6  : public ID2D1Device5
 {
-    
+
     /// <summary>
     /// Creates a new device context with no initially assigned target.
     /// </summary>
     STDMETHOD(CreateDeviceContext)(
         D2D1_DEVICE_CONTEXT_OPTIONS options,
-        _COM_Outptr_ ID2D1DeviceContext6 **deviceContext6 
+        _COM_Outptr_ ID2D1DeviceContext6 **deviceContext6
         ) PURE;
-    
+
     using ID2D1Device5::CreateDeviceContext;
-    
+
     using ID2D1Device4::CreateDeviceContext;
-    
+
     using ID2D1Device3::CreateDeviceContext;
-    
+
     using ID2D1Device2::CreateDeviceContext;
-    
+
     using ID2D1Device1::CreateDeviceContext;
-    
+
     using ID2D1Device::CreateDeviceContext;
 }; // interface ID2D1Device6
-
 
 /// <summary>
 /// Creates Direct2D resources. This interface also enables the creation of
@@ -1761,36 +1714,33 @@ interface DX_DECLARE_INTERFACE("7bfef914-2d75-4bad-be87-e18ddb077b6d") ID2D1Devi
 /// </summary>
 interface DX_DECLARE_INTERFACE("bdc2bdd3-b96c-4de6-bdf7-99d4745454de") ID2D1Factory7  : public ID2D1Factory6
 {
-    
+
     /// <summary>
     /// This creates a new Direct2D device from the given IDXGIDevice.
     /// </summary>
     STDMETHOD(CreateDevice)(
         _In_ IDXGIDevice *dxgiDevice,
-        _COM_Outptr_ ID2D1Device6 **d2dDevice6 
+        _COM_Outptr_ ID2D1Device6 **d2dDevice6
         ) PURE;
-    
+
     using ID2D1Factory6::CreateDevice;
-    
+
     using ID2D1Factory5::CreateDevice;
-    
+
     using ID2D1Factory4::CreateDevice;
-    
+
     using ID2D1Factory3::CreateDevice;
-    
+
     using ID2D1Factory2::CreateDevice;
-    
+
     using ID2D1Factory1::CreateDevice;
 }; // interface ID2D1Factory7
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1InkStyle ID2D1InkStyle;
 
@@ -1820,14 +1770,13 @@ typedef interface ID2D1GdiMetafileSink1 ID2D1GdiMetafileSink1;
 
 #endif
 
-           
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 #if NTDDI_VERSION >= NTDDI_WINTHRESHOLD
-    void WINAPI 
+    void WINAPI
     D2D1GetGradientMeshInteriorPointsFromCoonsPatch(
         _In_ CONST D2D1_POINT_2F *pPoint0,
         _In_ CONST D2D1_POINT_2F *pPoint1,
@@ -1845,14 +1794,12 @@ extern "C"
         _Out_ D2D1_POINT_2F *pTensorPoint12,
         _Out_ D2D1_POINT_2F *pTensorPoint21,
         _Out_ D2D1_POINT_2F *pTensorPoint22
-        ); 
+        );
 #endif // #if NTDDI_VERSION >= NTDDI_WINTHRESHOLD
-        
+
 #ifdef __cplusplus
 }
 #endif
-        
-
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/

@@ -24,7 +24,6 @@ else
 	HAVE_ZLIB = 1
 	HAVE_BUILTINZLIB = 1
 	HAVE_LIBRETRODB = 1
-	HAVE_ZARCH = 0
 	HAVE_MATERIALUI = 0 # enable later?
 	HAVE_XMB = 0
 	HAVE_STATIC_VIDEO_FILTERS = 1
@@ -34,12 +33,12 @@ else
 	HAVE_DYNAMIC = 1
 
 	include Makefile.common
-        BLACKLIST :=
+	CFLAGS += $(DEF_FLAGS)
+	BLACKLIST :=
 	BLACKLIST += input/input_overlay.o
-        BLACKLIST += tasks/task_overlay.o
+	BLACKLIST += tasks/task_overlay.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
-
 
 ifeq ($(strip $(LIBTRANSISTOR_HOME)),)
 $(error "Please set LIBTRANSISTOR_HOME in your environment. export LIBTRANSISTOR_HOME=<path/to/libtransistor/dist/>")

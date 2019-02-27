@@ -36,7 +36,7 @@ retroarch.pnd: install
 	pnd_make -c -p retroarch.pnd -d $(PNDDIR)/ -x $(PNDDIR)/PXML.xml -i $(PNDDIR)/icon.png
 
 clean:
-	rm -f *.o 
+	rm -f *.o
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
@@ -52,4 +52,3 @@ clean:
 	rm -f $(BINDIR)/retroarch-joyconfig
 	rm -f $(PNDDIR)/readme.html
 	rm -f retroarch
-

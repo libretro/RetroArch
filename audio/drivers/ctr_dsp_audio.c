@@ -195,7 +195,6 @@ static size_t ctr_dsp_audio_buffer_size(void *data)
    return CTR_DSP_AUDIO_COUNT;
 }
 
-
 audio_driver_t audio_ctr_dsp = {
    ctr_dsp_audio_init,
    ctr_dsp_audio_write,
@@ -211,4 +210,3 @@ audio_driver_t audio_ctr_dsp = {
    ctr_dsp_audio_write_avail,
    ctr_dsp_audio_buffer_size
 };
-

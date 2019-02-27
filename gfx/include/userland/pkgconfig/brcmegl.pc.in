@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: brcmEGL
+Description: Fake brcmEGL package for RPi
+Version: 10
+Requires: bcm_host
+Libs: -L${libdir} -lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvchostif
+Cflags: -I${includedir} -I${includedir}/interface/vmcs_host/linux \
+        -I${includedir}/interface/vcos/pthreads

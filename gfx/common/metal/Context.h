@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
 #import "RendererCommon.h"
 
 @interface Texture : NSObject
@@ -61,6 +62,9 @@ typedef struct
 /*! @brief resets the viewport for the main render encoder to the drawable size */
 - (void)resetRenderViewport;
 
+/*! @brief resets the scissor rect for the main render encoder to the drawable size */
+- (void)resetScissorRect;
+
 /*! @brief draws a quad at the specified position (normalized coordinates) using the main render encoder */
 - (void)drawQuadX:(float)x y:(float)y w:(float)w h:(float)h
                 r:(float)r g:(float)g b:(float)b a:(float)a;
@@ -73,6 +77,7 @@ typedef struct
 /*! @brief end commits the command buffer */
 - (void)end;
 
+- (void)setRotation:(unsigned)rotation;
 - (bool)readBackBuffer:(uint8_t *)buffer;
 
 @end

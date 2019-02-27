@@ -19,7 +19,7 @@
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
 
-/* Modifications Copyright (C) 2017 - Brad Parker
+/* Modifications Copyright (C) 2016-2019 - Brad Parker
  * - added socket functions for PS3/Vita/WiiU
  */
 
@@ -578,7 +578,7 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
 
     if( ret < 0 )
     {
-        if( net_would_block( ctx ) != 0 )
+        if( net_would_block((const mbedtls_net_context*)ctx) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
 
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \

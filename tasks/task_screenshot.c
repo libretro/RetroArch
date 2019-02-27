@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -70,6 +70,7 @@ struct screenshot_task_state
    uint8_t *out_buffer;
    const void *frame;
    char filename[PATH_MAX_LENGTH];
+   char shotname[256];
    void *userbuf;
    struct scaler_ctx scaler;
 };
@@ -169,7 +170,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true);
+      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(msg);
    }
 }
@@ -190,14 +191,17 @@ static bool screenshot_dump(
    char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task             = task_init();
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
    const char *screenshot_dir     = settings->paths.directory_screenshot;
-   char shotname[256];
+   struct retro_system_info system_info;
 
-   shotname[0]                    = '\0';
+   state->shotname[0]             = '\0';
    screenshot_path[0]             = '\0';
+
+   if (!core_get_system_info(&system_info))
+         return false;
 
    /* If fullpath is true, name_base already contains a static path + filename to save the screenshot to. */
    if (fullpath)
@@ -232,14 +236,28 @@ static bool screenshot_dump(
       else
       {
          if (settings->bools.auto_screenshot_filename)
-            fill_str_dated_filename(shotname, path_basename(name_base),
-                  IMG_EXT, sizeof(shotname));
+         {
+            const char *screenshot_name = NULL;
+
+            if (path_is_empty(RARCH_PATH_CONTENT))
+            {
+               if (string_is_empty(system_info.library_name))
+                  screenshot_name = "RetroArch";
+               else
+                  screenshot_name = system_info.library_name;
+            }
+            else
+               screenshot_name = path_basename(name_base);
+
+            fill_str_dated_filename(state->shotname, screenshot_name,
+                  IMG_EXT, sizeof(state->shotname));
+         }
          else
-            snprintf(shotname, sizeof(shotname),
+            snprintf(state->shotname, sizeof(state->shotname),
                   "%s.png", path_basename(name_base));
 
          fill_pathname_join(state->filename, screenshot_dir,
-               shotname, sizeof(state->filename));
+               state->shotname, sizeof(state->filename));
       }
    }
 

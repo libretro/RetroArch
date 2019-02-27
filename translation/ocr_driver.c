@@ -15,7 +15,6 @@ static const ocr_driver_t *ocr_backends[] = {
 static const ocr_driver_t *current_ocr_backend = NULL;
 static void *ocr_data = NULL;
 
-
 static const ocr_driver_t *ocr_find_backend(const char* ident)
 {
 	unsigned i;
@@ -30,14 +29,14 @@ static const ocr_driver_t *ocr_find_backend(const char* ident)
 }
 
 bool  ocr_driver_init(void)
-{	
+{
 	settings_t *settings = config_get_ptr();
 	int game_char_set = RETRO_LANGUAGE_DUMMY;
 	current_ocr_backend = ocr_find_backend(settings->arrays.ocr_driver);
 	ocr_data = NULL;
-	
+
 	/* TODO: get game language */
-	
+
 	if (current_ocr_backend)
 		ocr_data = (*current_ocr_backend->init)(game_char_set);
 	return ocr_data != NULL;

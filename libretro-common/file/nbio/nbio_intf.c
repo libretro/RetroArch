@@ -32,6 +32,9 @@
 extern nbio_intf_t nbio_linux;
 extern nbio_intf_t nbio_mmap_unix;
 extern nbio_intf_t nbio_mmap_win32;
+#if defined(ORBIS)
+extern nbio_intf_t nbio_orbis;
+#endif
 extern nbio_intf_t nbio_stdio;
 
 #if defined(_linux__)
@@ -40,6 +43,8 @@ static nbio_intf_t *internal_nbio = &nbio_linux;
 static nbio_intf_t *internal_nbio = &nbio_mmap_unix;
 #elif defined(_WIN32) && !defined(_XBOX)
 static nbio_intf_t *internal_nbio = &nbio_mmap_win32;
+#elif defined(ORBIS)
+static nbio_intf_t *internal_nbio = &nbio_orbis;
 #else
 static nbio_intf_t *internal_nbio = &nbio_stdio;
 #endif

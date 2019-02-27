@@ -43,7 +43,6 @@
 #define CLUSTERS_PER_FAT12 4085
 #define CLUSTERS_PER_FAT16 65525
 
-
 uint32_t _FAT_fat_nextCluster(PARTITION* partition, uint32_t cluster);
 
 uint32_t _FAT_fat_linkFreeCluster(PARTITION* partition, uint32_t cluster);

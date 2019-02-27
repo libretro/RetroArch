@@ -2,7 +2,7 @@
 
 """
    License statement applies to this file (glgen.py) only.
-""" 
+"""
 
 """
    Permission is hereby granted, free of charge,
@@ -32,6 +32,25 @@ def noext(sym):
       if sym.endswith(ext):
          return False
    return True
+
+def fix_multiline_functions(lines):
+   fixed_lines = []
+   temp_lines = []
+   for line in lines:
+      if line.count('(') > line.count(')'):
+         temp_lines.append(line)
+      else:
+         if len(temp_lines) > 0:
+            if line.count(')') > line.count('('):
+               temp_lines.append(line)
+               fixed_line = re.sub(' +',' ', ''.join(temp_lines).replace('\n','').replace('\t',''))
+               fixed_lines.append(fixed_line)
+               temp_lines = []
+            else:
+               temp_lines.append(line)
+         else:
+            fixed_lines.append(line)
+   return fixed_lines
 
 def find_gl_symbols(lines):
    typedefs = []
@@ -68,7 +87,7 @@ if __name__ == '__main__':
          banned_ext.append(banned)
 
    with open(sys.argv[1], 'r') as f:
-      lines = f.readlines()
+      lines = fix_multiline_functions(f.readlines())
       typedefs, syms = find_gl_symbols(lines)
 
       overrides = generate_defines(syms)
@@ -136,4 +155,3 @@ if __name__ == '__main__':
       f.write('    { NULL, NULL },\n')
       f.write('};\n')
       dump(f, declarations)
-

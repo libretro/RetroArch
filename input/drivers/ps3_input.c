@@ -40,7 +40,7 @@
 #define MAX_PADS 7
 #endif
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct
@@ -163,7 +163,6 @@ static void ps3_input_free_input(void *data)
 #endif
    free(data);
 }
-
 
 static void* ps3_input_init(const char *joypad_driver)
 {

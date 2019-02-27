@@ -49,8 +49,6 @@ struct memp {
   struct memp *next;
 };
 
-
-
 static struct memp *memp_tab[MEMP_MAX];
 
 static const u16_t memp_sizes[MEMP_MAX] = {
@@ -115,7 +113,6 @@ static u8_t memp_memory[(MEMP_NUM_PBUF *
        MEM_ALIGN_SIZE(sizeof(struct sys_timeout) +
           sizeof(struct memp)))];
 
-
 #if !SYS_LIGHTWEIGHT_PROT
 static sys_sem mutex;
 #endif
@@ -179,7 +176,6 @@ memp_init(void)
 #if !SYS_LIGHTWEIGHT_PROT
   LWP_SemInit(&mutex,1,1);
 #endif
-
 
 }
 
@@ -270,4 +266,3 @@ memp_free(memp_t type, void *mem)
     LWP_SemPost(mutex);
 #endif /* SYS_LIGHTWEIGHT_PROT */
 }
-

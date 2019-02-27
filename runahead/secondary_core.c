@@ -18,6 +18,7 @@
 #include "mem_util.h"
 
 #include "../core.h"
+#include "../configuration.h"
 #include "../dynamic.h"
 #include "../paths.h"
 #include "../content.h"
@@ -50,29 +51,41 @@ void clear_controller_port_map(void);
 
 static char *get_temp_directory_alloc(void)
 {
-   char *path       = NULL;
+   char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD pathLength = GetTempPath(0, NULL) + 1;
-   path             = (char*)malloc(pathLength * sizeof(char));
+   DWORD pathLength       = GetTempPath(0, NULL) + 1;
+   path                   = (char*)malloc(pathLength * sizeof(char));
 
-   path[pathLength - 1] = 0;
+   if (!path)
+      return NULL;
+
+   path[pathLength - 1]   = 0;
    GetTempPath(pathLength, path);
 #else
    DWORD pathLength = GetTempPathW(0, NULL) + 1;
    wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
+
+   if (!wideStr)
+      return NULL;
+
    wideStr[pathLength - 1] = 0;
    GetTempPathW(pathLength, wideStr);
 
    path = utf16_to_utf8_string_alloc(wideStr);
    free(wideStr);
 #endif
+#elif defined ANDROID
+   {
+      settings_t *settings = config_get_ptr();
+      path = strcpy_alloc_force(settings->paths.directory_libretro);
+   }
 #else
-   path = "/tmp";
    if (getenv("TMPDIR"))
-      path = getenv("TMPDIR");
+      path = strcpy_alloc_force(getenv("TMPDIR"));
+   else
+      path = strcpy_alloc_force("/tmp");
 
-   path = strcpy_alloc_force(path);
 #endif
    return path;
 }
@@ -228,7 +241,7 @@ static bool secondary_core_create(void)
    bool contentless       = false;
    bool is_inited         = false;
 
-   if (  last_core_type != CORE_TYPE_PLAIN || 
+   if (  last_core_type != CORE_TYPE_PLAIN ||
          !load_content_info                ||
          load_content_info->special)
       return false;
@@ -319,7 +332,6 @@ static bool secondary_core_create(void)
 
    return true;
 }
-
 
 void secondary_core_set_variable_update(void)
 {
@@ -431,4 +443,3 @@ void secondary_core_set_variable_update(void) { }
 void clear_controller_port_map(void) { }
 
 #endif
-

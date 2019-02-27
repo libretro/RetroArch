@@ -22,9 +22,7 @@
 EXTERN_C CONST IID IID_ID2D1EffectContext1;
 EXTERN_C CONST IID IID_ID2D1EffectContext2;
 
-
 #ifndef D2D_USE_C_DEFINITIONS
-
 
 /// <summary>
 /// The internal context handed to effect authors to create transforms from effects
@@ -33,7 +31,7 @@ EXTERN_C CONST IID IID_ID2D1EffectContext2;
 /// </summary>
 interface DX_DECLARE_INTERFACE("84ab595a-fc81-4546-bacd-e8ef4d8abe7a") ID2D1EffectContext1  : public ID2D1EffectContext
 {
-    
+
     /// <summary>
     /// Creates a 3D lookup table for mapping a 3-channel input to a 3-channel output.
     /// The table data must be provided in 4-channel format.
@@ -44,10 +42,9 @@ interface DX_DECLARE_INTERFACE("84ab595a-fc81-4546-bacd-e8ef4d8abe7a") ID2D1Effe
         _In_reads_(dataCount) CONST BYTE *data,
         UINT32 dataCount,
         _In_reads_(2) CONST UINT32 *strides,
-        _COM_Outptr_ ID2D1LookupTable3D **lookupTable 
+        _COM_Outptr_ ID2D1LookupTable3D **lookupTable
         ) PURE;
 }; // interface ID2D1EffectContext1
-
 
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2
 
@@ -58,34 +55,31 @@ interface DX_DECLARE_INTERFACE("84ab595a-fc81-4546-bacd-e8ef4d8abe7a") ID2D1Effe
 /// </summary>
 interface DX_DECLARE_INTERFACE("577ad2a0-9fc7-4dda-8b18-dab810140052") ID2D1EffectContext2  : public ID2D1EffectContext1
 {
-    
+
     /// <summary>
     /// Creates a color context from a DXGI color space type. It is only valid to use
     /// this with the Color Management Effect in 'Best' mode.
     /// </summary>
     STDMETHOD(CreateColorContextFromDxgiColorSpace)(
         DXGI_COLOR_SPACE_TYPE colorSpace,
-        _COM_Outptr_ ID2D1ColorContext1 **colorContext 
+        _COM_Outptr_ ID2D1ColorContext1 **colorContext
         ) PURE;
-    
+
     /// <summary>
     /// Creates a color context from a simple color profile. It is only valid to use
     /// this with the Color Management Effect in 'Best' mode.
     /// </summary>
     STDMETHOD(CreateColorContextFromSimpleColorProfile)(
         _In_ CONST D2D1_SIMPLE_COLOR_PROFILE *simpleProfile,
-        _COM_Outptr_ ID2D1ColorContext1 **colorContext 
+        _COM_Outptr_ ID2D1ColorContext1 **colorContext
         ) PURE;
 }; // interface ID2D1EffectContext2
 
-
 #endif
 
 #endif
-
 
 #ifdef D2D_USE_C_DEFINITIONS
-
 
 typedef interface ID2D1EffectContext1 ID2D1EffectContext1;
 #if NTDDI_VERSION >= NTDDI_WIN10_RS2

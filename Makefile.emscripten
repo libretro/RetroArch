@@ -16,6 +16,7 @@ HAVE_OPENGLES = 1
 HAVE_RJPEG  = 0
 HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
+HAVE_MENU = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
 HAVE_SDL2 = 0
@@ -57,7 +58,7 @@ endif
 
 include Makefile.common
 
-CFLAGS += -Ideps/libz -Ideps -Ideps/stb
+CFLAGS += $(DEF_FLAGS) -Ideps/libz -Ideps -Ideps/stb
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)

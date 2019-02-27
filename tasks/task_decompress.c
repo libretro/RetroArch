@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -27,6 +26,8 @@
 #include "../file_path_special.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
+
+#define CALLBACK_ERROR_SIZE 4200
 
 static int file_decompressed_target_file(const char *name,
       const char *valid_exts,
@@ -51,7 +52,7 @@ static int file_decompressed_subdir(const char *name,
 
    /* Ignore directories. */
    if (
-         name[strlen(name) - 1] == '/' || 
+         name[strlen(name) - 1] == '/' ||
          name[strlen(name) - 1] == '\\')
       goto next_file;
 
@@ -80,9 +81,9 @@ next_file:
    return 1;
 
 error:
-   userdata->dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
+   userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    snprintf(userdata->dec->callback_error,
-         PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
+         CALLBACK_ERROR_SIZE, "Failed to deflate %s.\n", path);
 
    return 0;
 }
@@ -122,8 +123,8 @@ next_file:
    return 1;
 
 error:
-   dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
-   snprintf(dec->callback_error, PATH_MAX_LENGTH,
+   dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
+   snprintf(dec->callback_error, CALLBACK_ERROR_SIZE,
          "Failed to deflate %s.\n", path);
 
    return 0;
@@ -270,7 +271,8 @@ bool task_push_decompress(
       const char *subdir,
       const char *valid_ext,
       retro_task_callback_t cb,
-      void *user_data)
+      void *user_data,
+      void *frontend_userdata)
 {
    char tmp[PATH_MAX_LENGTH];
    const char *ext            = NULL;
@@ -337,6 +339,8 @@ bool task_push_decompress(
 
    if (!t)
       goto error;
+
+   t->frontend_userdata = frontend_userdata;
 
    t->state       = s;
    t->handler     = task_decompress_handler;

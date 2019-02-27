@@ -88,13 +88,17 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval);
 
 void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 
+typedef bool (*egl_accept_config_cb_t)(void *display_data, EGLDisplay dpy, EGLConfig config);
+bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config);
+
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
       void *display_data,
       EGLint *major,
       EGLint *minor,
       EGLint *n,
-      const EGLint *attrib_ptr);
+      const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb);
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs);
 

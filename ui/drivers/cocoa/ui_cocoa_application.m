@@ -23,10 +23,6 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
-#define NSEventMaskAny NSAnyEventMask
-#endif
-
 static void* ui_application_cocoa_initialize(void)
 {
    return NULL;
@@ -47,13 +43,12 @@ static void ui_application_cocoa_process_events(void)
         NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
         if (!event)
             break;
-#if __has_feature(objc_arc)
-        [NSApp sendEvent: event];
-       
-#else
+#ifndef HAVE_COCOA_METAL
         [event retain];
+#endif
         [NSApp sendEvent: event];
-        [event release];
+#ifndef HAVE_COCOA_METAL
+        [event retain];
 #endif
     }
 }

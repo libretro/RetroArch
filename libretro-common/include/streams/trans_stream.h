@@ -39,7 +39,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 enum trans_stream_error
 {
     TRANS_STREAM_ERROR_NONE = 0,
@@ -105,4 +104,3 @@ extern const struct trans_stream_backend pipe_backend;
 RETRO_END_DECLS
 
 #endif
-

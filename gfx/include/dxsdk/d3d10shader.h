@@ -10,14 +10,12 @@
 #ifndef __D3D10SHADER_H__
 #define __D3D10SHADER_H__
 
-
 #include "d3d10.h"
 
 /*#include <winapifamily.h>*/
 
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
-
 
 //---------------------------------------------------------------------------
 // D3D10_TX_VERSION:
@@ -26,7 +24,6 @@
 // Used by D3D10Fill[]TX functions
 //---------------------------------------------------------------------------
 #define D3D10_TX_VERSION(_Major,_Minor) (('T' << 24) | ('X' << 16) | ((_Major) << 8) | (_Minor))
-
 
 //----------------------------------------------------------------------------
 // D3D10SHADER flags:
@@ -40,9 +37,9 @@
 //   you KNOW will work.  (ie. have compiled before without this option.)
 //   Shaders are always validated by D3D before they are set to the device.
 //
-// D3D10_SHADER_SKIP_OPTIMIZATION 
+// D3D10_SHADER_SKIP_OPTIMIZATION
 //   Instructs the compiler to skip optimization steps during code generation.
-//   Unless you are trying to isolate a problem in your code using this option 
+//   Unless you are trying to isolate a problem in your code using this option
 //   is not recommended.
 //
 // D3D10_SHADER_PACK_MATRIX_ROW_MAJOR
@@ -50,8 +47,8 @@
 //   on input and output from the shader.
 //
 // D3D10_SHADER_PACK_MATRIX_COLUMN_MAJOR
-//   Unless explicitly specified, matrices will be packed in column-major 
-//   order on input and output from the shader.  This is generally more 
+//   Unless explicitly specified, matrices will be packed in column-major
+//   order on input and output from the shader.  This is generally more
 //   efficient, since it allows vector-matrix multiplication to be performed
 //   using a series of dot-products.
 //
@@ -61,16 +58,16 @@
 //
 // D3D10_SHADER_FORCE_VS_SOFTWARE_NO_OPT
 //   Force compiler to compile against the next highest available software
-//   target for vertex shaders.  This flag also turns optimizations off, 
-//   and debugging on.  
+//   target for vertex shaders.  This flag also turns optimizations off,
+//   and debugging on.
 //
 // D3D10_SHADER_FORCE_PS_SOFTWARE_NO_OPT
 //   Force compiler to compile against the next highest available software
-//   target for pixel shaders.  This flag also turns optimizations off, 
+//   target for pixel shaders.  This flag also turns optimizations off,
 //   and debugging on.
 //
 // D3D10_SHADER_NO_PRESHADER
-//   Disables Preshaders. Using this flag will cause the compiler to not 
+//   Disables Preshaders. Using this flag will cause the compiler to not
 //   pull out static expression for evaluation on the host cpu
 //
 // D3D10_SHADER_AVOID_FLOW_CONTROL
@@ -111,25 +108,19 @@
 #define D3D10_SHADER_DEBUG_NAME_FOR_SOURCE          (1 << 22)
 #define D3D10_SHADER_DEBUG_NAME_FOR_BINARY          (1 << 23)
 
-
 // optimization level flags
 #define D3D10_SHADER_OPTIMIZATION_LEVEL0            (1 << 14)
 #define D3D10_SHADER_OPTIMIZATION_LEVEL1            0
 #define D3D10_SHADER_OPTIMIZATION_LEVEL2            ((1 << 14) | (1 << 15))
 #define D3D10_SHADER_OPTIMIZATION_LEVEL3            (1 << 15)
 
-
 // Force root signature flags. (Passed in Flags2)
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_LATEST   0
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_1_0      (1 << 4)
 #define D3D10_SHADER_FLAGS2_FORCE_ROOT_SIGNATURE_1_1      (1 << 5)
 
-
-
-
 typedef D3D_SHADER_MACRO D3D10_SHADER_MACRO;
 typedef D3D10_SHADER_MACRO* LPD3D10_SHADER_MACRO;
-
 
 typedef D3D_SHADER_VARIABLE_CLASS D3D10_SHADER_VARIABLE_CLASS;
 typedef D3D10_SHADER_VARIABLE_CLASS* LPD3D10_SHADER_VARIABLE_CLASS;
@@ -165,7 +156,6 @@ typedef interface ID3DInclude ID3D10Include;
 typedef interface ID3DInclude* LPD3D10INCLUDE;
 #define IID_ID3D10Include IID_ID3DInclude
 
-
 //----------------------------------------------------------------------------
 // ID3D10ShaderReflection:
 //----------------------------------------------------------------------------
@@ -179,16 +169,16 @@ typedef struct _D3D10_SHADER_DESC
     UINT                    Version;                     // Shader version
     LPCSTR                  Creator;                     // Creator string
     UINT                    Flags;                       // Shader compilation/parse flags
-    
+
     UINT                    ConstantBuffers;             // Number of constant buffers
     UINT                    BoundResources;              // Number of bound resources
     UINT                    InputParameters;             // Number of parameters in the input signature
     UINT                    OutputParameters;            // Number of parameters in the output signature
 
     UINT                    InstructionCount;            // Number of emitted instructions
-    UINT                    TempRegisterCount;           // Number of temporary registers used 
+    UINT                    TempRegisterCount;           // Number of temporary registers used
     UINT                    TempArrayCount;              // Number of temporary arrays used
-    UINT                    DefCount;                    // Number of constant defines 
+    UINT                    DefCount;                    // Number of constant defines
     UINT                    DclCount;                    // Number of declarations (input + output)
     UINT                    TextureNormalInstructions;   // Number of non-categorized texture instructions
     UINT                    TextureLoadInstructions;     // Number of texture load instructions
@@ -234,7 +224,7 @@ typedef struct _D3D10_SHADER_TYPE_DESC
     UINT                        Columns;        // Number of columns (for vectors & matrices, 1 for other numeric, 0 if not applicable)
     UINT                        Elements;       // Number of elements (0 if not an array)
     UINT                        Members;        // Number of members (0 if not a structure)
-    UINT                        Offset;         // Offset from the start of structure (0 if not a structure member) 
+    UINT                        Offset;         // Offset from the start of structure (0 if not a structure member)
 } D3D10_SHADER_TYPE_DESC;
 
 typedef struct _D3D10_SHADER_INPUT_BIND_DESC
@@ -243,7 +233,7 @@ typedef struct _D3D10_SHADER_INPUT_BIND_DESC
     D3D10_SHADER_INPUT_TYPE     Type;           // Type of resource (e.g. texture, cbuffer, etc.)
     UINT                        BindPoint;      // Starting bind point
     UINT                        BindCount;      // Number of contiguous bind points (for arrays)
-    
+
     UINT                        uFlags;         // Input binding flags
     D3D10_RESOURCE_RETURN_TYPE  ReturnType;     // Return type (if texture)
     D3D10_SRV_DIMENSION         Dimension;      // Dimension (if texture)
@@ -259,27 +249,23 @@ typedef struct _D3D10_SIGNATURE_PARAMETER_DESC
     D3D10_REGISTER_COMPONENT_TYPE ComponentType;// Scalar type (e.g. uint, float, etc.)
     BYTE                        Mask;           // Mask to indicate which components of the register
                                                 // are used (combination of D3D10_COMPONENT_MASK values)
-    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is 
+    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is
                                                 // never written (if this is an output signature) or
                                                 // always read (if this is an input signature).
                                                 // (combination of D3D10_COMPONENT_MASK values)
-    
-} D3D10_SIGNATURE_PARAMETER_DESC;
 
+} D3D10_SIGNATURE_PARAMETER_DESC;
 
 //
 // Interface definitions
 //
-
-
-
 
 typedef interface ID3D10ShaderReflectionType ID3D10ShaderReflectionType;
 typedef interface ID3D10ShaderReflectionType *LPD3D10SHADERREFLECTIONTYPE;
 
 // {C530AD7D-9B16-4395-A979-BA2ECFF83ADD}
 interface DECLSPEC_UUID("C530AD7D-9B16-4395-A979-BA2ECFF83ADD") ID3D10ShaderReflectionType;
-DEFINE_GUID(IID_ID3D10ShaderReflectionType, 
+DEFINE_GUID(IID_ID3D10ShaderReflectionType,
 0xc530ad7d, 0x9b16, 0x4395, 0xa9, 0x79, 0xba, 0x2e, 0xcf, 0xf8, 0x3a, 0xdd);
 
 #undef INTERFACE
@@ -288,7 +274,7 @@ DEFINE_GUID(IID_ID3D10ShaderReflectionType,
 DECLARE_INTERFACE(ID3D10ShaderReflectionType)
 {
     STDMETHOD(GetDesc)(THIS_ D3D10_SHADER_TYPE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D10ShaderReflectionType*, GetMemberTypeByIndex)(THIS_ UINT Index) PURE;
     STDMETHOD_(ID3D10ShaderReflectionType*, GetMemberTypeByName)(THIS_ LPCSTR Name) PURE;
     STDMETHOD_(LPCSTR, GetMemberTypeName)(THIS_ UINT Index) PURE;
@@ -299,7 +285,7 @@ typedef interface ID3D10ShaderReflectionVariable *LPD3D10SHADERREFLECTIONVARIABL
 
 // {1BF63C95-2650-405d-99C1-3636BD1DA0A1}
 interface DECLSPEC_UUID("1BF63C95-2650-405d-99C1-3636BD1DA0A1") ID3D10ShaderReflectionVariable;
-DEFINE_GUID(IID_ID3D10ShaderReflectionVariable, 
+DEFINE_GUID(IID_ID3D10ShaderReflectionVariable,
 0x1bf63c95, 0x2650, 0x405d, 0x99, 0xc1, 0x36, 0x36, 0xbd, 0x1d, 0xa0, 0xa1);
 
 #undef INTERFACE
@@ -308,7 +294,7 @@ DEFINE_GUID(IID_ID3D10ShaderReflectionVariable,
 DECLARE_INTERFACE(ID3D10ShaderReflectionVariable)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D10_SHADER_VARIABLE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D10ShaderReflectionType*, GetType)(THIS) PURE;
 };
 
@@ -317,7 +303,7 @@ typedef interface ID3D10ShaderReflectionConstantBuffer *LPD3D10SHADERREFLECTIONC
 
 // {66C66A94-DDDD-4b62-A66A-F0DA33C2B4D0}
 interface DECLSPEC_UUID("66C66A94-DDDD-4b62-A66A-F0DA33C2B4D0") ID3D10ShaderReflectionConstantBuffer;
-DEFINE_GUID(IID_ID3D10ShaderReflectionConstantBuffer, 
+DEFINE_GUID(IID_ID3D10ShaderReflectionConstantBuffer,
 0x66c66a94, 0xdddd, 0x4b62, 0xa6, 0x6a, 0xf0, 0xda, 0x33, 0xc2, 0xb4, 0xd0);
 
 #undef INTERFACE
@@ -326,7 +312,7 @@ DEFINE_GUID(IID_ID3D10ShaderReflectionConstantBuffer,
 DECLARE_INTERFACE(ID3D10ShaderReflectionConstantBuffer)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D10_SHADER_BUFFER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D10ShaderReflectionVariable*, GetVariableByIndex)(THIS_ UINT Index) PURE;
     STDMETHOD_(ID3D10ShaderReflectionVariable*, GetVariableByName)(THIS_ LPCSTR Name) PURE;
 };
@@ -336,7 +322,7 @@ typedef interface ID3D10ShaderReflection *LPD3D10SHADERREFLECTION;
 
 // {D40E20B6-F8F7-42ad-AB20-4BAF8F15DFAA}
 interface DECLSPEC_UUID("D40E20B6-F8F7-42ad-AB20-4BAF8F15DFAA") ID3D10ShaderReflection;
-DEFINE_GUID(IID_ID3D10ShaderReflection, 
+DEFINE_GUID(IID_ID3D10ShaderReflection,
 0xd40e20b6, 0xf8f7, 0x42ad, 0xab, 0x20, 0x4b, 0xaf, 0x8f, 0x15, 0xdf, 0xaa);
 
 #undef INTERFACE
@@ -349,15 +335,15 @@ DECLARE_INTERFACE_(ID3D10ShaderReflection, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D10_SHADER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D10ShaderReflectionConstantBuffer*, GetConstantBufferByIndex)(THIS_ UINT Index) PURE;
     STDMETHOD_(ID3D10ShaderReflectionConstantBuffer*, GetConstantBufferByName)(THIS_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ UINT ResourceIndex, _Out_ D3D10_SHADER_INPUT_BIND_DESC *pDesc) PURE;
-    
+
     STDMETHOD(GetInputParameterDesc)(THIS_ UINT ParameterIndex, _Out_ D3D10_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
     STDMETHOD(GetOutputParameterDesc)(THIS_ UINT ParameterIndex, _Out_ D3D10_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
-    
+
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -407,7 +393,7 @@ extern "C" {
 //      these are the same messages you will see in your debug output.
 //----------------------------------------------------------------------------
 
-HRESULT WINAPI D3D10CompileShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData, SIZE_T SrcDataSize, _In_opt_ LPCSTR pFileName, _In_opt_ CONST D3D10_SHADER_MACRO* pDefines, _In_opt_ LPD3D10INCLUDE pInclude, 
+HRESULT WINAPI D3D10CompileShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData, SIZE_T SrcDataSize, _In_opt_ LPCSTR pFileName, _In_opt_ CONST D3D10_SHADER_MACRO* pDefines, _In_opt_ LPD3D10INCLUDE pInclude,
     LPCSTR pFunctionName, LPCSTR pProfile, UINT Flags, _Out_ ID3D10Blob** ppShader, _Out_opt_ ID3D10Blob** ppErrorMsgs);
 
 //----------------------------------------------------------------------------
@@ -429,7 +415,6 @@ HRESULT WINAPI D3D10CompileShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData,
 //----------------------------------------------------------------------------
 
 HRESULT WINAPI D3D10DisassembleShader(_In_reads_bytes_(BytecodeLength) CONST void *pShader, SIZE_T BytecodeLength, BOOL EnableColorCode, _In_opt_ LPCSTR pComments, _Out_ ID3D10Blob** ppDisassembly);
-
 
 //----------------------------------------------------------------------------
 // D3D10GetPixelShaderProfile/D3D10GetVertexShaderProfile/D3D10GetGeometryShaderProfile:
@@ -460,7 +445,7 @@ LPCSTR WINAPI D3D10GetGeometryShaderProfile(_In_ ID3D10Device *pDevice);
 //  BytecodeLength
 //      Length of the shader bytecode buffer
 //  ppReflector
-//      [out] Returns a ID3D10ShaderReflection object that can be used to 
+//      [out] Returns a ID3D10ShaderReflection object that can be used to
 //      retrieve shader resource and constant buffer information
 //
 //----------------------------------------------------------------------------
@@ -495,7 +480,7 @@ HRESULT WINAPI D3D10ReflectShader(_In_reads_bytes_(BytecodeLength) CONST void *p
 //      these are the same messages you will see in your debug output.
 //----------------------------------------------------------------------------
 
-HRESULT WINAPI D3D10PreprocessShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData, SIZE_T SrcDataSize, _In_opt_ LPCSTR pFileName, _In_opt_ CONST D3D10_SHADER_MACRO* pDefines, 
+HRESULT WINAPI D3D10PreprocessShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcData, SIZE_T SrcDataSize, _In_opt_ LPCSTR pFileName, _In_opt_ CONST D3D10_SHADER_MACRO* pDefines,
     _In_opt_ LPD3D10INCLUDE pInclude, _Out_ ID3D10Blob** ppShaderText, _Out_opt_ ID3D10Blob** ppErrorMsgs);
 
 //////////////////////////////////////////////////////////////////////////
@@ -504,14 +489,14 @@ HRESULT WINAPI D3D10PreprocessShader(_In_reads_bytes_(SrcDataSize) LPCSTR pSrcDa
 // ---------------------------------
 //
 // void *pShaderBytecode - a buffer containing the result of an HLSL
-//  compilation.  Typically this opaque buffer contains several 
+//  compilation.  Typically this opaque buffer contains several
 //  discrete sections including the shader executable code, the input
-//  signature, and the output signature.  This can typically be retrieved 
+//  signature, and the output signature.  This can typically be retrieved
 //  by calling ID3D10Blob::GetBufferPointer() on the returned blob
 //  from HLSL's compile APIs.
 //
-// UINT BytecodeLength - the length of pShaderBytecode.  This can 
-//  typically be retrieved by calling ID3D10Blob::GetBufferSize() 
+// UINT BytecodeLength - the length of pShaderBytecode.  This can
+//  typically be retrieved by calling ID3D10Blob::GetBufferSize()
 //  on the returned blob from HLSL's compile APIs.
 //
 // ID3D10Blob **ppSignatureBlob(s) - a newly created buffer that
@@ -555,6 +540,5 @@ HRESULT WINAPI D3D10GetShaderDebugInfo(_In_reads_bytes_(BytecodeLength) CONST vo
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
-    
-#endif //__D3D10SHADER_H__
 
+#endif //__D3D10SHADER_H__

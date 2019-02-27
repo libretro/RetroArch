@@ -42,6 +42,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
+#include "../../configuration.h"
+
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 
@@ -69,7 +71,7 @@ enum {
 /* Use this to enable/disable using the touch screen as mouse */
 #define ENABLE_TOUCH_SCREEN_MOUSE 1
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct
@@ -470,7 +472,6 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 #endif
-
 
 static bool android_input_init_handle(void)
 {
@@ -1057,11 +1058,21 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "R800") &&
-         (
-          strstr(device_name, "keypad-game-zeus") ||
-          strstr(device_name, "keypad-zeus")
-         )
+   else if(
+            (
+               strstr(device_model, "R800x") ||
+               strstr(device_model, "R800at") ||
+               strstr(device_model, "R800i") ||
+               strstr(device_model, "R800a") ||
+               strstr(device_model, "R800") ||
+               strstr(device_model, "Xperia Play") ||
+               strstr(device_model, "Play") ||
+               strstr(device_model, "SO-01D")
+            ) && (
+               strstr(device_name, "keypad-game-zeus") ||
+               strstr(device_name, "keypad-zeus") ||
+               strstr(device_name, "Android Gamepad")
+            )
          )
    {
       /* only use the hack if the device is one of the built-in devices */
@@ -1328,13 +1339,14 @@ static bool android_input_key_pressed(void *data, int key)
  */
 static void android_input_poll(void *data)
 {
+   settings_t *settings = config_get_ptr();
    int ident;
    unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
             ALooper_pollAll((android_input_key_pressed(data, key))
-               ? -1 : 1,
+               ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)

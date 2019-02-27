@@ -28,21 +28,19 @@
 #endif
 
 #include "vulkan_common.h"
-#include "../../libretro-common/include/retro_timers.h"
+#include <retro_timers.h>
 #include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include "../../libretro-common/include/retro_assert.h"
+#include <retro_assert.h>
 #include "vksym.h"
-#include "../../libretro-common/include/dynamic/dylib.h"
-#include "../../libretro-common/include/libretro_vulkan.h"
-#include "../../libretro-common/include/retro_math.h"
-#include "../../libretro-common/include/string/stdstring.h"
+#include <libretro_vulkan.h>
+#include <retro_math.h>
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(ANDROID)
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
@@ -979,10 +977,18 @@ static void vulkan_check_dynamic_state(
    {
       VkRect2D sci;
 
-      sci.offset.x      = vk->vp.x;
-      sci.offset.y      = vk->vp.y;
-      sci.extent.width  = vk->vp.width;
-      sci.extent.height = vk->vp.height;
+      if (vk->tracker.use_scissor)
+      {
+         sci = vk->tracker.scissor;
+      }
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor (vk->cmd, 0, 1, &sci);
@@ -2440,7 +2446,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;
@@ -2461,7 +2467,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.pNext = NULL;
             surf_info.flags = 0;
             surf_info.pView = surface;
-            
+
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;

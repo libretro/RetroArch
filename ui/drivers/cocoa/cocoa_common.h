@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __COCOA_COMMON_H
-#define __COCOA_COMMON_H
+#ifndef __COCOA_COMMON_SHARED_H
+#define __COCOA_COMMON_SHARED_H
 
 #include <Foundation/Foundation.h>
 
@@ -24,8 +24,22 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CORELOCATION
-#include <CoreLocation/CoreLocation.h>
+#if defined(HAVE_COCOATOUCH)
+#define GLContextClass EAGLContext
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+
+#ifndef UIUserInterfaceIdiomTV
+#define UIUserInterfaceIdiomTV 2
+#endif
+
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+#else
+#define GLContextClass NSOpenGLContext
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
 #endif
 
 typedef enum apple_view_type {
@@ -42,7 +56,7 @@ typedef enum apple_view_type {
 @interface MetalView : MTKView
 @end
 
-#endif
+#ifdef HAVE_COCOA_METAL
 
 @protocol ApplePlatform
 
@@ -67,14 +81,15 @@ typedef enum apple_view_type {
 @end
 
 extern id<ApplePlatform> apple_platform;
+#endif
+#endif
 
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
-#ifdef HAVE_AVFOUNDATION
-#import <AVFoundation/AVCaptureOutput.h>
+#if TARGET_OS_TV
+#import <GameController/GameController.h>
 #endif
-
 
 /*********************************************/
 /* RAMenuBase                                */
@@ -92,21 +107,16 @@ extern id<ApplePlatform> apple_platform;
 
 @end
 
-typedef struct
-{
-   char orientations[32];
-   unsigned orientation_flags;
-   char bluetooth_mode[64];
-} apple_frontend_settings_t;
-extern apple_frontend_settings_t apple_frontend_settings;
-
-@interface CocoaView : UIViewController<CLLocationManagerDelegate,
-AVCaptureAudioDataOutputSampleBufferDelegate>
+#if TARGET_OS_IOS
+@interface CocoaView : UIViewController
+#elif TARGET_OS_TV
+@interface CocoaView : GCEventViewController
+#endif
 + (CocoaView*)get;
 @end
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
-UINavigationControllerDelegate, ApplePlatform>
+UINavigationControllerDelegate>
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
@@ -126,16 +136,23 @@ UINavigationControllerDelegate, ApplePlatform>
 
 void get_ios_version(int *major, int *minor);
 
-#elif defined(HAVE_COCOA)
+#endif
+
+typedef struct
+{
+   char orientations[32];
+   unsigned orientation_flags;
+   char bluetooth_mode[64];
+} apple_frontend_settings_t;
+extern apple_frontend_settings_t apple_frontend_settings;
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 #include <AppKit/AppKit.h>
 
 @interface CocoaView : NSView
-#ifdef HAVE_CORELOCATION
-<CLLocationManagerDelegate>
-#endif
 
 + (CocoaView*)get;
-#if !defined(HAVE_COCOA)
+#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
 - (void)display;
 #endif
 
@@ -158,5 +175,7 @@ void get_ios_version(int *major, int *minor);
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif
+
+void *get_chosen_screen(void);
 
 #endif

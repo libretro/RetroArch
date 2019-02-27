@@ -191,7 +191,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 
    DEBUG_VAR(path);
    DEBUG_STR(path);
-   
+
    arg_data[0] = NULL;
 
    arg_data[args] = elf_path_cst;
@@ -233,20 +233,22 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          }
       }
 #endif
-	  
+
       if (envIsHomebrew())
       {
          exec_3dsx_no_path_in_args(path, arg_data);
       }
       else
       {
-         RARCH_LOG("\n");
-         RARCH_LOG("\n");
-         RARCH_LOG("Warning:\n");
-         RARCH_LOG("First core launch may take 20 seconds!\n");
-         RARCH_LOG("Do not force quit before then or your memory card may be corrupted!\n");
-         RARCH_LOG("\n");
-         RARCH_LOG("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("Warning:\n");
+         RARCH_WARN("First core launch may take 20\n");
+         RARCH_WARN("seconds! Do not force quit\n");
+         RARCH_WARN("before then or your memory\n");
+         RARCH_WARN("card may be corrupted!\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
          exec_cia(path, arg_data);
       }
 
@@ -356,6 +358,17 @@ static void ctr_check_dspfirm(void)
          }
          fclose(code_fp);
       }
+      else
+      {
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("Warning:\n");
+         RARCH_WARN("3DS DSP dump is missing.\n");
+         RARCH_WARN("A working DSP dump is required\n");
+         RARCH_WARN("for correct operation.\n");
+         RARCH_WARN("\n");
+         RARCH_WARN("\n");
+      }
    }
 }
 
@@ -415,7 +428,6 @@ static void frontend_ctr_init(void* data)
    mcuHwcInit();
 #endif
 }
-
 
 static int frontend_ctr_get_rating(void)
 {
@@ -590,5 +602,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
    "ctr",
 };

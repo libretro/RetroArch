@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,9 +18,15 @@
 #ifndef _QT_LOAD_CORE_WINDOW_H
 #define _QT_LOAD_CORE_WINDOW_H
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <retro_common_api.h>
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include <QtWidgets>
 

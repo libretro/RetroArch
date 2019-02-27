@@ -1,0 +1,44 @@
+#!/bin/bash
+BUILDTYPE=Release
+
+if [ "$1" = "--debug" ]; then
+	BUILDTYPE=Debug
+	shift
+fi
+
+BUILDSUBDIR=`echo $BUILDTYPE | tr '[A-Z]' '[a-z]'`;
+
+if [ "armv6l" = `arch` ] || [ "armv7l" = `arch` ]; then
+	# Native compile on the Raspberry Pi
+	mkdir -p build/raspberry/$BUILDSUBDIR
+	pushd build/raspberry/$BUILDSUBDIR
+	cmake -DCMAKE_BUILD_TYPE=$BUILDTYPE ../../..
+	if [ "armv6l" = `arch` ]; then
+		make
+	else
+		make -j4
+	fi
+	if [ "$1" != "" ]; then
+		sudo make install DESTDIR=$1
+	else
+		sudo make install
+	fi
+elif [ "$1" = "--native" ]; then
+	# Build natively on the host
+	mkdir -p build/native/$BUILDSUBDIR
+	pushd build/native/$BUILDSUBDIR
+	cmake -DCMAKE_BUILD_TYPE=$BUILDTYPE ../../..
+	shift
+	make -j `nproc` $*
+else
+	# Cross compile on a more capable machine
+	mkdir -p build/arm-linux/$BUILDSUBDIR
+	pushd build/arm-linux/$BUILDSUBDIR
+	cmake -DCMAKE_TOOLCHAIN_FILE=../../../makefiles/cmake/toolchains/arm-linux-gnueabihf.cmake -DCMAKE_BUILD_TYPE=$BUILDTYPE ../../..
+	make -j `nproc`
+
+	if [ "$1" != "" ]; then
+		sudo make install DESTDIR=$1
+	fi
+fi
+popd

@@ -43,7 +43,7 @@
 
 #include "../input_driver.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct psp_input

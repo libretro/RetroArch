@@ -15,7 +15,7 @@
 
 #define CINTERFACE
 
-/* For Xbox we will just link statically 
+/* For Xbox we will just link statically
  * to Direct3D libraries instead. */
 
 #if !defined(_XBOX) && defined(HAVE_DYLIB)
@@ -99,7 +99,6 @@ typedef HRESULT (__stdcall
         LPD3DXFONT*             ppFont);
 #endif
 
-
 #ifdef HAVE_D3DX
 static D3D9XCreateFontIndirect_t    D3D9CreateFontIndirect;
 static D3D9CreateTextureFromFile_t  D3D9CreateTextureFromFile;
@@ -116,7 +115,7 @@ void *d3d9_create(void)
 #ifdef HAVE_DYNAMIC_D3D
 
 #ifdef HAVE_D3DX
-static const char *d3dx9_dll_list[] = 
+static const char *d3dx9_dll_list[] =
 {
    "d3dx9_24.dll",
    "d3dx9_25.dll",
@@ -177,7 +176,7 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
    if (!g_d3d9_dll)
       return false;
 #endif
-   
+
    d3d9_SDKVersion            = 31;
 #ifdef HAVE_DYNAMIC_D3D
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
@@ -302,7 +301,7 @@ void *d3d9_vertex_buffer_new(void *_dev,
    if (usage == 0)
       if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
          usage = D3DUSAGE_SOFTWAREPROCESSING;
-#endif         
+#endif
 
    if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
                dev, length, usage, fvf,
@@ -317,7 +316,7 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 {
    if (vertex_data)
    {
-      LPDIRECT3DVERTEXBUFFER9 buf = 
+      LPDIRECT3DVERTEXBUFFER9 buf =
          (LPDIRECT3DVERTEXBUFFER9)vertex_data;
       IDirect3DVertexBuffer9_Release(buf);
       buf = NULL;
@@ -325,7 +324,7 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 
    if (vertex_declaration)
    {
-      LPDIRECT3DVERTEXDECLARATION9 vertex_decl = 
+      LPDIRECT3DVERTEXDECLARATION9 vertex_decl =
          (LPDIRECT3DVERTEXDECLARATION9)vertex_declaration;
       d3d9_vertex_declaration_free(vertex_decl);
       vertex_decl = NULL;
@@ -337,7 +336,7 @@ static bool d3d9_reset_internal(void *data,
       )
 {
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (dev && 
+   if (dev &&
          IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
       return true;
 
@@ -577,7 +576,7 @@ void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
    D3DXHANDLE           handle  = (D3DXHANDLE)_handle;
    CONST FLOAT              *pf = (CONST FLOAT*)_pf;
    if (consttbl && dev)
-      consttbl->lpVtbl->SetFloatArray(consttbl, dev, handle, pf, 
+      consttbl->lpVtbl->SetFloatArray(consttbl, dev, handle, pf,
             (UINT)count);
 #endif
 }
@@ -602,7 +601,7 @@ void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
 #if defined(HAVE_D3DX)
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
    D3DXHANDLE        handle     = (D3DXHANDLE)data;
-   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)matrix;
+   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)_matrix;
    if (consttbl && dev && handle)
       consttbl->lpVtbl->SetMatrix(consttbl, dev, handle, matrix);
 #endif

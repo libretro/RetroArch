@@ -1,26 +1,4 @@
-exists() # checks executables listed in $@ against the $PATH
-{
-	v=1
-	while [ "$#" -gt 0 ]; do
-		arg="$1"
-		shift 1
-		case "$arg" in ''|*/) continue ;; esac
-		x="${arg##*/}"
-		z="${arg%/*}"
-		[ ! -f "$z/$x" ] || [ ! -x "$z/$x" ] && [ "$z/$x" = "$arg" ] && continue
-		[ "$x" = "$z" ] && [ -x "$z/$x" ] && [ ! -f "$arg" ] && z=
-		p=":$z:$PATH"
-		while [ "$p" != "${p#*:}" ]; do
-			p="${p#*:}"
-			d="${p%%:*}"
-			{ [ -f "$d/$x" ] && [ -x "$d/$x" ] && \
-				{ printf %s\\n "$d/$x"; v=0; break; }; } || :
-		done
-	done
-	return "$v"
-}
-
-if [ -n "$CROSS_COMPILE" ]; then
+if [ -n "${CROSS_COMPILE:=}" ]; then
 	case "$CROSS_COMPILE" in
 		*'-mingw32'*) OS='Win32';;
 		*'-msdosdjgpp'*) OS='DOS';;
@@ -47,4 +25,4 @@ if [ -e /etc/lsb-release ]; then
 	DISTRO="(${DISTRIB_DESCRIPTION} ${DISTRIB_RELEASE})"
 fi
 
-echo "Checking operating system ... $OS ${DISTRO}"
+printf %s\\n "Checking operating system ... $OS ${DISTRO}"

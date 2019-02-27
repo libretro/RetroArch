@@ -46,7 +46,6 @@ RETRO_BEGIN_DECLS
 #define GFX_MAX_FRAME_HISTORY 128
 #endif
 
-
 enum rarch_shader_type
 {
    RARCH_SHADER_NONE = 0,

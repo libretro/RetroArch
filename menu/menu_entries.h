@@ -99,6 +99,8 @@ typedef struct menu_file_list_cbs
    const char *action_down_ident;
    const char *action_get_value_ident;
 
+   bool checked;
+
    rarch_setting_t *setting;
 
    int (*action_iterate)(const char *label, unsigned action);
@@ -179,6 +181,9 @@ void menu_entries_append_enum(file_list_t *list, const char *path, const char *l
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
+
+void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
+      bool checked);
 
 RETRO_END_DECLS
 

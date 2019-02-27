@@ -4,16 +4,23 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <queues/task_queue.h>
 #include <file/archive_file.h>
 #include "../../../tasks/tasks_internal.h"
 #include "../../../verbosity.h"
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #undef TEMP_EXTENSION
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
@@ -22,7 +29,8 @@ extern "C" {
 #define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
 #define THUMBNAILPACK_EXTENSION ".zip"
 
-static void extractThumbnailPackCB(void *task_data, void *user_data, const char *err)
+static void extractThumbnailPackCB(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;
@@ -191,7 +199,6 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    reply->disconnect();
    reply->close();
-   reply->deleteLater();
 }
 
 void MainWindow::onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
@@ -309,6 +316,11 @@ void MainWindow::onThumbnailPackExtractFinished(bool success)
 
    emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
 
+   QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
+
+   m_playlistModel->reloadSystemThumbnails(reply->property("system").toString());
+   reply->deleteLater();
+   updateVisibleItems();
    /* reload thumbnail image */
    emit itemChanged();
 }

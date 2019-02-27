@@ -62,7 +62,7 @@ static void connmanctl_scan(void)
 
    pclose(popen("connmanctl scan wifi", "r"));
 
-   runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true);
+   runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
@@ -214,7 +214,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 
    while (fgets (ln, 512, command_file) != NULL)
    {
-      runloop_msg_queue_push(ln, 1, 180, true);
+      runloop_msg_queue_push(ln, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    pclose(command_file);
 

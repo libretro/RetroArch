@@ -85,12 +85,25 @@ bool file_list_prepend(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   unsigned i;
+   return file_list_insert(list, path,
+      label, type,
+      directory_ptr, entry_idx,
+      0
+   );
+}
+
+bool file_list_insert(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx,
+      size_t idx)
+{
+   int i;
 
    if (!file_list_expand_if_needed(list))
       return false;
 
-   for (i = (unsigned)list->size; i > 0; i--)
+   for (i = (unsigned)list->size; i > (int)idx; i--)
    {
       struct item_file *copy = (struct item_file*)
          calloc(1, sizeof(struct item_file));
@@ -103,7 +116,7 @@ bool file_list_prepend(file_list_t *list,
       free(copy);
    }
 
-   file_list_add(list, 0, path, label, type,
+   file_list_add(list, idx, path, label, type,
          directory_ptr, entry_idx);
 
    return true;
@@ -135,7 +148,6 @@ size_t file_list_get_directory_ptr(const file_list_t *list)
    size_t size = file_list_get_size(list);
    return list->list[size].directory_ptr;
 }
-
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {

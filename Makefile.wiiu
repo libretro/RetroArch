@@ -64,6 +64,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += frontend/drivers/platform_null.o
    OBJ += libretro-common/encodings/encoding_utf.o
    OBJ += libretro-common/compat/compat_strcasestr.o
+   OBJ += libretro-common/compat/fopen_utf8.o
    OBJ += libretro-common/file/file_path.o
    OBJ += libretro-common/string/stdstring.o
    OBJ += libretro-common/lists/string_list.o
@@ -115,12 +116,12 @@ endif
    	HAVE_RPNG = 1
    	HAVE_RJPEG = 1
    	HAVE_RBMP = 1
+	HAVE_MENU = 1
    	HAVE_RGUI = 1
    	HAVE_ZLIB = 1
    	HAVE_7ZIP = 1
 	HAVE_BUILTINZLIB = 0
    	HAVE_LIBRETRODB = 1
-   	HAVE_ZARCH = 0
    	HAVE_MATERIALUI = 1
    	HAVE_XMB = 1
    	HAVE_STB_FONT = 1
@@ -241,7 +242,6 @@ ifneq ($(WANT_IOSUHAX), 1)
 LIBS += -liosuhax
 endif
 
-
 RPX_OBJ           = $(BUILD_DIR)/wiiu/system/stubs_rpl.o
 HBL_ELF_OBJ       = $(BUILD_DIR)/wiiu/system/dynamic.o $(BUILD_DIR)/wiiu/system/stubs_elf.o
 
@@ -263,12 +263,10 @@ endif
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $(BUILD_DIR)/$*.depend
 
-
 all: $(TARGETS)
 
 %: $(BUILD_DIR)/%
 	cp $< $@
-
 
 $(BUILD_DIR)/%.o: %.cpp %.depend
 	@$(if $(Q), echo CXX $<,)

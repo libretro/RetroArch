@@ -30,7 +30,6 @@
     #include <emmintrin.h>
 #endif
 
-
 //--------------<M-A-C-R-O-S>-----------------------------------------------//
 // assertion
 #if !defined(DSPASSERT)
@@ -46,12 +45,10 @@
     #define ISPOWEROF2(n) ( ((n)&((n)-1)) == 0 && (n) != 0 )
 #endif
 
-
 //--------------<H-E-L-P-E-R-S>---------------------------------------------//
 namespace XDSP {
 #pragma warning(push)
 #pragma warning(disable: 4328 4640) // disable "indirection alignment of formal parameter", "construction of local static object is not thread-safe" compile warnings
-
 
 // Helper functions, used by the FFT functions.
 // The application need not call them directly.
@@ -60,7 +57,6 @@ namespace XDSP {
     typedef __m128 XVECTOR;
     typedef XVECTOR& XVECTORREF;
     typedef const XVECTOR& XVECTORREFC;
-
 
     // Parallel multiplication of four complex numbers, assuming
     // real and imaginary values are stored in separate vectors.
@@ -84,7 +80,6 @@ namespace XDSP {
         r1 = _mm_sub_ps(vr1r2, vi1i2); // real:      (r1*r2 - i1*i2)
         i1 = _mm_add_ps(vr1i2, vr2i1); // imaginary: (r1*i2 + r2*i1)
     }
-
 
     // Radix-4 decimation-in-time FFT butterfly.
     // This version assumes that all four elements of the butterfly are
@@ -120,7 +115,6 @@ namespace XDSP {
         const static XVECTOR vDFT4SignBits1 = { 0.0f, -0.0f,  0.0f, -0.0f };
         const static XVECTOR vDFT4SignBits2 = { 0.0f,  0.0f, -0.0f, -0.0f };
         const static XVECTOR vDFT4SignBits3 = { 0.0f, -0.0f, -0.0f,  0.0f };
-
 
         // calculating Temp
         XVECTOR rTemp = _mm_add_ps( _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(1, 1, 0, 0)),                               // [r1X| r1X|r1Y| r1Y] +
@@ -178,7 +172,6 @@ namespace XDSP {
         XVECTOR rTemp0, rTemp1, rTemp2, rTemp3, rTemp4, rTemp5, rTemp6, rTemp7;
         XVECTOR iTemp0, iTemp1, iTemp2, iTemp3, iTemp4, iTemp5, iTemp6, iTemp7;
 
-
         // calculating Temp
         rTemp0 = _mm_add_ps(r0, r2);          iTemp0 = _mm_add_ps(i0, i2);
         rTemp2 = _mm_add_ps(r1, r3);          iTemp2 = _mm_add_ps(i1, i3);
@@ -200,7 +193,6 @@ namespace XDSP {
             ButterflyDIT4_1(rTemp6, iTemp6);
             ButterflyDIT4_1(rTemp7, iTemp7);
         }
-
 
         r0 = rTemp4;    i0 = iTemp4;
         r1 = rTemp5;    i1 = iTemp5;
@@ -235,8 +227,6 @@ namespace XDSP {
         }
     }
 
-
-
       ////
       // DESCRIPTION:
       //  8-sample FFT.
@@ -262,7 +252,6 @@ namespace XDSP {
         static XVECTOR wr2 = { -1.0f, -0.70710677f,  0.0f,  0.70710677f };
         static XVECTOR wi2 = {  0.0f,  0.70710677f,  1.0f,  0.70710677f };
 
-
         for (UINT32 uIndex=0; uIndex<uCount; ++uIndex) {
             XVECTOR* __restrict pR = pReal      + uIndex*2;
             XVECTOR* __restrict pI = pImaginary + uIndex*2;
@@ -284,8 +273,6 @@ namespace XDSP {
             pI[1] = _mm_add_ps(evensI, i);
         }
     }
-
-
 
       ////
       // DESCRIPTION:
@@ -310,7 +297,6 @@ namespace XDSP {
         XVECTOR aUnityTableReal[4]      = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.92387950f, 0.70710677f, 0.38268343f, 1.0f, 0.70710677f, -4.3711388e-008f, -0.70710677f, 1.0f, 0.38268343f, -0.70710677f, -0.92387950f };
         XVECTOR aUnityTableImaginary[4] = { -0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -0.38268343f, -0.70710677f, -0.92387950f, -0.0f, -0.70710677f, -1.0f, -0.70710677f, -0.0f, -0.92387950f, -0.70710677f, 0.38268343f };
 
-
         for (UINT32 uIndex=0; uIndex<uCount; ++uIndex) {
             ButterflyDIT4_4(pReal[uIndex*4],
                             pReal[uIndex*4 + 1],
@@ -325,8 +311,6 @@ namespace XDSP {
                             1, TRUE);
         }
     }
-
-
 
       ////
       // DESCRIPTION:
@@ -369,7 +353,6 @@ namespace XDSP {
         const UINT32 uStride3       = uStride * 3;
         const UINT32 uStrideInvMask = ~uStrideMask;
 
-
         for (UINT32 uIndex=0; uIndex<(uTotal_vectors>>2); ++uIndex) {
             const UINT32 n = ((uIndex & uStrideInvMask) << 2) + (uIndex & uStrideMask);
             ButterflyDIT4_4(pReal[n],
@@ -384,7 +367,6 @@ namespace XDSP {
                             pUnityTableImaginary + (n & uStage_vectors_mask),
                             uStride, FALSE);
         }
-
 
         if (uLength > 16*4) {
             FFT(pReal, pImaginary, pUnityTable+(uLength>>1), uLength>>2, uCount*4);
@@ -423,7 +405,6 @@ inline void FFTInitializeUnityTable (__out_ecount(uLength) XVECTOR* __restrict p
 
     FLOAT32* __restrict pfUnityTable = (FLOAT32* __restrict)pUnityTable;
 
-
     // initialize unity table for recursive FFT lengths: uLength, uLength/4, uLength/16... > 16
     do {
         FLOAT32 flStep = 6.283185307f / uLength; // 2PI / FFT length
@@ -441,7 +422,6 @@ inline void FFTInitializeUnityTable (__out_ecount(uLength) XVECTOR* __restrict p
         pfUnityTable += uLength*8;
     } while (uLength > 16);
 }
-
 
   ////
   // DESCRIPTION:
@@ -467,7 +447,6 @@ inline void FFTUnswizzle (__out_ecount((1<<uLog2Length)/4) XVECTOR* __restrict p
     FLOAT32*       __restrict pfOutput = (FLOAT32* __restrict)pOutput;
     const FLOAT32* __restrict pfInput  = (const FLOAT32* __restrict)pInput;
     const UINT32 uLength = UINT32(1 << uLog2Length);
-
 
     if ((uLog2Length & 0x1) == 0) {
         // even powers of two
@@ -495,7 +474,6 @@ inline void FFTUnswizzle (__out_ecount((1<<uLog2Length)/4) XVECTOR* __restrict p
     }
 }
 
-
   ////
   // DESCRIPTION:
   //  Convert complex components to polar form.
@@ -519,7 +497,6 @@ inline void FFTPolar (__out_ecount(uLength/4) XVECTOR* __restrict pOutput, __in_
 
     FLOAT32 flOneOverLength = 1.0f / uLength;
 
-
     // result = sqrtf((real/uLength)^2 + (imaginary/uLength)^2) * 2
         XVECTOR vOneOverLength = _mm_set_ps1(flOneOverLength);
 
@@ -533,10 +510,6 @@ inline void FFTPolar (__out_ecount(uLength/4) XVECTOR* __restrict pOutput, __in_
             pOutput[uIndex] = _mm_add_ps(vTotal, vTotal);
         }
 }
-
-
-
-
 
 //--------------------------------------------------------------------------//
   ////
@@ -566,14 +539,12 @@ inline void Deinterleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* _
     FLOAT32*       __restrict pfOutput = (FLOAT32* __restrict)pOutput;
     const FLOAT32* __restrict pfInput  = (const FLOAT32* __restrict)pInput;
 
-
     for (UINT32 uChannel=0; uChannel<uChannelCount; ++uChannel) {
         for (UINT32 uFrame=0; uFrame<uFrameCount; ++uFrame) {
             pfOutput[uChannel * uFrameCount + uFrame] = pfInput[uFrame * uChannelCount + uChannel];
         }
     }
 }
-
 
   ////
   // DESCRIPTION:
@@ -602,17 +573,12 @@ inline void Interleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* __r
     FLOAT32*       __restrict pfOutput = (FLOAT32* __restrict)pOutput;
     const FLOAT32* __restrict pfInput  = (const FLOAT32* __restrict)pInput;
 
-
     for (UINT32 uChannel=0; uChannel<uChannelCount; ++uChannel) {
         for (UINT32 uFrame=0; uFrame<uFrameCount; ++uFrame) {
             pfOutput[uFrame * uChannelCount + uChannel] = pfInput[uChannel * uFrameCount + uFrame];
         }
     }
 }
-
-
-
-
 
 //--------------------------------------------------------------------------//
   ////
@@ -645,7 +611,6 @@ inline void FFTInterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) XVE
     XVECTOR vRealTemp[768];
     XVECTOR vImaginaryTemp[768];
     const UINT32 uLength = UINT32(1 << uLog2Length);
-
 
     if (uChannelCount > 1) {
         Deinterleave(vRealTemp, pReal, uChannelCount, uLength);
@@ -680,7 +645,6 @@ inline void FFTInterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) XVE
     }
 }
 
-
   ////
   // DESCRIPTION:
   //  This function applies a 2^N-sample inverse FFT.
@@ -710,7 +674,6 @@ inline void IFFTDeinterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) 
     XVECTOR vRealTemp[768];
     XVECTOR vImaginaryTemp[768];
     const UINT32 uLength = UINT32(1 << uLog2Length);
-
 
         const XVECTOR vRnp = _mm_set_ps1(1.0f/uLength);
         const XVECTOR vRnm = _mm_set_ps1(-1.0f/uLength);
@@ -747,8 +710,6 @@ inline void IFFTDeinterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) 
     }
 }
 
-
 #pragma warning(pop)
 }; // namespace XDSP
 //---------------------------------<-EOF->----------------------------------//
-

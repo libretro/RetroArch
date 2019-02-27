@@ -111,7 +111,6 @@ typedef struct OSFastMutexQueue
    OSFastMutex *tail;
 } OSFastMutexQueue;
 
-
 typedef struct
 {
    OSThread *prev;

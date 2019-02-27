@@ -32,10 +32,9 @@ static void* ui_window_cocoa_init(void)
 
 static void ui_window_cocoa_destroy(void *data)
 {
-#if !__has_feature(objc_arc)
+#if !defined(HAVE_COCOA_METAL)
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
-    // TODO(sgc): incorrect behavior
     [[cocoa_view window] release];
 #endif
 }
@@ -73,7 +72,11 @@ static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 
    if (droppable)
    {
+#if defined(HAVE_COCOA_METAL)
+      [[cocoa_view window] registerForDraggedTypes:@[NSPasteboardTypeColor, NSPasteboardTypeFileURL]];
+#elif defined(HAVE_COCOA)
       [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
+#endif
    }
    else
    {
@@ -85,9 +88,7 @@ static bool ui_window_cocoa_focused(void *data)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
-   if ([[cocoa_view window] isMainWindow] == YES)
-      return true;
-   return false;
+   return cocoa_view.window.isMainWindow;
 }
 
 ui_window_t ui_window_cocoa = {

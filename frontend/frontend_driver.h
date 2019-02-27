@@ -106,6 +106,7 @@ typedef struct frontend_ctx_driver
    void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
    bool (*check_for_path_changes)(path_change_data_t *change_data);
    void (*set_sustained_performance_mode)(bool on);
+   const char* (*get_cpu_model_name)(void);
 
    const char *ident;
 
@@ -120,13 +121,16 @@ extern frontend_ctx_driver_t frontend_ctx_qnx;
 extern frontend_ctx_driver_t frontend_ctx_darwin;
 extern frontend_ctx_driver_t frontend_ctx_unix;
 extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_ps2;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_switch;
 extern frontend_ctx_driver_t frontend_ctx_win32;
+extern frontend_ctx_driver_t frontend_ctx_uwp;
 extern frontend_ctx_driver_t frontend_ctx_xenon;
 extern frontend_ctx_driver_t frontend_ctx_emscripten;
 extern frontend_ctx_driver_t frontend_ctx_dos;
 extern frontend_ctx_driver_t frontend_ctx_switch;
+extern frontend_ctx_driver_t frontend_ctx_orbis;
 extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**
@@ -207,6 +211,8 @@ void frontend_driver_watch_path_for_changes(struct string_list *list, int flags,
 bool frontend_driver_check_for_path_changes(path_change_data_t *change_data);
 
 void frontend_driver_set_sustained_performance_mode(bool on);
+
+const char* frontend_driver_get_cpu_model_name(void);
 
 RETRO_END_DECLS
 

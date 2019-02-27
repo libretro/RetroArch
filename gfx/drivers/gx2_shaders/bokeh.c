@@ -62,7 +62,6 @@ static struct
    },
 };
 
-
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
@@ -739,7 +738,6 @@ static GX2UniformVar uniform_vars[] = {
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},
 };
 
-
 GX2Shader bokeh_shader =
 {
    {
@@ -796,6 +794,6 @@ GX2Shader bokeh_shader =
       .uniformBlockCount = countof(uniform_blocks), uniform_blocks,
       .uniformVarCount = countof(uniform_vars), uniform_vars,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

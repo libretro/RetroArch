@@ -12,31 +12,31 @@
 // Introduction
 //
 // rpcsal.h provides a set of annotations to describe how RPC functions use their
-// parameters - the assumptions it makes about them, adn the guarantees it makes 
+// parameters - the assumptions it makes about them, adn the guarantees it makes
 // upon finishing.  These annotations are similar to those found in specstrings.h,
 // but are designed to be used by the MIDL compiler when it generates annotations
 // enabled header files.
 //
 // IDL authors do not need to annotate their functions declarations.  The MIDL compiler
-// will interpret the IDL directives and use one of the annotations contained 
-// in this header.  This documentation is intended to help those trying to  understand 
+// will interpret the IDL directives and use one of the annotations contained
+// in this header.  This documentation is intended to help those trying to  understand
 // the MIDL-generated header files or those who maintain their own copies of these files.
 //
 // -------------------------------------------------------------------------------
 // Differences between rpcsal.h and specstrings.h
-// 
+//
 // There are a few important differences between the annotations found in rpcsal.h and
 // those in specstrings.h:
-// 
-// 1. [in] parameters are not marked as read-only.  They may be used for scratch space 
+//
+// 1. [in] parameters are not marked as read-only.  They may be used for scratch space
 // at the server and changes will not affect the client.
 // 2. String versions of each macro alleviates the need for a special type definition
 //
 // -------------------------------------------------------------------------------
 // Interpreting RPC Annotations
 //
-// These annotations are interpreted precisely in the same way as those in specstrings.h.  
-// Please refer to that header for information related to general usage in annotations. 
+// These annotations are interpreted precisely in the same way as those in specstrings.h.
+// Please refer to that header for information related to general usage in annotations.
 //
 // To construct an RPC annotation, concatenate the appropriate value from each category
 // along with a leading __RPC_.  A typical annotation looks like "__RPC__in_string".
@@ -116,17 +116,17 @@
 //
 // 1. Specifying two buffer annotations on a single parameter results in unspecified behavior
 //    (e.g. __RPC__in_bcount(5) __RPC__out_bcount(6)
-// 
-// 2. The size of the buffer and the amount that has been initialized are separate concepts.  
-//    Specify the size using _ecount or _bcount.  Specify the amount that is initialized using 
-//    _full, _part, or _string.  As a special case, a single element buffer does not need 
+//
+// 2. The size of the buffer and the amount that has been initialized are separate concepts.
+//    Specify the size using _ecount or _bcount.  Specify the amount that is initialized using
+//    _full, _part, or _string.  As a special case, a single element buffer does not need
 //    _ecount, _bcount, _full, or _part
-// 
-// 3. The count may be less than the total size of the buffer in which case it describes the 
-//    accessible portion. 
-// 
+//
+// 3. The count may be less than the total size of the buffer in which case it describes the
+//    accessible portion.
+//
 // 4. "__RPC__opt" and "__RPC_deref" are not valid annotations.
-// 
+//
 // 5. The placement of _opt when using _deref is important:
 //      __RPC__deref_opt_...      : Input may be NULL
 //      __RPC__deref_..._opt      : Output may be NULL
@@ -147,11 +147,9 @@
     #endif
 #endif
 
-
 #ifdef  __cplusplus
 extern "C" {
 #endif  // #ifdef __cplusplus
-
 
 #ifndef _SAL1_2_Source_
 #define _SAL1_2_Source_(Name, args, annotes) _SA_annotes3(SAL_name, #Name, "", "1.2") _Group_(annotes _SAL_nop_impl_)
@@ -168,7 +166,6 @@ extern "C" {
 #define __RPC__in_xcount_full(size)                  _SAL1_2_Source_(__RPC__in_xcount_full, (size), __RPC__in_ecount(size))
 #define __RPC__in_xcount_full_string(size)           _SAL1_2_Source_(__RPC__in_xcount_full_string, (size), __RPC__in_ecount_full(size) _Pre_ _Null_terminated_)
 #define __RPC__in_xcount_part(size, length)          _SAL1_2_Source_(__RPC__in_xcount_part, (size,length), __RPC__in_ecount(length) _Pre_writable_size_(size))
-
 
 #define __RPC__deref_in                              _SAL1_2_Source_(__RPC__deref_in, (), __RPC__in _At_(*_Curr_, _Pre_ _Notnull_))
 #define __RPC__deref_in_string                       _SAL1_2_Source_(__RPC__deref_in_string, (), __RPC__deref_in _At_(*_Curr_, _Pre_ _Null_terminated_))
@@ -210,7 +207,7 @@ extern "C" {
 #define __RPC__out_xcount_full(size)                 _SAL1_2_Source_(__RPC__out_xcount_full, (size), __RPC__out)
 #define __RPC__out_xcount_full_string(size)          _SAL1_2_Source_(__RPC__out_xcount_full_string, (size), __RPC__out _Post_ _Null_terminated_)
 
-// [in,out] 
+// [in,out]
 #define __RPC__inout                                 _SAL1_2_Source_(__RPC__inout, (), _Inout_)
 #define __RPC__inout_string                          _SAL1_2_Source_(__RPC__inout_string, (), __RPC__inout  _Pre_ _Null_terminated_ _Post_ _Null_terminated_)
 #define __RPC__inout_ecount(size)                    _SAL1_2_Source_(__RPC__inout_ecount, (size), _Inout_updates_(size))
@@ -222,7 +219,7 @@ extern "C" {
 #define __RPC__inout_xcount_full(size)               _SAL1_2_Source_(__RPC__inout_xcount_full, (size), __RPC__inout)
 #define __RPC__inout_xcount_full_string(size)        _SAL1_2_Source_(__RPC__inout_xcount_full_string, (size), __RPC__inout _Pre_ _Null_terminated_ _Post_ _Null_terminated_)
 
-// [in,unique] 
+// [in,unique]
 #define __RPC__in_opt                                _SAL1_2_Source_(__RPC__in_opt, (), _Pre_ _Notref_ _Maybenull_ _Pre_ _Valid_)
 #define __RPC__in_opt_string                         _SAL1_2_Source_(__RPC__in_opt_string, (), __RPC__in_opt  _Pre_ _Null_terminated_)
 #define __RPC__in_ecount_opt(size)                   _SAL1_2_Source_(__RPC__in_ecount_opt, (size), __RPC__in_opt  _Pre_readable_size_(size))
@@ -236,7 +233,7 @@ extern "C" {
 #define __RPC__in_xcount_opt(size)                   _SAL1_2_Source_(__RPC__in_xcount_opt, (size), __RPC__in_ecount_opt(size))
 #define __RPC__in_xcount_opt_string(size)            _SAL1_2_Source_(__RPC__in_xcount_opt_string, (size), __RPC__in_ecount_opt(size) _Pre_ _Null_terminated_)
 
-// [in,out,unique] 
+// [in,out,unique]
 #define __RPC__inout_opt                             _SAL1_2_Source_(__RPC__inout_opt, (), _Inout_opt_)
 #define __RPC__inout_opt_string                      _SAL1_2_Source_(__RPC__inout_opt_string, (), __RPC__inout_opt  _Pre_ _Null_terminated_)
 #define __RPC__inout_ecount_opt(size)                _SAL1_2_Source_(__RPC__inout_ecount_opt, (size), _Inout_updates_opt_(size))
@@ -262,7 +259,7 @@ extern "C" {
 #define __RPC__deref_out_xcount_full(size)           _SAL1_2_Source_(__RPC__deref_out_xcount_full, (size), __RPC__deref_out)
 #define __RPC__deref_out_xcount_full_string(size)    _SAL1_2_Source_(__RPC__deref_out_xcount_full_string, (size), __RPC__deref_out _At_(*_Curr_, _Post_ _Null_terminated_))
 
-// [in,out] **, second pointer decoration. 
+// [in,out] **, second pointer decoration.
 #define __RPC__deref_inout                           _SAL1_2_Source_(__RPC__deref_inout, (), _Inout_ _At_(*_Curr_, _Pre_ _Notnull_ _Post_ _Notnull_))
 #define __RPC__deref_inout_string                    _SAL1_2_Source_(__RPC__deref_inout_string, (), __RPC__deref_inout _At_(*_Curr_, _Pre_ _Null_terminated_ _Post_ _Null_terminated_))
 #define __RPC__deref_inout_opt                       _SAL1_2_Source_(__RPC__deref_inout_opt, (), _Inout_ _At_(*_Curr_, _Pre_ _Maybenull_ _Post_ _Maybenull_))
@@ -280,10 +277,9 @@ extern "C" {
 #define __RPC__deref_inout_xcount_full_string(size)  _SAL1_2_Source_(__RPC__deref_inout_xcount_full_string, (size), __RPC__deref_inout _At_(*_Curr_, _Post_ _Null_terminated_))
 #define __RPC__deref_inout_xcount_full_opt_string(size)  _SAL1_2_Source_(__RPC__deref_inout_xcount_full_opt_string, (size), __RPC__deref_inout_opt _At_(*_Curr_, _Pre_ _Null_terminated_ _Post_ _Null_terminated_))
 
-
 // #define __RPC_out_opt    out_opt is not allowed in rpc
 
-// [in,out,unique] 
+// [in,out,unique]
 #define __RPC__deref_opt_inout                           _SAL1_2_Source_(__RPC__deref_opt_inout, (), _Inout_opt_ _At_(*_Curr_, _Pre_ _Notnull_ _Post_ _Notnull_))
 #define __RPC__deref_opt_inout_ecount(size)              _SAL1_2_Source_(__RPC__deref_opt_inout_ecount, (size), __RPC__deref_opt_inout _At_(*_Curr_, _Pre_writable_size_(size) _Post_writable_size_(size)))
 #define __RPC__deref_opt_inout_string                    _SAL1_2_Source_(__RPC__deref_opt_inout_string, (), __RPC__deref_opt_inout _At_(*_Curr_, _Pre_ _Null_terminated_ _Post_ _Null_terminated_))
@@ -293,7 +289,6 @@ extern "C" {
 #define __RPC__deref_opt_inout_xcount_part(size, length)  _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_part, (size,length), __RPC__deref_opt_inout)
 #define __RPC__deref_opt_inout_xcount_full(size)         _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_full, (size), __RPC__deref_opt_inout)
 #define __RPC__deref_opt_inout_xcount_full_string(size)  _SAL1_2_Source_(__RPC__deref_opt_inout_xcount_full_string, (size), __RPC__deref_opt_inout_string)
-
 
 #define __RPC__deref_out_ecount_opt(size)                _SAL1_2_Source_(__RPC__deref_out_ecount_opt, (size), _Outptr_result_buffer_maybenull_(size) _At_(*_Curr_, _Pre_maybenull_))
 #define __RPC__deref_out_ecount_part_opt(size, length)   _SAL1_2_Source_(__RPC__deref_out_ecount_part_opt, (size,length), _Outptr_result_buffer_to_maybenull_(size, length) _At_(*_Curr_, _Pre_maybenull_))
@@ -323,8 +318,6 @@ extern "C" {
 #define __RPC__range(min,max)                            _SAL1_2_Source_(__RPC__range, (min,max), __range(min,max))
 #define __RPC__in_range(min,max)                         _SAL1_2_Source_(__RPC__in_range, (min,max), _In_range_(min,max))
 
-
 #ifdef  __cplusplus
 }
 #endif
-

@@ -395,4 +395,3 @@ struct retro_hw_render_interface_vulkan
 };
 
 #endif
-

@@ -7,4 +7,3 @@ filter0 = wahwah
 # wahwah_freq_offset = 0.3
 # wahwah_depth = 0.7
 # wahwah_resonance = 2.5
-

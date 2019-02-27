@@ -37,7 +37,7 @@ RFILE* rfopen(const char *path, const char *mode)
       retro_mode = RETRO_VFS_FILE_ACCESS_READ;
       if (strstr(mode, "+"))
       {
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE |
             RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       }
    }
@@ -49,12 +49,12 @@ RFILE* rfopen(const char *path, const char *mode)
    }
    else if (strstr(mode, "a"))
    {
-      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE | 
+      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE |
          RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       position_to_end = true;
       if (strstr(mode, "+"))
       {
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE |
             RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       }
    }
@@ -109,7 +109,7 @@ char *rfgets(char *buffer, int maxCount, RFILE* stream)
 
 int rfgetc(RFILE* stream)
 {
-	return filestream_getc(stream);
+   return filestream_getc(stream);
 }
 
 int64_t rfwrite(void const* buffer,
@@ -131,11 +131,11 @@ int64_t rfflush(RFILE * stream)
 int rfprintf(RFILE * stream, const char * format, ...)
 {
    int result;
-	va_list vl;
-	va_start(vl, format);
-	result = filestream_vprintf(stream, format, vl);
-	va_end(vl);
-	return result;
+   va_list vl;
+   va_start(vl, format);
+   result = filestream_vprintf(stream, format, vl);
+   va_end(vl);
+   return result;
 }
 
 int rferror(RFILE* stream)
@@ -146,4 +146,14 @@ int rferror(RFILE* stream)
 int rfeof(RFILE* stream)
 {
    return filestream_eof(stream);
+}
+
+int rfscanf(RFILE * stream, const char * format, ...)
+{
+   int result;
+   va_list vl;
+   va_start(vl, format);
+   result = filestream_scanf(stream, format, vl);
+   va_end(vl);
+   return result;
 }

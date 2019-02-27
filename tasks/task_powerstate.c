@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include "../../frontend/frontend_driver.h"
 #include "tasks_internal.h"
+#include <queues/task_queue.h>
 
 static int              power_percent = 0;
 static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
@@ -38,8 +39,9 @@ enum frontend_powerstate get_last_powerstate(int *percent)
    return state;
 }
 
-static void task_powerstate_cb(void *task_data,
-                               void *user_data, const char *error)
+static void task_powerstate_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    powerstate_t *powerstate = (powerstate_t*)task_data;
 
@@ -66,8 +68,17 @@ static void task_powerstate_handler(retro_task_t *task)
 
 void task_push_get_powerstate(void)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
-   powerstate_t *state = (powerstate_t*)calloc(1, sizeof(*state));
+   retro_task_t *task  = task_init();
+   powerstate_t *state = NULL;
+
+   if (!task)
+      return;
+   state = (powerstate_t*)calloc(1, sizeof(*state));
+   if (!state)
+   {
+      free(task);
+      return;
+   }
 
    task->type     = TASK_TYPE_NONE;
    task->state    = state;

@@ -203,7 +203,7 @@ bool natt_open_port_any(struct natt_status *status,
       struct net_ifinfo_entry *entry = list.entries + i;
 
       /* ignore localhost */
-      if (  string_is_equal(entry->host, "127.0.0.1") || 
+      if (  string_is_equal(entry->host, "127.0.0.1") ||
             string_is_equal(entry->host, "::1"))
          continue;
 
@@ -233,7 +233,7 @@ bool natt_read(struct natt_status *status)
 }
 
 #if 0
-/* If we want to remove redirects in the future, this is a 
+/* If we want to remove redirects in the future, this is a
  * sample of how to do that. */
 
 void upnp_rem_redir (int port)

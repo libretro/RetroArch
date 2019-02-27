@@ -33,7 +33,7 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 /* Forward declarations */
@@ -135,7 +135,6 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
 
    return 0;
 }
-
 
 static void *cocoa_input_init(const char *joypad_driver)
 {

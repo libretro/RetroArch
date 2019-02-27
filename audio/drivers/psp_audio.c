@@ -16,21 +16,28 @@
  */
 
 #include <stdint.h>
+#if defined(VITA) || defined(PSP)
 #include <malloc.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 
-#ifdef VITA
+#if defined(VITA)
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/audioout.h>
-#else
+#elif defined(PSP)
 #include <pspkernel.h>
 #include <pspaudio.h>
+#elif defined(ORBIS)
+#include <audioout.h>
+#define SCE_AUDIO_OUT_PORT_TYPE_MAIN   0
+#define SCE_AUDIO_OUT_MODE_STEREO      1
+#define SceUID uint32_t
 #endif
 
 #include "../audio_driver.h"
@@ -64,9 +71,13 @@ static void audioMainLoop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-#ifdef VITA
+#if defined(VITA)
    int port         = sceAudioOutOpenPort(
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
+         psp->rate, SCE_AUDIO_OUT_MODE_STEREO);
+#elif defined(ORBIS)
+   int port         = sceAudioOutOpen(0xff,
+         SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
          psp->rate, SCE_AUDIO_OUT_MODE_STEREO);
 #else
    sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
@@ -95,7 +106,7 @@ static void audioMainLoop(void *data)
       scond_signal(psp->cond);
       slock_unlock(psp->cond_lock);
 
-#ifdef VITA
+#if defined(VITA) || defined(ORBIS)
       sceAudioOutOutput(port,
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
@@ -105,8 +116,10 @@ static void audioMainLoop(void *data)
 #endif
    }
 
-#ifdef VITA
+#if defined(VITA)
    sceAudioOutReleasePort(port);
+#elif defined(ORBIS)
+   sceAudioOutClose(port);
 #else
    sceAudioSRCChRelease();
 #endif
@@ -127,12 +140,23 @@ static void *psp_audio_init(const char *device,
    (void)device;
    (void)latency;
 
+#ifdef ORBIS
+   psp->buffer      = (uint32_t*)
+      malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+#else
    /* Cache aligned, not necessary but helpful. */
    psp->buffer      = (uint32_t*)
       memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+#endif
    memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+
+#ifdef ORBIS
+   psp->zeroBuffer      = (uint32_t*)
+      malloc(AUDIO_OUT_COUNT * sizeof(uint32_t));
+#else
    psp->zeroBuffer  = (uint32_t*)
       memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
+#endif
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
    psp->read_pos    = 0;
@@ -162,7 +186,7 @@ static void psp_audio_free(void *data)
             psp->running = false;
             sthread_join(psp->worker_thread);
       }
-      
+
       if (psp->cond)
             scond_free(psp->cond);
       if (psp->fifo_lock)
@@ -181,7 +205,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    psp_audio_t* psp = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
-   
+
    if (!psp->running)
       return -1;
 
@@ -217,7 +241,6 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    slock_unlock(psp->fifo_lock);
    return size;
 
-   
 }
 
 static bool psp_audio_alive(void *data)
@@ -227,7 +250,6 @@ static bool psp_audio_alive(void *data)
       return false;
    return psp->running;
 }
-
 
 static bool psp_audio_stop(void *data)
 {
@@ -294,7 +316,6 @@ static size_t psp_buffer_size(void *data)
    return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
 }
 
-
 audio_driver_t audio_psp = {
    psp_audio_init,
    psp_audio_write,
@@ -304,8 +325,10 @@ audio_driver_t audio_psp = {
    psp_audio_set_nonblock_state,
    psp_audio_free,
    psp_audio_use_float,
-#ifdef VITA
+#if defined(VITA)
    "vita",
+#elif defined(ORBIS)
+   "orbis",
 #else
    "psp",
 #endif
