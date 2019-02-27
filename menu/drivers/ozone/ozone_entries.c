@@ -451,7 +451,7 @@ border_iterate:
       ticker.s        = rich_label;
       ticker.str      = entry_rich_label;
       ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len      = (entry_width - entry_padding - text_offset) / ozone->entry_font_glyph_width;
+      ticker.len      = (entry_width - entry_padding) / ozone->entry_font_glyph_width;
 
       menu_animation_ticker(&ticker);
 
