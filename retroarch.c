@@ -575,12 +575,6 @@ void drivers_init(int flags)
       audio_driver_unset_own_driver();
    if (flags & DRIVER_INPUT_MASK)
       input_driver_unset_own_driver();
-   if (flags & DRIVER_CAMERA_MASK)
-      camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
-   if (flags & DRIVER_LOCATION_MASK)
-      location_driver_ctl(RARCH_LOCATION_CTL_UNSET_OWN_DRIVER, NULL);
-   if (flags & DRIVER_WIFI_MASK)
-      wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_OWN_DRIVER, NULL);
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -590,6 +584,7 @@ void drivers_init(int flags)
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
       driver_adjust_system_rates();
 
+   /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
    {
       struct retro_hw_render_callback *hwr =
@@ -606,19 +601,26 @@ void drivers_init(int flags)
       runloop_frame_time_last        = 0;
    }
 
+   /* Initialize audio driver */
    if (flags & DRIVER_AUDIO_MASK)
    {
       audio_driver_init();
       audio_driver_new_devices_list();
    }
 
-   /* Only initialize camera driver if we're ever going to use it. */
-   if ((flags & DRIVER_CAMERA_MASK) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
-      camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
+   if (flags & DRIVER_CAMERA_MASK)
+   {
+      /* Only initialize camera driver if we're ever going to use it. */
+      if (camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
+         camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
+   }
 
-   /* Only initialize location driver if we're ever going to use it. */
-   if ((flags & DRIVER_LOCATION_MASK) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
-      init_location();
+   if (flags & DRIVER_LOCATION_MASK)
+   {
+      /* Only initialize location driver if we're ever going to use it. */
+      if (location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
+         init_location();
+   }
 
    core_info_init_current_core();
 
@@ -633,6 +635,7 @@ void drivers_init(int flags)
 
    if (flags & DRIVER_VIDEO_MASK)
    {
+      /* Initialize menu driver */
       if (flags & DRIVER_MENU_MASK)
          menu_driver_init(video_is_threaded);
    }
@@ -649,9 +652,11 @@ void drivers_init(int flags)
          driver_set_nonblock_state();
    }
 
+   /* Initialize LED driver */
    if (flags & DRIVER_LED_MASK)
       led_driver_init();
 
+   /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_init();
 }
@@ -693,13 +698,13 @@ void driver_uninit(int flags)
    }
 #endif
 
-   if ((flags & DRIVER_LOCATION_MASK) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_LOCATION_MASK))
       location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_CAMERA_MASK))
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVER_LED)

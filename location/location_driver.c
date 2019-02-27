@@ -243,26 +243,16 @@ static void uninit_location(void)
 bool location_driver_ctl(enum rarch_location_ctl_state state, void *data)
 {
    static bool location_driver_active              = false;
-   static bool location_driver_data_own            = false;
 
    switch (state)
    {
       case RARCH_LOCATION_CTL_DESTROY:
          location_driver_active    = false;
-         location_driver_data_own  = false;
          location_driver           = NULL;
          break;
       case RARCH_LOCATION_CTL_DEINIT:
          uninit_location();
          break;
-      case RARCH_LOCATION_CTL_SET_OWN_DRIVER:
-         location_driver_data_own = true;
-         break;
-      case RARCH_LOCATION_CTL_UNSET_OWN_DRIVER:
-         location_driver_data_own = false;
-         break;
-      case RARCH_LOCATION_CTL_OWNS_DRIVER:
-         return location_driver_data_own;
       case RARCH_LOCATION_CTL_SET_ACTIVE:
          location_driver_active = true;
          break;
