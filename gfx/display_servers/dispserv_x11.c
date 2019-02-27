@@ -47,8 +47,9 @@ static char orig_output[256]    = {0};
 static char old_mode[256]       = {0};
 static char new_mode[256]       = {0};
 static XRRModeInfo crt_rrmode;
-static bool x11_display_server_using_global_dpy = false;
 #endif
+
+static bool x11_display_server_using_global_dpy = false;
 
 typedef struct
 {
