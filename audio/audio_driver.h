@@ -142,10 +142,6 @@ typedef struct audio_driver
 
 void audio_driver_destroy_data(void);
 
-void audio_driver_set_own_driver(void);
-
-void audio_driver_unset_own_driver(void);
-
 void audio_driver_suspend(void);
 
 bool audio_driver_is_suspended(void);
@@ -235,8 +231,6 @@ bool audio_driver_toggle_mute(void);
 bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
-
-bool audio_driver_owns_driver(void);
 
 void audio_driver_unset_callback(void);
 

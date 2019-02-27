@@ -191,7 +191,6 @@ hw_render_context_negotiation                            = NULL;
  * used for GLES.
  * TODO: Refactor this better. */
 static bool video_driver_use_rgba                        = false;
-static bool video_driver_data_own                        = false;
 static bool video_driver_active                          = false;
 
 static video_driver_frame_t frame_bak                    = NULL;
@@ -850,14 +849,10 @@ static void video_driver_free_internal(void)
       )
       input_driver_deinit();
 
-   if (
-         !video_driver_data_own
-         && video_driver_data
+   if (video_driver_data
          && current_video && current_video->free
       )
-      {
          current_video->free(video_driver_data);
-      }
 
    video_driver_pixel_converter_free();
    video_driver_filter_free();
@@ -1566,7 +1561,6 @@ void video_driver_destroy(void)
 
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
-   video_driver_data_own          = false;
    video_driver_active            = false;
    video_driver_cache_context     = false;
    video_driver_cache_context_ack = false;
@@ -2091,21 +2085,6 @@ void video_driver_reinit(void)
    video_driver_cache_context_ack = false;
    command_event(CMD_EVENT_RESET_CONTEXT, NULL);
    video_driver_cache_context = false;
-}
-
-void video_driver_set_own_driver(void)
-{
-   video_driver_data_own = true;
-}
-
-void video_driver_unset_own_driver(void)
-{
-   video_driver_data_own = false;
-}
-
-bool video_driver_owns_driver(void)
-{
-   return video_driver_data_own;
 }
 
 bool video_driver_is_hw_context(void)

@@ -171,7 +171,6 @@ static bool audio_driver_mixer_mute_enable               = false;
 static bool audio_driver_mute_enable                     = false;
 static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
-static bool audio_driver_data_own                        = false;
 static bool audio_mixer_active                           = false;
 
 static float audio_driver_rate_control_delta             = 0.0f;
@@ -1710,21 +1709,6 @@ void audio_driver_destroy_data(void)
    audio_driver_context_audio_data = NULL;
 }
 
-void audio_driver_set_own_driver(void)
-{
-   audio_driver_data_own = true;
-}
-
-void audio_driver_unset_own_driver(void)
-{
-   audio_driver_data_own = false;
-}
-
-bool audio_driver_owns_driver(void)
-{
-   return audio_driver_data_own;
-}
-
 void audio_driver_suspend(void)
 {
    audio_suspended = true;
@@ -1753,7 +1737,6 @@ bool audio_driver_is_active(void)
 void audio_driver_destroy(void)
 {
    audio_driver_active   = false;
-   audio_driver_data_own = false;
    current_audio         = NULL;
 }
 

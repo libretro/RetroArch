@@ -569,10 +569,6 @@ void drivers_init(int flags)
 {
    bool video_is_threaded = false;
 
-   if (flags & DRIVER_VIDEO_MASK)
-      video_driver_unset_own_driver();
-   if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_unset_own_driver();
    if (flags & DRIVER_INPUT_MASK)
       input_driver_unset_own_driver();
 
@@ -716,13 +712,13 @@ void driver_uninit(int flags)
    if (flags & DRIVER_AUDIO_MASK)
       audio_driver_deinit();
 
-   if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
+   if ((flags & DRIVER_VIDEO_MASK))
       video_driver_destroy_data();
 
    if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
       input_driver_destroy_data();
 
-   if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
+   if ((flags & DRIVER_AUDIO_MASK))
       audio_driver_destroy_data();
 
    if (flags & DRIVER_MIDI_MASK)
