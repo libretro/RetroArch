@@ -40,6 +40,17 @@ static INLINE int16_t convert_u8_to_s16(uint8_t val)
    return val * 0x0101 - 0x8000;
 }
 
+static bool is_analog_enabled(struct padButtonStatus buttons)
+{
+   bool enabled = false;
+
+   if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v) {
+      enabled = true;
+   }
+
+   return enabled;
+}
+
 static const char *ps2_joypad_name(unsigned pad)
 {
    return "PS2 Controller";
@@ -92,7 +103,47 @@ static void ps2_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 
 static int16_t ps2_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   return 0;
+   int val     = 0;
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
+   if (joyaxis == AXIS_NONE || port_num >= PS2_MAX_PADS)
+      return 0;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      axis = AXIS_NEG_GET(joyaxis);
+      is_neg = true;
+   }
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      axis = AXIS_POS_GET(joyaxis);
+      is_pos = true;
+   }
+
+   switch (axis)
+   {
+      case 0:
+         val = analog_state[port_num][0][0];
+         break;
+      case 1:
+         val = analog_state[port_num][0][1];
+         break;
+      case 2:
+         val = analog_state[port_num][1][0];
+         break;
+      case 3:
+         val = analog_state[port_num][1][1];
+         break;
+   }
+
+   if (is_neg && val > 0)
+      val = 0;
+   else if (is_pos && val < 0)
+      val = 0;
+
+   return val;
 }
 
 static void ps2_joypad_poll(void)
@@ -126,10 +177,12 @@ static void ps2_joypad_poll(void)
             pad_state[player] |= (state_tmp & PAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
 
             /* Analog */
-            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
-            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
-            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rjoy_h);;
-            analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.rjoy_v);;
+            if (is_analog_enabled(buttons)) {
+               analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
+               analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
+               analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rjoy_h);;
+               analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.rjoy_v);;
+            }
 
          }
       }
