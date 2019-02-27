@@ -843,10 +843,7 @@ static void video_driver_free_internal(void)
    if (!video_driver_is_video_cache_context())
       video_driver_free_hw_context();
 
-   if (
-         !input_driver_owns_driver() &&
-         !input_driver_is_data_ptr_same(video_driver_data)
-      )
+   if (!input_driver_is_data_ptr_same(video_driver_data))
       input_driver_deinit();
 
    if (video_driver_data

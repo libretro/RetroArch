@@ -230,8 +230,6 @@ const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
 
 void input_driver_keyboard_mapping_set_block(bool value);
 
-void input_driver_set(const input_driver_t **input, void **input_data);
-
 /**
  * input_sensor_set_state:
  * @port               : User number.
@@ -373,8 +371,6 @@ bool input_driver_is_nonblock_state(void);
 void input_driver_set_own_driver(void);
 
 void input_driver_unset_own_driver(void);
-
-bool input_driver_owns_driver(void);
 
 void input_driver_deinit_command(void);
 

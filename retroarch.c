@@ -569,9 +569,6 @@ void drivers_init(int flags)
 {
    bool video_is_threaded = false;
 
-   if (flags & DRIVER_INPUT_MASK)
-      input_driver_unset_own_driver();
-
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
@@ -715,7 +712,7 @@ void driver_uninit(int flags)
    if ((flags & DRIVER_VIDEO_MASK))
       video_driver_destroy_data();
 
-   if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
+   if ((flags & DRIVER_INPUT_MASK))
       input_driver_destroy_data();
 
    if ((flags & DRIVER_AUDIO_MASK))

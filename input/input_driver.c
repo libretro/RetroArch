@@ -419,7 +419,6 @@ static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
 static bool input_driver_nonblock_state           = false;
 bool input_driver_flushing_input                  = false;
-static bool input_driver_data_own                 = false;
 static float input_driver_axis_threshold          = 0.0f;
 static unsigned input_driver_max_users            = 0;
 
@@ -543,17 +542,6 @@ uint64_t input_driver_get_capabilities(void)
    if (!current_input || !current_input->get_capabilities)
       return 0;
    return current_input->get_capabilities(current_input_data);
-}
-
-void input_driver_set(const input_driver_t **input, void **input_data)
-{
-   if (input && input_data)
-   {
-      *input      = current_input;
-      *input_data = current_input_data;
-   }
-
-   input_driver_set_own_driver();
 }
 
 void input_driver_keyboard_mapping_set_block(bool value)
@@ -1271,7 +1259,6 @@ void input_driver_destroy(void)
    input_driver_block_libretro_input     = false;
    input_driver_nonblock_state           = false;
    input_driver_flushing_input           = false;
-   input_driver_data_own                 = false;
    memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
    current_input                         = NULL;
 }
@@ -1371,21 +1358,6 @@ void input_driver_unset_nonblock_state(void)
 bool input_driver_is_nonblock_state(void)
 {
    return input_driver_nonblock_state;
-}
-
-void input_driver_set_own_driver(void)
-{
-   input_driver_data_own = true;
-}
-
-void input_driver_unset_own_driver(void)
-{
-   input_driver_data_own = false;
-}
-
-bool input_driver_owns_driver(void)
-{
-   return input_driver_data_own;
 }
 
 bool input_driver_init_command(void)
