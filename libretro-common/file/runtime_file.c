@@ -51,11 +51,11 @@ typedef struct
    char **current_entry_val;
    char *runtime_string;
    char *last_played_string;
-} JSONContext;
+} RtlJSONContext;
 
-static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+static JSON_Parser_HandlerResult RtlJSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
 {
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   RtlJSONContext *pCtx = (RtlJSONContext*)JSON_Parser_GetUserData(parser);
    (void)attributes; /* unused */
    
    if (pCtx->current_entry_val)
@@ -77,9 +77,9 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+static JSON_Parser_HandlerResult RtlJSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
 {
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   RtlJSONContext *pCtx = (RtlJSONContext*)JSON_Parser_GetUserData(parser);
    (void)attributes; /* unused */
    
    if (pCtx->current_entry_val && length && !string_is_empty(pValue))
@@ -96,15 +96,15 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
    return JSON_Parser_Continue;
 }
 
-static JSON_Writer_HandlerResult JSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
+static JSON_Writer_HandlerResult RtlJSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
 {
-   JSONContext *context = (JSONContext*)JSON_Writer_GetUserData(writer);
+   RtlJSONContext *context = (RtlJSONContext*)JSON_Writer_GetUserData(writer);
    (void)writer; /* unused */
    
    return filestream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
 }
 
-static void JSONLogError(JSONContext *pCtx)
+static void RtlJSONLogError(RtlJSONContext *pCtx)
 {
    if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
    {
@@ -140,7 +140,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
    
-   JSONContext context = {0};
+   RtlJSONContext context = {0};
    RFILE *file = NULL;
    int ret = 0;
    
@@ -171,8 +171,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    
    /* Configure parser */
    JSON_Parser_SetAllowBOM(context.parser, JSON_True);
-   JSON_Parser_SetStringHandler(context.parser, &JSONStringHandler);
-   JSON_Parser_SetObjectMemberHandler(context.parser, &JSONObjectMemberHandler);
+   JSON_Parser_SetStringHandler(context.parser, &RtlJSONStringHandler);
+   JSON_Parser_SetObjectMemberHandler(context.parser, &RtlJSONObjectMemberHandler);
    JSON_Parser_SetUserData(context.parser, &context);
    
    /* Read file */
@@ -194,7 +194,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
       {
          RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%s\n---snip---\n", runtime_log->path, chunk);
-         JSONLogError(&context);
+         RtlJSONLogError(&context);
          JSON_Parser_Free(context.parser);
          goto end;
       }
@@ -204,7 +204,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
    {
       RARCH_WARN("Error parsing runtime log file: %s\n", runtime_log->path);
-      JSONLogError(&context);
+      RtlJSONLogError(&context);
       JSON_Parser_Free(context.parser);
       goto end;
    }
@@ -641,7 +641,7 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
 /* Saves specified runtime log to disk */
 void runtime_log_save(runtime_log_t *runtime_log)
 {
-   JSONContext context = {0};
+   RtlJSONContext context = {0};
    RFILE *file = NULL;
    char value_string[64]; /* 64 characters should be enough for a very long runtime... :) */
    int n;
@@ -670,7 +670,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    
    /* Configure JSON writer */
    JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
-   JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
+   JSON_Writer_SetOutputHandler(context.writer, &RtlJSONOutputHandler);
    JSON_Writer_SetUserData(context.writer, &context);
    
    /* Write output file */
