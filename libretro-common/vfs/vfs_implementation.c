@@ -876,9 +876,11 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 #if defined(VITA) || defined(PSP)
    is_dir = FIO_S_ISDIR(buf.st_mode);
 #elif defined(PS2)
-   if (!strncmp(path, "host", 4) && ((path[4]>='0' && path[4]<='9') || path[4]==':')) {
-      // fileXioGetStat is not working for host
-      is_dir = fioDopen(path);
+   if (!buf.mode) {
+      // if fileXioGetStat fails
+      int dir_ret = fileXioDopen(path);
+      is_dir =  dir_ret > 0;
+      fileXioDclose(dir_ret);
    } else {
       is_dir = FIO_S_ISDIR(buf.mode);
    }

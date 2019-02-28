@@ -25,17 +25,8 @@
 #include <libpwroff.h>
 #include <audsrv.h>
 #include <libpad.h>
+#include <ps2_devices.h>
 
-enum BootDeviceIDs{
-    BOOT_DEVICE_UNKNOWN = -1,
-    BOOT_DEVICE_MC0 = 0,
-    BOOT_DEVICE_MC1,
-    BOOT_DEVICE_CDROM,
-    BOOT_DEVICE_MASS,
-    BOOT_DEVICE_HDD,
-    BOOT_DEVICE_HOST,
-    BOOT_DEVICE_COUNT,
-};
 
 extern unsigned char poweroff_irx_start[];
 extern unsigned int poweroff_irx_size;
@@ -76,126 +67,25 @@ extern unsigned int mcman_irx_size;
 extern unsigned char mcserv_irx_start[];
 extern unsigned int mcserv_irx_size;
 
-static unsigned char HDDModulesLoaded=0;
-
 char eboot_path[512];
 char user_path[512];
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 
-static int getBootDeviceID(char *path)
-{
-   if (!strncmp(path, "mc0:", 4))
-      return BOOT_DEVICE_MC0;
-   else if (!strncmp(path, "mc1:", 4))
-      return BOOT_DEVICE_MC1;
-   else if (!strncmp(path, "cdrom0:", 7))
-      return BOOT_DEVICE_CDROM;
-   else if (!strncmp(path, "mass:", 5) || !strncmp(path, "mass0:", 6))
-      return BOOT_DEVICE_MASS;
-   else if (!strncmp(path, "hdd:", 4) || !strncmp(path, "hdd0:", 5))
-      return BOOT_DEVICE_HDD;
-   else if (!strncmp(path, "host", 4) && ((path[4]>='0' && path[4]<='9') || path[4]==':'))
-      return BOOT_DEVICE_HOST;
-   else
-      return BOOT_DEVICE_UNKNOWN;
-
-   return BOOT_DEVICE_HOST;
-}
-
-/* HACK! If booting from a USB device, keep trying to
- * open this program again until it succeeds.
- *
- * This will ensure that the emulator will be able to load its files.
- */
-
-static bool waitUntilDeviceIsReady(const char *device_path)
-{
-   int openFile = - 1;
-   int retries = 10; /* just in case we tried a unit that is not working/ready */
-
-   while(openFile < 0 && retries > 0)
-   {
-      openFile = fioDopen(device_path);
-      /* Wait untill the device is ready */
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-   };
-
-   fioDclose(openFile);
-   
-   return openFile >= 0;
-}
-
-void setPWDOnPFS(const char *FullCWD_path)
-{
-   int i;
-   char *path=NULL;
-   for (i=strlen(FullCWD_path); i>=0; i--)
-   {
-      /* Try to seperate the CWD from the path to this ELF. */
-      if (FullCWD_path[i]==':')
-      {
-         if ((path=malloc(i+6+2))!=NULL)
-         {
-            strcpy(path, "pfs0:/");
-            strncat(path, FullCWD_path, i+1);
-            path[i+1+6]='\0';
-         }
-         break;
-      }
-      else if ((FullCWD_path[i]=='\\')||(FullCWD_path[i]=='/'))
-      {
-         if ((path=malloc(i+6+1))!=NULL)
-         {
-            strcpy(path, "pfs0:/");
-            strncat(path, FullCWD_path, i);
-            path[i+6]='\0';
-         }
-         break;
-      }
-   }
-
-   if (path!=NULL)
-   {
-      chdir(path);
-      free(path);
-   }
-}
-
-static const char *getMountParams(const char *command, char *BlockDevice)
-{
-   int BlockDeviceNameLen;
-   const char *MountPath=NULL;
-
-   if (strlen(command)>6 && (MountPath=strchr(&command[5], ':'))!=NULL)
-   {
-      BlockDeviceNameLen=(unsigned int)MountPath-(unsigned int)command;
-      strncpy(BlockDevice, command, BlockDeviceNameLen);
-      BlockDevice[BlockDeviceNameLen]='\0';
-
-      MountPath++;    /* This is the location of the mount path; */
-   }
-
-   return MountPath;
-}
-
 static void create_path_names(void)
 {
    char cwd[FILENAME_MAX];
+   int bootDeviceID;
 
    getcwd(cwd, sizeof(cwd));
+   bootDeviceID=getBootDeviceID(cwd);
+   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
    strcat(cwd, "RETROARCH");
 
    strlcpy(eboot_path, cwd, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    strlcpy(user_path, eboot_path, sizeof(user_path));
+
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
          "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -252,40 +142,6 @@ static void poweroffCallback(void *arg)
 static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char cwd[FILENAME_MAX], blockDevice[16];
-   const char *mountPoint;
-   int bootDeviceID;
-
-   getcwd(cwd, sizeof(cwd));
-   bootDeviceID=getBootDeviceID(cwd);
-   waitUntilDeviceIsReady(cwd);
-
-   /* Mount the HDD partition, if required. */
-   if (bootDeviceID==BOOT_DEVICE_HDD)
-   {
-      /* Try not to adjust this unless you know what you are doing. The tricky part i keeping the NULL character in the middle of that argument list separated from the number 4. */
-      static const char PS2HDD_args[]="-o\0""2";
-      static const char PS2FS_args[]="-o\0""8";
-
-      if (!HDDModulesLoaded)
-      {
-         SifExecModuleBuffer(poweroff_irx_start, poweroff_irx_size, 0, NULL, NULL);
-         SifExecModuleBuffer(ps2dev9_irx_start, ps2dev9_irx_size, 0, NULL, NULL);
-         SifExecModuleBuffer(ps2atad_irx_start, ps2atad_irx_size, 0, NULL, NULL);
-         SifExecModuleBuffer(ps2hdd_irx_start, ps2hdd_irx_size, sizeof(PS2HDD_args), PS2HDD_args, NULL);
-         SifExecModuleBuffer(ps2fs_irx_start, ps2fs_irx_size, sizeof(PS2FS_args), PS2FS_args, NULL);
-         HDDModulesLoaded=1;
-      }
-
-      /* Attempt to mount the partition. */
-      if ((mountPoint=getMountParams(cwd, blockDevice))!=NULL && !strncmp(mountPoint, "pfs:", 4))
-      {
-         fileXioMount("pfs0:", blockDevice, FIO_MT_RDWR);
-
-         setPWDOnPFS(&mountPoint[4]);
-      }
-   }
-
    create_path_names();
 
 #ifndef IS_SALAMANDER
@@ -323,11 +179,13 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
-
 }
 
 static void frontend_ps2_init(void *data)
 {
+   char cwd[FILENAME_MAX];
+   int bootDeviceID;
+
    SifInitRpc(0);
 #if !defined(DEBUG)
    /* Comment this line if you don't wanna debug the output */
@@ -368,6 +226,11 @@ static void frontend_ps2_init(void *data)
    if (padInit(0) != 1) {
       RARCH_ERR("padInit library not initalizated\n");
    }
+
+   /* Prepare device */
+   getcwd(cwd, sizeof(cwd));
+   bootDeviceID=getBootDeviceID(cwd);
+   waitUntilDeviceIsReady(bootDeviceID);
 
 #if defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("retroarch.log");
@@ -494,35 +357,32 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
       MSG_UNKNOWN;
 
    menu_entries_append_enum(list,
-         "mc0:/",
+         rootDevicePath(BOOT_DEVICE_MC0),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "mc1:/",
+         rootDevicePath(BOOT_DEVICE_MC1),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "mass:/",
+         rootDevicePath(BOOT_DEVICE_MASS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "cdfs:/",
+         rootDevicePath(BOOT_DEVICE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "hdd0:/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+#if defined(DEBUG)
    menu_entries_append_enum(list,
          "host:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
+#endif
 #endif
 
    return 0;

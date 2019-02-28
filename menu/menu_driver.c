@@ -1762,7 +1762,7 @@ static bool menu_init(menu_handle_t *menu_data)
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
-#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
+#if !(defined(PS2) && defined(DEBUG)) /* TODO: PS2 IMPROVEMENT */
       if (settings->bools.config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
