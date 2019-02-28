@@ -732,6 +732,9 @@ static int menu_input_pointer_post_iterate(
       return -1;
 
 #ifdef HAVE_OVERLAY
+   /* If we have overlays enabled, overlay controls take
+    * precedence and we don't want regular menu
+    * pointer controls to be handled */
    if ((       settings->bools.input_overlay_enable
             && input_overlay_is_alive(overlay_ptr)))
       return 0;
