@@ -988,9 +988,13 @@ static int16_t udev_input_state(void *data,
          return udev_mouse_state(udev, port, id, true);
 
       case RETRO_DEVICE_POINTER:
-         return udev_pointer_state(udev, port, id, false);
+         if (idx == 0) /* multi-touch unsupported (for now) */
+            return udev_pointer_state(udev, port, id, false);
+         break;
       case RARCH_DEVICE_POINTER_SCREEN:
-         return udev_pointer_state(udev, port, id, true);
+         if (idx == 0) /* multi-touch unsupported (for now) */
+            return udev_pointer_state(udev, port, id, true);
+         break;
 
       case RETRO_DEVICE_LIGHTGUN:
          switch ( id )
