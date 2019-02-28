@@ -2071,6 +2071,7 @@ void rarch_menu_running_finished(void)
    /* Prevent stray input */
    input_driver_set_flushing_input();
 
+   /* Stop menu background music before we exit the menu */
    if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
@@ -3653,7 +3654,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check UI companion toggle */
+   /* Check if we have pressed the UI companion toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3666,7 +3667,7 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   /* Check menu toggle */
+   /* Check if we have pressed the menu toggle button */
    {
       static bool old_pressed = false;
       char *menu_driver       = settings->arrays.menu_driver;
@@ -3720,7 +3721,7 @@ static enum runloop_state runloop_check_state(
    if (pause_nonactive)
       focused                = is_focused;
 
-   /* Check screenshot toggle */
+   /* Check if we have pressed the screenshot toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3732,7 +3733,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check audio mute toggle */
+   /* Check if we have pressed the audio mute toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3744,7 +3745,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check OSK toggle */
+   /* Check if we have pressed the OSK toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(current_input, RARCH_OSK);
@@ -3763,7 +3764,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check FPS toggle */
+   /* Check if we have pressed the FPS toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3775,7 +3776,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check recording toggle */
+   /* Check if we have pressed the recording toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3792,7 +3793,7 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   /* Check streaming toggle */
+   /* Check if we have pressed the streaming toggle button */
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
@@ -3831,7 +3832,7 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   /* Check pause */
+   /* Check if we have pressed the pause button */
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
@@ -3879,7 +3880,7 @@ static enum runloop_state runloop_check_state(
    if (!focused)
       return RUNLOOP_STATE_SLEEP;
 
-   /* Check fast forward button */
+   /* Check if we have pressed the fast forward button */
    /* To avoid continous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between then.
@@ -3925,16 +3926,14 @@ static enum runloop_state runloop_check_state(
 
       /* Display the fast forward state to the user, if needed. */
       if (runloop_fastmotion)
-      {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
    }
 
-   /* Check state slots */
+   /* Check if we have pressed any of the state slot buttons */
    {
       static bool old_should_slot_increase = false;
       static bool old_should_slot_decrease = false;
@@ -3979,7 +3978,7 @@ static enum runloop_state runloop_check_state(
       old_should_slot_decrease = should_slot_decrease;
    }
 
-   /* Check savestates */
+   /* Check if we have pressed any of the savestate buttons */
    {
       static bool old_should_savestate = false;
       static bool old_should_loadstate = false;
@@ -4052,10 +4051,8 @@ static enum runloop_state runloop_check_state(
       if (runloop_slowmotion)
       {
          if (settings->bools.video_black_frame_insertion)
-         {
             if (!runloop_idle)
                video_driver_cached_frame();
-         }
 
          if (state_manager_frame_is_reversed())
             runloop_msg_queue_push(
@@ -4107,7 +4104,7 @@ static enum runloop_state runloop_check_state(
       old_shader_prev             = shader_prev;
    }
 
-   /* Check disk */
+   /* Check if we have pressed any of the disk buttons */
    {
       static bool old_disk_eject  = false;
       static bool old_disk_next   = false;
@@ -4131,7 +4128,7 @@ static enum runloop_state runloop_check_state(
       old_disk_next               = disk_next;
    }
 
-   /* Check reset */
+   /* Check if we have pressed the reset button */
    {
       static bool old_state = false;
       bool new_state        = BIT256_GET(
