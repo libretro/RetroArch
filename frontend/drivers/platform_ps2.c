@@ -34,7 +34,6 @@ enum BootDeviceIDs{
     BOOT_DEVICE_MASS,
     BOOT_DEVICE_HDD,
     BOOT_DEVICE_HOST,
-
     BOOT_DEVICE_COUNT,
 };
 
@@ -84,13 +83,6 @@ char user_path[512];
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 
-/* Only paths residing on "basic" devices
- * (devices that don't require mounting)
- * can be specified here, since this system
- * doesn't perform mounting based on the path.
- */
-#define DEFAULT_PATH    "mass:"
-
 static int getBootDeviceID(char *path)
 {
    if (!strncmp(path, "mc0:", 4))
@@ -117,14 +109,15 @@ static int getBootDeviceID(char *path)
  * This will ensure that the emulator will be able to load its files.
  */
 
-static void waitUntilDeviceIsReady(const char *path)
+static bool waitUntilDeviceIsReady(const char *device_path)
 {
-   FILE *file;
+   int openFile = - 1;
+   int retries = 10; /* just in case we tried a unit that is not working/ready */
 
-   while((file=fopen(path, "rb"))==NULL)
+   while(openFile < 0 && retries > 0)
    {
-      /* Wait for a while first, or the IOP
-       * will get swamped by requests from the EE. */
+      openFile = fioDopen(device_path);
+      /* Wait untill the device is ready */
       nopdelay();
       nopdelay();
       nopdelay();
@@ -135,7 +128,9 @@ static void waitUntilDeviceIsReady(const char *path)
       nopdelay();
    };
 
-   fclose(file);
+   fioDclose(openFile);
+   
+   return openFile >= 0;
 }
 
 void setPWDOnPFS(const char *FullCWD_path)
@@ -194,11 +189,8 @@ static const char *getMountParams(const char *command, char *BlockDevice)
 static void create_path_names(void)
 {
    char cwd[FILENAME_MAX];
+
    getcwd(cwd, sizeof(cwd));
-   if (strncmp(cwd, "mc0:", 4) || strncmp(cwd, "mc1:", 4)) {
-      /* For now the save and load states just working in MCs */
-      strlcpy(cwd, "mc0:/", sizeof(cwd));
-   }
    strcat(cwd, "RETROARCH");
 
    strlcpy(eboot_path, cwd, sizeof(eboot_path));
@@ -266,6 +258,7 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
 
    getcwd(cwd, sizeof(cwd));
    bootDeviceID=getBootDeviceID(cwd);
+   waitUntilDeviceIsReady(cwd);
 
    /* Mount the HDD partition, if required. */
    if (bootDeviceID==BOOT_DEVICE_HDD)
@@ -292,11 +285,6 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
          setPWDOnPFS(&mountPoint[4]);
       }
    }
-   else if (bootDeviceID==BOOT_DEVICE_CDROM)
-      chdir(DEFAULT_PATH);
-   else if (bootDeviceID==BOOT_DEVICE_MASS)
-      waitUntilDeviceIsReady(argv[0]);
-   else if (bootDeviceID==BOOT_DEVICE_UNKNOWN) { }
 
    create_path_names();
 
