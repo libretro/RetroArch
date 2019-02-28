@@ -108,11 +108,11 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    core_info_list_t *core_info = NULL;
    runtime_log_t *runtime_log = NULL;
    
-   const char *savefile_dir = dir_get(RARCH_DIR_SAVEFILE);
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
+   char tmp_buf[PATH_MAX_LENGTH];
    
    unsigned i;
    
@@ -120,15 +120,22 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    core_name[0] = '\0';
    log_file_dir[0] = '\0';
    log_file_path[0] = '\0';
+   tmp_buf[0] = '\0';
    
    /* Error checking */
    if (!settings)
       return NULL;
    
-   if (string_is_empty(content_path) || string_is_empty(core_path) || string_is_empty(savefile_dir))
+   if (string_is_empty(settings->paths.directory_playlist))
+   {
+      RARCH_ERR("Playlist directory is undefined - cannot save runtime logs.\n");
+      return NULL;
+   }
+   
+   if (string_is_empty(content_path) || string_is_empty(core_path))
       return NULL;
    
-   if (string_is_equal(core_path, "builtin"))
+   if (string_is_equal(core_path, "builtin") || string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
       return NULL;
    
    /* Get core name */
@@ -150,18 +157,17 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
       return NULL;
    
    /* Get runtime log directory */
-   if (settings->bools.sort_savefiles_enable)
-   {
-      fill_pathname_join(
-            log_file_dir,
-            savefile_dir,
-            core_name,
-            sizeof(log_file_dir));
-   }
-   else
-   {
-      strlcpy(log_file_dir, savefile_dir, sizeof(log_file_dir));
-   }
+   fill_pathname_join(
+         tmp_buf,
+         settings->paths.directory_playlist,
+         "logs",
+         sizeof(tmp_buf));
+   
+   fill_pathname_join(
+         log_file_dir,
+         tmp_buf,
+         core_name,
+         sizeof(log_file_dir));
    
    if (string_is_empty(log_file_dir))
       return NULL;
@@ -189,10 +195,9 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
          size_t path_length = last_slash + 1 - content_path;
          if (path_length < PATH_MAX_LENGTH)
          {
-            char tmp[PATH_MAX_LENGTH];
-            memset(tmp, 0, sizeof(tmp));
-            strlcpy(tmp, content_path, path_length * sizeof(char));
-            strlcpy(content_name, path_basename(tmp), sizeof(content_name));
+            memset(tmp_buf, 0, sizeof(tmp_buf));
+            strlcpy(tmp_buf, content_path, path_length * sizeof(char));
+            strlcpy(content_name, path_basename(tmp_buf), sizeof(content_name));
          }
       }
    }
@@ -200,15 +205,9 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    {
       /* path_remove_extension() requires a char * (not const)
        * so have to use a temporary buffer... */
-      char *tmp = strdup(path_basename(content_path));
-      
-      strlcpy(
-            content_name,
-            path_remove_extension(tmp),
-            sizeof(content_name));
-      
-      if (!string_is_empty(tmp))
-         free(tmp);
+      tmp_buf[0] = '\0';
+      strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
+      strlcpy(content_name, path_remove_extension(tmp_buf), sizeof(content_name));
    }
    
    if (string_is_empty(content_name))
@@ -216,13 +215,6 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    
    /* Build final log file path */
    fill_pathname_join(log_file_path, log_file_dir, content_name, sizeof(log_file_path));
-   
-   if (!settings->bools.sort_savefiles_enable)
-   {
-      strlcat(log_file_path, " - ", sizeof(log_file_path));
-      strlcat(log_file_path, core_name, sizeof(log_file_path));
-   }
-   
    strlcat(log_file_path, file_path_str(FILE_PATH_RUNTIME_EXTENSION), sizeof(log_file_path));
    
    if (string_is_empty(log_file_path))
