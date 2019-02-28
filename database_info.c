@@ -380,7 +380,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    core_info_get_list(&core_info_list);
 
-   list = dir_list_new(dir, core_info_list->all_ext,
+   list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
          false, show_hidden_files,
          false, true);
 
