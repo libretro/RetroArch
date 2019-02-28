@@ -32,12 +32,96 @@
 #include <configuration.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <formats/jsonsax_full.h>
 #include <string/stdstring.h>
 #include <verbosity.h>
 
 #include <file/runtime_file.h>
 
-#define LOG_FILE_FORMAT_STR "%u:%02u:%02u\n%04u-%02u-%02u %02u:%02u:%02u\n"
+#define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
+#define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"
+
+/* JSON Stuff... */
+
+typedef struct
+{
+   JSON_Parser parser;
+   JSON_Writer writer;
+   RFILE *file;
+   char **current_entry_val;
+   char *runtime_string;
+   char *last_played_string;
+} JSONContext;
+
+static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+   
+   if (pCtx->current_entry_val)
+   {
+      /* something went wrong */
+      RARCH_ERR("JSON parsing failed at line %d.\n", __LINE__);
+      return JSON_Parser_Abort;
+   }
+   
+   if (length)
+   {
+      if (string_is_equal(pValue, "runtime"))
+         pCtx->current_entry_val = &pCtx->runtime_string;
+      else if (string_is_equal(pValue, "last_played"))
+         pCtx->current_entry_val = &pCtx->last_played_string;
+      /* ignore unknown members */
+   }
+   
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+   
+   if (pCtx->current_entry_val && length && !string_is_empty(pValue))
+   {
+      if (*pCtx->current_entry_val)
+         free(*pCtx->current_entry_val);
+      
+      *pCtx->current_entry_val = strdup(pValue);
+   }
+   /* ignore unknown members */
+   
+   pCtx->current_entry_val = NULL;
+   
+   return JSON_Parser_Continue;
+}
+
+static JSON_Writer_HandlerResult JSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
+{
+   JSONContext *context = (JSONContext*)JSON_Writer_GetUserData(writer);
+   (void)writer; /* unused */
+   
+   return filestream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
+}
+
+static void JSONLogError(JSONContext *pCtx)
+{
+   if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
+   {
+      JSON_Error error = JSON_Parser_GetError(pCtx->parser);
+      JSON_Location errorLocation = { 0, 0, 0 };
+      (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
+      RARCH_ERR("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
+            (int)errorLocation.line + 1,
+            (int)errorLocation.column + 1,
+            (int)errorLocation.byte,
+            JSON_ErrorString(error));
+   }
+   else if (pCtx->writer && JSON_Writer_GetError(pCtx->writer) != JSON_Error_AbortedByHandler)
+   {
+      RARCH_ERR("Error: could not write output - %s.\n", JSON_ErrorString(JSON_Writer_GetError(pCtx->writer)));
+   }
+}
 
 /* Initialisation */
 
@@ -56,8 +140,9 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
    
-   int ret = 0;
+   JSONContext context = {0};
    RFILE *file = NULL;
+   int ret = 0;
    
    /* Check if log file exists */
    if (!filestream_exists(runtime_log->path))
@@ -72,28 +157,108 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       return;
    }
    
-   /* Parse log file */
-   ret = filestream_scanf(file, LOG_FILE_FORMAT_STR,
-               &runtime_hours, &runtime_minutes, &runtime_seconds,
-               &last_played_year, &last_played_month, &last_played_day,
-               &last_played_hour, &last_played_minute, &last_played_second);
+   /* Initialise JSON parser */
+   context.runtime_string = NULL;
+   context.last_played_string = NULL;
+   context.parser = JSON_Parser_Create(NULL);
+   context.file = file;
    
-   if (ret == 9)
+   if (!context.parser)
    {
-      /* All is well - assign values to runtime_log object */
-      runtime_log->runtime.hours = runtime_hours;
-      runtime_log->runtime.minutes = runtime_minutes;
-      runtime_log->runtime.seconds = runtime_seconds;
-      
-      runtime_log->last_played.year = last_played_year;
-      runtime_log->last_played.month = last_played_month;
-      runtime_log->last_played.day = last_played_day;
-      runtime_log->last_played.hour = last_played_hour;
-      runtime_log->last_played.minute = last_played_minute;
-      runtime_log->last_played.second = last_played_second;
+      RARCH_ERR("Failed to create JSON parser.\n");
+      goto end;
    }
-   else
-      RARCH_ERR("Invalid runtime log file: %s\n", runtime_log->path);
+   
+   /* Configure parser */
+   JSON_Parser_SetAllowBOM(context.parser, JSON_True);
+   JSON_Parser_SetStringHandler(context.parser, &JSONStringHandler);
+   JSON_Parser_SetObjectMemberHandler(context.parser, &JSONObjectMemberHandler);
+   JSON_Parser_SetUserData(context.parser, &context);
+   
+   /* Read file */
+   while (!filestream_eof(file))
+   {
+      /* Runtime log files are tiny - use small chunk size */
+      char chunk[128] = {0};
+      int64_t length = filestream_read(file, chunk, sizeof(chunk));
+      
+      /* Error checking... */
+      if (!length && !filestream_eof(file))
+      {
+         RARCH_ERR("Failed to read runtime log file: %s\n", runtime_log->path);
+         JSON_Parser_Free(context.parser);
+         goto end;
+      }
+      
+      /* Parse chunk */
+      if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+      {
+         RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%s\n---snip---\n", runtime_log->path, chunk);
+         JSONLogError(&context);
+         JSON_Parser_Free(context.parser);
+         goto end;
+      }
+   }
+   
+   /* Finalise parsing */
+   if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
+   {
+      RARCH_WARN("Error parsing runtime log file: %s\n", runtime_log->path);
+      JSONLogError(&context);
+      JSON_Parser_Free(context.parser);
+      goto end;
+   }
+   
+   /* Free parser */
+   JSON_Parser_Free(context.parser);
+   
+   /* Process string values read from JSON file */
+   
+   /* Runtime */
+   ret = 0;
+   if (!string_is_empty(context.runtime_string))
+      ret = sscanf(context.runtime_string, LOG_FILE_RUNTIME_FORMAT_STR,
+                  &runtime_hours, &runtime_minutes, &runtime_seconds);
+   
+   if (ret != 3)
+   {
+      RARCH_ERR("Runtime log file - invalid 'runtime' entry detected: %s\n", runtime_log->path);
+      goto end;
+   }
+   
+   /* Last played */
+   ret = 0;
+   if (!string_is_empty(context.last_played_string))
+      ret = sscanf(context.last_played_string, LOG_FILE_LAST_PLAYED_FORMAT_STR,
+                  &last_played_year, &last_played_month, &last_played_day,
+                  &last_played_hour, &last_played_minute, &last_played_second);
+   
+   if (ret != 6)
+   {
+      RARCH_ERR("Runtime log file - invalid 'last played' entry detected: %s\n", runtime_log->path);
+      goto end;
+   }
+   
+   /* If we reach this point then all is well
+    * > Assign values to runtime_log object */
+   runtime_log->runtime.hours = runtime_hours;
+   runtime_log->runtime.minutes = runtime_minutes;
+   runtime_log->runtime.seconds = runtime_seconds;
+   
+   runtime_log->last_played.year = last_played_year;
+   runtime_log->last_played.month = last_played_month;
+   runtime_log->last_played.day = last_played_day;
+   runtime_log->last_played.hour = last_played_hour;
+   runtime_log->last_played.minute = last_played_minute;
+   runtime_log->last_played.second = last_played_second;
+   
+end:
+   
+   /* Clean up leftover strings */
+   if (context.runtime_string)
+      free(context.runtime_string);
+   if (context.last_played_string)
+      free(context.last_played_string);
    
    /* Close log file */
    filestream_close(file);
@@ -476,8 +641,10 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
 /* Saves specified runtime log to disk */
 void runtime_log_save(runtime_log_t *runtime_log)
 {
-   int ret = 0;
+   JSONContext context = {0};
    RFILE *file = NULL;
+   char value_string[64]; /* 64 characters should be enough for a very long runtime... :) */
+   int n;
    
    if (!runtime_log)
       return;
@@ -491,14 +658,72 @@ void runtime_log_save(runtime_log_t *runtime_log)
       return;
    }
    
-   /* Write log file contents */
-   ret = filestream_printf(file, LOG_FILE_FORMAT_STR,
-               runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds,
-               runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
-               runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
+   /* Initialise JSON writer */
+   context.writer = JSON_Writer_Create(NULL);
+   context.file = file;
    
-   if (ret <= 0)
-      RARCH_ERR("Failed to write runtime log file: %s\n", runtime_log->path);
+   if (!context.writer)
+   {
+      RARCH_ERR("Failed to create JSON writer.\n");
+      goto end;
+   }
+   
+   /* Configure JSON writer */
+   JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
+   JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
+   JSON_Writer_SetUserData(context.writer, &context);
+   
+   /* Write output file */
+   JSON_Writer_WriteStartObject(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   
+   /* > Version entry */
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteString(context.writer, "version", strlen("version"), JSON_UTF8);
+   JSON_Writer_WriteColon(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 1);
+   JSON_Writer_WriteString(context.writer, "1.0", strlen("1.0"), JSON_UTF8);
+   JSON_Writer_WriteComma(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   
+   /* > Runtime entry */
+   value_string[0] = '\0';
+   n = snprintf(value_string, sizeof(value_string), LOG_FILE_RUNTIME_FORMAT_STR,
+         runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds);
+   if ((n < 0) || (n >= 64))
+      n = 0; /* Silence GCC warnings... */
+   
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteString(context.writer, "runtime", strlen("runtime"), JSON_UTF8);
+   JSON_Writer_WriteColon(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 1);
+   JSON_Writer_WriteString(context.writer, value_string, strlen(value_string), JSON_UTF8);
+   JSON_Writer_WriteComma(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   
+   /* > Last played entry */
+   value_string[0] = '\0';
+   n = snprintf(value_string, sizeof(value_string), LOG_FILE_LAST_PLAYED_FORMAT_STR,
+         runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
+         runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
+   if ((n < 0) || (n >= 64))
+      n = 0; /* Silence GCC warnings... */
+   
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteString(context.writer, "last_played", strlen("last_played"), JSON_UTF8);
+   JSON_Writer_WriteColon(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 1);
+   JSON_Writer_WriteString(context.writer, value_string, strlen(value_string), JSON_UTF8);
+   JSON_Writer_WriteNewLine(context.writer);
+   
+   /* > Finalise */
+   JSON_Writer_WriteEndObject(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   
+   /* Free JSON writer */
+   JSON_Writer_Free(context.writer);
+   
+end:
    
    /* Close log file */
    filestream_close(file);
