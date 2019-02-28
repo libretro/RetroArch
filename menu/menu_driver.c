@@ -1758,6 +1758,10 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->bools.menu_show_start_screen)
    {
+      /* We don't want the welcome dialog screen to show up
+       * again after the first startup, so we save to config
+       * file immediately. */
+
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
 
       configuration_set_bool(settings,
