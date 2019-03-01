@@ -48,6 +48,15 @@ struct playlist_entry
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
+   /* Note: due to platform dependence, have to record
+    * timestamp as either a string or independent integer
+    * values. The latter is more verbose, but more efficient. */
+   unsigned last_played_year;
+   unsigned last_played_month;
+   unsigned last_played_day;
+   unsigned last_played_hour;
+   unsigned last_played_minute;
+   unsigned last_played_second;
 };
 
 struct content_playlist
@@ -133,8 +142,9 @@ void playlist_get_index(playlist_t *playlist,
 void playlist_get_runtime_index(playlist_t *playlist,
       size_t idx,
       const char **path, const char **core_path,
-      unsigned *runtime_hours, unsigned *runtime_minutes,
-      unsigned *runtime_seconds)
+      unsigned *runtime_hours, unsigned *runtime_minutes, unsigned *runtime_seconds,
+      unsigned *last_played_year, unsigned *last_played_month, unsigned *last_played_day,
+      unsigned *last_played_hour, unsigned *last_played_minute, unsigned *last_played_second)
 {
    if (!playlist)
       return;
@@ -149,6 +159,18 @@ void playlist_get_runtime_index(playlist_t *playlist,
       *runtime_minutes = playlist->entries[idx].runtime_minutes;
    if (runtime_seconds)
       *runtime_seconds = playlist->entries[idx].runtime_seconds;
+   if (last_played_year)
+      *last_played_year = playlist->entries[idx].last_played_year;
+   if (last_played_month)
+      *last_played_month = playlist->entries[idx].last_played_month;
+   if (last_played_day)
+      *last_played_day = playlist->entries[idx].last_played_day;
+   if (last_played_hour)
+      *last_played_hour = playlist->entries[idx].last_played_hour;
+   if (last_played_minute)
+      *last_played_minute = playlist->entries[idx].last_played_minute;
+   if (last_played_second)
+      *last_played_second = playlist->entries[idx].last_played_second;
 }
 
 /**
@@ -252,6 +274,12 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->runtime_hours = 0;
    entry->runtime_minutes = 0;
    entry->runtime_seconds = 0;
+   entry->last_played_year = 0;
+   entry->last_played_month = 0;
+   entry->last_played_day = 0;
+   entry->last_played_hour = 0;
+   entry->last_played_minute = 0;
+   entry->last_played_second = 0;
 }
 
 void playlist_update(playlist_t *playlist, size_t idx,
@@ -319,8 +347,10 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
 void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes,
-      unsigned runtime_seconds)
+      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
+      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
+      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second,
+      bool register_update)
 {
    struct playlist_entry *entry = NULL;
 
@@ -334,7 +364,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       if (entry->path != NULL)
          free(entry->path);
       entry->path        = strdup(path);
-      playlist->modified = true;
+      playlist->modified = playlist->modified || register_update;
    }
 
    if (core_path && (core_path != entry->core_path))
@@ -343,32 +373,69 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
          free(entry->core_path);
       entry->core_path   = NULL;
       entry->core_path   = strdup(core_path);
-      playlist->modified = true;
+      playlist->modified = playlist->modified || register_update;
    }
 
    if (runtime_hours != entry->runtime_hours)
    {
       entry->runtime_hours = runtime_hours;
-      playlist->modified = true;
+      playlist->modified = playlist->modified || register_update;
    }
 
    if (runtime_minutes != entry->runtime_minutes)
    {
       entry->runtime_minutes = runtime_minutes;
-      playlist->modified = true;
+      playlist->modified = playlist->modified || register_update;
    }
 
    if (runtime_seconds != entry->runtime_seconds)
    {
       entry->runtime_seconds = runtime_seconds;
-      playlist->modified = true;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_year != entry->last_played_year)
+   {
+      entry->last_played_year = last_played_year;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_month != entry->last_played_month)
+   {
+      entry->last_played_month = last_played_month;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_day != entry->last_played_day)
+   {
+      entry->last_played_day = last_played_day;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_hour != entry->last_played_hour)
+   {
+      entry->last_played_hour = last_played_hour;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_minute != entry->last_played_minute)
+   {
+      entry->last_played_minute = last_played_minute;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (last_played_second != entry->last_played_second)
+   {
+      entry->last_played_second = last_played_second;
+      playlist->modified = playlist->modified || register_update;
    }
 }
 
 bool playlist_push_runtime(playlist_t *playlist,
       const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes,
-      unsigned runtime_seconds)
+      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
+      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
+      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second)
 {
    size_t i;
    bool core_path_empty = string_is_empty(core_path);
@@ -447,6 +514,12 @@ bool playlist_push_runtime(playlist_t *playlist,
       playlist->entries[0].runtime_hours = runtime_hours;
       playlist->entries[0].runtime_minutes = runtime_minutes;
       playlist->entries[0].runtime_seconds = runtime_seconds;
+      playlist->entries[0].last_played_year = last_played_year;
+      playlist->entries[0].last_played_month = last_played_month;
+      playlist->entries[0].last_played_day = last_played_day;
+      playlist->entries[0].last_played_hour = last_played_hour;
+      playlist->entries[0].last_played_minute = last_played_minute;
+      playlist->entries[0].last_played_second = last_played_second;
    }
 
    playlist->size++;
@@ -549,15 +622,21 @@ bool playlist_push(playlist_t *playlist,
       memmove(playlist->entries + 1, playlist->entries,
             (playlist->cap - 1) * sizeof(struct playlist_entry));
 
-      playlist->entries[0].path            = NULL;
-      playlist->entries[0].label           = NULL;
-      playlist->entries[0].core_path       = NULL;
-      playlist->entries[0].core_name       = NULL;
-      playlist->entries[0].db_name         = NULL;
-      playlist->entries[0].crc32           = NULL;
-      playlist->entries[0].runtime_hours   = 0;
-      playlist->entries[0].runtime_minutes = 0;
-      playlist->entries[0].runtime_seconds = 0;
+      playlist->entries[0].path               = NULL;
+      playlist->entries[0].label              = NULL;
+      playlist->entries[0].core_path          = NULL;
+      playlist->entries[0].core_name          = NULL;
+      playlist->entries[0].db_name            = NULL;
+      playlist->entries[0].crc32              = NULL;
+      playlist->entries[0].runtime_hours      = 0;
+      playlist->entries[0].runtime_minutes    = 0;
+      playlist->entries[0].runtime_seconds    = 0;
+      playlist->entries[0].last_played_year   = 0;
+      playlist->entries[0].last_played_month  = 0;
+      playlist->entries[0].last_played_day    = 0;
+      playlist->entries[0].last_played_hour   = 0;
+      playlist->entries[0].last_played_minute = 0;
+      playlist->entries[0].last_played_second = 0;
       if (!string_is_empty(path))
          playlist->entries[0].path      = strdup(path);
       if (!string_is_empty(label))
@@ -708,6 +787,78 @@ void playlist_write_runtime_file(playlist_t *playlist)
 
          JSON_Writer_WriteSpace(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "runtime_seconds", strlen("runtime_seconds"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_year);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_year", strlen("last_played_year"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_month);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_month", strlen("last_played_month"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_day);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_day", strlen("last_played_day"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_hour);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_hour", strlen("last_played_hour"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_minute);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_minute", strlen("last_played_minute"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_second);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_second", strlen("last_played_second"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -1148,6 +1299,18 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
             else if (string_is_equal(pValue, "runtime_seconds"))
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
+            else if (string_is_equal(pValue, "last_played_year"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
+            else if (string_is_equal(pValue, "last_played_month"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
+            else if (string_is_equal(pValue, "last_played_day"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
+            else if (string_is_equal(pValue, "last_played_hour"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
+            else if (string_is_equal(pValue, "last_played_minute"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
+            else if (string_is_equal(pValue, "last_played_second"))
+               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
             else
             {
                /* ignore unknown members */

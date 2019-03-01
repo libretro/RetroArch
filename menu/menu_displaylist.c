@@ -93,6 +93,7 @@
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../dynamic.h"
+#include "../runtime_file.h"
 
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -1325,13 +1326,23 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t list_size = playlist_size(playlist);
    settings_t *settings = config_get_ptr();
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
-   bool get_runtime = string_is_equal(path_playlist, "history") && g_defaults.content_runtime && settings->bools.content_runtime_log;
+   bool get_runtime = false;
    char label_spacer[PL_LABEL_SPACER_MAXLEN];
 
    label_spacer[0] = '\0';
 
    if (list_size == 0)
       goto error;
+
+   /* Check whether runtime logging info should be parsed */
+   if (settings->bools.content_runtime_log)
+   {
+      /* Runtime logging is valid for every type of playlist *apart from*
+       * images/music/video history */
+      get_runtime = !(string_is_equal(path_playlist, "images_history") ||
+                      string_is_equal(path_playlist, "music_history")  ||
+                      string_is_equal(path_playlist, "video_history"));
+   }
 
    /* Get spacer for menu entry labels (<content><spacer><core>) */
    if (is_rgui)
@@ -1368,32 +1379,46 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       playlist_get_index(playlist, i,
             &path, &label, &core_path, &core_name, NULL, NULL);
 
-      /* If this is the content history playlist and runtime logging
-       * is enabled, extract any available runtime values */
+      /* Extract any available runtime values, if required */
       if (get_runtime)
       {
-         unsigned j;
+         runtime_log_t *runtime_log = NULL;
+         runtime_log = runtime_log_init(path, core_path);
 
-         /* Search 'content_runtime.lpl' until we find the current
-          * content+core combo */
-         for (j = 0; j < playlist_get_size(g_defaults.content_runtime); j++)
+         if (runtime_log)
          {
-            const char *runtime_path = NULL;
-            const char *runtime_core_path = NULL;
-            unsigned runtime_hours;
-            unsigned runtime_minutes;
-            unsigned runtime_seconds;
-
-            playlist_get_runtime_index(g_defaults.content_runtime, j, &runtime_path, &runtime_core_path,
-               &runtime_hours, &runtime_minutes, &runtime_seconds);
-
-            if (string_is_equal(path, runtime_path) && string_is_equal(core_path, runtime_core_path))
+            /* Check whether a non-zero runtime has been recorded */
+            if (runtime_log_has_runtime(runtime_log))
             {
-               playlist_update_runtime(playlist, i, NULL, NULL,
-                  runtime_hours, runtime_minutes, runtime_seconds);
+               unsigned runtime_hours;
+               unsigned runtime_minutes;
+               unsigned runtime_seconds;
+               unsigned last_played_year;
+               unsigned last_played_month;
+               unsigned last_played_day;
+               unsigned last_played_hour;
+               unsigned last_played_minute;
+               unsigned last_played_second;
 
-               break;
+               /* Read current runtime */
+               runtime_log_get_runtime_hms(runtime_log,
+                     &runtime_hours, &runtime_minutes, &runtime_seconds);
+
+               /* Read last played timestamp */
+               runtime_log_get_last_played(runtime_log,
+                     &last_played_year, &last_played_month, &last_played_day,
+                     &last_played_hour, &last_played_minute, &last_played_second);
+
+               /* Update playlist entry */
+               playlist_update_runtime(playlist, i, NULL, NULL,
+                     runtime_hours, runtime_minutes, runtime_seconds,
+                     last_played_year, last_played_month, last_played_day,
+                     last_played_hour, last_played_minute, last_played_second,
+                     false);
             }
+
+            /* Clean up */
+            free(runtime_log);
          }
       }
 

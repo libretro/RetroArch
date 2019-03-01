@@ -1234,8 +1234,6 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.path_content_video_history, false, NULL, true);
    SETTING_PATH("content_image_history_path",
          settings->paths.path_content_image_history, false, NULL, true);
-   SETTING_PATH("content_runtime_path",
-         settings->paths.path_content_runtime, false, NULL, true);
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
@@ -2085,7 +2083,6 @@ void config_set_defaults(void)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_image_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
-   *settings->paths.path_content_runtime         = '\0';
    *settings->paths.path_cheat_settings    = '\0';
    *settings->paths.path_shader            = '\0';
 #ifndef IOS
@@ -3066,25 +3063,6 @@ static bool config_load_file(const char *path, bool set_defaults,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
-      }
-   }
-
-   if (string_is_empty(settings->paths.path_content_runtime))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
-      {
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_runtime,
-               path_config,
-               file_path_str(FILE_PATH_CONTENT_RUNTIME),
-               sizeof(settings->paths.path_content_runtime));
-      }
-      else
-      {
-         fill_pathname_join(settings->paths.path_content_runtime,
-               settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_RUNTIME),
-               sizeof(settings->paths.path_content_runtime));
       }
    }
 
