@@ -605,8 +605,44 @@ icons_iterate:
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_sublabel, video_info);
 }
 
+static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      unsigned x_position,
+      unsigned sidebar_width,
+      unsigned y_offset)
+{
+   unsigned icon        = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
+   unsigned icon_size   = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
+   unsigned text_height = font_driver_get_line_height(ozone->fonts.footer, 1.0f);
+
+   menu_display_blend_begin(video_info);
+   ozone_draw_icon(video_info,
+      icon_size,
+      icon_size,
+      ozone->icons_textures[icon],
+      x_position + sidebar_width/2 - icon_size/2,
+      video_info->height / 2 - icon_size/2 - y_offset,
+      video_info->width,
+      video_info->height,
+      0, 1, ozone->theme->entries_icon);
+   menu_display_blend_end(video_info);
+
+   ozone_draw_text(video_info,
+      ozone,
+      msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
+      x_position + sidebar_width/2,
+      video_info->height / 2 - icon_size/2 + text_height * 3 + FONT_SIZE_FOOTER - y_offset,
+      TEXT_ALIGN_CENTER,
+      video_info->width, video_info->height,
+      ozone->fonts.footer,
+      ozone->theme->text_rgba,
+      true
+   );
+}
+
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
+   settings_t *settings    = config_get_ptr();
    unsigned sidebar_height = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
    unsigned sidebar_width  = ozone->dimensions.thumbnail_bar_width;
    unsigned x_position     = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;
@@ -630,6 +666,16 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       !string_is_equal(ozone_thumbnails_ident('L'),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
 
+   /* If user requested "left" thumbnail instead of content metadata
+    * and no thumbnails are available, show a centered message and
+    * return immediately */
+   if (!thumbnail && !left_thumbnail && settings->uints.menu_left_thumbnails != 0)
+   {
+      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, 0);
+      return;
+   }
+
+   /* Top row : thumbnail or no thumbnail available message */
    if (thumbnail)
    {
       unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
@@ -648,7 +694,13 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          ozone_pure_white
       );
    }
+   else
+   {
+      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width,
+         ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
+   }
 
+   /* Bottom row : "left" thumbnail or content metadata */
    if (left_thumbnail)
    {
       unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.left_thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;

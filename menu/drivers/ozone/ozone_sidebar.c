@@ -376,7 +376,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
       }
    }
    //Show it
-   else if (ozone->cursor_in_sidebar)
+   else if (ozone->cursor_in_sidebar || (!is_playlist && !settings->bools.ozone_collapse_sidebar))
    {
       if (allow_animation)
       {

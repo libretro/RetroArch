@@ -54,7 +54,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_Y_PADDING           20
 #define SIDEBAR_ENTRY_HEIGHT        50
 #define SIDEBAR_ENTRY_Y_PADDING     10
-#define SIDEBAR_ENTRY_ICON_SIZE     40
+#define SIDEBAR_ENTRY_ICON_SIZE     46
 #define SIDEBAR_ENTRY_ICON_PADDING  15
 
 #define CURSOR_SIZE 64

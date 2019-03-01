@@ -4803,6 +4803,10 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+    MSG_NO_THUMBNAIL_AVAILABLE,
+    "No thumbnail available"
+    )
+MSG_HASH(
     MSG_PRESS_AGAIN_TO_QUIT,
     "Press again to quit..."
     )
