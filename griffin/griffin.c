@@ -25,6 +25,8 @@
 #define HAVE_COMPRESSION 1
 #endif
 
+#define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
+
 #if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
@@ -1131,7 +1133,6 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
-#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
 /* needed for both playlists and netplay lobbies */
 #include "../libretro-common/formats/json/jsonsax_full.c"
 
