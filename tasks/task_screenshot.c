@@ -49,6 +49,7 @@
 #include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
+#include "../verbosity.h"
 
 #include "../gfx/video_driver.h"
 
@@ -143,6 +144,9 @@ static void task_screenshot_handler(retro_task_t *task)
    {
       task_set_finished(task, true);
 
+      if (task->title)
+         task_free_title(task);
+
       if (state->userbuf)
          free(state->userbuf);
 
@@ -173,6 +177,9 @@ static void task_screenshot_handler(retro_task_t *task)
       runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(msg);
    }
+
+   if (task->title)
+      task_free_title(task);
 }
 
 /* Take frame bottom-up. */
@@ -191,17 +198,19 @@ static bool screenshot_dump(
    char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   retro_task_t *task             = task_init();
-   screenshot_task_state_t *state = (screenshot_task_state_t*)
-         calloc(1, sizeof(*state));
+   retro_task_t *task;
+   screenshot_task_state_t *state;
    const char *screenshot_dir     = settings->paths.directory_screenshot;
    struct retro_system_info system_info;
 
-   state->shotname[0]             = '\0';
    screenshot_path[0]             = '\0';
 
    if (!core_get_system_info(&system_info))
-         return false;
+      return false;
+
+   task = task_init();
+   state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
+   state->shotname[0] = '\0';
 
    /* If fullpath is true, name_base already contains a static path + filename to save the screenshot to. */
    if (fullpath)
@@ -282,10 +291,28 @@ static bool screenshot_dump(
       if (!savestate)
          task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
-      task_queue_push(task);
+      if (!task_queue_push(task))
+      {
+         /* There is already a blocking task going on */
+         if (task->title)
+            task_free_title(task);
+
+         free(task);
+
+         if (state->out_buffer)
+            free(state->out_buffer);
+
+         free(state);
+
+         return false;
+      }
    }
    else
+   {
+      if (task)
+         free(task);
       return screenshot_dump_direct(state);
+   }
 
    return true;
 }

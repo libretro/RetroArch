@@ -209,8 +209,10 @@ void task_queue_retrieve(task_retriever_data_t *data);
 void task_queue_check(void);
 
 /* Pushes a task
- * The task will start as soon as possible. */
-void task_queue_push(retro_task_t *task);
+ * The task will start as soon as possible.
+ * If a second blocking task is attempted, false will be returned
+ * and the task will be ignored. */
+bool task_queue_push(retro_task_t *task);
 
 /* Blocks until all tasks have finished
  * will return early if cond is not NULL

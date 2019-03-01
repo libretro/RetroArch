@@ -610,7 +610,7 @@ void task_queue_check(void)
    impl_current->gather();
 }
 
-void task_queue_push(retro_task_t *task)
+bool task_queue_push(retro_task_t *task)
 {
    /* Ignore this task if a related one is already running */
    if (task->type == TASK_TYPE_BLOCKING)
@@ -634,12 +634,14 @@ void task_queue_push(retro_task_t *task)
 
       /* skip this task, user must try again later */
       if (found)
-         return;
+         return false;
    }
 
    /* The lack of NULL checks in the following functions
     * is proposital to ensure correct control flow by the users. */
    impl_current->push_running(task);
+
+   return true;
 }
 
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)
