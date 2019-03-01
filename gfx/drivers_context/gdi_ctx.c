@@ -106,8 +106,8 @@ static void gfx_ctx_gdi_update_window_title(void *data, void *data2)
    if (settings->bools.video_memory_show)
    {
 #ifndef __WINRT__
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      int64_t mem_bytes_used = frontend_driver_get_used_memory();
+      int64_t mem_bytes_total = frontend_driver_get_total_memory();
       char         mem[128];
 
       mem[0] = '\0';
