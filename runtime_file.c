@@ -25,18 +25,19 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include <retro_miscellaneous.h>
-#include <file_path_special.h>
-#include <dirs.h>
-#include <core_info.h>
-#include <configuration.h>
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/jsonsax_full.h>
 #include <string/stdstring.h>
-#include <verbosity.h>
 
-#include <file/runtime_file.h>
+#include "file_path_special.h"
+#include "dirs.h"
+#include "core_info.h"
+#include "configuration.h"
+#include "verbosity.h"
+
+#include "runtime_file.h"
 
 #define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
 #define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"

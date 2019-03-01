@@ -53,7 +53,7 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 #include <features/features_cpu.h>
-#include <file/runtime_file.h>
+#include "runtime_file.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

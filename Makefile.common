@@ -239,7 +239,7 @@ OBJ += frontend/frontend.o \
        core_info.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
-       $(LIBRETRO_COMM_DIR)/file/runtime_file.o \
+       runtime_file.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
