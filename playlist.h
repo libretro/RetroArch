@@ -82,8 +82,9 @@ void playlist_get_index(playlist_t *playlist,
 void playlist_get_runtime_index(playlist_t *playlist,
       size_t idx,
       const char **path, const char **core_path,
-      unsigned *runtime_hours, unsigned *runtime_minutes,
-      unsigned *runtime_seconds);
+      unsigned *runtime_hours, unsigned *runtime_minutes, unsigned *runtime_seconds,
+      unsigned *last_played_year, unsigned *last_played_month, unsigned *last_played_day,
+      unsigned *last_played_hour, unsigned *last_played_minute, unsigned *last_played_second);
 
 /**
  * playlist_delete_index:
@@ -112,8 +113,9 @@ bool playlist_push(playlist_t *playlist,
 
 bool playlist_push_runtime(playlist_t *playlist,
       const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes,
-      unsigned runtime_seconds);
+      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
+      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
+      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second);
 
 void playlist_update(playlist_t *playlist, size_t idx,
       const char *path, const char *label,
@@ -121,10 +123,17 @@ void playlist_update(playlist_t *playlist, size_t idx,
       const char *crc32,
       const char *db_name);
 
+/* Note: register_update determines whether the internal
+ * 'playlist->modified' flag is set when updating runtime
+ * values. Since these are normally set temporarily (for
+ * display purposes), we do not always want this function
+ * to trigger a re-write of the playlist file. */
 void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes,
-      unsigned runtime_seconds);
+      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
+      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
+      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second,
+      bool register_update);
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,

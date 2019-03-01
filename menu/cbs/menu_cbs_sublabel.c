@@ -826,6 +826,12 @@ static int action_bind_sublabel_playlist_entry(
    unsigned runtime_hours = 0;
    unsigned runtime_minutes = 0;
    unsigned runtime_seconds = 0;
+   unsigned last_played_year = 0;
+   unsigned last_played_month = 0;
+   unsigned last_played_day = 0;
+   unsigned last_played_hour = 0;
+   unsigned last_played_minute = 0;
+   unsigned last_played_second = 0;
    
    if (!settings->bools.playlist_show_sublabels)
       return 0;
@@ -836,7 +842,7 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
    if (i >= playlist_get_size(playlist))
       return 0;
-
+   
    /* Read playlist entry */
    playlist_get_index(playlist, i, NULL, NULL, NULL, &core_name, NULL, NULL);
    
@@ -849,43 +855,56 @@ static int action_bind_sublabel_playlist_entry(
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
       core_name);
    
-   /* Get runtime *if* 'content_runtime_log' is enabled
-    * NB: Runtime is currently stored in an independent
-    * 'content_runtime.lpl' file, similar to the content
-    * history. It therefore only really makes sense to
-    * check runtime when viewing the content history
-    * playlist. If runtime were added to all playlists
-    * (would be nice), we could do this trivially for all
-    * content. */
+   /* Get runtime info *if* runtime logging is enabled
+    * *and* this is a valid playlist type */
    if (!settings->bools.content_runtime_log)
       return 0;
    
-   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+   /* Note: This looks heavy, but each string_is_equal() call will
+    * return almost immediately */
+   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) &&
+       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)) &&
+       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) &&
+       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) &&
+       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) &&
+       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
    
    /* Any available runtime values are now copied to the content
     * history playlist when it is parsed by menu_displaylist, so
     * we can extract them directly via index */
    playlist_get_runtime_index(playlist, i, NULL, NULL,
-            &runtime_hours, &runtime_minutes, &runtime_seconds);
+         &runtime_hours, &runtime_minutes, &runtime_seconds,
+         &last_played_year, &last_played_month, &last_played_day,
+         &last_played_hour, &last_played_minute, &last_played_second);
    
+   /* Check whether a non-zero runtime has been recorded */
    if ((runtime_hours > 0) || (runtime_minutes > 0) || (runtime_seconds > 0))
    {
       int n = 0;
       char tmp[64];
-      tmp[0] = '\0';
       
+      /* Runtime label */
+      tmp[0] = '\0';
       n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
          runtime_hours, runtime_minutes, runtime_seconds);
       
-      /* Stupid nonsense... GCC will generate warnings if we
-       * don't do something here... */
       if ((n < 0) || (n >= 64))
-      {
-         n = 0;
-      }
+         n = 0; /* Silence GCC warnings... */
+      
+      if (!string_is_empty(tmp))
+         strlcat(s, tmp, len);
+      
+      /* Last played label */
+      tmp[0] = '\0';
+      n = snprintf(tmp, sizeof(tmp), "\n%s %04u/%02u/%02u - %02u:%02u:%02u",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+         last_played_year, last_played_month, last_played_day,
+         last_played_hour, last_played_minute, last_played_second);
+      
+      if ((n < 0) || (n >= 64))
+         n = 0; /* Silence GCC warnings... */
       
       if (!string_is_empty(tmp))
          strlcat(s, tmp, len);

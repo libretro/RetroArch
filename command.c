@@ -2222,13 +2222,6 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.music_history = NULL;
 
-         if (g_defaults.content_runtime)
-         {
-            playlist_write_runtime_file(g_defaults.content_runtime);
-            playlist_free(g_defaults.content_runtime);
-         }
-         g_defaults.content_runtime = NULL;
-
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
@@ -2277,13 +2270,6 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_music_history);
             g_defaults.music_history = playlist_init(
                   settings->paths.path_content_music_history,
-                  content_history_size);
-
-            RARCH_LOG("%s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_runtime);
-            g_defaults.content_runtime = playlist_init(
-                  settings->paths.path_content_runtime,
                   content_history_size);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)

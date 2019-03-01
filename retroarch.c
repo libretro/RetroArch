@@ -108,8 +108,6 @@
 #include "file_path_special.h"
 #include "ui/ui_companion_driver.h"
 #include "verbosity.h"
-#include "defaults.h"
-#include "playlist.h"
 
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
@@ -2404,91 +2402,27 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             n = 0; /* Just silence any potential gcc warnings... */
          RARCH_LOG(log);
 
-         if (settings->bools.content_runtime_log)
+         /* Only write to file if logging is enabled *and* content has run
+          * for a non-zero length of time */
+         if (settings->bools.content_runtime_log && libretro_core_runtime_usec > 0)
          {
-            const char *content_path = path_get(RARCH_PATH_CONTENT);
-            const char *core_path = path_get(RARCH_PATH_CORE);
+            runtime_log_t *runtime_log = NULL;
 
-            if (!string_is_empty(content_path) && !string_is_empty(core_path) && !string_is_equal(core_path, "builtin"))
+            /* Initialise runtime log file */
+            runtime_log = runtime_log_init(path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE));
+            if (runtime_log)
             {
-               unsigned playlist_hours = 0;
-               unsigned playlist_minutes = 0;
-               unsigned playlist_seconds = 0;
-               runtime_log_t *runtime_log = NULL;
-               bool playlist_file_is_valid = false;
-               bool runtime_log_file_is_valid = false;
+               /* Add additional runtime */
+               runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
 
-               /* Intialise content_runtime playlist entry and get
-                * existing values */
-               if (g_defaults.content_runtime)
-               {
-                  /* Push current entry to the top (does not update runtime
-                   * values), or create new entry if it does not already exist */
-                  playlist_push_runtime(g_defaults.content_runtime, content_path, core_path, 0, 0, 0);
+               /* Update 'last played' entry */
+               runtime_log_set_last_played_now(runtime_log);
 
-                  /* Get current runtime */
-                  if (playlist_get_size(g_defaults.content_runtime) > 0)
-                  {
-                     playlist_get_runtime_index(g_defaults.content_runtime, 0, NULL, NULL,
-                        &playlist_hours, &playlist_minutes, &playlist_seconds);
+               /* Save runtime log file */
+               runtime_log_save(runtime_log);
 
-                     playlist_file_is_valid = true;
-                  }
-               }
-
-               /* Initialise runtime log file */
-               runtime_log = runtime_log_init(content_path, core_path);
-               if (runtime_log)
-               {
-                  /* If runtime log file is empty, populate it with values
-                   * from content_runtime playlist */
-                  if (!runtime_log_has_runtime(runtime_log))
-                  {
-                     runtime_log_set_runtime_hms(runtime_log,
-                           playlist_hours, playlist_minutes, playlist_seconds);
-                  }
-
-                  /* Add additional runtime */
-                  runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
-
-                  /* Read back current runtime, so we can copy it
-                   * to content_runtime playlist */
-                  runtime_log_get_runtime_hms(runtime_log,
-                        &playlist_hours, &playlist_minutes, &playlist_seconds);
-
-                  /* Update 'last played' entry */
-                  runtime_log_set_last_played_now(runtime_log);
-
-                  /* Save runtime log file */
-                  runtime_log_save(runtime_log);
-
-                  /* Clean up */
-                  free(runtime_log);
-
-                  runtime_log_file_is_valid = true;
-               }
-
-               /* Update content_runtime playlist */
-               if (playlist_file_is_valid)
-               {
-                  /* If something went wrong with the runtime log
-                   * file (can't happen...), then playlist_hours/minutes/seconds
-                   * still contains original (old) values. Have to update them
-                   * manually... */
-                  if (!runtime_log_file_is_valid)
-                  {
-                     retro_time_t usec_old;
-
-                     runtime_log_convert_hms2usec(
-                           playlist_hours, playlist_minutes, playlist_seconds, &usec_old);
-
-                     runtime_log_convert_usec2hms(usec_old + libretro_core_runtime_usec,
-                           &playlist_hours, &playlist_minutes, &playlist_seconds);
-                  }
-
-                  playlist_update_runtime(g_defaults.content_runtime, 0, content_path, core_path,
-                           playlist_hours, playlist_minutes, playlist_seconds);
-               }
+               /* Clean up */
+               free(runtime_log);
             }
          }
 
