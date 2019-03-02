@@ -160,6 +160,7 @@ void font_driver_free_osd(void);
 int font_driver_get_line_height(void *font_data, float scale);
 
 extern font_renderer_t gl_raster_font;
+extern font_renderer_t gl_core_raster_font;
 extern font_renderer_t gl1_raster_font;
 extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;

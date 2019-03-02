@@ -6,6 +6,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
    mat4 MVP;
    vec2 OutputSize;
    float time;
+   float yflip;
 } constants;
 
 layout(location = 0) out vec4 FragColor;
@@ -56,7 +57,7 @@ void main(void)
 {
    float tim = constants.time * 0.4 * speed;
    vec2 pos = gl_FragCoord.xy / constants.OutputSize.xx;
-   pos.y = 1.0 - pos.y; // Flip Y
+   pos.y = mix(pos.y, 1.0 - pos.y, constants.yflip); // Flip Y
    float a = 0.0;
    // Each of these is a layer of snow
    // Remove some for better performance

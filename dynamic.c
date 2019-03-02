@@ -1157,8 +1157,11 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "gl"))
+         if (!string_is_equal(video_ident, "gl") &&
+             !string_is_equal(video_ident, "glcore"))
+         {
             return false;
+         }
          break;
 		case RETRO_HW_CONTEXT_DIRECT3D:
 			if (!(string_is_equal(video_ident, "d3d11") && major == 11))

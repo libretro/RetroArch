@@ -57,6 +57,7 @@ HAVE_D3D12=yes             # Direct3D 12 support
 C89_D3D12=no
 HAVE_D3DX=yes              # Direct3DX support
 HAVE_OPENGL=auto           # OpenGL 2.0 support
+HAVE_OPENGL_CORE=yes       # Modern OpenGL driver support (GLES3+/GL3.2 core+), requires OpenGL.
 HAVE_OPENGL1=no            # OpenGL 1.1 support
 HAVE_MALI_FBDEV=no         # Mali fbdev context support
 HAVE_VIVANTE_FBDEV=no      # Vivante fbdev context support

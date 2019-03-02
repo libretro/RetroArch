@@ -6,6 +6,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
    mat4 MVP;
    vec2 OutputSize;
    float time;
+   float yflip;
 } constants;
 
 layout(location = 0) out vec4 FragColor;
@@ -15,6 +16,7 @@ void main(void)
 
       float speed = constants.time * 4.0;
       vec2 uv = -1.0 + 2.0 * gl_FragCoord.xy / constants.OutputSize;
+	  uv.y *= constants.yflip;
       uv.x *= constants.OutputSize.x / constants.OutputSize.y;
     vec3 color = vec3(0.0);
 

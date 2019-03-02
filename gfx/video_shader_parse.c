@@ -1266,6 +1266,8 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_GX2_API:
          case GFX_CTX_VULKAN_API:
+         case GFX_CTX_OPENGL_API:
+         case GFX_CTX_OPENGL_ES_API:
          case GFX_CTX_METAL_API:
             return RARCH_SHADER_SLANG;
          default:
@@ -1285,6 +1287,8 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_GX2_API:
          case GFX_CTX_VULKAN_API:
+         case GFX_CTX_OPENGL_API:
+         case GFX_CTX_OPENGL_ES_API:
          case GFX_CTX_METAL_API:
             return RARCH_SHADER_SLANG;
          default:

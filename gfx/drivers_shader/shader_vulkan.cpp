@@ -831,7 +831,6 @@ bool vulkan_filter_chain::init_alias()
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   unsigned i = 0;
    for (auto &pass : passes)
    {
       auto &name = pass->get_name();

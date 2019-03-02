@@ -348,6 +348,11 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
+if [ "$HAVE_OPENGL" == 'no' ] && [ "$HAVE_OPENGLES3" == 'no' ]; then
+   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
+   HAVE_OPENGL_CORE='no'
+fi
+
 if [ "$HAVE_ZLIB" = 'no' ]; then
    HAVE_BUILTINZLIB=no
 elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then

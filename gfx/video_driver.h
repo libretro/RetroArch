@@ -1215,6 +1215,7 @@ void video_driver_set_gpu_api_version_string(const char *str);
 
 const char* video_driver_get_gpu_api_version_string(void);
 
+extern video_driver_t video_gl_core;
 extern video_driver_t video_gl2;
 extern video_driver_t video_gl1;
 extern video_driver_t video_vulkan;

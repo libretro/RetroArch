@@ -1248,6 +1248,20 @@ ifeq ($(HAVE_VULKAN), 1)
    HAVE_SPIRV_CROSS = 1
 endif
 
+ifeq ($(HAVE_OPENGL_CORE), 1)
+   OBJ += gfx/drivers/gl_core.o \
+          gfx/drivers_font/gl_core_raster_font.o \
+          gfx/drivers_shader/shader_gl_core.o
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_gl_core.o
+   endif
+
+   DEFINES += -DHAVE_OPENGL_CORE
+   HAVE_SLANG       = 1
+   HAVE_GLSLANG     = 1
+   HAVE_SPIRV_CROSS = 1
+endif
+
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/drivers/omap_gfx.o
 endif
