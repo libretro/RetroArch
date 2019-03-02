@@ -438,7 +438,10 @@ noconv:
 	return (acc);
 }
 
-//long strtol(const char *s, char **endptr, int base); FJTRUJY MISSING
+float strtof(const char* str, char** endptr)
+{
+   return (float) strtod(str, endptr);
+}
 //unsigned long strtoul(const char *s, char **endptr, int base); FJTRUJY MISSING
 
 int link(const char *oldpath, const char *newpath)

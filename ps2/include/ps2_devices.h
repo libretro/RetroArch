@@ -12,16 +12,38 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COMPAT_CTYPE_H
-#define COMPAT_CTYPE_H
+#ifndef PS2_DEVICES_H
+#define PS2_DEVICES_H
 
-char *strtok_r(char *str, const char *delim, char **saveptr);
+#include <stdbool.h>
 
-unsigned long long strtoull(const char * __restrict nptr, char ** __restrict endptr, int base);
+enum BootDeviceIDs{
+   BOOT_DEVICE_UNKNOWN = -1,
+   BOOT_DEVICE_MC0 = 0,
+   BOOT_DEVICE_MC1,
+   BOOT_DEVICE_CDROM,
+   BOOT_DEVICE_MASS,
+   BOOT_DEVICE_MASS0,
+   BOOT_DEVICE_HDD,
+   BOOT_DEVICE_HDD0,
+   BOOT_DEVICE_HOST,
+   BOOT_DEVICE_HOST0,
+   BOOT_DEVICE_HOST1,
+   BOOT_DEVICE_HOST2,
+   BOOT_DEVICE_HOST3,
+   BOOT_DEVICE_HOST4,
+   BOOT_DEVICE_HOST5,
+   BOOT_DEVICE_HOST6,
+   BOOT_DEVICE_HOST7,
+   BOOT_DEVICE_HOST8,
+   BOOT_DEVICE_HOST9,
+   BOOT_DEVICE_COUNT,
+};
 
-int link(const char *oldpath, const char *newpath);
-int unlink(const char *path);
+char *rootDevicePath(enum BootDeviceIDs device_id);
 
-float strtof (const char* str, char** endptr);
+enum BootDeviceIDs getBootDeviceID(char *path);
+
+bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id);
 
 #endif

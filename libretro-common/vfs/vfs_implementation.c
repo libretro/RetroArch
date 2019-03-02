@@ -821,11 +821,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    if (tmp[len-1] == '/')
       tmp[len-1] = '\0';
 
-   if (fileXioGetStat(tmp, &buf) < 0)
-   {
-      free(tmp);
-      return 0;
-   }
+   fileXioGetStat(tmp, &buf);
    free(tmp);
 #elif defined(__CELLOS_LV2__)
     CellFsStat buf;
@@ -880,7 +876,14 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 #if defined(VITA) || defined(PSP)
    is_dir = FIO_S_ISDIR(buf.st_mode);
 #elif defined(PS2)
-   is_dir = FIO_S_ISDIR(buf.mode);
+   if (!buf.mode) {
+      // if fileXioGetStat fails
+      int dir_ret = fileXioDopen(path);
+      is_dir =  dir_ret > 0;
+      fileXioDclose(dir_ret);
+   } else {
+      is_dir = FIO_S_ISDIR(buf.mode);
+   }
 #elif defined(__CELLOS_LV2__)
    is_dir = ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
