@@ -2396,7 +2396,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runtime_log_convert_usec2hms(libretro_core_runtime_usec, &hours, &minutes, &seconds);
 
          n = snprintf(log, sizeof(log),
-               "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.\n ",
+               "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.\n",
                hours, minutes, seconds);
          if ((n < 0) || (n >= PATH_MAX_LENGTH))
             n = 0; /* Just silence any potential gcc warnings... */
