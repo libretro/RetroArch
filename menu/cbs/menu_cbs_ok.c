@@ -6009,7 +6009,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_parent_directory_push);
             break;
          case FILE_TYPE_DIRECTORY:
-            BIND_ACTION_OK(cbs, action_ok_directory_push);
+            if (cbs->enum_idx != MSG_UNKNOWN
+                  || menu_label_hash == MENU_LABEL_DISK_IMAGE_APPEND
+                  || menu_label_hash == MENU_LABEL_SUBSYSTEM_ADD)
+               BIND_ACTION_OK(cbs, action_ok_directory_push);
+            else
+               BIND_ACTION_OK(cbs, action_ok_push_random_dir);
             break;
          case FILE_TYPE_CARCHIVE:
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
