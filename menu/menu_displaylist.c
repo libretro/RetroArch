@@ -2987,6 +2987,15 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
+         global_t *global = global_get_ptr();
+
+         /* Have to update global->name.label here, otherwise
+          * the 'Add to Favorites' option will produce nonsensical
+          * playlist entries... */
+         if (global)
+            if (!string_is_empty(label))
+               strlcpy(global->name.label, label, sizeof(global->name.label));
+
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),

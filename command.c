@@ -2416,8 +2416,26 @@ TODO: Add a setting for these tweaks */
          global_t *global                 = global_get_ptr();
          struct retro_system_info *system = runloop_get_libretro_system_info();
          const char *label                = NULL;
-         const char *core_path            = system ? path_get(RARCH_PATH_CORE) : NULL;
-         const char *core_name            = system ? system->library_name : NULL;
+         char core_path[PATH_MAX_LENGTH];
+         char core_name[PATH_MAX_LENGTH];
+
+         core_path[0] = '\0';
+         core_name[0] = '\0';
+
+         if (system)
+         {
+            if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+               strlcpy(core_path, path_get(RARCH_PATH_CORE), sizeof(core_path));
+
+            if (!string_is_empty(system->library_name))
+               strlcpy(core_name, system->library_name, sizeof(core_name));
+         }
+
+         if (string_is_empty(core_path))
+            strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+
+         if (string_is_empty(core_name))
+            strlcpy(core_name, file_path_str(FILE_PATH_DETECT), sizeof(core_name));
 
          if (!string_is_empty(global->name.label))
             label = global->name.label;
