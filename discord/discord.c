@@ -448,6 +448,7 @@ void discord_update(enum discord_presence presence)
 
 void discord_init(void)
 {
+   char full_path[PATH_MAX_LENGTH];
    char command[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
 
@@ -467,11 +468,17 @@ void discord_init(void)
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
 #ifdef _WIN32
-   strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+   GetModuleFileNameA(NULL, full_path, sizeof(full_path));
+   if (strstr(get_retroarch_launch_arguments(), full_path))
+      strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+   else
+   {
+      path_basedir(full_path);
+      snprintf(command, sizeof(command), "%s%s", full_path, get_retroarch_launch_arguments());
+   }
 #else
    snprintf(command, sizeof(command), "sh -c %s", get_retroarch_launch_arguments());
 #endif
-
    RARCH_LOG("[discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
    discord_ready = true;
