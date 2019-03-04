@@ -545,8 +545,7 @@ bool menu_display_libretro(bool is_idle,
 
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
-      return true; /* Maybe return false here
-                      for indication of idleness? */
+      return false; /* Return false here for indication of idleness */
    }
    return video_driver_cached_frame();
 }
