@@ -1748,7 +1748,7 @@ QHash<QString, QString> MainWindow::getFileContentHash(const QModelIndex &index)
    QFileInfo fileInfo = m_fileModel->fileInfo(index);
    QHash<QString, QString> hash;
 
-   hash["path"] = m_fileModel->filePath(index);;
+   hash["path"] = QDir::toNativeSeparators(m_fileModel->filePath(index));
    hash["label"] = hash["path"];
    hash["label_noext"] = fileInfo.completeBaseName();
    hash["db_name"] = fileInfo.dir().dirName();
