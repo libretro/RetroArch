@@ -277,6 +277,7 @@ static unsigned fastforward_after_frames                        = 0;
 static retro_usec_t runloop_frame_time_last                     = 0;
 static retro_time_t frame_limit_minimum_time                    = 0.0;
 static retro_time_t frame_limit_last_time                       = 0.0;
+static retro_time_t libretro_core_runtime_last                  = 0;
 static retro_time_t libretro_core_runtime_usec                  = 0;
 
 extern bool input_driver_flushing_input;
@@ -807,10 +808,41 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 void rarch_core_runtime_tick(void)
 {
+   retro_time_t frame_time;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (av_info && av_info->timing.fps)
-      libretro_core_runtime_usec += (1.0 / av_info->timing.fps) * 1000 * 1000;
+   {
+      frame_time = (1.0 / av_info->timing.fps) * 1000000;
+
+      /* Account for slow motion */
+      if (runloop_slowmotion)
+      {
+         settings_t *settings = config_get_ptr();
+         if (settings)
+            frame_time = (retro_time_t)((double)frame_time * settings->floats.slowmotion_ratio);
+      }
+      /* Account for fast forward */
+      else if (runloop_fastmotion)
+      {
+         /* Doing it this way means we miss the first frame after
+          * turning fast forward on, but it saves the overhead of
+          * having to do:
+          *    retro_time_t current_usec = cpu_features_get_time_usec();
+          *    libretro_core_runtime_last = current_usec;
+          * every frame when fast forward is off. */
+         retro_time_t current_usec = cpu_features_get_time_usec();
+
+         if (current_usec - libretro_core_runtime_last < frame_time)
+         {
+            frame_time = current_usec - libretro_core_runtime_last;
+         }
+
+         libretro_core_runtime_last = current_usec;
+      }
+
+      libretro_core_runtime_usec += frame_time;
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -2382,6 +2414,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_CONTENT_RUNTIME_LOG_INIT:
+         libretro_core_runtime_last = cpu_features_get_time_usec();
          libretro_core_runtime_usec = 0;
          break;
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
