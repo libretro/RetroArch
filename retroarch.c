@@ -2426,6 +2426,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             }
          }
 
+         /* Reset runtime
+          * (Not required, but ensures that time can never
+          * be logged more than once...) */
+         libretro_core_runtime_usec = 0;
+
          break;
       }
       case RARCH_CTL_GET_PERFCNT:
@@ -4326,15 +4331,17 @@ int runloop_iterate(unsigned *sleep_ms)
       else
       {
          core_run();
-         rarch_core_runtime_tick();
       }
    }
 #else
    {
       core_run();
-      rarch_core_runtime_tick();
    }
 #endif
+
+   /* Increment runtime tick counter after each call to
+    * core_run() or run_ahead() */
+   rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())
