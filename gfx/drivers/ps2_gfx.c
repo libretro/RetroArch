@@ -276,7 +276,11 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       bool sendPalette = false;
       struct retro_hw_ps2_insets padding = empty_ps2_insets;
       if (frame != RETRO_HW_FRAME_BUFFER_VALID){ /* Checking if the transfer is done in the core */
-         transfer_texture(ps2->coreTexture, frame, width, height, ps2->PSM, ps2->core_filter, 1);
+         /* calculate proper width based in the pitch */
+         int bytes_per_pixel = (ps2->PSM == GS_PSM_CT32) ? 4 : 2;
+         int real_width = pitch / bytes_per_pixel; 
+         transfer_texture(ps2->coreTexture, frame, real_width, height, ps2->PSM, ps2->core_filter, 1);
+         padding.right = real_width - width;
       } else {
          sendPalette = ps2->iface.updatedPalette;
          ps2->iface.updatedPalette = false;
