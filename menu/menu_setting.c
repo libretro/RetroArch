@@ -337,16 +337,16 @@ static void setting_get_string_representation_video_stream_quality(
    /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
-      case 8:
+      case RECORD_CONFIG_TYPE_STREAMING_CUSTOM:
          strlcpy(s, "Custom", len);
          break;
-      case 9:
+      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
          strlcpy(s, "Low", len);
          break;
-      case 10:
+      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
          strlcpy(s, "Medium", len);
          break;
-      case 11:
+      case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
          strlcpy(s, "High", len);
          break;
    }
@@ -361,28 +361,28 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
    /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
-      case 0:
+      case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
          strlcpy(s, "Custom", len);
          break;
-      case 1:
+      case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
          strlcpy(s, "Low", len);
          break;
-      case 2:
+      case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
          strlcpy(s, "Medium", len);
          break;
-      case 3:
+      case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
          strlcpy(s, "High", len);
          break;
-      case 4:
+      case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
          strlcpy(s, "Lossless", len);
          break;
-      case 5:
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
          strlcpy(s, "WebM Fast", len);
          break;
-      case 6:
+      case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
          strlcpy(s, "WebM High Quality", len);
          break;
-      case 7:
+      case RECORD_CONFIG_TYPE_RECORDING_GIF:
          strlcpy(s, "GIF", len);
          break;
    }
@@ -7295,7 +7295,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
-           CONFIG_UINT(
+            CONFIG_UINT(
                list, list_info,
                &settings->uints.video_stream_quality,
                MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
