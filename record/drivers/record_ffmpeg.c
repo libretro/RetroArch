@@ -571,7 +571,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->out_pix_fmt          = PIX_FMT_YUV420P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
@@ -587,7 +587,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->out_pix_fmt          = PIX_FMT_YUV420P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
@@ -603,7 +603,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->out_pix_fmt          = PIX_FMT_YUV444P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
@@ -663,7 +663,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->vcodec, "gif", sizeof(params->vcodec));
          strlcpy(params->acodec, "", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "framerate", "50", 0);
+         av_dict_set(&params->video_opts, "framerate", "30", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
@@ -694,7 +694,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->scale_factor = 1;
       strlcpy(params->format, "matroska", sizeof(params->format));
    }
-   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && preset < RECORD_CONFIG_TYPE_RECORDING_GIF)
    {
       if (!settings->bools.video_gpu_record)
          params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
@@ -705,11 +705,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
-      if (!settings->bools.video_gpu_record)
-         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
-            settings->uints.video_record_scale_factor : 1;
-      else
-         params->scale_factor = 1;
+      params->scale_factor = 1;
       strlcpy(params->format, "gif", sizeof(params->format));
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
