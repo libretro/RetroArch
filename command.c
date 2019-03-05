@@ -2412,44 +2412,25 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
-         /* TODO/FIXME - does path_get(RARCH_PATH_CORE) depend on the system info struct? Investigate */
-         global_t *global                 = global_get_ptr();
-         struct retro_system_info *system = runloop_get_libretro_system_info();
-         const char *label                = NULL;
-         char core_path[PATH_MAX_LENGTH];
-         char core_name[PATH_MAX_LENGTH];
+         struct string_list *str_list = (struct string_list*)data;
 
-         core_path[0] = '\0';
-         core_name[0] = '\0';
-
-         if (system)
+         if (str_list)
          {
-            if (!string_is_empty(path_get(RARCH_PATH_CORE)))
-               strlcpy(core_path, path_get(RARCH_PATH_CORE), sizeof(core_path));
-
-            if (!string_is_empty(system->library_name))
-               strlcpy(core_name, system->library_name, sizeof(core_name));
+            if (str_list->size >= 4)
+            {
+               /* Write playlist entry */
+               command_playlist_push_write(
+                     g_defaults.content_favorites,
+                     str_list->elems[0].data, /* content_path */
+                     str_list->elems[1].data, /* content_label */
+                     str_list->elems[2].data, /* core_path */
+                     str_list->elems[3].data  /* core_name */
+                     );
+               runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
 
-         if (string_is_empty(core_path))
-            strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
-
-         if (string_is_empty(core_name))
-            strlcpy(core_name, file_path_str(FILE_PATH_DETECT), sizeof(core_name));
-
-         if (!string_is_empty(global->name.label))
-            label = global->name.label;
-
-         command_playlist_push_write(
-               g_defaults.content_favorites,
-               (const char*)data,
-               label,
-               core_path,
-               core_name
-               );
-         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
-
       }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
       {

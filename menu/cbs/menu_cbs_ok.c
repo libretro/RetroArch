@@ -3809,35 +3809,200 @@ static int action_ok_reset_core_association(const char *path,
    return 0;
 }
 
+/* This function is called when selecting 'add to favorites'
+ * while viewing the quick menu (i.e. content is running) */
 static int action_ok_add_to_favorites(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   void *new_path = (void*)path_get(RARCH_PATH_CONTENT);
-   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, new_path))
-      return menu_cbs_exit();
-   return 0;
+   const char *content_path = path_get(RARCH_PATH_CONTENT);
+   int ret = 0;
+
+   /* Error checking
+    * > If content path is empty, cannot do anything... */
+   if (!string_is_empty(content_path))
+   {
+      global_t *global                 = global_get_ptr();
+      struct retro_system_info *system = runloop_get_libretro_system_info();
+      struct string_list *str_list     = NULL;
+
+      union string_list_elem_attr attr;
+      char content_label[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      char core_name[PATH_MAX_LENGTH];
+
+      content_label[0] = '\0';
+      core_path[0] = '\0';
+      core_name[0] = '\0';
+
+      /* Create string list container for playlist parameters */
+      attr.i = 0;
+      str_list = string_list_new();
+      if (!str_list)
+         return 0;
+
+      /* Determine playlist parameters */
+
+      /* > content_label */
+      if (global)
+         if (!string_is_empty(global->name.label))
+            strlcpy(content_label, global->name.label, sizeof(content_label));
+
+      if (string_is_empty(content_label)) /* Label is empty - use file name instead */
+         fill_short_pathname_representation(content_label, content_path, sizeof(content_label));
+
+      /* > core_path + core_name */
+      if (system)
+      {
+         if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+         {
+            core_info_ctx_find_t core_info;
+
+            /* >> core_path */
+            strlcpy(core_path, path_get(RARCH_PATH_CORE), sizeof(core_path));
+
+            /* >> core_name
+             * (always use display name, if available) */
+            core_info.inf  = NULL;
+            core_info.path = core_path;
+
+            if (core_info_find(&core_info, core_path))
+               if (!string_is_empty(core_info.inf->display_name))
+                  strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
+         }
+
+         /* >> core_name (continued) */
+         if (string_is_empty(core_name) && !string_is_empty(system->library_name))
+            strlcpy(core_name, system->library_name, sizeof(core_name));
+      }
+
+      if (string_is_empty(core_path) || string_is_empty(core_name))
+      {
+         strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+         strlcpy(core_name, file_path_str(FILE_PATH_DETECT), sizeof(core_name));
+      }
+
+      /* Copy playlist parameters into string list
+       *   [0]: content_path
+       *   [1]: content_label
+       *   [2]: core_path
+       *   [3]: core_name */
+      string_list_append(str_list, content_path, attr);
+      string_list_append(str_list, content_label, attr);
+      string_list_append(str_list, core_path, attr);
+      string_list_append(str_list, core_name, attr);
+
+      /* Trigger 'ADD_TO_FAVORITES' event */
+      if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)str_list))
+         ret = menu_cbs_exit();
+
+      /* Clean up */
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   return ret;
 }
 
+/* This function is called when selecting 'add to favorites'
+ * while viewing a playlist entry */
 static int action_ok_add_to_favorites_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *tmp_path                = NULL;
-   menu_handle_t *menu                 = NULL;
-   playlist_t *tmp_playlist            = playlist_get_cached();
+   const char *content_path  = NULL;
+   const char *content_label = NULL;
+   const char *core_path     = NULL;
+   const char *core_name     = NULL;
+   menu_handle_t *menu       = NULL;
+   playlist_t *tmp_playlist  = playlist_get_cached();
+   int ret = 0;
 
    if (!tmp_playlist)
       return 0;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   playlist_get_index(tmp_playlist,
-         menu->rpl_entry_selection_ptr, &tmp_path,
-         NULL, NULL, NULL, NULL, NULL);
+   /* Read current playlist parameters */
+   playlist_get_index(tmp_playlist, menu->rpl_entry_selection_ptr,
+         &content_path, &content_label, &core_path, &core_name,
+         NULL, NULL);
 
-   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)tmp_path))
-      return menu_cbs_exit();
-   return 0;
+   /* Error checking
+    * > If content path is empty, cannot do anything... */
+   if (!string_is_empty(content_path))
+   {
+      struct string_list *str_list = NULL;
+      union string_list_elem_attr attr;
+      char core_display_name[PATH_MAX_LENGTH];
 
+      core_display_name[0] = '\0';
+
+      /* Create string list container for playlist parameters */
+      attr.i = 0;
+      str_list = string_list_new();
+      if (!str_list)
+         return 0;
+
+      /* Copy playlist parameters into string list
+       *   [0]: content_path
+       *   [1]: content_label
+       *   [2]: core_path
+       *   [3]: core_name */
+
+      /* > content_path */
+      string_list_append(str_list, content_path, attr);
+
+      /* > content_label */
+      if (!string_is_empty(content_label))
+      {
+         string_list_append(str_list, content_label, attr);
+      }
+      else
+      {
+         /* Label is empty - use file name instead */
+         char fallback_content_label[PATH_MAX_LENGTH];
+         fallback_content_label[0] = '\0';
+         fill_short_pathname_representation(fallback_content_label, content_path, sizeof(fallback_content_label));
+         string_list_append(str_list, fallback_content_label, attr);
+      }
+
+      /* > core_path + core_name */
+      if (!string_is_empty(core_path) && !string_is_empty(core_name))
+      {
+         core_info_ctx_find_t core_info;
+
+         /* >> core_path */
+         string_list_append(str_list, core_path, attr);
+
+         /* >> core_name
+          * (always use display name, if available) */
+         core_info.inf  = NULL;
+         core_info.path = core_path;
+
+         if (core_info_find(&core_info, core_path))
+            if (!string_is_empty(core_info.inf->display_name))
+               strlcpy(core_display_name, core_info.inf->display_name, sizeof(core_display_name));
+
+         if (!string_is_empty(core_display_name))
+            string_list_append(str_list, core_display_name, attr);
+         else
+            string_list_append(str_list, core_name, attr);
+      }
+      else
+      {
+         string_list_append(str_list, file_path_str(FILE_PATH_DETECT), attr);
+         string_list_append(str_list, file_path_str(FILE_PATH_DETECT), attr);
+      }
+
+      /* Trigger 'ADD_TO_FAVORITES' event */
+      if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)str_list))
+         ret = menu_cbs_exit();
+
+      /* Clean up */
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   return ret;
 }
 
 static int action_ok_delete_entry(const char *path,
