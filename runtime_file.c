@@ -345,7 +345,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
       
       if(!path_is_directory(log_file_dir))
       {
-         RARCH_ERR("Failed to create directory for runtime log: %s.\n", log_file_dir);
+         RARCH_ERR("[runtime] Failed to create directory for runtime log: %s.\n", log_file_dir);
          return NULL;
       }
    }
@@ -385,6 +385,8 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    
    if (string_is_empty(log_file_path))
       return NULL;
+   else
+      RARCH_LOG("[runtime] Logging playtime to: %s.\n", log_file_path);
    
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
