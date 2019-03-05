@@ -3976,7 +3976,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-    "Log events to the terminal."
+    "Log events to a terminal or file."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY,

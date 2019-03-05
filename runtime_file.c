@@ -370,7 +370,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
       
       if(!path_is_directory(log_file_dir))
       {
-         RARCH_ERR("Failed to create directory for runtime log: %s.\n", log_file_dir);
+         RARCH_ERR("[runtime] failed to create directory for runtime log: %s.\n", log_file_dir);
          return NULL;
       }
    }
@@ -415,7 +415,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    
    if (string_is_empty(log_file_path))
       return NULL;
-   
+
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
    runtime_log = (runtime_log_t*)calloc(1, sizeof(*runtime_log));

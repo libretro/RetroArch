@@ -1759,6 +1759,20 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       }
    }
 
+
+   if (verbosity_is_enabled())
+   {
+      settings_t *settings  = config_get_ptr();
+      if (settings->bools.log_to_file && 
+         !string_is_empty(settings->paths.log_dir) && !string_is_empty(settings->paths.log_file))
+      {
+         char buf[PATH_MAX_LENGTH];
+         fill_pathname_join(buf, settings->paths.log_dir, settings->paths.log_file, sizeof(buf));
+         RARCH_LOG("Logging to file: %s\n", buf);
+         retro_main_log_file_init(buf);
+      }
+   }
+
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
          PACKAGE_VERSION, retroarch_git_version);

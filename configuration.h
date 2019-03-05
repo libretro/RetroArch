@@ -315,11 +315,16 @@ typedef struct settings
       bool playlist_show_sublabels;
 
       bool quit_press_twice;
+<<<<<<< HEAD
       bool vibrate_on_keypress;
       bool enable_device_vibration;
 #ifdef HAVE_OZONE
       bool ozone_collapse_sidebar;
 #endif
+=======
+
+      bool log_to_file;
+>>>>>>> add log to file settings
    } bools;
 
    struct
@@ -589,6 +594,9 @@ typedef struct settings
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
       char streaming_title[PATH_MAX_LENGTH];
+
+      char log_dir[PATH_MAX_LENGTH];
+      char log_file[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;

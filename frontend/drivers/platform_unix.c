@@ -1660,6 +1660,10 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
                   }
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        internal_storage_app_path, "logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
                   break;
 
                /* only the internal app dir is writable, this should never happen*/
@@ -1722,6 +1726,10 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
                   }
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        app_dir, "logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
                   break;
                /* sdcard is writable, this should be the case most of the time*/
                case INTERNAL_STORAGE_WRITABLE:
@@ -1741,6 +1749,10 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
                         internal_storage_path, "RetroArch/downloads",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        internal_storage_path, "RetroArch/logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         internal_storage_path, "RetroArch/config",
