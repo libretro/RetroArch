@@ -231,7 +231,7 @@ static void keyboard_handle_key(void *data,
       return;
 #endif
    input_keyboard_event(value,
-         rarch_keysym_lut[key],
+			input_keymaps_translate_keysym_to_rk(key),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
