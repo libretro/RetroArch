@@ -273,6 +273,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    settings_t *settings = config_get_ptr();
    core_info_list_t *core_info = NULL;
    runtime_log_t *runtime_log = NULL;
+   const char *core_path_basename = path_basename(core_path);
    
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
@@ -298,7 +299,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
       return NULL;
    }
    
-   if (string_is_empty(content_path) || string_is_empty(core_path))
+   if (string_is_empty(content_path) || string_is_empty(core_path_basename))
       return NULL;
    
    if (string_is_equal(core_path, "builtin") || string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
@@ -312,7 +313,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    
    for (i = 0; i < core_info->count; i++)
    {
-      if (string_is_equal(core_info->list[i].path, core_path))
+      if (string_is_equal(path_basename(core_info->list[i].path), core_path_basename))
       {
          strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
          break;

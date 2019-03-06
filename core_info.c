@@ -539,6 +539,7 @@ static core_info_t *core_info_find_internal(
       const char *core)
 {
    size_t i;
+   const char *core_path_basename = path_basename(core);
 
    for (i = 0; i < list->count; i++)
    {
@@ -546,7 +547,7 @@ static core_info_t *core_info_find_internal(
 
       if (!info || !info->path)
          continue;
-      if (string_is_equal(info->path, core))
+      if (string_is_equal(path_basename(info->path), core_path_basename))
          return info;
    }
 
@@ -806,6 +807,8 @@ void core_info_get_name(const char *path, char *s, size_t len,
       path_info : dir_cores;
    struct string_list *contents     = dir_list_new(
          dir_cores, exts, false, dir_show_hidden_files, false, false);
+   const char *core_path_basename   = path_basename(path);
+
    if (!contents)
       return;
 
@@ -817,7 +820,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
       char *new_core_name             = NULL;
       const char *current_path        = contents->elems[i].data;
 
-      if (!string_is_equal(current_path, path))
+      if (!string_is_equal(path_basename(current_path), core_path_basename))
          continue;
 
       info_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
