@@ -277,66 +277,43 @@ bool command_set_shader(const char *arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-#if defined(HAVE_NEW_CHEEVOS)
    unsigned i;
-   char  *reply            = NULL;
-   const uint8_t * data    = NULL;
+   char *reply             = NULL;
+   const uint8_t  *data    = NULL;
    char *reply_at          = NULL;
    unsigned int nbytes     = 0;
    unsigned int alloc_size = 0;
-   unsigned int addr    = -1;
+   unsigned int addr       = -1;
 
    if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
       return true;
+   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
+   reply      = (char*) malloc(alloc_size);
+   reply[0]   = '\0';
+   reply_at   = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
 
+#if defined(HAVE_NEW_CHEEVOS)
    data = cheevos_patch_address(addr, cheevos_get_console());
-
-   if (data)
-   {
-      for (i = 0; i < nbytes; i++)
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
-   }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
-   }
-   free(reply);
 #else
    cheevos_var_t var;
-   unsigned i;
-   char reply[256]      = {0};
-   const uint8_t * data = NULL;
-   char *reply_at       = NULL;
-
-   reply[0]             = '\0';
-
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   var.value = addr;
    cheevos_var_patch_addr(&var, cheevos_get_console());
    data = cheevos_var_get_memory(&var);
+#endif 
 
    if (data)
    {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
       for (i = 0; i < nbytes; i++)
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
+         sprintf(reply_at + 3 * i, " %.2X", data[i]);
+      reply_at[3 * nbytes] = '\n';
+      command_reply(reply, reply_at + 3 * nbytes + 1 - reply);
    }
    else
    {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+      strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+      command_reply(reply, reply_at + strlen(" -1\n") - reply);
    }
-#endif
-
+   free(reply);
    return true;
 }
 #undef SMY_CMD_STR
