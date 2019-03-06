@@ -280,6 +280,9 @@ static retro_time_t frame_limit_last_time                       = 0.0;
 static retro_time_t libretro_core_runtime_last                  = 0;
 static retro_time_t libretro_core_runtime_usec                  = 0;
 
+static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
+static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
+
 extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
@@ -2414,9 +2417,35 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_CONTENT_RUNTIME_LOG_INIT:
+      {
+         const char *content_path = path_get(RARCH_PATH_CONTENT);
+         const char *core_path = path_get(RARCH_PATH_CORE);
+
          libretro_core_runtime_last = cpu_features_get_time_usec();
          libretro_core_runtime_usec = 0;
+
+         /* Have to cache content and core path here, otherwise
+          * logging fails if new content is loaded without
+          * closing existing content
+          * i.e. RARCH_PATH_CONTENT and RARCH_PATH_CORE get
+          * updated when the new content is loaded, which
+          * happens *before* RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
+          * -> using RARCH_PATH_CONTENT and RARCH_PATH_CORE
+          *    directly in RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
+          *    can therefore lead to the runtime of the currently
+          *    loaded content getting written to the *new*
+          *    content's log file... */
+         memset(runtime_content_path, 0, sizeof(runtime_content_path));
+         memset(runtime_core_path, 0, sizeof(runtime_core_path));
+
+         if (!string_is_empty(content_path))
+            strlcpy(runtime_content_path, content_path, sizeof(runtime_content_path));
+
+         if (!string_is_empty(core_path))
+            strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
+
          break;
+      }
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
       {
          settings_t *settings = config_get_ptr();
@@ -2442,7 +2471,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             runtime_log_t *runtime_log = NULL;
 
             /* Initialise runtime log file */
-            runtime_log = runtime_log_init(path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE));
+            runtime_log = runtime_log_init(runtime_content_path, runtime_core_path);
             if (runtime_log)
             {
                /* Add additional runtime */
@@ -2459,10 +2488,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             }
          }
 
-         /* Reset runtime
-          * (Not required, but ensures that time can never
-          * be logged more than once...) */
+         /* Reset runtime + content/core paths, to prevent any
+          * possibility of duplicate logging */
          libretro_core_runtime_usec = 0;
+         memset(runtime_content_path, 0, sizeof(runtime_content_path));
+         memset(runtime_core_path, 0, sizeof(runtime_core_path));
 
          break;
       }

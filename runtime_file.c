@@ -650,6 +650,8 @@ void runtime_log_save(runtime_log_t *runtime_log)
    if (!runtime_log)
       return;
    
+   RARCH_LOG("Saving runtime log file: %s\n", runtime_log->path);
+   
    /* Attempt to open log file */
    file = filestream_open(runtime_log->path, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    
