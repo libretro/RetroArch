@@ -290,7 +290,7 @@ static bool command_read_ram(const char *arg)
    alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
    reply      = (char*) malloc(alloc_size);
    reply[0]   = '\0';
-   reply_at   = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
+   reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
 #if defined(HAVE_NEW_CHEEVOS)
    data = cheevos_patch_address(addr, cheevos_get_console());
@@ -304,7 +304,7 @@ static bool command_read_ram(const char *arg)
    if (data)
    {
       for (i = 0; i < nbytes; i++)
-         sprintf(reply_at + 3 * i, " %.2X", data[i]);
+         snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
       reply_at[3 * nbytes] = '\n';
       command_reply(reply, reply_at + 3 * nbytes + 1 - reply);
    }
