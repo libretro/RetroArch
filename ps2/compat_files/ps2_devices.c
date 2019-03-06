@@ -158,7 +158,7 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 
    while(openFile < 0 && retries > 0)
    {
-      openFile = fioDopen(rootDevice);
+      openFile = fileXioDopen(rootDevice);
       /* Wait untill the device is ready */
       nopdelay();
       nopdelay();
@@ -172,7 +172,7 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
       retries--;
    };
 
-   fioDclose(openFile);
+   fileXioDclose(openFile);
    
    return openFile >= 0;
 }

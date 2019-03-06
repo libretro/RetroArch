@@ -222,8 +222,8 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 #elif defined(__CELLOS_LV2__) || defined(_MSC_VER) && _MSC_VER <= 1310
       return fseek(stream->fp, (long)offset, whence);
 #elif defined(PS2)
-      int64_t ret = fioLseek(fileno(stream->fp), (off_t)offset, whence);
-      /* fioLseek could return positive numbers */
+      int64_t ret = fileXioLseek(fileno(stream->fp), (off_t)offset, whence);
+      /* fileXioLseek could return positive numbers */
       if (ret > 0) {
          ret = 0;
       }
