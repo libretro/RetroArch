@@ -268,7 +268,7 @@ end:
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
  * Returns NULL if content_path and/or core_path are invalid */
-runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
+runtime_log_t *runtime_log_init(const char *content_path, const char *core_path, bool log_per_core)
 {
    settings_t *settings = config_get_ptr();
    core_info_list_t *core_info = NULL;
@@ -305,7 +305,11 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
    if (string_is_equal(core_path, "builtin") || string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
       return NULL;
    
-   /* Get core name */
+   /* Get core name
+    * Note: An annoyance - this is required even when
+    * we are performing aggregate (not per core) logging,
+    * since content name is sometimes dependent upon core
+    * (e.g. see TyrQuake below) */
    core_info_get_list(&core_info);
    
    if (!core_info)
@@ -330,11 +334,18 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path)
          "logs",
          sizeof(tmp_buf));
    
-   fill_pathname_join(
-         log_file_dir,
-         tmp_buf,
-         core_name,
-         sizeof(log_file_dir));
+   if (log_per_core)
+   {
+      fill_pathname_join(
+            log_file_dir,
+            tmp_buf,
+            core_name,
+            sizeof(log_file_dir));
+   }
+   else
+   {
+      strlcpy(log_file_dir, tmp_buf, sizeof(log_file_dir));
+   }
    
    if (string_is_empty(log_file_dir))
       return NULL;

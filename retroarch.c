@@ -848,6 +848,28 @@ void rarch_core_runtime_tick(void)
    }
 }
 
+static void update_runtime_log(bool log_per_core)
+{
+   runtime_log_t *runtime_log = NULL;
+
+   /* Initialise runtime log file */
+   runtime_log = runtime_log_init(runtime_content_path, runtime_core_path, log_per_core);
+   if (runtime_log)
+   {
+      /* Add additional runtime */
+      runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
+
+      /* Update 'last played' entry */
+      runtime_log_set_last_played_now(runtime_log);
+
+      /* Save runtime log file */
+      runtime_log_save(runtime_log);
+
+      /* Clean up */
+      free(runtime_log);
+   }
+}
+
 #ifdef HAVE_THREADS
 void runloop_msg_queue_lock(void)
 {
@@ -2464,28 +2486,16 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             n = 0; /* Just silence any potential gcc warnings... */
          RARCH_LOG("%s\n",log);
 
-         /* Only write to file if logging is enabled *and* content has run
-          * for a non-zero length of time */
-         if (settings->bools.content_runtime_log && libretro_core_runtime_usec > 0)
+         /* Only write to file if content has run for a non-zero length of time */
+         if (libretro_core_runtime_usec > 0)
          {
-            runtime_log_t *runtime_log = NULL;
+            /* Per core logging */
+            if (settings->bools.content_runtime_log)
+               update_runtime_log(true);
 
-            /* Initialise runtime log file */
-            runtime_log = runtime_log_init(runtime_content_path, runtime_core_path);
-            if (runtime_log)
-            {
-               /* Add additional runtime */
-               runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
-
-               /* Update 'last played' entry */
-               runtime_log_set_last_played_now(runtime_log);
-
-               /* Save runtime log file */
-               runtime_log_save(runtime_log);
-
-               /* Clean up */
-               free(runtime_log);
-            }
+            /* Aggregate logging */
+            if (settings->bools.content_runtime_log_aggregate)
+               update_runtime_log(false);
          }
 
          /* Reset runtime + content/core paths, to prevent any
