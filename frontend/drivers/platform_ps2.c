@@ -248,6 +248,7 @@ static void frontend_ps2_deinit(void *data)
    padEnd();
    audsrv_quit();
    fileXioExit();
+   Exit(0);
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)

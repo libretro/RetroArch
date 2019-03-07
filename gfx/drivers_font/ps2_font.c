@@ -43,8 +43,24 @@ static u32 gsKit_fontm_clut[16] = {	0x00000000, 0x11111111, 0x22222222, 0x333333
 					0x80888888, 0x80999999, 0x80AAAAAA, 0x80BBBBBB, \
 					0x80CCCCCC, 0x80DDDDDD, 0x80EEEEEE, 0x80FFFFFF };
 
-static void ps2_prepare_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
+static void deinit_texture(GSTEXTURE *texture)
 {
+   free(texture->Mem);
+   free(texture->Clut);
+   texture->Mem = NULL;
+   texture->Clut = NULL;
+}
+
+static void deinit_gsfont(GSFONTM *gsFontM)
+{
+   deinit_texture(gsFontM->Texture);
+   free(gsFontM->TexBase);
+   gsFontM->TexBase = NULL;
+   free(gsFontM);
+}
+
+static void ps2_prepare_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
+{  
    if(gsKit_fontm_unpack(gsFontM) == 0) {
       gsFontM->Texture->Width = FONTM_TEXTURE_WIDTH;
       gsFontM->Texture->Height = FONTM_TEXTURE_HEIGHT;
@@ -94,8 +110,9 @@ static void *ps2_font_init_font(void *gl_data, const char *font_path,
 static void ps2_font_free_font(void *data, bool is_threaded)
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
-   free(ps2->gsFontM);
-   free(ps2);
+   deinit_gsfont(ps2->gsFontM);
+   ps2->ps2_video = NULL;
+   ps2 = NULL;
 }
 
 static void ps2_font_render_msg(
