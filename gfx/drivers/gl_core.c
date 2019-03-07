@@ -449,7 +449,7 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
    }
 #else
    api   = GFX_CTX_OPENGL_API;
-   if (hwr)
+   if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
    {
       major = hwr->version_major;
       minor = hwr->version_minor;
