@@ -277,6 +277,9 @@ bool command_set_shader(const char *arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
+#if !defined(HAVE_NEW_CHEEVOS)
+   cheevos_var_t var;
+#endif
    unsigned i;
    char *reply             = NULL;
    const uint8_t  *data    = NULL;
@@ -295,7 +298,6 @@ static bool command_read_ram(const char *arg)
 #if defined(HAVE_NEW_CHEEVOS)
    data = cheevos_patch_address(addr, cheevos_get_console());
 #else
-   cheevos_var_t var;
    var.value = addr;
    cheevos_var_patch_addr(&var, cheevos_get_console());
    data = cheevos_var_get_memory(&var);
