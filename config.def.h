@@ -717,6 +717,9 @@ static const bool playlist_show_core_name = false;
 
 static const bool playlist_show_sublabels = false;
 
+/* Specifies which runtime record to use on playlist sublabels */
+static unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
@@ -793,6 +796,9 @@ static const bool desktop_menu_enable = true;
 
 /* Keep track of how long each core+content has been running for over time */
 static const bool content_runtime_log = false;
+
+/* Keep track of how long each content has been running for over time (ignores core) */
+static const bool content_runtime_log_aggregate = false;
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;

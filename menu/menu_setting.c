@@ -1298,6 +1298,30 @@ static void setting_get_string_representation_crt_switch_resolution_super(
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
 }
 
+static void setting_get_string_representation_uint_playlist_sublabel_runtime_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_RUNTIME_PER_CORE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE),
+               len);
+         break;
+      case PLAYLIST_RUNTIME_AGGREGATE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE),
+               len);
+         break;
+   }
+}
+
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
    unsigned port = 0;
@@ -4958,6 +4982,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
                   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
                   content_runtime_log,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.content_runtime_log_aggregate,
+                  MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+                  MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+                  content_runtime_log_aggregate,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -9883,6 +9922,22 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.playlist_sublabel_runtime_type,
+               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+               playlist_sublabel_runtime_type,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_playlist_sublabel_runtime_type;
+         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_RUNTIME_LAST-1, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,
