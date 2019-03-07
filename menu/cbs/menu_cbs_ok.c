@@ -2672,7 +2672,8 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->paths.path_libretro_info,
          settings->paths.directory_libretro,
          ext_name,
-         settings->bools.show_hidden_files);
+         settings->bools.show_hidden_files,
+         true);
    command_playlist_update_write(
          NULL,
          menu->scratchpad.unsigned_var,

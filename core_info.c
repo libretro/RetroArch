@@ -800,7 +800,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
-      const char *exts, bool dir_show_hidden_files)
+      const char *exts, bool dir_show_hidden_files,
+      bool get_display_name)
 {
    size_t i;
    const char       *path_basedir   = !string_is_empty(path_info) ?
@@ -842,7 +843,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
          continue;
       }
 
-      if (config_get_string(conf, "corename",
+      if (config_get_string(conf, get_display_name ? "display_name" : "corename",
             &new_core_name))
       {
          strlcpy(s, new_core_name, len);
