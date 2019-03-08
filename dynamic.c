@@ -1279,6 +1279,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
+
+         /* This case occurs when a core (internally) requests
+          * a shutdown event. Must save runtime log file here,
+          * since normal command.c CMD_EVENT_CORE_DEINIT event
+          * will not occur until after the current content has
+          * been cleared (causing log to be skipped) */
+         rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
+
          rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
          rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
          break;

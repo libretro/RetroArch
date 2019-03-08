@@ -303,6 +303,13 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_DEINIT
 };
 
+enum playlist_sublabel_runtime
+{
+   PLAYLIST_RUNTIME_PER_CORE = 0,
+   PLAYLIST_RUNTIME_AGGREGATE,
+   PLAYLIST_RUNTIME_LAST
+};
+
 typedef uintptr_t menu_texture_item;
 
 typedef struct menu_display_ctx_clearcolor

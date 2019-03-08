@@ -286,7 +286,11 @@ static unsigned fastforward_after_frames                        = 0;
 static retro_usec_t runloop_frame_time_last                     = 0;
 static retro_time_t frame_limit_minimum_time                    = 0.0;
 static retro_time_t frame_limit_last_time                       = 0.0;
+static retro_time_t libretro_core_runtime_last                  = 0;
 static retro_time_t libretro_core_runtime_usec                  = 0;
+
+static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
+static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
 
 extern bool input_driver_flushing_input;
 
@@ -816,10 +820,63 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 void rarch_core_runtime_tick(void)
 {
+   retro_time_t frame_time;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (av_info && av_info->timing.fps)
-      libretro_core_runtime_usec += (1.0 / av_info->timing.fps) * 1000 * 1000;
+   {
+      frame_time = (1.0 / av_info->timing.fps) * 1000000;
+
+      /* Account for slow motion */
+      if (runloop_slowmotion)
+      {
+         settings_t *settings = config_get_ptr();
+         if (settings)
+            frame_time = (retro_time_t)((double)frame_time * settings->floats.slowmotion_ratio);
+      }
+      /* Account for fast forward */
+      else if (runloop_fastmotion)
+      {
+         /* Doing it this way means we miss the first frame after
+          * turning fast forward on, but it saves the overhead of
+          * having to do:
+          *    retro_time_t current_usec = cpu_features_get_time_usec();
+          *    libretro_core_runtime_last = current_usec;
+          * every frame when fast forward is off. */
+         retro_time_t current_usec = cpu_features_get_time_usec();
+
+         if (current_usec - libretro_core_runtime_last < frame_time)
+         {
+            frame_time = current_usec - libretro_core_runtime_last;
+         }
+
+         libretro_core_runtime_last = current_usec;
+      }
+
+      libretro_core_runtime_usec += frame_time;
+   }
+}
+
+static void update_runtime_log(bool log_per_core)
+{
+   runtime_log_t *runtime_log = NULL;
+
+   /* Initialise runtime log file */
+   runtime_log = runtime_log_init(runtime_content_path, runtime_core_path, log_per_core);
+   if (runtime_log)
+   {
+      /* Add additional runtime */
+      runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
+
+      /* Update 'last played' entry */
+      runtime_log_set_last_played_now(runtime_log);
+
+      /* Save runtime log file */
+      runtime_log_save(runtime_log);
+
+      /* Clean up */
+      free(runtime_log);
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -2391,8 +2448,35 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_CONTENT_RUNTIME_LOG_INIT:
+      {
+         const char *content_path = path_get(RARCH_PATH_CONTENT);
+         const char *core_path = path_get(RARCH_PATH_CORE);
+
+         libretro_core_runtime_last = cpu_features_get_time_usec();
          libretro_core_runtime_usec = 0;
+
+         /* Have to cache content and core path here, otherwise
+          * logging fails if new content is loaded without
+          * closing existing content
+          * i.e. RARCH_PATH_CONTENT and RARCH_PATH_CORE get
+          * updated when the new content is loaded, which
+          * happens *before* RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
+          * -> using RARCH_PATH_CONTENT and RARCH_PATH_CORE
+          *    directly in RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
+          *    can therefore lead to the runtime of the currently
+          *    loaded content getting written to the *new*
+          *    content's log file... */
+         memset(runtime_content_path, 0, sizeof(runtime_content_path));
+         memset(runtime_core_path, 0, sizeof(runtime_core_path));
+
+         if (!string_is_empty(content_path))
+            strlcpy(runtime_content_path, content_path, sizeof(runtime_content_path));
+
+         if (!string_is_empty(core_path))
+            strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
+
          break;
+      }
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
       {
          settings_t *settings = config_get_ptr();
@@ -2411,29 +2495,23 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             n = 0; /* Just silence any potential gcc warnings... */
          RARCH_LOG("%s\n",log);
 
-         /* Only write to file if logging is enabled *and* content has run
-          * for a non-zero length of time */
-         if (settings->bools.content_runtime_log && libretro_core_runtime_usec > 0)
+         /* Only write to file if content has run for a non-zero length of time */
+         if (libretro_core_runtime_usec > 0)
          {
-            runtime_log_t *runtime_log = NULL;
+            /* Per core logging */
+            if (settings->bools.content_runtime_log)
+               update_runtime_log(true);
 
-            /* Initialise runtime log file */
-            runtime_log = runtime_log_init(path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_CORE));
-            if (runtime_log)
-            {
-               /* Add additional runtime */
-               runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
-
-               /* Update 'last played' entry */
-               runtime_log_set_last_played_now(runtime_log);
-
-               /* Save runtime log file */
-               runtime_log_save(runtime_log);
-
-               /* Clean up */
-               free(runtime_log);
-            }
+            /* Aggregate logging */
+            if (settings->bools.content_runtime_log_aggregate)
+               update_runtime_log(false);
          }
+
+         /* Reset runtime + content/core paths, to prevent any
+          * possibility of duplicate logging */
+         libretro_core_runtime_usec = 0;
+         memset(runtime_content_path, 0, sizeof(runtime_content_path));
+         memset(runtime_core_path, 0, sizeof(runtime_core_path));
 
          break;
       }
@@ -4335,15 +4413,17 @@ int runloop_iterate(unsigned *sleep_ms)
       else
       {
          core_run();
-         rarch_core_runtime_tick();
       }
    }
 #else
    {
       core_run();
-      rarch_core_runtime_tick();
    }
 #endif
+
+   /* Increment runtime tick counter after each call to
+    * core_run() or run_ahead() */
+   rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())

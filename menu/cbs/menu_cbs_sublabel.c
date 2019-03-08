@@ -522,6 +522,8 @@ default_sublabel_macro(action_bind_sublabel_rgui_menu_color_theme,              
 default_sublabel_macro(action_bind_sublabel_rgui_menu_theme_preset,                        MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_downscaler,                MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER)
 default_sublabel_macro(action_bind_sublabel_content_runtime_log,                           MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG)
+default_sublabel_macro(action_bind_sublabel_content_runtime_log_aggregate,                 MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE)
+default_sublabel_macro(action_bind_sublabel_playlist_sublabel_runtime_type,                MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_type,                              MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_speed,                             MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED)
@@ -856,9 +858,12 @@ static int action_bind_sublabel_playlist_entry(
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
       core_name);
    
-   /* Get runtime info *if* runtime logging is enabled
+   /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
-   if (!settings->bools.content_runtime_log)
+   if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
+         !settings->bools.content_runtime_log) ||
+       ((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
+         !settings->bools.content_runtime_log_aggregate))
       return 0;
    
    /* Note: This looks heavy, but each string_is_equal() call will
@@ -2376,6 +2381,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log_aggregate);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_sublabel_runtime_type);
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_internal_upscale_level);

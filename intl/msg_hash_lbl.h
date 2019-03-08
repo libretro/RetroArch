@@ -1789,11 +1789,15 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SOUND_BGM,
       "menu_sound_bgm")
 MSG_HASH(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
       "content_runtime_log")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+      "content_runtime_log_aggregate")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
       "playlist_show_core_name")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,
       "playlist_sort_alphabetical")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
       "playlist_show_sublabels")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+      "playlist_sublabel_runtime_type")
 MSG_HASH(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
       "help_send_debug_info")

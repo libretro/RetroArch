@@ -277,66 +277,45 @@ bool command_set_shader(const char *arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-#if defined(HAVE_NEW_CHEEVOS)
+#if !defined(HAVE_NEW_CHEEVOS)
+   cheevos_var_t var;
+#endif
    unsigned i;
-   char  *reply            = NULL;
-   const uint8_t * data    = NULL;
+   char *reply             = NULL;
+   const uint8_t  *data    = NULL;
    char *reply_at          = NULL;
    unsigned int nbytes     = 0;
    unsigned int alloc_size = 0;
-   unsigned int addr    = -1;
+   unsigned int addr       = -1;
 
    if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
       return true;
+   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
+   reply      = (char*) malloc(alloc_size);
+   reply[0]   = '\0';
+   reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
+#if defined(HAVE_NEW_CHEEVOS)
    data = cheevos_patch_address(addr, cheevos_get_console());
-
-   if (data)
-   {
-      for (i = 0; i < nbytes; i++)
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
-   }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
-   }
-   free(reply);
 #else
-   cheevos_var_t var;
-   unsigned i;
-   char reply[256]      = {0};
-   const uint8_t * data = NULL;
-   char *reply_at       = NULL;
-
-   reply[0]             = '\0';
-
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   var.value = addr;
    cheevos_var_patch_addr(&var, cheevos_get_console());
    data = cheevos_var_get_memory(&var);
+#endif 
 
    if (data)
    {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
       for (i = 0; i < nbytes; i++)
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
+         snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
+      reply_at[3 * nbytes] = '\n';
+      command_reply(reply, reply_at + 3 * nbytes + 1 - reply);
    }
    else
    {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+      strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+      command_reply(reply, reply_at + strlen(" -1\n") - reply);
    }
-#endif
-
+   free(reply);
    return true;
 }
 #undef SMY_CMD_STR
@@ -2412,44 +2391,25 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
-         /* TODO/FIXME - does path_get(RARCH_PATH_CORE) depend on the system info struct? Investigate */
-         global_t *global                 = global_get_ptr();
-         struct retro_system_info *system = runloop_get_libretro_system_info();
-         const char *label                = NULL;
-         char core_path[PATH_MAX_LENGTH];
-         char core_name[PATH_MAX_LENGTH];
+         struct string_list *str_list = (struct string_list*)data;
 
-         core_path[0] = '\0';
-         core_name[0] = '\0';
-
-         if (system)
+         if (str_list)
          {
-            if (!string_is_empty(path_get(RARCH_PATH_CORE)))
-               strlcpy(core_path, path_get(RARCH_PATH_CORE), sizeof(core_path));
-
-            if (!string_is_empty(system->library_name))
-               strlcpy(core_name, system->library_name, sizeof(core_name));
+            if (str_list->size >= 4)
+            {
+               /* Write playlist entry */
+               command_playlist_push_write(
+                     g_defaults.content_favorites,
+                     str_list->elems[0].data, /* content_path */
+                     str_list->elems[1].data, /* content_label */
+                     str_list->elems[2].data, /* core_path */
+                     str_list->elems[3].data  /* core_name */
+                     );
+               runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
 
-         if (string_is_empty(core_path))
-            strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
-
-         if (string_is_empty(core_name))
-            strlcpy(core_name, file_path_str(FILE_PATH_DETECT), sizeof(core_name));
-
-         if (!string_is_empty(global->name.label))
-            label = global->name.label;
-
-         command_playlist_push_write(
-               g_defaults.content_favorites,
-               (const char*)data,
-               label,
-               core_path,
-               core_name
-               );
-         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
-
       }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
       {

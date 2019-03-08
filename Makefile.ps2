@@ -39,7 +39,7 @@ RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -
 
 LIBDIR =
 LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
-LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
+LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpad -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR

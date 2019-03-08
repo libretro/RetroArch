@@ -1302,7 +1302,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       goto error;
 
    /* Check whether runtime logging info should be parsed */
-   if (settings->bools.content_runtime_log)
+   if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
+         settings->bools.content_runtime_log) ||
+       ((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
+         settings->bools.content_runtime_log_aggregate))
    {
       /* Runtime logging is valid for every type of playlist *apart from*
        * images/music/video history */
@@ -1350,7 +1353,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (get_runtime)
       {
          runtime_log_t *runtime_log = NULL;
-         runtime_log = runtime_log_init(path, core_path);
+         runtime_log = runtime_log_init(path, core_path,
+               settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE);
 
          if (runtime_log)
          {
@@ -2954,15 +2958,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
-         global_t *global = global_get_ptr();
-
-         /* Have to update global->name.label here, otherwise
-          * the 'Add to Favorites' option will produce nonsensical
-          * playlist entries... */
-         if (global)
-            if (!string_is_empty(label))
-               strlcpy(global->name.label, label, sizeof(global->name.label));
-
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),
@@ -5355,6 +5350,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
                PARSE_ONLY_BOOL, false);
+        ret = menu_displaylist_parse_settings_enum(menu, info,
+              MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+              PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
                PARSE_ONLY_BOOL, false);
@@ -5478,6 +5476,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

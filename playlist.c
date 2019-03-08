@@ -1567,13 +1567,76 @@ playlist_t *playlist_init(const char *path, size_t size)
 static int playlist_qsort_func(const struct playlist_entry *a,
       const struct playlist_entry *b)
 {
-   const char *a_label = a ? a->label : NULL;
-   const char *b_label = b ? b->label : NULL;
+   char *a_str            = NULL;
+   char *b_str            = NULL;
+   char *a_fallback_label = NULL;
+   char *b_fallback_label = NULL;
+   int ret                = 0;
 
-   if (!a_label || !b_label)
-      return 0;
+   if (!a || !b)
+      goto end;
 
-   return strcasecmp(a_label, b_label);
+   a_str = a->label;
+   b_str = b->label;
+
+   /* It is quite possible for playlist labels
+    * to be blank. If that is the case, have to use
+    * filename as a fallback (this is slow, but we
+    * have no other option...) */
+   if (string_is_empty(a_str))
+   {
+      if (string_is_empty(a->path))
+         goto end;
+
+      a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+      if (!a_fallback_label)
+         goto end;
+
+      fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+
+      if (string_is_empty(a_fallback_label))
+         goto end;
+
+      a_str = a_fallback_label;
+   }
+
+   if (string_is_empty(b_str))
+   {
+      if (string_is_empty(b->path))
+         goto end;
+
+      b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+      if (!b_fallback_label)
+         goto end;
+
+      fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
+
+      if (string_is_empty(b_fallback_label))
+         goto end;
+
+      b_str = b_fallback_label;
+   }
+
+   ret = strcasecmp(a_str, b_str);
+
+end:
+
+   a_str = NULL;
+   b_str = NULL;
+
+   if (a_fallback_label)
+   {
+      free(a_fallback_label);
+      a_fallback_label = NULL;
+   }
+
+   if (b_fallback_label)
+   {
+      free(b_fallback_label);
+      b_fallback_label = NULL;
+   }
+
+   return ret;
 }
 
 void playlist_qsort(playlist_t *playlist)

@@ -1041,9 +1041,24 @@ static bool task_load_content(content_ctx_info_t *content_info,
 #endif
                break;
             default:
+            {
+               core_info_t *core_info = NULL;
+
+               /* Set core path */
                core_path            = path_get(RARCH_PATH_CORE);
-               core_name            = info->library_name;
+
+               /* Set core display name
+                * (As far as I can tell, core_info_get_current_core()
+                * should always provide a valid pointer here...) */
+               core_info_get_current_core(&core_info);
+               if (core_info)
+                  core_name         = core_info->display_name;
+
+               if (string_is_empty(core_name))
+                  core_name         = info->library_name;
+
                break;
+            }
          }
 
          if (launched_from_cli)

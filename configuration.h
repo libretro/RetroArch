@@ -309,6 +309,7 @@ typedef struct settings
       bool sustained_performance_mode;
       bool playlist_use_old_format;
       bool content_runtime_log;
+      bool content_runtime_log_aggregate;
 
       bool playlist_show_core_name;
       bool playlist_sort_alphabetical;
@@ -437,6 +438,8 @@ typedef struct settings
       unsigned menu_font_color_blue;
       unsigned menu_rgui_internal_upscale_level;
       unsigned menu_ticker_type;
+
+      unsigned playlist_sublabel_runtime_type;
 
       unsigned camera_width;
       unsigned camera_height;

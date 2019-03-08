@@ -241,21 +241,14 @@ static void frontend_ps2_init(void *data)
 static void frontend_ps2_deinit(void *data)
 {
    (void)data;
-#ifndef IS_SALAMANDER
+#if defined(HAVE_FILE_LOGGER)
    verbosity_disable();
-#ifdef HAVE_FILE_LOGGER
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
-
-#endif
-
    padEnd();
    audsrv_quit();
-
-   fileXioUmount("pfs0:");
    fileXioExit();
-
-   SifExitRpc();
+   Exit(0);
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)

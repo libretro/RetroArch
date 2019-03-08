@@ -8312,11 +8312,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-    "Save content runtime log"
+    "Save runtime log (per core)"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-    "Keeps track of how long your content has been running over time."
+    "Keeps track of how long each item of content has run for, with records separated by core."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Save runtime log (aggregate)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Keeps track of how long each item of content has run for, recorded as the aggregate total across all cores."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -8324,7 +8332,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
-    "Shows additional information for each playlist entry, such as current core association and play time (if available). Has a variable performance impact."
+    "Shows additional information for each playlist entry, such as current core association and runtime (if available). Has a variable performance impact."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -8337,6 +8345,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
     "Last Played:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Playlist sublabel runtime"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Selects which type of runtime log record to display on playlist sublabels. (Note that the corresponding runtime log must be enabled via the 'Saving' options menu)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+    "Per Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+    "Aggregate"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,

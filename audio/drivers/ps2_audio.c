@@ -23,13 +23,12 @@
 
 #include "../audio_driver.h"
 
-#define AUDIO_BUFFER 64 * 1024
+#define AUDIO_BUFFER 128 * 1024
 #define AUDIO_CHANNELS 2
 #define AUDIO_BITS 16
 
 typedef struct ps2_audio
 {
-   fifo_buffer_t* buffer;
    bool nonblocking;
    bool running;
 
@@ -82,21 +81,15 @@ static void ps2_audio_free(void *data)
 
 static ssize_t ps2_audio_write(void *data, const void *buf, size_t size)
 {
+   int bytes_sent;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
    if (!ps2->running)
       return -1;
 
-   if (ps2->nonblocking)
-   {
-      if (fifo_write_avail(ps2->buffer) < size)
-         return 0;
-   }
+   bytes_sent = audsrv_play_audio(buf, size);
 
-   audsrv_wait_audio(size);
-   audsrv_play_audio(buf, size);
-
-   return size;
+   return bytes_sent;
 }
 
 static bool ps2_audio_alive(void *data)
