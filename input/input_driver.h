@@ -760,11 +760,15 @@ void input_config_set_device_display_name(unsigned port, const char *name);
 
 void input_config_set_device_config_name(unsigned port, const char *name);
 
+void input_config_set_device_config_path(unsigned port, const char *path);
+
 void input_config_clear_device_name(unsigned port);
 
 void input_config_clear_device_display_name(unsigned port);
 
 void input_config_clear_device_config_name(unsigned port);
+
+void input_config_clear_device_config_path(unsigned port);
 
 unsigned input_config_get_device_count(void);
 
@@ -779,6 +783,10 @@ const char *input_config_get_device_name(unsigned port);
 const char *input_config_get_device_display_name(unsigned port);
 
 const char *input_config_get_device_config_name(unsigned port);
+
+const char *input_config_get_device_config_path(unsigned port);
+
+const char *input_config_get_device_config_port(unsigned port);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 

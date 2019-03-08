@@ -14,6 +14,7 @@
  */
 
 #define CINTERFACE
+#define COBJMACROS
 
 #include <assert.h>
 
@@ -21,6 +22,8 @@
 #include <gfx/scaler/pixconv.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <encodings/utf.h>
+#include <dxgi.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1039,6 +1042,44 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       d3d11->hw.iface.context           = d3d11->context;
       d3d11->hw.iface.featureLevel      = d3d11->supportedFeatureLevel;
       d3d11->hw.iface.D3DCompile        = D3DCompile;
+   }
+
+#ifdef __WINRT__
+   DXGICreateFactory2(&d3d11->factory);
+#else
+   DXGICreateFactory(&d3d11->factory);
+#endif
+
+   {
+      int i = 0;
+      DXGI_ADAPTER_DESC desc = {0};
+      char str[128];
+
+      str[0] = '\0';
+
+      while (true)
+      {
+#ifdef __WINRT__
+         if (FAILED(DXGIEnumAdapters2(d3d11->factory, i++, &d3d11->adapter)))
+            break;
+#else
+         if (FAILED(DXGIEnumAdapters(d3d11->factory, i++, &d3d11->adapter)))
+            break;
+#endif
+
+         IDXGIAdapter_GetDesc(d3d11->adapter, &desc);
+
+         utf16_to_char_string(desc.Description, str, sizeof(str));
+
+         RARCH_LOG("[D3D11]: Using GPU: %s\n", str);
+
+         video_driver_set_gpu_device_string(str);
+
+         Release(d3d11->adapter);
+
+         /* We only care about the first adapter for now */
+         break;
+      }
    }
 
    return d3d11;

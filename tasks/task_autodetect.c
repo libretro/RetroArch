@@ -303,9 +303,15 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    else
       input_config_set_device_display_name(params->idx, params->name);
    if (!string_is_empty(conf->path))
+   {
       input_config_set_device_config_name(params->idx, path_basename(conf->path));
+      input_config_set_device_config_path(params->idx, conf->path);
+   }
    else
+   {
       input_config_set_device_config_name(params->idx, "N/A");
+      input_config_set_device_config_path(params->idx, "N/A");
+   }
 
    input_autoconfigure_joypad_reindex_devices();
 }
@@ -862,7 +868,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
          free(params->name);
       params->name = strdup("Android Gamepad");
 
-      if(input_autoconfigure_joypad_from_conf_internal(params, task))
+      if (input_autoconfigure_joypad_from_conf_internal(params, task))
       {
          RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d). Using fallback\n",
                !string_is_empty(params->name) ? params->name : "N/A",
@@ -933,6 +939,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    input_config_clear_device_name(state->idx);
    input_config_clear_device_display_name(state->idx);
    input_config_clear_device_config_name(state->idx);
+   input_config_clear_device_config_path(state->idx);
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;

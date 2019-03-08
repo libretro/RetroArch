@@ -57,6 +57,8 @@
 #define MOVERESIZE_X_SHIFT                   8
 #define MOVERESIZE_Y_SHIFT                   9
 
+#define V_DBLSCAN 0x20
+
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 bool g_x11_entered                          = false;
@@ -243,6 +245,7 @@ float x11_get_refresh_rate(void *data)
    Screen *screen;
    int screenid;
    int dotclock;
+   float refresh;
 
    if (!g_x11_dpy || g_x11_win == None)
       return 0.0f;
@@ -255,7 +258,13 @@ float x11_get_refresh_rate(void *data)
 
    XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline);
 
-   return (float) dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
+   /* non-native modes like 1080p on a 4K display might use DoubleScan */
+   if (modeline.flags & V_DBLSCAN)
+      dotclock /= 2;
+
+   refresh = (float)dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
+
+   return refresh;
 }
 
 static bool get_video_mode(video_frame_info_t *video_info,
@@ -389,6 +398,12 @@ bool x11_get_metrics(void *data,
 
    switch (type)
    {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         *value = (float)pixels_x;
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         *value = (float)pixels_y;
+         break;
       case DISPLAY_METRIC_MM_WIDTH:
          *value = (float)physical_width;
          break;

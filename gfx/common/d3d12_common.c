@@ -14,6 +14,7 @@
  */
 
 #define CINTERFACE
+#define COBJMACROS
 
 #include <boolean.h>
 
@@ -27,6 +28,9 @@
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 #endif
+
+#include <encodings/utf.h>
+#include <dxgi.h>
 
 #ifdef __MINGW32__
 /* clang-format off */
@@ -180,7 +184,20 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 #endif
 
          if (SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))
+         {
+            char str[128];
+            DXGI_ADAPTER_DESC desc = {0};
+
+            IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
+
+            utf16_to_char_string(desc.Description, str, sizeof(str));
+
+            RARCH_LOG("[D3D12]: Using GPU: %s\n", str);
+
+            video_driver_set_gpu_device_string(str);
+
             break;
+         }
 
          Release(d3d12->adapter);
       }

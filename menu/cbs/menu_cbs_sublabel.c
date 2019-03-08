@@ -530,6 +530,7 @@ default_sublabel_macro(action_bind_sublabel_menu_ticker_speed,                  
 default_sublabel_macro(action_bind_sublabel_playlist_show_core_name,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME)
 default_sublabel_macro(action_bind_sublabel_playlist_sort_alphabetical,                    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
+default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -2404,6 +2405,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_FULL_WIDTH_LAYOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_full_width_layout);
+            break;
+         case MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_help_send_debug_info);
             break;
          default:
          case MSG_UNKNOWN:

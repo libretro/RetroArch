@@ -422,6 +422,12 @@ void rarch_force_video_driver_fallback(const char *driver);
 
 void rarch_core_runtime_tick(void);
 
+void rarch_send_debug_info(void);
+
+bool rarch_write_debug_info(void);
+
+void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
+
 RETRO_END_DECLS
 
 #endif

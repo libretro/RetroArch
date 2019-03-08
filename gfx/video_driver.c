@@ -230,6 +230,9 @@ static bool video_started_fullscreen                     = false;
 static shader_backend_t *current_shader                  = NULL;
 static void *current_shader_data                         = NULL;
 
+static char video_driver_gpu_device_string[128] = {0};
+static char video_driver_gpu_api_version_string[128] = {0};
+
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
    { "16:9",          1.7778f },
@@ -3547,3 +3550,23 @@ bool video_driver_has_widgets(void)
       && current_video->menu_widgets_enabled(video_driver_data);
 }
 #endif
+
+void video_driver_set_gpu_device_string(const char *str)
+{
+   strlcpy(video_driver_gpu_device_string, str, sizeof(video_driver_gpu_device_string));
+}
+
+const char* video_driver_get_gpu_device_string(void)
+{
+   return video_driver_gpu_device_string;
+}
+
+void video_driver_set_gpu_api_version_string(const char *str)
+{
+   strlcpy(video_driver_gpu_api_version_string, str, sizeof(video_driver_gpu_api_version_string));
+}
+
+const char* video_driver_get_gpu_api_version_string(void)
+{
+   return video_driver_gpu_api_version_string;
+}

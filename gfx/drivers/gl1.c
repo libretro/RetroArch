@@ -187,6 +187,19 @@ static void *gl1_gfx_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl1->version_major, &gl1->version_minor);
 
+   {
+      char device_str[128];
+
+      device_str[0] = '\0';
+
+      strlcpy(device_str, vendor, sizeof(device_str));
+      strlcat(device_str, " ", sizeof(device_str));
+      strlcat(device_str, renderer, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+      video_driver_set_gpu_api_version_string(version);
+   }
+
    RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;

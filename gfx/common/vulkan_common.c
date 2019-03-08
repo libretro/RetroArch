@@ -1738,6 +1738,44 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
 
+   {
+      char device_str[128];
+      char driver_version[64];
+      char api_version[64];
+      char version_str[128];
+      int pos = 0;
+
+      device_str[0] = driver_version[0] = api_version[0] = version_str[0] = '\0';
+
+      strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
+      strlcat(device_str, " ", sizeof(device_str));
+
+      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
+      strlcat(driver_version, ".", sizeof(driver_version));
+      pos++;
+      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
+      pos++;
+      strlcat(driver_version, ".", sizeof(driver_version));
+      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
+
+      strlcat(device_str, driver_version, sizeof(device_str));
+
+      pos = 0;
+
+      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      strlcat(api_version, ".", sizeof(api_version));
+      pos++;
+      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
+      pos++;
+      strlcat(api_version, ".", sizeof(api_version));
+      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
+
+      strlcat(version_str, api_version, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+      video_driver_set_gpu_api_version_string(version_str);
+   }
+
    if (vk->context.device == VK_NULL_HANDLE)
    {
       VkQueueFamilyProperties *queue_properties = NULL;

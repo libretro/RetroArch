@@ -278,6 +278,7 @@ static uint16_t input_config_pid[MAX_USERS];
 
 static char input_device_display_names[MAX_INPUT_DEVICES][64];
 static char input_device_config_names [MAX_INPUT_DEVICES][64];
+static char input_device_config_paths [MAX_INPUT_DEVICES][64];
 char        input_device_names        [MAX_INPUT_DEVICES][64];
 
 uint64_t lifecycle_state;
@@ -2792,6 +2793,13 @@ const char *input_config_get_device_display_name(unsigned port)
    return input_device_display_names[port];
 }
 
+const char *input_config_get_device_config_path(unsigned port)
+{
+   if (string_is_empty(input_device_config_paths[port]))
+      return NULL;
+   return input_device_config_paths[port];
+}
+
 const char *input_config_get_device_config_name(unsigned port)
 {
    if (string_is_empty(input_device_config_names[port]))
@@ -2808,6 +2816,21 @@ void input_config_set_device_name(unsigned port, const char *name)
             sizeof(input_device_names[port]));
 
       input_autoconfigure_joypad_reindex_devices();
+   }
+}
+
+void input_config_set_device_config_path(unsigned port, const char *path)
+{
+   if (!string_is_empty(path))
+   {
+      fill_pathname_parent_dir_name(input_device_config_paths[port],
+            path, sizeof(input_device_config_paths[port]));
+      strlcat(input_device_config_paths[port],
+            "/",
+            sizeof(input_device_config_paths[port]));
+      strlcat(input_device_config_paths[port],
+            path_basename(path),
+            sizeof(input_device_config_paths[port]));
    }
 }
 
@@ -2840,6 +2863,11 @@ void input_config_clear_device_name(unsigned port)
 void input_config_clear_device_display_name(unsigned port)
 {
    input_device_display_names[port][0] = '\0';
+}
+
+void input_config_clear_device_config_path(unsigned port)
+{
+   input_device_config_paths[port][0] = '\0';
 }
 
 void input_config_clear_device_config_name(unsigned port)
