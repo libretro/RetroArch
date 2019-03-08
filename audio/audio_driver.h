@@ -282,6 +282,8 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
 void audio_driver_load_menu_sounds(void);
 
+const char* audio_driver_get_ident(void);
+
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;

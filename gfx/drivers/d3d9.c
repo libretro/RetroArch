@@ -1303,6 +1303,22 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
 
+   {
+      D3DADAPTER_IDENTIFIER9 ident = {0};
+      IDirect3D9_GetAdapterIdentifier(g_pD3D9, 0, 0, &ident);
+      char version_str[128];
+
+      version_str[0] = '\0';
+
+      snprintf(version_str, sizeof(version_str), "%u.%u.%u.%u", HIWORD(ident.DriverVersion.HighPart), LOWORD(ident.DriverVersion.HighPart), HIWORD(ident.DriverVersion.LowPart), LOWORD(ident.DriverVersion.LowPart));
+
+      RARCH_LOG("[D3D9]: Using GPU: %s\n", ident.Description);
+      RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
+
+      video_driver_set_gpu_device_string(ident.Description);
+      video_driver_set_gpu_api_version_string(version_str);
+   }
+
    RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
 }

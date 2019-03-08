@@ -1801,3 +1801,11 @@ bool *audio_get_bool_ptr(enum audio_action action)
 
    return NULL;
 }
+
+const char* audio_driver_get_ident(void)
+{
+   if (!current_audio)
+      return NULL;
+
+   return current_audio->ident;
+}

@@ -8338,3 +8338,27 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
     "Last Played:"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Send Debug Info"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_DEBUG_INFO,
+    "Failed to save debug info."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_DEBUG_INFO,
+    "Failed to send debug info to server."
+    )
+MSG_HASH(
+    MSG_SENDING_DEBUG_INFO,
+    "Sending debug info..."
+    )
+MSG_HASH(
+    MSG_SENT_DEBUG_INFO,
+    "Sent debug info to server successfully. Your ID number is %u."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+    "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis."
+    )

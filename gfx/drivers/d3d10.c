@@ -14,11 +14,14 @@
  */
 
 #define CINTERFACE
+#define COBJMACROS
 
 #include <assert.h>
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <encodings/utf.h>
+#include <dxgi.h>
 
 #include "../../driver.h"
 #include "../../verbosity.h"
@@ -631,6 +634,7 @@ d3d10_gfx_init(const video_info_t* video,
       RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
       goto error;
    }
+
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    {
@@ -967,6 +971,44 @@ d3d10_gfx_init(const video_info_t* video,
       d3d10->hw.iface.D3DCompile        = D3DCompile;
    }
 #endif
+
+#ifdef __WINRT__
+   DXGICreateFactory2(&d3d10->factory);
+#else
+   DXGICreateFactory(&d3d10->factory);
+#endif
+
+   {
+      int i = 0;
+      DXGI_ADAPTER_DESC desc = {0};
+      char str[128];
+
+      str[0] = '\0';
+
+      while (true)
+      {
+#ifdef __WINRT__
+         if (FAILED(DXGIEnumAdapters2(d3d10->factory, i++, &d3d10->adapter)))
+            break;
+#else
+         if (FAILED(DXGIEnumAdapters(d3d10->factory, i++, &d3d10->adapter)))
+            break;
+#endif
+
+         IDXGIAdapter_GetDesc(d3d10->adapter, &desc);
+
+         utf16_to_char_string(desc.Description, str, sizeof(str));
+
+         RARCH_LOG("[D3D10]: Using GPU: %s\n", str);
+
+         video_driver_set_gpu_device_string(str);
+
+         Release(d3d10->adapter);
+
+         /* We only care about the first adapter for now */
+         break;
+      }
+   }
 
    return d3d10;
 

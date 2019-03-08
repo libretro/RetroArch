@@ -459,7 +459,6 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       char cpu_str[8192];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
-      enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
 
       cpu_str[0] = cpu_arch_str[0] = cpu_text_str[0] = '\0';
 
@@ -467,39 +466,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
             sizeof(cpu_text_str));
 
-      switch (arch)
-      {
-         case FRONTEND_ARCH_X86:
-            strlcpy(cpu_arch_str, "x86", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_X86_64:
-            strlcpy(cpu_arch_str, "x64", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_PPC:
-            strlcpy(cpu_arch_str, "PPC", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_ARM:
-            strlcpy(cpu_arch_str, "ARM", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_ARMV7:
-            strlcpy(cpu_arch_str, "ARMv7", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_ARMV8:
-            strlcpy(cpu_arch_str, "ARMv8", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_MIPS:
-            strlcpy(cpu_arch_str, "MIPS", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_TILE:
-            strlcpy(cpu_arch_str, "Tilera", sizeof(cpu_arch_str));
-            break;
-         case FRONTEND_ARCH_NONE:
-         default:
-            strlcpy(cpu_arch_str,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(cpu_arch_str));
-            break;
-      }
+      rarch_get_cpu_architecture_string(cpu_arch_str, sizeof(cpu_arch_str));
 
       snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
 
@@ -521,38 +488,38 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-   for(controller = 0; controller < MAX_USERS; controller++)
+   for (controller = 0; controller < MAX_USERS; controller++)
    {
       if (input_is_autoconfigured(controller))
       {
-            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
-               controller,
-               input_config_get_device_name(controller),
-               input_autoconfigure_get_device_name_index(controller));
+         snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+            controller,
+            input_config_get_device_name(controller),
+            input_autoconfigure_get_device_name_index(controller));
+         menu_entries_append_enum(info->list, tmp, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            snprintf(tmp, sizeof(tmp), " Device display name: %s",
+               input_config_get_device_display_name(controller) ?
+               input_config_get_device_display_name(controller) : "N/A");
             menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
-            {
-               snprintf(tmp, sizeof(tmp), " Device display name: %s",
-                  input_config_get_device_display_name(controller) ?
-                  input_config_get_device_display_name(controller) : "N/A");
-               menu_entries_append_enum(info->list, tmp, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-               snprintf(tmp, sizeof(tmp), " Device config name: %s",
-                  input_config_get_device_display_name(controller) ?
-                  input_config_get_device_config_name(controller) : "N/A");
-               menu_entries_append_enum(info->list, tmp, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-               snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
-                  input_config_get_vid(controller),
-                  input_config_get_pid(controller));
-               menu_entries_append_enum(info->list, tmp, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            }
+            snprintf(tmp, sizeof(tmp), " Device config name: %s",
+               input_config_get_device_display_name(controller) ?
+               input_config_get_device_config_name(controller) : "N/A");
+            menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
+               input_config_get_vid(controller),
+               input_config_get_pid(controller));
+            menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         }
       }
    }
 
@@ -3484,7 +3451,7 @@ static int menu_displaylist_parse_options_remappings(
 
       if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
       {
-         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
+         for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
          {
             char desc_label[400];
             char descriptor[300];
@@ -7820,6 +7787,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
                msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
                MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+               0, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
+               msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
+               MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
                0, 0, 0);
          info->need_refresh = true;
          info->need_push    = true;

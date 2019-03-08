@@ -1059,6 +1059,12 @@ bool win32_get_metrics(void *data,
 
    switch (type)
    {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         *value = pixels_x;
+         return true;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         *value = pixels_y;
+         return true;
       case DISPLAY_METRIC_MM_WIDTH:
          *value = physical_width;
          return true;

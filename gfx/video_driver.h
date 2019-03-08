@@ -106,7 +106,9 @@ enum display_metric_types
    DISPLAY_METRIC_NONE = 0,
    DISPLAY_METRIC_MM_WIDTH,
    DISPLAY_METRIC_MM_HEIGHT,
-   DISPLAY_METRIC_DPI
+   DISPLAY_METRIC_DPI,
+   DISPLAY_METRIC_PIXEL_WIDTH,
+   DISPLAY_METRIC_PIXEL_HEIGHT
 };
 
 enum display_flags
@@ -1204,6 +1206,14 @@ bool video_driver_is_threaded(void);
 
 bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
       enum display_flags flag);
+
+void video_driver_set_gpu_device_string(const char *str);
+
+const char* video_driver_get_gpu_device_string(void);
+
+void video_driver_set_gpu_api_version_string(const char *str);
+
+const char* video_driver_get_gpu_api_version_string(void);
 
 extern video_driver_t video_gl2;
 extern video_driver_t video_gl1;
