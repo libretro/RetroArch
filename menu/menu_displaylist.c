@@ -1294,6 +1294,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    settings_t *settings = config_get_ptr();
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    bool get_runtime = false;
+   bool show_inline_core_name = false;
    char label_spacer[PL_LABEL_SPACER_MAXLEN];
 
    label_spacer[0] = '\0';
@@ -1314,13 +1315,22 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
                       string_is_equal(path_playlist, "video_history"));
    }
 
-   /* Get spacer for menu entry labels (<content><spacer><core>) */
-   if (is_rgui)
-      strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
-   else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
-      strlcpy(label_spacer, PL_LABEL_SPACER_OZONE, sizeof(label_spacer));
-   else
-      strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
+   /* Check whether core name should be added to playlist entries */
+   if (!settings->bools.playlist_show_sublabels &&
+       ((settings->uints.playlist_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS) ||
+        (!is_collection && !(settings->uints.playlist_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_NEVER))))
+   {
+      show_inline_core_name = true;
+
+      /* Get spacer for menu entry labels (<content><spacer><core>)
+       * > Note: Only required when showing inline core names */
+      if (is_rgui)
+         strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
+      else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         strlcpy(label_spacer, PL_LABEL_SPACER_OZONE, sizeof(label_spacer));
+      else
+         strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
+   }
 
    /* Inform menu driver of current system name */
    if (!string_is_empty(info->path))
@@ -1416,27 +1426,20 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          /* Standard playlist entry
           * > Base menu entry label is always playlist label
           *   > If playlist label is NULL, fallback to playlist entry file name
-          * > If playlist sublabels are enabled, no further additions
-          *   are required
-          * > If playlist sublabels are disabled:
-          *   > If this is *not* a standard collection (i.e. a history list or
-          *     favourites) *or* 'show core name' is enabled, add currently
-          *     associated core (if set) */
+          * > If required, add currently associated core (if any), otherwise
+          *   no further action is necessary */
 
          if (string_is_empty(label))
             fill_short_pathname_representation(menu_entry_label, path, sizeof(menu_entry_label));
          else
             strlcpy(menu_entry_label, label, sizeof(menu_entry_label));
 
-         if (!settings->bools.playlist_show_sublabels)
+         if (show_inline_core_name)
          {
-            if (!is_collection || settings->bools.playlist_show_core_name)
+            if (!string_is_empty(core_name) && !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
             {
-               if (!string_is_empty(core_name) && !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
-               {
-                  strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
-                  strlcat(menu_entry_label, core_name, sizeof(menu_entry_label));
-               }
+               strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
+               strlcat(menu_entry_label, core_name, sizeof(menu_entry_label));
             }
          }
 
@@ -5348,14 +5351,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
                PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+               PARSE_ONLY_UINT, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
                PARSE_ONLY_BOOL, false);
-        ret = menu_displaylist_parse_settings_enum(menu, info,
-              MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-              PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
-               PARSE_ONLY_BOOL, false);
+               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+               PARSE_ONLY_UINT, false);
 
          menu_displaylist_parse_playlist_associations(info);
          info->need_push    = true;
