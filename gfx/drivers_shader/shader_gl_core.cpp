@@ -1947,7 +1947,7 @@ bool gl_core_filter_chain::init_history()
       original_history.emplace_back(new gl_core::Framebuffer(0, 1));
    }
 
-   RARCH_LOG("[GLCore]: Using history of %u frames.\n", required_images);
+   RARCH_LOG("[GLCore]: Using history of %u frames.\n", unsigned(required_images));
 
    /* On first frame, we need to clear the textures to
     * a known state, but we need

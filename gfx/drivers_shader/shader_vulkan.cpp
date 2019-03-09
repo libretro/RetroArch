@@ -761,7 +761,7 @@ bool vulkan_filter_chain::init_history()
                max_input_size, original_format, 1));
    }
 
-   RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", required_images);
+   RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
 
    /* On first frame, we need to clear the textures to
     * a known state, but we need
