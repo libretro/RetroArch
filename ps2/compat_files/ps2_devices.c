@@ -16,12 +16,15 @@
 
 #include <stdio.h>
 #include <kernel.h>
+#include <string.h>
+#include <fileXio_rpc.h>
 
 #define DEVICE_SLASH "/"
 
 #define DEVICE_MC0 "mc0:"
 #define DEVICE_MC1 "mc1:"
 #define DEVICE_CDROM "cdrom0:"
+#define DEVICE_CDFS "cdfs:"
 #define DEVICE_MASS "mass:"
 #define DEVICE_MASS0 "mass0:"
 #define DEVICE_HDD "hdd:"
@@ -40,6 +43,7 @@
 
 #define DEVICE_MC0_PATH DEVICE_MC0 DEVICE_SLASH
 #define DEVICE_MC1_PATH DEVICE_MC1 DEVICE_SLASH
+#define DEVICE_CDFS_PATH DEVICE_CDFS DEVICE_SLASH
 #define DEVICE_CDROM_PATH DEVICE_CDROM DEVICE_SLASH
 #define DEVICE_MASS_PATH DEVICE_MASS DEVICE_SLASH
 #define DEVICE_MASS0_PATH DEVICE_MASS0 DEVICE_SLASH
@@ -67,6 +71,8 @@ char *rootDevicePath(enum BootDeviceIDs device_id)
          return DEVICE_MC1_PATH;
       case BOOT_DEVICE_CDROM:
          return DEVICE_CDROM_PATH;
+      case BOOT_DEVICE_CDFS:
+         return DEVICE_CDFS_PATH;
       case BOOT_DEVICE_MASS:
          return DEVICE_MASS_PATH;
       case BOOT_DEVICE_MASS0:
@@ -110,6 +116,8 @@ enum BootDeviceIDs getBootDeviceID(char *path)
       return BOOT_DEVICE_MC1;
    else if (!strncmp(path, DEVICE_CDROM, 7))
       return BOOT_DEVICE_CDROM;
+   else if (!strncmp(path, DEVICE_CDFS, 5))
+      return BOOT_DEVICE_CDFS;
    else if (!strncmp(path, DEVICE_MASS, 5))
       return BOOT_DEVICE_MASS;
    else if (!strncmp(path, DEVICE_MASS0, 6))

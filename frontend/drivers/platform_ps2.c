@@ -27,8 +27,11 @@
 #include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
+#include <cdvd_rpc.h>
+#include <cd.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
+#include <ps2_descriptor.h>
 
 char eboot_path[512];
 char user_path[512];
@@ -180,6 +183,9 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
 
+   /* CDVD */
+   SifExecModuleBuffer(&cdvd_irx, size_cdvd_irx, 0, NULL, NULL);
+
    if (mcInit(MC_TYPE_XMC)) {
       RARCH_ERR("mcInit library not initalizated\n");
    }
@@ -201,6 +207,16 @@ static void frontend_ps2_init(void *data)
       RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 
+   /* Initializes CDVD library */
+   if (CDVD_Init() != 1) {
+      RARCH_ERR("CDVD_Init library not initalizated\n");
+   }
+   if (cdInit(CDVD_INIT_INIT) != 1) {
+      RARCH_ERR("cdInit library not initalizated\n");
+   }
+
+   _init_ps2_io();
+
    /* Prepare device */
    getcwd(cwd, sizeof(cwd));
    bootDeviceID=getBootDeviceID(cwd);
@@ -219,6 +235,9 @@ static void frontend_ps2_deinit(void *data)
    verbosity_disable();
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
+   _free_ps2_io();
+   cdInit(CDVD_INIT_EXIT);
+   CDVD_Stop();
    padEnd();
    audsrv_quit();
    fileXioExit();
@@ -330,6 +349,11 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          rootDevicePath(BOOT_DEVICE_MC1),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         rootDevicePath(BOOT_DEVICE_CDFS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);

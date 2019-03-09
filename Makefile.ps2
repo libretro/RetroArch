@@ -5,11 +5,14 @@ HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 BIG_STACK          = 0
-MUTE_WARNINGS      = 0
+MUTE_WARNINGS      = 1
 PS2_IP = 192.168.1.150
 
 TARGET = retroarchps2.elf
 TARGET_RELEASE = retroarchps2-release.elf
+
+# Lib CDVD
+CDVD_DIR = ps2/libcdvd
 
 # Compile the IRXs first
 IRX_DIR = ps2/irx
@@ -27,7 +30,7 @@ ifeq ($(MUTE_WARNINGS), 1)
    DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses
 endif
 
-INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
+INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include -I$(CDVD_DIR)/ee
 INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include
 INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 GPVAL = -G0
@@ -38,8 +41,9 @@ RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHA
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
-LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
-LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lpatches -lpoweroff
+LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L$(CDVD_DIR)/lib -L.
+LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio 
+LIBS += -lcdvdfs -lpatches -lpoweroff
 
 
 ifeq ($(HAVE_THREADS), 1)
@@ -64,9 +68,11 @@ CFLAGS += $(RARCH_DEFINES)
 EE_OBJS += $(IRX_DIR)/freemtap_irx.o $(IRX_DIR)/freepad_irx.o $(IRX_DIR)/freesio2_irx.o $(IRX_DIR)/iomanX_irx.o
 EE_OBJS += $(IRX_DIR)/fileXio_irx.o $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o
 EE_OBJS += $(IRX_DIR)/usbhdfsd_irx.o $(IRX_DIR)/freesd_irx.o $(IRX_DIR)/audsrv_irx.o $(IRX_DIR)/poweroff_irx.o
+EE_OBJS += $(IRX_DIR)/cdvd_irx.o
 
 # Missing objecst on the PS2SDK
-EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o ps2/compat_files/ps2_devices.o
+EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o ps2/compat_files/ps2_devices.o 
+EE_OBJS += ps2/compat_files/cd.o ps2/compat_files/ps2_hashtable.o ps2/compat_files/murmur3.o ps2/compat_files/ps2_descriptor.o
 
 #EE_OBJS = griffin/griffin.o bootstrap/ps2/kernel_functions.o
 EE_OBJS += griffin/griffin.o

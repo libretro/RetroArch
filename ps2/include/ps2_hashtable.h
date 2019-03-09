@@ -12,39 +12,34 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PS2_DEVICES_H
-#define PS2_DEVICES_H
+#ifndef PS2_HASHTABLE_H
+#define PS2_HASHTABLE_H
 
+#include <stdint.h>
 #include <stdbool.h>
 
-enum BootDeviceIDs{
-   BOOT_DEVICE_UNKNOWN = -1,
-   BOOT_DEVICE_MC0 = 0,
-   BOOT_DEVICE_MC1,
-   BOOT_DEVICE_CDROM,
-   BOOT_DEVICE_CDFS,
-   BOOT_DEVICE_MASS,
-   BOOT_DEVICE_MASS0,
-   BOOT_DEVICE_HDD,
-   BOOT_DEVICE_HDD0,
-   BOOT_DEVICE_HOST,
-   BOOT_DEVICE_HOST0,
-   BOOT_DEVICE_HOST1,
-   BOOT_DEVICE_HOST2,
-   BOOT_DEVICE_HOST3,
-   BOOT_DEVICE_HOST4,
-   BOOT_DEVICE_HOST5,
-   BOOT_DEVICE_HOST6,
-   BOOT_DEVICE_HOST7,
-   BOOT_DEVICE_HOST8,
-   BOOT_DEVICE_HOST9,
-   BOOT_DEVICE_COUNT,
+struct table_entry {
+   char               *key;
+   void               *value;
+   uint32_t            hash;
+   struct table_entry *next;
 };
 
-char *rootDevicePath(enum BootDeviceIDs device_id);
+struct hash_table {
+   uint32_t       capacity;
+   uint32_t       size;
+   struct table_entry **table;
+};
 
-enum BootDeviceIDs getBootDeviceID(char *path);
+typedef struct hash_table HashTable;
 
-bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id);
+HashTable *crb_hashtable_create(uint32_t _size);
+void       crb_hashtable_destroy(HashTable **_tbl);
+
+void       crb_hashtable_grow(HashTable *_tbl);
+void       crb_hashtable_hash(const char *_key, uint32_t *hash);
+bool       crb_hashtable_insert(HashTable *_tbl, const char *_key, void *_data);
+void      *crb_hashtable_find(HashTable *_tbl, const char *_key);
+void      *crb_hashtable_remove(HashTable *_tbl, const char *_key);
 
 #endif
