@@ -1322,6 +1322,36 @@ static void setting_get_string_representation_uint_playlist_sublabel_runtime_typ
    }
 }
 
+static void setting_get_string_representation_uint_playlist_inline_core_display_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV),
+               len);
+         break;
+      case PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS),
+               len);
+         break;
+      case PLAYLIST_INLINE_CORE_DISPLAY_NEVER:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
+               len);
+         break;
+   }
+}
+
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
    unsigned port = 0;
@@ -9939,21 +9969,21 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_playlist_sublabel_runtime_type;
          menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_RUNTIME_LAST-1, 1, true, true);
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.playlist_show_core_name,
-               MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_CORE_NAME,
-               playlist_show_core_name,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->uints.playlist_show_inline_core_name,
+               MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+               playlist_show_inline_core_name,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_playlist_inline_core_display_type;
+         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_INLINE_CORE_DISPLAY_LAST-1, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 

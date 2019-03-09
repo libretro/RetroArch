@@ -1581,7 +1581,6 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, content_runtime_log, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, content_runtime_log_aggregate, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, playlist_show_sublabels, false);
-   SETTING_BOOL("playlist_show_core_name",       &settings->bools.playlist_show_core_name, true, playlist_show_core_name, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, playlist_sort_alphabetical, false);
 
    SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, quit_press_twice, false);
@@ -1763,6 +1762,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("libnx_overclock",  &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
 #endif
 
+   SETTING_UINT("playlist_show_inline_core_name",  &settings->uints.playlist_show_inline_core_name, true, playlist_show_inline_core_name, false);
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, playlist_sublabel_runtime_type, false);
 
    *size = count;

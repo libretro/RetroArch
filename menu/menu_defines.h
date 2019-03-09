@@ -310,6 +310,14 @@ enum playlist_sublabel_runtime
    PLAYLIST_RUNTIME_LAST
 };
 
+enum playlist_inline_core_display_type
+{
+   PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV = 0,
+   PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+   PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+   PLAYLIST_INLINE_CORE_DISPLAY_LAST
+};
+
 typedef uintptr_t menu_texture_item;
 
 typedef struct menu_display_ctx_clearcolor

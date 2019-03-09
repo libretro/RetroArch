@@ -527,7 +527,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_sublabel_runtime_type,     
 default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_type,                              MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_speed,                             MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED)
-default_sublabel_macro(action_bind_sublabel_playlist_show_core_name,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME)
+default_sublabel_macro(action_bind_sublabel_playlist_show_inline_core_name,                MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME)
 default_sublabel_macro(action_bind_sublabel_playlist_sort_alphabetical,                    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
@@ -2397,8 +2397,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_TICKER_SPEED:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ticker_speed);
             break;
-         case MENU_ENUM_LABEL_PLAYLIST_SHOW_CORE_NAME:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_core_name);
+         case MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_inline_core_name);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_sort_alphabetical);

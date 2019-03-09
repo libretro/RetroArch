@@ -8259,12 +8259,24 @@ MSG_HASH(
     "Save playlists using old format"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_CORE_NAME,
-    "Always show associated cores in playlists"
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Show associated cores in playlists"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_CORE_NAME,
-    "Labels each playlist entry with the currently associated core (if any)."
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Specify when to tag playlist entries with the currently associated core (if any). NOTE: This setting is ignored when playlist sublabels are enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+    "History & Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+    "Always"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+    "Never"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
