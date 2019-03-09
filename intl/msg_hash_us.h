@@ -1282,6 +1282,10 @@ MSG_HASH(
     "FPS toggle"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+    "Netplay hosting toggle"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
     "Fullscreen toggle"
     )

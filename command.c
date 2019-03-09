@@ -224,6 +224,7 @@ static const struct cmd_map map[] = {
    { "OSK",                    RARCH_OSK },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
+   { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -2114,6 +2115,24 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_SEND_DEBUG_INFO:
          rarch_send_debug_info();
          break;
+      case CMD_EVENT_NETPLAY_HOST_TOGGLE:
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+         {
+            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         }
+         else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+         {
+            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         }
+         else
+         {
+            command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
+         }
+
+         break;
       case CMD_EVENT_FPS_TOGGLE:
          {
             settings_t *settings           = config_get_ptr();
@@ -2672,6 +2691,50 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
+      case CMD_EVENT_NETPLAY_ENABLE_HOST:
+      {
+#ifdef HAVE_MENU
+         bool contentless  = false;
+         bool is_inited    = false;
+
+         content_get_status(&contentless, &is_inited);
+
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+         /* If we haven't yet started, this will load on its own */
+         if (!is_inited)
+         {
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                  1, 480, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            return false;
+         }
+
+         /* Enable Netplay itself */
+         if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+            return false;
+#endif
+         break;
+      }
+      case CMD_EVENT_NETPLAY_DISCONNECT:
+      {
+         settings_t *settings = config_get_ptr();
+
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+         /* Re-enable rewind if it was enabled
+            TODO: Add a setting for these tweaks */
+         if (settings->bools.rewind_enable)
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
+         if (settings->uints.autosave_interval != 0)
+            command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+
+         break;
+      }
 #else
       case CMD_EVENT_NETPLAY_DEINIT:
       case CMD_EVENT_NETWORK_DEINIT:

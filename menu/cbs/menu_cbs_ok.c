@@ -5162,29 +5162,7 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool contentless  = false;
-   bool is_inited    = false;
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-
-   content_get_status(&contentless, &is_inited);
-
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-
-   netplay_refresh_rooms_menu(list);
-   /* If we haven't yet started, this will load on its own */
-   if (!is_inited)
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return 0;
-   }
-
-   /* Enable Netplay itself */
-   if (command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+   if (command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL))
       return generic_action_ok_command(CMD_EVENT_RESUME);
 #endif
    return -1;
@@ -5266,17 +5244,8 @@ static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   settings_t *settings = config_get_ptr();
+   generic_action_ok_command(CMD_EVENT_NETPLAY_DISCONNECT);
 
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
-
-   /* Re-enable rewind if it was enabled
-      TODO: Add a setting for these tweaks */
-   if (settings->bools.rewind_enable)
-      generic_action_ok_command(CMD_EVENT_REWIND_INIT);
-   if (settings->uints.autosave_interval != 0)
-      generic_action_ok_command(CMD_EVENT_AUTOSAVE_INIT);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
