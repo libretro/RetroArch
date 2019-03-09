@@ -387,6 +387,15 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    RARCH_LOG("[GLCore]: Max texture size: %d px, renderbuffer size: %d px.\n",
              max_fbo_size, max_rb_size);
 
+   if (width > max_fbo_size)
+       width = max_fbo_size;
+   if (width > max_rb_size)
+       width = max_rb_size;
+   if (height > max_fbo_size)
+       height = max_fbo_size;
+   if (height > max_rb_size)
+       height = max_rb_size;
+
    glGenFramebuffers(1, &gl->hw_render_fbo);
    glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo);
    glGenTextures(1, &gl->hw_render_texture);
@@ -399,8 +408,10 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    if (hwr->depth)
    {
       glGenRenderbuffers(1, &gl->hw_render_rb_ds);
+      glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_rb_ds);
       glRenderbufferStorage(GL_RENDERBUFFER, hwr->stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16,
                             width, height);
+      glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
       if (hwr->stencil)
          glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl->hw_render_rb_ds);
@@ -420,7 +431,6 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    gl->hw_render_max_width = width;
    gl->hw_render_max_height = height;
    glBindTexture(GL_TEXTURE_2D, 0);
-   glBindRenderbuffer(GL_RENDERBUFFER, 0);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    gl_core_context_bind_hw_render(gl, false);
 
