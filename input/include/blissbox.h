@@ -93,6 +93,7 @@ const blissbox_pad_type_t blissbox_pad_types[] =
    {"V_BOY", 29},
    {"WII_CLASSIC", 31},
    {"WII_MPLUS", 32},
+   {"PSX_JOGCON", 227},
    {NULL, 0}, /* used to mark unconnected ports, do not remove */
 };
 
