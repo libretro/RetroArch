@@ -1016,32 +1016,37 @@ static bool task_load_content(content_ctx_info_t *content_info,
          const char *core_path      = NULL;
          const char *core_name      = NULL;
          const char *label          = NULL;
-         playlist_t *playlist_tmp   = g_defaults.content_history;
+         const char *crc32          = NULL;
+         const char *db_name        = NULL;
+         playlist_t *playlist_hist  = g_defaults.content_history;
          global_t *global           = global_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
-               playlist_tmp         = g_defaults.video_history;
+               playlist_hist        = g_defaults.video_history;
                core_name            = "movieplayer";
                core_path            = "builtin";
 #endif
                break;
             case RARCH_CONTENT_MUSIC:
-               playlist_tmp         = g_defaults.music_history;
+               playlist_hist        = g_defaults.music_history;
                core_name            = "musicplayer";
                core_path            = "builtin";
                break;
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-               playlist_tmp         = g_defaults.image_history;
+               playlist_hist        = g_defaults.image_history;
                core_name            = "imageviewer";
                core_path            = "builtin";
 #endif
                break;
             default:
             {
+#ifdef HAVE_MENU
+               menu_handle_t *menu = NULL;
+#endif
                core_info_t *core_info = NULL;
 
                /* Set core path */
@@ -1057,6 +1062,19 @@ static bool task_load_content(content_ctx_info_t *content_info,
                if (string_is_empty(core_name))
                   core_name         = info->library_name;
 
+#ifdef HAVE_MENU
+               /* Set database name + checksum */
+               if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+               {
+                  playlist_t *playlist_curr = playlist_get_cached();
+
+                  if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, tmp, core_path))
+                  {
+                     playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
+                     playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+                  }
+               }
+#endif
                break;
             }
          }
@@ -1072,13 +1090,15 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
          if (
                content_ctx->history_list_enable
-               && playlist_tmp)
+               && playlist_hist)
             command_playlist_push_write(
-                  playlist_tmp,
+                  playlist_hist,
                   tmp,
                   label,
                   core_path,
-                  core_name);
+                  core_name,
+                  crc32,
+                  db_name);
       }
 
       free(tmp);

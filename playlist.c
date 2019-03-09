@@ -32,6 +32,7 @@
 #include "playlist.h"
 #include "verbosity.h"
 #include "configuration.h"
+#include "file_path_special.h"
 
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
@@ -1651,7 +1652,9 @@ void command_playlist_push_write(
       const char *path,
       const char *label,
       const char *core_path,
-      const char *core_name)
+      const char *core_name,
+      const char *crc32,
+      const char *db_name)
 {
    if (!playlist)
       return;
@@ -1662,8 +1665,8 @@ void command_playlist_push_write(
          label,
          core_path,
          core_name,
-         NULL,
-         NULL
+         crc32,
+         db_name
          ))
       playlist_write_file(playlist);
 }
@@ -1694,4 +1697,54 @@ void command_playlist_update_write(
          db_name);
 
    playlist_write_file(playlist);
+}
+
+bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
+      const char *path, const char *core_path)
+{
+   if (!playlist)
+      return false;
+
+   if (idx >= playlist->size)
+      return false;
+
+   return string_is_equal(playlist->entries[idx].path, path) &&
+          string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
+}
+
+void playlist_get_crc32(playlist_t *playlist, size_t idx,
+      const char **crc32)
+{
+   if (!playlist)
+      return;
+
+   if (crc32)
+      *crc32 = playlist->entries[idx].crc32;
+}
+
+void playlist_get_db_name(playlist_t *playlist, size_t idx,
+      const char **db_name)
+{
+   if (!playlist)
+      return;
+
+   if (db_name)
+   {
+      if (!string_is_empty(playlist->entries[idx].db_name))
+         *db_name = playlist->entries[idx].db_name;
+      else
+      {
+         const char *conf_path_basename = path_basename(playlist->conf_path);
+
+         /* Only use file basename if this is a 'collection' playlist
+          * (i.e. ignore history/favourites) */
+         if (!string_is_empty(conf_path_basename) &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_FAVORITES)) &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_HISTORY)) &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)))
+            *db_name = conf_path_basename;
+      }
+   }
 }
