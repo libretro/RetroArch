@@ -5007,6 +5007,68 @@ bool rarch_write_debug_info(void)
    filestream_printf(file, "      - Output Rate: %u Hz\n", settings->uints.audio_out_rate);
    filestream_printf(file, "      - DSP Plugin: %s\n", !string_is_empty(settings->paths.path_audio_dsp_plugin) ? settings->paths.path_audio_dsp_plugin : "n/a");
 
+   {
+      core_info_list_t *core_info_list = NULL;
+      bool found = false;
+
+      filestream_printf(file, "\n");
+      filestream_printf(file, "Firmware files found:\n");
+
+      core_info_get_list(&core_info_list);
+
+      if (core_info_list)
+      {
+        int i;
+
+         for (i = 0; i < core_info_list->count; i++)
+         {
+            core_info_t *info = &core_info_list->list[i];
+
+            if (!info)
+               continue;
+
+            if (info->firmware_count)
+            {
+               int j;
+               bool core_found = false;
+
+               for (j = 0; j < info->firmware_count; j++)
+               {
+                  core_info_firmware_t *firmware = &info->firmware[j];
+                  char path[PATH_MAX_LENGTH];
+
+                  if (!firmware)
+                     continue;
+
+                  path[0] = '\0';
+
+                  fill_pathname_join(
+                        path,
+                        settings->paths.directory_system,
+                        firmware->path,
+                        sizeof(path));
+
+                  if (filestream_exists(path))
+                  {
+                     found = true;
+
+                     if (!core_found)
+                     {
+                        core_found = true;
+                        filestream_printf(file, "  - %s:\n", !string_is_empty(info->core_name) ? info->core_name : path_basename(info->path));
+                     }
+
+                     filestream_printf(file, "      - %s (%s)\n", firmware->path, firmware->optional ? "optional" : "required");
+                  }
+               }
+            }
+         }
+      }
+
+      if (!found)
+         filestream_printf(file, "  - n/a\n");
+   }
+
    filestream_close(file);
 
    RARCH_LOG("Wrote debug info to %s\n", debug_filepath);
