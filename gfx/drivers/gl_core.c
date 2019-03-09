@@ -1689,7 +1689,7 @@ static bool gl_core_frame(void *data, const void *frame,
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
    if (video_info->hard_sync &&
-       video_info->input_driver_nonblock_state &&
+       !video_info->input_driver_nonblock_state &&
        !gl->menu_texture_enable)
    {
       gl_core_fence_iterate(gl, video_info->hard_sync_frames);
