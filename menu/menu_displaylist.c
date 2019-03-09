@@ -1759,7 +1759,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
             playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
-                  NULL, &crc32);
+                  &crc32, NULL);
 
             if (crc32)
                 tmp_str_list = string_split(crc32, "|");

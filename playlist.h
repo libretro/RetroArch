@@ -76,8 +76,8 @@ void playlist_get_index(playlist_t *playlist,
       size_t idx,
       const char **path, const char **label,
       const char **core_path, const char **core_name,
-      const char **db_name,
-      const char **crc32);
+      const char **crc32,
+      const char **db_name);
 
 void playlist_get_runtime_index(playlist_t *playlist,
       size_t idx,
@@ -139,8 +139,8 @@ void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       char **path, char **label,
       char **core_path, char **core_name,
-      char **db_name,
-      char **crc32);
+      char **crc32,
+      char **db_name);
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
@@ -167,7 +167,9 @@ void command_playlist_push_write(
       const char *path,
       const char *label,
       const char *core_path,
-      const char *core_name);
+      const char *core_name,
+      const char *crc32,
+      const char *db_name);
 
 void command_playlist_update_write(
       playlist_t *playlist,
@@ -178,6 +180,18 @@ void command_playlist_update_write(
       const char *core_display_name,
       const char *crc32,
       const char *db_name);
+
+/* Returns true if specified playlist index matches
+ * specified content/core paths */
+bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
+      const char *path, const char *core_path);
+
+void playlist_get_crc32(playlist_t *playlist, size_t idx,
+      const char **crc32);
+
+/* If db_name is empty, 'returns' playlist file basename */
+void playlist_get_db_name(playlist_t *playlist, size_t idx,
+      const char **db_name);
 
 RETRO_END_DECLS
 

@@ -2122,7 +2122,9 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          combined_path,
          NULL,
          "builtin",
-         "musicplayer");
+         "musicplayer",
+         NULL,
+         NULL);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
@@ -2152,7 +2154,9 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
          combined_path,
          NULL,
          "builtin",
-         "musicplayer");
+         "musicplayer",
+         NULL,
+         NULL);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
@@ -3824,7 +3828,10 @@ static int action_ok_add_to_favorites(const char *path,
    {
       global_t *global                 = global_get_ptr();
       struct retro_system_info *system = runloop_get_libretro_system_info();
+      menu_handle_t *menu              = NULL;
       struct string_list *str_list     = NULL;
+      const char *crc32                = NULL;
+      const char *db_name              = NULL;
 
       union string_list_elem_attr attr;
       char content_label[PATH_MAX_LENGTH];
@@ -3882,15 +3889,31 @@ static int action_ok_add_to_favorites(const char *path,
          strlcpy(core_name, file_path_str(FILE_PATH_DETECT), sizeof(core_name));
       }
 
+      /* > crc32 + db_name */
+      if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      {
+         playlist_t *playlist_curr = playlist_get_cached();
+
+         if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, content_path, core_path))
+         {
+            playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
+            playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+         }
+      }
+
       /* Copy playlist parameters into string list
        *   [0]: content_path
        *   [1]: content_label
        *   [2]: core_path
-       *   [3]: core_name */
+       *   [3]: core_name
+       *   [4]: crc32
+       *   [5]: db_name */
       string_list_append(str_list, content_path, attr);
       string_list_append(str_list, content_label, attr);
       string_list_append(str_list, core_path, attr);
       string_list_append(str_list, core_name, attr);
+      string_list_append(str_list, !string_is_empty(crc32) ? crc32 : "", attr);
+      string_list_append(str_list, !string_is_empty(db_name) ? db_name : "", attr);
 
       /* Trigger 'ADD_TO_FAVORITES' event */
       if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)str_list))
@@ -3913,19 +3936,21 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    const char *content_label = NULL;
    const char *core_path     = NULL;
    const char *core_name     = NULL;
+   const char *crc32         = NULL;
+   const char *db_name       = NULL;
    menu_handle_t *menu       = NULL;
-   playlist_t *tmp_playlist  = playlist_get_cached();
+   playlist_t *playlist_curr = playlist_get_cached();
    int ret = 0;
 
-   if (!tmp_playlist)
+   if (!playlist_curr)
       return 0;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    /* Read current playlist parameters */
-   playlist_get_index(tmp_playlist, menu->rpl_entry_selection_ptr,
+   playlist_get_index(playlist_curr, menu->rpl_entry_selection_ptr,
          &content_path, &content_label, &core_path, &core_name,
-         NULL, NULL);
+         &crc32, NULL);
 
    /* Error checking
     * > If content path is empty, cannot do anything... */
@@ -3947,7 +3972,9 @@ static int action_ok_add_to_favorites_playlist(const char *path,
        *   [0]: content_path
        *   [1]: content_label
        *   [2]: core_path
-       *   [3]: core_name */
+       *   [3]: core_name
+       *   [4]: crc32
+       *   [5]: db_name */
 
       /* > content_path */
       string_list_append(str_list, content_path, attr);
@@ -3993,6 +4020,13 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          string_list_append(str_list, file_path_str(FILE_PATH_DETECT), attr);
          string_list_append(str_list, file_path_str(FILE_PATH_DETECT), attr);
       }
+
+      /* crc32 */
+      string_list_append(str_list, !string_is_empty(crc32) ? crc32 : "", attr);
+
+      /* db_name */
+      playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+      string_list_append(str_list, !string_is_empty(db_name) ? db_name : "", attr);
 
       /* Trigger 'ADD_TO_FAVORITES' event */
       if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)str_list))

@@ -2395,7 +2395,7 @@ TODO: Add a setting for these tweaks */
 
          if (str_list)
          {
-            if (str_list->size >= 4)
+            if (str_list->size >= 6)
             {
                /* Write playlist entry */
                command_playlist_push_write(
@@ -2403,7 +2403,9 @@ TODO: Add a setting for these tweaks */
                      str_list->elems[0].data, /* content_path */
                      str_list->elems[1].data, /* content_label */
                      str_list->elems[2].data, /* core_path */
-                     str_list->elems[3].data  /* core_name */
+                     str_list->elems[3].data, /* core_name */
+                     str_list->elems[4].data, /* crc32 */
+                     str_list->elems[5].data  /* db_name */
                      );
                runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
