@@ -573,7 +573,7 @@ bool x11_alive(void *data)
          case KeyRelease:
             /*  When you receive a key release and the next event is a key press
                of the same key combination, then it's auto-repeat and the 
-               key wasn't acutally released. */
+               key wasn't actually released. */
             if(XEventsQueued(g_x11_dpy, QueuedAfterReading))
             {
                XEvent next_event;
@@ -582,7 +582,7 @@ bool x11_alive(void *data)
                    next_event.xkey.time == event.xkey.time &&
                    next_event.xkey.keycode == event.xkey.keycode)
                {
-                  break; // Key wasn’t actually released 
+                  break; // Key wasn't actually released 
                }
             }
          case KeyPress:
