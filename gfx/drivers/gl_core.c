@@ -427,6 +427,13 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
       return false;
    }
 
+   if (hwr->depth && hwr->stencil)
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+   else if (hwr->depth)
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   else
+      glClear(GL_COLOR_BUFFER_BIT);
+
    gl->hw_render_enable = true;
    gl->hw_render_max_width = width;
    gl->hw_render_max_height = height;
