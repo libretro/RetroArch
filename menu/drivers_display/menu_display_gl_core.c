@@ -231,20 +231,20 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    {
       glUniform4fv(loc->flat_ubo_vertex,
                    (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
-                   draw->pipeline.backend_data);
+                   (const GLfloat*)draw->pipeline.backend_data);
    }
 
    if (loc && loc->flat_ubo_fragment >= 0)
    {
       glUniform4fv(loc->flat_ubo_fragment,
                    (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
-                   draw->pipeline.backend_data);
+                   (const GLfloat*)draw->pipeline.backend_data);
    }
 
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? draw->matrix_data : menu_display_gl_core_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : menu_display_gl_core_get_default_mvp(video_info);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
       {
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
