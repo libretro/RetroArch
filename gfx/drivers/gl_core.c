@@ -332,6 +332,8 @@ static void gl_core_destroy_resources(gl_core_t *gl)
    if (!gl)
       return;
 
+   gl_core_context_bind_hw_render(gl, false);
+
    if (gl->filter_chain)
       gl_core_filter_chain_free(gl->filter_chain);
    gl->filter_chain = NULL;
@@ -978,6 +980,7 @@ static void *gl_core_init(const video_info_t *video,
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
+   gl_core_context_bind_hw_render(gl, false);
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
@@ -1273,8 +1276,8 @@ static void gl_core_free(void *data)
 
    gl_core_context_bind_hw_render(gl, false);
    font_driver_free_osd();
-   video_context_driver_free();
    gl_core_destroy_resources(gl);
+   video_context_driver_free();
 }
 
 static bool gl_core_alive(void *data)
