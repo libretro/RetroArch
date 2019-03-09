@@ -1274,6 +1274,10 @@ MSG_HASH(
     "Frameadvance"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "Send Debug Info"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "FPS toggle"
     )
@@ -8397,4 +8401,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
     "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis."
+    )
+MSG_HASH(
+    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+    "Press two more times to submit diagnostic info to the RetroArch team."
+    )
+MSG_HASH(
+    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+    "Press one more time to submit diagnostic info to the RetroArch team."
     )

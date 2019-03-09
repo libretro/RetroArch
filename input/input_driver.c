@@ -353,6 +353,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
       DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
       DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
+      DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
       DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
       DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
       DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
@@ -1019,10 +1020,12 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
    if (!menu_input_dialog_get_display_kb())
    {
-      unsigned ids[15][2];
+      unsigned ids[17][2];
       const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
       const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
       const struct retro_keybind *companionkey = &input_config_binds[0][RARCH_UI_COMPANION_TOGGLE];
+      const struct retro_keybind *fpskey = &input_config_binds[0][RARCH_FPS_TOGGLE];
+      const struct retro_keybind *debugkey = &input_config_binds[0][RARCH_SEND_DEBUG_INFO];
 
       ids[0][0]  = RETROK_SPACE;
       ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
@@ -1054,6 +1057,10 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
       ids[13][1] = RETRO_DEVICE_ID_JOYPAD_Y;
       ids[14][0] = companionkey->key;
       ids[14][1] = RARCH_UI_COMPANION_TOGGLE;
+      ids[15][0] = fpskey->key;
+      ids[15][1] = RARCH_FPS_TOGGLE;
+      ids[16][0] = debugkey->key;
+      ids[16][1] = RARCH_SEND_DEBUG_INFO;
 
       if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
@@ -1061,7 +1068,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
          ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
       }
 
-      for (i = 0; i < 15; i++)
+      for (i = 0; i < 17; i++)
       {
          if (current_input->input_state(current_input_data,
                   joypad_info, binds, 0,

@@ -3763,6 +3763,73 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check if we have pressed the "send debug info" button.
+    * Must press 3 times in a row to activate, but it will
+    * alert the user of this with each press of the hotkey. */
+   {
+      static uint32_t debug_seq = 0;
+      static bool old_pressed = false;
+      static bool old_any_pressed = false;
+      int any_i;
+      bool any_pressed = false;
+      bool pressed = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
+
+      for (any_i = 0; any_i < ARRAY_SIZE(current_input.data); any_i++)
+      {
+         if (current_input.data[any_i])
+         {
+            any_pressed = true;
+            break;
+         }
+      }
+
+      if (pressed && !old_pressed)
+         debug_seq |= pressed ? 1 : 0;
+
+      switch (debug_seq)
+      {
+         case 1: /* pressed hotkey one time */
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO),
+                  2, 180, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
+         case 3: /* pressed hotkey two times */
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO),
+                  2, 180, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
+         case 7: /* pressed hotkey third and final time */
+            debug_seq = 0;
+            command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
+            break;
+      }
+
+      if (any_pressed && !old_any_pressed)
+      {
+         debug_seq <<= 1;
+
+         if (debug_seq > 7)
+            debug_seq = 0;
+      }
+
+      old_pressed = pressed;
+      old_any_pressed = any_pressed;
+   }
+
+   /* Check if we have pressed the FPS toggle button */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_FPS_TOGGLE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_FPS_TOGGLE, NULL);
+
+      old_pressed             = pressed;
+   }
+
    if (menu_driver_is_alive())
    {
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
@@ -3814,18 +3881,6 @@ static enum runloop_state runloop_check_state(
             input_keyboard_ctl(
                   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
       }
-
-      old_pressed             = pressed;
-   }
-
-   /* Check if we have pressed the FPS toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_FPS_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_FPS_TOGGLE, NULL);
 
       old_pressed             = pressed;
    }

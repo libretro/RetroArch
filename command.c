@@ -223,6 +223,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
+   { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -2109,6 +2110,9 @@ TODO: Add a setting for these tweaks */
 
             RARCH_LOG("%s\n", msg);
          }
+         break;
+      case CMD_EVENT_SEND_DEBUG_INFO:
+         rarch_send_debug_info();
          break;
       case CMD_EVENT_FPS_TOGGLE:
          {

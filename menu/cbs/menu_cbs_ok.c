@@ -5109,7 +5109,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 
 static int action_ok_help_send_debug_info(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   rarch_send_debug_info();
+   command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
    return 0;
 }
 

@@ -85,6 +85,8 @@ enum event_command
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
+   /* Gathers diagnostic info about the system and RetroArch configuration, then sends it to our servers. */
+   CMD_EVENT_SEND_DEBUG_INFO,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Deinitializes overlay. */
