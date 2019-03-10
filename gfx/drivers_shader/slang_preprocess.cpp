@@ -54,7 +54,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
                param.maximum != itr->maximum ||
                param.step != itr->step)
          {
-            RARCH_ERR("[Vulkan]: Duplicate parameters"
+            RARCH_ERR("[slang]: Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
                   itr->id);
             mismatch_dup = true;

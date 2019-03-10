@@ -692,6 +692,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_gl_core;
 extern menu_display_ctx_driver_t menu_display_ctx_gl1;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_metal;

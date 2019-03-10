@@ -348,6 +348,11 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
+if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES3" = 'no' ]; then
+   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
+   HAVE_OPENGL_CORE='no'
+fi
+
 if [ "$HAVE_ZLIB" = 'no' ]; then
    HAVE_BUILTINZLIB=no
 elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
@@ -473,6 +478,7 @@ check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
 check_enabled CXX VULKAN vulkan 'The C++ compiler is' false
+check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
 check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then

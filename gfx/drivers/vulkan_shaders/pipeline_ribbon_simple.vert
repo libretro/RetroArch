@@ -5,6 +5,7 @@ layout(location = 0) in vec3 VertexCoord;
 layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
+   float yflip;
 } constants;
 
 float iqhash(float n)
@@ -32,4 +33,5 @@ void main()
    v2.z = v.z * 3.0;
    v.y = cos((v.x + v.z / 3.0 + constants.time) * 2.0) / 10.0 + noise(v2.xyz) / 4.0;
    gl_Position = vec4(v, 1.0);
+   gl_Position.y *= constants.yflip;
 }

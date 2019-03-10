@@ -130,6 +130,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_OPENGL1
    &menu_display_ctx_gl1,
 #endif
+#ifdef HAVE_OPENGL_CORE
+   &menu_display_ctx_gl_core,
+#endif
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
 #endif
@@ -279,6 +282,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_OPENGL1:
          if (string_is_equal(video_driver, "gl1"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL_CORE:
+         if (string_is_equal(video_driver, "glcore"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:

@@ -122,6 +122,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
 #ifdef HAVE_SHADERPIPELINE
    static uint8_t ubo_scratch_data[768];
    static float t                = 0.0f;
+   float yflip                   = 0.0f;
    static struct video_coords blank_coords;
    float output_size[2];
    video_coord_array_t *ca       = NULL;
@@ -147,10 +148,12 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
          ca = menu_display_get_coords_array();
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(float);
+         draw->pipeline.backend_data_size = 2 * sizeof(float);
 
          /* Match UBO layout in shader. */
+         yflip = 1.0f;
          memcpy(ubo_scratch_data, &t, sizeof(t));
+         memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
          break;
 
       /* Snow simple */
@@ -158,7 +161,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
          draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 3 * sizeof(float);
+         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
@@ -167,7 +170,15 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
                sizeof(output_size));
+
+         /* Shader uses FragCoord, need to fix up. */
+         if (draw->pipeline.id == VIDEO_SHADER_MENU_5)
+            yflip = -1.0f;
+         else
+            yflip = 1.0f;
+
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 2 * sizeof(float), &t, sizeof(t));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 3 * sizeof(float), &yflip, sizeof(yflip));
          draw->coords = &blank_coords;
          blank_coords.vertices = 4;
          draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;

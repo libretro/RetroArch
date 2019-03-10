@@ -422,6 +422,9 @@ VIDEO DRIVER
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
 #endif
+#ifdef HAVE_OPENGL_CORE
+#include "../gfx/drivers/gl_core.c"
+#endif
 #include "../libretro-common/gfx/gl_capabilities.c"
 
 #ifndef HAVE_PSGL
@@ -501,6 +504,9 @@ FONTS
 #include "../gfx/drivers_font/gl_raster_font.c"
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers_font/gl1_raster_font.c"
+#endif
+#ifdef HAVE_OPENGL_CORE
+#include "../gfx/drivers_font/gl_core_raster_font.c"
 #endif
 #endif
 
@@ -1262,6 +1268,9 @@ MENU
 #include "../menu/drivers_display/menu_display_gl.c"
 #ifdef HAVE_OPENGL1
 #include "../menu/drivers_display/menu_display_gl1.c"
+#endif
+#ifdef HAVE_OPENGL_CORE
+#include "../menu/drivers_display/menu_display_gl_core.c"
 #endif
 #endif
 
