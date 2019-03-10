@@ -3830,6 +3830,18 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check if we have pressed the netplay host toggle button */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_NETPLAY_HOST_TOGGLE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_NETPLAY_HOST_TOGGLE, NULL);
+
+      old_pressed             = pressed;
+   }
+
    if (menu_driver_is_alive())
    {
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
