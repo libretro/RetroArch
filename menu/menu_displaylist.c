@@ -6786,7 +6786,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       {
-         settings_t *settings = config_get_ptr();
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,

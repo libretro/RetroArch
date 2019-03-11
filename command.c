@@ -2738,6 +2738,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
+      case CMD_EVENT_NETPLAY_DISCONNECT:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:

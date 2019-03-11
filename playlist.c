@@ -690,8 +690,7 @@ static void JSONLogError(JSONContext *pCtx)
 void playlist_write_runtime_file(playlist_t *playlist)
 {
    size_t i;
-   RFILE *file = NULL;
-   settings_t *settings = config_get_ptr();
+   RFILE *file         = NULL;
    JSONContext context = {0};
 
    if (!playlist || !playlist->modified)
@@ -922,8 +921,8 @@ void playlist_write_file(playlist_t *playlist)
    else
    {
       JSONContext context = {0};
-      context.writer = JSON_Writer_Create(NULL);
-      context.file = file;
+      context.writer      = JSON_Writer_Create(NULL);
+      context.file        = file;
 
       if (!context.writer)
       {
