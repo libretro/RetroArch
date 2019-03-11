@@ -4609,7 +4609,8 @@ void rarch_force_video_driver_fallback(const char *driver)
    settings_t *settings = config_get_ptr();
    ui_msg_window_t *msg_window = NULL;
 
-   strlcpy(settings->arrays.video_driver, driver, sizeof(settings->arrays.video_driver));
+   strlcpy(settings->arrays.video_driver,
+         driver, sizeof(settings->arrays.video_driver));
 
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
@@ -4620,9 +4621,9 @@ void rarch_force_video_driver_fallback(const char *driver)
 
    if (msg_window)
    {
-      ui_msg_window_state window_state;
-      char *title = strdup(msg_hash_to_str(MSG_ERROR));
       char text[PATH_MAX_LENGTH];
+      ui_msg_window_state window_state;
+      char *title          = strdup(msg_hash_to_str(MSG_ERROR));
 
       text[0]              = '\0';
 
@@ -4687,24 +4688,23 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
 
 bool rarch_write_debug_info(void)
 {
-   settings_t *settings = config_get_ptr();
+   int i;
    gfx_ctx_mode_t mode_info = {0};
    char str[PATH_MAX_LENGTH];
    char debug_filepath[PATH_MAX_LENGTH];
+   settings_t                  *settings = config_get_ptr();
+   RFILE *file                           = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   const char *cpu_model = NULL;
-   const char *path_config = path_get(RARCH_PATH_CONFIG);
-   RFILE *file;
-   unsigned lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
-   int i;
+   const char *cpu_model                 = NULL;
+   const char *path_config               = path_get(RARCH_PATH_CONFIG);
+   unsigned lang                         = 
+      *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 
    str[0] = debug_filepath[0] = '\0';
 
+   /* Only print our debug info in English */
    if (lang != RETRO_LANGUAGE_ENGLISH)
-   {
-      /* Only print our debug info in English */
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, RETRO_LANGUAGE_ENGLISH);
-   }
 
    fill_pathname_resolve_relative(
          debug_filepath,
@@ -4712,7 +4712,8 @@ bool rarch_write_debug_info(void)
          DEBUG_INFO_FILENAME,
          sizeof(debug_filepath));
 
-   file = filestream_open(debug_filepath, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   file = filestream_open(debug_filepath,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -5148,6 +5149,7 @@ error:
    return false;
 }
 
+#ifdef HAVE_NETWORKING
 static void send_debug_info_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -5221,9 +5223,11 @@ static void send_debug_info_cb(retro_task_t *task,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 }
+#endif
 
 void rarch_send_debug_info(void)
 {
+#ifdef HAVE_NETWORKING
    const char *url = "http://lobby.libretro.com/debuginfo/add/";
    char *info_buf = NULL;
    const size_t param_buf_size = 65535;
@@ -5276,4 +5280,5 @@ finish:
       free(param_buf);
    if (info_buf)
       free(info_buf);
+#endif
 }
