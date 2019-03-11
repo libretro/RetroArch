@@ -26,6 +26,7 @@
 #include "../../menu_driver.h"
 
 #include "../../../cheevos/badges.h"
+#include "../../../verbosity.h"
 
 menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active)
@@ -760,7 +761,10 @@ bool ozone_reset_theme_textures(ozone_handle_t *ozone)
          strlcat(filename, ".png", sizeof(filename));
 
          if (!menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         {
+            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", theme_path, path_default_slash(), filename);
             result = false;
+         }
       }
    }
 

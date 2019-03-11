@@ -4807,6 +4807,10 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+    MSG_CHANGE_THUMBNAIL_TYPE,
+    "Change thumbnail type"
+    )
+MSG_HASH(
     MSG_NO_THUMBNAIL_AVAILABLE,
     "No thumbnail available"
     )

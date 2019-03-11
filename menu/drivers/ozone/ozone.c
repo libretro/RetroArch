@@ -1276,8 +1276,10 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Buttons */
    {
-      unsigned back_width  = 215;
-      unsigned ok_width    = 96;
+      unsigned back_width     = 215;
+      unsigned ok_width       = 96;
+      unsigned search_width   = 343;
+      unsigned thumb_width    = 343 + 188 + 80;
       bool do_swap         = video_info->input_menu_swap_ok_cancel_buttons;
 
       if (do_swap)
@@ -1299,6 +1301,11 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
          ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
       }
 
+      ozone_draw_icon(video_info, 26, 26, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_X], video_info->width - 379, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+
+      if (ozone->is_playlist && !ozone->cursor_in_sidebar)
+         ozone_draw_icon(video_info, 26, 26, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_Y], video_info->width - 379 - 118 - 100 - 50, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+
       menu_display_blend_end(video_info);
 
       ozone_draw_text(video_info, ozone,
@@ -1311,6 +1318,16 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK) :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK),
             video_info->width - ok_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+
+      ozone_draw_text(video_info, ozone,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+            video_info->width - search_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+
+      if (ozone->is_playlist && !ozone->cursor_in_sidebar)
+         ozone_draw_text(video_info, ozone,
+               msg_hash_to_str(MSG_CHANGE_THUMBNAIL_TYPE),
+               video_info->width - thumb_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+
    }
 
    menu_display_blend_end(video_info);
