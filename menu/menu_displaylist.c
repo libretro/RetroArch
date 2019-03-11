@@ -104,7 +104,7 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
 #define PL_LABEL_SPACER_RGUI    " | "
-#define PL_LABEL_SPACER_MAXLEN 37
+#define PL_LABEL_SPACER_MAXLEN  8
 
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
