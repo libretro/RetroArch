@@ -389,6 +389,16 @@ static void ozone_free(void *data)
    }
 }
 
+unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 {
    menu_entry_t entry;
@@ -451,6 +461,9 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 
       snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
          "%s", core_label);
+
+      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.66) / ozone->footer_font_glyph_width, false);
+      ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
 
       /* Fill play time if applicable */
       if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
@@ -703,6 +716,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->entry_font_glyph_width    = FONT_SIZE_ENTRIES_LABEL * 3/4;
       ozone->sublabel_font_glyph_width = FONT_SIZE_ENTRIES_SUBLABEL * 3/4;
       ozone->sidebar_font_glyph_width  = FONT_SIZE_SIDEBAR * 3/4;
+      ozone->footer_font_glyph_width   = FONT_SIZE_FOOTER * 3/4;
 
       /* More realistic font size */
       size = font_driver_get_message_width(ozone->fonts.title, "a", 1, 1);
@@ -717,6 +731,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
       size = font_driver_get_message_width(ozone->fonts.sidebar, "a", 1, 1);
       if (size)
          ozone->sidebar_font_glyph_width = size;
+      size = font_driver_get_message_width(ozone->fonts.footer, "a", 1, 1);
+      if (size)
+         ozone->footer_font_glyph_width = size;
 
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)

@@ -183,16 +183,6 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
    }
 }
 
-static unsigned ozone_count_lines(const char *str)
-{
-   unsigned c     = 0;
-   unsigned lines = 1;
-
-   for (c = 0; str[c]; c++)
-      lines += (str[c] == '\n');
-   return lines;
-}
-
 void ozone_compute_entries_position(ozone_handle_t *ozone)
 {
    /* Compute entries height and adjust scrolling if needed */
@@ -252,7 +242,10 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
             entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
 
          if (ozone->depth == 1)
-            entry_padding -= (unsigned) ozone->dimensions.sidebar_width;
+            sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
+
+         if (ozone->show_thumbnail_bar)
+            sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
 
          word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
 
@@ -519,11 +512,14 @@ border_iterate:
 
       if (node->wrap && sublabel_str)
       {
-            int sublabel_max_width = video_info_width - (unsigned) ozone->dimensions.sidebar_width -
+            int sublabel_max_width = video_info_width -
                entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
 
             if (ozone->show_thumbnail_bar)
                sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
+
+            if (ozone->depth == 1)
+               sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
 
             word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
       }
@@ -644,7 +640,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
    unsigned *y, unsigned title_column_x, unsigned data_column_x,
-   const char *title, const char *data)
+   const char *title, const char *data, unsigned lines_count)
 {
    ozone_draw_text(video_info, ozone,
       title,
@@ -671,7 +667,7 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
       true
    );
 
-   *y += font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5;
+   *y += (font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5) * lines_count;
 }
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
@@ -731,8 +727,13 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
    else
    {
+      /* If thumbnails are disabled, we don't know the thumbnail
+       * height but we still need to move it to leave room for the
+       * content metadata panel */
+      unsigned height = video_info->height / 4;
+
       ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width,
-         ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
+         height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
    }
 
    /* Bottom row : "left" thumbnail or content metadata */
@@ -776,21 +777,24 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-         ozone->selection_core_name
+         ozone->selection_core_name,
+         ozone->selection_core_name_lines
       );
 
       /* Playtime */
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-         ozone->selection_playtime
+         ozone->selection_playtime,
+         1
       );
 
       /* Last played */
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-         ozone->selection_lastplayed
+         ozone->selection_lastplayed,
+         1
       );
    }
 }
