@@ -1984,6 +1984,14 @@ static void gl_core_get_poke_interface(void *data,
    *iface = &gl_core_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool gl_core_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
