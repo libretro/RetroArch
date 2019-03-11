@@ -453,7 +453,7 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
          "%s", core_label);
 
       /* Fill play time if applicable */
-      if (settings->bools.content_runtime_log)
+      if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
       {
          unsigned runtime_hours        = 0;
          unsigned runtime_minutes      = 0;
