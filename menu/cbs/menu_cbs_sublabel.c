@@ -310,6 +310,7 @@ default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_
 default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
+default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
@@ -1006,6 +1007,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
+      settings_t *settings; /* config_get_ptr is called only when needed */
+
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
@@ -1591,7 +1594,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
             break;
          case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+            settings = config_get_ptr();
+            if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+            }
+            else
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+            }
             break;
          case MENU_ENUM_LABEL_MOUSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable);

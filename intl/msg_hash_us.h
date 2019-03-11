@@ -2955,6 +2955,10 @@ MSG_HASH(
     "Left Thumbnails"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+    "Second Thumbnail"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
     "Thumbnails Vertical Disposition"
     )
@@ -5695,6 +5699,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
     "Type of thumbnail to display at the left."
     )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Replace the content metadata panel by another thumbnail."
+   )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
     "Display the left thumbnail under the right one, on the right side of the screen."

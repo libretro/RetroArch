@@ -9196,11 +9196,15 @@ static bool setting_append_list(
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
+            bool is_ozone              = string_is_equal(settings->arrays.menu_driver, "ozone");
+            enum msg_hash_enums label  = is_ozone ? 
+               MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE : MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_left_thumbnails,
                   MENU_ENUM_LABEL_LEFT_THUMBNAILS,
-                  MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+                  label,
                   menu_left_thumbnails_default,
                   &group_info,
                   &subgroup_info,
@@ -9212,20 +9216,21 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_left_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
-            CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_xmb_vertical_thumbnails,
-               MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
-               MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-               xmb_vertical_thumbnails,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+            if (!is_ozone)
+               CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_xmb_vertical_thumbnails,
+                  MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+                  xmb_vertical_thumbnails,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
          }
 
          CONFIG_BOOL(
