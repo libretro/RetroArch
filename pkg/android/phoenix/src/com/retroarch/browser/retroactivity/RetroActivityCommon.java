@@ -8,12 +8,15 @@ import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.media.AudioAttributes;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.app.UiModeManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +37,17 @@ public class RetroActivityCommon extends RetroActivityLocation
   public static int FRONTEND_ORIENTATION_270 = 3;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
+  public void doVibrate()
+  {
+    Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+
+    if (Build.VERSION.SDK_INT >= 26) {
+      vibrator.vibrate(VibrationEffect.createOneShot(33, VibrationEffect.DEFAULT_AMPLITUDE), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+    }else{
+      vibrator.vibrate(33);
+    }
+  }
 
   // Exiting cleanly from NDK seems to be nearly impossible.
   // Have to use exit(0) to avoid weird things happening, even with runOnUiThread() approaches.

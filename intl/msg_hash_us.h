@@ -8414,3 +8414,7 @@ MSG_HASH(
     MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
     "Press one more time to submit diagnostic info to the RetroArch team."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+    "Vibrate on key press"
+    )

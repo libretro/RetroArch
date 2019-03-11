@@ -163,6 +163,7 @@ struct android_app
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
    jmethodID setScreenOrientation;
+   jmethodID doVibrate;
 };
 
 enum
@@ -266,7 +267,9 @@ enum
     */
    APP_CMD_DESTROY,
 
-   APP_CMD_REINIT_DONE
+   APP_CMD_REINIT_DONE,
+
+   APP_CMD_VIBRATE_KEYPRESS
 };
 
 #define JNI_EXCEPTION(env) \

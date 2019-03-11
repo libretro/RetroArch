@@ -1801,3 +1801,5 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
       "playlist_sublabel_runtime_type")
 MSG_HASH(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
       "help_send_debug_info")
+MSG_HASH(MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
+      "vibrate_on_keypress")
