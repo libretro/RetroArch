@@ -737,8 +737,13 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
    else
    {
+      /* If thumbnails are disabled, we don't know the thumbnail
+       * height but we still need to move it to leave room for the
+       * content metadata panel */
+      unsigned height = video_info->height / 4;
+
       ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width,
-         ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
+         height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
    }
 
    /* Bottom row : "left" thumbnail or content metadata */
