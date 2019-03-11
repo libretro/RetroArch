@@ -2115,24 +2115,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_SEND_DEBUG_INFO:
          rarch_send_debug_info();
          break;
-      case CMD_EVENT_NETPLAY_HOST_TOGGLE:
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
-         {
-            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
-         }
-         else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
-         {
-            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
-         }
-         else
-         {
-            command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
-         }
-
-         break;
       case CMD_EVENT_FPS_TOGGLE:
          {
             settings_t *settings           = config_get_ptr();
@@ -2735,6 +2717,18 @@ TODO: Add a setting for these tweaks */
 
          break;
       }
+      case CMD_EVENT_NETPLAY_HOST_TOGGLE:
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         else
+            command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
+
+         break;
 #else
       case CMD_EVENT_NETPLAY_DEINIT:
       case CMD_EVENT_NETWORK_DEINIT:
@@ -2743,6 +2737,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
+      case CMD_EVENT_NETPLAY_HOST_TOGGLE:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
