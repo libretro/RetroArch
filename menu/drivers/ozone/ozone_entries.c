@@ -252,7 +252,10 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
             entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
 
          if (ozone->depth == 1)
-            entry_padding -= (unsigned) ozone->dimensions.sidebar_width;
+            sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
+
+         if (ozone->show_thumbnail_bar)
+            sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
 
          word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
 
@@ -519,11 +522,14 @@ border_iterate:
 
       if (node->wrap && sublabel_str)
       {
-            int sublabel_max_width = video_info_width - (unsigned) ozone->dimensions.sidebar_width -
+            int sublabel_max_width = video_info_width -
                entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
 
             if (ozone->show_thumbnail_bar)
                sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
+
+            if (ozone->depth == 1)
+               sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
 
             word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
       }
