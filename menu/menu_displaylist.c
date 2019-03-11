@@ -6713,6 +6713,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,

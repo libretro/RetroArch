@@ -1691,6 +1691,7 @@ enum msg_hash_enums
    MENU_LABEL(RGUI_BROWSER_DIRECTORY),
    MENU_LABEL(CONTENT_DATABASE_DIRECTORY),
    MENU_LABEL(PLAYLIST_DIRECTORY),
+   MENU_LABEL(RUNTIME_LOG_DIRECTORY),
    MENU_LABEL(CORE_ASSETS_DIRECTORY),
    MENU_LABEL(SCREENSHOT_DIRECTORY),
    MENU_LABEL(CONTENT_DIRECTORY),
@@ -2454,6 +2455,7 @@ enum msg_hash_enums
 #define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
 #define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
+#define MENU_LABEL_RUNTIME_LOG_DIRECTORY                                       0xfaca231eU
 #define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
 #define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U

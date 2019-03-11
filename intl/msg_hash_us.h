@@ -8347,6 +8347,14 @@ MSG_HASH(
     "Keeps track of how long each item of content has run for, recorded as the aggregate total across all cores."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+    "Runtime Logs"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+    "Save runtime log files to this directory."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
     "Show playlist sublabels"
     )
