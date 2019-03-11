@@ -421,6 +421,15 @@ static void android_input_poll_main_cmd(void)
          RARCH_LOG("APP_CMD_DESTROY\n");
          android_app->destroyRequested = 1;
          break;
+      case APP_CMD_VIBRATE_KEYPRESS:
+      {
+         JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+
+         if (env && g_android)
+            CALL_VOID_METHOD(env, g_android->activity->clazz,
+                  g_android->doVibrate);
+         break;
+      }
    }
 }
 
@@ -741,6 +750,10 @@ static INLINE int android_input_poll_event_type_motion(
    else
    {
       int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->bools.vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
+         android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
 
       if(action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
       {

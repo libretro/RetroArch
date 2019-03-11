@@ -315,6 +315,7 @@ typedef struct settings
       bool playlist_show_sublabels;
 
       bool quit_press_twice;
+      bool vibrate_on_keypress;
    } bools;
 
    struct
