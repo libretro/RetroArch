@@ -1410,9 +1410,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
             entry_type = menu_entry_get_type_new(&entry);
 
-            /* TODO: Fix all conditions here to make sure that
-             * all expected thumbnails show up
-             * (except for savestates which will come later) */
             if (ozone->is_playlist && ozone->depth == 1)
             {
                if (!string_is_empty(entry.path))
