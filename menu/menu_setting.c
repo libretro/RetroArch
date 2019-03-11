@@ -11250,6 +11250,21 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
+               settings->paths.directory_runtime_log,
+               sizeof(settings->paths.directory_runtime_log),
+               MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+               "",
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
                dir_get_ptr(RARCH_DIR_SAVEFILE),
                dir_get_size(RARCH_DIR_SAVEFILE),
                MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,

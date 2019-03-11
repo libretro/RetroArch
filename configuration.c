@@ -1274,6 +1274,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.directory_thumbnails, true, NULL, true);
    SETTING_PATH("playlist_directory",
          settings->paths.directory_playlist, true, NULL, true);
+   SETTING_PATH("runtime_log_directory",
+         settings->paths.directory_runtime_log, true, NULL, true);
    SETTING_PATH("joypad_autoconfig_dir",
          settings->paths.directory_autoconfig, false, NULL, true);
    SETTING_PATH("audio_filter_dir",
@@ -2062,6 +2064,7 @@ void config_set_defaults(void)
    *settings->paths.directory_dynamic_wallpapers = '\0';
    *settings->paths.directory_thumbnails = '\0';
    *settings->paths.directory_playlist = '\0';
+   *settings->paths.directory_runtime_log = '\0';
    *settings->paths.directory_autoconfig = '\0';
 #ifdef HAVE_MENU
    *settings->paths.directory_menu_content = '\0';
@@ -3123,6 +3126,8 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->paths.directory_thumbnails = '\0';
    if (string_is_equal(settings->paths.directory_playlist, "default"))
       *settings->paths.directory_playlist = '\0';
+   if (string_is_equal(settings->paths.directory_runtime_log, "default"))
+      *settings->paths.directory_runtime_log = '\0';
 #ifdef HAVE_MENU
    if (string_is_equal(settings->paths.directory_menu_content, "default"))
       *settings->paths.directory_menu_content = '\0';

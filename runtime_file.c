@@ -293,9 +293,9 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    if (!settings)
       return NULL;
    
-   if (string_is_empty(settings->paths.directory_playlist))
+   if (string_is_empty(settings->paths.directory_runtime_log) && string_is_empty(settings->paths.directory_playlist))
    {
-      RARCH_ERR("Playlist directory is undefined - cannot save runtime logs.\n");
+      RARCH_ERR("Runtime log directory is undefined - cannot save runtime log files.\n");
       return NULL;
    }
    
@@ -328,11 +328,18 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
       return NULL;
    
    /* Get runtime log directory */
-   fill_pathname_join(
-         tmp_buf,
-         settings->paths.directory_playlist,
-         "logs",
-         sizeof(tmp_buf));
+   if (string_is_empty(settings->paths.directory_runtime_log))
+   {
+      /* If 'custom' runtime log path is undefined,
+       * use default 'playlists/logs' directory... */
+      fill_pathname_join(
+            tmp_buf,
+            settings->paths.directory_playlist,
+            "logs",
+            sizeof(tmp_buf));
+   }
+   else
+      strlcpy(tmp_buf, settings->paths.directory_runtime_log, sizeof(tmp_buf));
    
    if (log_per_core)
    {
@@ -343,9 +350,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
             sizeof(log_file_dir));
    }
    else
-   {
       strlcpy(log_file_dir, tmp_buf, sizeof(log_file_dir));
-   }
    
    if (string_is_empty(log_file_dir))
       return NULL;
