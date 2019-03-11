@@ -32,8 +32,6 @@
 
 static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
 {
-   /* TODO: Once we have thumbnails this condition will no longer work
-    * on playlists (where the sidebar is partially collapsed with depth == 1) */
    if (ozone->depth == 1)
       if (old_list)
          return ozone->dimensions.entry_padding_horizontal_full;
@@ -640,6 +638,38 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    );
 }
 
+static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
+   unsigned *y, unsigned title_column_x, unsigned data_column_x,
+   const char *title, const char *data)
+{
+   ozone_draw_text(video_info, ozone,
+      title,
+      title_column_x,
+      *y + FONT_SIZE_FOOTER,
+      TEXT_ALIGN_LEFT,
+      video_info->width, video_info->height,
+      ozone->fonts.footer,
+      ozone->theme->text_rgba,
+      true
+   );
+
+   if (font_driver_get_message_width(ozone->fonts.footer, data, strlen(data), 1) > ozone->dimensions.thumbnail_bar_width / 2)
+      *y += font_driver_get_line_height(ozone->fonts.footer, 1);
+
+   ozone_draw_text(video_info, ozone,
+      data,
+      data_column_x,
+      *y + FONT_SIZE_FOOTER,
+      TEXT_ALIGN_RIGHT,
+      video_info->width, video_info->height,
+      ozone->fonts.footer,
+      ozone->theme->text_rgba,
+      true
+   );
+
+   *y += font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5;
+}
+
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
    settings_t *settings    = config_get_ptr();
@@ -681,7 +711,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
       unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
 
-      thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
+      if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
+         thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
 
       ozone_draw_icon(video_info,
          ozone->dimensions.thumbnail_width,
@@ -717,9 +748,46 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          ozone_pure_white
       );
    }
-   else
+   else if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
    {
-      /* TODO: Content metadata */
+      unsigned y                          = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
+      unsigned content_metadata_padding   = ozone->dimensions.sidebar_entry_icon_padding*3;
+      unsigned separator_padding          = ozone->dimensions.sidebar_entry_icon_padding*2;
+      unsigned title_column_x             = x_position + content_metadata_padding;
+      unsigned data_column_x              = x_position + sidebar_width - content_metadata_padding;
+
+      /* Content metadata */
+      y += 10;
+
+      /* Separator */
+      menu_display_draw_quad(video_info,
+         x_position + separator_padding, y,
+         sidebar_width - separator_padding*2, 1,
+         video_info->width, video_info->height,
+         ozone->theme_dynamic.entries_border);
+
+      y += 18;
+
+      /* Core association */
+      ozone_content_metadata_line(video_info, ozone,
+         &y, title_column_x, data_column_x,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+         ozone->selection_core_name
+      );
+
+      /* Playtime */
+      ozone_content_metadata_line(video_info, ozone,
+         &y, title_column_x, data_column_x,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+         ozone->selection_playtime
+      );
+
+      /* Last played */
+      ozone_content_metadata_line(video_info, ozone,
+         &y, title_column_x, data_column_x,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+         ozone->selection_lastplayed
+      );
    }
 }
 

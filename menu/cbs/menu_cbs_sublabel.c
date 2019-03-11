@@ -837,9 +837,9 @@ static int action_bind_sublabel_playlist_entry(
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
    
-   if (!settings->bools.playlist_show_sublabels)
+   if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
       return 0;
-   
+
    /* Get current playlist */
    playlist = playlist_get_cached();
    if (!playlist)

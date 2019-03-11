@@ -235,6 +235,10 @@ struct ozone_handle
 
    uintptr_t thumbnail;
    uintptr_t left_thumbnail;
+
+   char selection_core_name[255];
+   char selection_playtime[64];
+   char selection_lastplayed[64];
 };
 
 /* If you change this struct, also

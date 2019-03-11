@@ -439,8 +439,62 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
    if (playlist)
    {
       const char    *core_name       = NULL;
+      const char    *core_label      = NULL;
       playlist_get_index(playlist, i,
             NULL, NULL, NULL, &core_name, NULL, NULL);
+
+      /* Fill core name */
+      if (!core_name || string_is_equal(core_name, "DETECT"))
+         core_label = msg_hash_to_str(MSG_AUTODETECT);
+      else
+         core_label = core_name;
+
+      snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
+         "%s", core_label);
+
+      /* Fill play time if applicable */
+      if (settings->bools.content_runtime_log)
+      {
+         unsigned runtime_hours        = 0;
+         unsigned runtime_minutes      = 0;
+         unsigned runtime_seconds      = 0;
+
+         unsigned last_played_year     = 0;
+         unsigned last_played_month    = 0;
+         unsigned last_played_day      = 0;
+         unsigned last_played_hour     = 0;
+         unsigned last_played_minute   = 0;
+         unsigned last_played_second   = 0;
+
+         playlist_get_runtime_index(playlist, i, NULL, NULL,
+            &runtime_hours, &runtime_minutes, &runtime_seconds,
+            &last_played_year, &last_played_month, &last_played_day,
+            &last_played_hour, &last_played_minute, &last_played_second);
+
+         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%02u:%02u:%02u",
+            runtime_hours, runtime_minutes, runtime_seconds);
+
+         if (last_played_year == 0 && last_played_month == 0 && last_played_day == 0
+            && last_played_hour == 0 && last_played_minute == 0 && last_played_second == 0)
+         {
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
+         }
+         else
+         {
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%04u/%02u/%02u - %02u:%02u:%02u",
+                        last_played_year, last_played_month, last_played_day,
+                        last_played_hour, last_played_minute, last_played_second);
+         }
+      }
+      else
+      {
+         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+
+         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+      }
 
       if (string_is_equal(core_name, "imageviewer"))
       {
@@ -1940,9 +1994,9 @@ static void ozone_toggle(void *userdata, bool menu_on)
    {
       ozone->draw_sidebar = true;
       ozone->sidebar_offset = 0.0f;
-
-      ozone_sidebar_update_collapse(ozone, false);
    }
+
+   ozone_sidebar_update_collapse(ozone, false);
 }
 
 static bool ozone_menu_init_list(void *data)
