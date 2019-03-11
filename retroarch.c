@@ -4856,7 +4856,6 @@ bool rarch_write_debug_info(void)
          {
             for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
             {
-               char desc_label[400];
                char descriptor[300];
                const struct retro_keybind *auto_bind = NULL;
                const struct retro_keybind *keybind   = NULL;
@@ -5086,7 +5085,7 @@ bool rarch_write_debug_info(void)
 
       if (core_info_list)
       {
-        int i;
+         unsigned i;
 
          for (i = 0; i < core_info_list->count; i++)
          {
@@ -5097,7 +5096,7 @@ bool rarch_write_debug_info(void)
 
             if (info->firmware_count)
             {
-               int j;
+               unsigned j;
                bool core_found = false;
 
                for (j = 0; j < info->firmware_count; j++)

@@ -1297,6 +1297,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       return false;
 
    d3d->video_info = *info;
+
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
@@ -1304,9 +1305,10 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       settings->arrays.input_joypad_driver, input, input_data);
 
    {
-      D3DADAPTER_IDENTIFIER9 ident = {0};
-      IDirect3D9_GetAdapterIdentifier(g_pD3D9, 0, 0, &ident);
       char version_str[128];
+      D3DADAPTER_IDENTIFIER9 ident = {0};
+
+      IDirect3D9_GetAdapterIdentifier(g_pD3D9, 0, 0, &ident);
 
       version_str[0] = '\0';
 
