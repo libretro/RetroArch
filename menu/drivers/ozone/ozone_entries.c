@@ -183,16 +183,6 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
    }
 }
 
-static unsigned ozone_count_lines(const char *str)
-{
-   unsigned c     = 0;
-   unsigned lines = 1;
-
-   for (c = 0; str[c]; c++)
-      lines += (str[c] == '\n');
-   return lines;
-}
-
 void ozone_compute_entries_position(ozone_handle_t *ozone)
 {
    /* Compute entries height and adjust scrolling if needed */
@@ -650,7 +640,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
    unsigned *y, unsigned title_column_x, unsigned data_column_x,
-   const char *title, const char *data)
+   const char *title, const char *data, unsigned lines_count)
 {
    ozone_draw_text(video_info, ozone,
       title,
@@ -677,7 +667,7 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
       true
    );
 
-   *y += font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5;
+   *y += (font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5) * lines_count;
 }
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
@@ -787,21 +777,24 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-         ozone->selection_core_name
+         ozone->selection_core_name,
+         ozone->selection_core_name_lines
       );
 
       /* Playtime */
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-         ozone->selection_playtime
+         ozone->selection_playtime,
+         1
       );
 
       /* Last played */
       ozone_content_metadata_line(video_info, ozone,
          &y, title_column_x, data_column_x,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-         ozone->selection_lastplayed
+         ozone->selection_lastplayed,
+         1
       );
    }
 }

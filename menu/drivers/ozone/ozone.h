@@ -143,6 +143,7 @@ struct ozone_handle
    unsigned title_font_glyph_width;
    unsigned entry_font_glyph_width;
    unsigned sublabel_font_glyph_width;
+   unsigned footer_font_glyph_width;
    unsigned sidebar_font_glyph_width;
 
    ozone_theme_t *theme;
@@ -239,6 +240,7 @@ struct ozone_handle
    char selection_core_name[255];
    char selection_playtime[64];
    char selection_lastplayed[64];
+   unsigned selection_core_name_lines;
 };
 
 /* If you change this struct, also
@@ -306,5 +308,7 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
 
 const char *ozone_thumbnails_ident(char pos);
+
+unsigned ozone_count_lines(const char *str);
 
 #endif
