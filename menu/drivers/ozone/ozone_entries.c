@@ -248,8 +248,12 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       {
          char *sublabel_str = menu_entry_get_sublabel(&entry);
 
-         int sublabel_max_width = video_info_width - (unsigned) ozone->dimensions.sidebar_width - 
+         int sublabel_max_width = video_info_width -
             entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
+
+         if (ozone->depth == 1)
+            entry_padding -= (unsigned) ozone->dimensions.sidebar_width;
+
          word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
 
          lines = ozone_count_lines(sublabel_str);
