@@ -310,6 +310,7 @@ default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_
 default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
+default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
@@ -393,6 +394,7 @@ default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                 
 default_sublabel_macro(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
+default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
 default_sublabel_macro(action_bind_sublabel_menu_use_preferred_system_color_theme, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
@@ -836,9 +838,9 @@ static int action_bind_sublabel_playlist_entry(
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
    
-   if (!settings->bools.playlist_show_sublabels)
+   if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
       return 0;
-   
+
    /* Get current playlist */
    playlist = playlist_get_cached();
    if (!playlist)
@@ -1005,6 +1007,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
+      settings_t *settings; /* config_get_ptr is called only when needed */
+
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
@@ -1348,6 +1352,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_menu_color_theme);
             break;
+         case MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_collapse_sidebar);
+            break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_color_theme);
@@ -1587,7 +1594,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
             break;
          case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+            settings = config_get_ptr();
+            if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+            }
+            else
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+            }
             break;
          case MENU_ENUM_LABEL_MOUSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable);

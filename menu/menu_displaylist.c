@@ -104,15 +104,7 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
 #define PL_LABEL_SPACER_RGUI    " | "
-#if defined(__APPLE__)
-/* UTF-8 support is currently broken on Apple devices... */
-#define PL_LABEL_SPACER_OZONE   "   |   "
-#else
-/* <EM SPACE><BULLET><EM SPACE>
- * UCN equivalent: "\u2003\u2022\u2003" */
-#define PL_LABEL_SPACER_OZONE   "\xE2\x80\x83\xE2\x80\xA2\xE2\x80\x83"
-#endif
-#define PL_LABEL_SPACER_MAXLEN 37
+#define PL_LABEL_SPACER_MAXLEN  8
 
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
@@ -1316,7 +1308,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    }
 
    /* Check whether core name should be added to playlist entries */
-   if (!settings->bools.playlist_show_sublabels &&
+   if (!string_is_equal(settings->arrays.menu_driver, "ozone") &&
+       !settings->bools.playlist_show_sublabels &&
        ((settings->uints.playlist_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS) ||
         (!is_collection && !(settings->uints.playlist_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_NEVER))))
    {
@@ -1326,8 +1319,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
        * > Note: Only required when showing inline core names */
       if (is_rgui)
          strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
-      else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
-         strlcpy(label_spacer, PL_LABEL_SPACER_OZONE, sizeof(label_spacer));
       else
          strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
    }
@@ -6182,6 +6173,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,
+                  PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,

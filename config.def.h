@@ -282,6 +282,10 @@ static bool menu_use_preferred_system_color_theme = true;
 static bool menu_use_preferred_system_color_theme = false;
 #endif
 
+#ifdef HAVE_OZONE
+static bool ozone_collapse_sidebar = false;
+#endif
+
 static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;

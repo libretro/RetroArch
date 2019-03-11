@@ -54,7 +54,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_Y_PADDING           20
 #define SIDEBAR_ENTRY_HEIGHT        50
 #define SIDEBAR_ENTRY_Y_PADDING     10
-#define SIDEBAR_ENTRY_ICON_SIZE     40
+#define SIDEBAR_ENTRY_ICON_SIZE     46
 #define SIDEBAR_ENTRY_ICON_PADDING  15
 
 #define CURSOR_SIZE 64
@@ -122,6 +122,9 @@ struct ozone_handle
       float list_alpha;
 
       float messagebox_alpha;
+
+      float sidebar_text_alpha;
+      float thumbnail_bar_position;
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -141,7 +144,7 @@ struct ozone_handle
    unsigned entry_font_glyph_width;
    unsigned sublabel_font_glyph_width;
    unsigned sidebar_font_glyph_width;
-   
+
    ozone_theme_t *theme;
 
    struct {
@@ -186,14 +189,17 @@ struct ozone_handle
       int footer_height;
 
       int entry_padding_horizontal_half;
-      int entry_padding_horizontal_full; /* TODO: when sidebar is not visible */
+      int entry_padding_horizontal_full;
       int entry_padding_vertical;
       int entry_height;
       int entry_spacing;
       int entry_icon_size;
       int entry_icon_padding;
 
-      int sidebar_width;
+      int sidebar_width_normal;
+      int sidebar_width_collapsed;
+
+      float sidebar_width;
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
@@ -202,6 +208,13 @@ struct ozone_handle
       int sidebar_entry_icon_padding;
 
       int cursor_size;
+
+      int thumbnail_bar_width;
+
+      float thumbnail_width; /* set at layout time */
+      float thumbnail_height; /* set later to thumbnail_width * image aspect ratio */
+      float left_thumbnail_width; /* set at layout time */
+      float left_thumbnail_height; /* set later to left_thumbnail_width * image aspect ratio */
    } dimensions;
 
    bool show_cursor;
@@ -209,6 +222,23 @@ struct ozone_handle
 
    int16_t cursor_x_old;
    int16_t cursor_y_old;
+
+   bool sidebar_collapsed;
+
+   /* Thumbnails data */
+   bool show_thumbnail_bar;
+
+   char *thumbnail_content;
+   char *thumbnail_system;
+   char *thumbnail_file_path;
+   char *left_thumbnail_file_path; /* name taken from xmb for consistency but not actually on the left */
+
+   uintptr_t thumbnail;
+   uintptr_t left_thumbnail;
+
+   char selection_core_name[255];
+   char selection_playtime[64];
+   char selection_lastplayed[64];
 };
 
 /* If you change this struct, also
@@ -220,6 +250,7 @@ typedef struct ozone_node
    unsigned height;
    unsigned position_y;
    bool wrap;
+   char *fullpath;
 
    /* Console tabs */
    char *console_name;
@@ -267,5 +298,13 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 void ozone_compute_entries_position(ozone_handle_t *ozone);
 
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
+
+void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
+
+void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
+
+void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
+
+const char *ozone_thumbnails_ident(char pos);
 
 #endif

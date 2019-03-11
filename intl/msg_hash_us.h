@@ -2955,6 +2955,10 @@ MSG_HASH(
     "Left Thumbnails"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+    "Second Thumbnail"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
     "Thumbnails Vertical Disposition"
     )
@@ -4803,6 +4807,14 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+    MSG_CHANGE_THUMBNAIL_TYPE,
+    "Change thumbnail type"
+    )
+MSG_HASH(
+    MSG_NO_THUMBNAIL_AVAILABLE,
+    "No thumbnail available"
+    )
+MSG_HASH(
     MSG_PRESS_AGAIN_TO_QUIT,
     "Press again to quit..."
     )
@@ -5691,6 +5703,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
     "Type of thumbnail to display at the left."
     )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Replace the content metadata panel by another thumbnail."
+   )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
     "Display the left thumbnail under the right one, on the right side of the screen."
@@ -8205,6 +8221,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
     "Select a different color theme."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+    "Collapse the sidebar"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+    "Have the left sidebar always collapsed."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,

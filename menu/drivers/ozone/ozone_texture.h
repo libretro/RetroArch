@@ -42,6 +42,8 @@ static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
 enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_BUTTON_A = 0,
    OZONE_THEME_TEXTURE_BUTTON_B,
+   OZONE_THEME_TEXTURE_BUTTON_X,
+   OZONE_THEME_TEXTURE_BUTTON_Y,
    OZONE_THEME_TEXTURE_SWITCH,
    OZONE_THEME_TEXTURE_CHECK,
 
@@ -54,8 +56,11 @@ enum OZONE_THEME_TEXTURES {
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
+   "button_x",
+   "button_y",
    "switch",
    "check",
+
    "cursor_noborder",
    "cursor_static"
 };

@@ -63,7 +63,10 @@
       "xiosbase": "c",
       "xstring": "c",
       "xtree": "c",
-      "xutility": "c"
+      "xutility": "c",
+      "menu_input_dialog.h": "c",
+      "menu_filebrowser.h": "c",
+      "ozone_sidebar.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
