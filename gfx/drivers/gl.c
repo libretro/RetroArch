@@ -3305,6 +3305,10 @@ static void *gl2_init(const video_info_t *video,
 
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
+#if defined(__APPLE__) && !defined(IOS)
+   if (!video_context_driver_set_video_mode(&mode))
+      goto error;
+#endif
 
 #if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
