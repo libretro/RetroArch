@@ -746,29 +746,38 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 {
    bool is_playlist;
 
-   switch (ozone->categories_selection_ptr)
+   if (ozone->categories_selection_ptr > ozone->system_tab_end)
    {
-      case OZONE_SYSTEM_TAB_MAIN:
-      case OZONE_SYSTEM_TAB_SETTINGS:
-      case OZONE_SYSTEM_TAB_ADD:
-         is_playlist = false;
-         break;
-      case OZONE_SYSTEM_TAB_HISTORY:
-      case OZONE_SYSTEM_TAB_FAVORITES:
-      case OZONE_SYSTEM_TAB_MUSIC:
+      is_playlist = true;
+   }
+   else
+   {
+      switch (ozone->tabs[ozone->categories_selection_ptr])
+      {
+         case OZONE_SYSTEM_TAB_MAIN:
+         case OZONE_SYSTEM_TAB_SETTINGS:
+         case OZONE_SYSTEM_TAB_ADD:
+#ifdef HAVE_NETWORKING
+         case OZONE_SYSTEM_TAB_NETPLAY:
+#endif
+            is_playlist = false;
+            break;
+         case OZONE_SYSTEM_TAB_HISTORY:
+         case OZONE_SYSTEM_TAB_FAVORITES:
+         case OZONE_SYSTEM_TAB_MUSIC:
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      case OZONE_SYSTEM_TAB_VIDEO:
+         case OZONE_SYSTEM_TAB_VIDEO:
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      case OZONE_SYSTEM_TAB_IMAGES:
+         case OZONE_SYSTEM_TAB_IMAGES:
 #endif
-#ifdef HAVE_NETWORKING
-      case OZONE_SYSTEM_TAB_NETPLAY:
-#endif
-      default:
-         is_playlist = true;
-         break;
+         default:
+            is_playlist = true;
+            break;
+      }
    }
+
+
 
    if (depth)
       return is_playlist && ozone->depth == 1;
