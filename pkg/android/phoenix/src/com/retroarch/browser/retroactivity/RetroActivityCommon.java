@@ -18,7 +18,7 @@ import android.os.PowerManager;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.util.Log;
-
+import java.lang.Math;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -35,17 +35,32 @@ public class RetroActivityCommon extends RetroActivityLocation
   public static int FRONTEND_ORIENTATION_90 = 1;
   public static int FRONTEND_ORIENTATION_180 = 2;
   public static int FRONTEND_ORIENTATION_270 = 3;
+  public static int RETRO_RUMBLE_STRONG = 0;
+  public static int RETRO_RUMBLE_WEAK = 1;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
-  public void doVibrate()
+  public void doVibrate(int effect, int strength, int oneShot)
   {
     Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+    int repeat = 0;
+    long[] pattern = {16};
+    int[] strengths = {strength};
+
+    if (strength == 0) {
+      vibrator.cancel();
+      return;
+    }
+
+    if (oneShot > 0)
+      repeat = -1;
+    else
+      pattern[0] = 1000;
 
     if (Build.VERSION.SDK_INT >= 26) {
-      vibrator.vibrate(VibrationEffect.createOneShot(33, VibrationEffect.DEFAULT_AMPLITUDE), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+      vibrator.vibrate(VibrationEffect.createWaveform(pattern, strengths, repeat), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
     }else{
-      vibrator.vibrate(33);
+      vibrator.vibrate(pattern, repeat);
     }
   }
 

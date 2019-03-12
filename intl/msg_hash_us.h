@@ -8450,3 +8450,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
     "Vibrate on key press"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+    "Enable device vibration (for supported cores)"
+    )

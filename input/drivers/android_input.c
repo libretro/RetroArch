@@ -425,9 +425,11 @@ static void android_input_poll_main_cmd(void)
       {
          JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
-         if (env && g_android)
-            CALL_VOID_METHOD(env, g_android->activity->clazz,
-                  g_android->doVibrate);
+         if (env && g_android && g_android->doVibrate)
+         {
+            CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+                  g_android->doVibrate, RETRO_RUMBLE_STRONG, 255, 1);
+         }
          break;
       }
    }
@@ -1630,10 +1632,47 @@ static void android_input_grab_mouse(void *data, bool state)
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+   settings_t *settings = config_get_ptr();
+
    (void)data;
    (void)port;
-   (void)effect;
-   (void)strength;
+
+   if (settings->bools.enable_device_vibration)
+   {
+      JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+      struct android_app *android_app = (struct android_app*)g_android;
+
+      if (env && g_android && g_android->doVibrate)
+      {
+         static uint16_t last_strength_strong = 0;
+         static uint16_t last_strength_weak = 0;
+         static uint16_t last_strength = 0;
+         uint16_t new_strength = 0;
+
+         if (effect == RETRO_RUMBLE_STRONG)
+         {
+            new_strength = strength | last_strength_weak;
+            last_strength_strong = strength;
+         }
+         else if (effect == RETRO_RUMBLE_WEAK)
+         {
+            new_strength = strength | last_strength_strong;
+            last_strength_weak = strength;
+         }
+
+         if (new_strength != last_strength)
+         {
+            /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
+            int strength_final = (255.0f / 65535.0f) * (float)new_strength;
+
+            CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+                  g_android->doVibrate, RETRO_RUMBLE_STRONG, strength_final, 0);
+
+            last_strength = new_strength;
+         }
+      }
+      return true;
+   }
 
    return false;
 }
