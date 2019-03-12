@@ -954,7 +954,7 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_EURO, RETROK_EURO },
 #endif
    { KEY_UNDO, RETROK_UNDO },
-   /*{ ?, RETROK_OEM_102 },*/
+   { KEY_102ND, RETROK_OEM_102 },
    { 0, RETROK_UNKNOWN },
 };
 #endif
