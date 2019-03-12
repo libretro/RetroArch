@@ -1,4 +1,80 @@
 # 1.7.7 (future)
+- 3DS: Add unique IDs to prevent cores overwriting each other.
+- ANDROID: We now target API level 26 (minimum is still API level 9).
+- ANDROID: Add option to vibrate on touch (works in menu or overlay).
+- ANDROID: Add device vibration option for cores that support rumble.
+- AUDIO: Avoid deadlocks in certain audio drivers when toggling menu sounds on.
+- BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
+- CRT: Dynamic super resolution support.
+- DISCORD: Fix potential crash when username is empty and discord is disabled.
+- DISCORD: Ask to join support for Linux.
+- INPUT/ANDROID: Add "Input Block Timeout" option.
+- COMMON: Make playlist sorting optional and consistent.
+- COMMON: Fix sorting of playlists with blank labels.
+- COMMON: Fix content scanner creating false positive playlist entries that also have wrong label and crc32.
+- COMMON: Add some MMX-optimized pixel conversion routines.
+- COMMON: Fix typo preventing some SSE2-optimized pixel conversions from being used.
+- COMMON: Add option to track how long content has been running over time.
+- COMMON: Fix buffer overflows in system information.
+- COMMON: Add option to change screen orientation via the windowing system (Android, Windows, X11).
+- COMMON: Show CPU model name in log.
+- COMMON: Add "Help -> Send Debug Info" option (and F10 hotkey) to send diagnostic info to the RetroArch team for help with problems.
+- COMMON: Show GPU device name/version in log.
+- GL: Add new "gl1" OpenGL 1.1 compliant video driver for legacy GPUs and software renderers
+- GL: Draw OSD on top of overlay.
+- GL: Add a new "glcore" driver with slang support (requires GL 3.2+ or GLES3).
+- GONG: Add savestate support.
+- GONG: Add video refresh rate core options.
+- GONG: Two player support via core option.
+- LOCALIZATION: Update Polish translation.
+- MIDI: Fix startup crash in midi driver.
+- MENU: Add memory statistics support to more context drivers.
+- MENU: Enable ozone driver for UWP builds.
+- MENU: Add optional "looping" menu text ticker with configurable speed.
+- MENU: Fix core video rendering when using ozone with GL cores that implement the scissor test.
+- MENU: Add optional playlist sublabels (associated core + play time, where available).
+- MENU: Dropdown list settings now apply immediately.
+- MENU: Add setting to require pressing the "Exit RetroArch" hotkey twice to confirm.
+- MENU: Now able to run at higher refresh rates than 60Hz.
+- MENU: Enable "Add to Favorites" without loading a core.
+- MENU: Allow core name to be hidden on history/favorites playlists.
+- MENU: Populate crc32 and db_name fields when adding history/favourites playlist entries.
+- MENU/GLUI: Add subsystem support.
+- MENU/OZONE: Add mouse support on entries (no sidebar yet).
+- MENU/OZONE: Allow collapsing the sidebar.
+- MENU/OZONE: Add thumbnail support.
+- MENU/QT: Add git version and build date to Help->About window.
+- MENU/QT: Fix content loading via the file browser.
+- MENU/RGUI: Improve playlist titles.
+- MENU/RGUI: Add option to hide associated cores in playlists.
+- MENU/RGUI: Add internal upscaling option.
+- MENU/RGUI: Add subsystem support.
+- MENU/RGUI: Add menu sublabel support.
+- MENU/RGUI: Re-enable "Load Core" option when content is loaded.
+- MENU/RGUI: Add optional "Collections" entry to main menu.
+- MENU/RGUI: Add "Lock Menu Aspect Ratio" option.
+- MENU/RGUI: Add "full width" layout option.
+- MENU/RGUI: Ensure menu color theme is applied immediately.
+- MENU/RGUI: Fix "Lock Menu Aspect Ratio" option when using custom viewports.
+- MENU/XMB: Prevent crashes when resizing to a tiny window.
+- NETPLAY: Fix stall-out causing total disconnection with >2 players.
+- NETPLAY: Different (more intuitive?) default netplay share policy.
+- NETPLAY: Add hotkey option to toggle hosting on/off.
+- NETWORKING: Encode URLs to allow for spaces in directory names.
+- OSX: Prevent crash on exit.
+- OSX: Metal is now the default video driver.
+- OSX: Enable CoreAudio v3 driver for Metal.
+- PS2: Implemented analog support for ps2 controllers.
+- PS2: Fix audio freeze after restarting core.
+- PS2: Fix issues with load state and the font driver.
+- PS2: File I/O now works for USB and network host.
+- PS2: Support cores with extra padding in their frame buffers.
+- VULKAN: Fix color issues with RGBA8888 swapchains in readback (screenshots).
+- WII: Don't init overlay when RAM is beyond 72MB.
+- WII: Skip CRC calculation on content load, can improve load times of larger games by several seconds.
+- WINDOWS: Fall back to gl1 driver if accelerated GPU driver is unavailable.
+- WINDOWS: Allow winraw and xinput to work without dinput (needed for WinRT).
+- WINDOWS: Add MSVC2017 ARM desktop support.
 
 # 1.7.6
 - ANDROID: Fix Xperia Play input binding.
