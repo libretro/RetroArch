@@ -1706,8 +1706,17 @@ static void wiiu_gfx_set_osd_msg(void *data,
 
 }
 
+static uint32_t wiiu_gfx_get_flags(void *data)
+{
+   uint32_t flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+
+   return flags;
+}
+
 static const video_poke_interface_t wiiu_poke_interface = {
-   NULL, /* get_flags */
+   wiiu_gfx_get_flags,
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    wiiu_gfx_load_texture,
