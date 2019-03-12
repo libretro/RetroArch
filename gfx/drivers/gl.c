@@ -3306,6 +3306,8 @@ static void *gl2_init(const video_info_t *video,
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 #if defined(__APPLE__) && !defined(IOS)
+   /* This is a hack for now to work around a very annoying
+    * issue that currently eludes us. */
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 #endif
