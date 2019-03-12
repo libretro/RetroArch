@@ -821,6 +821,7 @@ static const unsigned midi_volume = 100;
 static const bool sustained_performance_mode = false;
 
 static const bool vibrate_on_keypress = false;
+static const bool enable_device_vibration = false;
 
 #if defined(HAKCHI)
 static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";

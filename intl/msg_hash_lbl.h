@@ -1807,3 +1807,5 @@ MSG_HASH(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
       "help_send_debug_info")
 MSG_HASH(MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
       "vibrate_on_keypress")
+MSG_HASH(MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
+      "enable_device_vibration")

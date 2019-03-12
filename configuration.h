@@ -316,6 +316,7 @@ typedef struct settings
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
+      bool enable_device_vibration;
 #ifdef HAVE_OZONE
       bool ozone_collapse_sidebar;
 #endif

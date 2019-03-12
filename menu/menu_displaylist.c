@@ -7083,6 +7083,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
                PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
+               PARSE_ONLY_BOOL, false);
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                PARSE_ONLY_UINT, false) == 0)
