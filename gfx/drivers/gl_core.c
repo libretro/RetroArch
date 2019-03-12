@@ -1386,7 +1386,7 @@ static void gl_core_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
-   gl->rotation = 90 * rotation;
+   gl->rotation = 270 * rotation;
    gl_core_set_projection(gl, &gl_core_default_ortho, true);
 }
 
