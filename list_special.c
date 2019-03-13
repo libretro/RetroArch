@@ -99,7 +99,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
          {
             union string_list_elem_attr attr;
-            bool is_preset                   = false;
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
@@ -109,24 +108,33 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             attr.i = 0;
 
-            if (video_shader_is_supported(RARCH_SHADER_CG) &&
-                  video_shader_get_type_from_ext("cgp", &is_preset))
-               string_list_append(str_list, "cgp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_CG) &&
-                  video_shader_get_type_from_ext("cg", &is_preset))
-               string_list_append(str_list, "cg", attr);
-            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-                  video_shader_get_type_from_ext("glsl", &is_preset))
-               string_list_append(str_list, "glsl", attr);
-            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-                  video_shader_get_type_from_ext("glslp", &is_preset))
-               string_list_append(str_list, "glslp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-                  video_shader_get_type_from_ext("slang", &is_preset))
-               string_list_append(str_list, "slang", attr);
-            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-                  video_shader_get_type_from_ext("slangp", &is_preset))
-               string_list_append(str_list, "slangp", attr);
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+               {
+                  string_list_append(str_list, "cgp", attr);
+                  string_list_append(str_list, "cg", attr);
+               }
+            }
+
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+               {
+                  string_list_append(str_list, "glslp", attr);
+                  string_list_append(str_list, "glsl", attr);
+               }
+            }
+
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+               {
+                  string_list_append(str_list, "slangp", attr);
+                  string_list_append(str_list, "slang", attr);
+               }
+            }
+
             string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");
             string_list_free(str_list);
             exts = ext_shaders;

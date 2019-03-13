@@ -8093,31 +8093,32 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          {
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
-            struct string_list *str_list    = NULL;
-            bool is_preset                  = false;
+            struct string_list *str_list    = string_list_new();
 
             attr.i = 0;
 
             new_exts[0] = '\0';
-            str_list    = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
-            if (video_shader_is_supported(RARCH_SHADER_CG) &&
-                  video_shader_get_type_from_ext("cg", &is_preset)
-                  != RARCH_SHADER_NONE)
-               string_list_append(str_list, "cg", attr);
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+                  string_list_append(str_list, "cg", attr);
+            }
 
-            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-                  video_shader_get_type_from_ext("glsl", &is_preset)
-                  != RARCH_SHADER_NONE)
-               string_list_append(str_list, "glsl", attr);
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+                  string_list_append(str_list, "glsl", attr);
+            }
 
-            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-                  video_shader_get_type_from_ext("slang", &is_preset)
-                  != RARCH_SHADER_NONE)
-               string_list_append(str_list, "slang", attr);
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+                  string_list_append(str_list, "slang", attr);
+            }
 
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
             if (!string_is_empty(info->exts))
