@@ -1121,22 +1121,31 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
-#ifdef HAVE_SLANG
-   if (type == RARCH_SHADER_SLANG)
+   gfx_ctx_flags_t flags;
+   unsigned flag;
+
+   switch (type)
+   {
+      case RARCH_SHADER_SLANG:
+         flag = GFX_CTX_FLAGS_SHADERS_SLANG;
+         break;
+      case RARCH_SHADER_GLSL:
+         flag = GFX_CTX_FLAGS_SHADERS_GLSL;
+         break;
+      case RARCH_SHADER_CG:
+         flag = GFX_CTX_FLAGS_SHADERS_CG;
+         break;
+      case RARCH_SHADER_HLSL:
+         flag = GFX_CTX_FLAGS_SHADERS_HLSL;
+         break;
+      case RARCH_SHADER_NONE:
+      default:
+         return false;
+   }
+
+   if (video_driver_get_all_flags(&flags, flag))
       return true;
-#endif
-#ifdef HAVE_GLSL
-   if (type == RARCH_SHADER_GLSL)
-      return true;
-#endif
-#ifdef HAVE_HLSL
-   if (type == RARCH_SHADER_HLSL)
-      return true;
-#endif
-#ifdef HAVE_CG
-   if (type == RARCH_SHADER_CG)
-      return true;
-#endif
+
    return false;
 }
 
