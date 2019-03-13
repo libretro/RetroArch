@@ -3680,6 +3680,8 @@ static bool gl2_set_shader(void *data,
       return false;
 
    gl->shader->deinit(gl->shader_data);
+   gl->shader_data = NULL;
+
    video_shader_driver_deinit();
 
    switch (type)
