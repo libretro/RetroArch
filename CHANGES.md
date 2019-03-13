@@ -70,6 +70,7 @@
 - PS2: Fix issues with load state and the font driver.
 - PS2: File I/O now works for USB and network host.
 - PS2: Support cores with extra padding in their frame buffers.
+- SWITCH: Add rumble support.
 - VULKAN: Fix color issues with RGBA8888 swapchains in readback (screenshots).
 - WII: Don't init overlay when RAM is beyond 72MB.
 - WII: Skip CRC calculation on content load, can improve load times of larger games by several seconds.
