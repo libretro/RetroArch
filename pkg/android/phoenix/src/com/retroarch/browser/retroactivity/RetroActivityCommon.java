@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.media.AudioAttributes;
+import android.view.InputDevice;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.app.UiModeManager;
@@ -40,12 +41,25 @@ public class RetroActivityCommon extends RetroActivityLocation
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
-  public void doVibrate(int effect, int strength, int oneShot)
+  public void doVibrate(int id, int effect, int strength, int oneShot)
   {
-    Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+    Vibrator vibrator = null;
     int repeat = 0;
     long[] pattern = {16};
     int[] strengths = {strength};
+
+    if (id == -1)
+      vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+    else
+    {
+      InputDevice dev = InputDevice.getDevice(id);
+
+      if (dev != null)
+        vibrator = dev.getVibrator();
+    }
+
+    if (vibrator == null)
+      return;
 
     if (strength == 0) {
       vibrator.cancel();
@@ -58,6 +72,9 @@ public class RetroActivityCommon extends RetroActivityLocation
       pattern[0] = 1000;
 
     if (Build.VERSION.SDK_INT >= 26) {
+      if (id >= 0)
+        Log.i("RetroActivity", "Vibrate id " + id + ": strength " + strength);
+
       vibrator.vibrate(VibrationEffect.createWaveform(pattern, strengths, repeat), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
     }else{
       vibrator.vibrate(pattern, repeat);

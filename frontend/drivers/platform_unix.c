@@ -2037,7 +2037,7 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->setScreenOrientation, class,
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
-         "doVibrate", "(III)V");
+         "doVibrate", "(IIII)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
