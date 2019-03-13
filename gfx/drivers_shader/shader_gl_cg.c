@@ -1210,6 +1210,11 @@ static struct video_shader *gl_cg_get_current_shader(void *data)
    return cg->shader;
 }
 
+static void gl_cg_get_flags(uint32_t *flags)
+{
+   BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_CG);
+}
+
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
    gl_cg_init_menu_shaders,
@@ -1228,6 +1233,7 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_get_feedback_pass,
    gl_cg_mipmap_input,
    gl_cg_get_current_shader,
+   gl_cg_get_flags,
 
    RARCH_SHADER_CG,
    "gl_cg"

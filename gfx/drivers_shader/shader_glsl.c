@@ -1641,6 +1641,11 @@ void gl_glsl_set_context_type(bool core_profile,
    glsl_minor = minor;
 }
 
+static void gl_glsl_get_flags(uint32_t *flags)
+{
+   BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+}
+
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
    gl_glsl_init_menu_shaders,
@@ -1659,6 +1664,7 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_get_feedback_pass,
    gl_glsl_mipmap_input,
    gl_glsl_get_current_shader,
+   gl_glsl_get_flags,
 
    RARCH_SHADER_GLSL,
    "glsl"

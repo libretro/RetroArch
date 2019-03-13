@@ -244,6 +244,8 @@ typedef struct shader_backend
 
    struct video_shader *(*get_current_shader)(void *data);
 
+   void (*get_flags)(uint32_t*);
+
    enum rarch_shader_type type;
 
    /* Human readable string. */

@@ -60,7 +60,9 @@ static void gl_core_deinit_fences(gl_core_t *gl)
 
 static bool gl_core_init_pbo_readback(gl_core_t *gl)
 {
-   int i;
+   unsigned i;
+   struct scaler_ctx *scaler  = NULL;
+
    glGenBuffers(GL_CORE_NUM_PBOS, gl->pbo_readback);
 
    for (i = 0; i < GL_CORE_NUM_PBOS; i++)
@@ -70,7 +72,8 @@ static bool gl_core_init_pbo_readback(gl_core_t *gl)
    }
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
-   struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
+   scaler                    = &gl->pbo_readback_scaler;
+
    scaler->in_width          = gl->vp.width;
    scaler->in_height         = gl->vp.height;
    scaler->out_width         = gl->vp.width;
@@ -95,7 +98,7 @@ static bool gl_core_init_pbo_readback(gl_core_t *gl)
 
 static void gl_core_deinit_pbo_readback(gl_core_t *gl)
 {
-   int i;
+   unsigned i;
    for (i = 0; i < GL_CORE_NUM_PBOS; i++)
       if (gl->pbo_readback[i] != 0)
          glDeleteBuffers(1, &gl->pbo_readback[i]);
@@ -122,7 +125,7 @@ static void gl_core_free_overlay(gl_core_t *gl)
 
 static void gl_core_free_scratch_vbos(gl_core_t *gl)
 {
-   int i;
+   unsigned i;
    for (i = 0; i < GL_CORE_NUM_VBOS; i++)
       if (gl->scratch_vbos[i])
          glDeleteBuffers(1, &gl->scratch_vbos[i]);
@@ -203,7 +206,7 @@ static void gl_core_overlay_vertex_geom(void *data,
       float w, float h)
 {
    GLfloat *vertex = NULL;
-   gl_core_t *gl = (gl_core_t*)data;
+   gl_core_t   *gl = (gl_core_t*)data;
 
    if (!gl)
       return;
@@ -328,7 +331,7 @@ static void gl_core_deinit_hw_render(gl_core_t *gl)
 
 static void gl_core_destroy_resources(gl_core_t *gl)
 {
-   int i;
+   unsigned i;
    if (!gl)
       return;
 
@@ -381,6 +384,7 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    GLint max_rb_size;
    GLenum status;
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+
    gl_core_context_bind_hw_render(gl, true);
 
    RARCH_LOG("[GLCore]: Initializing HW render (%u x %u).\n", width, height);
@@ -448,13 +452,13 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
 
 static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 {
+   unsigned major;
+   unsigned minor;
    enum gfx_ctx_api api;
+   gfx_ctx_flags_t flags;
    const gfx_ctx_driver_t *gfx_ctx      = NULL;
    void                      *ctx_data  = NULL;
    settings_t                 *settings = config_get_ptr();
-   unsigned major;
-   unsigned minor;
-   gfx_ctx_flags_t flags;
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
 #ifdef HAVE_OPENGLES3
@@ -1519,6 +1523,13 @@ static void gl_core_update_cpu_texture(gl_core_t *gl,
 
 static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_info)
 {
+   const float vbo_data[] = {
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+   };
+
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
    glDisable(GL_DEPTH_TEST);
@@ -1534,13 +1545,6 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
    glUseProgram(gl->pipelines.alpha_blend);
    if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
       glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex, 4, gl->mvp_no_rot_yflip.data);
-
-   const float vbo_data[] = {
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-   };
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
@@ -1580,9 +1584,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (frame)
    {
       if (!gl->hw_render_enable)
-      {
          gl_core_update_cpu_texture(gl, streamed, frame, frame_width, frame_height, pitch);
-      }
       else
       {
          streamed->width = frame_width;
@@ -1662,8 +1664,10 @@ static bool gl_core_frame(void *data, const void *frame,
 
    if (!string_is_empty(msg))
    {
-      //if (video_info->msg_bgcolor_enable)
-      //   gl_core_render_osd_background(gl, video_info, msg);
+#if 0
+      if (video_info->msg_bgcolor_enable)
+         gl_core_render_osd_background(gl, video_info, msg);
+#endif
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 

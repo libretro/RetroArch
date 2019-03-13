@@ -4129,11 +4129,15 @@ static float gl2_get_refresh_rate(void *data)
 
 static uint32_t gl2_get_flags(void *data)
 {
+   gl_t                   *gl = (gl_t*)data;
    uint32_t             flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   if (gl && gl->shader->get_flags)
+      gl->shader->get_flags(&flags);
 
    return flags;
 }
