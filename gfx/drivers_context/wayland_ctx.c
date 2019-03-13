@@ -1898,10 +1898,23 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+         if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
+#ifdef HAVE_SLANG
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         }
+         else if (string_is_equal(video_driver_get_ident(), "gl"))
+         {
+#ifdef HAVE_GLSL
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         }
          break;
       case GFX_CTX_VULKAN_API:
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_VULKAN);
+#ifdef HAVE_SLANG
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
          break;
       case GFX_CTX_NONE:
       default:

@@ -1111,17 +1111,24 @@ void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
 {
    if (meta.uniform)
    {
-      meta.location.ubo_vertex = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
-      meta.location.ubo_fragment = glGetUniformLocation(pipeline,
-                                                        (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
+      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+
+      if (vert >= 0)
+         meta.location.ubo_vertex = vert;
+      if (frag >= 0)
+         meta.location.ubo_fragment = frag;
    }
 
    if (meta.push_constant)
    {
-      meta.location.push_vertex = glGetUniformLocation(pipeline,
-                                                       (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
-      meta.location.push_fragment = glGetUniformLocation(pipeline,
-                                                         (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
+      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+
+      if (vert >= 0)
+         meta.location.push_vertex = vert;
+      if (frag >= 0)
+         meta.location.push_fragment = frag;
    }
 }
 
@@ -1129,17 +1136,24 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
 {
    if (meta.uniform)
    {
-      meta.location.ubo_vertex = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
-      meta.location.ubo_fragment = glGetUniformLocation(pipeline,
-                                                        (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
+      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+
+      if (vert >= 0)
+         meta.location.ubo_vertex = vert;
+      if (frag >= 0)
+         meta.location.ubo_fragment = frag;
    }
 
    if (meta.push_constant)
    {
-      meta.location.push_vertex = glGetUniformLocation(pipeline,
-                                                       (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
-      meta.location.push_fragment = glGetUniformLocation(pipeline,
-                                                         (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
+      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+
+      if (vert >= 0)
+         meta.location.push_vertex = vert;
+      if (frag >= 0)
+         meta.location.push_fragment = frag;
    }
 }
 
@@ -1152,18 +1166,24 @@ void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_te
 
       if (m.uniform)
       {
-         m.location.ubo_vertex = glGetUniformLocation(pipeline,
-                                                      (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
-         m.location.ubo_fragment = glGetUniformLocation(pipeline,
-                                                        (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
+         int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
+
+         if (vert >= 0)
+            m.location.ubo_vertex = vert;
+         if (frag >= 0)
+            m.location.ubo_fragment = frag;
       }
 
       if (m.push_constant)
       {
-         m.location.push_vertex = glGetUniformLocation(pipeline,
-                                                       (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
-         m.location.push_fragment = glGetUniformLocation(pipeline,
-                                                         (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
+         int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
+
+         if (vert >= 0)
+            m.location.push_vertex = vert;
+         if (frag >= 0)
+            m.location.push_fragment = frag;
       }
    }
 }
