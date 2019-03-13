@@ -241,8 +241,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);
 
-enum rarch_shader_type video_shader_get_type_from_ext(
-      const char *ext, bool *is_preset);
+enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
+      bool *is_preset);
 
 bool video_shader_is_supported(enum rarch_shader_type type);
 

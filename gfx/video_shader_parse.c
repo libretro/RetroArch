@@ -1152,147 +1152,54 @@ bool video_shader_any_supported(void)
    return false;
 }
 
-enum rarch_shader_type video_shader_get_type_from_ext(
-      const char *ext, bool *is_preset)
+enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
+      bool *is_preset)
 {
-   enum gfx_ctx_api api = video_context_driver_get_api();
-
    if (string_is_empty(ext))
       return RARCH_SHADER_NONE;
 
    if (strlen(ext) > 1 && ext[0] == '.')
       ext++;
 
-   *is_preset           = false;
-
    if (
-         string_is_equal_case_insensitive(ext, "cg")
-         )
-   {
-      switch (api)
-      {
-         case GFX_CTX_DIRECT3D9_API:
-            return RARCH_SHADER_CG;
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-            {
-               struct retro_hw_render_callback *hwr =
-                  video_driver_get_hw_context();
-               if (hwr)
-               {
-                  switch (hwr->context_type)
-                  {
-                     case RETRO_HW_CONTEXT_OPENGLES2:
-                     case RETRO_HW_CONTEXT_OPENGL_CORE:
-                     case RETRO_HW_CONTEXT_OPENGLES3:
-                        return RARCH_SHADER_NONE;
-                     default:
-                        break;
-                  }
-               }
-            }
-            return RARCH_SHADER_CG;
-         default:
-            break;
-      }
-   }
-   if (
-         string_is_equal_case_insensitive(ext, "cgp")
-         )
-   {
-      *is_preset = true;
-      switch (api)
-      {
-         case GFX_CTX_DIRECT3D9_API:
-            return RARCH_SHADER_CG;
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-            {
-               struct retro_hw_render_callback *hwr =
-                  video_driver_get_hw_context();
-               if (hwr)
-               {
-                  switch (hwr->context_type)
-                  {
-                     case RETRO_HW_CONTEXT_OPENGLES2:
-                     case RETRO_HW_CONTEXT_OPENGL_CORE:
-                     case RETRO_HW_CONTEXT_OPENGLES3:
-                        return RARCH_SHADER_NONE;
-                     default:
-                        break;
-                  }
-               }
-            }
-            return RARCH_SHADER_CG;
-         default:
-            break;
-      }
-   }
-   if (
-         string_is_equal_case_insensitive(ext, "glsl")
-         )
-   {
-      switch (api)
-      {
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-            return RARCH_SHADER_GLSL;
-         default:
-            break;
-      }
-   }
-   if (
-         string_is_equal_case_insensitive(ext, "glslp")
-         )
-   {
-      *is_preset = true;
-      switch (api)
-      {
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-            return RARCH_SHADER_GLSL;
-         default:
-            break;
-      }
-   }
-   if (
-         string_is_equal_case_insensitive(ext, "slang")
-         )
-   {
-      switch (api)
-      {
-         case GFX_CTX_DIRECT3D10_API:
-         case GFX_CTX_DIRECT3D11_API:
-         case GFX_CTX_DIRECT3D12_API:
-         case GFX_CTX_GX2_API:
-         case GFX_CTX_VULKAN_API:
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-         case GFX_CTX_METAL_API:
-            return RARCH_SHADER_SLANG;
-         default:
-            break;
-      }
-   }
-   if (
+         string_is_equal_case_insensitive(ext, "cgp") ||
+         string_is_equal_case_insensitive(ext, "glslp") ||
          string_is_equal_case_insensitive(ext, "slangp")
-         )
-   {
+      )
       *is_preset = true;
+   else
+      *is_preset = false;
 
-      switch (api)
+   {
+      gfx_ctx_flags_t flags;
+      if (string_is_equal_case_insensitive(ext, "cgp") ||
+          string_is_equal_case_insensitive(ext, "cg")
+         )
       {
-         case GFX_CTX_DIRECT3D10_API:
-         case GFX_CTX_DIRECT3D11_API:
-         case GFX_CTX_DIRECT3D12_API:
-         case GFX_CTX_GX2_API:
-         case GFX_CTX_VULKAN_API:
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-         case GFX_CTX_METAL_API:
+         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+            return RARCH_SHADER_CG;
+      }
+   }
+
+   {
+      gfx_ctx_flags_t flags;
+      if (string_is_equal_case_insensitive(ext, "glslp") ||
+          string_is_equal_case_insensitive(ext, "glsl")
+         )
+      {
+         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+            return RARCH_SHADER_GLSL;
+      }
+   }
+
+   {
+      gfx_ctx_flags_t flags;
+      if (string_is_equal_case_insensitive(ext, "slangp") ||
+          string_is_equal_case_insensitive(ext, "slang")
+         )
+      {
+         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             return RARCH_SHADER_SLANG;
-         default:
-            break;
       }
    }
 
@@ -1313,8 +1220,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
-   bool is_preset                     = false;
-
+   bool is_preset = false;
    if (!path)
       return fallback;
    return  video_shader_get_type_from_ext(path_get_extension(path),

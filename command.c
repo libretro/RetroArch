@@ -254,9 +254,6 @@ bool command_set_shader(const char *arg)
    bool is_preset                  = false;
    enum rarch_shader_type     type = video_shader_get_type_from_ext(
          path_get_extension(arg), &is_preset);
-#ifdef HAVE_MENU
-   struct video_shader    *shader  = menu_shader_get();
-#endif
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -269,7 +266,7 @@ bool command_set_shader(const char *arg)
 
    retroarch_set_shader_preset(arg);
 #ifdef HAVE_MENU
-   return menu_shader_manager_set_preset(shader, type, arg);
+   return menu_shader_manager_set_preset(menu_shader_get(), type, arg);
 #else
    return true;
 #endif
