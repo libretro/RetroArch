@@ -3245,34 +3245,45 @@ static unsigned menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
    count++;
 
-   if (video_shader_is_supported(RARCH_SHADER_CG))
    {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
-            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
-            MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-            MENU_SETTING_ACTION, 0, 0);
-      count++;
+      gfx_ctx_flags_t flags;
+
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+      {
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
+               msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+      }
    }
 
-   if (video_shader_is_supported(RARCH_SHADER_GLSL))
    {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
-            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
-            MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-            MENU_SETTING_ACTION, 0, 0);
-      count++;
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+               msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+      }
    }
 
-   if (video_shader_is_supported(RARCH_SHADER_SLANG))
    {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
-            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
-            MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
-            MENU_SETTING_ACTION, 0, 0);
-      count++;
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+               msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+      }
    }
 #endif
 
