@@ -190,7 +190,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
             IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
 
-            utf16_to_char_string(desc.Description, str, sizeof(str));
+            utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
             RARCH_LOG("[D3D12]: Using GPU: %s\n", str);
 

@@ -4791,10 +4791,11 @@ bool rarch_write_debug_info(void)
 
    {
       float width = 0, height = 0, refresh = 0.0f;
-      gfx_ctx_metrics_t metrics = {0};
-
-      metrics.type = DISPLAY_METRIC_PIXEL_WIDTH;
+      gfx_ctx_metrics_t metrics;
+      
+      metrics.type  = DISPLAY_METRIC_PIXEL_WIDTH;
       metrics.value = &width;
+
       video_context_driver_get_metrics(&metrics);
 
       metrics.type = DISPLAY_METRIC_PIXEL_HEIGHT;

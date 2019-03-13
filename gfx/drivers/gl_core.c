@@ -23,6 +23,7 @@
 #include <gfx/video_frame.h>
 #include <glsym/glsym.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
