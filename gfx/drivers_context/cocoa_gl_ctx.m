@@ -34,6 +34,7 @@
 
 #include <retro_assert.h>
 #include <compat/apple_compat.h>
+#include <string/stdstring.h>
 
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
