@@ -680,7 +680,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    bool thumbnail;
    bool left_thumbnail;
 
-   //Background
+   /* Background */
    if (!video_info->libretro_running)
    {
       menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
@@ -688,7 +688,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       menu_display_draw_quad(video_info, x_position, video_info->height - ozone->dimensions.footer_height - 55/2 - 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2 + 1, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
    }
 
-   //Thumbnails
+   /* Thumbnails */
    thumbnail = ozone->thumbnail &&
       !string_is_equal(ozone_thumbnails_ident('R'),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));

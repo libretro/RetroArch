@@ -349,20 +349,20 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
 
    menu_animation_kill_by_tag(&tag);
 
-   //Collapse it
+   /* Collapse it */
    if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       if (allow_animation)
       {
          entry.cb = ozone_sidebar_collapse_end;
 
-         //Text alpha
+         /* Text alpha */
          entry.subject        = &ozone->animations.sidebar_text_alpha;
          entry.target_value   = 0.0f;
 
          menu_animation_push(&entry);
 
-         //Collapse
+         /* Collapse */
          entry.subject        = &ozone->dimensions.sidebar_width;
          entry.target_value   = ozone->dimensions.sidebar_width_collapsed;
 
@@ -375,7 +375,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          ozone_sidebar_collapse_end(ozone);
       }
    }
-   //Show it
+   /* Show it */
    else if (ozone->cursor_in_sidebar || (!is_playlist && !settings->bools.ozone_collapse_sidebar))
    {
       if (allow_animation)
@@ -384,13 +384,13 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
 
          entry.cb = NULL;
 
-         //Text alpha
+         /* Text alpha */
          entry.subject        = &ozone->animations.sidebar_text_alpha;
          entry.target_value   = 1.0f;
 
          menu_animation_push(&entry);
 
-         //Collapse
+         /* Collapse */
          entry.subject        = &ozone->dimensions.sidebar_width;
          entry.target_value   = ozone->dimensions.sidebar_width_normal;
 
