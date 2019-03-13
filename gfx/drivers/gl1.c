@@ -184,22 +184,6 @@ static void *gl1_gfx_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   if (!string_is_empty(version))
-      sscanf(version, "%d.%d", &gl1->version_major, &gl1->version_minor);
-
-   {
-      char device_str[128];
-
-      device_str[0] = '\0';
-
-      strlcpy(device_str, vendor, sizeof(device_str));
-      strlcat(device_str, " ", sizeof(device_str));
-      strlcat(device_str, renderer, sizeof(device_str));
-
-      video_driver_set_gpu_device_string(device_str);
-      video_driver_set_gpu_api_version_string(version);
-   }
-
    RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
@@ -241,6 +225,41 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    RARCH_LOG("[GL1]: Using resolution %ux%u\n", temp_width, temp_height);
 
+   vendor   = (const char*)glGetString(GL_VENDOR);
+   renderer = (const char*)glGetString(GL_RENDERER);
+   version  = (const char*)glGetString(GL_VERSION);
+   extensions = (const char*)glGetString(GL_EXTENSIONS);
+
+   if (!string_is_empty(version))
+      sscanf(version, "%d.%d", &gl1->version_major, &gl1->version_minor);
+
+   if (!string_is_empty(extensions))
+      gl1->extensions = string_split(extensions, " ");
+
+   RARCH_LOG("[GL1]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
+   RARCH_LOG("[GL1]: Version: %s.\n", version);
+   RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
+
+   {
+      char device_str[128];
+
+      device_str[0] = '\0';
+
+      if (!string_is_empty(vendor))
+      {
+         strlcpy(device_str, vendor, sizeof(device_str));
+         strlcat(device_str, " ", sizeof(device_str));
+      }
+
+      if (!string_is_empty(renderer))
+         strlcat(device_str, renderer, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+
+      if (!string_is_empty(version))
+         video_driver_set_gpu_api_version_string(version);
+   }
+
    inp.input      = input;
    inp.input_data = input_data;
 
@@ -250,17 +269,6 @@ static void *gl1_gfx_init(const video_info_t *video,
       font_driver_init_osd(gl1, false,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL1_API);
-
-   vendor   = (const char*)glGetString(GL_VENDOR);
-   renderer = (const char*)glGetString(GL_RENDERER);
-   version  = (const char*)glGetString(GL_VERSION);
-   extensions = (const char*)glGetString(GL_EXTENSIONS);
-
-   gl1->extensions = string_split(extensions, " ");
-
-   RARCH_LOG("[GL1]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
-   RARCH_LOG("[GL1]: Version: %s.\n", version);
-   RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
 
    gl1->smooth = settings->bools.video_smooth;
    gl1->supports_bgra = string_list_find_elem(gl1->extensions, "GL_EXT_bgra");
