@@ -200,7 +200,7 @@ struct ozone_handle
       int sidebar_width_normal;
       int sidebar_width_collapsed;
 
-      float sidebar_width;
+      float sidebar_width; /* animated field */
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
