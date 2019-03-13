@@ -1236,5 +1236,5 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_get_flags,
 
    RARCH_SHADER_CG,
-   "gl_cg"
+   "cg"
 };
