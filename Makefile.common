@@ -8,26 +8,26 @@ ifeq ($(HAVE_STACK_USAGE), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT),)
-   HAVE_GL_CONTEXT=0
-	HAVE_GL_MODERN=0
+   HAVE_GL_CONTEXT = 0
+   HAVE_GL_MODERN  = 0
 
    ifeq ($(HAVE_OPENGL), 1)
-      HAVE_GL_CONTEXT=1
-		HAVE_GL_MODERN=1
+      HAVE_GL_CONTEXT = 1
+      HAVE_GL_MODERN  = 1
    endif
 
    ifeq ($(HAVE_OPENGL1), 1)
-      HAVE_GL_CONTEXT=1
+      HAVE_GL_CONTEXT = 1
    endif
 
    ifeq ($(HAVE_OPENGLES), 1)
-      HAVE_GL_CONTEXT=1
-		HAVE_GL_MODERN=1
+      HAVE_GL_CONTEXT = 1
+      HAVE_GL_MODERN  = 1
    endif
 
    ifeq ($(HAVE_OPENGLES3), 1)
-      HAVE_GL_CONTEXT=1
-		HAVE_GL_MODERN=1
+      HAVE_GL_CONTEXT = 1
+      HAVE_GL_MODERN  = 1
    endif
 endif
 
@@ -1260,6 +1260,7 @@ ifeq ($(HAVE_OPENGL_CORE), 1)
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
    HAVE_SPIRV_CROSS = 1
+   NEED_CXX_LINKER  = 1
 endif
 
 ifeq ($(HAVE_OMAP), 1)
