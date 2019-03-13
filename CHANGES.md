@@ -3,6 +3,7 @@
 - ANDROID: We now target API level 26 (minimum is still API level 9).
 - ANDROID: Add option to vibrate on touch (works in menu or overlay).
 - ANDROID: Add device vibration option for cores that support rumble.
+- ANDROID: Add gamepad vibration support for cores that support rumble.
 - AUDIO: Avoid deadlocks in certain audio drivers when toggling menu sounds on.
 - BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
 - CRT: Dynamic super resolution support.
