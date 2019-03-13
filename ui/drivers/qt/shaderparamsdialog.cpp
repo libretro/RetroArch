@@ -516,19 +516,19 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-         filter += QLatin1Literal("*") + file_path_str(FILE_PATH_CGP_EXTENSION);
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_CGP_EXTENSION);
    }
 
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-         filter += QLatin1Literal("*") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
    }
 
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-         filter += QLatin1Literal("*") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
    }
 
    filter += ")";
@@ -658,19 +658,19 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-         filter += QLatin1Literal("*.cg");
+         filter += QLatin1Literal(" *.cg");
    }
 
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-         filter += QLatin1Literal("*.glsl");
+         filter += QLatin1Literal(" *.glsl");
    }
 
    {
       gfx_ctx_flags_t flags;
       if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-         filter += QLatin1Literal("*.slang");
+         filter += QLatin1Literal(" *.slang");
    }
 
    filter += ")";
