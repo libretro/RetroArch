@@ -197,12 +197,14 @@ static void switch_input_grab_mouse(void *data, bool state)
 static bool switch_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)port;
-	(void)effect;
-	(void)strength;
-
-	return false;
+#ifdef HAVE_LIBNX
+   switch_input_t *sw = (switch_input_t*) data;
+   if (!sw)
+      return false;
+   return input_joypad_set_rumble(sw->joypad, port, effect, strength);
+#else
+   return false;
+#endif
 }
 
 static bool switch_input_keyboard_mapping_is_blocked(void *data)
