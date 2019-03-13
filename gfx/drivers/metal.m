@@ -319,6 +319,9 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
 
    return flags;
 }
