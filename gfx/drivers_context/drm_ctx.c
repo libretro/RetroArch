@@ -909,6 +909,8 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
    if (drm->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
    return flags;
 }
 

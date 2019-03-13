@@ -4129,42 +4129,11 @@ static float gl2_get_refresh_rate(void *data)
 
 static uint32_t gl2_get_flags(void *data)
 {
-   unsigned i;
-   uint32_t shader_driver_count = 0;
    uint32_t             flags   = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-
-#ifdef HAVE_GLSL
-   shader_driver_count++;
-#endif
-#ifdef HAVE_CG
-   shader_driver_count++;
-#endif
-
-#ifdef HAVE_GLSL
-   for (i = 0; i < shader_driver_count; i++)
-   {
-      if (string_is_equal(gl2_shader_ctx_drivers[i]->ident, "glsl"))
-      {
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
-         break;
-      }
-   }
-#endif
-
-#ifdef HAVE_CG
-   for (i = 0; i < shader_driver_count; i++)
-   {
-      if (string_is_equal(gl2_shader_ctx_drivers[i]->ident, "cg"))
-      {
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
-         break;
-      }
-   }
-#endif
 
    return flags;
 }

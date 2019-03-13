@@ -1894,6 +1894,20 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    else
       BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
+   switch (wl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+         break;
+      case GFX_CTX_VULKAN_API:
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_VULKAN);
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
    return flags;
 }
 

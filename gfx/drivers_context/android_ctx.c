@@ -590,6 +590,24 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
+   switch (android_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_GLSL
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         break;
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_SLANG
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
    return flags;
 }
 
