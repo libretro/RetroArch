@@ -1238,6 +1238,7 @@ MENU
 #include "../menu/menu_shader.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
+#include "../menu/menu_thumbnail_path.c"
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
