@@ -687,7 +687,7 @@ static INLINE int android_input_poll_event_type_motion(
    int btn;
 
    /* Only handle events from a touchscreen or mouse */
-   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
+   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
       return 1;
 
    getaction  = AMotionEvent_getAction(event);
@@ -778,7 +778,7 @@ static INLINE int android_input_poll_event_type_motion(
          }
       }
 
-      if (action == AMOTION_EVENT_ACTION_MOVE && ENABLE_TOUCH_SCREEN_MOUSE)
+      if ((action == AMOTION_EVENT_ACTION_MOVE || action == AMOTION_EVENT_ACTION_HOVER_MOVE) && ENABLE_TOUCH_SCREEN_MOUSE)
          android_mouse_calculate_deltas(android,event,motion_ptr);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
