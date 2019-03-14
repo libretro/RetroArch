@@ -310,4 +310,6 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 unsigned ozone_count_lines(const char *str);
 
+void ozone_update_content_metadata(ozone_handle_t *ozone);
+
 #endif

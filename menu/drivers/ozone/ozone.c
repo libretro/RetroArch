@@ -373,13 +373,10 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 {
    settings_t     *settings       = config_get_ptr();
    ozone_handle_t    *ozone       = (ozone_handle_t*)data;
-   playlist_t     *playlist       = NULL;
    const char    *core_name       = NULL;
 
    if (!ozone)
       return;
-
-   playlist = playlist_get_cached();
 
    /* imageviewer content requires special treatment... */
    menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
@@ -390,71 +387,6 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
    }
    else
       menu_thumbnail_update_path(ozone->thumbnail_path_data, pos == 'R' ? MENU_THUMBNAIL_RIGHT : MENU_THUMBNAIL_LEFT);
-
-   if (playlist)
-   {
-      const char    *core_label      = NULL;
-      playlist_get_index(playlist, i,
-            NULL, NULL, NULL, &core_name, NULL, NULL);
-
-      /* Fill core name */
-      if (!core_name || string_is_equal(core_name, "DETECT"))
-         core_label = msg_hash_to_str(MSG_AUTODETECT);
-      else
-         core_label = core_name;
-
-      snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
-         "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
-
-      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false);
-      ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
-
-      /* Fill play time if applicable */
-      if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
-      {
-         unsigned runtime_hours        = 0;
-         unsigned runtime_minutes      = 0;
-         unsigned runtime_seconds      = 0;
-
-         unsigned last_played_year     = 0;
-         unsigned last_played_month    = 0;
-         unsigned last_played_day      = 0;
-         unsigned last_played_hour     = 0;
-         unsigned last_played_minute   = 0;
-         unsigned last_played_second   = 0;
-
-         playlist_get_runtime_index(playlist, i, NULL, NULL,
-            &runtime_hours, &runtime_minutes, &runtime_seconds,
-            &last_played_year, &last_played_month, &last_played_day,
-            &last_played_hour, &last_played_minute, &last_played_second);
-
-         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %02u:%02u:%02u",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME), runtime_hours, runtime_minutes, runtime_seconds);
-
-         if (last_played_year == 0 && last_played_month == 0 && last_played_day == 0
-            && last_played_hour == 0 && last_played_minute == 0 && last_played_second == 0)
-         {
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
-         }
-         else
-         {
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %04u/%02u/%02u -\n%02u:%02u:%02u",
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-                        last_played_year, last_played_month, last_played_day,
-                        last_played_hour, last_played_minute, last_played_second);
-         }
-      }
-      else
-      {
-         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
-
-         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
-      }
-   }
 }
 
 static void ozone_update_thumbnail_image(void *data)
@@ -1193,10 +1125,86 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    menu_display_blend_end(video_info);
 }
 
+void ozone_update_content_metadata(ozone_handle_t *ozone)
+{
+   playlist_t *playlist       = playlist_get_cached();
+   const char *core_name      = NULL;
+   settings_t *settings       = config_get_ptr();
+
+   menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
+
+   if (ozone->is_playlist && playlist)
+   {
+      const char    *core_label      = NULL;
+      playlist_get_index(playlist, ozone->selection,
+            NULL, NULL, NULL, &core_name, NULL, NULL);
+
+      /* Fill core name */
+      if (!core_name || string_is_equal(core_name, "DETECT"))
+         core_label = msg_hash_to_str(MSG_AUTODETECT);
+      else
+         core_label = core_name;
+
+      snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
+         "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
+
+      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false);
+      ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
+
+      /* Fill play time if applicable */
+      if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
+      {
+         unsigned runtime_hours        = 0;
+         unsigned runtime_minutes      = 0;
+         unsigned runtime_seconds      = 0;
+
+         unsigned last_played_year     = 0;
+         unsigned last_played_month    = 0;
+         unsigned last_played_day      = 0;
+         unsigned last_played_hour     = 0;
+         unsigned last_played_minute   = 0;
+         unsigned last_played_second   = 0;
+
+         playlist_get_runtime_index(playlist, ozone->selection, NULL, NULL,
+            &runtime_hours, &runtime_minutes, &runtime_seconds,
+            &last_played_year, &last_played_month, &last_played_day,
+            &last_played_hour, &last_played_minute, &last_played_second);
+
+         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %02u:%02u:%02u",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME), runtime_hours, runtime_minutes, runtime_seconds);
+
+         if (last_played_year == 0 && last_played_month == 0 && last_played_day == 0
+            && last_played_hour == 0 && last_played_minute == 0 && last_played_second == 0)
+         {
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
+         }
+         else
+         {
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %04u/%02u/%02u -\n%02u:%02u:%02u",
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                        last_played_year, last_played_month, last_played_day,
+                        last_played_hour, last_played_minute, last_played_second);
+         }
+      }
+      else
+      {
+         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+
+         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+      }
+   }
+
+}
+
 static void ozone_set_thumbnail_content(void *data, const char *s)
 {
-   size_t selection = menu_navigation_get_selection();
-   ozone_handle_t *ozone = (ozone_handle_t*)data;
+   size_t selection           = menu_navigation_get_selection();
+   ozone_handle_t *ozone      = (ozone_handle_t*)data;
+
    if (!ozone)
       return;
 
@@ -1282,6 +1290,8 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
    size_t new_selection = menu_navigation_get_selection();
    ozone_node_t *node   = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, new_selection);
+
+   ozone_update_content_metadata(ozone);
 
    menu_entry_init(&entry);
 
