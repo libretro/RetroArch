@@ -287,7 +287,7 @@ static bool command_read_ram(const char *arg)
    unsigned int alloc_size = 0;
    unsigned int addr       = -1;
 
-   if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
+   if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
    alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
    reply      = (char*) malloc(alloc_size);
