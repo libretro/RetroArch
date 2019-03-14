@@ -682,11 +682,9 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Thumbnails */
    thumbnail = ozone->thumbnail &&
-      !string_is_equal(ozone_thumbnails_ident('R'),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+     menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT);
    left_thumbnail = ozone->left_thumbnail &&
-      !string_is_equal(ozone_thumbnails_ident('L'),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+      menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT);
 
    /* If user requested "left" thumbnail instead of content metadata
     * and no thumbnails are available, show a centered message and
