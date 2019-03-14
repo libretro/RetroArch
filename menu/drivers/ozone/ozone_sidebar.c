@@ -292,6 +292,8 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    if (ozone->empty_playlist)
       return;
 
+   ozone_update_content_metadata(ozone);
+
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
    ozone->cursor_in_sidebar_old     = ozone->cursor_in_sidebar;
    ozone->cursor_in_sidebar         = false;
