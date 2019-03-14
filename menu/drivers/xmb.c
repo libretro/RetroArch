@@ -1052,9 +1052,9 @@ static void xmb_unload_thumbnail_textures(void *data)
       video_driver_texture_unload(&xmb->left_thumbnail);
 }
 
-static void xmb_set_thumbnail_content(void *data, char *s, size_t len)
+static void xmb_set_thumbnail_content(void *data, const char *s)
 {
-   size_t selection = menu_navigation_get_selection();
+   size_t selection  = menu_navigation_get_selection();
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
@@ -1194,20 +1194,20 @@ static void xmb_selection_pointer_changed(
                  (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
                 xmb->is_playlist)
             {
-               xmb_set_thumbnail_content(xmb, "", 0 /* will be ignored */);
+               xmb_set_thumbnail_content(xmb, NULL);
                update_thumbnails = true;
             }
             /* Database list updates
              * (pointless nuisance...) */
             else if (depth == 4 && xmb->is_db_manager_list)
             {
-               xmb_set_thumbnail_content(xmb, "", 0 /* will be ignored */);
+               xmb_set_thumbnail_content(xmb, NULL);
                update_thumbnails = true;
             }
             /* Filebrowser image updates */
             else if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
             {
-               xmb_set_thumbnail_content(xmb, "imageviewer", 0 /* will be ignored */);
+               xmb_set_thumbnail_content(xmb, "imageviewer");
                update_thumbnails = true;
             }
 
@@ -1416,7 +1416,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
          if (xmb->is_playlist || xmb->is_db_manager_list)
          {
-            xmb_set_thumbnail_content(xmb, "", 0 /* will be ignored */);
+            xmb_set_thumbnail_content(xmb, NULL);
 
             if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
                xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
@@ -1746,7 +1746,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
       if (xmb->is_playlist)
       {
-         xmb_set_thumbnail_content(xmb, "", 0 /* will be ignored */);
+         xmb_set_thumbnail_content(xmb, NULL);
 
          if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
             xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');

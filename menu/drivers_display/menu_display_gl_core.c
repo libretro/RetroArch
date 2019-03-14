@@ -244,24 +244,28 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : menu_display_gl_core_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)menu_display_gl_core_get_default_mvp(video_info);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
-      {
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);
-      }
    }
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl_core_bind_scratch_vbo(gl, vertex, 2 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, tex_coord, 2 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, color, 4 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, vertex,
+         2 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, tex_coord,
+         2 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, color,
+         4 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+         4 * sizeof(float), (void *)(uintptr_t)0);
 
    if (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP)
       glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);

@@ -1353,7 +1353,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 }
 
 
-static void ozone_set_thumbnail_content(void *data, char *s, size_t len)
+static void ozone_set_thumbnail_content(void *data, const char *s)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
    if (!ozone)
@@ -1403,8 +1403,10 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
    if (ozone->selection != new_selection)
    {
-      ozone->selection_old = ozone->selection;
-      ozone->selection = new_selection;
+      ozone_node_t *node   = NULL;
+
+      ozone->selection_old         = ozone->selection;
+      ozone->selection             = new_selection;
 
       ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
 
@@ -1412,7 +1414,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone_update_scroll(ozone, allow_animation, node);
 
       /* Update thumbnail */
-      ozone_node_t *node = (ozone_node_t*)
+      node = (ozone_node_t*)
          file_list_get_userdata_at_offset(selection_buf, ozone->selection);
 
       if (node)
@@ -1432,7 +1434,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             if (ozone->is_playlist && ozone->depth == 1)
             {
                if (!string_is_empty(entry.path))
-                  ozone_set_thumbnail_content(ozone, entry.path, 0 /* will be ignored */);
+                  ozone_set_thumbnail_content(ozone, entry.path);
                if (!string_is_equal(thumb_ident,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
                {
@@ -1451,7 +1453,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
                      && ozone->tabs[ozone->categories_selection_ptr] <= OZONE_SYSTEM_TAB_SETTINGS))
             {
                if (!string_is_empty(entry.path))
-                  ozone_set_thumbnail_content(ozone, entry.path, 0 /* will be ignored */);
+                  ozone_set_thumbnail_content(ozone, entry.path);
                if (!string_is_equal(thumb_ident,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
                {
@@ -1860,7 +1862,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
          menu_entry_get(&entry, 0, ozone->selection, NULL, true);
 
          if (!string_is_empty(entry.path))
-            ozone_set_thumbnail_content(ozone, entry.path, 0 /* will be ignored */);
+            ozone_set_thumbnail_content(ozone, entry.path);
 
          menu_entry_free(&entry);
 
@@ -1876,7 +1878,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
          menu_entry_get(&entry, 0, ozone->selection, NULL, true);
 
          if (!string_is_empty(entry.path))
-            ozone_set_thumbnail_content(ozone, entry.path, 0 /* will be ignored */);
+            ozone_set_thumbnail_content(ozone, entry.path);
 
          menu_entry_free(&entry);
 

@@ -1069,7 +1069,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
          IDXGIAdapter_GetDesc(d3d11->adapter, &desc);
 
-         utf16_to_char_string(desc.Description, str, sizeof(str));
+         utf16_to_char_string((const uint16_t*)
+               desc.Description, str, sizeof(str));
 
          RARCH_LOG("[D3D11]: Using GPU: %s\n", str);
 

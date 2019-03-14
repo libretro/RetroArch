@@ -997,7 +997,8 @@ d3d10_gfx_init(const video_info_t* video,
 
          IDXGIAdapter_GetDesc(d3d10->adapter, &desc);
 
-         utf16_to_char_string(desc.Description, str, sizeof(str));
+         utf16_to_char_string((const uint16_t*)
+               desc.Description, str, sizeof(str));
 
          RARCH_LOG("[D3D10]: Using GPU: %s\n", str);
 

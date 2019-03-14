@@ -2184,7 +2184,7 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
 void menu_driver_set_thumbnail_content(char *s, size_t len)
 {
    if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_content)
-      menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
+      menu_driver_ctx->set_thumbnail_content(menu_userdata, s);
 }
 
 /* Teardown function for the menu driver. */

@@ -1122,7 +1122,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    gfx_ctx_flags_t flags;
-   unsigned flag;
+   enum display_flags flag = GFX_CTX_FLAGS_NONE;
 
    switch (type)
    {
