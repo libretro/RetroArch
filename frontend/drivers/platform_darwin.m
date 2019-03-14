@@ -53,6 +53,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <rhash.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
