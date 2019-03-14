@@ -57,6 +57,7 @@ typedef struct
    bool decorations;
 } dispserv_x11_t;
 
+#ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(void)
 {
    Display *dpy = g_x11_dpy;
@@ -72,7 +73,9 @@ static Display* x11_display_server_open_display(void)
 
    return dpy;
 }
+#endif
 
+#ifdef HAVE_XRANDR
 static void x11_display_server_close_display(Display *dpy)
 {
    if (!dpy || x11_display_server_using_global_dpy || dpy == g_x11_dpy)
@@ -80,6 +83,7 @@ static void x11_display_server_close_display(Display *dpy)
 
    XCloseDisplay(dpy);
 }
+#endif
 
 static void* x11_display_server_init(void)
 {
