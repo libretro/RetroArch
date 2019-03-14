@@ -1998,6 +1998,25 @@ static bool gl_core_menu_widgets_enabled(void *data)
 }
 #endif
 
+static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_BORDER:
+         return GL_CLAMP_TO_BORDER;
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+      default:
+	 break;
+   }
+
+   return 0;
+}
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
@@ -2028,7 +2047,7 @@ video_driver_t video_gl_core = {
    gl_core_get_overlay_interface,
 #endif
    gl_core_get_poke_interface,
-   /*gl_core_wrap_type_to_enum,*/NULL,
+   gl_core_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    gl_core_menu_widgets_enabled
 #endif
