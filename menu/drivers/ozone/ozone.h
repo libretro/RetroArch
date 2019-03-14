@@ -238,8 +238,8 @@ struct ozone_handle
    uintptr_t left_thumbnail;
 
    char selection_core_name[255];
-   char selection_playtime[64];
-   char selection_lastplayed[64];
+   char selection_playtime[255];
+   char selection_lastplayed[255];
    unsigned selection_core_name_lines;
 };
 
