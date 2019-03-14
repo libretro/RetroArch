@@ -4,6 +4,7 @@
 - ANDROID: Add option to vibrate on touch (works in menu or overlay).
 - ANDROID: Add device vibration option for cores that support rumble.
 - ANDROID: Add gamepad vibration support for cores that support rumble.
+- ANDROID: Allow stylus/pen to move mouse without pressing down.
 - AUDIO: Avoid deadlocks in certain audio drivers when toggling menu sounds on.
 - BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
 - CRT: Dynamic super resolution support.
