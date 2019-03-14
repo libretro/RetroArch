@@ -700,7 +700,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Top row : thumbnail or no thumbnail available message */
    if (thumbnail)
    {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
 
       if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
@@ -731,7 +731,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Bottom row : "left" thumbnail or content metadata */
    if (thumbnail && left_thumbnail)
    {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.left_thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.left_thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
 
       ozone_draw_icon(video_info,

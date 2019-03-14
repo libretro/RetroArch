@@ -2333,7 +2333,7 @@ static bool ozone_load_image(void *userdata, void *data, enum menu_image_type ty
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
    unsigned sidebar_height;
    unsigned height;
-   unsigned maximum_height;
+   unsigned maximum_height, maximum_width;
 
    if (!ozone || !data)
       return false;
@@ -2342,18 +2342,27 @@ static bool ozone_load_image(void *userdata, void *data, enum menu_image_type ty
 
    sidebar_height = height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
    maximum_height = sidebar_height / 2;
+   maximum_width  = ozone->dimensions.thumbnail_bar_width - ozone->dimensions.sidebar_entry_icon_padding * 2;
 
    switch (type)
    {
       case MENU_IMAGE_THUMBNAIL:
       {
          struct texture_image *img  = (struct texture_image*)data;
+         float scale_down;
+
          ozone->dimensions.thumbnail_height      = ozone->dimensions.thumbnail_width
             * (float)img->height / (float)img->width;
 
-         if (ozone->dimensions.thumbnail_height > maximum_height)
+         scale_down = (float) maximum_height / ozone->dimensions.thumbnail_height;
+
+         ozone->dimensions.thumbnail_height  *= scale_down;
+         ozone->dimensions.thumbnail_width   *= scale_down;
+
+         if (ozone->dimensions.thumbnail_width > (float)maximum_width)
          {
-            float scale_down = (float) maximum_height / (float) ozone->dimensions.thumbnail_height;
+            scale_down = (float) maximum_width / ozone->dimensions.thumbnail_width;
+
             ozone->dimensions.thumbnail_height  *= scale_down;
             ozone->dimensions.thumbnail_width   *= scale_down;
          }
