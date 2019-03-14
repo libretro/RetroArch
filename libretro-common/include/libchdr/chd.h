@@ -212,7 +212,7 @@ extern "C" {
 
 /* standard hard disk metadata */
 #define HARD_DISK_METADATA_TAG		0x47444444	/* 'GDDD' */
-#define HARD_DISK_METADATA_FORMAT	"CYLS:%d,HEADS:%d,SECS:%d,BPS:%d"
+#define HARD_DISK_METADATA_FORMAT	"CYLS:%u,HEADS:%u,SECS:%u,BPS:%u"
 
 /* hard disk identify information */
 #define HARD_DISK_IDENT_METADATA_TAG 0x49444e54 /* 'IDNT' */
