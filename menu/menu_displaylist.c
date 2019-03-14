@@ -1323,8 +1323,24 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
    }
 
-   /* Inform menu driver of current system name */
-   if (!string_is_empty(info->path))
+   /* Inform menu driver of current system name
+    * > Note: history, favorites and images_history
+    *   require special treatment here, since info->path
+    *   is nonsensical in these cases (and we *do* need
+    *   to call set_thumbnail_system() in these cases,
+    *   since all three playlist types have thumbnail
+    *   support) */
+   if (string_is_equal(path_playlist, "history") ||
+       string_is_equal(path_playlist, "favorites") ||
+       string_is_equal(path_playlist, "images_history"))
+   {
+      char system_name[15];
+      system_name[0] = '\0';
+
+      strlcpy(system_name, path_playlist, sizeof(system_name));
+      menu_driver_set_thumbnail_system(system_name, sizeof(system_name));
+   }
+   else if (!string_is_empty(info->path))
    {
       char lpl_basename[PATH_MAX_LENGTH];
       lpl_basename[0] = '\0';
@@ -1391,24 +1407,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
             /* Clean up */
             free(runtime_log);
-         }
-      }
-
-      /* If this is a standard collection (not a history list or
-       * favourites), trigger thumbnail update for current selection.
-       * Note: Thumbnail updates must be omitted when using RGUI,
-       * since this functionality is handled elsewhere... */
-      if (i == selection)
-      {
-         if (is_collection && !string_is_empty(label) && !is_rgui)
-         {
-            char *content_basename = strdup(label);
-            /* Note: If menu_driver_set_thumbnail_content() accepted a const pointer,
-             * we could save a string duplication here... */
-            menu_driver_set_thumbnail_content(content_basename, strlen(content_basename) + 1);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
-            free(content_basename);
          }
       }
 
@@ -1721,12 +1719,15 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
-      /* It is unclear why parsing a database should trigger a
-       * thumbnail update, but I guess this is here for a reason...
-       * Regardless, thumbnail updates must be disabled when using
+      /* This allows thumbnails to be shown while viewing database
+       * entries...
+       * It only makes sense to do this for the first info entry,
+       * since menu drivers cannot handle multiple successive
+       * calls of menu_driver_set_thumbnail_content()...
+       * Note that thumbnail updates must be disabled when using
        * RGUI, since this functionality is handled elsewhere
        * (and doing it here creates harmful conflicts) */
-      if (!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      if ((i == 0) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
          if (!string_is_empty(db_info_entry->name))
             strlcpy(thumbnail_content, db_info_entry->name,

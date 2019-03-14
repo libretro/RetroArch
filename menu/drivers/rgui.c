@@ -53,6 +53,7 @@
 #include <file/config_file.h>
 
 /* Thumbnail additions */
+#include "../menu_thumbnail_path.h"
 #include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
@@ -424,9 +425,7 @@ typedef struct
    bool is_playlist;
    bool entry_has_thumbnail;
    bool show_thumbnail;
-   char *thumbnail_system;
-   char *thumbnail_content;
-   char *thumbnail_path;
+   menu_thumbnail_path_data_t *thumbnail_path_data;
    uint32_t thumbnail_queue_size;
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
@@ -1608,6 +1607,7 @@ static void rgui_render(void *data, bool is_idle)
     * through a list...) */
    if (rgui->show_thumbnail && rgui->entry_has_thumbnail && (thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
+      const char *thumbnail_title = NULL;
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
       thumbnail_title_buf[0] = '\0';
@@ -1615,24 +1615,28 @@ static void rgui_render(void *data, bool is_idle)
       /* Draw thumbnail */
       rgui_render_thumbnail();
 
-      /* Format thumbnail title */
-      ticker.s        = thumbnail_title_buf;
-      ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-      ticker.str      = rgui->thumbnail_content;
-      ticker.selected = true;
-      menu_animation_ticker(&ticker);
-
-      title_width = utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE;
-      title_x = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
-
-      if (rgui_framebuf_data)
+      /* Get thumbnail title */
+      if (menu_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
       {
-         /* Draw thumbnail title background */
-         rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch,
-                        title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
+         /* Format thumbnail title */
+         ticker.s        = thumbnail_title_buf;
+         ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+         ticker.str      = thumbnail_title;
+         ticker.selected = true;
+         menu_animation_ticker(&ticker);
 
-         /* Draw thumbnail title */
-         blit_line((int)title_x, 0, thumbnail_title_buf, rgui->colors.hover_color);
+         title_width = utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE;
+         title_x = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
+
+         if (rgui_framebuf_data)
+         {
+            /* Draw thumbnail title background */
+            rgui_fill_rect(rgui, rgui_framebuf_data, fb_pitch,
+                           title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
+
+            /* Draw thumbnail title */
+            blit_line((int)title_x, 0, thumbnail_title_buf, rgui->colors.hover_color);
+         }
       }
    }
    else
@@ -1927,6 +1931,10 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->last_width  = fb_width;
    rgui->last_height = fb_height;
 
+   rgui->thumbnail_path_data = menu_thumbnail_path_init();
+   if (!rgui->thumbnail_path_data)
+      goto error;
+
    rgui->thumbnail_queue_size = 0;
    /* Ensure that we start with thumbnails disabled */
    rgui->show_thumbnail = false;
@@ -1948,12 +1956,8 @@ static void rgui_free(void *data)
 
    if (rgui)
    {
-      if (!string_is_empty(rgui->thumbnail_system))
-         free(rgui->thumbnail_system);
-      if (!string_is_empty(rgui->thumbnail_content))
-         free(rgui->thumbnail_content);
-      if (!string_is_empty(rgui->thumbnail_path))
-         free(rgui->thumbnail_path);
+      if (rgui->thumbnail_path_data)
+         free(rgui->thumbnail_path_data);
    }
 
    fb_font_inited = menu_display_get_font_data_init();
@@ -2092,151 +2096,12 @@ static void rgui_navigation_clear(void *data, bool pending_push)
    rgui->scroll_y = 0;
 }
 
-static const char *rgui_thumbnail_ident(void)
-{
-   char folder = 0;
-   settings_t *settings = config_get_ptr();
-
-   folder = settings->uints.menu_thumbnails;
-
-   switch (folder)
-   {
-      case 1:
-         return "Named_Snaps";
-      case 2:
-         return "Named_Titles";
-      case 3:
-         return "Named_Boxarts";
-      case 0:
-      default:
-         break;
-   }
-
-   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
-}
-
-static bool rgui_update_thumbnail_path(void *userdata)
-{
-   rgui_t *rgui = (rgui_t*)userdata;
-   settings_t *settings = config_get_ptr();
-   char new_path[PATH_MAX_LENGTH] = {0};
-   const char *thumbnail_base_dir = settings->paths.directory_thumbnails;
-   const char *thumb_ident = rgui_thumbnail_ident();
-
-   if (!string_is_empty(rgui->thumbnail_path))
-   {
-      free(rgui->thumbnail_path);
-      rgui->thumbnail_path = NULL;
-   }
-
-   /* NB: The following is copied directly from xmb.c (xmb_update_thumbnail_path()) */
-   if (!string_is_equal(thumb_ident, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) &&
-       !string_is_empty(thumbnail_base_dir) &&
-       !string_is_empty(rgui->thumbnail_system) &&
-       !string_is_empty(rgui->thumbnail_content))
-   {
-      /* Append thumbnail system directory */
-      fill_pathname_join(new_path, thumbnail_base_dir, rgui->thumbnail_system, sizeof(new_path));
-
-      if (!string_is_empty(new_path))
-      {
-         char *tmp_new2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         tmp_new2[0] = '\0';
-
-         /* Append Named_Snaps/Named_Boxarts/Named_Titles */
-         fill_pathname_join(tmp_new2, new_path, thumb_ident, PATH_MAX_LENGTH * sizeof(char));
-
-         strlcpy(new_path, tmp_new2, PATH_MAX_LENGTH * sizeof(char));
-         free(tmp_new2);
-         tmp_new2 = NULL;
-
-         if (!string_is_empty(new_path))
-         {
-            /* Scrub characters that are not cross-platform and/or violate the
-             * No-Intro filename standard:
-             * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-             * Replace these characters in the entry name with underscores.
-             */
-            char *scrub_char_pointer = NULL;
-            char *tmp_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            char *tmp = strdup(rgui->thumbnail_content);
-
-            tmp_new[0] = '\0';
-
-            while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
-               *scrub_char_pointer = '_';
-
-            fill_pathname_join(tmp_new, new_path, tmp, PATH_MAX_LENGTH * sizeof(char));
-
-            if (!string_is_empty(tmp_new))
-               strlcpy(new_path, tmp_new, sizeof(new_path));
-
-            free(tmp_new);
-            tmp_new = NULL;
-            free(tmp);
-            tmp = NULL;
-
-            /* Append png extension */
-            if (!string_is_empty(new_path))
-            {
-               strlcat(new_path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(new_path));
-
-               if (!string_is_empty(new_path))
-               {
-                  rgui->thumbnail_path = strdup(new_path);
-                  return true;
-               }
-            }
-         }
-      }
-   }
-   
-   return false;
-}
-
 static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
 {
    rgui_t *rgui = (rgui_t*)userdata;
    if (!rgui)
       return;
-   if (!string_is_empty(rgui->thumbnail_system))
-      free(rgui->thumbnail_system);
-   rgui->thumbnail_system = strdup(s);
-}
-
-static bool rgui_update_thumbnail_content(void *userdata)
-{
-   rgui_t *rgui = (rgui_t*)userdata;
-   playlist_t *playlist = NULL;
-   size_t selection = menu_navigation_get_selection();
-
-   if (!rgui)
-      return false;
-
-   /* Get label of currently selected playlist entry */
-   playlist = playlist_get_cached();
-   if (playlist)
-   {
-      if (selection < playlist_get_size(playlist))
-      {
-         const char *label = NULL;
-         playlist_get_index(playlist, selection, NULL, &label, NULL, NULL, NULL, NULL);
-
-         if (!string_is_empty(rgui->thumbnail_content))
-         {
-            free(rgui->thumbnail_content);
-            rgui->thumbnail_content = NULL;
-         }
-
-         if (!string_is_empty(label))
-         {
-            rgui->thumbnail_content = strdup(label);
-            return true;
-         }
-      }
-   }
-   
-   return false;
+   menu_thumbnail_set_system(rgui->thumbnail_path_data, s);
 }
 
 static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui)
@@ -2245,11 +2110,18 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui)
    
    if (rgui->show_thumbnail && rgui->is_playlist)
    {
-      if (rgui_update_thumbnail_content(rgui))
+      if (menu_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+            playlist_get_cached(), menu_navigation_get_selection()))
       {
-         if (rgui_update_thumbnail_path(rgui))
+         if (menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          {
-            rgui->entry_has_thumbnail = request_thumbnail(rgui, rgui->thumbnail_path);
+            const char *thumbnail_path = NULL;
+            
+            if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
+                  MENU_THUMBNAIL_RIGHT, &thumbnail_path))
+            {
+               rgui->entry_has_thumbnail = request_thumbnail(rgui, thumbnail_path);
+            }
          }
       }
    }
@@ -2379,7 +2251,10 @@ static void rgui_populate_entries(void *data,
       return;
    
    /* Check whether we are currently viewing a playlist */
-   rgui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST));
+   rgui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST));
    
    /* Set menu title */
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
