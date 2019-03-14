@@ -1403,8 +1403,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
    if (ozone->selection != new_selection)
    {
-      ozone_node_t *node   = NULL;
-
       ozone->selection_old         = ozone->selection;
       ozone->selection             = new_selection;
 
@@ -1414,79 +1412,73 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone_update_scroll(ozone, allow_animation, node);
 
       /* Update thumbnail */
-      node = (ozone_node_t*)
-         file_list_get_userdata_at_offset(selection_buf, ozone->selection);
-
-      if (node)
+      if (!string_is_equal(thumb_ident,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) || !string_is_equal(left_thumb_ident,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       {
-         if (!string_is_equal(thumb_ident,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) || !string_is_equal(left_thumb_ident,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         menu_entry_t entry;
+         unsigned entry_type;
+         unsigned i = ozone->selection;
+
+         menu_entry_init(&entry);
+         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+         entry_type = menu_entry_get_type_new(&entry);
+
+         if (ozone->is_playlist && ozone->depth == 1)
          {
-            menu_entry_t entry;
-            unsigned entry_type;
-            unsigned i = ozone->selection;
-
-            menu_entry_init(&entry);
-            menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-            entry_type = menu_entry_get_type_new(&entry);
-
-            if (ozone->is_playlist && ozone->depth == 1)
+            if (!string_is_empty(entry.path))
+               ozone_set_thumbnail_content(ozone, entry.path);
+            if (!string_is_equal(thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
             {
-               if (!string_is_empty(entry.path))
-                  ozone_set_thumbnail_content(ozone, entry.path);
-               if (!string_is_equal(thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'R');
-                  ozone_update_thumbnail_image(ozone);
-               }
-               if (!string_is_equal(left_thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'L');
-                  ozone_update_thumbnail_image(ozone);
-               }
+               ozone_update_thumbnail_path(ozone, i, 'R');
+               ozone_update_thumbnail_image(ozone);
             }
-            else if (((entry_type == FILE_TYPE_IMAGE || entry_type == FILE_TYPE_IMAGEVIEWER ||
-                        entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
-                     && ozone->tabs[ozone->categories_selection_ptr] <= OZONE_SYSTEM_TAB_SETTINGS))
+            if (!string_is_equal(left_thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
             {
-               if (!string_is_empty(entry.path))
-                  ozone_set_thumbnail_content(ozone, entry.path);
-               if (!string_is_equal(thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'R');
-                  ozone_update_thumbnail_image(ozone);
-               }
-               else if (!string_is_equal(left_thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'L');
-                  ozone_update_thumbnail_image(ozone);
-               }
+               ozone_update_thumbnail_path(ozone, i, 'L');
+               ozone_update_thumbnail_image(ozone);
             }
-            else if (filebrowser_get_type() != FILEBROWSER_NONE)
-            {
-               ozone_reset_thumbnail_content(ozone);
-               if (!string_is_equal(thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'R');
-                  ozone_update_thumbnail_image(ozone);
-               }
-               else if (!string_is_equal(left_thumb_ident,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  ozone_update_thumbnail_path(ozone, i, 'L');
-                  ozone_update_thumbnail_image(ozone);
-               }
-            }
-            menu_entry_free(&entry);
          }
-         /* TODO: Update savestate thumbnail */
+         else if (((entry_type == FILE_TYPE_IMAGE || entry_type == FILE_TYPE_IMAGEVIEWER ||
+                     entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
+                  && ozone->tabs[ozone->categories_selection_ptr] <= OZONE_SYSTEM_TAB_SETTINGS))
+         {
+            if (!string_is_empty(entry.path))
+               ozone_set_thumbnail_content(ozone, entry.path);
+            if (!string_is_equal(thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+            {
+               ozone_update_thumbnail_path(ozone, i, 'R');
+               ozone_update_thumbnail_image(ozone);
+            }
+            else if (!string_is_equal(left_thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+            {
+               ozone_update_thumbnail_path(ozone, i, 'L');
+               ozone_update_thumbnail_image(ozone);
+            }
+         }
+         else if (filebrowser_get_type() != FILEBROWSER_NONE)
+         {
+            ozone_reset_thumbnail_content(ozone);
+            if (!string_is_equal(thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+            {
+               ozone_update_thumbnail_path(ozone, i, 'R');
+               ozone_update_thumbnail_image(ozone);
+            }
+            else if (!string_is_equal(left_thumb_ident,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+            {
+               ozone_update_thumbnail_path(ozone, i, 'L');
+               ozone_update_thumbnail_image(ozone);
+            }
+         }
+         menu_entry_free(&entry);
       }
+      /* TODO: Update savestate thumbnail */
    }
 }
 
