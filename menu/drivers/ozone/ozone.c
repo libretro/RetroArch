@@ -1349,7 +1349,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          }
       }
 
-      //TODO: update savestate thumbnail and path
+      /* TODO: update savestate thumbnail and path */
    }
 
    menu_entry_free(&entry);
