@@ -2114,7 +2114,9 @@ static void xmb_populate_entries(void *data,
    xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    xmb->is_playlist = (xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES) ||
                       (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY) ||
+#ifdef HAVE_IMAGEVIEWER
                       (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES) ||
+#endif
                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
