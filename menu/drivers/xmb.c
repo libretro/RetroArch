@@ -2061,6 +2061,8 @@ static void xmb_list_open(xmb_handle_t *xmb)
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
+   else
+      return; /* If menu hasn't changed, do nothing */
 
    xmb_list_open_horizontal_list(xmb);
 
