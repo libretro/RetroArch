@@ -1127,6 +1127,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
+   size_t selection           = menu_navigation_get_selection();
    playlist_t *playlist       = playlist_get_cached();
    const char *core_name      = NULL;
    settings_t *settings       = config_get_ptr();
@@ -1136,7 +1137,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
    if (ozone->is_playlist && playlist)
    {
       const char    *core_label      = NULL;
-      playlist_get_index(playlist, ozone->selection,
+      playlist_get_index(playlist, selection,
             NULL, NULL, NULL, &core_name, NULL, NULL);
 
       /* Fill core name */
@@ -1165,7 +1166,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          unsigned last_played_minute   = 0;
          unsigned last_played_second   = 0;
 
-         playlist_get_runtime_index(playlist, ozone->selection, NULL, NULL,
+         playlist_get_runtime_index(playlist, selection, NULL, NULL,
             &runtime_hours, &runtime_minutes, &runtime_seconds,
             &last_played_year, &last_played_month, &last_played_day,
             &last_played_hour, &last_played_minute, &last_played_second);
@@ -1259,6 +1260,8 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
        * pointless nuisance and a waste of CPU cycles, IMHO... */
       menu_thumbnail_set_content(ozone->thumbnail_path_data, s);
    }
+
+   ozone_update_content_metadata(ozone);
 }
 
 static void ozone_unload_thumbnail_textures(void *data)
@@ -1308,8 +1311,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone->selection             = new_selection;
 
       ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
-
-      ozone_update_content_metadata(ozone);
 
       menu_animation_kill_by_tag(&tag);
       ozone_update_scroll(ozone, allow_animation, node);
@@ -1705,25 +1706,23 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
       if (animate)
          ozone_list_open(ozone);
    }
-   else
+
+   /* Thumbnails */
+   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
    {
-      /* Thumbnails */
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      ozone_unload_thumbnail_textures(ozone);
+
+      if (ozone->is_playlist)
       {
-         ozone_unload_thumbnail_textures(ozone);
+         ozone_set_thumbnail_content(ozone, "");
 
-         if (ozone->is_playlist)
-         {
-            ozone_set_thumbnail_content(ozone, "");
+         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+            ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'R');
 
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
-               ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'R');
+         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+            ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'L');
 
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
-               ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'L');
-
-            ozone_update_thumbnail_image(ozone);
-         }
+         ozone_update_thumbnail_image(ozone);
       }
    }
 }
@@ -2180,6 +2179,7 @@ static bool ozone_load_image(void *userdata, void *data, enum menu_image_type ty
    unsigned sidebar_height;
    unsigned height;
    unsigned maximum_height, maximum_width;
+   float display_aspect_ratio;
 
    if (!ozone || !data)
       return false;
@@ -2189,50 +2189,75 @@ static bool ozone_load_image(void *userdata, void *data, enum menu_image_type ty
    sidebar_height = height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
    maximum_height = sidebar_height / 2;
    maximum_width  = ozone->dimensions.thumbnail_bar_width - ozone->dimensions.sidebar_entry_icon_padding * 2;
+   if (maximum_height > 0)
+      display_aspect_ratio = (float)maximum_width / (float)maximum_height;
+   else
+      display_aspect_ratio = 0.0f;
 
    switch (type)
    {
       case MENU_IMAGE_THUMBNAIL:
       {
-         struct texture_image *img  = (struct texture_image*)data;
-         float scale_down;
+         struct texture_image *img = (struct texture_image*)data;
 
-         ozone->dimensions.thumbnail_height      = ozone->dimensions.thumbnail_width
-            * (float)img->height / (float)img->width;
-
-         scale_down = (float) maximum_height / ozone->dimensions.thumbnail_height;
-
-         ozone->dimensions.thumbnail_height  *= scale_down;
-         ozone->dimensions.thumbnail_width   *= scale_down;
-
-         if (ozone->dimensions.thumbnail_width > (float)maximum_width)
+         if (img->width > 0 && img->height > 0 && display_aspect_ratio > 0.0001f)
          {
-            scale_down = (float) maximum_width / ozone->dimensions.thumbnail_width;
+            float thumb_aspect_ratio = (float)img->width / (float)img->height;
 
-            ozone->dimensions.thumbnail_height  *= scale_down;
-            ozone->dimensions.thumbnail_width   *= scale_down;
+            if (thumb_aspect_ratio > display_aspect_ratio)
+            {
+               ozone->dimensions.thumbnail_width = (float)maximum_width;
+               ozone->dimensions.thumbnail_height = (float)img->height * (float)maximum_width / (float)img->width;
+            }
+            else
+            {
+               ozone->dimensions.thumbnail_height = (float)maximum_height;
+               ozone->dimensions.thumbnail_width = (float)img->width * (float)maximum_height / (float)img->height;
+            }
+
+            video_driver_texture_unload(&ozone->thumbnail);
+            video_driver_texture_load(data,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->thumbnail);
+         }
+         else
+         {
+            ozone->dimensions.thumbnail_width = 0.0f;
+            ozone->dimensions.thumbnail_height = 0.0f;
+            video_driver_texture_unload(&ozone->thumbnail);
          }
 
-         video_driver_texture_unload(&ozone->thumbnail);
-         video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->thumbnail);
          break;
       }
       case MENU_IMAGE_LEFT_THUMBNAIL:
       {
-         struct texture_image *img  = (struct texture_image*)data;
-         ozone->dimensions.left_thumbnail_height      = ozone->dimensions.left_thumbnail_width
-            * (float)img->height / (float)img->width;
+         struct texture_image *img = (struct texture_image*)data;
 
-         if (ozone->dimensions.left_thumbnail_height > maximum_height)
+         if (img->width > 0 && img->height > 0 && display_aspect_ratio > 0.0001f)
          {
-            float scale_down = (float) maximum_height / (float) ozone->dimensions.left_thumbnail_height;
-            ozone->dimensions.left_thumbnail_height  *= scale_down;
-            ozone->dimensions.left_thumbnail_width   *= scale_down;
+            float thumb_aspect_ratio = (float)img->width / (float)img->height;
+
+            if (thumb_aspect_ratio > display_aspect_ratio)
+            {
+               ozone->dimensions.left_thumbnail_width = (float)maximum_width;
+               ozone->dimensions.left_thumbnail_height = (float)img->height * (float)maximum_width / (float)img->width;
+            }
+            else
+            {
+               ozone->dimensions.left_thumbnail_height = (float)maximum_height;
+               ozone->dimensions.left_thumbnail_width = (float)img->width * (float)maximum_height / (float)img->height;
+            }
+
+            video_driver_texture_unload(&ozone->left_thumbnail);
+            video_driver_texture_load(data,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->left_thumbnail);
          }
-         video_driver_texture_unload(&ozone->left_thumbnail);
-         video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->left_thumbnail);
+         else
+         {
+            ozone->dimensions.left_thumbnail_width = 0.0f;
+            ozone->dimensions.left_thumbnail_height = 0.0f;
+            video_driver_texture_unload(&ozone->left_thumbnail);
+         }
+
          break;
       }
       default:
