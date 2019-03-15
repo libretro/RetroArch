@@ -1293,8 +1293,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
    size_t new_selection = menu_navigation_get_selection();
    ozone_node_t *node   = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, new_selection);
 
-   ozone_update_content_metadata(ozone);
-
    menu_entry_init(&entry);
 
    if (!node)
@@ -1310,6 +1308,8 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone->selection             = new_selection;
 
       ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
+
+      ozone_update_content_metadata(ozone);
 
       menu_animation_kill_by_tag(&tag);
       ozone_update_scroll(ozone, allow_animation, node);
