@@ -243,6 +243,8 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
  * Returns true if content is valid */
 bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name)
 {
+   char *content_img_no_ext = NULL;
+   
    if (!path_data)
       return false;
    
@@ -272,8 +274,13 @@ bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, con
             img_name, sizeof(path_data->content_img));
    
    /* Get image label */
-   strlcpy(path_data->content_label,
-               path_remove_extension(path_data->content_img), sizeof(path_data->content_label));
+   content_img_no_ext = path_remove_extension(path_data->content_img);
+   if (!string_is_empty(content_img_no_ext))
+      strlcpy(path_data->content_label,
+            content_img_no_ext, sizeof(path_data->content_label));
+   else
+      strlcpy(path_data->content_label,
+            path_data->content_img, sizeof(path_data->content_label));
    
    /* Set file path */
    fill_pathname_join(path_data->content_path,
@@ -376,16 +383,22 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
                "MAME", sizeof(path_data->content_db_name));
       else
       {
+         char *db_name_no_ext = NULL;
          char tmp_buf[PATH_MAX_LENGTH];
          tmp_buf[0] = '\0';
-         
-         strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
          
          /* Remove .lpl extension
           * > path_remove_extension() requires a char * (not const)
           *   so have to use a temporary buffer... */
-         strlcpy(path_data->content_db_name,
-               path_remove_extension(tmp_buf), sizeof(path_data->content_db_name));
+         strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+         db_name_no_ext = path_remove_extension(tmp_buf);
+         
+         if (!string_is_empty(db_name_no_ext))
+            strlcpy(path_data->content_db_name,
+                  db_name_no_ext, sizeof(path_data->content_db_name));
+         else
+            strlcpy(path_data->content_db_name,
+                  tmp_buf, sizeof(path_data->content_db_name));
       }
    }
    
