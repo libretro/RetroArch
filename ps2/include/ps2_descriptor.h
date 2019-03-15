@@ -16,7 +16,7 @@
 #define PS2_DESCRIPTOR_H
 
 #include <stddef.h>
-#include <cd.h>
+#include <fileXio_cdvd.h>
 
 #define MAX_OPEN_FILES 256
 #define FILEENTRY_SIZE 2048
@@ -40,20 +40,9 @@ extern DescriptorTranslation *__ps2_fdmap[];
 
 void _init_ps2_io(void);
 void _free_ps2_io(void);
-
+int is_fd_valid(int fd);
 int __ps2_acquire_descriptor(void);
 int __ps2_release_descriptor(int fd);
-int __ps2_duplicate_descriptor(int fd);
-int __ps2_descriptor_ref_count(int fd);
 DescriptorTranslation *__ps2_fd_grab(int fd);
-int __ps2_fd_drop(DescriptorTranslation *fdmap);
-
-static inline int is_fd_valid(int fd)
-{
-   /* Correct fd value */
-   fd = MAX_OPEN_FILES - fd;
-
-	return (fd > 0) && (fd < MAX_OPEN_FILES) && (__ps2_fdmap[fd] != NULL);
-}
 
 #endif /* PS2_DESCRIPTOR_H */

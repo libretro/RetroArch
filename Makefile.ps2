@@ -72,7 +72,7 @@ EE_OBJS += $(IRX_DIR)/cdvd_irx.o
 
 # Missing objecst on the PS2SDK
 EE_OBJS += ps2/compat_files/compat_ctype.o ps2/compat_files/time.o ps2/compat_files/ps2_devices.o 
-EE_OBJS += ps2/compat_files/cd.o ps2/compat_files/ps2_hashtable.o ps2/compat_files/murmur3.o ps2/compat_files/ps2_descriptor.o
+EE_OBJS += ps2/compat_files/fileXio_cdvd.o ps2/compat_files/ps2_descriptor.o
 
 #EE_OBJS = griffin/griffin.o bootstrap/ps2/kernel_functions.o
 EE_OBJS += griffin/griffin.o

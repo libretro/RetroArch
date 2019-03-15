@@ -19,40 +19,65 @@
 #include <string.h>
 #include <fileXio_rpc.h>
 
-#define SCE_ERRNO_MASK 0xFF
-
-DescriptorTranslation *__ps2_fdmap[MAX_OPEN_FILES];
-DescriptorTranslation __ps2_fdmap_pool[MAX_OPEN_FILES];
-
+static DescriptorTranslation *__ps2_fdmap[MAX_OPEN_FILES];
+static DescriptorTranslation __ps2_fdmap_pool[MAX_OPEN_FILES];
 static int _lock_sema_id = -1;
+
 static inline int _lock(void)
 {
-	return(WaitSema(_lock_sema_id));
+   return(WaitSema(_lock_sema_id));
 }
 
 static inline int _unlock(void)
 {
-	return(SignalSema(_lock_sema_id));
+   return(SignalSema(_lock_sema_id));
+}
+
+static int __ps2_fd_drop(DescriptorTranslation *map)
+{
+   _lock();
+
+   if (map->ref_count == 1)
+   {
+      map->ref_count--;
+      free(map->FileEntry);
+      memset(map, 0, sizeof(DescriptorTranslation));
+   }
+   else
+   {
+      map->ref_count--;
+   }
+
+   _unlock();
+   return 0;
+}
+
+int is_fd_valid(int fd)
+{
+   /* Correct fd value */
+   fd = MAX_OPEN_FILES - fd;
+
+   return (fd > 0) && (fd < MAX_OPEN_FILES) && (__ps2_fdmap[fd] != NULL);
 }
 
 void _init_ps2_io(void) {
-	int ret;
+   int ret;
    ee_sema_t sp;
 
-	memset(__ps2_fdmap, 0, sizeof(__ps2_fdmap));
-	memset(__ps2_fdmap_pool, 0, sizeof(__ps2_fdmap_pool));
+   memset(__ps2_fdmap, 0, sizeof(__ps2_fdmap));
+   memset(__ps2_fdmap_pool, 0, sizeof(__ps2_fdmap_pool));
 
    sp.init_count = 1;
-	sp.max_count = 1;
-	sp.option = 0;
-	_lock_sema_id = CreateSema(&sp);
+   sp.max_count = 1;
+   sp.option = 0;
+   _lock_sema_id = CreateSema(&sp);
 
 }
 
 void _free_ps2_io(void) {
-	_lock();
-	_unlock();
-	if(_lock_sema_id >= 0) DeleteSema(_lock_sema_id);
+   _lock();
+   _unlock();
+   if(_lock_sema_id >= 0) DeleteSema(_lock_sema_id);
 }
 
 int __ps2_acquire_descriptor(void)
@@ -61,13 +86,12 @@ int __ps2_acquire_descriptor(void)
    int i = 0;
    _lock();
 
-   // get free descriptor
-   // only allocate descriptors after stdin/stdout/stderr -> aka 0/1/2
-   for (fd = 1; fd < MAX_OPEN_FILES; ++fd)
+   /* get free descriptor */
+   for (fd = 0; fd < MAX_OPEN_FILES; ++fd)
    {
       if (__ps2_fdmap[fd] == NULL)
       {
-         // get free pool
+         /* get free pool */
          for (i = 0; i < MAX_OPEN_FILES; ++i)
          {
             if (__ps2_fdmap_pool[i].ref_count == 0)
@@ -83,107 +107,44 @@ int __ps2_acquire_descriptor(void)
       }
    }
 
-   // // no mores descriptors available...
+   /* no mores descriptors available... */
    _unlock();
    return -1;
 }
 
 int __ps2_release_descriptor(int fd)
 {
-	DescriptorTranslation *map = NULL;
-	int res = -1;
+   int res = -1;
 
-	_lock();
-
-	if (is_fd_valid(fd) && __ps2_fd_drop(__ps2_fdmap[MAX_OPEN_FILES - fd]) >= 0)
-	{
+   if (is_fd_valid(fd) && __ps2_fd_drop(__ps2_fdmap[MAX_OPEN_FILES - fd]) >= 0)
+   {
+      _lock();
       /* Correct fd value */
       fd = MAX_OPEN_FILES - fd;
-      free(__ps2_fdmap[fd]->FileEntry);
-		__ps2_fdmap[fd] = NULL;
-		res = 0;
-	}
+      __ps2_fdmap[fd] = NULL;
+      res = 0;
+      _unlock();
+   }
 
-	_unlock();
-	return res;
-}
-
-int __ps2_duplicate_descriptor(int fd)
-{
-	int fd2 = -1;
-
-	_lock();
-
-	if (is_fd_valid(fd))
-	{
-      /* Correct fd value */
-      fd = MAX_OPEN_FILES - fd;
-		// get free descriptor
-		// only allocate descriptors after stdin/stdout/stderr -> aka 0/1/2
-		for (fd2 = 0; fd2 < MAX_OPEN_FILES; ++fd2)
-		{
-			if (__ps2_fdmap[fd2] == NULL)
-			{
-				__ps2_fdmap[fd2] = __ps2_fdmap[fd];
-				__ps2_fdmap[fd2]->ref_count++;
-				_unlock();
-				return fd2;
-			}
-		}
-	}
-
-	_unlock();
-	return -1;
-}
-
-int __ps2_descriptor_ref_count(int fd)
-{
-	int res = 0;
-   /* Correct fd value */
-   fd = MAX_OPEN_FILES - fd;
-
-	_lock();
-	res = __ps2_fdmap[fd]->ref_count;
-	_unlock();
-	return res;
+   return res;
 }
 
 DescriptorTranslation *__ps2_fd_grab(int fd)
 {
-	DescriptorTranslation *map = NULL;
-   
-	_lock();
+   DescriptorTranslation *map = NULL;
 
-	if (is_fd_valid(fd))
-	{
+   _lock();
+
+   if (is_fd_valid(fd))
+   {
       /* Correct fd value */
       fd = MAX_OPEN_FILES - fd;
-		map = __ps2_fdmap[fd];
+      map = __ps2_fdmap[fd];
 
-		if (map)
-			map->ref_count++;
-	}
+      if (map)
+         map->ref_count++;
+   }
 
-	_unlock();
-	return map;
-}
-
-int __ps2_fd_drop(DescriptorTranslation *map)
-{
-	_lock();
-
-	if (map->ref_count == 1)
-	{
-		int ret = 0;
-
-		map->ref_count--;
-		memset(map, 0, sizeof(DescriptorTranslation));
-	}
-	else
-	{
-		map->ref_count--;
-	}
-
-	_unlock();
-	return 0;
+   _unlock();
+   return map;
 }

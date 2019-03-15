@@ -28,7 +28,7 @@
 #include <audsrv.h>
 #include <libpad.h>
 #include <cdvd_rpc.h>
-#include <cd.h>
+#include <fileXio_cdvd.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
 #include <ps2_descriptor.h>
