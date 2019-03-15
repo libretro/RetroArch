@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#!/usr/bin/env node
 
 var fs, fs_listing, rdSync, symLinks;
 
@@ -41,3 +41,4 @@ rdSync = function(dpath, tree, name) {
 fs_listing = rdSync(process.cwd(), {}, '/');
 
 console.log(JSON.stringify(fs_listing));
+
