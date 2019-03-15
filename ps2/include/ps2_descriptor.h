@@ -12,11 +12,37 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INTTYPES_H
-#define INTTYPES_H
+#ifndef PS2_DESCRIPTOR_H
+#define PS2_DESCRIPTOR_H
 
-#define PRId64 "ld"
-#define PRIu64 "lu"
-#define PRIuPTR "lu"
+#include <stddef.h>
+#include <fileXio_cdvd.h>
 
-#endif /* INTTYPES_H */
+#define MAX_OPEN_FILES 256
+#define FILEENTRY_SIZE 2048
+
+typedef struct {
+    char displayname[64];
+    int  dircheck;
+    char filename[256];
+} entries;
+
+typedef struct
+{
+   char path[256];
+   int ref_count;
+   int items;
+   int current_folder_position;
+   entries *FileEntry;
+} DescriptorTranslation;
+
+extern DescriptorTranslation *__ps2_fdmap[];
+
+void _init_ps2_io(void);
+void _free_ps2_io(void);
+int is_fd_valid(int fd);
+int __ps2_acquire_descriptor(void);
+int __ps2_release_descriptor(int fd);
+DescriptorTranslation *__ps2_fd_grab(int fd);
+
+#endif /* PS2_DESCRIPTOR_H */

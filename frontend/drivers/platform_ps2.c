@@ -23,49 +23,15 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
+#include <libmc.h>
+#include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
+#include <cdvd_rpc.h>
+#include <fileXio_cdvd.h>
 #include <ps2_devices.h>
-
-
-extern unsigned char poweroff_irx_start[];
-extern unsigned int poweroff_irx_size;
-
-extern unsigned char ps2dev9_irx_start[];
-extern unsigned int ps2dev9_irx_size;
-
-extern unsigned char ps2atad_irx_start[];
-extern unsigned int ps2atad_irx_size;
-
-extern unsigned char ps2hdd_irx_start[];
-extern unsigned int ps2hdd_irx_size;
-
-extern unsigned char ps2fs_irx_start[];
-extern unsigned int ps2fs_irx_size;
-
-extern unsigned char iomanX_irx_start[];
-extern unsigned int iomanX_irx_size;
-
-extern unsigned char fileXio_irx_start[];
-extern unsigned int fileXio_irx_size;
-
-extern unsigned char freesd_irx_start[];
-extern unsigned int freesd_irx_size;
-
-extern unsigned char audsrv_irx_start[];
-extern unsigned int audsrv_irx_size;
-
-extern unsigned char usbd_irx_start[];
-extern unsigned int usbd_irx_size;
-
-extern unsigned char usbhdfsd_irx_start[];
-extern unsigned int usbhdfsd_irx_size;
-
-extern unsigned char mcman_irx_start[];
-extern unsigned int mcman_irx_size;
-
-extern unsigned char mcserv_irx_start[];
-extern unsigned int mcserv_irx_size;
+#include <ps2_irx_variables.h>
+#include <ps2_descriptor.h>
 
 char eboot_path[512];
 char user_path[512];
@@ -196,36 +162,60 @@ static void frontend_ps2_init(void *data)
    SifInitRpc(0);
    sbv_patch_enable_lmb();
 
-   /* Controllers */
-   SifLoadModule("rom0:SIO2MAN", 0, NULL);
-   SifLoadModule("rom0:PADMAN", 0, NULL);
-
    /* I/O Files */
-   SifExecModuleBuffer(iomanX_irx_start, iomanX_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(fileXio_irx_start, fileXio_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&freesio2_irx, size_freesio2_irx, 0, NULL, NULL);
 
    /* Memory Card */
-   SifExecModuleBuffer(mcman_irx_start, mcman_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(mcserv_irx_start, mcserv_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
+
+   /* Controllers */
+   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
 
    /* USB */
-   SifExecModuleBuffer(usbd_irx_start, usbd_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(usbhdfsd_irx_start, usbhdfsd_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
    /* Audio */
-   SifExecModuleBuffer(freesd_irx_start, freesd_irx_size, 0, NULL, NULL);
-   SifExecModuleBuffer(audsrv_irx_start, audsrv_irx_size, 0, NULL, NULL);
+   SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+
+   /* CDVD */
+   SifExecModuleBuffer(&cdvd_irx, size_cdvd_irx, 0, NULL, NULL);
+
+   if (mcInit(MC_TYPE_XMC)) {
+      RARCH_ERR("mcInit library not initalizated\n");
+   }
 
    /* Initializes audsrv library */
    if (audsrv_init()) {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad library
+   /* Initializes pad libraries
       Must be init with 0 as parameter*/
+   if (mtapInit() != 1) {
+      RARCH_ERR("mtapInit library not initalizated\n");
+   }
    if (padInit(0) != 1) {
       RARCH_ERR("padInit library not initalizated\n");
    }
+   if (mtapPortOpen(0) != 1) {
+      RARCH_ERR("mtapPortOpen library not initalizated\n");
+   }
+
+   /* Initializes CDVD library */
+   if (CDVD_Init() != 1) {
+      RARCH_ERR("CDVD_Init library not initalizated\n");
+   }
+   if (cdInit(CDVD_INIT_INIT) != 1) {
+      RARCH_ERR("cdInit library not initalizated\n");
+   }
+
+   _init_ps2_io();
 
    /* Prepare device */
    getcwd(cwd, sizeof(cwd));
@@ -245,6 +235,9 @@ static void frontend_ps2_deinit(void *data)
    verbosity_disable();
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
+   _free_ps2_io();
+   cdInit(CDVD_INIT_EXIT);
+   CDVD_Stop();
    padEnd();
    audsrv_quit();
    fileXioExit();
@@ -356,6 +349,11 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          rootDevicePath(BOOT_DEVICE_MC1),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         rootDevicePath(BOOT_DEVICE_CDFS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);

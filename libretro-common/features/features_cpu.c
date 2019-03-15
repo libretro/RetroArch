@@ -68,6 +68,7 @@
 #if defined(PS2)
 #include <kernel.h>
 #include <timer.h>
+#include <time.h>
 #endif
 
 #if defined(__PSL1GHT__)

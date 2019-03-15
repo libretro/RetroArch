@@ -172,7 +172,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               GS_TEXT);
 }
 
-static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int height)
+static void clearVRAMIfNeeded(ps2_video_t *ps2, const void *frame, int width, int height)
 {
    if (!ps2->clearVRAM) {
       if(frame && frame != RETRO_HW_FRAME_BUFFER_VALID) {

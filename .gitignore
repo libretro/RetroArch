@@ -165,6 +165,10 @@ retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
 
+# PS2
+ps2/irx/*.c
+ps2/libcdvd/lib/
+
 # Wayland
 gfx/common/wayland/idle-inhibit-unstable-v1.c
 gfx/common/wayland/idle-inhibit-unstable-v1.h
