@@ -1676,6 +1676,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
    int new_depth;
+   bool animate;
 
    if (!ozone)
       return;
@@ -1693,6 +1694,7 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
 
    new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
+   animate                    = new_depth != ozone->depth;
    ozone->fade_direction      = new_depth <= ozone->depth;
    ozone->depth               = new_depth;
    ozone->is_playlist         = ozone_is_playlist(ozone, true);
@@ -1700,7 +1702,8 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
 
    if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
    {
-      ozone_list_open(ozone);
+      if (animate)
+         ozone_list_open(ozone);
    }
    else
    {
