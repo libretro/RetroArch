@@ -31,12 +31,12 @@ I you want a self hosted version you need
 - Unzip it in the same dir you extracted the rest, inside **/assets/frontend/bundle**
 - Create an **assets/cores** dir, you can put game data in that dir so it's available under **downloads**
 - chmod +x the indexer script
-- run the indexer script (you need coffeescript) like this:
+- run the indexer script (you need Node.js) like this:
 ```
 cd ${ROOT_WWW_PATH}/assets/frontend/bundle
-../../../indexer > .index-xhr
+../../../indexer.js > .index-xhr
 cd ${ROOT_WWW_PATH}/assets/cores
-../../indexer > .index-xhr
+../../indexer.js > .index-xhr
 ```
 
 That should be it, you can add more cores to the list by editing index.html
