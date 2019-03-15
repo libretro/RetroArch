@@ -319,8 +319,13 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    {
       if (string_is_equal(path_basename(core_info->list[i].path), core_path_basename))
       {
-         strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
-         break;
+         if (!string_is_empty(core_info->list[i].core_name))
+         {
+            strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
+            break;
+         }
+         else
+            return NULL;
       }
    }
    
@@ -340,6 +345,9 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    }
    else
       strlcpy(tmp_buf, settings->paths.directory_runtime_log, sizeof(tmp_buf));
+   
+   if (string_is_empty(tmp_buf))
+      return NULL;
    
    if (log_per_core)
    {
@@ -388,9 +396,14 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    {
       /* path_remove_extension() requires a char * (not const)
        * so have to use a temporary buffer... */
+      char *tmp_buf_no_ext = NULL;
       tmp_buf[0] = '\0';
       strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
-      strlcpy(content_name, path_remove_extension(tmp_buf), sizeof(content_name));
+      tmp_buf_no_ext = path_remove_extension(tmp_buf);
+      if (!string_is_empty(tmp_buf_no_ext))
+         strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
+      else
+         return NULL;
    }
    
    if (string_is_empty(content_name))
