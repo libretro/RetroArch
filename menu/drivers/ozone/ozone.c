@@ -1190,10 +1190,12 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       }
       else
       {
-         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s",
+         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
 
-         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s",
+         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
       }
    }
