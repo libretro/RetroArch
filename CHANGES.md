@@ -66,6 +66,7 @@
 - OSX: Prevent crash on exit.
 - OSX: Metal is now the default video driver.
 - OSX: Enable CoreAudio v3 driver for Metal.
+- PS2: CDFS support.
 - PS2: Implemented analog support for ps2 controllers.
 - PS2: Fix audio freeze after restarting core.
 - PS2: Fix issues with load state and the font driver.
