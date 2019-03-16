@@ -22,14 +22,12 @@
 #define FILEENTRY_SIZE 2048
 
 typedef struct {
-    char displayname[64];
-    int  dircheck;
-    char filename[256];
+   int  dircheck;
+   char filename[256];
 } entries;
 
 typedef struct
 {
-   char path[256];
    int ref_count;
    int items;
    int current_folder_position;

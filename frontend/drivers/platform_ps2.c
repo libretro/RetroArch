@@ -27,6 +27,7 @@
 #include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
+#include <libcdvd-common.h>
 #include <cdvd_rpc.h>
 #include <fileXio_cdvd.h>
 #include <ps2_devices.h>
@@ -208,11 +209,10 @@ static void frontend_ps2_init(void *data)
    }
 
    /* Initializes CDVD library */
+   /* SCECdINoD init without check for a disc. Reduces risk of a lockup if the drive is in a erroneous state. */
+   sceCdInit(SCECdINoD);
    if (CDVD_Init() != 1) {
       RARCH_ERR("CDVD_Init library not initalizated\n");
-   }
-   if (cdInit(CDVD_INIT_INIT) != 1) {
-      RARCH_ERR("cdInit library not initalizated\n");
    }
 
    _init_ps2_io();
@@ -236,7 +236,6 @@ static void frontend_ps2_deinit(void *data)
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
    _free_ps2_io();
-   cdInit(CDVD_INIT_EXIT);
    CDVD_Stop();
    padEnd();
    audsrv_quit();
