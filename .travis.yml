@@ -63,6 +63,7 @@ addons:
     packages:
       - libsdl2-dev
       - libusb-1.0-0-dev
+      - libxml2-dev
       - qtbase5-dev
       - qtdeclarative5-dev
     sources:

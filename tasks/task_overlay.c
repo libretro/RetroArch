@@ -23,6 +23,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <rhash.h>
+#include "/usr/include/libxml2/parser.h"
 
 #include "tasks_internal.h"
 
@@ -750,6 +751,10 @@ bool task_push_overlay_load_default(
       goto error;
 
    conf = config_file_new(overlay_path);
+
+   xmlDocPtr doc = xmlReadFile(overlay_path, NULL, 0);
+   xmlNodePtr root = xmlDocGetRootElement(doc);
+   xmlFreeDoc(doc);
 
    if (!conf)
       goto error;
