@@ -23,7 +23,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <rhash.h>
-#include "/usr/include/libxml2/parser.h"
+#include <libxml/parser.h>
 
 #include "tasks_internal.h"
 

@@ -1474,12 +1474,12 @@ ifeq ($(WANT_WGL), 1)
    LIBS += -lcomctl32
 endif
 
-#ifeq ($(HAVE_LIBXML2), 1)
-   #LIBS += $(LIBXML2_LIBS)
-   #DEFINES += $(LIBXML2_CFLAGS)
+ifeq ($(HAVE_LIBXML2), 1)
+   LIBS += $(LIBXML2_LIBS)
+   DEFINES += $(LIBXML2_CFLAGS)
 #else
    #OBJ += $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o
-#endif
+endif
 
 # Compression/Archive
 
