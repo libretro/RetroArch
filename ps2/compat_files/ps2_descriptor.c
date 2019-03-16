@@ -40,6 +40,7 @@ static int __ps2_fd_drop(DescriptorTranslation *map)
    if (map->ref_count == 1)
    {
       map->ref_count--;
+      map->current_folder_position = -1;
       free(map->FileEntry);
       memset(map, 0, sizeof(DescriptorTranslation));
    }
@@ -57,7 +58,7 @@ int is_fd_valid(int fd)
    /* Correct fd value */
    fd = MAX_OPEN_FILES - fd;
 
-   return (fd > 0) && (fd < MAX_OPEN_FILES) && (__ps2_fdmap[fd] != NULL);
+   return (fd >= 0) && (fd < MAX_OPEN_FILES) && (__ps2_fdmap[fd] != NULL);
 }
 
 void _init_ps2_io(void) {
