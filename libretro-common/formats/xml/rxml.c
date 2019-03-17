@@ -116,7 +116,7 @@ static bool range_is_space(const char *begin, const char *end)
    return true;
 }
 
-static void skip_spaces(const char **ptr_)
+static void rxml_skip_spaces(const char **ptr_)
 {
    const char *ptr = *ptr_;
    while (isspace(*ptr))
@@ -218,7 +218,7 @@ static char *find_first_space(const char *str)
 static bool rxml_parse_tag(struct rxml_node *node, const char *str)
 {
    const char *str_ptr = str;
-   skip_spaces(&str_ptr);
+   rxml_skip_spaces(&str_ptr);
 
    const char *name_end = find_first_space(str_ptr);
    if (name_end)
@@ -248,7 +248,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
    if (!node)
       return NULL;
 
-   skip_spaces(ptr_);
+   rxml_skip_spaces(ptr_);
 
    ptr = *ptr_;
    if (*ptr != '<')
@@ -474,7 +474,7 @@ void rxml_free_document(rxml_document_t *doc)
    free(doc);
 }
 
-char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
+const char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
 {
    struct rxml_attrib_node *attribs = NULL;
    for (attribs = node->attrib; attribs; attribs = attribs->next)

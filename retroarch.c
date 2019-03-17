@@ -1024,8 +1024,6 @@ static void retroarch_print_features(void)
    _PSUPP(glsl,            "GLSL",            "Fragment/vertex shader driver");
    _PSUPP(glsl,            "HLSL",            "Fragment/vertex shader driver");
 
-   _PSUPP(libxml2,         "libxml2",         "libxml2 XML parsing");
-
    _PSUPP(sdl_image,       "SDL_image",       "SDL_image image loading");
    _PSUPP(rpng,            "rpng",            "PNG image loading/encoding");
    _PSUPP(rpng,            "rjpeg",           "JPEG image loading");

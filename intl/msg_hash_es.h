@@ -2739,10 +2739,6 @@ MSG_HASH(
     "Soporte de Libusb"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-    "Soporte de parseo XML libxml2"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
     "Soporte de juego en red (peer-to-peer)"
     )

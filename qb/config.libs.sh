@@ -405,8 +405,6 @@ if [ "$HAVE_KMS" != "no" ]; then
    fi
 fi
 
-check_val '' LIBXML2 -lxml2 libxml2 libxml-2.0 '' '' false
-
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then

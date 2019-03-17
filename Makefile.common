@@ -1474,13 +1474,6 @@ ifeq ($(WANT_WGL), 1)
    LIBS += -lcomctl32
 endif
 
-#ifeq ($(HAVE_LIBXML2), 1)
-   #LIBS += $(LIBXML2_LIBS)
-   #DEFINES += $(LIBXML2_CFLAGS)
-#else
-   #OBJ += $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o
-#endif
-
 # Compression/Archive
 
 OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
@@ -1617,6 +1610,7 @@ endif
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
+       $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
 ifdef HAVE_COMPRESSION

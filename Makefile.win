@@ -32,7 +32,6 @@ HAVE_FREETYPE := 1
 HAVE_FFMPEG   := 0
 
 HAVE_CG       := 1
-HAVE_LIBXML2  := 0
 HAVE_ZLIB     := 1
 WANT_ZLIB     := 1
 HAVE_CC_RESAMPLER := 1
@@ -44,11 +43,6 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
 FREETYPE_CFLAGS  := -DHAVE_FREETYPE -Ifreetype2
 FREETYPE_LIBS    := -lfreetype
-endif
-
-ifeq ($(HAVE_LIBXML2), 1)
-LIBXML2_CFLAGS   := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
-LIBXML2_LIBS     := -lxml2 -liconv
 endif
 
 ifeq ($(HAVE_SDL), 1)
