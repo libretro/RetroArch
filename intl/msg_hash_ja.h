@@ -566,10 +566,6 @@ MSG_HASH(
       "終了前に設定を自動保存"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "コレクション"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "コンテンツデータベース"
       )
@@ -2770,7 +2766,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "メニュー表示中はオーバーレイを隠し、メニューを閉じたときに再表示する。")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "スキャンしたコンテンツを表示します。"
       )
 MSG_HASH(

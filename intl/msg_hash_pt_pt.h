@@ -463,10 +463,6 @@ MSG_HASH(
       "Guardar configuração ao sair"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Coleções"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Base de dados"
       )
@@ -2499,7 +2495,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Ocultar a sobreposição quando o menu estiver aberto e mostrar novamente ao encerrar o mesmo.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "O conteúdo verificado aparecerá aqui."
       )
 MSG_HASH(

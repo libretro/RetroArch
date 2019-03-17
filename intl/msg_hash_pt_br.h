@@ -590,10 +590,6 @@ MSG_HASH(
     "Salvar Configuração ao Sair"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Coleções"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Base de Dados"
     )
@@ -5129,7 +5125,7 @@ MSG_HASH(
     "Selecione a porta para a transparência escutar se Exibir Comandos na Transparência estiver habilitado."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "O conteúdo analisado aparecerá aqui."
     )
 MSG_HASH(

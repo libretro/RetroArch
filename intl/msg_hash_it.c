@@ -98,7 +98,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "I files saranno comparati alle entrate del database.\n"
                "Se c'è un riscontro, sarà aggiunta un'entrata\n"
-               "alla collezione.\n"
+               "alla playlist.\n"
                " \n"
                "Puoi accedere facilmente a questo contenuto\n"
                "andando su '%s' ->\n"
@@ -114,7 +114,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                   );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:

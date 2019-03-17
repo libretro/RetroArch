@@ -1751,7 +1751,6 @@ enum msg_hash_enums
 
    MENU_ENUM_LABEL_COLLECTION,
    MENU_LABEL(CONFIGURATIONS),
-   MENU_LABEL(CONTENT_COLLECTION_LIST),
    MENU_LABEL(BROWSE_URL_LIST),
 
    MENU_ENUM_LABEL_CUSTOM_BIND,
@@ -2532,8 +2531,7 @@ enum msg_hash_enums
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_CONTENT_DIR                                 0x7b99c1ffU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
-#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
-#define MENU_LABEL_COLLECTION                                                  0x5fea5991U
+#define MENU_LABEL_PLAYLISTS_TAB                                               0x5fea5991U
 
 #define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
 #define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U

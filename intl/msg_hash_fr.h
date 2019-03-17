@@ -475,10 +475,6 @@ MSG_HASH(
       "Sauvegarder la configuration en quittant"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Collections"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Base de données"
       )
@@ -2556,7 +2552,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Cacher l'overlay quand vous êtes dans le menu. Il sera actif uniquement dans les jeux.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Les contenus scannés apparaitront ici."
       )
 MSG_HASH(

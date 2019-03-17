@@ -507,10 +507,6 @@ MSG_HASH(
       "Einstellungen beim Beenden speichern"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Sammlungen"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Inhaltsdatenbank"
       )
@@ -2620,7 +2616,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "Wähle den Port des Controllers aus, dessen Eingaben im Overlay angezeigt werden sollen.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Während der Suche gefundener Inhalt wird hier erscheinen."
       )
 MSG_HASH(

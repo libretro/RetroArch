@@ -582,10 +582,6 @@ MSG_HASH(
     "Guardar configuración al salir"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Colecciones"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Base de datos"
     )
@@ -4985,7 +4981,7 @@ MSG_HASH(
     "Seleccionar el puerto en que los controles en pantalla escucharán las pulsaciones"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "El contenido escaneado aparecerá aquí"
     )
 MSG_HASH(

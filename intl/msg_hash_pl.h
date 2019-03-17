@@ -535,10 +535,6 @@ MSG_HASH(
       "Zapisz konfigurację przy wyjściu"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Kolekcje"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Baza danych"
       )
@@ -2724,7 +2720,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "Wybierz port dla nakładki, aby usłyszeć, czy opcja Pokaż nakładki na nakładkę jest włączona.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Tutaj pojawi się skanowana zawartość."
       )
 MSG_HASH(

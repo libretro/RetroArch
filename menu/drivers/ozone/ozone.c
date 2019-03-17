@@ -740,9 +740,9 @@ static int ozone_list_push(void *data, void *userdata,
 
 #ifdef HAVE_LIBRETRODB
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-                  MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                  MENU_ENUM_LABEL_PLAYLISTS_TAB,
                   MENU_SETTING_ACTION, 0, 0);
 #endif
 

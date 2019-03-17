@@ -479,10 +479,6 @@ MSG_HASH(
       "Salva la configurazione all' uscita"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Collezioni"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Database"
       )
@@ -2592,7 +2588,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Qui vengono visualizzati i contenuti scansionati."
       )
 MSG_HASH(

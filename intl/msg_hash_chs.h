@@ -524,10 +524,6 @@ MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
       "退出时进行询问"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "收藏"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "游戏内容数据库文件夹"
       )
@@ -2751,7 +2747,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "如果开启「在图层上显示控制器」，\n"
       "请选择相应屏幕图层的端口来侦听。")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "扫描到的游戏内容将在此处显示。"
       )
 MSG_HASH(

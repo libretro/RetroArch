@@ -475,10 +475,6 @@ MSG_HASH(
       "Lưu cấu hình khi thoát"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Bộ sưu tập"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Mục cơ sở dữ liệu nội dung"
       )
@@ -2560,7 +2556,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Hide the overlay while inside the menu, and show it again when exiting the menu.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Scanned content will appear here."
       )
 MSG_HASH(

@@ -590,10 +590,6 @@ MSG_HASH(
     "Save Configuration on Exit"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Playlists"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Database"
     )
@@ -5352,8 +5348,8 @@ MSG_HASH(
     "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-    "Scanned content will appear here."
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+    "Scanned content matching the database will appear here."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,

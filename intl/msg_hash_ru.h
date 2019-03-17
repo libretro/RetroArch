@@ -484,10 +484,6 @@ MSG_HASH(
       "Сохранить конфигурацию и выйти"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Коллекции"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "База данных контента"
       )
@@ -2561,7 +2557,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Спрятать наложения в меню интерфейса, и показывать снова после выхода из него.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Сканированный контент появится здесь."
       )
 MSG_HASH(

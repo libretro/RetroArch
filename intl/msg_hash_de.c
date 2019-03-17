@@ -676,17 +676,17 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Um nach Inhalten zu suchen, gehe zu '%s' und\n"
                "wähle '%s' oder %s'.\n"
-               " \n"
+               "\n"
                "Die Dateien werden werden mit einer Datenbank abgeglichen.\n"
-               "Bei einem Treffer wird die Datei zu einer Sammlung\n"
+               "Bei einem Treffer wird die Datei zu eine Wiedergabeliste\n"
                "hinzugefügt.\n"
-               " \n"
+               "\n"
                "du kannst diese Inhalte einfach aufrufen, indem du\n"
                "zu'%s' ->\n"
                "'%s'\n gehst,"
                "anstatt jedes Mal den Dateibrowser\n"
                "verwenden zu müssen.\n"
-               " \n"
+               "\n"
                "HINWEIS: Inhalte für einige Cores können möglicherweise\n"
                "noch nicht durchsucht werden."
                ,
@@ -694,7 +694,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:

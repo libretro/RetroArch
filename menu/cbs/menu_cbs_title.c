@@ -172,7 +172,7 @@ default_title_macro(action_get_title_goto_favorites,            MENU_ENUM_LABEL_
 default_title_macro(action_get_title_goto_image,                MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
 default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
-default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -844,7 +844,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+         case MENU_ENUM_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
@@ -1144,7 +1144,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
+         case MENU_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
             break;
          case MENU_LABEL_ACHIEVEMENT_LIST:

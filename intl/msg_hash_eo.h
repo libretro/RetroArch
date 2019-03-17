@@ -400,10 +400,6 @@ MSG_HASH(
       "Save Configuration on Exit"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Collections"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Content Database"
       )
@@ -2398,8 +2394,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Hide the overlay while inside the menu, and show it again when exiting the menu.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "Scanned content will appear here."
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+      "Scanned content matching the database will appear here."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,

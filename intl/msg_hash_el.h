@@ -555,10 +555,6 @@ MSG_HASH(
     "Απόθηκευση Διαμόρφωσης στην Έξοδο"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Συλλογές"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Βάσεις Δεδομένων"
     )
@@ -4885,7 +4881,7 @@ MSG_HASH(
     "Επιλογή της θύρας για όταν είναι ενεργοποιημένη η επιλογή 'Εμφάνιση Εισαγωγών Στην Οθόνη'"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "Το σαρωμένο περιεχόμενο θα εμφανίζεται εδώ."
     )
 MSG_HASH(

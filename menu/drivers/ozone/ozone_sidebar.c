@@ -532,11 +532,11 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    info.path                    = strdup(
          settings->paths.directory_playlist);
    info.label                   = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup(
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
-   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+   info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
    if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
    {
