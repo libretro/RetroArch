@@ -9,19 +9,20 @@ LIBCDVD_IRX_DIR = $(LIBCDVD_DIR)/lib
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
 IRX_FILES += freemtap.irx freepad.irx freesio2.irx iomanX.irx fileXio.irx mcman.irx mcserv.irx usbd.irx usbhdfsd.irx 
-IRX_FILES += freesd.irx audsrv.irx poweroff.irx cdvd.irx
-IRX_C_FILES = $(IRX_FILES:.irx=_irx.c)
+IRX_FILES += freesd.irx audsrv.irx poweroff.irx
+IRX_C_FILES = $(IRX_FILES:.irx=_irx.c) cdvd_irx.c
+
+all: cdvd irxs
 
 # Specific file name and output per IRX Module
 %.irx:
-	if [[ "$(@)" == "cdvd.irx" ]]; then \
-		$(MAKE) -C $(LIBCDVD_DIR); \
-		$(EE_BIN2C) $(LIBCDVD_IRX_DIR)/$@ $(@:.irx=_irx.c) $(@:.irx=_irx); \
-	else \
-		$(EE_BIN2C) $(IRX_DIR)/$@ $(@:.irx=_irx.c) $(@:.irx=_irx); \
-	fi
+	$(EE_BIN2C) $(IRX_DIR)/$@ $(@:.irx=_irx.c) $(@:.irx=_irx)
 
-all: $(IRX_FILES)
+irxs: $(IRX_FILES)
+
+cdvd:
+	$(MAKE) -C $(LIBCDVD_DIR)
+	$(EE_BIN2C) $(LIBCDVD_IRX_DIR)/$@.irx $@_irx.c $@_irx
 
 clean:
 	rm -f $(IRX_C_FILES)
