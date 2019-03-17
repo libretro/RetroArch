@@ -1363,9 +1363,9 @@ static bool playlist_read_file(
 
       filestream_seek(file, 0, SEEK_SET);
 
-      if (bytes_read == 15)
+      if (bytes_read == 1)
       {
-         if (string_is_equal(buf, "{\n  \"version\": "))
+         if (string_is_equal(buf, "{"))
          {
             /* new playlist format detected */
             /*RARCH_LOG("New playlist format detected.\n");*/
