@@ -468,7 +468,6 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
    glLoadIdentity();
-   /*glLoadMatrixf(gl1->mvp.data);*/
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
@@ -1135,7 +1134,7 @@ static int video_texture_load_wrap_gl1_mipmap(void *data)
    if (!data)
       return 0;
    video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+         TEXTURE_FILTER_MIPMAP_NEAREST, &id);
    return (int)id;
 }
 
@@ -1146,7 +1145,7 @@ static int video_texture_load_wrap_gl1(void *data)
    if (!data)
       return 0;
    video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+         TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
 }
 #endif
@@ -1249,19 +1248,6 @@ static uint32_t gl1_get_flags(void *data)
    return flags;
 }
 
-static void gl1_set_mvp(void *data, void *shader_data, const void *mat_data)
-{
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
-
-   (void)data;
-   (void)shader_data;
-
-   if (!mat)
-      return;
-
-   glLoadMatrixf(mat->data);
-}
-
 static void gl1_set_coords(void *handle_data, void *shader_data,
       const struct video_coords *coords)
 {
@@ -1279,7 +1265,7 @@ static void gl1_set_coords(void *handle_data, void *shader_data,
 static const video_poke_interface_t gl1_poke_interface = {
    gl1_get_flags,
    gl1_set_coords,
-   gl1_set_mvp,
+   NULL,
    gl1_load_texture,
    gl1_unload_texture,
    gl1_set_video_mode,

@@ -131,8 +131,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-
-   video_driver_set_mvp(&mvp);
+   glLoadMatrixf(mvp.matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();

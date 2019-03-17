@@ -2703,8 +2703,16 @@ bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id)
 {
+#ifdef HAVE_THREADS
+   bool is_threaded = video_driver_is_threaded_internal();
+#endif
    if (!id || !video_driver_poke || !video_driver_poke->load_texture)
       return false;
+
+#ifdef HAVE_THREADS
+   if (is_threaded)
+      video_context_driver_make_current(false);
+#endif
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
          video_driver_is_threaded_internal(),
@@ -2715,8 +2723,16 @@ bool video_driver_texture_load(void *data,
 
 bool video_driver_texture_unload(uintptr_t *id)
 {
+#ifdef HAVE_THREADS
+   bool is_threaded = video_driver_is_threaded_internal();
+#endif
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
+
+#ifdef HAVE_THREADS
+   if (is_threaded)
+      video_context_driver_make_current(false);
+#endif
 
    video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
@@ -3362,6 +3378,10 @@ enum gfx_ctx_api video_context_driver_get_api(void)
       else if (string_is_equal(video_driver, "gx"))
          return GFX_CTX_GX_API;
       else if (string_is_equal(video_driver, "gl"))
+         return GFX_CTX_OPENGL_API;
+      else if (string_is_equal(video_driver, "gl1"))
+         return GFX_CTX_OPENGL_API;
+      else if (string_is_equal(video_driver, "glcore"))
          return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
          return GFX_CTX_VULKAN_API;
