@@ -41,7 +41,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "badges.h"
+#include "../cheevos/badges.h" /* RCHEEVOS TODO: fix path */
 #include "cheevos.h"
 #include "fixup.h"
 #include "parser.h"
@@ -159,12 +159,12 @@ static cheevos_locals_t cheevos_locals =
    {0},  /* token */
 };
 
-bool cheevos_loaded = false;
-bool cheevos_hardcore_active = false;
-bool cheevos_hardcore_paused = false;
-bool cheevos_state_loaded_flag = false;
-int cheats_are_enabled = 0;
-int cheats_were_enabled = 0;
+bool rcheevos_loaded = false;
+bool rcheevos_hardcore_active = false;
+bool rcheevos_hardcore_paused = false;
+bool rcheevos_state_loaded_flag = false;
+int rcheevos_cheats_are_enabled = 0;
+int rcheevos_cheats_were_enabled = 0;
 
 #ifdef HAVE_THREADS
 #define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
@@ -288,7 +288,7 @@ static int cheevos_parse(const char* json)
    cheevos_lboard_t* lboard = NULL;
    cheevos_racheevo_t* rac  = NULL;
 
-   cheevos_fixup_init(&cheevos_locals.fixups);
+   rcheevos_fixup_init(&cheevos_locals.fixups);
 
    res = cheevos_get_patchdata(json, &cheevos_locals.patchdata);
 
@@ -364,7 +364,7 @@ static int cheevos_parse(const char* json)
          }
 
          rc_parse_trigger(cheevo->trigger, cheevo->info->memaddr, NULL, 0);
-         cheevo->active = CHEEVOS_ACTIVE_SOFTCORE | CHEEVOS_ACTIVE_HARDCORE;
+         cheevo->active = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE;
          cheevo->last = 1;
       }
    }
@@ -406,7 +406,7 @@ error:
    CHEEVOS_FREE(cheevos_locals.unofficial);
    CHEEVOS_FREE(cheevos_locals.lboards);
    cheevos_free_patchdata(&cheevos_locals.patchdata);
-   cheevos_fixup_destroy(&cheevos_locals.fixups);
+   rcheevos_fixup_destroy(&cheevos_locals.fixups);
    return -1;
 }
 
@@ -488,8 +488,8 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
    /* Deactivates the cheevo. */
    cheevo->active &= ~mode;
 
-   if (mode == CHEEVOS_ACTIVE_HARDCORE)
-      cheevo->active &= ~CHEEVOS_ACTIVE_SOFTCORE;
+   if (mode == RCHEEVOS_ACTIVE_HARDCORE)
+      cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;
 
    /* Show the OSD message. */
    snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
@@ -497,7 +497,7 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
    runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Start the award task. */
-   if ((mode & CHEEVOS_ACTIVE_HARDCORE) != 0)
+   if ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0)
       cheevos_award_task_hardcore(NULL, NULL, cheevo, "");
    else
       cheevos_award_task_softcore(NULL, NULL, cheevo, "");
@@ -523,7 +523,7 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
 static unsigned cheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 {
-   const uint8_t* data = cheevos_fixup_find(&cheevos_locals.fixups,
+   const uint8_t* data = rcheevos_fixup_find(&cheevos_locals.fixups,
       address, cheevos_locals.patchdata.console_id);
    unsigned value = 0;
 
@@ -540,12 +540,12 @@ static unsigned cheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 static void cheevos_test_cheevo_set(bool official)
 {
    settings_t *settings = config_get_ptr();
-   int mode = CHEEVOS_ACTIVE_SOFTCORE;
+   int mode = RCHEEVOS_ACTIVE_SOFTCORE;
    cheevos_cheevo_t* cheevo;
    int i, count;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
-      mode = CHEEVOS_ACTIVE_HARDCORE;
+   if (settings && settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
+      mode = RCHEEVOS_ACTIVE_HARDCORE;
 
    if (official)
    {
@@ -696,7 +696,7 @@ static void cheevos_test_leaderboards(void)
    }
 }
 
-void cheevos_reset_game(void)
+void rcheevos_reset_game(void)
 {
    cheevos_cheevo_t* cheevo;
    cheevos_lboard_t* lboard;
@@ -721,7 +721,7 @@ void cheevos_reset_game(void)
    }
 }
 
-void cheevos_populate_menu(void* data)
+void rcheevos_populate_menu(void* data)
 {
 #ifdef HAVE_MENU
    int i                         = 0;
@@ -732,9 +732,9 @@ void cheevos_populate_menu(void* data)
 
    if (   settings->bools.cheevos_enable
        && settings->bools.cheevos_hardcore_mode_enable
-       && cheevos_loaded)
+       && rcheevos_loaded)
    {
-      if (!cheevos_hardcore_paused)
+      if (!rcheevos_hardcore_paused)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
@@ -752,7 +752,7 @@ void cheevos_populate_menu(void* data)
 
    for (i = 0, count = cheevos_locals.patchdata.core_count; i < count; i++, cheevo++)
    {
-      if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
+      if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
       {
          menu_entries_append_enum(info->list, cheevo->info->title,
             cheevo->info->description,
@@ -760,9 +760,9 @@ void cheevos_populate_menu(void* data)
             MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
          set_badge_info(&badges_ctx, i, cheevo->info->badge,
-            (cheevo->active & CHEEVOS_ACTIVE_HARDCORE));
+            (cheevo->active & RCHEEVOS_ACTIVE_HARDCORE));
       }
-      else if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+      else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
       {
          menu_entries_append_enum(info->list, cheevo->info->title,
             cheevo->info->description,
@@ -770,7 +770,7 @@ void cheevos_populate_menu(void* data)
             MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
          set_badge_info(&badges_ctx, i, cheevo->info->badge,
-            (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
+            (cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE));
       }
       else
       {
@@ -780,7 +780,7 @@ void cheevos_populate_menu(void* data)
             MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
          set_badge_info(&badges_ctx, i, cheevo->info->badge,
-            (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
+            (cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE));
       }
    }
 
@@ -790,7 +790,7 @@ void cheevos_populate_menu(void* data)
 
       for (i = 0, count = cheevos_locals.patchdata.unofficial_count; i < count; i++, cheevo++)
       {
-         if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
+         if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
          {
             menu_entries_append_enum(info->list, cheevo->info->title,
                cheevo->info->description,
@@ -798,9 +798,9 @@ void cheevos_populate_menu(void* data)
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
             set_badge_info(&badges_ctx, i, cheevo->info->badge,
-               (cheevo->active & CHEEVOS_ACTIVE_HARDCORE));
+               (cheevo->active & RCHEEVOS_ACTIVE_HARDCORE));
          }
-         else if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+         else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
          {
             menu_entries_append_enum(info->list, cheevo->info->title,
                cheevo->info->description,
@@ -808,7 +808,7 @@ void cheevos_populate_menu(void* data)
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
             set_badge_info(&badges_ctx, i, cheevo->info->badge,
-               (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
+               (cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE));
          }
          else
          {
@@ -818,7 +818,7 @@ void cheevos_populate_menu(void* data)
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
 
             set_badge_info(&badges_ctx, i, cheevo->info->badge,
-               (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
+               (cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE));
          }
       }
    }
@@ -839,7 +839,7 @@ void cheevos_populate_menu(void* data)
 #endif
 }
 
-bool cheevos_get_description(cheevos_ctx_desc_t* desc)
+bool rcheevos_get_description(rcheevos_ctx_desc_t* desc)
 {
    unsigned idx;
    const cheevos_cheevo_t* cheevo;
@@ -849,7 +849,7 @@ bool cheevos_get_description(cheevos_ctx_desc_t* desc)
 
    *desc->s = 0;
 
-   if (cheevos_loaded)
+   if (rcheevos_loaded)
    {
       idx = desc->idx;
 
@@ -871,15 +871,15 @@ bool cheevos_get_description(cheevos_ctx_desc_t* desc)
    return true;
 }
 
-bool cheevos_apply_cheats(bool* data_bool)
+bool rcheevos_apply_cheats(bool* data_bool)
 {
-   cheats_are_enabled   = *data_bool;
-   cheats_were_enabled |= cheats_are_enabled;
+   rcheevos_cheats_are_enabled   = *data_bool;
+   rcheevos_cheats_were_enabled |= rcheevos_cheats_are_enabled;
 
    return true;
 }
 
-bool cheevos_unload(void)
+bool rcheevos_unload(void)
 {
    bool running = false;
    unsigned i = 0, count = 0;
@@ -904,7 +904,7 @@ bool cheevos_unload(void)
 #endif
    }
 
-   if (cheevos_loaded)
+   if (rcheevos_loaded)
    {
       for (i = 0, count = cheevos_locals.patchdata.core_count; i < count; i++)
       {
@@ -925,20 +925,20 @@ bool cheevos_unload(void)
       CHEEVOS_FREE(cheevos_locals.unofficial);
       CHEEVOS_FREE(cheevos_locals.lboards);
       cheevos_free_patchdata(&cheevos_locals.patchdata);
-      cheevos_fixup_destroy(&cheevos_locals.fixups);
+      rcheevos_fixup_destroy(&cheevos_locals.fixups);
 
       cheevos_locals.core       = NULL;
       cheevos_locals.unofficial = NULL;
       cheevos_locals.lboards    = NULL;
 
-      cheevos_loaded            = false;
-      cheevos_hardcore_paused   = false;
+      rcheevos_loaded            = false;
+      rcheevos_hardcore_paused   = false;
    }
 
    return true;
 }
 
-bool cheevos_toggle_hardcore_mode(void)
+bool rcheevos_toggle_hardcore_mode(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -947,13 +947,13 @@ bool cheevos_toggle_hardcore_mode(void)
 
    /* reset and deinit rewind to avoid cheat the score */
    if (   settings->bools.cheevos_hardcore_mode_enable
-       && !cheevos_hardcore_paused)
+       && !rcheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
 
       /* reset the state loaded flag in case it was set */
-      cheevos_state_loaded_flag = false;
+      rcheevos_state_loaded_flag = false;
 
       /* send reset core cmd to avoid any user
        * savestate previusly loaded. */
@@ -974,7 +974,7 @@ bool cheevos_toggle_hardcore_mode(void)
    return true;
 }
 
-void cheevos_test(void)
+void rcheevos_test(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -987,28 +987,28 @@ void cheevos_test(void)
 
       if (settings->bools.cheevos_hardcore_mode_enable &&
           settings->bools.cheevos_leaderboards_enable  &&
-          !cheevos_hardcore_paused)
+          !rcheevos_hardcore_paused)
          cheevos_test_leaderboards();
    }
 }
 
-bool cheevos_set_cheats(void)
+bool rcheevos_set_cheats(void)
 {
-   cheats_were_enabled = cheats_are_enabled;
+   rcheevos_cheats_were_enabled = rcheevos_cheats_are_enabled;
    return true;
 }
 
-void cheevos_set_support_cheevos(bool state)
+void rcheevos_set_support_cheevos(bool state)
 {
    cheevos_locals.core_supports = state;
 }
 
-bool cheevos_get_support_cheevos(void)
+bool rcheevos_get_support_cheevos(void)
 {
   return cheevos_locals.core_supports;
 }
 
-int cheevos_get_console(void)
+int rcheevos_get_console(void)
 {
    return cheevos_locals.patchdata.console_id;
 }
@@ -1365,7 +1365,7 @@ found:
          CORO_STOP();
       }
 
-      cheevos_loaded = true;
+      rcheevos_loaded = true;
 
       /*
          * Inputs:  CHEEVOS_VAR_GAMEID
@@ -1382,13 +1382,13 @@ found:
       if (coro->settings->bools.cheevos_verbose_enable && cheevos_locals.patchdata.core_count > 0)
       {
          char msg[256];
-         int mode               = CHEEVOS_ACTIVE_SOFTCORE;
+         int mode               = RCHEEVOS_ACTIVE_SOFTCORE;
          const cheevos_cheevo_t* cheevo = cheevos_locals.core;
          const cheevos_cheevo_t* end    = cheevo + cheevos_locals.patchdata.core_count;
          int number_of_unlocked = cheevos_locals.patchdata.core_count;
 
-         if (coro->settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
-            mode = CHEEVOS_ACTIVE_HARDCORE;
+         if (coro->settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
+            mode = RCHEEVOS_ACTIVE_HARDCORE;
 
          for (; cheevo < end; cheevo++)
             if (cheevo->active & mode)
@@ -1961,7 +1961,7 @@ found:
 
             if (coro->json)
             {
-               mode = coro->i == 0 ? CHEEVOS_ACTIVE_SOFTCORE : CHEEVOS_ACTIVE_HARDCORE;
+               mode = coro->i == 0 ? RCHEEVOS_ACTIVE_SOFTCORE : RCHEEVOS_ACTIVE_HARDCORE;
                cheevos_deactivate_unlocks(coro->json, cheevos_unlock_cb, &mode);
                CHEEVOS_FREE(coro->json);
             }
@@ -2035,14 +2035,14 @@ static void cheevos_task_handler(retro_task_t *task)
    }
 }
 
-bool cheevos_load(const void *data)
+bool rcheevos_load(const void *data)
 {
    retro_task_t *task;
    const struct retro_game_info *info = NULL;
    coro_t *coro                       = NULL;
 
-   cheevos_loaded = false;
-   cheevos_hardcore_paused = false;
+   rcheevos_loaded = false;
+   rcheevos_hardcore_paused = false;
 
    if (!cheevos_locals.core_supports || !data)
       return false;

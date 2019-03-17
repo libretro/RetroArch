@@ -25,13 +25,13 @@ Setup - mainly for debugging
 *****************************************************************************/
 
 /* Define this macro to get extra-verbose log for cheevos. */
-#undef CHEEVOS_VERBOSE
+#define CHEEVOS_VERBOSE
 
 /*****************************************************************************
 End of setup
 *****************************************************************************/
 
-#define CHEEVOS_TAG "[CHEEVOS]: "
+#define CHEEVOS_TAG "[RCHEEVOS]: "
 #define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q != NULL) free(q); } while (0)
 
 #ifdef CHEEVOS_VERBOSE

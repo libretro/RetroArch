@@ -21,6 +21,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos.h"
+#include "../../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 #include "../../verbosity.h"
 
@@ -572,12 +573,14 @@ static int action_bind_sublabel_cheevos_entry(
       char *s, size_t len)
 {
 #ifdef HAVE_CHEEVOS
+   settings_t *settings = config_get_ptr(); /* RCHEEVOS TODO: remove line */
    cheevos_ctx_desc_t desc_info;
    unsigned new_id = type - MENU_SETTINGS_CHEEVOS_START;
    desc_info.idx   = new_id;
    desc_info.s     = s;
    desc_info.len   = len;
-   cheevos_get_description(&desc_info);
+   /* RCHEEVOS TODO: remove test */
+   settings->bools.cheevos_rcheevos_enable ? rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info) : cheevos_get_description(&desc_info);
 
    strlcpy(s, desc_info.s, len);
 #endif

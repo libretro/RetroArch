@@ -36,12 +36,12 @@ typedef struct
    bool dirty;
 } cheevos_fixups_t;
 
-void cheevos_fixup_init(cheevos_fixups_t* fixups);
-void cheevos_fixup_destroy(cheevos_fixups_t* fixups);
+void rcheevos_fixup_init(cheevos_fixups_t* fixups);
+void rcheevos_fixup_destroy(cheevos_fixups_t* fixups);
 
-const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, int console);
+const uint8_t* rcheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, int console);
 
-const uint8_t* cheevos_patch_address(unsigned address, int console);
+const uint8_t* rcheevos_patch_address(unsigned address, int console);
 
 RETRO_END_DECLS
 

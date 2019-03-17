@@ -34,7 +34,7 @@ Setup - mainly for debugging
 *****************************************************************************/
 
 /* Define this macro to get extra-verbose log for cheevos. */
-#undef CHEEVOS_VERBOSE
+#define CHEEVOS_VERBOSE
 
 /*****************************************************************************
 End of setup

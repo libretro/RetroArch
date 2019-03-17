@@ -27,49 +27,49 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct cheevos_ctx_desc
+typedef struct rcheevos_ctx_desc
 {
    unsigned idx;
    char *s;
    size_t len;
-} cheevos_ctx_desc_t;
+} rcheevos_ctx_desc_t;
 
 enum
 {
-   CHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
-   CHEEVOS_ACTIVE_HARDCORE = 1 << 1
+   RCHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
+   RCHEEVOS_ACTIVE_HARDCORE = 1 << 1
 };
 
-bool cheevos_load(const void *data);
+bool rcheevos_load(const void *data);
 
-void cheevos_reset_game(void);
+void rcheevos_reset_game(void);
 
-void cheevos_populate_menu(void *data);
+void rcheevos_populate_menu(void *data);
 
-bool cheevos_get_description(cheevos_ctx_desc_t *desc);
+bool rcheevos_get_description(rcheevos_ctx_desc_t *desc);
 
-bool cheevos_apply_cheats(bool *data_bool);
+bool rcheevos_apply_cheats(bool *data_bool);
 
-bool cheevos_unload(void);
+bool rcheevos_unload(void);
 
-bool cheevos_toggle_hardcore_mode(void);
+bool rcheevos_toggle_hardcore_mode(void);
 
-void cheevos_test(void);
+void rcheevos_test(void);
 
-bool cheevos_set_cheats(void);
+bool rcheevos_set_cheats(void);
 
-void cheevos_set_support_cheevos(bool state);
+void rcheevos_set_support_cheevos(bool state);
 
-bool cheevos_get_support_cheevos(void);
+bool rcheevos_get_support_cheevos(void);
 
-int cheevos_get_console(void);
+int rcheevos_get_console(void);
 
-extern bool cheevos_loaded;
-extern bool cheevos_hardcore_active;
-extern bool cheevos_hardcore_paused;
-extern bool cheevos_state_loaded_flag;
-extern int cheats_are_enabled;
-extern int cheats_were_enabled;
+extern bool rcheevos_loaded;
+extern bool rcheevos_hardcore_active;
+extern bool rcheevos_hardcore_paused;
+extern bool rcheevos_state_loaded_flag;
+extern int rcheevos_cheats_are_enabled;
+extern int rcheevos_cheats_were_enabled;
 
 RETRO_END_DECLS
 

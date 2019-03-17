@@ -64,20 +64,20 @@ static size_t cheevos_var_highest_bit(size_t n)
    return n ^ (n >> 1);
 }
 
-void cheevos_fixup_init(cheevos_fixups_t* fixups)
+void rcheevos_fixup_init(cheevos_fixups_t* fixups)
 {
    fixups->elements = NULL;
    fixups->capacity = fixups->count = 0;
    fixups->dirty = false;
 }
 
-void cheevos_fixup_destroy(cheevos_fixups_t* fixups)
+void rcheevos_fixup_destroy(cheevos_fixups_t* fixups)
 {
    CHEEVOS_FREE(fixups->elements);
-   cheevos_fixup_init(fixups);
+   rcheevos_fixup_init(fixups);
 }
 
-const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, int console)
+const uint8_t* rcheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, int console)
 {
    cheevos_fixup_t key;
    cheevos_fixup_t* found;
@@ -114,13 +114,13 @@ const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, in
 
    fixups->elements[fixups->count].address = address;
    fixups->elements[fixups->count++].location = location =
-      cheevos_patch_address(address, console);
+      rcheevos_patch_address(address, console);
    fixups->dirty = true;
 
    return location;
 }
 
-const uint8_t* cheevos_patch_address(unsigned address, int console)
+const uint8_t* rcheevos_patch_address(unsigned address, int console)
 {
    rarch_system_info_t* system = runloop_get_system_info();
    const void* pointer = NULL;

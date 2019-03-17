@@ -50,6 +50,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
+#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 
 #include "../frontend/frontend_driver.h"
@@ -3465,7 +3466,8 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 
    if (settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
    {
-      cheevos_toggle_hardcore_mode();
+      /* RCHEEVOS TODO: remove settings test */
+      settings->bools.cheevos_rcheevos_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
       command_event(CMD_EVENT_RESET, NULL);
       return;
    }
