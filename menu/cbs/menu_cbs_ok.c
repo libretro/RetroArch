@@ -3352,7 +3352,7 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
-               file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+               file_path_str(FILE_PATH_CORE_THUMBNAILPACKS_URL),
                file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
@@ -3507,18 +3507,27 @@ void cb_generic_download(retro_task_t *task,
          dir_path = buf;
          break;
       }
+      case MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL:
+      {
+         dir_path = transf->path;
+         break;
+      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
          break;
    }
 
-   if (!string_is_empty(dir_path))
+   if (!string_is_empty(dir_path) && transf->enum_idx != MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+      strlcpy(output_path, transf->path, sizeof(output_path));
 
    /* Make sure the directory exists */
    path_basedir_wrapper(output_path);
+
+   RARCH_LOG("output path: %s\n", output_path);
 
    if (!path_mkdir(output_path))
    {
@@ -3526,9 +3535,12 @@ void cb_generic_download(retro_task_t *task,
       goto finish;
    }
 
-   if (!string_is_empty(dir_path))
+   if (!string_is_empty(dir_path) && transf->enum_idx != MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+      strlcpy(output_path, transf->path, sizeof(output_path));
+
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(output_path))
@@ -3671,7 +3683,7 @@ static int action_ok_download_generic(const char *path,
          path = file_path_str(FILE_PATH_SHADERS_CG_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
+         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILPACKS_URL), sizeof(s));
          break;
       default:
          strlcpy(s, settings->paths.network_buildbot_url, sizeof(s));

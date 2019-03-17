@@ -43,6 +43,8 @@
 #include "../../menu_input.h"
 #include "../../playlist.h"
 
+#include "../../menu/menu_cbs.h"
+
 #include "../../widgets/menu_input_dialog.h"
 #include "../../widgets/menu_osk.h"
 #include "../../widgets/menu_filebrowser.h"
@@ -54,7 +56,10 @@
 #include "../../../verbosity.h"
 #include "../../../tasks/task_powerstate.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../tasks/task_file_transfer.h"
 #include "../../../dynamic.h"
+
+#include <net/net_http.h>
 
 ozone_node_t *ozone_alloc_node(void)
 {
@@ -394,6 +399,9 @@ static void ozone_update_thumbnail_image(void *data)
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
+   char url [2048], url_encoded [2048];
+
+   settings_t *settings = config_get_ptr();
 
    if (!ozone)
       return;
@@ -404,7 +412,30 @@ static void ozone_update_thumbnail_image(void *data)
          task_push_image_load(right_thumbnail_path,
                menu_display_handle_thumbnail_upload, NULL);
       else
+      {
+         const char *system;
+         file_transfer_t *transf = NULL;
+         menu_thumbnail_get_system(ozone->thumbnail_path_data, &system);
+
+         strlcpy(url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(url));
+         strlcat(url, "/", sizeof(url));
+         strlcat(url, system, sizeof(url));
+         strlcat(url, "/", sizeof(url));
+         strlcat(url, menu_thumbnail_get_type(MENU_THUMBNAIL_RIGHT), sizeof(url));
+         strlcat(url, "/", sizeof(url));
+         strlcat(url, path_basename(right_thumbnail_path), sizeof(url));
+         net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+
+         transf = (file_transfer_t*)calloc(1, sizeof(*transf));
+         transf->enum_idx = MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL;
+         strlcpy(transf->path, right_thumbnail_path, sizeof(transf->path));
+
+         task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+         RARCH_LOG("[ozone] Downloading thumbnail from: %s\n", url_encoded);
+         RARCH_LOG("[ozone] Downloading thumbnail to: %s\n", right_thumbnail_path);
+
          video_driver_texture_unload(&ozone->thumbnail);
+      }
    }
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
@@ -1120,10 +1151,16 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
             video_info->width - search_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
 
       if (ozone->is_playlist && !ozone->cursor_in_sidebar)
-         ozone_draw_text(video_info, ozone,
-               msg_hash_to_str(MSG_CHANGE_THUMBNAIL_TYPE),
-               video_info->width - thumb_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
-
+      {
+         if (!missing_thumbnail)
+            ozone_draw_text(video_info, ozone,
+                  msg_hash_to_str(MSG_CHANGE_THUMBNAIL_TYPE),
+                  video_info->width - thumb_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+         else
+            ozone_draw_text(video_info, ozone,
+                  msg_hash_to_str(MSG_GET_THUMBNAIL),
+                  video_info->width - thumb_width, video_info->height - ozone->dimensions.footer_height / 2 + FONT_SIZE_FOOTER * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+      }
    }
 
    menu_display_blend_end(video_info);
@@ -1340,7 +1377,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          /* Filebrowser image updates */
          else if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
          {
-             ozone_set_thumbnail_content(ozone, "imageviewer");
+            ozone_set_thumbnail_content(ozone, "imageviewer");
             update_thumbnails = true;
          }
 
@@ -1352,7 +1389,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
                 ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'L');
 
-             ozone_update_thumbnail_image(ozone);
+            ozone_update_thumbnail_image(ozone);
          }
       }
 

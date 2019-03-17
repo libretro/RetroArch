@@ -571,3 +571,19 @@ bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const c
    
    return true;
 }
+
+bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system)
+{
+   if (!path_data)
+      return false;
+   
+   if (!system)
+      return false;
+   
+   if (string_is_empty(path_data->system))
+      return false;
+   
+   *system = path_data->system;
+   
+   return true;
+}

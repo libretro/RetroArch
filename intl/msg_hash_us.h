@@ -4831,6 +4831,10 @@ MSG_HASH(
     "Change thumbnail type"
     )
 MSG_HASH(
+    MSG_GET_THUMBNAIL,
+    "Get thumbnail"
+    )
+MSG_HASH(
     MSG_NO_THUMBNAIL_AVAILABLE,
     "No thumbnail available"
     )

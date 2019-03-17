@@ -124,6 +124,8 @@ bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char 
  * Returns true if core name is valid. */
 bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const char **core_name);
 
+bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system);
+
 RETRO_END_DECLS
 
 #endif

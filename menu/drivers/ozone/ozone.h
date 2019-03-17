@@ -73,6 +73,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define OZONE_TICKER_SPACER "\xE2\x80\x83\xE2\x80\xA2\xE2\x80\x83"
 #endif
 
+bool missing_thumbnail;
+
 struct ozone_handle
 {
    struct

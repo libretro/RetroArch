@@ -29,6 +29,7 @@
 #include "../../menu_animation.h"
 
 #include "../../../configuration.h"
+#include "../../../verbosity.h"
 
 static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
 {
@@ -695,11 +696,14 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       return;
    }
 
+
    /* Top row : thumbnail or no thumbnail available message */
    if (thumbnail)
    {
       unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
+
+      missing_thumbnail = false;
 
       if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
          thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
@@ -721,6 +725,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
        * height but we still need to move it to leave room for the
        * content metadata panel */
       unsigned height = video_info->height / 4;
+
+      missing_thumbnail = true;
 
       ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width,
          height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
