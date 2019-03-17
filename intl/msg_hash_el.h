@@ -4736,8 +4736,8 @@ MSG_HASH(
     "Επιλογή Αρχείου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Επιλογή Από Συλλογή"
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+    "Επιλογή Από λίστα αναπαραγωγής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,

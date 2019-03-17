@@ -4817,8 +4817,8 @@ MSG_HASH(
     "Seleccionar archivo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Seleccionar de la colección"
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+    "Seleccionar de la lista de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,

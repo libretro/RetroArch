@@ -5180,7 +5180,7 @@ MSG_HASH(
     "Select File"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
     "Select from a playlist"
     )
 MSG_HASH(

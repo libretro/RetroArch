@@ -2479,8 +2479,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Afficher le niveau de la batterie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Sélectionner un fichier")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Sélectionner depuis la collection")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Sélectionner depuis la playlist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtre")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
