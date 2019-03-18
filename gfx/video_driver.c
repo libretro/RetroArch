@@ -3291,7 +3291,7 @@ bool video_context_driver_show_mouse(bool *bool_data)
    return true;
 }
 
-static bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    if (!current_video_context.get_flags)
       return false;
