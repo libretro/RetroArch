@@ -1072,7 +1072,9 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
       unsigned ok_width       = 96;
       unsigned search_width   = 343;
       unsigned thumb_width    = 343 + 188 + 80;
-      bool do_swap         = video_info->input_menu_swap_ok_cancel_buttons;
+      unsigned icon_size      = 35;
+      unsigned icon_offset    = icon_size / 2;
+      bool do_swap            = video_info->input_menu_swap_ok_cancel_buttons;
 
       if (do_swap)
       {
@@ -1082,21 +1084,23 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       menu_display_blend_begin(video_info);
 
+      menu_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
+
       if (do_swap)
       {
-         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 133, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
-         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 251, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
       }
       else
       {
-         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 251, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
-         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
       }
 
-      ozone_draw_icon(video_info, 26, 26, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_X], video_info->width - 379, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+      ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U], video_info->width - 384, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
 
       if (ozone->is_playlist && !ozone->cursor_in_sidebar)
-         ozone_draw_icon(video_info, 26, 26, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_Y], video_info->width - 379 - 118 - 100 - 50, video_info->height - ozone->dimensions.footer_height / 2 - 12, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L], video_info->width - 384 - 118 - 100 - 50, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
 
       menu_display_blend_end(video_info);
 
