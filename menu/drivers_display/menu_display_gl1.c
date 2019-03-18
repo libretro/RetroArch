@@ -100,9 +100,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
-   video_shader_ctx_coords_t coords;
-   gl1_t             *gl1          = video_info ?
-      (gl1_t*)video_info->userdata : NULL;
+   gl1_t             *gl1          = (gl1_t*)video_info->userdata;
 
    if (!gl1 || !draw)
       return;
@@ -119,11 +117,6 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
    glEnable(GL_TEXTURE_2D);
 
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
-
-   coords.handle_data = gl1;
-   coords.data        = draw->coords;
-
-   video_driver_set_coords(&coords);
 
    mvp.data   = gl1;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data

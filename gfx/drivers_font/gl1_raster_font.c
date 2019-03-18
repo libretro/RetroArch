@@ -237,21 +237,11 @@ static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
       const video_coords_t *coords,
       video_frame_info_t *video_info)
 {
-   video_shader_ctx_coords_t coords_data;
-
    if (font->atlas->dirty)
    {
       gl1_raster_font_upload_atlas(font);
       font->atlas->dirty   = false;
    }
-
-   coords_data.handle_data = NULL;
-   coords_data.data        = coords;
-
-   video_driver_set_coords(&coords_data);
-
-   /*video_info->cb_set_mvp(font->gl,
-         video_info->shader_data, &font->gl->mvp_no_rot);*/
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
