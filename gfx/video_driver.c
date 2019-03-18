@@ -225,9 +225,6 @@ static gfx_ctx_flags_t deferred_flag_data                = {0};
 
 static bool video_started_fullscreen                     = false;
 
-static shader_backend_t *current_shader                  = NULL;
-static void *current_shader_data                         = NULL;
-
 static char video_driver_gpu_device_string[128] = {0};
 static char video_driver_gpu_api_version_string[128] = {0};
 
@@ -2842,8 +2839,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 
    video_info->context_data           = video_context_data;
-   video_info->shader_driver          = current_shader;
-   video_info->shader_data            = current_shader_data;
 
    video_info->cb_update_window_title = current_video_context.update_window_title;
    video_info->cb_swap_buffers        = current_video_context.swap_buffers;
@@ -3408,46 +3403,6 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
    return false;
 }
 
-static const shader_backend_t *video_shader_set_backend(
-      enum rarch_shader_type type)
-{
-   switch (type)
-   {
-      case RARCH_SHADER_CG:
-         {
-#ifdef HAVE_CG
-            gfx_ctx_flags_t flags;
-            flags.flags = 0;
-            video_context_driver_get_flags(&flags);
-
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-            {
-               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
-                     " GL context. Trying to fall back to GLSL...\n");
-               return video_shader_set_backend(RARCH_SHADER_GLSL);
-            }
-
-            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
-            return &gl_cg_backend;
-#else
-            break;
-#endif
-         }
-      case RARCH_SHADER_GLSL:
-#ifdef HAVE_GLSL
-         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
-         return &gl_glsl_backend;
-#else
-         break;
-#endif
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_NONE:
-      default:
-         break;
-   }
-
-   return NULL;
-}
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
@@ -3458,58 +3413,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
    if (!video_poke || !video_driver || !video_poke->get_current_shader)
       return false;
    shader->data = video_poke->get_current_shader(video_driver);
-   return true;
-}
-
-bool video_shader_driver_deinit(void)
-{
-   current_shader_data    = NULL;
-   current_shader         = NULL;
-   return true;
-}
-
-/* Finds first suitable shader context driver. */
-bool video_shader_driver_init_first(const void *data)
-{
-   shader_backend_t *ptr = (shader_backend_t*)data;
-   if (!ptr)
-      return false;
-   current_shader = ptr;
-   return true;
-}
-
-bool video_shader_driver_init(video_shader_ctx_init_t *init)
-{
-   void            *tmp = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!init->shader || !init->shader->init)
-   {
-      init->shader = video_shader_set_backend(init->shader_type);
-
-      if (!init->shader)
-         return false;
-   }
-
-   tmp = init->shader->init(init->data, init->path);
-
-   if (!tmp)
-      return false;
-
-   if (string_is_equal(settings->arrays.menu_driver, "xmb")
-         && init->shader->init_menu_shaders)
-   {
-      RARCH_LOG("Setting up menu pipeline shaders for XMB ... \n");
-      init->shader->init_menu_shaders(tmp);
-   }
-
-   init->shader_data      = tmp;
-   current_shader_data    = tmp;
-
-   RARCH_LOG("Resetting shader to defaults ... \n");
-
-   current_shader         = (shader_backend_t*)init->shader;
-
    return true;
 }
 

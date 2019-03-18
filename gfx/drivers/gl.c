@@ -1971,9 +1971,8 @@ static void gl2_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl, gl->shader_data,
+         VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -2012,6 +2011,76 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
 }
 
 /* Shaders */
+static const shader_backend_t *gl_shader_driver_set_backend(
+      enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+         {
+#ifdef HAVE_CG
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            video_context_driver_get_flags(&flags);
+
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            {
+               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
+                     " GL context. Trying to fall back to GLSL...\n");
+               return gl_shader_driver_set_backend(RARCH_SHADER_GLSL);
+            }
+
+            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+            return &gl_cg_backend;
+#else
+            break;
+#endif
+         }
+      case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
+         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
+         return &gl_glsl_backend;
+#else
+         break;
+#endif
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
+{
+   void            *tmp = NULL;
+   settings_t *settings = config_get_ptr();
+
+   if (!init->shader || !init->shader->init)
+   {
+      init->shader = gl_shader_driver_set_backend(init->shader_type);
+
+      if (!init->shader)
+         return false;
+   }
+
+   tmp = init->shader->init(init->data, init->path);
+
+   if (!tmp)
+      return false;
+
+   if (string_is_equal(settings->arrays.menu_driver, "xmb")
+         && init->shader->init_menu_shaders)
+   {
+      RARCH_LOG("Setting up menu pipeline shaders for XMB ... \n");
+      init->shader->init_menu_shaders(tmp);
+   }
+
+   init->shader_data      = tmp;
+
+   return true;
+}
 
 static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       struct retro_hw_render_callback *hwr
@@ -2057,7 +2126,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.data                    = gl;
    init_data.path                    = shader_path;
 
-   if (video_shader_driver_init(&init_data))
+   if (gl_shader_driver_init(&init_data))
    {
       gl->shader                     = init_data.shader;
       gl->shader_data                = init_data.shader_data;
@@ -2069,7 +2138,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.shader = NULL;
    init_data.path   = NULL;
 
-   ret              = video_shader_driver_init(&init_data);
+   ret              = gl_shader_driver_init(&init_data);
 
    gl->shader       = init_data.shader;
    gl->shader_data  = init_data.shader_data;
@@ -2237,10 +2306,7 @@ static INLINE void gl2_set_shader_viewports(gl_t *gl)
 
    for (i = 0; i < 2; i++)
    {
-      if (video_info.shader_driver && video_info.shader_driver->use)
-         video_info.shader_driver->use(gl,
-               video_info.shader_data, i, true);
-
+      gl->shader->use(gl, gl->shader_data, i, true);
       gl2_set_viewport(gl, &video_info,
             width, height, false, true);
    }
@@ -2351,9 +2417,8 @@ static void gl2_render_osd_background(
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl, gl->shader_data,
+         VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->shader->set_coords(gl->shader_data, &coords);
 
@@ -2453,9 +2518,8 @@ static INLINE void gl2_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl,
+         gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices    = 4;
 
@@ -2525,9 +2589,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->core_context_in_use)
       gl2_renderchain_bind_vao(chain);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, 1, true);
+   gl->shader->use(gl, gl->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -2720,10 +2782,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      if (video_info->shader_driver && video_info->shader_driver->use)
-         video_info->shader_driver->use(gl,
-               video_info->shader_data, 0, true);
-
+      gl->shader->use(gl, gl->shader_data, 0, true);
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
@@ -2821,7 +2880,6 @@ static void gl2_free(void *data)
    font_driver_free_osd();
 
    gl->shader->deinit(gl->shader_data);
-   video_shader_driver_deinit();
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -3430,7 +3488,7 @@ static void *gl2_init(const video_info_t *video,
 
    gl->shader          = (shader_backend_t*)gl2_shader_ctx_drivers[0];
 
-   if (!video_shader_driver_init_first(gl->shader))
+   if (!gl->shader)
    {
       RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
       goto error;
@@ -3665,8 +3723,6 @@ static bool gl2_set_shader(void *data,
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
-   video_shader_driver_deinit();
-
    switch (type)
    {
 #ifdef HAVE_GLSL
@@ -3697,11 +3753,11 @@ static bool gl2_set_shader(void *data,
    init_data.data        = gl;
    init_data.path        = path;
 
-   if (!video_shader_driver_init(&init_data))
+   if (!gl_shader_driver_init(&init_data))
    {
       init_data.path = NULL;
 
-      video_shader_driver_init(&init_data);
+      gl_shader_driver_init(&init_data);
 
       gl->shader       = init_data.shader;
       gl->shader_data  = init_data.shader_data;

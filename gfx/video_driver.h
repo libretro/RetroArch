@@ -491,9 +491,7 @@ typedef struct video_frame_info
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void *context_data;
-   void *shader_data;
    void *userdata;
-   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);
@@ -1182,12 +1180,6 @@ enum gfx_ctx_api video_context_driver_get_api(void);
 void video_context_driver_free(void);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
-
-bool video_shader_driver_deinit(void);
-
-bool video_shader_driver_init_first(const void *data);
-
-bool video_shader_driver_init(video_shader_ctx_init_t *init);
 
 float video_driver_get_refresh_rate(void);
 
