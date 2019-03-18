@@ -602,7 +602,6 @@ static const video_poke_interface_t sixel_poke_interface = {
    NULL,
    NULL,
    NULL,
-   NULL,
    sixel_set_video_mode,
    NULL,
    NULL,

@@ -4142,7 +4142,6 @@ static uint32_t gl2_get_flags(void *data)
 
 static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_flags,
-   NULL, /* set_mvp    */
    gl2_load_texture,
    gl2_unload_texture,
    gl2_set_video_mode,

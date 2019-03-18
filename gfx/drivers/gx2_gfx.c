@@ -1717,7 +1717,6 @@ static uint32_t wiiu_gfx_get_flags(void *data)
 
 static const video_poke_interface_t wiiu_poke_interface = {
    wiiu_gfx_get_flags,
-   NULL,                      /* set_mvp */
    wiiu_gfx_load_texture,
    wiiu_gfx_unload_texture,
    NULL, /* set_video_mode */

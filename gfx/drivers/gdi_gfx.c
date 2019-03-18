@@ -631,7 +631,6 @@ static void gdi_unload_texture(void *data, uintptr_t handle)
 
 static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* get_flags */
-   NULL,                      /* set_mvp */
    gdi_load_texture,
    gdi_unload_texture,
    gdi_set_video_mode,

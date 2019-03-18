@@ -812,6 +812,8 @@ static INLINE void d3d9_convert_geometry(
    }
 }
 
+void d3d9_set_mvp(void *data, const void *userdata);
+
 RETRO_END_DECLS
 
 #endif

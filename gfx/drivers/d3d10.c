@@ -1684,7 +1684,6 @@ static uint32_t d3d10_get_flags(void *data)
 
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
-   NULL, /* set_mvp */
    d3d10_gfx_load_texture,
    d3d10_gfx_unload_texture,
    NULL, /* set_video_mode */

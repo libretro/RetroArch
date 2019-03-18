@@ -121,7 +121,6 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    unsigned i;
-   video_shader_ctx_mvp_t mvp;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
    d3d8_video_t *d3d              = video_info ?
@@ -212,9 +211,8 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
 
-   mvp.data   = d3d;
-   mvp.matrix = &m1;
-   video_driver_set_mvp(&mvp);
+   d3d8_set_mvp(d3d->dev, &m1);
+
    if (draw && draw->texture)
       menu_display_d3d8_bind_texture(draw, d3d);
 

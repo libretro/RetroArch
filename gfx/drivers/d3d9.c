@@ -456,12 +456,10 @@ static void d3d9_viewport_info(void *data, struct video_viewport *vp)
    vp->full_height  = height;
 }
 
-static void d3d9_set_mvp(void *data,
-      void *shader_data,
-      const void *mat_data)
+void d3d9_set_mvp(void *data, const void *mat_data)
 {
-   d3d9_video_t *d3d = (d3d9_video_t*)data;
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+   d3d9_set_vertex_shader_constantf(dev, 0, (const float*)mat_data, 4);
 }
 
 static void d3d9_overlay_render(d3d9_video_t *d3d,
@@ -1696,7 +1694,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp);
       d3d9_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1725,7 +1723,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d9_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
@@ -2053,7 +2051,6 @@ static uint32_t d3d9_get_flags(void *data)
 
 static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_get_flags,
-   d3d9_set_mvp,
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,

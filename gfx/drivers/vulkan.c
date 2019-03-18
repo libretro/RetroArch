@@ -2407,7 +2407,6 @@ static uint32_t vulkan_get_flags(void *data)
 
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
-   NULL,                   /* set_mvp */
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,

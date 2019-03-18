@@ -125,8 +125,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static bool (*video_driver_cb_shader_set_mvp)(void *data,
-      void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
@@ -2852,8 +2850,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
 
-   video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
-
    video_info->userdata               = video_driver_get_ptr(false);
 
 #ifdef HAVE_THREADS
@@ -3472,31 +3468,6 @@ bool video_shader_driver_deinit(void)
    return true;
 }
 
-static bool video_driver_cb_set_mvp(void *data,
-      void *shader_data, const void *mat_data)
-{
-   video_shader_ctx_mvp_t mvp;
-   mvp.data   = data;
-   mvp.matrix = mat_data;
-
-   video_driver_set_mvp(&mvp);
-   return true;
-}
-
-static void video_shader_driver_reset_to_defaults(void)
-{
-   if (!current_shader)
-      return;
-
-   if (current_shader->set_mvp)
-      video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
-   else
-   {
-      current_shader->set_mvp           = video_driver_cb_set_mvp;
-      video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
-   }
-}
-
 /* Finds first suitable shader context driver. */
 bool video_shader_driver_init_first(const void *data)
 {
@@ -3504,7 +3475,6 @@ bool video_shader_driver_init_first(const void *data)
    if (!ptr)
       return false;
    current_shader = ptr;
-   video_shader_driver_reset_to_defaults();
    return true;
 }
 
@@ -3539,25 +3509,8 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    RARCH_LOG("Resetting shader to defaults ... \n");
 
    current_shader         = (shader_backend_t*)init->shader;
-   video_shader_driver_reset_to_defaults();
 
    return true;
-}
-
-void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
-{
-   if (!mvp || !mvp->matrix)
-      return;
-
-   if (current_shader && current_shader->set_mvp)
-      current_shader->set_mvp(mvp->data,
-            current_shader_data, mvp->matrix);
-   else
-   {
-      if (video_driver_poke && video_driver_poke->set_mvp)
-         video_driver_poke->set_mvp(mvp->data,
-               current_shader_data, mvp->matrix);
-   }
 }
 
 float video_driver_get_refresh_rate(void)

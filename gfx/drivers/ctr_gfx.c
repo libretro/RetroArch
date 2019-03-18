@@ -1144,7 +1144,6 @@ static void ctr_set_osd_msg(void *data,
 
 static const video_poke_interface_t ctr_poke_interface = {
    NULL, /* get_flags */
-   NULL,                                  /* set_mvp    */
    ctr_load_texture,
    ctr_unload_texture,
    NULL,

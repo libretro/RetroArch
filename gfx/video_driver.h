@@ -492,9 +492,6 @@ typedef struct video_frame_info
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
-   bool (*cb_set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
-
    void *context_data;
    void *shader_data;
    void *userdata;
@@ -691,8 +688,6 @@ struct aspect_ratio_elem
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
-   void (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
@@ -1195,8 +1190,6 @@ bool video_shader_driver_deinit(void);
 bool video_shader_driver_init_first(const void *data);
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
 float video_driver_get_refresh_rate(void);
 

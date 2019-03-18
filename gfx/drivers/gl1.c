@@ -1250,7 +1250,6 @@ static uint32_t gl1_get_flags(void *data)
 
 static const video_poke_interface_t gl1_poke_interface = {
    gl1_get_flags,
-   NULL,
    gl1_load_texture,
    gl1_unload_texture,
    gl1_set_video_mode,

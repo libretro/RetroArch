@@ -832,7 +832,6 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
 
 static const video_poke_interface_t psp_poke_interface = {
    NULL,          /* get_flags  */
-   NULL,          /* set_mvp */
    NULL,
    NULL,
    NULL,

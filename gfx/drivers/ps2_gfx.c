@@ -470,7 +470,6 @@ static bool ps2_get_hw_render_interface(void* data,
 
 static const video_poke_interface_t ps2_poke_interface = {
    NULL,          /* get_flags  */
-   NULL,          /* set_mvp */
    NULL,
    NULL,
    NULL,
