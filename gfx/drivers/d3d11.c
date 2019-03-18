@@ -1751,7 +1751,6 @@ static uint32_t d3d11_get_flags(void *data)
 
 static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_get_flags,
-   NULL, /* set_coords */
    NULL, /* set_mvp */
    d3d11_gfx_load_texture,
    d3d11_gfx_unload_texture,

@@ -1960,7 +1960,6 @@ static retro_proc_address_t gl_core_get_proc_address(void *data, const char *sym
 
 static const video_poke_interface_t gl_core_poke_interface = {
    gl_core_get_flags,
-   NULL,                   /* set_coords */
    NULL,                   /* set_mvp */
    gl_core_load_texture,
    gl_core_unload_texture,

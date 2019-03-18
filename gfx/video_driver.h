@@ -691,8 +691,6 @@ struct aspect_ratio_elem
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
-   void (*set_coords)(void *handle_data, void *shader_data,
-         const struct video_coords *coords);
    void (*set_mvp)(void *data, void *shader_data,
          const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
@@ -1197,8 +1195,6 @@ bool video_shader_driver_deinit(void);
 bool video_shader_driver_init_first(const void *data);
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 

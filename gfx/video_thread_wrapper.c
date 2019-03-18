@@ -1241,7 +1241,6 @@ static uint32_t thread_get_flags(void *data)
 
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
-   NULL,                            /* set_coords */
    NULL,                            /* set_mvp */
    thread_load_texture,
    thread_unload_texture,

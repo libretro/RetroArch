@@ -2053,7 +2053,6 @@ static uint32_t d3d9_get_flags(void *data)
 
 static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_get_flags,
-   NULL,                            /* set_coords */
    d3d9_set_mvp,
    d3d9_load_texture,
    d3d9_unload_texture,

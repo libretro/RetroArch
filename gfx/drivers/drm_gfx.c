@@ -966,7 +966,6 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 
 static const video_poke_interface_t drm_poke_interface = {
    NULL, /* get_flags */
-   NULL, /* set_coords */
    NULL, /* set_mvp    */
    NULL,
    NULL,

@@ -755,7 +755,6 @@ void switch_overlay_interface(void *data, const video_overlay_interface_t **ifac
 
 static const video_poke_interface_t switch_poke_interface = {
     NULL,                       /* get_flags */
-    NULL,                       /* set_coords */
     NULL,                       /* set_mvp */
     NULL,                       /* load_texture */
     NULL,                       /* unload_texture */

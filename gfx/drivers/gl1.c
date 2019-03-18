@@ -1248,23 +1248,8 @@ static uint32_t gl1_get_flags(void *data)
    return flags;
 }
 
-static void gl1_set_coords(void *handle_data, void *shader_data,
-      const struct video_coords *coords)
-{
-   gl1_t *gl1 = (gl1_t*)handle_data;
-
-   if (!gl1)
-      return;
-
-   gl1->coords.vertex = coords->vertex;
-   gl1->coords.color = coords->color;
-   gl1->coords.tex_coord = coords->tex_coord;
-   gl1->coords.lut_tex_coord = coords->lut_tex_coord;
-}
-
 static const video_poke_interface_t gl1_poke_interface = {
    gl1_get_flags,
-   gl1_set_coords,
    NULL,
    gl1_load_texture,
    gl1_unload_texture,

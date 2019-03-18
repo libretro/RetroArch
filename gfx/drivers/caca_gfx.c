@@ -306,7 +306,6 @@ static void caca_set_osd_msg(void *data,
 
 static const video_poke_interface_t caca_poke_interface = {
    NULL, /* get_flags */
-   NULL,                                  /* set_coords */
    NULL,                                  /* set_mvp    */
    NULL,
    NULL,
