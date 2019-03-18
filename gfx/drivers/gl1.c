@@ -15,7 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
+/* OpenGL driver.
+ *
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
  * Any additional features added for later 1.x versions should only be enabled if they are detected at runtime. */
 
 #include <stddef.h>

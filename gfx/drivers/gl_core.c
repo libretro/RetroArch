@@ -13,6 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Modern OpenGL driver.
+ *
+ * Minimum version (desktop): OpenGL 3.2+
+ * Minimum version (mobile) : OpenGLES 3.0+
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

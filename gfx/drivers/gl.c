@@ -15,6 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Middle of the road OpenGL driver.
+ *
+ * Minimum version (desktop): OpenGL 2.0+
+ * Minimum version (mobile) : OpenGLES 2.0+
+ */
+
 #ifdef _MSC_VER
 #pragma comment(lib, "opengl32")
 #endif
