@@ -658,11 +658,8 @@ static void gl2_renderchain_render(
 
       gl->coords.vertices = 4;
 
-      gl->shader->set_coords(gl,
-            gl->shader_data, &gl->coords);
-
-      gl->shader->set_mvp(gl, gl->shader_data,
-            &gl->mvp);
+      gl->shader->set_coords(gl->shader_data, &gl->coords);
+      gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -729,11 +726,8 @@ static void gl2_renderchain_render(
 
    gl->coords.vertices  = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1986,11 +1980,8 @@ static void gl2_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -2364,15 +2355,13 @@ static void gl2_render_osd_background(
       video_info->shader_driver->use(gl,
             video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
-   gl->shader->set_coords(gl, gl->shader_data,
-         &coords);
+   gl->shader->set_coords(gl->shader_data, &coords);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -2470,11 +2459,8 @@ static INLINE void gl2_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    gl->coords.vertices    = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -2669,11 +2655,8 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl->coords.vertices  = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

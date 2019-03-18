@@ -116,13 +116,10 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
    menu_display_gl_viewport(draw, video_info);
-   if (draw)
-      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, draw->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
+   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp(video_info));
 

@@ -1410,12 +1410,10 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 }
 
-static bool gl_glsl_set_mvp(void *data, void *shader_data, const void *mat_data)
+static bool gl_glsl_set_mvp(void *shader_data, const void *mat_data)
 {
    int loc;
    glsl_shader_data_t *glsl   = (glsl_shader_data_t*)shader_data;
-
-   (void)data;
 
    if (!glsl || !glsl->shader->modern)
       return false;
@@ -1448,7 +1446,7 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const void *mat_data)
       buffer[y + size]  = coord2[y]; \
    size                += multiplier * coords->vertices; \
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
+static bool gl_glsl_set_coords(void *shader_data,
       const struct video_coords *coords)
 {
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];

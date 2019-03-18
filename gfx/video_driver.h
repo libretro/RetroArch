@@ -234,10 +234,8 @@ typedef struct shader_backend
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(void *handle_data,
-         void *shader_data, const struct video_coords *coords);
-   bool (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
+   bool (*set_coords)(void *shader_data, const struct video_coords *coords);
+   bool (*set_mvp)(void *shader_data, const void *mat_data);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);

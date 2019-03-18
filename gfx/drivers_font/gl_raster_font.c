@@ -255,10 +255,8 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font,
       font->atlas->dirty   = false;
    }
 
-   font->gl->shader->set_coords(font->gl,
-         font->gl->shader_data, coords);
-
-   font->gl->shader->set_mvp(font->gl, font->gl->shader_data,
+   font->gl->shader->set_coords(font->gl->shader_data, coords);
+   font->gl->shader->set_mvp(font->gl->shader_data,
          &font->gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
