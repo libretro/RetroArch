@@ -5291,11 +5291,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία και τα προσθέτει στην συλλογή."
+    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Σαρώνει ένα συμβατό αρχείο και το προσθέτει στην συλλογή."
+    "Σαρώνει ένα συμβατό αρχείο"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

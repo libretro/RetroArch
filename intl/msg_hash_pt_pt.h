@@ -2739,9 +2739,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Terminar uma ligação de Netplay ativa.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Verificar uma pasta por ficheiros compatíveis e adicionar os mesmos à coleção.")
+      "Verificar uma pasta por ficheiros compatíveis.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Verificar um ficheiro compatível e adicioná-lo à coleção.")
+      "Verificar um ficheiro compatível.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Usa um intervalo de troca personalizado para Vsync. Utilize isto para reduzir efetivamente a taxa de atualização do monitor."
       )

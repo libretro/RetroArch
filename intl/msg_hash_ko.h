@@ -2762,9 +2762,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "활성 중인 모든 넷플레이 연결 해제.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "디렉토리에서 실행 가능한 파일을 검색하고 컬렉션에 추가.")
+      "디렉토리에서 실행 파일 검색.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "실행 가능한 파일을 검색하고 컬렉션에 추가.")
+      "실행 파일 검색.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "수직 동기에 사용자 스왑 간격을 사용. 모니터 재생 빈도를 효과적으로 줄이는데 사용."
       )

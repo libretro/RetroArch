@@ -5392,11 +5392,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Escanea una carpeta en busca de archivos compatibles y los añade a la colección"
+    "Escanea una carpeta en busca de archivos compatibles."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Escanea un archivo compatible y lo añade a la colección"
+    "Escanea un archivo compatible."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

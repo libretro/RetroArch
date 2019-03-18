@@ -3166,9 +3166,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "断开当前网络连接。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "扫描目录并将兼容的文件添加到合集中。")
+      "扫描目录并将兼容的文件添加到播放列表。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "扫描一个兼容的文件并将其添加到合集中")
+      "扫描一个兼容的文件并将其添加到播放列表")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "为垂直同步使用自定义的交换间隔。该设置可以\n"
       "有效地降低显示器刷新率。"

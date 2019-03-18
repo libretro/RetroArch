@@ -2808,9 +2808,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Se déconnecter de la session de jeu en réseau active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Analyse récursivement un dossier pour y trouver des contenus compatibles qui seront ajoutés dans des playlists.")
+      "Analyse récursivement un dossier pour y trouver des contenus compatibles.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Analyse un fichier pour vérifier s'il est compatible et l'ajouter à une playlist.")
+      "Analyse un fichier pour vérifier s'il est compatible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )

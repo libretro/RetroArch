@@ -2813,9 +2813,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Отключить активное соединение Netplay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Сканирует каталог для поиска совместимых файлов и добавляет их в коллекцию.")
+      "Сканирует каталог для поиска совместимых файлов.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Сканирует совместимый файл и добавляет его в коллекцию.")
+      "Сканирует совместимый файл.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Использует заданный интервал обновления для вертикальной синхронизации. Установите для эффективной частоты обновления монитора."
       )

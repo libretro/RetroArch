@@ -2872,9 +2872,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Beendet eine aktive Netplay-Verbindung.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Durchsuche ein Verzeichnis nach kompatiblen Dateien und füge diese zur Sammlung hinzu.")
+      "Durchsuche ein Verzeichnis nach kompatiblen Dateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Untersuche eine kompatible Datei und fügt diese zur Sammlung hinzu.")
+      "Untersuche eine kompatible Datei.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Verwende ein eigenes Intervall für Vsync. Aktivieren, um die Bildschirm-Wiederholrate zu halbieren."
       )

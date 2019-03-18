@@ -5773,11 +5773,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Scans a directory for compatible content. If found, content is added to playlists."
+    "Scans a directory for content that matches the database."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Scans a file for compatible content. If found, content is added to playlists."
+    "Scans a file for content that matches the database."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

@@ -3003,9 +3003,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Odłącz aktywne połączenie gry online.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Skanuje katalog w poszukiwaniu kompatybilnych plików i dodaje je do kolekcji.")
+      "Skanuje katalog w poszukiwaniu kompatybilnych plików.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Skanuje zgodny plik i dodaje go do kolekcji.")
+      "Skanuje zgodny plik.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Używa niestandardowego interwału wymiany dla Vsync. Ustaw, aby efektywnie zmniejszyć o połowę częstotliwość odświeżania monitora."
       )

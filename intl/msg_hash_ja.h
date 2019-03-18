@@ -3014,9 +3014,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "アクティブなネットプレイ接続を切断する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "フォルダ内のすべての対応ファイルをスキャンして\nコレクションに追加します。")
+      "フォルダ内のすべての対応ファイルをスキャン")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "対応ファイルをスキャンしてコレクションに追加\nします。")
+      "対応ファイルをスキャンし。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
