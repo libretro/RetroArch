@@ -267,13 +267,6 @@ static bool gl2_shader_scale(gl_t *gl,
    return true;
 }
 
-static const char *gl2_shader_get_ident(gl_t *gl)
-{
-   if (!gl || !gl->shader)
-      return "N/A";
-   return gl->shader->ident;
-}
-
 static void gl2_renderchain_convert_geometry(
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
@@ -1610,28 +1603,15 @@ static void gl2_renderchain_copy_frame(
 #endif
 }
 
-static void gl2_renderchain_bind_pbo(unsigned idx)
-{
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx);
+#define gl2_renderchain_bind_pbo(idx) glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx)
+#define gl2_renderchain_unbind_pbo()  glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+#define gl2_renderchain_init_pbo(size, data) glBufferData(GL_PIXEL_PACK_BUFFER, size, (const GLvoid*)data, GL_STREAM_READ)
+#else
+#define gl2_renderchain_bind_pbo(idx)
+#define gl2_renderchain_unbind_pbo()
+#define gl2_renderchain_init_pbo(size, data)
 #endif
-}
-
-static void gl2_renderchain_unbind_pbo(void)
-{
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-#endif
-}
-
-static void gl2_renderchain_init_pbo(unsigned size,
-      const void *data)
-{
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBufferData(GL_PIXEL_PACK_BUFFER, size,
-         (const GLvoid*)data, GL_STREAM_READ);
-#endif
-}
 
 static void gl2_renderchain_readback(
       gl_t *gl,
@@ -3494,9 +3474,7 @@ static void *gl2_init(const video_info_t *video,
       goto error;
    }
 
-   gl2_shader_get_ident(gl);
-
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl2_shader_get_ident(gl));
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl->shader->ident);
 
    if (!gl2_shader_init(gl, ctx_driver, hwr))
    {
