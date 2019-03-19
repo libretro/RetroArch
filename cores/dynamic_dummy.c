@@ -67,7 +67,7 @@ void libretro_dummy_retro_init(void)
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    settings_t *settings = config_get_ptr();
 #endif
-   unsigned i;
+   uint32_t i;
 
    /* Sensible defaults */
    frame_buf_width = 320;
