@@ -14,9 +14,11 @@
 
 #define MULTITOUCH_LIMIT 4 /* supports up to this many fingers at once */
 #define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
+#define SWITCH_NUM_SCANCODES 114
 #endif
 
 #include "../input_driver.h"
+#include "../input_keymaps.h"
 
 #define MAX_PADS 10
 
@@ -38,6 +40,7 @@ typedef struct switch_input
    bool touch_state[MULTITOUCH_LIMIT];
    uint32_t touch_x[MULTITOUCH_LIMIT];
    uint32_t touch_y[MULTITOUCH_LIMIT];
+   bool keyboard_state[SWITCH_NUM_SCANCODES];
 #endif
 } switch_input_t;
 
@@ -50,8 +53,12 @@ static void switch_input_poll(void *data)
 
 #ifdef HAVE_LIBNX
    uint32_t touch_count = hidTouchCount();
+   int i = 0;
+   int keySym = 0;
+   unsigned keyCode = 0;
+   uint16_t mod = 0;
 
-   for (int i = 0; i < MULTITOUCH_LIMIT; i++)
+   for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       sw->touch_state[i] = touch_count > i;
 
@@ -62,6 +69,31 @@ static void switch_input_poll(void *data)
 
          sw->touch_x[i] = touch_position.px;
          sw->touch_y[i] = touch_position.py;
+      }
+   }
+
+   mod = 0;
+   if (hidKeyboardHeld(KBD_LEFTALT) || hidKeyboardHeld(KBD_RIGHTALT))
+      mod |= RETROKMOD_ALT;
+   if (hidKeyboardHeld(KBD_LEFTCTRL) || hidKeyboardHeld(KBD_RIGHTCTRL))
+      mod |= RETROKMOD_CTRL;
+   if (hidKeyboardHeld(KBD_LEFTSHIFT) || hidKeyboardHeld(KBD_RIGHTSHIFT))
+      mod |= RETROKMOD_SHIFT;
+
+   for (i = 0; i < SWITCH_NUM_SCANCODES; i++)
+   {
+      keySym = rarch_key_map_switch[i].sym;
+      keyCode = input_keymaps_translate_keysym_to_rk(keySym);
+
+      if (hidKeyboardHeld(keySym) && !(sw->keyboard_state[i]))
+      {
+         sw->keyboard_state[i] = true;
+         input_keyboard_event(true, keyCode, keyCode, mod, RETRO_DEVICE_KEYBOARD);
+      }
+      else if (!hidKeyboardHeld(keySym) && sw->keyboard_state[i])
+      {
+         sw->keyboard_state[i] = false;
+         input_keyboard_event(false, keyCode, keyCode, mod, RETRO_DEVICE_KEYBOARD);
       }
    }
 #endif
@@ -120,6 +152,9 @@ static int16_t switch_input_state(void *data,
                   joypad_info, port, idx, id, binds[port]);
          break;
 #ifdef HAVE_LIBNX
+      case RETRO_DEVICE_KEYBOARD:
+         return ((id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return switch_pointer_device_state(sw, id, idx);
@@ -162,6 +197,12 @@ static void* switch_input_init(const char *joypad_driver)
    */
 
    calc_touch_scaling(sw, 1280, 720, TOUCH_AXIS_MAX);
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_switch);
+   int i;
+   for (i = 0; i < SWITCH_NUM_SCANCODES; i++) {
+      sw->keyboard_state[i] = false;
+   }
 #endif
 
    return sw;
@@ -174,7 +215,7 @@ static uint64_t switch_input_get_capabilities(void *data)
    uint64_t caps =  (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 
 #ifdef HAVE_LIBNX
-   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_POINTER) | (1 << RETRO_DEVICE_KEYBOARD);
 #endif
 
    return caps;
