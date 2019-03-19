@@ -2023,12 +2023,9 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    if (settings->bools.menu_rgui_lock_aspect)
    {
       unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-      if (aspect_ratio_idx != rgui->menu_aspect_ratio_idx)
-      {
-         settings->uints.video_aspect_ratio_idx = rgui->menu_aspect_ratio_idx;
-         video_driver_set_aspect_ratio();
-         settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
-      }
+      settings->uints.video_aspect_ratio_idx = rgui->menu_aspect_ratio_idx;
+      video_driver_set_aspect_ratio();
+      settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
    }
    
    return true;
