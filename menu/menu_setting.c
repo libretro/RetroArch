@@ -891,6 +891,48 @@ static void setting_get_string_representation_uint_rgui_internal_upscale_level(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_aspect_ratio(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_ASPECT_RATIO_4_3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_16_9:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_16_9_CENTRE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_16_10:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_16_10_CENTRE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE),
+               len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_menu_ticker_type(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -8292,6 +8334,24 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 0, RGUI_UPSCALE_LAST-1, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             }
+
+#if !defined(GEKKO)
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_rgui_aspect_ratio,
+                  MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+                  rgui_aspect,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_rgui_aspect_ratio;
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LAST-1, 1, true, true);
+#endif
 
             CONFIG_BOOL(
                   list, list_info,

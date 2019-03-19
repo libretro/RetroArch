@@ -1694,6 +1694,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, rgui_color_theme, false);
    SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
    SETTING_UINT("rgui_internal_upscale_level",  &settings->uints.menu_rgui_internal_upscale_level, true, rgui_internal_upscale_level, false);
+   SETTING_UINT("rgui_aspect_ratio",            &settings->uints.menu_rgui_aspect_ratio, true, rgui_aspect, false);
 #endif
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);

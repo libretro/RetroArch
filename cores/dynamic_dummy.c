@@ -21,9 +21,18 @@
 
 #include <libretro.h>
 
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#include <string/stdstring.h>
+#include "../configuration.h"
+#include "../menu/menu_defines.h"
+#endif
+
 #include "internal_cores.h"
 
 static uint16_t *dummy_frame_buf;
+
+static uint16_t frame_buf_width;
+static uint16_t frame_buf_height;
 
 #if defined(HAVE_LIBNX) && defined(HAVE_STATIC_DUMMY)
 void retro_init(void) { libretro_dummy_retro_init(); }
@@ -55,10 +64,38 @@ void retro_cheat_set(unsigned idx, bool enabled, const char *code) { libretro_du
 
 void libretro_dummy_retro_init(void)
 {
-   unsigned i;
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+   settings_t *settings = config_get_ptr();
+#endif
+   uint32_t i;
 
-   dummy_frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
-   for (i = 0; i < 320 * 240; i++)
+   /* Sensible defaults */
+   frame_buf_width = 320;
+   frame_buf_height = 240;
+
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+   {
+      switch (settings->uints.menu_rgui_aspect_ratio)
+      {
+         case RGUI_ASPECT_RATIO_16_9:
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            frame_buf_width = 426;
+            break;
+         case RGUI_ASPECT_RATIO_16_10:
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            frame_buf_width = 384;
+            break;
+         default:
+            /* 4:3 */
+            frame_buf_width = 320;
+            break;
+      }
+   }
+#endif
+
+   dummy_frame_buf = (uint16_t*)calloc(frame_buf_width * frame_buf_height, sizeof(uint16_t));
+   for (i = 0; i < frame_buf_width * frame_buf_height; i++)
       dummy_frame_buf[i] = 4 << 5;
 }
 
@@ -109,11 +146,11 @@ void libretro_dummy_retro_get_system_av_info(
    info->timing.fps           = refresh_rate;
    info->timing.sample_rate   = 30000.0;
 
-   info->geometry.base_width  = 320;
-   info->geometry.base_height = 240;
-   info->geometry.max_width   = 320;
-   info->geometry.max_height  = 240;
-   info->geometry.aspect_ratio = 4.0 / 3.0;
+   info->geometry.base_width  = frame_buf_width;
+   info->geometry.base_height = frame_buf_height;
+   info->geometry.max_width   = frame_buf_width;
+   info->geometry.max_height  = frame_buf_height;
+   info->geometry.aspect_ratio = (float)frame_buf_width / (float)frame_buf_height;
 }
 
 void libretro_dummy_retro_set_environment(retro_environment_t cb)
@@ -158,7 +195,7 @@ void libretro_dummy_retro_reset(void)
 void libretro_dummy_retro_run(void)
 {
    dummy_input_poll_cb();
-   dummy_video_cb(dummy_frame_buf, 320, 240, 640);
+   dummy_video_cb(dummy_frame_buf, frame_buf_width, frame_buf_height, 2 * frame_buf_width);
 }
 
 /* This should never be called, it's only used as a placeholder. */
