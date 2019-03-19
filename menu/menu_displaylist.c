@@ -6115,6 +6115,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;

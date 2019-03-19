@@ -3023,6 +3023,18 @@ MSG_HASH(
     "x9"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3,
+    "4:3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9,
+    "16:9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
+    "16:10"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Thumbnails"
     )
@@ -6807,6 +6819,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
     "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+    "Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+    "Select menu aspect ratio. Widescreen ratios increase the horizontal resolution of the menu interface. (May require a restart if 'Lock Menu Aspect Ratio' is disabled)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,

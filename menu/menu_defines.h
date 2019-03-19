@@ -249,6 +249,14 @@ enum rgui_upscale_level
    RGUI_UPSCALE_LAST
 };
 
+enum rgui_aspect_ratio
+{
+   RGUI_ASPECT_RATIO_4_3 = 0,
+   RGUI_ASPECT_RATIO_16_9,
+   RGUI_ASPECT_RATIO_16_10,
+   RGUI_ASPECT_RATIO_LAST
+};
+
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,

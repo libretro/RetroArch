@@ -443,6 +443,7 @@ typedef struct settings
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
       unsigned menu_rgui_internal_upscale_level;
+      unsigned menu_rgui_aspect_ratio;
       unsigned menu_ticker_type;
 
       unsigned playlist_show_inline_core_name;
