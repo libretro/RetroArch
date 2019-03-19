@@ -2367,14 +2367,10 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    static char video_driver_msg[256];
-   static char title[256];
    video_frame_info_t video_info;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   unsigned output_width                             = 0;
-   unsigned output_height                            = 0;
-   unsigned output_pitch                             = 0;
    const char *msg                                   = NULL;
    retro_time_t        new_time                      =
       cpu_features_get_time_usec();
@@ -2407,6 +2403,7 @@ void video_driver_frame(const void *data, unsigned width,
    /* Get the amount of frames per seconds. */
    if (video_driver_frame_count)
    {
+      static char title[256];
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
@@ -2417,78 +2414,46 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_driver_frame_count == 1)
          strlcpy(title, video_driver_window_title, sizeof(title));
 
+      if (video_info.fps_show)
+      {
+         snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+               "FPS: %6.1f", last_fps);
+         if (video_info.framecount_show)
+            strlcat(video_info.fps_text,
+                  " || ", sizeof(video_info.fps_text));
+      }
+
+      if (video_info.framecount_show)
+      {
+         char frames_text[64];
+         snprintf(frames_text,
+               sizeof(frames_text),
+               "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
+               (uint64_t)video_driver_frame_count);
+         strlcat(video_info.fps_text,
+               frames_text, sizeof(video_info.fps_text));
+      }
+
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
 
          strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
 
-         if (video_info.fps_show)
+         if (!string_is_empty(video_info.fps_text))
          {
-            snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                  " ||  FPS: %6.1f ", last_fps);
+            strlcat(video_driver_window_title,
+                  "|| ", sizeof(video_driver_window_title));
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }
 
-         if (video_info.framecount_show)
-         {
-            char frames_text[64];
-            snprintf(frames_text,
-                  sizeof(frames_text),
-                  " ||  Frames: %" PRIu64,
-                  (uint64_t)video_driver_frame_count);
-            strlcat(video_driver_window_title,
-                  frames_text, sizeof(video_driver_window_title));
-         }
-
-         curr_time = new_time;
+         curr_time                        = new_time;
          video_driver_window_title_update = true;
       }
-
-      if (video_info.fps_show)
-      {
-         if (video_info.framecount_show)
-            snprintf(
-                  video_info.fps_text,
-                  sizeof(video_info.fps_text),
-                  "FPS: %6.1f || %s: %" PRIu64,
-                  last_fps,
-                  msg_hash_to_str(MSG_FRAMES),
-                  (uint64_t)video_driver_frame_count);
-         else
-            snprintf(
-                  video_info.fps_text,
-                  sizeof(video_info.fps_text),
-                  "FPS: %6.1f",
-                  last_fps);
-      }
-
-      if (video_info.fps_show && video_info.framecount_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "FPS: %6.1f || %s: %" PRIu64,
-               last_fps,
-               msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_driver_frame_count);
-      else if (video_info.framecount_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "%s: %" PRIu64,
-               msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_driver_frame_count);
-      else if (video_info.fps_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "FPS: %6.1f",
-               last_fps);
    }
    else
    {
-
       curr_time = fps_time = new_time;
 
       strlcpy(video_driver_window_title,
@@ -2503,8 +2468,8 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_window_title_update = true;
    }
 
-   video_info.frame_rate = last_fps;
-   video_info.frame_time = frame_time / 1000.0f;
+   video_info.frame_rate  = last_fps;
+   video_info.frame_time  = frame_time / 1000.0f;
    video_info.frame_count = (uint64_t) video_driver_frame_count;
 
    /* Slightly messy code,
@@ -2524,6 +2489,10 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (data && video_driver_state_filter)
    {
+      unsigned output_width                             = 0;
+      unsigned output_height                            = 0;
+      unsigned output_pitch                             = 0;
+
       rarch_softfilter_get_output_size(video_driver_state_filter,
             &output_width, &output_height, width, height);
 
