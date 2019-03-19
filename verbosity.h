@@ -41,6 +41,8 @@ void retro_main_log_file_deinit(void);
 
 void retro_main_log_file_init(const char *path);
 
+bool is_logging_to_file(void);
+
 #if defined(HAVE_LOGGER)
 
 void logger_init (void);

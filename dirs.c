@@ -314,6 +314,8 @@ void dir_check_defaults(void)
     */
 #ifdef ORBIS
    if (filestream_exists("host0:app/custom.ini"))
+#elif defined(ANDROID)
+   if (filestream_exists("host0:app/custom.ini"))
 #else
    if (filestream_exists("custom.ini"))
 #endif

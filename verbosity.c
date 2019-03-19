@@ -96,6 +96,11 @@ bool verbosity_is_enabled(void)
    return main_verbosity;
 }
 
+bool is_logging_to_file(void)
+{
+   return log_file_initialized;
+}
+
 bool *verbosity_get_ptr(void)
 {
    return &main_verbosity;
@@ -190,10 +195,14 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
             prio = ANDROID_LOG_ERROR;
       }
-      __android_log_vprint(prio,
-            file_path_str(FILE_PATH_PROGRAM_NAME),
-            fmt,
-            ap);
+
+      if (log_file_initialized)
+         vfprintf(log_file_fp, fmt, ap);
+      else
+         __android_log_vprint(prio,
+               file_path_str(FILE_PATH_PROGRAM_NAME),
+               fmt,
+               ap);
    }
 #else
 

@@ -1310,6 +1310,9 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
             global->record.config_dir, false, NULL, true);
    }
 
+   SETTING_ARRAY("log_file", settings->paths.log_file, true, default_log_file, true);
+   SETTING_ARRAY("log_dir", settings->paths.log_dir, true, "", true);
+
    *size = count;
 
    return tmp;
@@ -1592,6 +1595,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, ozone_collapse_sidebar, false);
 #endif
+   SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
 
    *size = count;
 
@@ -1956,6 +1960,12 @@ void config_set_defaults(void)
    strlcpy(settings->arrays.discord_app_id,
       default_discord_app_id,  sizeof(settings->arrays.discord_app_id));
 
+   strlcpy(settings->paths.log_file,
+      default_log_file,  sizeof(settings->paths.log_file));
+
+   strlcpy(settings->paths.log_dir,
+      g_defaults.dirs[DEFAULT_DIR_LOGS],  sizeof(settings->paths.log_dir));
+
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu.materialui.menu_color_theme_enable)
       settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
@@ -2252,6 +2262,11 @@ void config_set_defaults(void)
       strlcpy(settings->paths.directory_content_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
             sizeof(settings->paths.directory_content_history));
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+      strlcpy(settings->paths.log_dir,
+            g_defaults.dirs[DEFAULT_DIR_LOGS],
+            sizeof(settings->paths.log_dir));
 
    if (!string_is_empty(g_defaults.path.config))
    {
@@ -2832,7 +2847,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (config_get_bool(conf, "log_verbosity", &tmp_bool))
    {
       if (tmp_bool)
+      {
          verbosity_enable();
+      }
       else
          verbosity_disable();
    }
@@ -3244,7 +3261,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    recording_driver_update_streaming_url();
 
    ret = true;
-
 end:
    if (conf)
       config_file_free(conf);
