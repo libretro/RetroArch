@@ -79,9 +79,11 @@ void libretro_dummy_retro_init(void)
       switch (settings->uints.menu_rgui_aspect_ratio)
       {
          case RGUI_ASPECT_RATIO_16_9:
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
             frame_buf_width = 426;
             break;
          case RGUI_ASPECT_RATIO_16_10:
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
             frame_buf_width = 384;
             break;
          default:

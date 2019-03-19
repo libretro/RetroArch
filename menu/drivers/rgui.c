@@ -1057,9 +1057,11 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    switch (settings->uints.menu_rgui_aspect_ratio)
    {
       case RGUI_ASPECT_RATIO_16_9:
+      case RGUI_ASPECT_RATIO_16_9_CENTRE:
          wallpaper_key = "rgui_wallpaper_16_9";
          break;
       case RGUI_ASPECT_RATIO_16_10:
+      case RGUI_ASPECT_RATIO_16_10_CENTRE:
          wallpaper_key = "rgui_wallpaper_16_10";
          break;
       default:
@@ -1915,6 +1917,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
 #if !defined(GEKKO)
    settings_t *settings = config_get_ptr();
 #endif
+   unsigned base_term_width;
    
    rgui_framebuffer_free();
    rgui_thumbnail_free();
@@ -1929,6 +1932,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
     * and update menu aspect index */
    rgui_frame_buf.height = 240;
    rgui_frame_buf.width = 320;
+   base_term_width = rgui_frame_buf.width;
    rgui->menu_aspect_ratio_idx = ASPECT_RATIO_4_3;
    
    /* Allocate frame buffer
@@ -1945,15 +1949,28 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    {
       case RGUI_ASPECT_RATIO_16_9:
          rgui_frame_buf.width = 426;
+         base_term_width = rgui_frame_buf.width;
+         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_9;
+         break;
+      case RGUI_ASPECT_RATIO_16_9_CENTRE:
+         rgui_frame_buf.width = 426;
+         base_term_width = 320;
          rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_9;
          break;
       case RGUI_ASPECT_RATIO_16_10:
          rgui_frame_buf.width = 384;
+         base_term_width = rgui_frame_buf.width;
+         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_10;
+         break;
+      case RGUI_ASPECT_RATIO_16_10_CENTRE:
+         rgui_frame_buf.width = 384;
+         base_term_width = 320;
          rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_10;
          break;
       default:
          /* 4:3 */
          rgui_frame_buf.width = 320;
+         base_term_width = rgui_frame_buf.width;
          rgui->menu_aspect_ratio_idx = ASPECT_RATIO_4_3;
          break;
    }
@@ -1976,9 +1993,9 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    /* Determine terminal layout */
    rgui_term_layout.start_x = (3 * 5) + 1;
    rgui_term_layout.start_y = (3 * 5) + FONT_HEIGHT_STRIDE;
-   rgui_term_layout.width = (rgui_frame_buf.width - (2 * rgui_term_layout.start_x)) / FONT_WIDTH_STRIDE;
+   rgui_term_layout.width = (base_term_width - (2 * rgui_term_layout.start_x)) / FONT_WIDTH_STRIDE;
    rgui_term_layout.height = (rgui_frame_buf.height - (2 * rgui_term_layout.start_y)) / FONT_HEIGHT_STRIDE;
-   rgui_term_layout.value_maxlen = (unsigned)(((float)RGUI_ENTRY_VALUE_MAXLEN * (float)rgui_frame_buf.width / 320.0f) + 0.5);
+   rgui_term_layout.value_maxlen = (unsigned)(((float)RGUI_ENTRY_VALUE_MAXLEN * (float)base_term_width / 320.0f) + 0.5);
    
    /* > 'Start X/Y' adjustments */
    rgui_term_layout.start_x = (rgui_frame_buf.width - (rgui_term_layout.width * FONT_WIDTH_STRIDE)) / 2;
