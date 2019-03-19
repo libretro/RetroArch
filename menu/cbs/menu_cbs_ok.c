@@ -3508,26 +3508,27 @@ void cb_generic_download(retro_task_t *task,
          break;
       }
       case MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL:
-      {
-         dir_path = transf->path;
          break;
-      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
          break;
    }
 
-   if (!string_is_empty(dir_path) && transf->enum_idx != MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+   if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   /* in this particular case we have the whole path already built from the task */
    else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
       strlcpy(output_path, transf->path, sizeof(output_path));
 
-   /* Make sure the directory exists */
-   path_basedir_wrapper(output_path);
 
-   RARCH_LOG("output path: %s\n", output_path);
+   /* Make sure the directory exists
+    *  This function is horrible, it mutates the original path so after operating we'll
+    *  have to set the path to the intended location again
+    *  ¯\_(ツ)_/¯
+    */
+   path_basedir_wrapper(output_path);
 
    if (!path_mkdir(output_path))
    {
@@ -3535,20 +3536,21 @@ void cb_generic_download(retro_task_t *task,
       goto finish;
    }
 
-   if (!string_is_empty(dir_path) && transf->enum_idx != MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+   /* Same exact code as L3518 */
+   if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   /* in this particular case we have the whole path already built from the task */
    else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
       strlcpy(output_path, transf->path, sizeof(output_path));
-
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(output_path))
    {
       if (task_check_decompress(output_path))
       {
-        err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
-        goto finish;
+         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
+         goto finish;
       }
    }
 #endif
@@ -3574,8 +3576,8 @@ void cb_generic_download(retro_task_t *task,
                msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
                frontend_userdata))
       {
-        err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
-        goto finish;
+         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
+         goto finish;
       }
    }
 #else
