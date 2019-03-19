@@ -413,27 +413,7 @@ static void ozone_update_thumbnail_image(void *data)
                menu_display_handle_thumbnail_upload, NULL);
       else
       {
-         const char *system;
-         file_transfer_t *transf = NULL;
-         menu_thumbnail_get_system(ozone->thumbnail_path_data, &system);
-
-         strlcpy(url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(url));
-         strlcat(url, "/", sizeof(url));
-         strlcat(url, system, sizeof(url));
-         strlcat(url, "/", sizeof(url));
-         strlcat(url, menu_thumbnail_get_type(MENU_THUMBNAIL_RIGHT), sizeof(url));
-         strlcat(url, "/", sizeof(url));
-         strlcat(url, path_basename(right_thumbnail_path), sizeof(url));
-         net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
-
-         transf = (file_transfer_t*)calloc(1, sizeof(*transf));
-         transf->enum_idx = MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL;
-         strlcpy(transf->path, right_thumbnail_path, sizeof(transf->path));
-
-         task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
-         RARCH_LOG("[ozone] Downloading thumbnail from: %s\n", url_encoded);
-         RARCH_LOG("[ozone] Downloading thumbnail to: %s\n", right_thumbnail_path);
-
+         menu_thumbnail_get(ozone->thumbnail_path_data, right_thumbnail_path);
          video_driver_texture_unload(&ozone->thumbnail);
       }
    }

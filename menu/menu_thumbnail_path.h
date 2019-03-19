@@ -126,6 +126,8 @@ bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const c
 
 bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system);
 
+void menu_thumbnail_get(menu_thumbnail_path_data_t *path_data, const char* right_thumbnail_path);
+
 RETRO_END_DECLS
 
 #endif

@@ -28,8 +28,10 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <lists/file_list.h>
+#include <net/net_http.h>
 
 #include "../configuration.h"
+#include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../paths.h"
 #include "../file_path_special.h"
@@ -38,6 +40,10 @@
 #include "widgets/menu_entry.h"
 
 #include "menu_thumbnail_path.h"
+#include "menu_cbs.h"
+
+#include "../tasks/tasks_internal.h"
+#include "../tasks/task_file_transfer.h"
 
 /* Used fixed size char arrays here, just to avoid
  * the inconvenience of having to calloc()/free()
@@ -586,4 +592,42 @@ bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char
    *system = path_data->system;
    
    return true;
+}
+
+void menu_thumbnail_get(menu_thumbnail_path_data_t *path_data, const char* right_thumbnail_path)
+{
+   const char *system;
+   file_transfer_t *transf = NULL;
+   char url [2048], url_encoded [2048];
+   settings_t *settings = config_get_ptr();
+
+   menu_thumbnail_get_system(path_data, &system);
+
+   /* early return if strings are empty */
+   if (string_is_empty(system) || string_is_empty(right_thumbnail_path))
+      return;
+
+   /* early return if strings point to an invalid system */
+   if (string_is_equal(system, "history") || string_is_equal(system, "favorites")
+      || string_is_equal(system, "imageviewer"))
+      return;
+
+   strlcpy(url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(url));
+   strlcat(url, "/", sizeof(url));
+   strlcat(url, system, sizeof(url));
+   strlcat(url, "/", sizeof(url));
+   strlcat(url, menu_thumbnail_get_type(MENU_THUMBNAIL_RIGHT), sizeof(url));
+   strlcat(url, "/", sizeof(url));
+   strlcat(url, path_basename(right_thumbnail_path), sizeof(url));
+   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+
+   transf = (file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL;
+   strlcpy(transf->path, right_thumbnail_path, sizeof(transf->path));
+
+   task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+#if 1
+   RARCH_LOG("[thumbnails] Downloading thumbnail from: %s\n", url_encoded);
+   RARCH_LOG("[thumbnails] Downloading thumbnail to: %s\n", right_thumbnail_path);
+#endif
 }
