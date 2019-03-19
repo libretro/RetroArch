@@ -141,6 +141,7 @@ void retro_main_log_file_deinit(void)
    {
       fclose(log_file_fp);
       log_file_fp = NULL;
+      log_file_initialized = false;
    }
    if (log_file_buf)
       free(log_file_buf);
