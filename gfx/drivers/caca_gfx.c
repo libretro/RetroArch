@@ -317,6 +317,7 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL,
    caca_set_texture_frame,
    NULL,
    caca_set_osd_msg,
