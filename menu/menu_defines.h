@@ -259,6 +259,14 @@ enum rgui_aspect_ratio
    RGUI_ASPECT_RATIO_LAST
 };
 
+enum rgui_aspect_ratio_lock
+{
+   RGUI_ASPECT_RATIO_LOCK_NONE = 0,
+   RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   RGUI_ASPECT_RATIO_LOCK_LAST
+};
+
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,

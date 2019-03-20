@@ -520,7 +520,7 @@ default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,     
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_background_filler_thickness_enable,  MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_linear_filter,                            MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER)
-default_sublabel_macro(action_bind_sublabel_menu_rgui_lock_aspect,                         MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT)
+default_sublabel_macro(action_bind_sublabel_menu_rgui_aspect_ratio_lock,                   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK)
 default_sublabel_macro(action_bind_sublabel_rgui_menu_color_theme,                         MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_rgui_menu_theme_preset,                        MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_downscaler,                MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER)
@@ -2387,8 +2387,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_LINEAR_FILTER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_linear_filter);
             break;
-         case MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_lock_aspect);
+         case MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_aspect_ratio_lock);
             break;
          case MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_menu_color_theme);

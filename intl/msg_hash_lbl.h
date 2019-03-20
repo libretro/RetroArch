@@ -1605,12 +1605,12 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
       "menu_rgui_border_filler_thickness_enable")
 MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "menu_rgui_background_filler_thickness_enable")
-MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT,
-      "menu_rgui_lock_aspect")
 MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
       "rgui_internal_upscale_level")
 MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO,
       "rgui_aspect_ratio")
+MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+      "rgui_aspect_ratio_lock")
 MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
       "menu_rgui_full_width_layout")
 MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,

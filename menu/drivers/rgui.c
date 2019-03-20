@@ -429,6 +429,12 @@ typedef struct
 
 typedef struct
 {
+   unsigned aspect_ratio_idx;
+   video_viewport_t viewport;
+} rgui_video_settings_t;
+
+typedef struct
+{
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
@@ -450,8 +456,9 @@ typedef struct
    char menu_title[255]; /* Must be a fixed length array... */
    char menu_sublabel[255]; /* Must be a fixed length array... */
    unsigned menu_aspect_ratio;
-   unsigned menu_aspect_ratio_idx;
-   unsigned content_aspect_ratio_idx;
+   unsigned menu_aspect_ratio_lock;
+   rgui_video_settings_t menu_video_settings;
+   rgui_video_settings_t content_video_settings;
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -1912,6 +1919,127 @@ static void rgui_wallpaper_free(void)
    wallpaper.data = NULL;
 }
 
+bool rgui_is_video_config_equal(rgui_video_settings_t *config_a, rgui_video_settings_t *config_b)
+{
+   return (config_a->aspect_ratio_idx == config_b->aspect_ratio_idx) &&
+          (config_a->viewport.width == config_b->viewport.width) &&
+          (config_a->viewport.height == config_b->viewport.height) &&
+          (config_a->viewport.x == config_b->viewport.x) &&
+          (config_a->viewport.y == config_b->viewport.y);
+}
+
+static void rgui_get_video_config(rgui_video_settings_t *video_settings)
+{
+   settings_t *settings        = config_get_ptr();
+   /* Could use settings->video_viewport_custom directly,
+    * but this seems to be the standard way of doing it... */
+   video_viewport_t *custom_vp = video_viewport_get_custom();
+   
+   if (!settings)
+      return;
+   
+   video_settings->aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   video_settings->viewport.width = custom_vp->width;
+   video_settings->viewport.height = custom_vp->height;
+   video_settings->viewport.x = custom_vp->x;
+   video_settings->viewport.y = custom_vp->y;
+}
+
+static void rgui_set_video_config(rgui_video_settings_t *video_settings)
+{
+   settings_t *settings        = config_get_ptr();
+   /* Could use settings->video_viewport_custom directly,
+    * but this seems to be the standard way of doing it... */
+   video_viewport_t *custom_vp = video_viewport_get_custom();
+   
+   if (!settings)
+      return;
+   
+   settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
+   custom_vp->width = video_settings->viewport.width;
+   custom_vp->height = video_settings->viewport.height;
+   custom_vp->x = video_settings->viewport.x;
+   custom_vp->y = video_settings->viewport.y;
+   
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom_vp->width / custom_vp->height;
+   
+   video_driver_set_aspect_ratio();
+}
+
+/* Note: This function is only called when aspect ratio
+ * lock is enabled */
+static void rgui_update_menu_viewport(rgui_t *rgui)
+{
+   settings_t *settings = config_get_ptr();
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   struct video_viewport vp;
+   
+   if (!settings)
+      return;
+   
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   video_driver_get_viewport_info(&vp);
+   
+   /* Could do this once in rgui_init(), but seems cleaner to
+    * handle all video config in one place... */
+   rgui->menu_video_settings.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+   
+   /* Determine custom viewport layout */
+   if (fb_width > 0 && fb_height > 0 && vp.full_width > 0 && vp.full_height > 0)
+   {
+      /* Check whether we need to perform integer scaling */
+      bool do_integer_scaling = (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_INTEGER);
+      
+      if (do_integer_scaling)
+      {
+         unsigned width_scale = (vp.full_width / fb_width);
+         unsigned height_scale = (vp.full_height / fb_height);
+         unsigned scale = (width_scale <= height_scale) ? width_scale : height_scale;
+         
+         if (scale > 0)
+         {
+            rgui->menu_video_settings.viewport.width = scale * fb_width;
+            rgui->menu_video_settings.viewport.height = scale * fb_height;
+         }
+         else
+            do_integer_scaling = false;
+      }
+      
+      if (!do_integer_scaling)
+      {
+         float display_aspect_ratio = (float)vp.full_width / (float)vp.full_height;
+         float aspect_ratio = (float)fb_width / (float)fb_height;
+         
+         if (aspect_ratio > display_aspect_ratio)
+         {
+            rgui->menu_video_settings.viewport.width = vp.full_width;
+            rgui->menu_video_settings.viewport.height = fb_height * vp.full_width / fb_width;
+         }
+         else
+         {
+            rgui->menu_video_settings.viewport.height = vp.full_height;
+            rgui->menu_video_settings.viewport.width = fb_width * vp.full_height / fb_height;
+         }
+      }
+      
+      /* Sanity check */
+      rgui->menu_video_settings.viewport.width = (rgui->menu_video_settings.viewport.width < 1) ?
+         1 : rgui->menu_video_settings.viewport.width;
+      rgui->menu_video_settings.viewport.height = (rgui->menu_video_settings.viewport.height < 1) ?
+         1 : rgui->menu_video_settings.viewport.height;
+   }
+   else
+   {
+      rgui->menu_video_settings.viewport.width = 1;
+      rgui->menu_video_settings.viewport.height = 1;
+   }
+   
+   rgui->menu_video_settings.viewport.x = (vp.full_width - rgui->menu_video_settings.viewport.width) / 2;
+   rgui->menu_video_settings.viewport.y = (vp.full_height - rgui->menu_video_settings.viewport.height) / 2;
+}
+
 static bool rgui_set_aspect_ratio(rgui_t *rgui)
 {
 #if !defined(GEKKO)
@@ -1933,7 +2061,6 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    rgui_frame_buf.height = 240;
    rgui_frame_buf.width = 320;
    base_term_width = rgui_frame_buf.width;
-   rgui->menu_aspect_ratio_idx = ASPECT_RATIO_4_3;
    
    /* Allocate frame buffer
     * (4 extra lines to cache the chequered background) */
@@ -1950,28 +2077,23 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
       case RGUI_ASPECT_RATIO_16_9:
          rgui_frame_buf.width = 426;
          base_term_width = rgui_frame_buf.width;
-         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_9;
          break;
       case RGUI_ASPECT_RATIO_16_9_CENTRE:
          rgui_frame_buf.width = 426;
          base_term_width = 320;
-         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_9;
          break;
       case RGUI_ASPECT_RATIO_16_10:
          rgui_frame_buf.width = 384;
          base_term_width = rgui_frame_buf.width;
-         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_10;
          break;
       case RGUI_ASPECT_RATIO_16_10_CENTRE:
          rgui_frame_buf.width = 384;
          base_term_width = 320;
-         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_16_10;
          break;
       default:
          /* 4:3 */
          rgui_frame_buf.width = 320;
          base_term_width = rgui_frame_buf.width;
-         rgui->menu_aspect_ratio_idx = ASPECT_RATIO_4_3;
          break;
    }
    
@@ -2020,12 +2142,10 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    
    /* If aspect ratio lock is enabled, notify
     * video driver of change */
-   if (settings->bools.menu_rgui_lock_aspect)
+   if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
    {
-      unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-      settings->uints.video_aspect_ratio_idx = rgui->menu_aspect_ratio_idx;
-      video_driver_set_aspect_ratio();
-      settings->uints.video_aspect_ratio_idx = aspect_ratio_idx;
+      rgui_update_menu_viewport(rgui);
+      rgui_set_video_config(&rgui->menu_video_settings);
    }
    
    return true;
@@ -2053,9 +2173,13 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->menu_title[0] = '\0';
    rgui->menu_sublabel[0] = '\0';
 
+   /* Cache initial video settings */
+   rgui_get_video_config(&rgui->content_video_settings);
+
    /* Set aspect ratio
     * - Allocates frame buffer
     * - Configures variable 'menu display' settings */
+   rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
    if (!rgui_set_aspect_ratio(rgui))
       goto error;
 
@@ -2160,6 +2284,21 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
       rgui_set_aspect_ratio(rgui);
+
+   if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
+   {
+      rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
+
+      if (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_NONE)
+      {
+         rgui_set_video_config(&rgui->content_video_settings);
+      }
+      else
+      {
+         rgui_update_menu_viewport(rgui);
+         rgui_set_video_config(&rgui->menu_video_settings);
+      }
+   }
 }
 
 static void rgui_set_texture(void)
@@ -2423,9 +2562,10 @@ static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   rgui_t *rgui = (rgui_t*)data;
+   rgui_t *rgui         = (rgui_t*)data;
+   settings_t *settings = config_get_ptr();
    
-   if (!rgui)
+   if (!rgui || !settings)
       return;
    
    /* Check whether we are currently viewing a playlist */
@@ -2438,6 +2578,22 @@ static void rgui_populate_entries(void *data,
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
    
    rgui_navigation_set(data, true);
+   
+   /* If aspect ratio lock is enabled, must restore
+    * content video settings when accessing the video
+    * settings menu... */
+   if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+   {
+      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST)))
+      {
+         /* Make sure that any changes made while accessing
+          * the video settings menu are preserved */
+         rgui_video_settings_t current_video_settings = {0};
+         rgui_get_video_config(&current_video_settings);
+         if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
+            rgui_set_video_config(&rgui->content_video_settings);
+      }
+   }
 }
 
 static int rgui_environ(enum menu_environ_cb type,
@@ -2505,36 +2661,29 @@ static void rgui_toggle(void *userdata, bool menu_on)
    if (!rgui || !settings)
       return;
    
-   if (settings->bools.menu_rgui_lock_aspect)
+   if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
    {
       if (menu_on)
       {
-         /* Cache last used content aspect ratio */
-         rgui->content_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+         /* Cache content video settings */
+         rgui_get_video_config(&rgui->content_video_settings);
          
-         /* Check if aspect ratio needs to change */
-         if (rgui->content_aspect_ratio_idx != rgui->menu_aspect_ratio_idx)
-         {
-            settings->uints.video_aspect_ratio_idx = rgui->menu_aspect_ratio_idx;
-            video_driver_set_aspect_ratio();
-            
-            /* If content is using a custom aspect ratio, we
-             * have to stop here - otherwise, restore content
-             * aspect ratio setting */
-            if (rgui->content_aspect_ratio_idx != ASPECT_RATIO_CUSTOM)
-               settings->uints.video_aspect_ratio_idx = rgui->content_aspect_ratio_idx;
-         }
+         /* Update menu viewport */
+         rgui_update_menu_viewport(rgui);
+         
+         /* Apply menu video settings */
+         rgui_set_video_config(&rgui->menu_video_settings);
       }
       else
       {
-         /* If content is using a custom aspect ratio, this
-          * must be restored */
-         if (rgui->content_aspect_ratio_idx == ASPECT_RATIO_CUSTOM
-               && settings->uints.video_aspect_ratio_idx == rgui->menu_aspect_ratio_idx)
-            settings->uints.video_aspect_ratio_idx = rgui->content_aspect_ratio_idx;
+         /* Restore content video settings *if* user
+          * has not changed video settings since menu was
+          * last toggled on */
+         rgui_video_settings_t current_video_settings = {0};
+         rgui_get_video_config(&current_video_settings);
          
-         if (settings->uints.video_aspect_ratio_idx != rgui->menu_aspect_ratio_idx)
-            video_driver_set_aspect_ratio();
+         if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
+            rgui_set_video_config(&rgui->content_video_settings);
       }
    }
    

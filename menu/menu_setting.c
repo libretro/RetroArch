@@ -933,6 +933,36 @@ static void setting_get_string_representation_uint_rgui_aspect_ratio(
    }
 }
 
+static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RGUI_ASPECT_RATIO_LOCK_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN),
+               len);
+         break;
+      case RGUI_ASPECT_RATIO_LOCK_INTEGER:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER),
+               len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_menu_ticker_type(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -8353,21 +8383,21 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LAST-1, 1, true, true);
 #endif
 
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->bools.menu_rgui_lock_aspect,
-                  MENU_ENUM_LABEL_MENU_RGUI_LOCK_ASPECT,
-                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
-                  true,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
+                  &settings->uints.menu_rgui_aspect_ratio_lock,
+                  MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+                  rgui_aspect_lock,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
+                  general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_rgui_aspect_ratio_lock;
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-1, 1, true, true);
 
             CONFIG_UINT(
                   list, list_info,
