@@ -59,10 +59,10 @@
 #include <gfx/scaler/scaler.h>
 
 #if defined(GEKKO)
-#define RGUI_TERM_START_X(fb_width)        (width / 21)
-#define RGUI_TERM_START_Y(fb_height)       (height / 9)
-#define RGUI_TERM_WIDTH(fb_width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT(fb_height)        (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_Y(height)) / (FONT_HEIGHT_STRIDE)))
+#define RGUI_TERM_START_X(fb_width)        (fb_width / 21)
+#define RGUI_TERM_START_Y(fb_height)       (fb_height / 9)
+#define RGUI_TERM_WIDTH(fb_width)          (((fb_width - RGUI_TERM_START_X(fb_width) - RGUI_TERM_START_X(fb_width)) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT(fb_height)        (((fb_height - RGUI_TERM_START_Y(fb_height) - RGUI_TERM_START_Y(fb_height)) / (FONT_HEIGHT_STRIDE)))
 #else
 #define RGUI_TERM_START_X(fb_width)        rgui_term_layout.start_x
 #define RGUI_TERM_START_Y(fb_height)       rgui_term_layout.start_y
