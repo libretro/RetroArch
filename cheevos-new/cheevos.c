@@ -662,7 +662,6 @@ static void cheevos_test_leaderboards(void)
 
          if (value != lboard->last_value)
          {
-            CHEEVOS_LOG(CHEEVOS_TAG "Value lboard %s %u\n", lboard->info->title, value);
             lboard->last_value = value;
          }
 

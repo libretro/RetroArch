@@ -1853,8 +1853,6 @@ static void cheevos_test_leaderboards(void)
 
          if (value != lboard->last_value)
          {
-            CHEEVOS_LOG("[CHEEVOS]: value lboard  %s %u\n",
-                  lboard->title, value);
             lboard->last_value = value;
          }
 
