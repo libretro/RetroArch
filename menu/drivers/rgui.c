@@ -2042,10 +2042,8 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
 
 static bool rgui_set_aspect_ratio(rgui_t *rgui)
 {
-#if !defined(GEKKO)
-   settings_t *settings = config_get_ptr();
-#endif
    unsigned base_term_width;
+   settings_t *settings = config_get_ptr();
    
    rgui_framebuffer_free();
    rgui_thumbnail_free();
@@ -2055,12 +2053,11 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    rgui->menu_aspect_ratio = settings->uints.menu_rgui_aspect_ratio;
    
 #if defined(GEKKO)
-   
    /* Set frame buffer dimensions
     * and update menu aspect index */
    rgui_frame_buf.height = 240;
-   rgui_frame_buf.width = 320;
-   base_term_width = rgui_frame_buf.width;
+   rgui_frame_buf.width  = 320;
+   base_term_width       = rgui_frame_buf.width;
    
    /* Allocate frame buffer
     * (4 extra lines to cache the chequered background) */
