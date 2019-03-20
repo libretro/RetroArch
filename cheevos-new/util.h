@@ -31,7 +31,7 @@ Setup - mainly for debugging
 End of setup
 *****************************************************************************/
 
-#define CHEEVOS_TAG "[RCHEEVOS]: "
+#define RCHEEVOS_TAG "[RCHEEVOS]: "
 #define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q != NULL) free(q); } while (0)
 
 #ifdef CHEEVOS_VERBOSE
@@ -41,10 +41,10 @@ End of setup
 
 #else
 
-#define CHEEVOS_LOG cheevos_log
+#define CHEEVOS_LOG rcheevos_log
 #define CHEEVOS_ERR RARCH_ERR
 
-void cheevos_log(const char *fmt, ...);
+void rcheevos_log(const char *fmt, ...);
 
 #endif
 

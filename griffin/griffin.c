@@ -158,15 +158,27 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 
+#include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
+#include "../cheevos/cond.c"
+#include "../cheevos/var.c"
+
 #include "../cheevos-new/cheevos.c"
 #include "../cheevos-new/fixup.c"
 #include "../cheevos-new/hash.c"
 #include "../cheevos-new/parser.c"
 
-#include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
-#include "../cheevos/cond.c"
-#include "../cheevos/var.c"
+#include "../deps/rcheevos/src/rcheevos/alloc.c"
+#include "../deps/rcheevos/src/rcheevos/condition.c"
+#include "../deps/rcheevos/src/rcheevos/condset.c"
+#include "../deps/rcheevos/src/rcheevos/expression.c"
+#include "../deps/rcheevos/src/rcheevos/format.c"
+#include "../deps/rcheevos/src/rcheevos/lboard.c"
+#include "../deps/rcheevos/src/rcheevos/operand.c"
+#include "../deps/rcheevos/src/rcheevos/term.c"
+#include "../deps/rcheevos/src/rcheevos/trigger.c"
+#include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rurl/url.c"
 
 #endif
 
@@ -1223,6 +1235,7 @@ MENU
 #include "../menu/menu_shader.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
+#include "../menu/menu_thumbnail_path.c"
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
