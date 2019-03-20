@@ -14,7 +14,8 @@
 
 #define MULTITOUCH_LIMIT 4 /* supports up to this many fingers at once */
 #define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
-#define SWITCH_NUM_SCANCODES 114
+#define SWITCH_NUM_SCANCODES 114 /* size of rarch_key_map_switch */
+#define SWITCH_MAX_SCANCODE 0xfb /* see https://switchbrew.github.io/libnx/hid_8h.html */
 #define MOUSE_MAX_X 1920
 #define MOUSE_MAX_Y 1080
 #endif
@@ -42,7 +43,7 @@ typedef struct switch_input
    bool touch_state[MULTITOUCH_LIMIT];
    uint32_t touch_x[MULTITOUCH_LIMIT];
    uint32_t touch_y[MULTITOUCH_LIMIT];
-   bool keyboard_state[SWITCH_NUM_SCANCODES];
+   bool keyboard_state[SWITCH_MAX_SCANCODE + 1];
 
    int32_t mouse_x;
    int32_t mouse_y;
@@ -97,15 +98,15 @@ static void switch_input_poll(void *data)
       keySym = rarch_key_map_switch[i].sym;
       keyCode = input_keymaps_translate_keysym_to_rk(keySym);
 
-      if (hidKeyboardHeld(keySym) && !(sw->keyboard_state[i]))
+      if (hidKeyboardHeld(keySym) && !(sw->keyboard_state[keySym]))
       {
-         sw->keyboard_state[i] = true;
-         input_keyboard_event(true, keyCode, keyCode, mod, RETRO_DEVICE_KEYBOARD);
+         sw->keyboard_state[keySym] = true;
+         input_keyboard_event(true, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
-      else if (!hidKeyboardHeld(keySym) && sw->keyboard_state[i])
+      else if (!hidKeyboardHeld(keySym) && sw->keyboard_state[keySym])
       {
-         sw->keyboard_state[i] = false;
-         input_keyboard_event(false, keyCode, keyCode, mod, RETRO_DEVICE_KEYBOARD);
+         sw->keyboard_state[keySym] = false;
+         input_keyboard_event(false, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
    }
 
@@ -327,7 +328,7 @@ static void* switch_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_switch);
    unsigned int i;
-   for (i = 0; i < SWITCH_NUM_SCANCODES; i++) {
+   for (i = 0; i <= SWITCH_MAX_SCANCODE; i++) {
       sw->keyboard_state[i] = false;
    }
    sw->mouse_x = 0;
