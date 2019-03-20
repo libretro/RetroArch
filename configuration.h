@@ -171,7 +171,6 @@ typedef struct settings
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
-      bool menu_rgui_lock_aspect;
       bool menu_rgui_full_width_layout;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
@@ -444,6 +443,7 @@ typedef struct settings
       unsigned menu_font_color_blue;
       unsigned menu_rgui_internal_upscale_level;
       unsigned menu_rgui_aspect_ratio;
+      unsigned menu_rgui_aspect_ratio_lock;
       unsigned menu_ticker_type;
 
       unsigned playlist_show_inline_core_name;

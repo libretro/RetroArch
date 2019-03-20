@@ -3043,6 +3043,18 @@ MSG_HASH(
     "16:10 (Centered)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+    "OFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+    "Fit Screen"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+    "Integer Scale"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Thumbnails"
     )
@@ -6813,11 +6825,11 @@ MSG_HASH(
     "Increase coarseness of menu background chequerboard pattern."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
     "Lock Menu Aspect Ratio"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT,
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
     "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
     )
 MSG_HASH(
