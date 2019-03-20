@@ -18,6 +18,7 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
       case 'a': case 'A': self->type = RC_CONDITION_ADD_SOURCE; break;
       case 'b': case 'B': self->type = RC_CONDITION_SUB_SOURCE; break;
       case 'c': case 'C': self->type = RC_CONDITION_ADD_HITS; break;
+      case 'n': case 'N': self->type = RC_CONDITION_AND_NEXT; break;
       default: *ret = RC_INVALID_CONDITION_TYPE; return 0;
     }
 

@@ -29,7 +29,8 @@ enum {
   RC_MISSING_CANCEL = -14,
   RC_MISSING_SUBMIT = -15,
   RC_MISSING_VALUE = -16,
-  RC_INVALID_LBOARD_FIELD = -17
+  RC_INVALID_LBOARD_FIELD = -17,
+  RC_MISSING_DISPLAY_STRING = -18
 };
 
 /*****************************************************************************\
@@ -109,7 +110,8 @@ enum {
   RC_OPERAND_DELTA,   /* The value last known at this address. */
   RC_OPERAND_CONST,   /* A 32-bit unsigned integer. */
   RC_OPERAND_FP,      /* A floating point value. */
-  RC_OPERAND_LUA      /* A Lua function that provides the value. */
+  RC_OPERAND_LUA,     /* A Lua function that provides the value. */
+  RC_OPERAND_PRIOR    /* The last differing value at this address. */
 };
 
 typedef struct {
@@ -118,8 +120,10 @@ typedef struct {
     struct {
       /* The memory address or constant value of this variable. */
       unsigned value;
-      /* The previous memory contents if RC_OPERAND_DELTA. */
+      /* The previous memory contents if RC_OPERAND_DELTA or RC_OPERAND_PRIOR. */
       unsigned previous;
+      /* The last differing value if RC_OPERAND_PRIOR. */
+      unsigned prior;
 
       /* The size of the variable. */
       char size;
@@ -150,7 +154,8 @@ enum {
   RC_CONDITION_RESET_IF,
   RC_CONDITION_ADD_SOURCE,
   RC_CONDITION_SUB_SOURCE,
-  RC_CONDITION_ADD_HITS
+  RC_CONDITION_ADD_HITS,
+  RC_CONDITION_AND_NEXT
 };
 
 /* operators */
@@ -300,7 +305,7 @@ void rc_reset_lboard(rc_lboard_t* lboard);
 
 /* Supported formats. */
 enum {
-  RC_FORMAT_FRAMES = 0,
+  RC_FORMAT_FRAMES,
   RC_FORMAT_SECONDS,
   RC_FORMAT_CENTISECS,
   RC_FORMAT_SCORE,
@@ -309,7 +314,56 @@ enum {
 };
 
 int rc_parse_format(const char* format_str);
-void rc_format_value(char* buffer, int size, unsigned value, int format);
+int rc_format_value(char* buffer, int size, unsigned value, int format);
+
+/*****************************************************************************\
+| Rich Presence                                                               |
+\*****************************************************************************/
+
+typedef struct rc_richpresence_lookup_item_t rc_richpresence_lookup_item_t;
+
+struct rc_richpresence_lookup_item_t {
+  unsigned value;
+  rc_richpresence_lookup_item_t* next_item;
+  const char* label;
+};
+
+typedef struct rc_richpresence_lookup_t rc_richpresence_lookup_t;
+
+struct rc_richpresence_lookup_t {
+  rc_richpresence_lookup_item_t* first_item;
+  rc_richpresence_lookup_t* next;
+  const char* name;
+  unsigned short format;
+};
+
+typedef struct rc_richpresence_display_part_t rc_richpresence_display_part_t;
+
+struct rc_richpresence_display_part_t {
+  rc_richpresence_display_part_t* next;
+  const char* text;
+  rc_richpresence_lookup_item_t* first_lookup_item;
+  rc_value_t value;
+  unsigned short display_type;
+};
+
+typedef struct rc_richpresence_display_t rc_richpresence_display_t;
+
+struct rc_richpresence_display_t {
+  rc_trigger_t trigger;
+  rc_richpresence_display_t* next;
+  rc_richpresence_display_part_t* display;
+};
+
+typedef struct {
+  rc_richpresence_display_t* first_display;
+  rc_richpresence_lookup_t* first_lookup;
+}
+rc_richpresence_t;
+
+int rc_richpresence_size(const char* script);
+rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx);
+int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
 
 #ifdef __cplusplus
 }

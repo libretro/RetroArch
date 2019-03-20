@@ -18,6 +18,8 @@ void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_sc
     if (*ret < 0) {
       return;
     }
+
+    self->requirement->next = 0;
   }
 
   while (*aux == 's' || *aux == 'S') {

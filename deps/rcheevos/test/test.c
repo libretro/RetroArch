@@ -13,7 +13,7 @@
 
 typedef struct {
   unsigned char* ram;
-  int size;
+  unsigned size;
 }
 memory_t;
 
@@ -44,6 +44,7 @@ static void parse_operand(rc_operand_t* self, const char** memaddr) {
   assert(ret >= 0);
   assert(**memaddr == 0);
   self->previous = 0;
+  self->prior = 0;
 }
 
 static void comp_operand(rc_operand_t* self, char expected_type, char expected_size, unsigned expected_value) {
@@ -157,6 +158,38 @@ static void test_operand(void) {
     parse_comp_operand("d0xH12345678", RC_OPERAND_DELTA, RC_OPERAND_8_BITS, 0x12345678U);
     parse_comp_operand("d0xHABCD", RC_OPERAND_DELTA, RC_OPERAND_8_BITS, 0xABCDU);
     parse_comp_operand("d0xhabcd", RC_OPERAND_DELTA, RC_OPERAND_8_BITS, 0xABCDU);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestParseVariablePriorMem
+    ------------------------------------------------------------------------*/
+
+    /* sizes */
+    parse_comp_operand("p0xH1234", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0x1234U);
+    parse_comp_operand("p0x 1234", RC_OPERAND_PRIOR, RC_OPERAND_16_BITS, 0x1234U);
+    parse_comp_operand("p0x1234", RC_OPERAND_PRIOR, RC_OPERAND_16_BITS, 0x1234U);
+    parse_comp_operand("p0xW1234", RC_OPERAND_PRIOR, RC_OPERAND_24_BITS, 0x1234U);
+    parse_comp_operand("p0xX1234", RC_OPERAND_PRIOR, RC_OPERAND_32_BITS, 0x1234U);
+    parse_comp_operand("p0xL1234", RC_OPERAND_PRIOR, RC_OPERAND_LOW, 0x1234U);
+    parse_comp_operand("p0xU1234", RC_OPERAND_PRIOR, RC_OPERAND_HIGH, 0x1234U);
+    parse_comp_operand("p0xM1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_0, 0x1234U);
+    parse_comp_operand("p0xN1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_1, 0x1234U);
+    parse_comp_operand("p0xO1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_2, 0x1234U);
+    parse_comp_operand("p0xP1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_3, 0x1234U);
+    parse_comp_operand("p0xQ1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_4, 0x1234U);
+    parse_comp_operand("p0xR1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_5, 0x1234U);
+    parse_comp_operand("p0xS1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_6, 0x1234U);
+    parse_comp_operand("p0xT1234", RC_OPERAND_PRIOR, RC_OPERAND_BIT_7, 0x1234U);
+
+    /* ignores case */
+    parse_comp_operand("P0Xh1234", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0x1234U);
+
+    /* addresses */
+    parse_comp_operand("p0xH0000", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0x0000U);
+    parse_comp_operand("p0xH12345678", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0x12345678U);
+    parse_comp_operand("p0xHABCD", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0xABCDU);
+    parse_comp_operand("p0xhabcd", RC_OPERAND_PRIOR, RC_OPERAND_8_BITS, 0xABCDU);
   }
 
   {
@@ -278,6 +311,44 @@ static void test_operand(void) {
 
     assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x16U);
     assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x16U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestVariableGetValueDelta
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_operand_t op;
+    const char* memaddr;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    memaddr = "p0xh1";
+    parse_operand(&op, &memaddr);
+
+    /* RC_OPERAND_PRIOR only updates when the memory value changes */
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x00); /* first call gets uninitialized value */
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x00); /* value only changes when memory changes */
+
+    ram[1] = 0x13;
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x12U);
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x12U);
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x12U);
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x12U);
+
+    ram[1] = 0x14;
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x13U);
+
+    ram[1] = 0x15;
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x14U);
+
+    ram[1] = 0x16;
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x15U);
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x15U);
+    assert(rc_evaluate_operand(&op, peek, &memory, NULL) == 0x15U);
   }
 }
 
@@ -568,9 +639,13 @@ static void test_condition(void) {
 }
 
 static void parse_trigger(rc_trigger_t** self, void* buffer, const char* memaddr) {
-  assert(rc_trigger_size(memaddr) >= 0);
+  int ret = rc_trigger_size(memaddr);
+  assert(ret >= 0);
+  memset(buffer, 0xEE, ret + 128);
+
   *self = rc_parse_trigger(buffer, memaddr, NULL, 0);
   assert(*self != NULL);
+  assert(*((int*)((char*)buffer + ret)) == 0xEEEEEEEE);
 }
 
 static void comp_trigger(rc_trigger_t* self, memory_t* memory, int expected_result) {
@@ -608,6 +683,8 @@ static rc_condset_t* trigger_get_set(rc_trigger_t* trigger, int ndx) {
 }
 
 static void test_trigger(void) {
+  char buffer[2048];
+    
   {
     /*------------------------------------------------------------------------
     TestSimpleSets
@@ -617,7 +694,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -681,7 +757,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -713,7 +788,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -737,7 +811,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -765,7 +838,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -814,7 +886,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -863,7 +934,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -896,7 +966,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -938,7 +1007,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -975,7 +1043,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -999,7 +1066,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1030,7 +1096,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1070,7 +1135,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1107,7 +1171,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1141,7 +1204,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1180,7 +1242,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1225,7 +1286,6 @@ static void test_trigger(void) {
     unsigned char ram[] = {0x00, 0x12, 0x34, 0xAB, 0x56};
     memory_t memory;
     rc_trigger_t* trigger;
-    char buffer[2048];
 
     rc_condset_t* condset;
 
@@ -1263,6 +1323,348 @@ static void test_trigger(void) {
     comp_trigger(trigger, &memory, 1); /* 1 + 3 = 4, met */
     assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
     assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 3U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNext
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* once(byte(0x0001) == 20 && byte(0x0002) == 20 && byte(0x0003) == 20) */
+    parse_trigger(&trigger, buffer, "N:0xH0001=20_N:0xH0002=20_0xH0003=20.3.");
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[3] = 20; /* final condition is not enough to reset */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[2] = 20; /* two conditions is not enough to reset */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[1] = 20; /* all three conditions true, only count hit on final */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 1U);
+
+    ram[2] = 30; /* middle condition not true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 1U);
+
+    ram[2] = 20; /* all three conditions true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 2U);
+
+    ram[3] = 30; /* third condition not true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 2U);
+
+    ram[3] = 20; /* all three conditions true, HitCount reached */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 3U);
+
+    comp_trigger(trigger, &memory, 1); /* HitCount reached */
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 3U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNextBoundaries
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+    char buffer[2048];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* byte(0x0000) == 0 && once(byte(0x0001) == 20 && byte(0x0002) == 20 && byte(0x0003) == 20) && byte(0x0000) == 0 */
+    parse_trigger(&trigger, buffer, "0xH0000=0_N:0xH0001=20_N:0xH0002=20_0xH0003=20.1._0xH0000=0");
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 4)->current_hits == 1U);
+
+    ram[3] = 20; /* final condition is not enough to reset */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 2U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 4)->current_hits == 2U);
+
+    ram[2] = 20; /* two conditions is not enough to reset */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 3U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 4)->current_hits == 3U);
+
+    ram[1] = 20; /* all three conditions true, whole trigger is true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 4U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 1U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 4)->current_hits == 4U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNextReset
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* byte(0x0000) == 0 && never(byte(0x0001) == 20 && byte(0x0002) == 20 && byte(0x0003) == 20) */
+    parse_trigger(&trigger, buffer, "0xH0000=0_N:0xH0001=20_N:0xH0002=20_R:0xH0003=20");
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[3] = 20; /* final condition is not enough to reset */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 2U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[2] = 20; /* two conditions is not enough to reset */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 3U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[1] = 20; /* all three conditions true, reset */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[2] = 30; /* middle condition not true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+
+    ram[2] = 20; /* all three conditions true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+
+    ram[3] = 30; /* third condition not true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+
+    ram[3] = 20; /* all three conditions true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNextPause
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* byte(0x0000) == 0 && never(byte(0x0001) == 20 && byte(0x0002) == 20 && byte(0x0003) == 20) */
+    parse_trigger(&trigger, buffer, "0xH0000=0_N:0xH0001=20_N:0xH0002=20_P:0xH0003=20");
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[3] = 20; /* final condition is not enough to pause */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 2U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[2] = 20; /* two conditions is not enough to pause */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 3U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 0U);
+
+    ram[1] = 20; /* all three conditions true, pause */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 3U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 3)->current_hits == 1U);
+
+    ram[2] = 30; /* middle condition not true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 4U);
+
+    ram[2] = 20; /* all three conditions true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 4U);
+
+    ram[3] = 30; /* third condition not true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 5U);
+
+    ram[3] = 20; /* all three conditions true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 5U);
+  }
+
+  {
+      /*------------------------------------------------------------------------
+      TestAddHits
+      ------------------------------------------------------------------------*/
+
+      unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+      memory_t memory;
+      rc_trigger_t* trigger;
+      char buffer[2048];
+
+      rc_condset_t* condset;
+
+      memory.ram = ram;
+      memory.size = sizeof(ram);
+
+      parse_trigger(&trigger, buffer, "C:0xH0001=18(2)_0xL0004=6(4)"); /* repeated(4, byte(1) == 18 || low(4) == 6) */
+      comp_trigger(trigger, &memory, 0);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 1U);
+
+      comp_trigger(trigger, &memory, 1); /* total hits met (2 for each condition) */
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 2U);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 2U);
+
+      comp_trigger(trigger, &memory, 1);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 2U); /* threshold met, stop incrementing */
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 2U); /* total met prevents incrementing even though individual tally has not reached total */
+
+      rc_reset_condset(trigger->requirement);
+
+      for (condset = trigger->alternative; condset != NULL; condset = condset->next)
+      {
+          rc_reset_condset(condset);
+      }
+
+      comp_trigger(trigger, &memory, 0);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 1U);
+
+      ram[1] = 16;
+      comp_trigger(trigger, &memory, 0); /* 1 + 2 < 4, not met */
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 2U);
+
+      comp_trigger(trigger, &memory, 1); /* 1 + 3 = 4, met */
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 1U);
+      assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 3U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNextAddSource
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* once(byte(0x0001) + byte(0x0002) == 20 && byte(0x0003) == 20) */
+    parse_trigger(&trigger, buffer, "A:0xH0001=0_N:0xH0002=20_0xH0003=20.1.");
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[3] = 20; /* final condition is true */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[2] = 20; /* AddSource condition would be true if AddSource ignored */
+    comp_trigger(trigger, &memory, 0);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 0U);
+
+    ram[2] = 10;
+    ram[1] = 10; /* AddSource condition true only via addition, whole trigger is true */
+    comp_trigger(trigger, &memory, 1);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 0)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 1)->current_hits == 0U);
+    assert(condset_get_cond(trigger_get_set(trigger, 0), 2)->current_hits == 1U);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestAndNextChangesTo
+    ------------------------------------------------------------------------*/
+
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_trigger_t* trigger;
+    char buffer[2048];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* byte(0x0001) ~> 18 */
+    parse_trigger(&trigger, buffer, "N:0xH0001=18_d0xH0001!=18");
+
+    /* value already 18, initial delta value is 0, so considered changed */
+    comp_trigger(trigger, &memory, 1);
+
+    /* value already 18 */
+    comp_trigger(trigger, &memory, 0);
+
+    /* value no longer 18 */
+    ram[1] = 20;
+    comp_trigger(trigger, &memory, 0);
+
+    /* value changes to 18 */
+    ram[1] = 18;
+    comp_trigger(trigger, &memory, 1);
+
+    /* value already 18 */
+    comp_trigger(trigger, &memory, 0);
   }
 
   {
@@ -1532,6 +1934,7 @@ static void test_term(void) {
     parse_comp_term_fp("0xH1234*1", RC_OPERAND_8_BITS, 0x1234U, 1.0);
     parse_comp_term_fp("0xH1234*3", RC_OPERAND_8_BITS, 0x1234U, 3.0);
     parse_comp_term_fp("0xH1234*0.5", RC_OPERAND_8_BITS, 0x1234U, 0.5);
+    parse_comp_term_fp("0xH1234*.5", RC_OPERAND_8_BITS, 0x1234U, 0.5);
     parse_comp_term_fp("0xH1234*-1", RC_OPERAND_8_BITS, 0x1234U, -1.0);
   }
 
@@ -1561,6 +1964,8 @@ static void test_term(void) {
     parse_comp_term_value("V6", &memory, 6);
     parse_comp_term_value("V6*2", &memory, 12);
     parse_comp_term_value("V6*0.5", &memory, 3);
+    parse_comp_term_value("V-6", &memory, (unsigned)(-6));
+    parse_comp_term_value("V-6*2", &memory, (unsigned)(-12));
 
     /* memory */
     parse_comp_term_value("0xH01", &memory, 0x12);
@@ -1587,9 +1992,11 @@ static void parse_comp_value(const char* memaddr, memory_t* memory, unsigned exp
 
   ret = rc_value_size(memaddr);
   assert(ret >= 0);
+  memset(buffer, 0xEE, ret + 128);
 
   self = rc_parse_value(buffer, memaddr, NULL, 0);
   assert(self != NULL);
+  assert(*((int*)((char*)buffer + ret)) == 0xEEEEEEEE);
 
   assert(rc_evaluate_value(self, peek, memory, NULL) == expected_value);
 }
@@ -1671,8 +2078,12 @@ static rc_lboard_t* parse_lboard(const char* memaddr, void* buffer) {
 
   ret = rc_lboard_size(memaddr);
   assert(ret >= 0);
+  memset(buffer, 0xEE, ret + 128);
+
   self = rc_parse_lboard(buffer, memaddr, NULL, 0);
   assert(self != NULL);
+  assert(*((int*)((char*)buffer + ret)) == 0xEEEEEEEE);
+
   return self;
 }
 
@@ -1713,6 +2124,8 @@ static unsigned lboard_evaluate(rc_lboard_t* lboard, lboard_test_state_t* test, 
 }
 
 static void test_lboard(void) {
+  char buffer[2048];
+
   {
     /*------------------------------------------------------------------------
     TestSimpleLeaderboard
@@ -1722,7 +2135,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     unsigned value;
     
     memory.ram = ram;
@@ -1784,7 +2196,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1831,7 +2242,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     unsigned value;
     
     memory.ram = ram;
@@ -1867,7 +2277,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     unsigned value;
     
     memory.ram = ram;
@@ -1897,7 +2306,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1922,7 +2330,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1956,7 +2363,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -1990,7 +2396,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -2016,7 +2421,6 @@ static void test_lboard(void) {
     memory_t memory;
     rc_lboard_t* lboard;
     lboard_test_state_t state;
-    char buffer[2048];
     
     memory.ram = ram;
     memory.size = sizeof(ram);
@@ -2062,6 +2466,750 @@ static void test_lboard(void) {
   }
 }
 
+static rc_richpresence_t* parse_richpresence(const char* script, void* buffer) {
+  int ret;
+  rc_richpresence_t* self;
+
+  ret = rc_richpresence_size(script);
+  assert(ret >= 0);
+  memset(buffer, 0xEE, ret + 128);
+
+  self = rc_parse_richpresence(buffer, script, NULL, 0);
+  assert(self != NULL);
+  assert(*((int*)((char*)buffer + ret)) == 0xEEEEEEEE);
+
+  return self;
+}
+
+static void test_richpresence(void) {
+  {
+    /*------------------------------------------------------------------------
+    TestStaticDisplayString
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nHello, world!", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Hello, world!") == 0);
+    assert(result == 13);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestEscapedComment
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nWhat \\// Where", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "What // Where") == 0);
+    assert(result == 13);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestEscapedBackslash
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nWhat \\\\ Where", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "What \\ Where") == 0);
+    assert(result == 12);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestPartiallyEscapedComment
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nWhat \\/// Where", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "What /") == 0);
+    assert(result == 6);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestTrailingBackslash
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nWhat \\", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "What ") == 0);
+    assert(result == 5);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplay
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\n?0xH0000=0?Zero\n?0xH0000=1?One\nOther", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Zero") == 0);
+    assert(result == 4);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "One") == 0);
+    assert(result == 3);
+
+    ram[0] = 2;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Other") == 0);
+    assert(result == 5);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplayOutOfOrder
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nOther\n?0xH0000=0?Zero\n?0xH0000=1?One", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Other") == 0);
+    assert(result == 5);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplayNoDefault
+    ------------------------------------------------------------------------*/
+    int result = rc_richpresence_size("Display:\n?0xH0000=0?Zero");
+    assert(result == RC_MISSING_DISPLAY_STRING);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplayCommonPrefix
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\n?0xH0000=0_0xH0001=18?First\n?0xH0000=0?Second\nThird", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "First") == 0);
+
+    ram[1] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Second") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Third") == 0);
+
+    ram[0] = 0;
+    ram[1] = 18;
+    richpresence = parse_richpresence("Display:\n?0xH0000=0?First\n?0xH0000=0_0xH0001=18?Second\nThird", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "First") == 0);
+
+    ram[1] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "First") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Third") == 0);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplayDuplicatedCondition
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\n?0xH0000=0?First\n?0xH0000=0?Second\nThird", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "First") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Third") == 0);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplayInvalidCondition
+    ------------------------------------------------------------------------*/
+    int result = rc_richpresence_size("Display:\n?BANANA?First\nOther");
+    assert(result == RC_INVALID_MEMORY_OPERAND);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestValueMacro
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Format:Points\nFormatType=VALUE\n\nDisplay:\n@Points(0x 0001) Points", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "13330 Points") == 0);
+    assert(result == 12);
+
+    ram[1] = 20;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "13332 Points") == 0);
+    assert(result == 12);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestFramesMacro
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Format:Frames\nFormatType=FRAMES\n\nDisplay:\n@Frames(0x 0001)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "03:42.16") == 0);
+    assert(result == 8);
+
+    ram[1] = 20;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "03:42.20") == 0);
+    assert(result == 8);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestValueMacroFormula
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Format:Points\nFormatType=VALUE\n\nDisplay:\n@Points(0xH0001*100_0xH0002) Points", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "1852 Points") == 0);
+    assert(result == 11);
+
+    ram[1] = 0x20;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "3252 Points") == 0);
+    assert(result == 11);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestUndefinedMacro
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\n@Points(0x 0001) Points", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "[Unknown macro]Points(0x 0001) Points") == 0);
+    assert(result == 37);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestEscapedMacro
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Format:Points\nFormatType=VALUE\n\nDisplay:\n\\@Points(0x 0001) \\@@Points(0x 0001) Points", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "@Points(0x 0001) @13330 Points") == 0);
+    assert(result == 30);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookup
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n\nDisplay:\nAt @Location(0xH0000)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+    assert(result == 3);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupFormula
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n\nDisplay:\nAt @Location(0xH0000*0.5)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupRepeated
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n\nDisplay:\nAt @Location(0xH0000), Near @Location(0xH0001)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near ") == 0);
+    assert(result == 14);
+
+    ram[1] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near One") == 0);
+    assert(result == 17);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One, Near One") == 0);
+    assert(result == 16);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupMultiple
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n\nLookup:Location2\n0=zero\n1=one\n\nDisplay:\nAt @Location(0xH0000), Near @Location2(0xH0001)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near ") == 0);
+    assert(result == 14);
+
+    ram[1] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near one") == 0);
+    assert(result == 17);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One, Near one") == 0);
+    assert(result == 16);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupAndValue
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n\nFormat:Location2\nFormatType=VALUE\n\nDisplay:\nAt @Location(0xH0000), Near @Location2(0xH0001)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near 18") == 0);
+    assert(result == 16);
+
+    ram[1] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero, Near 1") == 0);
+    assert(result == 15);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One, Near 1") == 0);
+    assert(result == 14);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupHexKeys
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0x00=Zero\n0x01=One\n\nDisplay:\nAt @Location(0xH0000)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+    assert(result == 3);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupDefault
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0=Zero\n1=One\n*=Star\n\nDisplay:\nAt @Location(0xH0000)", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Star") == 0);
+    assert(result == 7);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupCRLF
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\r\n0=Zero\r\n1=One\r\n\r\nDisplay:\r\nAt @Location(0xH0000)\r\n", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+    assert(result == 3);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupAfterDisplay
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Display:\nAt @Location(0xH0000)\n\nLookup:Location\n0=Zero\n1=One", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+    assert(result == 7);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+    assert(result == 6);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+    assert(result == 3);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestLookupWhitespace
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+    int result;
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0= Zero \n1= One \n\nDisplay:\nAt '@Location(0xH0000)' ", buffer);
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ' Zero ' ") == 0);
+    assert(result == 12);
+
+    ram[0] = 1;
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ' One ' ") == 0);
+    assert(result == 11);
+
+    ram[0] = 2; /* no entry */
+    result = rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At '' ") == 0);
+    assert(result == 6);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestRandomTextBetweenSections
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    /* Anything that doesn't begin with "Format:" "Lookup:" or "Display:" is ignored. People sometimes
+       use this logic to add comments to the Rich Presence script - particularly author comments */
+    richpresence = parse_richpresence("Locations are fun!\nLookup:Location\n0=Zero\n1=One\n\nDisplay goes here\nDisplay:\nAt @Location(0xH0000)\n\nWritten by User3", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+
+    ram[0] = 2; /* no entry */
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestComments
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("// Locations are fun!\nLookup:Location // lookup\n0=Zero // 0\n1=One // 1\n\n//Display goes here\nDisplay: // display\nAt @Location(0xH0000) // text\n\n//Written by User3", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+
+    ram[0] = 2; /* no entry */
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At ") == 0);
+  }
+
+  {
+    /*------------------------------------------------------------------------
+    TestConditionalDisplaySharedLookup
+    ------------------------------------------------------------------------*/
+    unsigned char ram[] = { 0x00, 0x12, 0x34, 0xAB, 0x56 };
+    memory_t memory;
+    rc_richpresence_t* richpresence;
+    char buffer[2048];
+    char output[128];
+
+    memory.ram = ram;
+    memory.size = sizeof(ram);
+
+    richpresence = parse_richpresence("Lookup:Location\n0x00=Zero\n0x01=One\n\nDisplay:\n?0xH0001=18?At @Location(0xH0000)\nNear @Location(0xH0000)", buffer);
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At Zero") == 0);
+
+    ram[0] = 1;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "At One") == 0);
+
+    ram[1] = 17;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Near One") == 0);
+
+    ram[0] = 0;
+    rc_evaluate_richpresence(richpresence, output, sizeof(output), peek, &memory, NULL);
+    assert(strcmp(output, "Near Zero") == 0);
+  }
+}
+
 static void test_lua(void) {
   {
     /*------------------------------------------------------------------------
@@ -2101,6 +3249,7 @@ int main(void) {
   test_term();
   test_value();
   test_lboard();
+  test_richpresence();
   test_lua();
 
   return 0;

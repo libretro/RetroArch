@@ -13,6 +13,7 @@ static void rc_update_condition_pause(rc_condition_t* condition, int* in_pause) 
     case RC_CONDITION_ADD_SOURCE:
     case RC_CONDITION_SUB_SOURCE:
     case RC_CONDITION_ADD_HITS:
+    case RC_CONDITION_AND_NEXT:
       condition->pause = *in_pause;
       break;
     
@@ -61,10 +62,11 @@ rc_condset_t* rc_parse_condset(int* ret, void* buffer, rc_scratch_t* scratch, co
 
 static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, int* reset, rc_peek_t peek, void* ud, lua_State* L) {
   rc_condition_t* condition;
-  int set_valid, cond_valid;
+  int set_valid, cond_valid, prev_cond;
   unsigned add_buffer, add_hits;
 
   set_valid = 1;
+  prev_cond = 1;
   add_buffer = add_hits = 0;
 
   for (condition = self->conditions; condition != 0; condition = condition->next) {
@@ -88,12 +90,22 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
           }
         }
 
+        add_buffer = 0;
         add_hits += condition->current_hits;
+        continue;
+
+      case RC_CONDITION_AND_NEXT:
+        prev_cond &= rc_test_condition(condition, add_buffer, peek, ud, L);
+        add_buffer = 0;
         continue;
     }
 
     /* always evaluate the condition to ensure delta values get tracked correctly */
     cond_valid = rc_test_condition(condition, add_buffer, peek, ud, L);
+
+    /* merge AndNext value and reset it for the next condition */
+    cond_valid &= prev_cond;
+    prev_cond = 1;
 
     /* if the condition has a target hit count that has already been met, it's automatically true, even if not currently true. */
     if (condition->required_hits != 0 && (condition->current_hits + add_hits) >= condition->required_hits) {
@@ -111,6 +123,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
       }
     }
 
+    /* reset AddHits and AddSource/SubSource values */
     add_buffer = add_hits = 0;
 
     switch (condition->type) {
@@ -141,7 +154,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
         }
 
         break;
-      
+
       default:
         set_valid &= cond_valid;
         break;

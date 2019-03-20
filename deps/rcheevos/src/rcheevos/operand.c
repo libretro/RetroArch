@@ -76,6 +76,10 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr) {
       self->is_bcd = 1;
       break;
 
+    case 'p': case 'P':
+      self->type = RC_OPERAND_PRIOR;
+      break;
+
     default:
       self->type = RC_OPERAND_ADDRESS;
       aux--;
@@ -256,6 +260,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, lua_S
       }
 
       /* fall through */
+    case '.':
     case '+': case '-':
     case '1': case '2': case '3': case '4': case '5':
     case '6': case '7': case '8': case '9':
@@ -287,6 +292,7 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_trigger, l
   self->size = RC_OPERAND_8_BITS;
   self->is_bcd = 0;
   self->previous = 0;
+  self->prior = 0;
 
   if (is_trigger) {
     return rc_parse_operand_trigger(self, memaddr, L, funcs_ndx);
@@ -363,6 +369,7 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
 
     case RC_OPERAND_ADDRESS:
     case RC_OPERAND_DELTA:
+    case RC_OPERAND_PRIOR:
       switch (self->size) {
         case RC_OPERAND_BIT_0:
           value = (peek(self->value, 1, ud) >> 0) & 1;
@@ -460,6 +467,12 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
         unsigned previous = self->previous;
         self->previous = value;
         value = previous;
+      } else if (self->type == RC_OPERAND_PRIOR) {
+        if (self->previous != value) {
+          self->prior = self->previous;
+          self->previous = value;
+        }
+        value = self->prior;
       }
 
       break;
