@@ -39,7 +39,7 @@ void *retro_main_log_file(void);
 
 void retro_main_log_file_deinit(void);
 
-void retro_main_log_file_init(const char *path);
+void retro_main_log_file_init(const char *path, bool append);
 
 bool is_logging_to_file(void);
 

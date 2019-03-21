@@ -1920,6 +1920,8 @@ static void frontend_unix_get_env(int *argc,
          "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)

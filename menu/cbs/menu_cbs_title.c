@@ -213,6 +213,7 @@ default_fill_title_macro(action_get_title_assets_directory,       MENU_ENUM_LABE
 default_fill_title_macro(action_get_title_extraction_directory,   MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY)
 default_fill_title_macro(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 default_fill_title_macro(action_get_title_font_path,              MENU_ENUM_LABEL_VALUE_XMB_FONT)
+default_fill_title_macro(action_get_title_log_dir,                MENU_ENUM_LABEL_VALUE_LOG_DIR)
 
 default_title_copy_macro(action_get_title_help,                   MENU_ENUM_LABEL_VALUE_HELP_LIST)
 default_title_copy_macro(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
@@ -715,6 +716,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
             break;
+         case MENU_ENUM_LABEL_LOG_DIR:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_log_dir);
+            break;
          case MENU_ENUM_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
             break;
@@ -1046,6 +1050,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
+            break;
+         case MENU_LABEL_LOG_DIR:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_log_dir);
             break;
          case MENU_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);

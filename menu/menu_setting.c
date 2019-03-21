@@ -3321,10 +3321,32 @@ void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          if (!verbosity_is_enabled())
+         {
+            rarch_log_file_init();
             verbosity_enable();
+         }
          else
+         {
             verbosity_disable();
+            rarch_log_file_deinit();
+         }
          retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+         break;
+      case MENU_ENUM_LABEL_LOG_TO_FILE:
+         if (verbosity_is_enabled())
+         {
+            if (settings->bools.log_to_file && !is_logging_to_file())
+               rarch_log_file_init();
+            else if (!settings->bools.log_to_file && is_logging_to_file())
+               rarch_log_file_deinit();
+         }
+         break;
+      case MENU_ENUM_LABEL_LOG_DIR:
+         if (verbosity_is_enabled() && is_logging_to_file())
+         {
+            rarch_log_file_deinit();
+            rarch_log_file_init();
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->bools.video_smooth);
@@ -4937,6 +4959,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_libretro_log_level;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.log_to_file,
+                  MENU_ENUM_LABEL_LOG_TO_FILE,
+                  MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+                  default_log_to_file,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -11407,6 +11444,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_CACHE],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.log_dir,
+               sizeof(settings->paths.log_dir),
+               MENU_ENUM_LABEL_LOG_DIR,
+               MENU_ENUM_LABEL_VALUE_LOG_DIR,
+               g_defaults.dirs[DEFAULT_DIR_LOGS],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,

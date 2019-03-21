@@ -227,6 +227,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_RUNTIME_EXTENSION:
          str = ".lrtl";
          break;
+      case FILE_PATH_DEFAULT_EVENT_LOG:
+         str = "retroarch.log";
+         break;
+      case FILE_PATH_EVENT_LOG_EXTENSION:
+         str = ".log";
+         break;
       case FILE_PATH_UNKNOWN:
       default:
          break;

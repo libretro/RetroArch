@@ -1617,6 +1617,14 @@ MSG_HASH(
     "Logging Verbosity"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Log To File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+    "Redirects system event log messages to file. Requires 'Logging Verbosity' to be enabled."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
     "Main Menu"
     )
@@ -8493,4 +8501,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
     "Enable device vibration (for supported cores)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_DIR,
+    "System Event Logs"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_DIR,
+    "Save system event log files to this directory."
     )

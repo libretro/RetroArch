@@ -111,7 +111,7 @@ void *retro_main_log_file(void)
    return log_file_fp;
 }
 
-void retro_main_log_file_init(const char *path)
+void retro_main_log_file_init(const char *path, bool append)
 {
    if (log_file_initialized)
       return;
@@ -125,7 +125,7 @@ void retro_main_log_file_init(const char *path)
    if (path == NULL)
       return;
 
-   log_file_fp          = (FILE*)fopen_utf8(path, "wb");
+   log_file_fp          = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
    log_file_initialized = true;
 
 #if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
@@ -145,6 +145,8 @@ void retro_main_log_file_deinit(void)
    if (log_file_buf)
       free(log_file_buf);
    log_file_buf = NULL;
+
+   log_file_initialized = false;
 }
 
 #if !defined(HAVE_LOGGER)
@@ -210,11 +212,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(HAVE_QT) || defined(__WINRT__)
       char buffer[1024];
 #endif
-#ifdef HAVE_FILE_LOGGER
       FILE *fp = (FILE*)retro_main_log_file();
-#else
-      FILE *fp = stderr;
-#endif
 
 #if defined(HAVE_QT) || defined(__WINRT__)
       buffer[0] = '\0';

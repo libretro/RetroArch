@@ -439,11 +439,7 @@ static bool menu_swap_ok_cancel_buttons = false;
 
 static bool quit_press_twice = false;
 
-#if defined(ANDROID)
-static bool default_log_to_file = true;
-#else
 static bool default_log_to_file = false;
-#endif
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
@@ -921,7 +917,5 @@ static char buildbot_server_url[] = "";
 static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
 
 static char default_discord_app_id[] = "475456035851599874";
-
-static char default_log_file[] = "retroarch.log";
 
 #endif

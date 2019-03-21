@@ -594,7 +594,6 @@ typedef struct settings
       char streaming_title[PATH_MAX_LENGTH];
 
       char log_dir[PATH_MAX_LENGTH];
-      char log_file[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;

@@ -187,7 +187,6 @@ enum
    RA_OPT_FEATURES,
    RA_OPT_VERSION,
    RA_OPT_EOF_EXIT,
-   RA_OPT_LOG_FILE,
    RA_OPT_MAX_FRAMES,
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
@@ -291,6 +290,8 @@ static retro_time_t libretro_core_runtime_usec                  = 0;
 
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
+
+static bool log_file_created                                    = false;
 
 extern bool input_driver_flushing_input;
 
@@ -1084,7 +1085,6 @@ static void retroarch_print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into "
          "program.");
@@ -1277,9 +1277,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "max-frames-ss-path", 1, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT_PATH },
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
       { "version",            0, NULL, RA_OPT_VERSION },
-#ifdef HAVE_FILE_LOGGER
-      { "log-file",           1, NULL, RA_OPT_LOG_FILE },
-#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -1735,12 +1732,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_print_version();
                exit(0);
 
-   #ifdef HAVE_FILE_LOGGER
-            case RA_OPT_LOG_FILE:
-               retro_main_log_file_init(optarg);
-               break;
-   #endif
-
             case 'c':
             case 'h':
             case RA_OPT_APPENDCONFIG:
@@ -1759,19 +1750,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       }
    }
 
-
    if (verbosity_is_enabled())
-   {
-      settings_t *settings  = config_get_ptr();
-      if (settings->bools.log_to_file && 
-         !string_is_empty(settings->paths.log_dir) && !string_is_empty(settings->paths.log_file))
-      {
-         char buf[PATH_MAX_LENGTH];
-         fill_pathname_join(buf, settings->paths.log_dir, settings->paths.log_file, sizeof(buf));
-         RARCH_LOG("Logging to file: %s\n", buf);
-         retro_main_log_file_init(buf);
-      }
-   }
+      rarch_log_file_init();
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
@@ -1975,7 +1955,8 @@ bool retroarch_main_init(int argc, char *argv[])
 
    rarch_error_on_init = true;
 
-   retro_main_log_file_init(NULL);
+   /* Have to initialise non-file logging once at the start... */
+   retro_main_log_file_init(NULL, false);
 
    retroarch_parse_input_and_config(argc, argv);
 
@@ -1993,8 +1974,8 @@ bool retroarch_main_init(int argc, char *argv[])
          RARCH_LOG_OUTPUT("CPU Model Name: %s\n", cpu_model);
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      fprintf(stderr, "%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
-      fprintf(stderr, "Built: %s\n", __DATE__);
+      RARCH_LOG_OUTPUT("%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
+      RARCH_LOG_OUTPUT("Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
       RARCH_LOG_OUTPUT("Git: %s\n", retroarch_git_version);
@@ -5295,4 +5276,75 @@ finish:
    if (info_buf)
       free(info_buf);
 #endif
+}
+
+void rarch_log_file_init(void)
+{
+   settings_t *settings = config_get_ptr();
+   FILE *fp = NULL;
+   bool success = false;
+   
+   /* If nothing has changed, do nothing */
+   if ((!settings->bools.log_to_file && !is_logging_to_file()) ||
+       (settings->bools.log_to_file && is_logging_to_file()))
+      return;
+   
+   /* If we are currently logging to file and wish to stop,
+    * de-initialise existing logger... */
+   if (!settings->bools.log_to_file && is_logging_to_file())
+   {
+      retro_main_log_file_deinit();
+      /* ...and revert to console */
+      retro_main_log_file_init(NULL, false);
+      return;
+   }
+   
+   /* If we reach this point, then we are not currently
+    * logging to file, and wish to do so */
+   
+   /* > Check whether we are already logging to console */
+   fp = retro_main_log_file();
+   if (fp)
+   {
+      /* De-initialise existing logger */
+      retro_main_log_file_deinit();
+   }
+   
+   /* > Attempt to initialise log file */
+   if (!string_is_empty(settings->paths.log_dir))
+   {
+      char buf[PATH_MAX_LENGTH];
+      fill_pathname_join(buf, settings->paths.log_dir, file_path_str(FILE_PATH_DEFAULT_EVENT_LOG), sizeof(buf));
+      if (!string_is_empty(buf))
+      {
+         /* When RetroArch is launched, log file is overwritten.
+          * On subsequent calls within the same session, it is appended to. */
+         retro_main_log_file_init(buf, log_file_created);
+         log_file_created = true;
+         success = true;
+      }
+   }
+   
+   /* > Fall back to console logging if something went wrong */
+   if (!success)
+      retro_main_log_file_init(NULL, false);
+}
+
+void rarch_log_file_deinit(void)
+{
+   FILE *fp = NULL;
+   
+   /* De-initialise existing logger, if currently logging to file */
+   if (is_logging_to_file())
+   {
+      retro_main_log_file_deinit();
+   }
+   
+   /* If logging is currently disabled... */
+   fp = retro_main_log_file();
+   if (!fp)
+   {
+      /* ...initialise logging to console */
+      retro_main_log_file_init(NULL, false);
+   }
 }
