@@ -1310,8 +1310,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
             global->record.config_dir, false, NULL, true);
    }
 
-   SETTING_ARRAY("log_file", settings->paths.log_file, true, default_log_file, true);
-   SETTING_ARRAY("log_dir", settings->paths.log_dir, true, "", true);
+   SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
 
    *size = count;
 
@@ -1594,6 +1593,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, ozone_collapse_sidebar, false);
 #endif
+
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
 
    *size = count;
@@ -1961,12 +1961,6 @@ void config_set_defaults(void)
    strlcpy(settings->arrays.discord_app_id,
       default_discord_app_id,  sizeof(settings->arrays.discord_app_id));
 
-   strlcpy(settings->paths.log_file,
-      default_log_file,  sizeof(settings->paths.log_file));
-
-   strlcpy(settings->paths.log_dir,
-      g_defaults.dirs[DEFAULT_DIR_LOGS],  sizeof(settings->paths.log_dir));
-
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu.materialui.menu_color_theme_enable)
       settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
@@ -2127,6 +2121,8 @@ void config_set_defaults(void)
    *settings->arrays.playlist_cores = '\0';
    *settings->paths.directory_content_history = '\0';
    *settings->paths.path_audio_dsp_plugin = '\0';
+
+   *settings->paths.log_dir = '\0';
 
    video_driver_default_settings();
 
@@ -3159,6 +3155,20 @@ static bool config_load_file(const char *path, bool set_defaults,
 #endif
    if (string_is_equal(settings->paths.directory_system, "default"))
       *settings->paths.directory_system = '\0';
+
+   /* Log directory is a special case, since it must contain
+    * a valid path as soon as possible - if config file
+    * value is 'default' must copy g_defaults.dirs[DEFAULT_DIR_LOGS]
+    * directly... */
+   if (string_is_equal(settings->paths.log_dir, "default"))
+   {
+      if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+         strlcpy(settings->paths.log_dir,
+               g_defaults.dirs[DEFAULT_DIR_LOGS],
+               sizeof(settings->paths.log_dir));
+      else
+         *settings->paths.log_dir = '\0';
+   }
 
    if (settings->floats.slowmotion_ratio < 1.0f)
       configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);

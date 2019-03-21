@@ -1393,6 +1393,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VOLUME_DOWN,
 
    MENU_LABEL(LOG_VERBOSITY),
+   MENU_LABEL(LOG_TO_FILE),
 
    MENU_ENUM_LABEL_OVERLAY_NEXT,
 
@@ -1703,6 +1704,7 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_SHADER_DIR),
    MENU_LABEL(VIDEO_FILTER_DIR),
    MENU_LABEL(AUDIO_FILTER_DIR),
+   MENU_LABEL(LOG_DIR),
 
    MENU_LABEL(TURBO_DEADZONE_LIST),
    MENU_LABEL(LIBRETRO_DIR_PATH),
@@ -2477,6 +2479,7 @@ enum msg_hash_enums
 #define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
+#define MENU_LABEL_LOG_DIR                                                     0x87BB87E5U
 
 /* RDB settings */
 
