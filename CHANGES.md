@@ -28,6 +28,7 @@
 - GONG: Add savestate support.
 - GONG: Add video refresh rate core options.
 - GONG: Two player support via core option.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
 - MIDI: Fix startup crash in midi driver.
 - MENU: Add memory statistics support to more context drivers.
