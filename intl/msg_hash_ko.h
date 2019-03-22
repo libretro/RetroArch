@@ -2937,7 +2937,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "조이패드가 연결되면 해당 디렉토리에 설정 파일이 있는 경우 자동으로 구성해줍니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "모든 컬렉션이 이 디렉토리에 저장됩니다.")
+      "모든 재생 목록은이 디렉토리에 저장됩니다.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "디렉토리를 설정하면 설정하면 임시로 압축해제된 컨첸츠가 이 디렉토리에 추출됩니다."
@@ -3114,7 +3114,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "설정 탭을 숨길때 비밀번호를 설정해 나중에 되돌릴수 있게 끔 합니다. 메인 메뉴에서 '설정 탭 표시'를 선택 후 비밀번호를 입력해 되돌릴수 있습니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "콜렉션에 있는 엔트리들을 편집할 수 있게 허용합니다.")
+      "재생목록에 있는 엔트리들을 편집할 수 있게 허용합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "엔트리 편집 허용")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

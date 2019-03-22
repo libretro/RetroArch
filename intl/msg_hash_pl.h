@@ -3188,7 +3188,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Jeśli joypad jest podłączony, to zostanie automatycznie skonfigurowany, jeśli plik konfiguracyjny odpowiadający mu jest obecny w tym katalogu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Zapisz wszystkie kolekcje w tym katalogu.")
+      "Zapisz wszystkie listy odtwarzania w tym katalogu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Jeśli ustawione na katalog, zawartość, która jest czasowo wyodrębniana (np. Z archiwów), zostanie wyodrębniona do tego katalogu."
@@ -3374,7 +3374,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Podanie hasła podczas ukrywania karty ustawień pozwala później przywrócić ją z menu, przechodząc do karty Menu główne, wybierając opcję Włącz kartę Ustawienia i wprowadzając hasło.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Zezwalaj użytkownikowi na zmianę nazw wpisów w kolekcjach.")
+      "Zezwalaj użytkownikowi na zmianę nazw wpisów na listach odtwarzania.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Zezwalaj na zmianę nazw wpisów")
 MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,

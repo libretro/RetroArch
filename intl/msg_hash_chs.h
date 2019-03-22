@@ -3373,7 +3373,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "如果插入的游戏手柄与该目录中的配置文件匹配，\n"
       "这个游戏手柄将自动完成配置。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "保存游戏列表文件的文件夹。")
+      "保存播放列表文件的文件夹。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "如果设置为目录，临时提取的内容（例如从档案中）\n"
@@ -3582,7 +3582,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "启用方法：在主菜单中选择「启用设置页」\n"
       "并输入密码来重新启用设置页。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "允许在集合中重命名条目。")
+      "允许重命名播放列表中的条目。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "允许重命名条目")
 MSG_HASH(

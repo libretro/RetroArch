@@ -5745,7 +5745,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Guardar colecciones en esta carpeta"
+    "Guardar listas de reprodução en esta carpeta"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6069,7 +6069,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Permitir al usuario renombrar entradas en colecciones"
+    "Permitir al usuario renombrar entradas en listas de reprodução"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,

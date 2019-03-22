@@ -5644,7 +5644,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all collections to this directory."
+    "Save all playlists to this directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -5968,7 +5968,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις στην συλλογή."
+    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις λίστας αναπαραγωγής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,

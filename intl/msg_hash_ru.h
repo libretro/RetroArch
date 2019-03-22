@@ -2988,7 +2988,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Если игровой джойстик подключен, то джойстик будет автомотически подстроен, если существует подходящий файл автоматической настройки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Сохранять все коллекции в выбранной папке.")
+      "Сохранять все плейлисты в выбранной папке.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Контент извлеченный из архивов будет временно размещен в этой папке."
@@ -3162,7 +3162,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Применение пароля при скрытии вкладки Настройки может позже восстановить ее из меню. Для этого нужно перейти на вкладку Главное меню, выбрать Включить вкладку Настройки и ввести пароль.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Разрешить пользователю переименовывать записи в коллекции.")
+      "Разрешить пользователю переименовывать записи в плейлистах.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Разрешить переименовывать записи")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

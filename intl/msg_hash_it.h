@@ -3027,7 +3027,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Se un joypad viene collegato, verrà automaticamente configurato se all'interno di questa directory è presente un file di configurazione corrispondente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Salva tutte le collezioni in questa directory.")
+      "Salva tutte le playlists in questa directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Se non viene impostata una directory, il contenuto estratto temporaneamente (ad esempio dagli archivi) si troverà in questa directory."
@@ -3211,7 +3211,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Fornisce una password quando si nasconde la colonna Impostazioni per poi ripristinarli dal menu, andando alla colonna Menù Principale, selezionando abilita la colonna Impostazioni e immettere la password")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Consente all'utente di rinominare le voci nelle collezioni.")
+      "Consente all'utente di rinominare le voci nelle playlists.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Permette di rinominare le voci")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

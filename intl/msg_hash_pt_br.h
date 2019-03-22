@@ -5889,7 +5889,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Salva todas as coleções neste diretório."
+    "Salva todas as listas de reprodução neste diretório."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6213,7 +6213,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Permite que o usuário renomeie os itens nas coleções."
+    "Permite que o usuário renomeie os itens nas listas de reprodução."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
