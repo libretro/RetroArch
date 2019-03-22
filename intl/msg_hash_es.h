@@ -5432,7 +5432,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Eliminar esta entrada de la colección"
+    "Eliminar esta entrada de la lista de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5576,7 +5576,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Permitir al usuario eliminar entradas de las colecciones"
+    "Permitir al usuario eliminar entradas de las listas de reprodução"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,

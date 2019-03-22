@@ -2485,7 +2485,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Выбрать файл")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-      "Выбрать из списка воспроизведения.")
+      "Выбрать из Плейлист.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Фильтр")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2835,7 +2835,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Сканировать для поиска новых комнат.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Удалить эту запись из коллекции.")
+      "Удалить эту запись из Плейлист.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Просмотреть больше информации о содержимом.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2907,7 +2907,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Выполнять задачи в отдельном потоке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Разрешить пользователю удалять отдельные записи из коллекции.")
+      "Разрешить пользователю удалять отдельные записи из Плейлисты.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Устанавливает каталог System. Ядра могут запрашивать его для загрузки BIOS, прошивок, системных настроек и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,

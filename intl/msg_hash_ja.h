@@ -3036,7 +3036,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "新しいネットプレイルームをスキャンします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "このエントリーをコレクションから削除する。")
+      "このエントリーをプレイリストから削除する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "このコンテンツについての詳細を表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -3108,7 +3108,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "タスクを別のスレッドで実行する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "ユーザーがコレクションからエントリーを削除できるようにする。")
+      "ユーザーがプレイリストからエントリーを削除できるようにする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "システムフォルダを指定します。コアはBIOSや特定システムの設定などをロードするため、このフォルダを探索することができます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3337,7 +3337,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "設定タブを隠す際にあらかじめパスワードを設定しておくことで、そのパスワードを使用してメニューから設定タブを復元することができます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "コレクションのエントリーの名前変更をユーザーに許可する。")
+      "プレイリストのエントリーの名前変更をユーザーに許可する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "エントリーの名前変更を許可")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

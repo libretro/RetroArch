@@ -5331,7 +5331,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Κατάργηση αυτής της καταχώρησης από την συλλογή."
+    "Κατάργηση αυτής της καταχώρισης από λίστα αναπαραγωγής."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5475,7 +5475,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από την συλλογή."
+    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από τις λίστες αναπαραγωγής."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,

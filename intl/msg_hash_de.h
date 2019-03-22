@@ -2894,7 +2894,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Suche nach neuen Räumen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Entferne diesen Eintrag aus der Sammlung.")
+      "Entferne diesen Eintrag aus der Wiedergabeliste.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Zeige weiterführende Informationen über diesen Inhalt an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
@@ -2970,7 +2970,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Führe Aufgaben im Hintergrund aus.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Erlaube dem Benutzer, Einträge aus der Sammlung zu entfernen.")
+      "Erlaube dem Benutzer, Einträge aus Wiedergabelisten zu entfernen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Lege das Systemverzeichnis fest. Cores können dieses Verzeichnis verwenden, um ein BIOS, system-spezifische Konfigurationen usw. zu laden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
