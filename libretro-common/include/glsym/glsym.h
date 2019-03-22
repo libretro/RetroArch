@@ -38,4 +38,8 @@
 #endif
 #endif
 
+#ifdef HAVE_GLSYM_PRIVATE
+#include "glsym_private.h"
+#endif
+
 #endif
