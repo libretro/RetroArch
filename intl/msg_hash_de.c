@@ -678,7 +678,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "wähle '%s' oder %s'.\n"
                "\n"
                "Die Dateien werden werden mit einer Datenbank abgeglichen.\n"
-               "Bei einem Treffer wird die Datei zu eine Wiedergabeliste\n"
+               "Bei einem Treffer wird die Datei zu einer Wiedergabeliste\n"
                "hinzugefügt.\n"
                "\n"
                "du kannst diese Inhalte einfach aufrufen, indem du\n"
