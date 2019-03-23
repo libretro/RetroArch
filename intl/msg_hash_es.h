@@ -5576,7 +5576,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Permitir al usuario eliminar entradas de las listas de reprodução"
+    "Permitir al usuario eliminar entradas de las listas de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5745,7 +5745,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Guardar listas de reprodução en esta carpeta"
+    "Guardar listas de reproducción en esta carpeta"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6069,7 +6069,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Permitir al usuario renombrar entradas en listas de reprodução"
+    "Permitir al usuario renombrar entradas en listas de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
