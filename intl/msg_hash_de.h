@@ -1136,9 +1136,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "Keine Leistungszähler.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-      "Keine Wiedergabelisten.")
+      "Keine Playlists.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-      "Keine Wiedergabelisten-Einträge verfügbar.")
+      "Keine Playlist-Einträge verfügbar.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
       "Keine Einstellungen gefunden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
@@ -1186,11 +1186,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
       "Leistungsindikatoren")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-      "Wiedergabelisten")
+      "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Wiedergabelisten")
+      "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-      "Wiedergabelisten")
+      "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "Touch-Unterstützung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PORT,
@@ -1887,7 +1887,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Ändere die Standard-Verzeichnisse für dieses System")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-      "Ändere die Einstellungen für die Wiedergabelisten.")
+      "Ändere die Einstellungen für die Playlists.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
       "Ändere die Einstellungen für das Netzwerk.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
@@ -2524,7 +2524,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Aktiviere oder deaktiviere Desktop-Gestaltung (nur Windows).")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-      "Aktiviere Wiedergabeliste für kürzlich geöffnete Inhalte.")
+      "Aktiviere Playlist für kürzlich geöffnete Inhalte.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "Begrenzt die Anzahl der Einträge in der Verlaufsliste.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
@@ -2540,7 +2540,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Wähle Datei")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-      "Wähle aus Wiedergabeliste")
+      "Wähle aus Playlist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2894,7 +2894,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Suche nach neuen Räumen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Entferne diesen Eintrag aus der Wiedergabeliste.")
+      "Entferne diesen Eintrag aus der Playlist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Zeige weiterführende Informationen über diesen Inhalt an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
@@ -2970,7 +2970,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Führe Aufgaben im Hintergrund aus.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Erlaube dem Benutzer, Einträge aus den Wiedergabelisten zu entfernen.")
+      "Erlaube dem Benutzer, Einträge aus den Playlists zu entfernen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Lege das Systemverzeichnis fest. Cores können dieses Verzeichnis verwenden, um ein BIOS, system-spezifische Konfigurationen usw. zu laden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3053,7 +3053,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Wenn ein Controller eingesteckt wird, wird er automatisch konfiguriert, sofern eine passende Konfigurationsdatei in diesem Verzeichnis vorhanden ist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Speichere alle Wiedergabelisten in diesem Verzeichnis.")
+      "Speichere alle Playlists in diesem Verzeichnis.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Wenn ein Verzeichnis gewählt wird, wird Inhalt, der temporär entpackt wird (z.B. aus Archiven) in dieses Verzeichnis entpackt."
@@ -3233,7 +3233,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Wird vor dem Verstecken der Einstellungen ein Passwort vergeben, wird es später möglich sein, den Reiter wiederherzustellen, in dem die Funktion 'Aktiviere den Reiter 'Einstellungen' ausgewählt und das Passwort dort eingegeben wird.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Erlaube dem Benutzer, Einträge in den Wiedergabelisten umzubenennen.")
+      "Erlaube dem Benutzer, Einträge in den Playlists umzubenennen.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Umbenennen von Einträgen erlauben")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,

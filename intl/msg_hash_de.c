@@ -339,9 +339,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len,
-               "Wiedergabelisten-Verzeichnis. \n"
+               "Playlists-Verzeichnis. \n"
                " \n"
-               "Speichere alle Wiedergabelisten in diesem \n"
+               "Speichere alle Playlists in diesem \n"
                "Verzeichnis.");
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
@@ -678,7 +678,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "wähle '%s' oder %s'.\n"
                "\n"
                "Die Dateien werden werden mit einer Datenbank abgeglichen.\n"
-               "Bei einem Treffer wird die Datei zu einer Wiedergabeliste\n"
+               "Bei einem Treffer wird die Datei zu einer Playlist\n"
                "hinzugefügt.\n"
                "\n"
                "du kannst diese Inhalte einfach aufrufen, indem du\n"
