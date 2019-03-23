@@ -1439,12 +1439,7 @@ DEPENDENCIES
 /*============================================================
 XML
 ============================================================ */
-#if 0
-#ifndef HAVE_LIBXML2
-#define RXML_LIBXML2_COMPAT 1
 #include "../libretro-common/formats/xml/rxml.c"
-#endif
-#endif
 
 /*============================================================
  AUDIO UTILS

@@ -2671,10 +2671,6 @@ MSG_HASH(
     "Υποστήριξη Libusb"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-    "Υποστήριξη ανάλυσης libxml2 XML"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
     "Υποστήριξη Netplay (peer-to-peer)"
     )

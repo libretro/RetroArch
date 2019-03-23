@@ -260,12 +260,6 @@ static const bool _hlsl_supp = true;
 static const bool _hlsl_supp = false;
 #endif
 
-#ifdef HAVE_LIBXML2
-static const bool _libxml2_supp = true;
-#else
-static const bool _libxml2_supp = false;
-#endif
-
 #ifdef HAVE_SDL_IMAGE
 static const bool _sdl_image_supp = true;
 #else

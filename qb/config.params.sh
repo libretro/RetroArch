@@ -80,7 +80,6 @@ HAVE_EGL=auto              # EGL context support
 HAVE_VG=auto               # OpenVG support
 HAVE_CG=auto               # Cg shader support
 HAVE_HLSL=no               # HLSL9 shader support (for Direct3D9)
-HAVE_LIBXML2=auto          # libxml2 support
 HAVE_BUILTINZLIB=no        # Bake in zlib
 HAVE_ZLIB=auto             # zlib support (ZIP extract, PNG decoding/encoding)
 HAVE_ALSA=auto             # ALSA support
