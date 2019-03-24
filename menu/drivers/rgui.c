@@ -457,6 +457,7 @@ typedef struct
    char menu_sublabel[255]; /* Must be a fixed length array... */
    unsigned menu_aspect_ratio;
    unsigned menu_aspect_ratio_lock;
+   bool aspect_update_pending;
    rgui_video_settings_t menu_video_settings;
    rgui_video_settings_t content_video_settings;
    struct scaler_ctx image_scaler;
@@ -1499,6 +1500,13 @@ static void rgui_render(void *data, bool is_idle)
    static bool display_kb         = false;
    bool current_display_cb        = false;
 
+   /* Apply pending aspect ratio update */
+   if (rgui->aspect_update_pending)
+   {
+      command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+      rgui->aspect_update_pending = false;
+   }
+
    current_display_cb = menu_input_dialog_get_display_kb();
 
    if (!rgui->force_redraw)
@@ -1945,7 +1953,7 @@ static void rgui_get_video_config(rgui_video_settings_t *video_settings)
    video_settings->viewport.y = custom_vp->y;
 }
 
-static void rgui_set_video_config(rgui_video_settings_t *video_settings)
+static void rgui_set_video_config(rgui_t *rgui, rgui_video_settings_t *video_settings, bool delay_update)
 {
    settings_t *settings        = config_get_ptr();
    /* Could use settings->video_viewport_custom directly,
@@ -1964,7 +1972,13 @@ static void rgui_set_video_config(rgui_video_settings_t *video_settings)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom_vp->width / custom_vp->height;
    
-   video_driver_set_aspect_ratio();
+   if (delay_update)
+      rgui->aspect_update_pending = true;
+   else
+   {
+      command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+      rgui->aspect_update_pending = false;
+   }
 }
 
 /* Note: This function is only called when aspect ratio
@@ -2040,7 +2054,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    rgui->menu_video_settings.viewport.y = (vp.full_height - rgui->menu_video_settings.viewport.height) / 2;
 }
 
-static bool rgui_set_aspect_ratio(rgui_t *rgui)
+static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
 {
    unsigned base_term_width;
    settings_t *settings = config_get_ptr();
@@ -2142,7 +2156,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui)
    if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
    {
       rgui_update_menu_viewport(rgui);
-      rgui_set_video_config(&rgui->menu_video_settings);
+      rgui_set_video_config(rgui, &rgui->menu_video_settings, delay_update);
    }
    
    return true;
@@ -2177,7 +2191,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * - Allocates frame buffer
     * - Configures variable 'menu display' settings */
    rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
-   if (!rgui_set_aspect_ratio(rgui))
+   rgui->aspect_update_pending = false;
+   if (!rgui_set_aspect_ratio(rgui, false))
       goto error;
 
    /* Fixed 'menu display' settings */
@@ -2279,8 +2294,15 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
+   /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
+    * normally call command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL)
+    * ## THIS CANNOT BE DONE INSIDE rgui_frame() IF THREADED VIDEO IS ENABLED ##
+    * Attempting to do so creates a deadlock, and causes RetroArch to hang.
+    * We therefore have to set the 'delay_update' argument, which causes
+    * command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL) to be called at
+    * the next instance of rgui_render() */
    if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
-      rgui_set_aspect_ratio(rgui);
+      rgui_set_aspect_ratio(rgui, true);
 
    if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
    {
@@ -2288,12 +2310,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
       if (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_NONE)
       {
-         rgui_set_video_config(&rgui->content_video_settings);
+         rgui_set_video_config(rgui, &rgui->content_video_settings, true);
       }
       else
       {
          rgui_update_menu_viewport(rgui);
-         rgui_set_video_config(&rgui->menu_video_settings);
+         rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
    }
 }
@@ -2588,7 +2610,7 @@ static void rgui_populate_entries(void *data,
          rgui_video_settings_t current_video_settings = {0};
          rgui_get_video_config(&current_video_settings);
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
-            rgui_set_video_config(&rgui->content_video_settings);
+            rgui_set_video_config(rgui, &rgui->content_video_settings, false);
       }
    }
 }
@@ -2669,7 +2691,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui_update_menu_viewport(rgui);
          
          /* Apply menu video settings */
-         rgui_set_video_config(&rgui->menu_video_settings);
+         rgui_set_video_config(rgui, &rgui->menu_video_settings, false);
       }
       else
       {
@@ -2680,7 +2702,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui_get_video_config(&current_video_settings);
          
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
-            rgui_set_video_config(&rgui->content_video_settings);
+            rgui_set_video_config(rgui, &rgui->content_video_settings, false);
       }
    }
    
