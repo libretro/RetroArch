@@ -34,25 +34,25 @@ typedef struct snes_ntsc_setup_t
 } snes_ntsc_setup_t;
 
 /* Video format presets */
-extern snes_ntsc_setup_t const snes_ntsc_composite; /* color bleeding + artifacts */
-extern snes_ntsc_setup_t const snes_ntsc_svideo;    /* color bleeding only */
-extern snes_ntsc_setup_t const snes_ntsc_rgb;       /* crisp image */
-extern snes_ntsc_setup_t const snes_ntsc_monochrome;/* desaturated + artifacts */
+extern snes_ntsc_setup_t const retroarch_snes_ntsc_composite; /* color bleeding + artifacts */
+extern snes_ntsc_setup_t const retroarch_snes_ntsc_svideo;    /* color bleeding only */
+extern snes_ntsc_setup_t const retroarch_snes_ntsc_rgb;       /* crisp image */
+extern snes_ntsc_setup_t const retroarch_snes_ntsc_monochrome;/* desaturated + artifacts */
 
 /* Initializes and adjusts parameters. Can be called multiple times on the same
 snes_ntsc_t object. Can pass NULL for either parameter. */
 typedef struct snes_ntsc_t snes_ntsc_t;
-void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup );
+void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup );
 
 /* Filters one or more rows of pixels. Input pixel format is set by SNES_NTSC_IN_FORMAT
 and output RGB depth is set by SNES_NTSC_OUT_DEPTH. Both default to 16-bit RGB.
 In_row_width is the number of pixels to get to the next input row. Out_pitch
 is the number of *bytes* to get to the next output row. */
-void snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
+void retroarch_snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
 		long in_row_width, int burst_phase, int in_width, int in_height,
 		void* rgb_out, long out_pitch, int first, int last);
 
-void snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
+void retroarch_snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
 		long in_row_width, int burst_phase, int in_width, int in_height,
 		void* rgb_out, long out_pitch, int first, int last);
 
