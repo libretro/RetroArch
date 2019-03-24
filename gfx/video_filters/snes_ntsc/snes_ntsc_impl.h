@@ -311,7 +311,7 @@ typedef struct pixel_info_t
 		(1.0f - (((ntsc) + 100) & 2))
 #endif
 
-extern pixel_info_t const snes_ntsc_pixels [alignment_count];
+extern pixel_info_t const retroarch_snes_ntsc_pixels [alignment_count];
 
 /* Generate pixel at all burst phases and column alignments */
 static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t* out )
@@ -326,7 +326,7 @@ static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t
 		Convolve these with kernels which: filter respective components, apply
 		sharpening, and rescale horizontally. Convert resulting yiq to rgb and pack
 		into integer. Based on algorithm by NewRisingSun. */
-		pixel_info_t const* pixel = snes_ntsc_pixels;
+		pixel_info_t const* pixel = retroarch_snes_ntsc_pixels;
 		int alignment_remain = alignment_count;
 		do
 		{
