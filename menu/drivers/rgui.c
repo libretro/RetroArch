@@ -2164,8 +2164,8 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
 
 static void *rgui_init(void **userdata, bool video_is_threaded)
 {
+   unsigned new_font_height;
    size_t fb_pitch, start;
-   unsigned fb_width, fb_height, new_font_height;
    rgui_t               *rgui = NULL;
    bool                   ret = false;
    settings_t *settings       = config_get_ptr();

@@ -67,7 +67,7 @@ void libretro_dummy_retro_init(void)
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    settings_t *settings = config_get_ptr();
 #endif
-   uint32_t i;
+   unsigned i;
 
    /* Sensible defaults */
    frame_buf_width = 320;
@@ -95,7 +95,7 @@ void libretro_dummy_retro_init(void)
 #endif
 
    dummy_frame_buf = (uint16_t*)calloc(frame_buf_width * frame_buf_height, sizeof(uint16_t));
-   for (i = 0; i < frame_buf_width * frame_buf_height; i++)
+   for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
       dummy_frame_buf[i] = 4 << 5;
 }
 
