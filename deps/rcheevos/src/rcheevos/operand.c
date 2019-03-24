@@ -118,7 +118,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr) {
       break;
   }
 
-  value = (unsigned)strtoul(aux, &end, 16);
+  value = strtoul(aux, &end, 16);
 
   if (end == aux) {
     return RC_INVALID_MEMORY_OPERAND;
@@ -213,7 +213,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, lua_S
 
   switch (*aux) {
     case 'h': case 'H':
-      value = (unsigned)strtoul(++aux, &end, 16);
+      value = strtoul(++aux, &end, 16);
 
       if (end == aux) {
         return RC_INVALID_CONST_OPERAND;
@@ -230,7 +230,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, lua_S
       break;
     
     case 'v': case 'V':
-      value = (unsigned)strtoul(++aux, &end, 10);
+      value = strtoul(++aux, &end, 10);
 
       if (end == aux) {
         return RC_INVALID_CONST_OPERAND;
