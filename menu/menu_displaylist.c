@@ -5492,6 +5492,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LOG_TO_FILE,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP,
+               PARSE_ONLY_BOOL, false);
 
          {
             settings_t      *settings     = config_get_ptr();

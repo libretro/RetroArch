@@ -292,6 +292,7 @@ static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
 
 static bool log_file_created                                    = false;
+static char timestamped_log_file_name[64]                       = {0};
 
 extern bool input_driver_flushing_input;
 
@@ -5282,6 +5283,22 @@ void rarch_log_file_init(void)
    FILE *fp = NULL;
    bool success = false;
    
+   /* If this is the first run, generate a timestamped log
+    * file name (do this even when not outputting timestamped
+    * log files, since user may decide to switch at any moment...) */
+   if (string_is_empty(timestamped_log_file_name))
+   {
+      char format[256];
+      time_t cur_time = time(NULL);
+      
+      format[0] = '\0';
+      
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", localtime(&cur_time));
+      
+      fill_pathname_noext(timestamped_log_file_name, format,
+            file_path_str(FILE_PATH_EVENT_LOG_EXTENSION), sizeof(timestamped_log_file_name));
+   }
+   
    /* If nothing has changed, do nothing */
    if ((!settings->bools.log_to_file && !is_logging_to_file()) ||
        (settings->bools.log_to_file && is_logging_to_file()))
@@ -5312,7 +5329,9 @@ void rarch_log_file_init(void)
    if (!string_is_empty(settings->paths.log_dir))
    {
       char buf[PATH_MAX_LENGTH];
-      fill_pathname_join(buf, settings->paths.log_dir, file_path_str(FILE_PATH_DEFAULT_EVENT_LOG), sizeof(buf));
+      fill_pathname_join(buf, settings->paths.log_dir,
+            settings->bools.log_to_file_timestamp ? timestamped_log_file_name : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
+            sizeof(buf));
       if (!string_is_empty(buf))
       {
          /* When RetroArch is launched, log file is overwritten.

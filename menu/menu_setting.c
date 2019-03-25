@@ -3342,6 +3342,7 @@ void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_LOG_DIR:
+      case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
          if (verbosity_is_enabled() && is_logging_to_file())
          {
             rarch_log_file_deinit();
@@ -4966,6 +4967,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_LOG_TO_FILE,
                   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
                   default_log_to_file,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.log_to_file_timestamp,
+                  MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP,
+                  MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+                  log_to_file_timestamp,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

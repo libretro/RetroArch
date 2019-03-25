@@ -440,6 +440,7 @@ static bool menu_swap_ok_cancel_buttons = false;
 static bool quit_press_twice = false;
 
 static bool default_log_to_file = false;
+static bool log_to_file_timestamp = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;

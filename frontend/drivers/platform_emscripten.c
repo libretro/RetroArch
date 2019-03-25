@@ -198,6 +198,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
    /* cache dir */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/tmp/",

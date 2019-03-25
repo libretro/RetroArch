@@ -144,6 +144,7 @@ default_sublabel_macro(action_bind_sublabel_toggle_gamepad_combo,          MENU_
 default_sublabel_macro(action_bind_sublabel_show_hidden_files,             MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES)
 default_sublabel_macro(action_bind_sublabel_log_verbosity,                 MENU_ENUM_SUBLABEL_LOG_VERBOSITY)
 default_sublabel_macro(action_bind_sublabel_log_to_file,                   MENU_ENUM_SUBLABEL_LOG_TO_FILE)
+default_sublabel_macro(action_bind_sublabel_log_to_file_timestamp,         MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP)
 default_sublabel_macro(action_bind_sublabel_log_dir,                       MENU_ENUM_SUBLABEL_LOG_DIR)
 default_sublabel_macro(action_bind_sublabel_video_monitor_index,           MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX)
 default_sublabel_macro(action_bind_sublabel_video_refresh_rate_auto,       MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO)
@@ -2133,6 +2134,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOG_TO_FILE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_to_file);
+            break;
+         case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_to_file_timestamp);
             break;
          case MENU_ENUM_LABEL_LOG_DIR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_dir);

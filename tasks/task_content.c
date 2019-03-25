@@ -188,9 +188,7 @@ static void content_load_init_wrap(
       const struct rarch_main_wrap *args,
       int *argc, char **argv)
 {
-#ifdef HAVE_FILE_LOGGER
    int i;
-#endif
 
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
@@ -238,10 +236,8 @@ static void content_load_init_wrap(
    if (args->verbose)
       argv[(*argc)++] = strdup("-v");
 
-#ifdef HAVE_FILE_LOGGER
    for (i = 0; i < *argc; i++)
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
-#endif
 }
 
 /**

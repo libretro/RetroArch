@@ -1625,6 +1625,14 @@ MSG_HASH(
     "Redirects system event log messages to file. Requires 'Logging Verbosity' to be enabled."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Timestamped Log Files"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+    "When logging to file, redirects the output from each RetroArch session to a new timestamped file. If disabled, log is overwritten each time RetroArch is restarted."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
     "Main Menu"
     )

@@ -263,6 +263,9 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
             g_defaults.dirs[DEFAULT_DIR_CORE],
             "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    }
 
 #ifndef IS_SALAMANDER
