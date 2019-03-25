@@ -1595,6 +1595,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #endif
 
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
+   SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, log_to_file_timestamp, false);
 
    *size = count;
 

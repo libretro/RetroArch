@@ -130,6 +130,8 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS], user_path,
          "wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
    /* tmp */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CACHE],

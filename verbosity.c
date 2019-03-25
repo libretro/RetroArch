@@ -126,6 +126,14 @@ void retro_main_log_file_init(const char *path, bool append)
       return;
 
    log_file_fp          = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
+
+   if (!log_file_fp)
+   {
+      log_file_fp       = stderr;
+      RARCH_ERR("Failed to open system event log file: %s\n", path);
+      return;
+   }
+
    log_file_initialized = true;
 
 #if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
@@ -137,7 +145,7 @@ void retro_main_log_file_init(const char *path, bool append)
 
 void retro_main_log_file_deinit(void)
 {
-   if (log_file_fp && log_file_fp != stderr)
+   if (log_file_fp && log_file_initialized)
    {
       fclose(log_file_fp);
       log_file_fp = NULL;
@@ -199,7 +207,10 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       }
 
       if (log_file_initialized)
+      {
          vfprintf(log_file_fp, fmt, ap);
+         fflush(log_file_fp);
+      }
       else
          __android_log_vprint(prio,
                file_path_str(FILE_PATH_PROGRAM_NAME),

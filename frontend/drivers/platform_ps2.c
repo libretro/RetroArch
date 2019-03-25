@@ -77,6 +77,8 @@ static void create_path_names(void)
          "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
          "SYSTEM", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "LOGS", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
    /* cache dir */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,

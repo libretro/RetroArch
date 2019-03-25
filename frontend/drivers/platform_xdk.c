@@ -132,6 +132,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #elif defined(_XBOX360)
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "game:",
@@ -152,6 +155,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
          "game:\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         "game:\\logs",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
          g_defaults.dirs[DEFAULT_DIR_CORE],

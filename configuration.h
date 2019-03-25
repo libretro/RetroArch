@@ -321,6 +321,7 @@ typedef struct settings
 #endif
 
       bool log_to_file;
+      bool log_to_file_timestamp;
    } bools;
 
    struct
