@@ -1492,14 +1492,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Ist die Zeitlupe eingeschaltet, wird das Spiel \n"
                "um diesen Faktor verlangsamt.");
          break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Definiert Achsen-Grenzwert.\n"
-               " \n"
-               "Wie weit eine Achse bewegt werden muss, um einen \n"
-               "Tastendruck auszulösen .\n"
-               "Mögliche Werte liegen im Bereich [0.0, 1.0].");
-         break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
                "Turbo-Frequenz.\n"

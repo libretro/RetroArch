@@ -1533,14 +1533,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "Quando está em Câmera Lenta, o conteúdo será \n"
                              "diminuído pelo fator especificado/definido.");
             break;
-        case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-            snprintf(s, len,
-                     "Define a zona morta do controle analógico. \n"
-                             " \n"
-                             "Até que ponto um eixo deve ser \n"
-                             "movido para resultar em um botão pressionado. \n"
-                             "Os valores aceitos são entre [0.0, 1.0].");
-            break;
         case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
             snprintf(s, len,
                      "Período do turbo.\n"

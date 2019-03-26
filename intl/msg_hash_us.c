@@ -1572,9 +1572,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "When slowmotion, content will slow\n"
                              "down by factor.");
             break;
-        case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
+        case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
             snprintf(s, len,
-                     "Defines axis threshold.\n"
+                     "Defines the axis threshold.\n"
                              " \n"
                              "How far an axis must be tilted to result\n"
                              "in a button press.\n"

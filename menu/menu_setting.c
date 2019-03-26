@@ -7329,8 +7329,8 @@ static bool setting_append_list(
             CONFIG_FLOAT(
                   list, list_info,
                   input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
-                  MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD,
-                  MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
+                  MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
                   axis_threshold,
                   "%.3f",
                   &group_info,
@@ -7339,8 +7339,38 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 1.0, 0.01, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_analog_deadzone,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+                  analog_deadzone,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 1.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_analog_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+                  analog_sensitivity,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
 
             CONFIG_UINT(
                   list, list_info,

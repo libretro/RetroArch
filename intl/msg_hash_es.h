@@ -1046,10 +1046,6 @@ MSG_HASH(
     "Activar Auto-configuración"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Zona muerta analógica"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
     "Menú: cambiar OK y Cancelar"
     )
@@ -4618,10 +4614,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNC,
     "Sincronizar audio. Recomendado"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-    "Cuanto debe mover la palanca para ser detectada. Evita movimientos indeseados en los mandos que no vuelven perfectamente al centro"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,

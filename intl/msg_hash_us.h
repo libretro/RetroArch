@@ -1054,8 +1054,16 @@ MSG_HASH(
     "Autoconfig"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Analog Stick Deadzone"
+    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Input Button Axis Threshold"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+    "Analog Deadzone"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+    "Analog Sensitivity"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -4975,7 +4983,7 @@ MSG_HASH(
     "Synchronize audio. Recommended."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
+    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
     "How far an axis must be tilted to result in a button press."
     )
 MSG_HASH(

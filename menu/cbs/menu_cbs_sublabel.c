@@ -169,7 +169,7 @@ default_sublabel_macro(action_bind_sublabel_input_bind_hold,               MENU_
 default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_mixer_volume,            MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
-default_sublabel_macro(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD)
+default_sublabel_macro(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
 default_sublabel_macro(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 default_sublabel_macro(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
@@ -2029,7 +2029,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_hold);
             break;
-         case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
+         case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_axis_threshold);
             break;
          case MENU_ENUM_LABEL_AUDIO_SYNC:

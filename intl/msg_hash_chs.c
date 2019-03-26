@@ -1399,13 +1399,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "减速游戏时，速度将被降低的倍数。");
          break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "摇杆灵敏度\n"
-               " \n"
-               "必须把摇杆推到多大幅度才算按下按键。\n"
-               "数值范围为0.0至1.0。");
-         break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
                "Turbo period.\n"
