@@ -689,8 +689,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Botão direcional (direita) da pistola")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Ativar auto-configuração de teclas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Zona morta do eixo analógico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Menu trocar botões OK e Cancelar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -2289,10 +2287,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_SYNC,
       "Sincronizar o som. Recomendado.")
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Até que ponto um eixo deve estar inclinado para causar o pressionamento de um botão."
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Quantidade de segundos a aguardar até que seja feita uma nova associação."

@@ -987,15 +987,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Al reducir la velocidad, el contenido \n"
                "se ralentizará según este factor.");
          break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Define el margen de los ejes.\n"
-               " \n"
-               "Indica la distancia mínima que debe \n"
-               "recorrer un eje para que provoque \n"
-               "una pulsación del botón.\n"
-               "Los valores posibles son [0.0, 1.0].");
-         break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
                "Período de turbo.\n"

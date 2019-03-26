@@ -1003,10 +1003,6 @@ MSG_HASH(
     "Ενεργοποίηση Αυτόματης Διαμόρφωσης"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Νεκρή Ζώνη Αναλογικού"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
     "Εναλλαγή Κουμπιών Επιβεβαίωσης & Ακύρωσης Στο Μενού"
     )
@@ -4537,10 +4533,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNC,
     "Συγχρονισμός ήχου. Προτείνεται."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-    "Πόσο μακριά ένας άξωνας πρέπει να γείρει ώστε να οδηγήσει σε πάτημα κουμπιού."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,

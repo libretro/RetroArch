@@ -353,6 +353,8 @@ typedef struct settings
 
       float slowmotion_ratio;
       float fastforward_ratio;
+      float input_analog_deadzone;
+      float input_analog_sensitivity;
    } floats;
 
    struct

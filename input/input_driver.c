@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -876,6 +877,48 @@ static INLINE bool input_keys_pressed_iterate(unsigned i,
    return false;
 }
 
+static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port, uint32_t joyaxis)
+{
+   int16_t val = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (!drv || !drv->axis)
+      return 0;
+
+   val = drv->axis(port, joyaxis);
+
+   if (settings->floats.input_analog_deadzone)
+   {
+      float normalized;
+
+      /* if analog value is below the deadzone, ignore it */
+      val = ((float)abs(val) / 0x7fff) < settings->floats.input_analog_deadzone ? 0 : val;
+
+      if (val == 0)
+         return 0;
+
+      normalized = (1.0f / 0x7fff) * val;
+
+      /* now scale the "good" analog range appropriately, so we don't start out way above 0 */
+      val = 0x7fff * ((normalized - settings->floats.input_analog_deadzone) / (1.0f - settings->floats.input_analog_deadzone));
+   }
+
+   if (settings->floats.input_analog_sensitivity != 1.0f)
+   {
+      float normalized = (1.0f / 0x7fff) * val;
+      int new_val = 0x7fff * normalized * settings->floats.input_analog_sensitivity;
+
+      if (new_val > 0x7fff)
+         new_val = 0x7fff;
+      else if (new_val < -0x7fff)
+         new_val = -0x7fff;
+
+      val = new_val;
+   }
+
+   return val;
+}
+
 #ifdef HAVE_MENU
 
 /**
@@ -979,7 +1022,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !sec->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = sec->axis(joypad_info.joy_idx, joyaxis);
+                  int16_t  axis        = input_joypad_axis(sec, joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
@@ -991,7 +1034,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !first->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = first->axis(joypad_info.joy_idx, joyaxis);
+                  int16_t  axis        = input_joypad_axis(first, joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
@@ -1682,34 +1725,36 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
 {
    int16_t res;
 
-   if ( idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON )
+   if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
    {
       /* A RETRO_DEVICE_JOYPAD button? */
-      if ( ident < RARCH_FIRST_CUSTOM_BIND )
+      if (ident < RARCH_FIRST_CUSTOM_BIND)
       {
          uint32_t axis = 0;
          const struct retro_keybind *bind = NULL;
 
          bind = &binds[ ident ];
+
          if (!bind->valid)
             return 0;
 
          axis = bind->joyaxis;
-         if ( axis == AXIS_NONE )
-            axis = joypad_info.auto_binds[ ident ].joyaxis;
+
+         if (axis == AXIS_NONE)
+            axis = joypad_info.auto_binds[ident].joyaxis;
 
          /* Analog button. */
-         res = abs( drv->axis( joypad_info.joy_idx, axis ) );
+         res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis));
 
          /* If the result is zero, it's got a digital button attached to it */
-         if ( res == 0 )
+         if (res == 0)
          {
             uint16_t key = bind->joykey;
 
-            if ( key == NO_BTN )
-               key = joypad_info.auto_binds[ ident ].joykey;
+            if (key == NO_BTN)
+               key = joypad_info.auto_binds[ident].joykey;
 
-            if ( drv->button(joypad_info.joy_idx, key))
+            if (drv->button(joypad_info.joy_idx, key))
                res = 0x7fff;
          }
       }
@@ -1747,8 +1792,8 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (axis_plus == AXIS_NONE)
          axis_plus  = joypad_info.auto_binds[ident_plus].joyaxis;
 
-      pressed_minus = abs(drv->axis(joypad_info.joy_idx, axis_minus));
-      pressed_plus  = abs(drv->axis(joypad_info.joy_idx, axis_plus));
+      pressed_minus = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_minus));
+      pressed_plus  = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_plus));
       res           = pressed_plus - pressed_minus;
 
       if (res == 0)

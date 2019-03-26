@@ -755,7 +755,11 @@ static const unsigned libretro_log_level = 1;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold = 0.5;
+static const float axis_threshold = 0.5f;
+
+static const float analog_deadzone = 0.0f;
+
+static const float analog_sensitivity = 1.0f;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period = 6;
