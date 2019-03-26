@@ -22,6 +22,7 @@ HAVE_BUILTINMBEDTLS=yes    # Bake in the mbedtls library
 C89_BUILTINMBEDTLS=no
 CXX_BUILTINMBEDTLS=no
 HAVE_OVERLAY=yes           # Overlay support
+HAVE_VIDEO_LAYOUT=yes      # Layout support
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
 HAVE_SDL=auto              # SDL support
 C89_SDL=no
