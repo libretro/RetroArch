@@ -475,6 +475,16 @@ VIDEO DRIVER
 
 #include "../deps/ibxm/ibxm.c"
 
+#ifdef HAVE_VIDEO_LAYOUT
+#include "../gfx/video_layout.c"
+#include "../gfx/video_layout/view.c"
+#include "../gfx/video_layout/element.c"
+#include "../gfx/video_layout/component.c"
+#include "../gfx/video_layout/internal.c"
+#include "../gfx/video_layout/scope.c"
+#include "../gfx/video_layout/load.c"
+#endif
+
 /*============================================================
 FONTS
 ============================================================ */
