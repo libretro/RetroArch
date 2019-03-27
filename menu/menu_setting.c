@@ -9345,13 +9345,65 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_inline_thumbnails,
+                  MENU_ENUM_LABEL_MENU_RGUI_INLINE_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+                  rgui_inline_thumbnails,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_swap_thumbnails,
+                  MENU_ENUM_LABEL_MENU_RGUI_SWAP_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+                  rgui_swap_thumbnails,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
+
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone") || string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
+            enum msg_hash_enums thumbnails_label_value;
+            enum msg_hash_enums left_thumbnails_label_value;
+
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            {
+               thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
+               left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
+            }
+            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            {
+               thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
+               left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
+            }
+            else
+            {
+               thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
+               left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
+            }
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_thumbnails,
                   MENU_ENUM_LABEL_THUMBNAILS,
-                  MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+                  thumbnails_label_value,
                   menu_thumbnails_default,
                   &group_info,
                   &subgroup_info,
@@ -9362,6 +9414,40 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_left_thumbnails,
+                  MENU_ENUM_LABEL_LEFT_THUMBNAILS,
+                  left_thumbnails_label_value,
+                  menu_left_thumbnails_default,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_left_thumbnails;
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+         }
+
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_xmb_vertical_thumbnails,
+                  MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+                  xmb_vertical_thumbnails,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
@@ -9381,45 +9467,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_thumbnail_scaler;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_THUMB_SCALE_LAST-1, 1, true, true);
-         }
-
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
-         {
-            bool is_ozone              = string_is_equal(settings->arrays.menu_driver, "ozone");
-            enum msg_hash_enums label  = is_ozone ? 
-               MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE : MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_left_thumbnails,
-                  MENU_ENUM_LABEL_LEFT_THUMBNAILS,
-                  label,
-                  menu_left_thumbnails_default,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_menu_left_thumbnails;
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-
-            if (!is_ozone)
-               CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_xmb_vertical_thumbnails,
-                  MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
-                  MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-                  xmb_vertical_thumbnails,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
          }
 
          CONFIG_BOOL(
