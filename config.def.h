@@ -720,13 +720,15 @@ static const bool playlist_sort_alphabetical = true;
 /* File format to use when writing playlists to disk */
 static const bool playlist_use_old_format = false;
 
+#ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
 static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
 
-static const bool playlist_show_sublabels = false;
-
 /* Specifies which runtime record to use on playlist sublabels */
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#endif
+
+static const bool playlist_show_sublabels = false;
 
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;

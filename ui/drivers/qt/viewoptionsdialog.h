@@ -12,23 +12,28 @@ class QColor;
 class QLabel;
 class QSpinBox;
 
-class ViewOptionsDialog : public QDialog
+#ifdef HAVE_MENU
+class QWidget;
+class OptionsCategory;
+class QListWidget;
+class QStackedWidget;
+#endif
+
+class ViewOptionsWidget : public QWidget
 {
    Q_OBJECT
 public:
-   ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent = 0);
+   ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent = 0);
 public slots:
-   void showDialog();
-   void hideDialog();
    void onAccepted();
    void onRejected();
+   void loadViewOptions();
+   void saveViewOptions();
 private slots:
    void onThemeComboBoxIndexChanged(int index);
    void onThumbnailComboBoxIndexChanged(int index);
    void onHighlightColorChoose();
 private:
-   void loadViewOptions();
-   void saveViewOptions();
    void showOrHideHighlightColor();
 
    MainWindow *m_mainwindow;
@@ -48,6 +53,33 @@ private:
    QCheckBox *m_suggestLoadedCoreFirstCheckBox;
    QSpinBox *m_allPlaylistsListMaxCountSpinBox;
    QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
+};
+
+class ViewOptionsDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   ViewOptionsDialog(MainWindow *window, QWidget *parent = 0);
+   // Make sure the settings dialog starts up as small as possible.
+   QSize sizeHint() const final { return minimumSize(); }
+#ifdef HAVE_MENU
+   void repaintIcons();
+#endif
+public slots:
+   void showDialog();
+   void hideDialog();
+private slots:
+   void onRejected();
+private:
+#ifdef HAVE_MENU
+   void addCategory(QWidget *widget, QString name, QString icon);
+   void addCategory(OptionsCategory *category);
+   QVector<OptionsCategory*> m_categoryList;
+   QListWidget *m_optionsList;
+   QStackedWidget *m_optionsStack;
+#else
+   ViewOptionsWidget *m_viewOptionsWidget;
+#endif
 };
 
 #endif

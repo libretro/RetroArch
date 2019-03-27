@@ -102,9 +102,9 @@ ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
 endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
-	DEF_FLAGS += -DHAVE_LOGGER
-	DEFINES += -DHAVE_LOGGER
-	OBJ += network/net_logger.o
+   DEF_FLAGS += -DHAVE_LOGGER
+   DEFINES += -DHAVE_LOGGER
+   OBJ += network/net_logger.o
 endif
 
 # System
@@ -357,6 +357,27 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
+    ifeq ($(HAVE_MENU), 1)
+       OBJ += ui/drivers/qt/settingswidgets.o \
+              ui/drivers/qt/options/achievements.o \
+              ui/drivers/qt/options/audio.o \
+              ui/drivers/qt/options/configuration.o \
+              ui/drivers/qt/options/core.o \
+              ui/drivers/qt/options/directory.o \
+              ui/drivers/qt/options/drivers.o \
+              ui/drivers/qt/options/input.o \
+              ui/drivers/qt/options/latency.o \
+              ui/drivers/qt/options/logging.o \
+              ui/drivers/qt/options/network.o \
+              ui/drivers/qt/options/osd.o \
+              ui/drivers/qt/options/playlists.o \
+              ui/drivers/qt/options/recording.o \
+              ui/drivers/qt/options/saving.o \
+              ui/drivers/qt/options/throttle.o \
+              ui/drivers/qt/options/ui.o \
+              ui/drivers/qt/options/user.o \
+              ui/drivers/qt/options/video.o
+    endif
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
@@ -367,6 +388,10 @@ ifeq ($(HAVE_QT), 1)
                   ui/drivers/qt/coreinfodialog.h \
                   ui/drivers/qt/playlistentrydialog.h \
                   ui/drivers/qt/viewoptionsdialog.h
+   ifeq ($(HAVE_MENU), 1)
+      MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
+                     ui/drivers/qt/options/options.h
+   endif
 
    DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS) -DHAVE_MAIN
    #DEFINES += $(QT5WEBENGINE_CFLAGS)
@@ -519,16 +544,16 @@ endif
 
 ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
-	HAVE_COREAUDIO_LIBS = 1
+   HAVE_COREAUDIO_LIBS = 1
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
    OBJ += audio/drivers/coreaudio3.o
-	HAVE_COREAUDIO_LIBS = 1
+   HAVE_COREAUDIO_LIBS = 1
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
-	LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)
@@ -796,8 +821,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_thumbnail_path.o
 
    ifeq ($(HAVE_MENU_COMMON),1)
-		OBJ += menu/drivers_display/menu_display_null.o
-	endif
+      OBJ += menu/drivers_display/menu_display_null.o
+   endif
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o
@@ -807,8 +832,8 @@ endif
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
    OBJ += tasks/task_overlay.o \
-	  input/input_overlay.o \
-	  led/drivers/led_overlay.o
+     input/input_overlay.o \
+     led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -895,11 +920,11 @@ endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
-		  input/drivers/wayland_input.o \
-		  gfx/common/wayland/xdg-shell.o \
-		  gfx/common/wayland/xdg-shell-unstable-v6.o \
-		  gfx/common/wayland/idle-inhibit-unstable-v1.o \
-		  gfx/common/wayland/xdg-decoration-unstable-v1.o
+        input/drivers/wayland_input.o \
+        gfx/common/wayland/xdg-shell.o \
+        gfx/common/wayland/xdg-shell-unstable-v6.o \
+        gfx/common/wayland/idle-inhibit-unstable-v1.o \
+        gfx/common/wayland/xdg-decoration-unstable-v1.o
  ifeq ($(HAVE_EGL), 1)
    LIBS += $(EGL_LIBS)
  endif
@@ -1174,7 +1199,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
          GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32
-	 WANT_WGL=1
+    WANT_WGL=1
       endif
       LIBS += $(GL_LIBS)
    endif
@@ -1347,8 +1372,8 @@ ifeq ($(HAVE_D3D11), 1)
           gfx/common/d3d11_common.o \
           gfx/drivers_font/d3d11_font.o
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_d3d11.o
-	endif
+      OBJ += menu/drivers_display/menu_display_d3d11.o
+   endif
    DEFINES += -DHAVE_D3D11
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1669,8 +1694,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    # Netplay
-	DEFINES += -DHAVE_NETWORK_CMD
-	OBJ += network/netplay/netplay_delta.o \
+   DEFINES += -DHAVE_NETWORK_CMD
+   OBJ += network/netplay/netplay_delta.o \
                network/netplay/netplay_frontend.o \
                network/netplay/netplay_handshake.o \
                network/netplay/netplay_init.o \
@@ -1822,8 +1847,8 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/display_servers/dispserv_win32.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_gdi.o
-	endif
+      OBJ += menu/drivers_display/menu_display_gdi.o
+   endif
    LIBS += -lmsimg32 -lhid -lsetupapi
 endif
 

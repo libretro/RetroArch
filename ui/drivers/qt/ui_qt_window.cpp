@@ -1249,6 +1249,9 @@ void MainWindow::setTheme(Theme theme)
       default:
          break;
    }
+#ifdef HAVE_MENU
+   m_viewOptionsDialog->repaintIcons();
+#endif
 }
 
 void MainWindow::setDefaultCustomProperties()

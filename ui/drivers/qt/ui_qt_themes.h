@@ -12,7 +12,6 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
    ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
       background-color:#d4d4d4;
    }
-
    QLabel#dropIndicator {
       font-size: 9pt;
       color: darkgrey;
@@ -27,9 +26,13 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
    QFrame#playlistWidget, QFrame#browserWidget, QFrame#logWidget {
       padding: 8px;
    }
-   ListWidget {
+   QListWidget {
       icon-size: 32px;
    }
+   /* color of the icons on the settings dialog */
+   /* QLabel#iconColor {
+      color: black;
+   } */
 )");
 
 static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
@@ -46,7 +49,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       border-right:1px solid rgba(125,125,125,50%);
       border-bottom:1px solid rgba(25,25,25,75%);
    }
-   ListWidget {
+   QListWidget {
       icon-size: 32px;
    }
    QLabel#dropIndicator {
