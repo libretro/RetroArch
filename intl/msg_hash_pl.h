@@ -2641,8 +2641,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Pokaż poziom naładowania baterii")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Wybierz plik")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-      "Wybierz z listy odtwarzania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtr")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -3026,8 +3024,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Zeskanuj nowe pokoje.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Usuń ten wpis z listy odtwarzania.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Zobacz więcej informacji o zawartości.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
@@ -3102,8 +3098,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "Pokaż zaawansowane ustawienia dla zaawansowanych użytkowników (domyślnie ukryty).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Wykonuj zadania w oddzielnym wątku.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Pozwól użytkownikowi usuwać wpisy z list odtwarzania.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Ustawia katalog systemowy. Rdzenie mogą wysyłać zapytania do tego katalogu, aby załadować BIOS, konfiguracje specyficzne dla systemu itp.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3187,8 +3181,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "Pliki informacji o aplikacji/rdzeniu przechowywane są tutaj .")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Jeśli joypad jest podłączony, to zostanie automatycznie skonfigurowany, jeśli plik konfiguracyjny odpowiadający mu jest obecny w tym katalogu.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Zapisz wszystkie listy odtwarzania w tym katalogu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Jeśli ustawione na katalog, zawartość, która jest czasowo wyodrębniana (np. Z archiwów), zostanie wyodrębniona do tego katalogu."
@@ -3373,8 +3365,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Włącza kartę Ustawienia. Wymagane jest ponowne uruchomienie karty.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Podanie hasła podczas ukrywania karty ustawień pozwala później przywrócić ją z menu, przechodząc do karty Menu główne, wybierając opcję Włącz kartę Ustawienia i wprowadzając hasło.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Zezwalaj użytkownikowi na zmianę nazw wpisów na listach odtwarzania.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Zezwalaj na zmianę nazw wpisów")
 MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,

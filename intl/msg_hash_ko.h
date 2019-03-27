@@ -2437,8 +2437,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "배터리 수준 표시")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "파일 선택")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-      "재생목록에서 선택")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "필터")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2761,10 +2759,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
       "클라이언트 모드로 넷플레이 사용.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "활성 중인 모든 넷플레이 연결 해제.")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "디렉토리에서 실행 파일 검색.")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "실행 파일 검색.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "수직 동기에 사용자 스왑 간격을 사용. 모니터 재생 빈도를 효과적으로 줄이는데 사용."
       )
@@ -2783,8 +2777,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "새 호스트 검색.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "재생목록에서 현재 항목 삭제.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "컨텐츠에 대한 자세한 정보 확인.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2855,8 +2847,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "파워 유저를 위한 고급 설정 보이기(기본값은 숨김).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "분할된 스레드에서 작업을 수행.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "사용자가 재생목록에서 항목을 제거할 수 있게 허용.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "시스템 디렉토리를 설정. 코어는 이 디렉토리에서 BIOS, 시스템 특정 구성 등을 불러들일 수 있습니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2936,8 +2926,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "앱/코어 정보 파일이 저장될 공간.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "조이패드가 연결되면 해당 디렉토리에 설정 파일이 있는 경우 자동으로 구성해줍니다.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "모든 재생 목록은이 디렉토리에 저장됩니다.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "디렉토리를 설정하면 설정하면 임시로 압축해제된 컨첸츠가 이 디렉토리에 추출됩니다."
@@ -3113,8 +3101,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "설정 탭을 표시/해제 합니다. 다시 표시하기 위해 재시작이 필요합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "설정 탭을 숨길때 비밀번호를 설정해 나중에 되돌릴수 있게 끔 합니다. 메인 메뉴에서 '설정 탭 표시'를 선택 후 비밀번호를 입력해 되돌릴수 있습니다.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "재생목록에 있는 엔트리들을 편집할 수 있게 허용합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "엔트리 편집 허용")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

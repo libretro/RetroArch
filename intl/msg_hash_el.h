@@ -4736,10 +4736,6 @@ MSG_HASH(
     "Επιλογή Αρχείου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-    "Επιλογή Από λίστα αναπαραγωγής"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
     "Φίλτρα"
     )
@@ -5330,10 +5326,6 @@ MSG_HASH(
     "Σάρωση για νέα δωμάτια."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Κατάργηση αυτής της καταχώρισης από λίστα αναπαραγωγής."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
     "View more information about the content."
     )
@@ -5472,10 +5464,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
     "Perform tasks on a separate thread."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από τις λίστες αναπαραγωγής."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5965,10 +5953,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
     "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις λίστας αναπαραγωγής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
