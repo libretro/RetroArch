@@ -41,6 +41,9 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:rgb(53,53,53);
       selection-background-color:%1;
    }
+   QWidget:disabled {
+      color:rgb(127,127,127);
+   }
    QFrame#playlistWidget, QFrame#browserWidget, QStackedWidget#centralWidget, QFrame#logWidget {
       padding: 8px;
       background-color:rgb(66,66,66);
@@ -62,11 +65,42 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QTextEdit, LogTextEdit {
       background-color:rgb(25,25,25);
    }
-   QSpinBox, QDoubleSpinBox, QCheckBox {
+   QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton {
       background-color:rgb(25,25,25);
    }
-   QCheckBox:checked, QCheckBox:unchecked {
-      background-color:rgb(53,53,53);
+   QCheckBox:checked, QCheckBox:unchecked, QRadioButton:checked, QRadioButton:unchecked {
+      background-color:transparent;
+   }
+   /* Groupboxes for the settings window, can be restricted later with ViewOptionsDialog QGroupBox */
+   QGroupBox {
+      background-color:rgba(80,80,80,50%);
+      margin-top:27px;
+      border:1px solid rgba(25,25,25,127);
+      border-top-left-radius:0px;
+      border-top-right-radius:4px;
+   }
+   QGroupBox::title {
+      min-height:28px;
+      subcontrol-origin:margin;
+      subcontrol-position:left top;
+      padding:4px 6px 5px 6px;
+      margin-left:0px;
+      background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(65,65,65),stop: 0.4 rgb(70,70,70),stop:1 rgb(90,90,90));
+      border:1px solid rgba(25,25,25,127);
+      border-bottom:1px solid rgb(65,65,65);
+      border-top-left-radius:4px;
+      border-top-right-radius:4px;
+   }
+   QGroupBox::indicator:checked {
+      background-color:%1;
+      border:4px solid rgb(45,45,45);
+   }
+   QGroupBox::indicator:unchecked {
+      background-color:rgba(25,25,25,50%);
+   }
+   QGroupBox::indicator {
+      width:16px;
+      height:16px;
    }
    QWidget#shaderParamsWidget {
       background-color:rgb(25,25,25);
@@ -206,23 +240,6 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    }
    QDockWidget::float-button {
       right:25px;
-   }
-   QGroupBox {
-      background-color:rgba(66,66,66,50%);
-      margin-top:27px;
-      border:1px solid rgba(25,25,25,127);
-      border-top-left-radius:4px;
-      border-top-right-radius:4px;
-   }
-   QGroupBox::title {
-      subcontrol-origin:margin;
-      subcontrol-position:left top;
-      padding:4px 6px;
-      margin-left:3px;
-      background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
-      border:1px solid rgba(25,25,25,75);
-      border-top-left-radius:4px;
-      border-top-right-radius:4px;
    }
    QTabWidget::pane {
       background-color:rgba(66,66,66,50%);
@@ -401,6 +418,9 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       subcontrol-position:top;
       subcontrol-origin:margin;
    }
+   QSlider {
+      background:transparent;
+   }
    QSlider::sub-page {
       background:%1;
    }
@@ -445,6 +465,9 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
    }
    QStatusBar QLabel {
+      background-color:transparent;
+   }
+   QLabel {
       background-color:transparent;
    }
    QSizeGrip {
