@@ -5281,7 +5281,6 @@ void rarch_log_file_init(void)
 {
    settings_t *settings = config_get_ptr();
    FILE *fp = NULL;
-   bool success = false;
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5328,6 +5327,20 @@ void rarch_log_file_init(void)
    /* > Attempt to initialise log file */
    if (!string_is_empty(settings->paths.log_dir))
    {
+      /* Create log directory, if required */
+      if (!path_is_directory(settings->paths.log_dir))
+      {
+         path_mkdir(settings->paths.log_dir);
+         if(!path_is_directory(settings->paths.log_dir))
+         {
+            /* Re-enable console logging and output error message */
+            retro_main_log_file_init(NULL, false);
+            RARCH_ERR("Failed to create system event log directory: %s\n", settings->paths.log_dir);
+            return;
+         }
+      }
+      
+      /* Format log file name */
       char buf[PATH_MAX_LENGTH];
       fill_pathname_join(buf, settings->paths.log_dir,
             settings->bools.log_to_file_timestamp ? timestamped_log_file_name : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
@@ -5337,14 +5350,16 @@ void rarch_log_file_init(void)
          /* When RetroArch is launched, log file is overwritten.
           * On subsequent calls within the same session, it is appended to. */
          retro_main_log_file_init(buf, log_file_created);
-         log_file_created = true;
-         success = true;
+         if (is_logging_to_file())
+            log_file_created = true;
+         return;
       }
    }
    
-   /* > Fall back to console logging if something went wrong */
-   if (!success)
-      retro_main_log_file_init(NULL, false);
+   /* If we reach this point, then something went wrong...
+    * Just fall back to console logging */
+   retro_main_log_file_init(NULL, false);
+   RARCH_ERR("Failed to initialise system event file logging...\n");
 }
 
 void rarch_log_file_deinit(void)
