@@ -1153,7 +1153,9 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
          "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
 
-      ozone->selection_core_is_imageviewer = string_is_equal(core_label, "imageviewer");
+      ozone->selection_core_is_viewer = string_is_equal(core_label, "imageviewer")
+            || string_is_equal(core_label, "musicplayer")
+            || string_is_equal(core_label, "movieplayer");
 
       word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false);
       ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
