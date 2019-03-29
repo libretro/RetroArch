@@ -240,7 +240,7 @@ struct ozone_handle
    char selection_playtime[255];
    char selection_lastplayed[255];
    unsigned selection_core_name_lines;
-   bool selection_core_is_imageviewer;
+   bool selection_core_is_viewer;
 
    bool is_db_manager_list;
 };
