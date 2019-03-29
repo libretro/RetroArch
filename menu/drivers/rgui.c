@@ -1022,7 +1022,7 @@ static void rgui_render_fs_thumbnail(void)
    }
 }
 
-static unsigned inline rgui_get_mini_thumbnail_fullwidth(void)
+static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(void)
 {
    unsigned width = mini_thumbnail.is_valid ? mini_thumbnail.width : 0;
    unsigned left_width = mini_left_thumbnail.is_valid ? mini_left_thumbnail.width : 0;
@@ -2372,7 +2372,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
 static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    unsigned new_font_height;
-   size_t fb_pitch, start;
+   size_t start;
    rgui_t               *rgui = NULL;
    bool                   ret = false;
    settings_t *settings       = config_get_ptr();

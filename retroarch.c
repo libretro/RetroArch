@@ -5327,6 +5327,7 @@ void rarch_log_file_init(void)
    /* > Attempt to initialise log file */
    if (!string_is_empty(settings->paths.log_dir))
    {
+      char buf[PATH_MAX_LENGTH];
       /* Create log directory, if required */
       if (!path_is_directory(settings->paths.log_dir))
       {
@@ -5341,7 +5342,6 @@ void rarch_log_file_init(void)
       }
       
       /* Format log file name */
-      char buf[PATH_MAX_LENGTH];
       fill_pathname_join(buf, settings->paths.log_dir,
             settings->bools.log_to_file_timestamp ? timestamped_log_file_name : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
             sizeof(buf));
