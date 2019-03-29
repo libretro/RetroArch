@@ -743,7 +743,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          ozone_pure_white
       );
    }
-   else if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
+   else if (!ozone->selection_core_is_imageviewer)
    {
       unsigned y                          = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
       unsigned content_metadata_padding   = ozone->dimensions.sidebar_entry_icon_padding*3;
