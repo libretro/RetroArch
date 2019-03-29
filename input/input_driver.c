@@ -18,12 +18,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <encodings/utf.h>
 #include <string/stdstring.h>
+#include <math/float_minmax.h>
 
 #include <retro_assert.h>
 
@@ -881,18 +883,48 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
 {
    int16_t val = 0;
    settings_t *settings = config_get_ptr();
+   bool left = true;
 
    if (!drv || !drv->axis)
       return 0;
 
    val = drv->axis(port, joyaxis);
 
+   if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
+   {
+      /* current axis is negative */
+      if (AXIS_NEG_GET(joyaxis) < 2)
+      {
+         /* current stick is the left */
+         left = true;
+      }
+      else
+         left = false;
+   }
+   else
+   {
+      /* current axis is positive */
+      if (AXIS_POS_GET(joyaxis) < 2)
+      {
+         /* current stick is the left */
+         left = true;
+      }
+      else
+         left = false;
+   }
+
+
    if (settings->floats.input_analog_deadzone)
    {
+      /* 0/1 are the left analog X/Y axes, 2/3 are the right analog X/Y axes */
+      int16_t x = input_joypad_axis_raw(drv, port, left ? 0 : 2);
+      int16_t y = input_joypad_axis_raw(drv, port, left ? 1 : 3);
+      int mag = sqrt(x * x + y * y);
       float normalized;
+      float normal_mag = (1.0f / 0x7fff) * mag;
 
       /* if analog value is below the deadzone, ignore it */
-      val = ((float)abs(val) / 0x7fff) < settings->floats.input_analog_deadzone ? 0 : val;
+      val = normal_mag <= settings->floats.input_analog_deadzone ? 0 : val;
 
       if (val == 0)
          return 0;
@@ -900,7 +932,7 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
       normalized = (1.0f / 0x7fff) * val;
 
       /* now scale the "good" analog range appropriately, so we don't start out way above 0 */
-      val = 0x7fff * ((normalized - settings->floats.input_analog_deadzone) / (1.0f - settings->floats.input_analog_deadzone));
+      val = 0x7fff * normalized * MIN(1.0f, ((normal_mag - settings->floats.input_analog_deadzone) / (1.0f - settings->floats.input_analog_deadzone)));
    }
 
    if (settings->floats.input_analog_sensitivity != 1.0f)
