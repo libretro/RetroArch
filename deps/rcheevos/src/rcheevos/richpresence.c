@@ -11,7 +11,7 @@ enum {
   RC_FORMAT_LOOKUP = 102
 };
 
-const char* rc_parse_line(const char* line, const char** end) {
+static const char* rc_parse_line(const char* line, const char** end) {
   const char* nextline;
   const char* endline;
 
@@ -42,7 +42,7 @@ const char* rc_parse_line(const char* line, const char** end) {
   return nextline;
 }
 
-rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, int* ret, rc_scratch_t* scratch, const char* line, const char* endline, lua_State* L, int funcs_ndx, rc_richpresence_t* richpresence) {
+static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const char* line, const char* endline, rc_parse_state_t* parse, rc_richpresence_t* richpresence) {
   rc_richpresence_display_t* self;
   rc_richpresence_display_part_t* part;
   rc_richpresence_display_part_t** next;
@@ -55,7 +55,7 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
     return 0;
 
   {
-    self = RC_ALLOC(rc_richpresence_display_t, buffer, ret, scratch);
+    self = RC_ALLOC(rc_richpresence_display_t, parse);
     memset(self, 0, sizeof(rc_richpresence_display_t));
     next = &self->display;
   }
@@ -71,14 +71,14 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
     }
 
     if (ptr > line) {
-      part = RC_ALLOC(rc_richpresence_display_part_t, buffer, ret, scratch);
+      part = RC_ALLOC(rc_richpresence_display_part_t, parse);
       memset(part, 0, sizeof(rc_richpresence_display_part_t));
       *next = part;
       next = &part->next;
 
       /* handle string part */
       part->display_type = RC_FORMAT_STRING;
-      part->text = rc_alloc_str(buffer, ret, line, ptr - line);
+      part->text = rc_alloc_str(parse, line, ptr - line);
       if (part->text) {
         /* remove backslashes used for escaping */
         in = part->text;
@@ -104,16 +104,16 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
         ++ptr;
 
       if (ptr > line) {
-        if (!buffer) {
+        if (!parse->buffer) {
           /* just calculating size, can't confirm lookup exists */
-          part = RC_ALLOC(rc_richpresence_display_part_t, buffer, ret, scratch);
+          part = RC_ALLOC(rc_richpresence_display_part_t, parse);
 
           line = ++ptr;
           while (ptr < endline && *ptr != ')')
             ++ptr;
           if (*ptr == ')') {
-            rc_parse_value_internal(&part->value, ret, buffer, scratch, &line, L, funcs_ndx);
-            if (ret < 0)
+            rc_parse_value_internal(&part->value, &line, parse);
+            if (parse->offset < 0)
               return 0;
             ++ptr;
           }
@@ -123,7 +123,7 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
           lookup = richpresence->first_lookup;
           while (lookup) {
             if (strncmp(lookup->name, line, ptr - line) == 0 && lookup->name[ptr - line] == '\0') {
-              part = RC_ALLOC(rc_richpresence_display_part_t, buffer, ret, scratch);
+              part = RC_ALLOC(rc_richpresence_display_part_t, parse);
               *next = part;
               next = &part->next;
 
@@ -135,8 +135,9 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
               while (ptr < endline && *ptr != ')')
                 ++ptr;
               if (*ptr == ')') {
-                rc_parse_value_internal(&part->value, ret, buffer, scratch, &line, L, funcs_ndx);
-                if (ret < 0)
+                rc_parse_value_internal(&part->value, &line, parse);
+                part->value.memrefs = 0;
+                if (parse->offset < 0)
                   return 0;
                 ++ptr;
               }
@@ -148,7 +149,7 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
           }
 
           if (!lookup) {
-            part = RC_ALLOC(rc_richpresence_display_part_t, buffer, ret, scratch);
+            part = RC_ALLOC(rc_richpresence_display_part_t, parse);
             memset(part, 0, sizeof(rc_richpresence_display_part_t));
             *next = part;
             next = &part->next;
@@ -156,7 +157,7 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
             ptr = line;
 
             part->display_type = RC_FORMAT_STRING;
-            part->text = rc_alloc_str(buffer, ret, "[Unknown macro]", 15);
+            part->text = rc_alloc_str(parse, "[Unknown macro]", 15);
           }
         }
       }
@@ -170,7 +171,7 @@ rc_richpresence_display_t* rc_parse_richpresence_display_internal(void* buffer, 
   return self;
 }
 
-const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup, const char* nextline, int* ret, void* buffer, void* scratch, lua_State* L, int funcs_ndx)
+static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup, const char* nextline, rc_parse_state_t* parse)
 {
   rc_richpresence_lookup_item_t** next;
   rc_richpresence_lookup_item_t* item;
@@ -202,7 +203,7 @@ const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup, const
       line += chars + 1;
 
       if (chars == 1 && number[0] == '*') {
-        defaultlabel = rc_alloc_str(buffer, ret, line, endline - line);
+        defaultlabel = rc_alloc_str(parse, line, endline - line);
         continue;
       }
 
@@ -211,18 +212,18 @@ const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup, const
       else
         key = strtoul(&number[0], 0, 10);
 
-      item = RC_ALLOC(rc_richpresence_lookup_item_t, buffer, ret, scratch);
+      item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
       item->value = key;
-      item->label = rc_alloc_str(buffer, ret, line, endline - line);
+      item->label = rc_alloc_str(parse, line, endline - line);
       *next = item;
       next = &item->next_item;
     }
   } while (1);
 
   if (!defaultlabel)
-    defaultlabel = rc_alloc_str(buffer, ret, "", 0);
+    defaultlabel = rc_alloc_str(parse, "", 0);
 
-  item = RC_ALLOC(rc_richpresence_lookup_item_t, buffer, ret, scratch);
+  item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
   item->value = 0;
   item->label = defaultlabel;
   item->next_item = 0;
@@ -231,10 +232,11 @@ const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup, const
   return nextline;
 }
 
-void rc_parse_richpresence_internal(rc_richpresence_t* self, int* ret, void* buffer, void* scratch, const char* script, lua_State* L, int funcs_ndx) {
+void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script, rc_parse_state_t* parse) {
   rc_richpresence_display_t** nextdisplay;
   rc_richpresence_lookup_t** nextlookup;
   rc_richpresence_lookup_t* lookup;
+  rc_trigger_t* trigger;
   char format[64];
   const char* display = 0;
   const char* line;
@@ -254,26 +256,26 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, int* ret, void* buf
     if (strncmp(line, "Lookup:", 7) == 0) {
       line += 7;
 
-      lookup = RC_ALLOC(rc_richpresence_lookup_t, buffer, ret, scratch);
-      lookup->name = rc_alloc_str(buffer, ret, line, endline - line);
+      lookup = RC_ALLOC(rc_richpresence_lookup_t, parse);
+      lookup->name = rc_alloc_str(parse, line, endline - line);
       lookup->format = RC_FORMAT_LOOKUP;
       *nextlookup = lookup;
       nextlookup = &lookup->next;
 
-      nextline = rc_parse_richpresence_lookup(lookup, nextline, ret, buffer, scratch, L, funcs_ndx);
+      nextline = rc_parse_richpresence_lookup(lookup, nextline, parse);
 
     } else if (strncmp(line, "Format:", 7) == 0) {
       line += 7;
 
-      lookup = RC_ALLOC(rc_richpresence_lookup_t, buffer, ret, scratch);
-      lookup->name = rc_alloc_str(buffer, ret, line, endline - line);
+      lookup = RC_ALLOC(rc_richpresence_lookup_t, parse);
+      lookup->name = rc_alloc_str(parse, line, endline - line);
       lookup->first_item = 0;
       *nextlookup = lookup;
       nextlookup = &lookup->next;
 
       line = nextline;
       nextline = rc_parse_line(line, &endline);
-      if (buffer && strncmp(line, "FormatType=", 11) == 0) {
+      if (parse->buffer && strncmp(line, "FormatType=", 11) == 0) {
         line += 11;
 
         chars = endline - line;
@@ -313,11 +315,13 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, int* ret, void* buf
         ++ptr;
 
       if (ptr < endline) {
-        *nextdisplay = rc_parse_richpresence_display_internal(buffer, ret, scratch, ptr + 1, endline, L, funcs_ndx, self);
-        rc_parse_trigger_internal(&((*nextdisplay)->trigger), ret, buffer, scratch, &line, L, funcs_ndx);
-        if (*ret < 0)
+        *nextdisplay = rc_parse_richpresence_display_internal(ptr + 1, endline, parse, self);
+        trigger = &((*nextdisplay)->trigger);
+        rc_parse_trigger_internal(trigger, &line, parse);
+        trigger->memrefs = 0;
+        if (parse->offset < 0)
           return;
-        if (buffer)
+        if (parse->buffer)
           nextdisplay = &((*nextdisplay)->next);
       }
 
@@ -326,39 +330,45 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, int* ret, void* buf
     }
 
     /* non-conditional display: string */
-    *nextdisplay = rc_parse_richpresence_display_internal(buffer, ret, scratch, line, endline, L, funcs_ndx, self);
-    hasdisplay = (*nextdisplay != NULL);
-    if (buffer)
+    *nextdisplay = rc_parse_richpresence_display_internal(line, endline, parse, self);
+    if (*nextdisplay) {
+      hasdisplay = 1;
       nextdisplay = &((*nextdisplay)->next);
+    }
   }
 
   /* finalize */
   *nextdisplay = 0;
 
-  if (!hasdisplay && ret > 0)
-    *ret = RC_MISSING_DISPLAY_STRING;
+  if (!hasdisplay && parse->offset > 0) {
+    parse->offset = RC_MISSING_DISPLAY_STRING;
+  }
 }
 
 int rc_richpresence_size(const char* script) {
-  int ret;
   rc_richpresence_t* self;
-  rc_scratch_t scratch;
+  rc_parse_state_t parse;
+  rc_init_parse_state(&parse, 0, 0, 0);
+  
+  self = RC_ALLOC(rc_richpresence_t, &parse);
+  rc_parse_richpresence_internal(self, script, &parse);
 
-  ret = 0;
-  self = RC_ALLOC(rc_richpresence_t, 0, &ret, &scratch);
-  rc_parse_richpresence_internal(self, &ret, 0, &scratch, script, 0, 0);
-  return ret;
+  rc_destroy_parse_state(&parse);
+  return parse.offset;
 }
 
 rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx) {
-  int ret;
   rc_richpresence_t* self;
-  rc_scratch_t scratch;
+  rc_parse_state_t parse;
+  rc_init_parse_state(&parse, buffer, L, funcs_ndx);
 
-  ret = 0;
-  self = RC_ALLOC(rc_richpresence_t, buffer, &ret, &scratch);
-  rc_parse_richpresence_internal(self, &ret, buffer, 0, script, L, funcs_ndx);
-  return ret >= 0 ? self : 0;
+  self = RC_ALLOC(rc_richpresence_t, &parse);
+  rc_init_parse_state_memrefs(&parse, &self->memrefs);
+
+  rc_parse_richpresence_internal(self, script, &parse);
+  
+  rc_destroy_parse_state(&parse);
+  return parse.offset >= 0 ? self : 0;
 }
 
 int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
@@ -368,6 +378,8 @@ int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsi
   char* ptr;
   int chars;
   unsigned value;
+
+  rc_update_memref_values(richpresence->memrefs, peek, peek_ud);
 
   ptr = buffer;
   display = richpresence->first_display;

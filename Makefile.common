@@ -1709,6 +1709,8 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/alloc.o \
              deps/rcheevos/src/rcheevos/format.o \
+             deps/rcheevos/src/rcheevos/memref.o \
+             deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)

@@ -23,19 +23,25 @@ static void rc_update_condition_pause(rc_condition_t* condition, int* in_pause) 
   }
 }
 
-rc_condset_t* rc_parse_condset(int* ret, void* buffer, rc_scratch_t* scratch, const char** memaddr, lua_State* L, int funcs_ndx) {
+rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
   rc_condset_t* self;
   rc_condition_t** next;
   int in_pause;
 
-  self = RC_ALLOC(rc_condset_t, buffer, ret, scratch);
+  self = RC_ALLOC(rc_condset_t, parse);
   self->has_pause = 0;
   next = &self->conditions;
 
-  for (;;) {
-    *next = rc_parse_condition(ret, buffer, scratch, memaddr, L, funcs_ndx);
+  if (**memaddr == 'S' || **memaddr == 's' || !**memaddr) {
+    /* empty group - editor allows it, so we have to support it */
+    *next = 0;
+    return self;
+  }
 
-    if (*ret < 0) {
+  for (;;) {
+    *next = rc_parse_condition(memaddr, parse);
+
+    if (parse->offset < 0) {
       return 0;
     }
 
@@ -52,7 +58,7 @@ rc_condset_t* rc_parse_condset(int* ret, void* buffer, rc_scratch_t* scratch, co
   *next = 0;
 
 
-  if (buffer != 0) {
+  if (parse->buffer != 0) {
     in_pause = 0;
     rc_update_condition_pause(self->conditions, &in_pause);
   }

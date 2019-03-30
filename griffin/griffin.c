@@ -178,6 +178,8 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/term.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rcheevos/memref.c"
+#include "../deps/rcheevos/src/rcheevos/richpresence.c"
 #include "../deps/rcheevos/src/rurl/url.c"
 
 #endif

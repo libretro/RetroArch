@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_scratch_t* scratch, const char** memaddr, lua_State* L, int funcs_ndx) {
+void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_parse_state_t* parse) {
   rc_condset_t** next;
   const char* aux;
 
@@ -13,9 +13,9 @@ void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_sc
     self->requirement = 0;
   }
   else {
-    self->requirement = rc_parse_condset(ret, buffer, scratch, &aux, L, funcs_ndx);
+    self->requirement = rc_parse_condset(&aux, parse);
 
-    if (*ret < 0) {
+    if (parse->offset < 0) {
       return;
     }
 
@@ -24,9 +24,9 @@ void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_sc
 
   while (*aux == 's' || *aux == 'S') {
     aux++;
-    *next = rc_parse_condset(ret, buffer, scratch, &aux, L, funcs_ndx);
+    *next = rc_parse_condset(&aux, parse);
 
-    if (*ret < 0) {
+    if (parse->offset < 0) {
       return;
     }
 
@@ -38,30 +38,36 @@ void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_sc
 }
 
 int rc_trigger_size(const char* memaddr) {
-  int ret;
   rc_trigger_t* self;
-  rc_scratch_t scratch;
+  rc_parse_state_t parse;
+  rc_init_parse_state(&parse, 0, 0, 0);
 
-  ret = 0;
-  self = RC_ALLOC(rc_trigger_t, 0, &ret, &scratch);
-  rc_parse_trigger_internal(self, &ret, 0, &scratch, &memaddr, 0, 0);
-  return ret;
+  self = RC_ALLOC(rc_trigger_t, &parse);
+  rc_parse_trigger_internal(self, &memaddr, &parse);
+
+  rc_destroy_parse_state(&parse);
+  return parse.offset;
 }
 
 rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx) {
-  int ret;
   rc_trigger_t* self;
-  rc_scratch_t scratch;
+  rc_parse_state_t parse;
+  rc_init_parse_state(&parse, buffer, L, funcs_ndx);
   
-  ret = 0;
-  self = RC_ALLOC(rc_trigger_t, buffer, &ret, &scratch);
-  rc_parse_trigger_internal(self, &ret, buffer, 0, &memaddr, L, funcs_ndx);
-  return ret >= 0 ? self : 0;
+  self = RC_ALLOC(rc_trigger_t, &parse);
+  rc_init_parse_state_memrefs(&parse, &self->memrefs);
+
+  rc_parse_trigger_internal(self, &memaddr, &parse);
+
+  rc_destroy_parse_state(&parse);
+  return parse.offset >= 0 ? self : 0;
 }
 
 int rc_test_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State* L) {
   int ret, reset;
   rc_condset_t* condset;
+
+  rc_update_memref_values(self->memrefs, peek, ud);
 
   reset = 0;
   ret = self->requirement != 0 ? rc_test_condset(self->requirement, &reset, peek, ud, L) : 1;

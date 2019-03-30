@@ -30,7 +30,8 @@ enum {
   RC_MISSING_SUBMIT = -15,
   RC_MISSING_VALUE = -16,
   RC_INVALID_LBOARD_FIELD = -17,
-  RC_MISSING_DISPLAY_STRING = -18
+  RC_MISSING_DISPLAY_STRING = -18,
+  RC_OUT_OF_MEMORY = -19
 };
 
 /*****************************************************************************\
@@ -83,26 +84,56 @@ enum {
 typedef unsigned (*rc_peek_t)(unsigned address, unsigned num_bytes, void* ud);
 
 /*****************************************************************************\
-| Operands                                                                    |
+| Memory References                                                           |
 \*****************************************************************************/
 
 /* Sizes. */
 enum {
-  RC_OPERAND_BIT_0,
-  RC_OPERAND_BIT_1,
-  RC_OPERAND_BIT_2,
-  RC_OPERAND_BIT_3,
-  RC_OPERAND_BIT_4,
-  RC_OPERAND_BIT_5,
-  RC_OPERAND_BIT_6,
-  RC_OPERAND_BIT_7,
-  RC_OPERAND_LOW,
-  RC_OPERAND_HIGH,
-  RC_OPERAND_8_BITS,
-  RC_OPERAND_16_BITS,
-  RC_OPERAND_24_BITS,
-  RC_OPERAND_32_BITS
+  RC_MEMSIZE_BIT_0,
+  RC_MEMSIZE_BIT_1,
+  RC_MEMSIZE_BIT_2,
+  RC_MEMSIZE_BIT_3,
+  RC_MEMSIZE_BIT_4,
+  RC_MEMSIZE_BIT_5,
+  RC_MEMSIZE_BIT_6,
+  RC_MEMSIZE_BIT_7,
+  RC_MEMSIZE_LOW,
+  RC_MEMSIZE_HIGH,
+  RC_MEMSIZE_8_BITS,
+  RC_MEMSIZE_16_BITS,
+  RC_MEMSIZE_24_BITS,
+  RC_MEMSIZE_32_BITS
 };
+
+typedef struct {
+  /* The memory address of this variable. */
+  unsigned address;
+  /* The size of the variable. */
+  char size;
+  /* True if the value is in BCD. */
+  char is_bcd;
+} rc_memref_t;
+
+typedef struct rc_memref_value_t rc_memref_value_t;
+
+struct rc_memref_value_t {
+  /* The value of this memory reference. */
+  unsigned value;
+  /* The previous value of this memory reference. */
+  unsigned previous;
+  /* The last differing value of this memory reference. */
+  unsigned prior;
+
+  /* The referenced memory */
+  rc_memref_t memref;
+
+  /* The next memory reference in the chain */
+  rc_memref_value_t* next;
+};
+
+/*****************************************************************************\
+| Operands                                                                    |
+\*****************************************************************************/
 
 /* types */
 enum {
@@ -117,20 +148,10 @@ enum {
 typedef struct {
   union {
     /* A value read from memory. */
-    struct {
-      /* The memory address or constant value of this variable. */
-      unsigned value;
-      /* The previous memory contents if RC_OPERAND_DELTA or RC_OPERAND_PRIOR. */
-      unsigned previous;
-      /* The last differing value if RC_OPERAND_PRIOR. */
-      unsigned prior;
+    rc_memref_value_t* memref;
 
-      /* The size of the variable. */
-      char size;
-      /* True if the value is in BCD. */
-      char is_bcd;
-      /* The type of the variable. */
-    };
+    /* A value. */
+    unsigned value;
 
     /* A floating point value. */
     double fp_value;
@@ -171,9 +192,6 @@ enum {
 typedef struct rc_condition_t rc_condition_t;
 
 struct rc_condition_t {
-  /* The next condition in the chain. */
-  rc_condition_t* next;
-
   /* The condition's operands. */
   rc_operand_t operand1;
   rc_operand_t operand2;
@@ -182,6 +200,9 @@ struct rc_condition_t {
   unsigned required_hits;
   /* Number of hits so far. */
   unsigned current_hits;
+
+  /* The next condition in the chain. */
+  rc_condition_t* next;
 
   /**
    * Set if the condition needs to processed as part of the "check if paused"
@@ -222,6 +243,9 @@ typedef struct {
 
   /* The list of sub condition sets in this test. */
   rc_condset_t* alternative;
+
+  /* The memory references required by the trigger. */
+  rc_memref_value_t* memrefs;
 }
 rc_trigger_t;
 
@@ -262,6 +286,9 @@ struct rc_expression_t {
 typedef struct {
   /* The list of expression to evaluate. */
   rc_expression_t* expressions;
+
+  /* The memory references required by the value. */
+  rc_memref_value_t* memrefs;
 }
 rc_value_t;
 
@@ -288,6 +315,7 @@ typedef struct {
   rc_trigger_t cancel;
   rc_value_t value;
   rc_value_t* progress;
+  rc_memref_value_t* memrefs;
 
   char started;
   char submitted;
@@ -358,6 +386,7 @@ struct rc_richpresence_display_t {
 typedef struct {
   rc_richpresence_display_t* first_display;
   rc_richpresence_lookup_t* first_lookup;
+  rc_memref_value_t* memrefs;
 }
 rc_richpresence_t;
 
