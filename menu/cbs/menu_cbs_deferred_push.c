@@ -120,6 +120,9 @@ generic_deferred_push(deferred_push_remap_file_load,                DISPLAYLIST_
 generic_deferred_push(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
 generic_deferred_push(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
 generic_deferred_push(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
+#ifdef HAVE_VIDEO_LAYOUT
+generic_deferred_push(deferred_push_video_layout_path,              DISPLAYLIST_VIDEO_LAYOUT_PATH)
+#endif
 generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
@@ -147,6 +150,9 @@ generic_deferred_push(deferred_push_cheat_search_settings_list,     DISPLAYLIST_
 generic_deferred_push(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
+#ifdef HAVE_VIDEO_LAYOUT
+generic_deferred_push(deferred_push_onscreen_video_layout_settings_list, DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)
+#endif
 generic_deferred_push(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
@@ -718,6 +724,13 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
       return 0;
    }
+#ifdef HAVE_VIDEO_LAYOUT
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_video_layout_settings_list);
+      return 0;
+   }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_menu_file_browser_settings_list);
@@ -1267,6 +1280,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
                break;
+#ifdef HAVE_VIDEO_LAYOUT
+            case MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_layout_path);
+               break;
+#endif
             case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
                break;
@@ -1303,6 +1321,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
                break;
+#ifdef HAVE_VIDEO_LAYOUT
+            case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_video_layout_settings_list);
+               break;
+#endif
             case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
                break;
@@ -1505,6 +1528,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
                break;
+#ifdef HAVE_VIDEO_LAYOUT
+            case MENU_LABEL_VIDEO_LAYOUT_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_layout_path);
+               break;
+#endif
             case MENU_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
                break;
