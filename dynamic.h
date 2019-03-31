@@ -108,6 +108,8 @@ struct retro_core_t
    void *(*retro_get_memory_data)(unsigned);
    size_t (*retro_get_memory_size)(unsigned);
 
+   void (*retro_netplay_host_start)(const char*, unsigned);
+
    unsigned poll_type;
    bool inited;
    bool symbols_inited;
@@ -153,6 +155,10 @@ void uninit_libretro_sym(struct retro_core_t *core);
 extern struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 extern struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 extern unsigned subsystem_current_count;
+
+void core_unset_supports_passthrough(void);
+void core_set_supports_passthrough(void);
+bool core_get_supports_passthrough(void);
 
 RETRO_END_DECLS
 

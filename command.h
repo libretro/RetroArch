@@ -195,7 +195,9 @@ enum event_command
    /* Start hosting netplay. */
    CMD_EVENT_NETPLAY_ENABLE_HOST,
    /* Disconnect from the netplay host. */
-   CMD_EVENT_NETPLAY_DISCONNECT,
+   CMD_EVENT_NETPLAY_DISCONNECT
+   /* Start netplay passthrough. */,
+   CMD_EVENT_NETPLAY_ENABLE_PASSTHROUGH,
    /* Initializes BSV movie. */
    CMD_EVENT_BSV_MOVIE_INIT,
    /* Deinitializes BSV movie. */

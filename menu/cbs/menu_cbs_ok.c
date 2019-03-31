@@ -22,6 +22,8 @@
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
+#include "../../dynamic.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -4415,11 +4417,22 @@ void netplay_refresh_rooms_menu(file_list_t *list)
    }
    else
    {
-      menu_entries_append_enum(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
+      if (core_get_supports_passthrough())
+      {
+         menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_PASSTHROUGH),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_PASSTHROUGH),
+            MENU_ENUM_LABEL_NETPLAY_ENABLE_PASSTHROUGH,
+            MENU_SETTING_ACTION, 0, 0);
+      }
+      else
+      {
+         menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+            MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+            MENU_SETTING_ACTION, 0, 0);
+      }
    }
 
    menu_entries_append_enum(list,
@@ -5168,6 +5181,16 @@ static int action_ok_netplay_enable_host(const char *path,
    return -1;
 }
 
+static int action_ok_netplay_enable_passthrough(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   if (command_event(CMD_EVENT_NETPLAY_ENABLE_PASSTHROUGH, NULL))
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+#endif
+   return -1;
+}
+
 #ifdef HAVE_NETWORKING
 static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
@@ -5875,6 +5898,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
             BIND_ACTION_OK(cbs, action_ok_netplay_enable_host);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_PASSTHROUGH:
+            BIND_ACTION_OK(cbs, action_ok_netplay_enable_passthrough);
             break;
          case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
             BIND_ACTION_OK(cbs, action_ok_netplay_enable_client);

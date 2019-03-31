@@ -530,3 +530,9 @@ bool core_is_game_loaded(void)
 {
   return current_core.game_loaded;
 }
+
+bool core_netplay_host_start(const char *hostname, unsigned port)
+{
+   current_core.retro_netplay_host_start(hostname, port);
+   return true;
+}

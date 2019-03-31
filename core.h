@@ -243,6 +243,8 @@ bool core_is_inited(void);
 
 bool core_is_game_loaded(void);
 
+bool core_netplay_host_start(const char *hostname, unsigned port);
+
 extern struct retro_callbacks retro_ctx;
 
 RETRO_END_DECLS

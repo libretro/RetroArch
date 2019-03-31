@@ -1797,6 +1797,10 @@ MSG_HASH(
     "Start netplay host"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_PASSTHROUGH,
+    "Start netplay passthrough"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
     "Stop netplay host"
     )

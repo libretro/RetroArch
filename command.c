@@ -2698,6 +2698,16 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       }
+
+      case CMD_EVENT_NETPLAY_ENABLE_PASSTHROUGH:
+      {
+         bool contentless  = false;
+         bool is_inited    = false;
+         const char host[] = "test";
+
+         content_get_status(&contentless, &is_inited);
+         core_netplay_host_start(host, 1234);
+      }
       case CMD_EVENT_NETPLAY_DISCONNECT:
       {
          settings_t *settings = config_get_ptr();

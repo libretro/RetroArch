@@ -1087,6 +1087,14 @@ enum retro_mod
                                             * The core can use the returned value to set an ideal 
                                             * refresh rate/framerate.
                                             */
+#define RETRO_ENVIRONMENT_SET_NETPLAY_PASSTHROUGH (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const bool * --
+                                            * If true, the libretro implementation supports netplay on it's own,
+                                            * this indicates the frontend to leverage that instead of using
+                                            * the frontend specific netplay implementation
+                                            *
+                                            * This must be called in retro_init
+                                            */
 
 /* VFS functionality */
 
@@ -2526,6 +2534,18 @@ RETRO_API unsigned retro_get_region(void);
 /* Gets region of memory. */
 RETRO_API void *retro_get_memory_data(unsigned id);
 RETRO_API size_t retro_get_memory_size(unsigned id);
+
+/* Start hosting a game */
+RETRO_API bool retro_netplay_host_start(const char *hostname, unsigned port);
+
+/* Connect to a netplay peer */
+RETRO_API bool retro_netplay_host_connect(const char *hostname, unsigned port);
+
+/* Stop hosting a game */
+RETRO_API bool retro_netplay_host_stop(void);
+
+/* Disconnect from a netplay peer */
+RETRO_API bool retro_netplay_host_discconnect(void);
 
 #ifdef __cplusplus
 }

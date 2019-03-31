@@ -116,6 +116,23 @@ static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
 static bool *load_no_content_hook   = NULL;
 
+static bool netplay_passthrough = false;
+
+void core_set_supports_passthrough(void)
+{
+   netplay_passthrough = true;
+}
+
+void core_unset_supports_passthrough(void)
+{
+   netplay_passthrough = true;
+}
+
+bool core_get_supports_passthrough(void)
+{
+   return netplay_passthrough;
+}
+
 struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 unsigned subsystem_current_count;
@@ -578,6 +595,8 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
             SYMBOL(retro_get_region);
             SYMBOL(retro_get_memory_data);
             SYMBOL(retro_get_memory_size);
+
+            SYMBOL(retro_netplay_host_start);
          }
          break;
       case CORE_TYPE_DUMMY:
@@ -1558,6 +1577,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             content_set_does_not_need_content();
          else
             content_unset_does_not_need_content();
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_NETPLAY_PASSTHROUGH:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_NETPLAY_PASSTHROUGH: %s.\n", state ? "yes" : "no");
+
+         if (state)
+            core_set_supports_passthrough();
+         else
+            core_unset_supports_passthrough();
          break;
       }
 
