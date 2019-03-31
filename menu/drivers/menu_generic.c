@@ -159,6 +159,11 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
                   case FILE_TYPE_OVERLAY:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY;
                      break;
+#ifdef HAVE_VIDEO_LAYOUT
+                  case FILE_TYPE_VIDEO_LAYOUT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_VIDEO_LAYOUT;
+                     break;
+#endif
                   case FILE_TYPE_CHEAT:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CHEAT;
                      break;
