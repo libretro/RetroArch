@@ -206,6 +206,12 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          *load_no_content_hook = *(const bool*)data;
          break;
+      case RETRO_ENVIRONMENT_SET_NETPLAY_PASSTHROUGH:
+         if(*(const bool*)data)
+            core_set_supports_passthrough();
+         else
+            core_unset_supports_passthrough();
+         break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
          unsigned i, j, size;
