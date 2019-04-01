@@ -1684,5 +1684,8 @@ video_driver_t video_gx = {
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
    gx_get_poke_interface,
 };

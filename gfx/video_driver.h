@@ -34,6 +34,10 @@
 #include "../input/input_overlay.h"
 #endif
 
+#ifdef HAVE_VIDEO_LAYOUT
+#include "video_layout.h"
+#endif
+
 #include "video_defines.h"
 #include "video_coord_array.h"
 #include "video_filter.h"
@@ -799,6 +803,9 @@ typedef struct video_driver
    void (*overlay_interface)(void *data,
          const video_overlay_interface_t **iface);
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   const video_layout_render_interface_t *(*video_layout_render_interface)(void *data);
+#endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 
@@ -948,6 +955,10 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(
       const video_overlay_interface_t **iface);
+#endif
+
+#ifdef HAVE_VIDEO_LAYOUT
+const video_layout_render_interface_t *video_driver_layout_render_interface(void);
 #endif
 
 void * video_driver_read_frame_raw(unsigned *width,

@@ -1864,6 +1864,9 @@ video_driver_t video_d3d12 = {
 #ifdef HAVE_OVERLAY
    d3d12_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
+#endif
    d3d12_gfx_get_poke_interface,
    NULL, /* d3d12_wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
