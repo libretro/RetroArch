@@ -6909,6 +6909,14 @@ MSG_HASH(
     "Resize and position menu entries to make best use of available screen space. Disable this to use classic fixed-width two column layout."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+    "Shadow Effects"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+    "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
     "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )
