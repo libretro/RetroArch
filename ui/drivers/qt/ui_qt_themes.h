@@ -326,6 +326,11 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QPushButton[flat="true"] {
       background-color:transparent;
    }
+   QPushButton[flat="true"]::menu-indicator {
+      position:relative;
+      bottom:4px;
+      right:4px;
+   }
    QRadioButton::indicator {
       width:18px;
       height:18px;
