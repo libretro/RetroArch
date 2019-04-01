@@ -94,6 +94,7 @@ typedef struct
    uint32_t bg_light_color;
    uint32_t border_dark_color;
    uint32_t border_light_color;
+   uint32_t shadow_color;
 } rgui_theme_t;
 
 static const rgui_theme_t rgui_theme_classic_red = {
@@ -103,7 +104,8 @@ static const rgui_theme_t rgui_theme_classic_red = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC08C0000, /* border_dark_color */
-   0xC0CC0E03  /* border_light_color */
+   0xC0CC0E03, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_orange = {
@@ -113,7 +115,8 @@ static const rgui_theme_t rgui_theme_classic_orange = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC0962800, /* border_dark_color */
-   0xC0E46C03  /* border_light_color */
+   0xC0E46C03, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_yellow = {
@@ -123,7 +126,8 @@ static const rgui_theme_t rgui_theme_classic_yellow = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC0AC7800, /* border_dark_color */
-   0xC0F3C60D  /* border_light_color */
+   0xC0F3C60D, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_green = {
@@ -133,7 +137,8 @@ static const rgui_theme_t rgui_theme_classic_green = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC0204020, /* border_dark_color */
-   0xC0408040  /* border_light_color */
+   0xC0408040, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_blue = {
@@ -143,7 +148,8 @@ static const rgui_theme_t rgui_theme_classic_blue = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC0005BA6, /* border_dark_color */
-   0xC02E94E2  /* border_light_color */
+   0xC02E94E2, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_violet = {
@@ -153,7 +159,8 @@ static const rgui_theme_t rgui_theme_classic_violet = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC04C0A60, /* border_dark_color */
-   0xC0842DCE  /* border_light_color */
+   0xC0842DCE, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_grey = {
@@ -163,7 +170,8 @@ static const rgui_theme_t rgui_theme_classic_grey = {
    0xC0202020, /* bg_dark_color */
    0xC0404040, /* bg_light_color */
    0xC0505050, /* border_dark_color */
-   0xC0798A99  /* border_light_color */
+   0xC0798A99, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_legacy_red = {
@@ -173,7 +181,8 @@ static const rgui_theme_t rgui_theme_legacy_red = {
    0xC09E4137, /* bg_dark_color */
    0xC0B34B41, /* bg_light_color */
    0xC0BF5E58, /* border_dark_color */
-   0xC0F27A6F  /* border_light_color */
+   0xC0F27A6F, /* border_light_color */
+   0xC01F0C0A  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_dark_purple = {
@@ -183,7 +192,8 @@ static const rgui_theme_t rgui_theme_dark_purple = {
    0xC0562D56, /* bg_dark_color */
    0xC0663A66, /* bg_light_color */
    0xC0885783, /* border_dark_color */
-   0xC0A675A1  /* border_light_color */
+   0xC0A675A1, /* border_light_color */
+   0xC0140A14  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_midnight_blue = {
@@ -193,7 +203,8 @@ static const rgui_theme_t rgui_theme_midnight_blue = {
    0xC024374A, /* bg_dark_color */
    0xC03C4D5E, /* bg_light_color */
    0xC046586A, /* border_dark_color */
-   0xC06D7F91  /* border_light_color */
+   0xC06D7F91, /* border_light_color */
+   0xC00A0F14  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_golden = {
@@ -203,7 +214,8 @@ static const rgui_theme_t rgui_theme_golden = {
    0xC0B88D0B, /* bg_dark_color */
    0xC0BF962B, /* bg_light_color */
    0xC0e1ad21, /* border_dark_color */
-   0xC0FCC717  /* border_light_color */
+   0xC0FCC717, /* border_light_color */
+   0xC0382B03  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_electric_blue = {
@@ -213,7 +225,8 @@ static const rgui_theme_t rgui_theme_electric_blue = {
    0xC02E69C6, /* bg_dark_color */
    0xC0007FFF, /* bg_light_color */
    0xC034A5D8, /* border_dark_color */
-   0xC070C9FF  /* border_light_color */
+   0xC070C9FF, /* border_light_color */
+   0xC012294D  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_apple_green = {
@@ -223,7 +236,8 @@ static const rgui_theme_t rgui_theme_apple_green = {
    0xC04F7942, /* bg_dark_color */
    0xC0688539, /* bg_light_color */
    0xC0608E3A, /* border_dark_color */
-   0xC09AB973  /* border_light_color */
+   0xC09AB973, /* border_light_color */
+   0xC01F2E19  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_volcanic_red = {
@@ -233,7 +247,8 @@ static const rgui_theme_t rgui_theme_volcanic_red = {
    0xC0922724, /* bg_dark_color */
    0xC0BD0F1E, /* bg_light_color */
    0xC0CE2029, /* border_dark_color */
-   0xC0FF0000  /* border_light_color */
+   0xC0FF0000, /* border_light_color */
+   0xC0330D0D  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_lagoon = {
@@ -243,7 +258,8 @@ static const rgui_theme_t rgui_theme_lagoon = {
    0xC0495C6B, /* bg_dark_color */
    0xC0526778, /* bg_light_color */
    0xC058848F, /* border_dark_color */
-   0xC060909C  /* border_light_color */
+   0xC060909C, /* border_light_color */
+   0xC01C2329  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_brogrammer = {
@@ -253,7 +269,8 @@ static const rgui_theme_t rgui_theme_brogrammer = {
    0xC0242424, /* bg_dark_color */
    0xC0242424, /* bg_light_color */
    0xC0E74C3C, /* border_dark_color */
-   0xC0E74C3C  /* border_light_color */
+   0xC0E74C3C, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_dracula = {
@@ -263,7 +280,8 @@ static const rgui_theme_t rgui_theme_dracula = {
    0xC02F3240, /* bg_dark_color */
    0xC02F3240, /* bg_light_color */
    0xC06272A4, /* border_dark_color */
-   0xC06272A4  /* border_light_color */
+   0xC06272A4, /* border_light_color */
+   0xC00F0F0F  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_fairyfloss = {
@@ -273,7 +291,8 @@ static const rgui_theme_t rgui_theme_fairyfloss = {
    0xC0675F87, /* bg_dark_color */
    0xC0675F87, /* bg_light_color */
    0xC08077A8, /* border_dark_color */
-   0xC08077A8  /* border_light_color */
+   0xC08077A8, /* border_light_color */
+   0xC0262433  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_flatui = {
@@ -283,7 +302,8 @@ static const rgui_theme_t rgui_theme_flatui = {
    0xE0ECF0F1, /* bg_dark_color */
    0xE0ECF0F1, /* bg_light_color */
    0xE095A5A6, /* border_dark_color */
-   0xE095A5A6  /* border_light_color */
+   0xE095A5A6, /* border_light_color */
+   0xE0C3DBDE  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_gruvbox_dark = {
@@ -293,7 +313,8 @@ static const rgui_theme_t rgui_theme_gruvbox_dark = {
    0xC03D3D3D, /* bg_dark_color */
    0xC03D3D3D, /* bg_light_color */
    0xC099897A, /* border_dark_color */
-   0xC099897A  /* border_light_color */
+   0xC099897A, /* border_light_color */
+   0xC0000000  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_gruvbox_light = {
@@ -303,7 +324,8 @@ static const rgui_theme_t rgui_theme_gruvbox_light = {
    0xE0FBEBC7, /* bg_dark_color */
    0xE0FBEBC7, /* bg_light_color */
    0xE0928374, /* border_dark_color */
-   0xE0928374  /* border_light_color */
+   0xE0928374, /* border_light_color */
+   0xE0D5C4A1  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_hacking_the_kernel = {
@@ -313,7 +335,8 @@ static const rgui_theme_t rgui_theme_hacking_the_kernel = {
    0xC0000000, /* bg_dark_color */
    0xC0000000, /* bg_light_color */
    0xC0036303, /* border_dark_color */
-   0xC0036303  /* border_light_color */
+   0xC0036303, /* border_light_color */
+   0xC0154D2B  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_nord = {
@@ -323,7 +346,8 @@ static const rgui_theme_t rgui_theme_nord = {
    0xC0363C4F, /* bg_dark_color */
    0xC0363C4F, /* bg_light_color */
    0xC04E596E, /* border_dark_color */
-   0xC04E596E  /* border_light_color */
+   0xC04E596E, /* border_light_color */
+   0xC0040505  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_nova = {
@@ -333,7 +357,8 @@ static const rgui_theme_t rgui_theme_nova = {
    0xC0485B66, /* bg_dark_color */
    0xC0485B66, /* bg_light_color */
    0xC0627985, /* border_dark_color */
-   0xC0627985  /* border_light_color */
+   0xC0627985, /* border_light_color */
+   0xC01E272C  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_one_dark = {
@@ -343,7 +368,8 @@ static const rgui_theme_t rgui_theme_one_dark = {
    0xC02D323B, /* bg_dark_color */
    0xC02D323B, /* bg_light_color */
    0xC0495162, /* border_dark_color */
-   0xC0495162  /* border_light_color */
+   0xC0495162, /* border_light_color */
+   0xC007080A  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_palenight = {
@@ -353,7 +379,8 @@ static const rgui_theme_t rgui_theme_palenight = {
    0xC02F3347, /* bg_dark_color */
    0xC02F3347, /* bg_light_color */
    0xC0697098, /* border_dark_color */
-   0xC0697098  /* border_light_color */
+   0xC0697098, /* border_light_color */
+   0xC00D0E14  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_solarized_dark = {
@@ -363,7 +390,8 @@ static const rgui_theme_t rgui_theme_solarized_dark = {
    0xC0003542, /* bg_dark_color */
    0xC0003542, /* bg_light_color */
    0xC093A1A1, /* border_dark_color */
-   0xC093A1A1  /* border_light_color */
+   0xC093A1A1, /* border_light_color */
+   0xC000141A  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_solarized_light = {
@@ -373,7 +401,8 @@ static const rgui_theme_t rgui_theme_solarized_light = {
    0xE0FDEDDF, /* bg_dark_color */
    0xE0FDEDDF, /* bg_light_color */
    0xE093A1A1, /* border_dark_color */
-   0xE093A1A1  /* border_light_color */
+   0xE093A1A1, /* border_light_color */
+   0xE0E0DBC9  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_tango_dark = {
@@ -383,7 +412,8 @@ static const rgui_theme_t rgui_theme_tango_dark = {
    0xC0384042, /* bg_dark_color */
    0xC0384042, /* bg_light_color */
    0xC06A767A, /* border_dark_color */
-   0xC06A767A  /* border_light_color */
+   0xC06A767A, /* border_light_color */
+   0xC01A1A1A  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_tango_light = {
@@ -393,7 +423,8 @@ static const rgui_theme_t rgui_theme_tango_light = {
    0xE0EEEEEC, /* bg_dark_color */
    0xE0EEEEEC, /* bg_light_color */
    0xE0C7C7C7, /* border_dark_color */
-   0xE0C7C7C7  /* border_light_color */
+   0xE0C7C7C7, /* border_light_color */
+   0xE0D3D7CF  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_zenburn = {
@@ -403,7 +434,8 @@ static const rgui_theme_t rgui_theme_zenburn = {
    0xC04F4F4F, /* bg_dark_color */
    0xC04F4F4F, /* bg_light_color */
    0xC0636363, /* border_dark_color */
-   0xC0636363  /* border_light_color */
+   0xC0636363, /* border_light_color */
+   0xC01F1F1F  /* shadow_color */
 };
 
 static const rgui_theme_t rgui_theme_anti_zenburn = {
@@ -413,7 +445,8 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0C0C0C0, /* bg_dark_color */
    0xE0C0C0C0, /* bg_light_color */
    0xE0A0A0A0, /* border_dark_color */
-   0xE0A0A0A0  /* border_light_color */
+   0xE0A0A0A0, /* border_light_color */
+   0xE0B0B0B0  /* shadow_color */
 };
 
 typedef struct
@@ -425,6 +458,7 @@ typedef struct
    uint16_t bg_light_color;
    uint16_t border_dark_color;
    uint16_t border_light_color;
+   uint16_t shadow_color;
 } rgui_colors_t;
 
 typedef struct
@@ -651,6 +685,51 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 #define argb32_to_pixel_platform_format(color) argb32_to_rgba4444(color)
 
 #endif
+
+static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
+{
+   unsigned shift  = (rgui->bg_thickness ? 1 : 0);
+   unsigned select = ((x >> shift) + (y >> shift)) & 1;
+   return (select == 0) ? rgui->colors.bg_dark_color : rgui->colors.bg_light_color;
+}
+
+static uint16_t rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y)
+{
+   unsigned shift  = (rgui->border_thickness ? 1 : 0);
+   unsigned select = ((x >> shift) + (y >> shift)) & 1;
+   return (select == 0) ? rgui->colors.border_dark_color : rgui->colors.border_light_color;
+}
+
+static void rgui_fill_rect(
+      rgui_t *rgui,
+      uint16_t *data,
+      size_t pitch,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y))
+{
+   unsigned i, j;
+
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
+         data[j * (pitch >> 1) + i] = col(rgui, i, j);
+}
+
+static void rgui_color_rect(
+      uint16_t *data,
+      size_t pitch,
+      unsigned fb_width, unsigned fb_height,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      uint16_t color)
+{
+   unsigned i, j;
+
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
+         if (i < fb_width && j < fb_height)
+            data[j * (pitch >> 1) + i] = color;
+}
 
 static bool request_wallpaper(const char *path)
 {
@@ -967,14 +1046,18 @@ static bool rgui_render_wallpaper(void)
    return false;
 }
 
-static void rgui_render_fs_thumbnail(void)
+static void rgui_render_fs_thumbnail(rgui_t *rgui)
 {
+   settings_t *settings = config_get_ptr();
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    unsigned x, y;
    unsigned fb_x_offset, fb_y_offset;
    unsigned thumb_x_offset, thumb_y_offset;
    unsigned width, height;
+
+   if (!settings)
+      return;
 
    if (fs_thumbnail.is_valid && rgui_frame_buf.data && fs_thumbnail.data)
    {
@@ -1019,6 +1102,53 @@ static void rgui_render_fs_thumbnail(void)
                fs_thumbnail.data[(x + thumb_x_offset) + ((y + thumb_y_offset) * fs_thumbnail.width)];
          }
       }
+
+      /* Draw drop shadow, if required */
+      if (settings->bools.menu_rgui_shadows)
+      {
+         unsigned shadow_x;
+         unsigned shadow_y;
+         unsigned shadow_width;
+         unsigned shadow_height;
+
+         /* Vertical component */
+         if (fs_thumbnail.width < fb_width)
+         {
+            shadow_width = fb_width - fs_thumbnail.width;
+            shadow_width = shadow_width > 2 ? 2 : shadow_width;
+            shadow_height = fs_thumbnail.height + 2 < fb_height ? fs_thumbnail.height : fb_height - 2;
+
+            shadow_x = fb_x_offset + fs_thumbnail.width;
+            shadow_y = fb_y_offset + 2;
+
+            /* Super paranoid safety check...
+             * (This is not required at all, but terrible things
+             * will happen if we ever go out of bounds...) */
+            if (((shadow_x + shadow_width) <= fb_width) &&
+                ((shadow_y + shadow_height) <= fb_height))
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
+         }
+
+         /* Horizontal component */
+         if (fs_thumbnail.height < fb_height)
+         {
+            shadow_height = fb_height - fs_thumbnail.height;
+            shadow_height = shadow_height > 2 ? 2 : shadow_height;
+            shadow_width = fs_thumbnail.width + 2 < fb_width ? fs_thumbnail.width : fb_width - 2;
+
+            shadow_x = fb_x_offset + 2;
+            shadow_y = fb_y_offset + fs_thumbnail.height;
+
+            /* Super paranoid safety check...
+             * (This is not required at all, but terrible things
+             * will happen if we ever go out of bounds...) */
+            if (((shadow_x + shadow_width) <= fb_width) &&
+                ((shadow_y + shadow_height) <= fb_height))
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
+         }
+      }
    }
 }
 
@@ -1029,7 +1159,7 @@ static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(void)
    return width >= left_width ? width : left_width;
 }
 
-static void rgui_render_mini_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thumbnail_id)
+static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enum menu_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
    size_t fb_pitch;
@@ -1076,6 +1206,15 @@ static void rgui_render_mini_thumbnail(thumbnail_t *thumbnail, enum menu_thumbna
             rgui_frame_buf.data[(y + fb_y_offset) * (fb_pitch >> 1) + (x + fb_x_offset)] =
                thumbnail->data[x + (y * thumbnail->width)];
          }
+      }
+
+      /* Draw drop shadow, if required */
+      if (settings->bools.menu_rgui_shadows)
+      {
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               fb_x_offset + thumbnail->width, fb_y_offset + 1, 1, thumbnail->height, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               fb_x_offset + 1, fb_y_offset + thumbnail->height, thumbnail->width, 1, rgui->colors.shadow_color);
       }
    }
 }
@@ -1162,7 +1301,8 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    char *wallpaper_key = NULL;
    unsigned normal_color, hover_color, title_color,
       bg_dark_color, bg_light_color,
-      border_dark_color, border_light_color;
+      border_dark_color, border_light_color,
+      shadow_color;
    char wallpaper_file[PATH_MAX_LENGTH];
    bool success = false;
 
@@ -1218,6 +1358,12 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    if(!config_get_hex(conf, "rgui_border_light_color", &border_light_color))
       goto end;
 
+   /* Make shadow colour optional (fallback to fully opaque black)
+    * - i.e. if user has no intention of enabling shadows, they
+    * should not have to include this entry */
+   if(!config_get_hex(conf, "rgui_shadow_color", &shadow_color))
+      shadow_color = 0xFF000000;
+
    config_get_array(conf, wallpaper_key, wallpaper_file, sizeof(wallpaper_file));
 
    success = true;
@@ -1233,6 +1379,7 @@ end:
       theme_colors->bg_light_color = (uint32_t)bg_light_color;
       theme_colors->border_dark_color = (uint32_t)border_dark_color;
       theme_colors->border_light_color = (uint32_t)border_light_color;
+      theme_colors->shadow_color = (uint32_t)shadow_color;
 
       /* Load wallpaper, if required */
       if (!string_is_empty(wallpaper_file))
@@ -1254,6 +1401,7 @@ end:
       theme_colors->bg_light_color = rgui_theme_classic_green.bg_light_color;
       theme_colors->border_dark_color = rgui_theme_classic_green.border_dark_color;
       theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
+      theme_colors->shadow_color = rgui_theme_classic_green.shadow_color;
    }
 
    if (conf)
@@ -1282,6 +1430,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
       theme_colors.bg_light_color = current_theme->bg_light_color;
       theme_colors.border_dark_color = current_theme->border_dark_color;
       theme_colors.border_light_color = current_theme->border_light_color;
+      theme_colors.shadow_color = current_theme->shadow_color;
    }
    rgui->colors.hover_color = argb32_to_pixel_platform_format(theme_colors.hover_color);
    rgui->colors.normal_color = argb32_to_pixel_platform_format(theme_colors.normal_color);
@@ -1290,83 +1439,79 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.bg_light_color = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
    rgui->colors.border_dark_color = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
    rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
+   rgui->colors.shadow_color = argb32_to_pixel_platform_format(theme_colors.shadow_color);
 
    rgui->bg_modified = true;
    rgui->force_redraw = true;
 }
 
-static uint16_t rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shift  = (rgui->bg_thickness ? 1 : 0);
-   unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? rgui->colors.bg_dark_color : rgui->colors.bg_light_color;
-}
-
-static uint16_t rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shift  = (rgui->border_thickness ? 1 : 0);
-   unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? rgui->colors.border_dark_color : rgui->colors.border_light_color;
-}
-
-static void rgui_fill_rect(
-      rgui_t *rgui,
-      uint16_t *data,
-      size_t pitch,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y))
-{
-   unsigned i, j;
-
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         data[j * (pitch >> 1) + i] = col(rgui, i, j);
-}
-
-static void rgui_color_rect(
-      uint16_t *data,
-      size_t pitch,
-      unsigned fb_width, unsigned fb_height,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      uint16_t color)
-{
-   unsigned i, j;
-
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         if (i < fb_width && j < fb_height)
-            data[j * (pitch >> 1) + i] = color;
-}
-
 static void blit_line(int x, int y,
-      const char *message, uint16_t color)
+      const char *message, uint16_t color, uint16_t shadow_color, bool draw_shadow)
 {
    size_t pitch = menu_display_get_framebuffer_pitch();
    const uint8_t *font_fb = menu_display_get_font_framebuffer();
 
    if (font_fb)
    {
-      while (!string_is_empty(message))
+      /* We're going to do some ugly loop unswitching here
+       * because rendering text is *very* expensive and I don't
+       * want to rely on the compiler to optimise this properly... */
+      if (draw_shadow)
       {
-         unsigned i, j;
-         char symbol = *message++;
-
-         for (j = 0; j < FONT_HEIGHT; j++)
+         /* Drop shadow version */
+         while (!string_is_empty(message))
          {
-            for (i = 0; i < FONT_WIDTH; i++)
+            unsigned i, j;
+            char symbol = *message++;
+
+            for (j = 0; j < FONT_HEIGHT; j++)
             {
-               uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-               int offset  = (i + j * FONT_WIDTH) >> 3;
-               bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
+               for (i = 0; i < FONT_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+                  int offset  = (i + j * FONT_WIDTH) >> 3;
 
-               if (col)
-                  rgui_frame_buf.data[(y + j) * (pitch >> 1) + (x + i)] = color;
+                  if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
+                  {
+                     unsigned pixel_x = x + i;
+                     unsigned pixel_y = y + j;
+
+                     /* Text pixel */
+                     rgui_frame_buf.data[pixel_y * (pitch >> 1) + pixel_x] = color;
+
+                     /* Shadow pixels */
+                     rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) +  pixel_x     ] = shadow_color;
+                     rgui_frame_buf.data[ pixel_y      * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
+                     rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
+                  }
+               }
             }
-         }
 
-         x += FONT_WIDTH_STRIDE;
+            x += FONT_WIDTH_STRIDE;
+         }
+      }
+      else
+      {
+         /* Normal version */
+         while (!string_is_empty(message))
+         {
+            unsigned i, j;
+            char symbol = *message++;
+
+            for (j = 0; j < FONT_HEIGHT; j++)
+            {
+               for (i = 0; i < FONT_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+                  int offset  = (i + j * FONT_WIDTH) >> 3;
+
+                  if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
+                     rgui_frame_buf.data[(y + j) * (pitch >> 1) + (x + i)] = color;
+               }
+            }
+
+            x += FONT_WIDTH_STRIDE;
+         }
       }
    }
 }
@@ -1473,10 +1618,24 @@ static void rgui_render_background(rgui_t *rgui)
 
          if (settings->bools.menu_rgui_border_filler_enable)
          {
+            /* Draw border */
             rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_border_filler);
             rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_border_filler);
             rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_border_filler);
             rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10, rgui_border_filler);
+
+            /* Draw drop shadow, if required */
+            if (settings->bools.menu_rgui_shadows)
+            {
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     10, 10, 1, fb_height - 20, rgui->colors.shadow_color);
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     10, 10, fb_width - 20, 1, rgui->colors.shadow_color);
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     fb_width - 5, 6, 1, fb_height - 10, rgui->colors.shadow_color);
+               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                     6, fb_height - 5, fb_width - 10, 1, rgui->colors.shadow_color);
+            }
          }
       }
    }
@@ -1551,10 +1710,37 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
       if (settings->bools.menu_rgui_border_filler_enable)
       {
+         /* Draw drop shadow, if required */
+         if (settings->bools.menu_rgui_shadows)
+         {
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  x + 5, y + 5, 1, height - 5, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  x + 5, y + 5, width - 5, 1, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  x + width, y + 1, 1, height, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  x + 1, y + height, width, 1, rgui->colors.shadow_color);
+         }
+
+         /* Draw border */
          rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x, y, width - 5, 5, rgui_border_filler);
          rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x + width - 5, y, 5, height - 5, rgui_border_filler);
          rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x + 5, y + height - 5, width - 5, 5, rgui_border_filler);
          rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x, y + 5, 5, height - 5, rgui_border_filler);
+      }
+      else if (settings->bools.menu_rgui_shadows)
+      {
+         /* Without a border, this is a bit silly...
+          * All we can do is draw a sort of frame... */
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               x + 4, y + 4, 1, height - 8, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               x + 5, y + 4, width - 10, 1, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               x + width - 5, y + 4, 1, height - 8, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               x + 5, y + height - 5, width - 10, 1, rgui->colors.shadow_color);
       }
    }
 
@@ -1565,7 +1751,8 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       if (rgui_frame_buf.data)
-         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, rgui->colors.normal_color);
+         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg,
+               rgui->colors.normal_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
    }
 
 end:
@@ -1742,7 +1929,7 @@ static void rgui_render(void *data, bool is_idle)
       thumbnail_title_buf[0] = '\0';
 
       /* Draw thumbnail */
-      rgui_render_fs_thumbnail();
+      rgui_render_fs_thumbnail(rgui);
 
       /* Get thumbnail title */
       if (menu_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
@@ -1764,7 +1951,8 @@ static void rgui_render(void *data, bool is_idle)
                            title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
 
             /* Draw thumbnail title */
-            blit_line((int)title_x, 0, thumbnail_title_buf, rgui->colors.hover_color);
+            blit_line((int)title_x, 0, thumbnail_title_buf,
+                  rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
          }
       }
    }
@@ -1822,7 +2010,7 @@ static void rgui_render(void *data, bool is_idle)
                (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
                      - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
                RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE,
-               title_buf, rgui->colors.title_color);
+               title_buf, rgui->colors.title_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
 
       /* Print menu entries */
       x = RGUI_TERM_START_X(fb_width);
@@ -1963,7 +2151,8 @@ static void rgui_render(void *data, bool is_idle)
 
          if (rgui_frame_buf.data)
             blit_line(x, y, message,
-                  entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color);
+                  entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color,
+                  rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
 
          if (!string_is_empty(entry_path))
             free(entry_path);
@@ -1973,10 +2162,10 @@ static void rgui_render(void *data, bool is_idle)
       if (show_mini_thumbnails)
       {
          if (show_thumbnail)
-            rgui_render_mini_thumbnail(&mini_thumbnail, MENU_THUMBNAIL_RIGHT);
+            rgui_render_mini_thumbnail(rgui, &mini_thumbnail, MENU_THUMBNAIL_RIGHT);
          
          if (show_left_thumbnail)
-            rgui_render_mini_thumbnail(&mini_left_thumbnail, MENU_THUMBNAIL_LEFT);
+            rgui_render_mini_thumbnail(rgui, &mini_left_thumbnail, MENU_THUMBNAIL_LEFT);
       }
 
       /* Print menu sublabel/core name (if required) */
@@ -1996,7 +2185,8 @@ static void rgui_render(void *data, bool is_idle)
             blit_line(
                   RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf, rgui->colors.hover_color);
+                  RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
+                  rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
       }
       else if (settings->bools.menu_core_enable)
       {
@@ -2017,7 +2207,8 @@ static void rgui_render(void *data, bool is_idle)
                blit_line(
                      RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                      (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                     RGUI_TERM_START_Y(fb_height) + 2, core_title_buf, rgui->colors.hover_color);
+                     RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
+                     rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
          }
       }
 
@@ -2039,7 +2230,8 @@ static void rgui_render(void *data, bool is_idle)
             blit_line(
                   timedate_x,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, timedate, rgui->colors.hover_color);
+                  RGUI_TERM_START_Y(fb_height) + 2, timedate,
+                  rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
       }
    }
 
