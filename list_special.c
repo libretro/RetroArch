@@ -31,17 +31,13 @@
 #include "menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CAMERA
 #include "camera/camera_driver.h"
-#endif
 
 #ifdef HAVE_WIFI
 #include "wifi/wifi_driver.h"
 #endif
 
-#ifdef HAVE_LOCATION
 #include "location/location_driver.h"
-#endif
 
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
@@ -187,7 +183,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_CAMERA_DRIVERS:
-#ifdef HAVE_CAMERA
          for (i = 0; camera_driver_find_handle(i); i++)
          {
             const char *opt  = camera_driver_find_ident(i);
@@ -196,7 +191,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
-#endif
       case STRING_LIST_WIFI_DRIVERS:
 #ifdef HAVE_WIFI
          for (i = 0; wifi_driver_find_handle(i); i++)
@@ -209,15 +203,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_LOCATION_DRIVERS:
-#ifdef HAVE_LOCATION
          for (i = 0; location_driver_find_handle(i); i++)
          {
             const char *opt  = location_driver_find_ident(i);
             *len            += strlen(opt) + 1;
-            string_list_append(options_l, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
-#endif
       case STRING_LIST_AUDIO_DRIVERS:
          for (i = 0; audio_driver_find_handle(i); i++)
          {
