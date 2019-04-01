@@ -2122,6 +2122,9 @@ video_driver_t video_d3d9 = {
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
+#endif
    d3d9_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)

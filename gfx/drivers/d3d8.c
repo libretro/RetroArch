@@ -1905,5 +1905,8 @@ video_driver_t video_d3d8 = {
 #ifdef HAVE_OVERLAY
    d3d8_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
    d3d8_get_poke_interface
 };

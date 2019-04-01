@@ -263,5 +263,8 @@ video_driver_t video_xshm = {
 #ifdef HAVE_OVERLAY
     NULL,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
     xshm_gfx_poke_interface
 };

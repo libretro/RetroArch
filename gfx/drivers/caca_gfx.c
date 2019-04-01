@@ -360,6 +360,9 @@ video_driver_t video_caca = {
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
   caca_gfx_get_poke_interface,
   NULL /* wrap_type_to_enum */
 };

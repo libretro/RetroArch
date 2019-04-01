@@ -4234,6 +4234,9 @@ video_driver_t video_gl2 = {
 #ifdef HAVE_OVERLAY
    gl2_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
+#endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)

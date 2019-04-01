@@ -52,6 +52,10 @@
 #endif
 #endif
 
+#ifdef HAVE_VIDEO_LAYOUT
+#include "video_layout.h"
+#endif
+
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
 #include "video_display_server.h"
@@ -1211,6 +1215,16 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
       return false;
    current_video->overlay_interface(video_driver_data, iface);
    return true;
+}
+#endif
+
+#ifdef HAVE_VIDEO_LAYOUT
+const video_layout_render_interface_t *video_driver_layout_render_interface(void)
+{
+   if (!current_video)
+      return NULL;
+
+   return current_video->video_layout_render_interface(video_driver_data);
 }
 #endif
 

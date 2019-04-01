@@ -2058,6 +2058,9 @@ video_driver_t video_gl_core = {
 #ifdef HAVE_OVERLAY
    gl_core_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
+#endif
    gl_core_get_poke_interface,
    gl_core_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
