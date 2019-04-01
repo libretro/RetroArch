@@ -447,6 +447,9 @@ public slots:
    void showWelcomeScreen();
    void onIconViewClicked();
    void onListViewClicked();
+   void onBoxartThumbnailClicked();
+   void onScreenshotThumbnailClicked();
+   void onTitleThumbnailClicked();
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
