@@ -115,10 +115,6 @@ static unsigned get_pot(unsigned x)
    return (is_pot(x) ? x : next_pow2(x));
 }
 
-static void gl1_gfx_create(void)
-{
-}
-
 static void *gl1_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -154,8 +150,6 @@ static void *gl1_gfx_init(const video_info_t *video,
       gl1_video_pitch = video->width * 4;
    else
       gl1_video_pitch = video->width * 2;
-
-   gl1_gfx_create();
 
    ctx_driver = video_context_driver_init_first(gl1,
          settings->arrays.video_context_driver,
@@ -1068,33 +1062,15 @@ static void gl1_load_texture_data(
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl1_wrap_type_to_enum(wrap_type);
 
-   /* Assume no mipmapping support. */
+   /* GL1.x does not have mipmapping support. */
    switch (filter_type)
    {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         filter_type = TEXTURE_FILTER_LINEAR;
-         break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
-         filter_type = TEXTURE_FILTER_NEAREST;
-         break;
-      default:
-         break;
-   }
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_NEAREST;
-         mag_filter = GL_LINEAR;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         min_filter = GL_NEAREST_MIPMAP_NEAREST;
-         mag_filter = GL_NEAREST;
-         break;
       case TEXTURE_FILTER_NEAREST:
          min_filter = GL_NEAREST;
          mag_filter = GL_NEAREST;
          break;
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
       case TEXTURE_FILTER_LINEAR:
       default:
          min_filter = GL_LINEAR;
@@ -1129,17 +1105,6 @@ static void video_texture_load_gl1(
 }
 
 #ifdef HAVE_THREADS
-static int video_texture_load_wrap_gl1_mipmap(void *data)
-{
-   uintptr_t id = 0;
-
-   if (!data)
-      return 0;
-   video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_NEAREST, &id);
-   return (int)id;
-}
-
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
@@ -1161,16 +1126,6 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
    if (threaded)
    {
       custom_command_method_t func = video_texture_load_wrap_gl1;
-
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = video_texture_load_wrap_gl1_mipmap;
-            break;
-         default:
-            break;
-      }
       return video_thread_texture_load(data, func);
    }
 #endif
