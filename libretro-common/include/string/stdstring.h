@@ -44,12 +44,7 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 {
    if (!a || !b)
       return false;
-   while(*a && (*a == *b))
-   {
-      a++;
-      b++;
-   }
-   return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
+   return strcmp(a, b) == 0;
 }
 
 static INLINE bool string_is_not_equal(const char *a, const char *b)
