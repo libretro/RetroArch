@@ -499,8 +499,10 @@ typedef struct
    struct scaler_ctx image_scaler;
 } rgui_t;
 
-static unsigned mini_thumbnail_max_width = 0;
+static unsigned mini_thumbnail_max_width  = 0;
 static unsigned mini_thumbnail_max_height = 0;
+
+static const uint8_t *rgui_font_framebuf  = NULL;
 
 typedef struct
 {
@@ -1559,7 +1561,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   menu_display_set_font_framebuffer(font);
+   rgui_font_framebuf = font;
 
    return true;
 }
@@ -1580,7 +1582,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
       return init_font(menu, font_bmp_buf);
 #endif
 
-   menu_display_set_font_framebuffer(font_bin_buf);
+   rgui_font_framebuf = font_bin_buf;
 
    return true;
 }
@@ -1661,7 +1663,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    struct string_list *list   = NULL;
    settings_t *settings       = config_get_ptr();
    size_t pitch               = menu_display_get_framebuffer_pitch();
-   const uint8_t *font_fb     = menu_display_get_font_framebuffer();
+   const uint8_t *font_fb     = rgui_font_framebuf;
    (void)settings;
 
    if (!message || !*message)
@@ -1791,7 +1793,7 @@ static void rgui_render(void *data, bool is_idle)
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
    size_t pitch                   = menu_display_get_framebuffer_pitch();
-   const uint8_t *font_fb         = menu_display_get_font_framebuffer();
+   const uint8_t *font_fb         = rgui_font_framebuf;
 
    static bool display_kb         = false;
    bool current_display_cb        = false;
@@ -2659,7 +2661,7 @@ static void rgui_free(void *data)
    }
 
    fb_font_inited = menu_display_get_font_data_init();
-   font_fb = menu_display_get_font_framebuffer();
+   font_fb        = rgui_font_framebuf;
 
    if (fb_font_inited)
       free((void*)font_fb);
