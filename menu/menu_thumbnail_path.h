@@ -56,7 +56,7 @@ typedef struct menu_thumbnail_path_data menu_thumbnail_path_data_t;
  * Returns handle to new menu_thumbnail_path_data_t object.
  * on success, otherwise NULL.
  * Note: Returned object must be free()d */
-menu_thumbnail_path_data_t *menu_thumbnail_path_init();
+menu_thumbnail_path_data_t *menu_thumbnail_path_init(void);
 
 /* Resets thumbnail path data
  * (blanks all internal string containers) */
