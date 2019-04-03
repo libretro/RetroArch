@@ -1272,7 +1272,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       playlist_t *playlist, const char *path_playlist, bool is_collection)
 {
    unsigned i;
-   size_t selection = menu_navigation_get_selection();
    size_t list_size = playlist_size(playlist);
    settings_t *settings = config_get_ptr();
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");

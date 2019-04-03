@@ -877,7 +877,10 @@ end:
 #elif defined(__MACH__)
    if (!name)
       return;
-   sysctlbyname("machdep.cpu.brand_string", name, &len, NULL, 0);
+   {
+      size_t len_size = len;
+      sysctlbyname("machdep.cpu.brand_string", name, &len_size, NULL, 0);
+   }
 #else
    if (!name)
       return;

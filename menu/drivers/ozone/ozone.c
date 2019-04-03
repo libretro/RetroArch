@@ -371,7 +371,6 @@ unsigned ozone_count_lines(const char *str)
 
 static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 {
-   settings_t     *settings       = config_get_ptr();
    ozone_handle_t    *ozone       = (ozone_handle_t*)data;
    const char    *core_name       = NULL;
 
@@ -2169,8 +2168,6 @@ static int ozone_pointer_tap(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-
    size_t selection         = menu_navigation_get_selection();
    if (ptr == selection && cbs && cbs->action_select)
       return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
