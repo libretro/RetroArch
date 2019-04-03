@@ -351,18 +351,20 @@ static void gl2_load_texture_image(GLenum target,
 {
 #if !defined(HAVE_PSGL) && !defined(ORBIS)
 #ifdef HAVE_OPENGLES2
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT) && internalFormat != GL_BGRA_EXT)
-   {
-      gl2_size_format(&internalFormat);
-      glTexStorage2DEXT(target, 1, internalFormat, width, height);
-   }
+   unsigned cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE) && internalFormat != GL_BGRA_EXT)
+   unsigned cap = GL_CAPS_TEX_STORAGE;
+#endif
+
+   if (gl_check_capability(cap) && internalFormat != GL_BGRA_EXT)
    {
       gl2_size_format(&internalFormat);
-      glTexStorage2D(target, 1, internalFormat, width, height);
-   }
+#ifdef HAVE_OPENGLES2
+      glTexStorage2DEXT(target, 1, internalFormat, width, height);
+#else
+      glTexStorage2D   (target, 1, internalFormat, width, height);
 #endif
+   }
    else
 #endif
    {
