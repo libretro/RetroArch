@@ -377,6 +377,8 @@ audio_driver_t audio_coreaudio3 = {
    coreaudio3_free,
    coreaudio3_use_float,
    "coreaudio3",
+   NULL, /* device_list_new */
+   NULL, /* device_list_free */
    coreaudio3_write_avail,
    coreaudio3_buffer_size,
 };
