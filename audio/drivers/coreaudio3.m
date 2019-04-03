@@ -89,7 +89,7 @@ static void rb_init(ringbuffer_h r, size_t cap)
 static void rb_free(ringbuffer_h r)
 {
    free(r->buffer);
-   bzero(r, sizeof(*r));
+   memset(r, 0, sizeof(*r));
 }
 
 #define UNLIKELY(x) __builtin_expect((x), 0)

@@ -744,12 +744,14 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
 {
-   bzero(range, sizeof(*range));
+   MTLResourceOptions opts;
+
+   memset(range, 0, sizeof(*range));
 
 #if TARGET_OS_OSX
-   MTLResourceOptions opts = MTLResourceStorageModeManaged;
+   opts = MTLResourceStorageModeManaged;
 #else
-   MTLResourceOptions opts = MTLResourceStorageModeShared;
+   opts = MTLResourceStorageModeShared;
 #endif
 
    if (!_head)
