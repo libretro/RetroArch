@@ -1445,71 +1445,73 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->force_redraw = true;
 }
 
-static void rgui_blit_line(
-      size_t pitch,
-      const uint8_t *font_fb,
-      int x, int y,
-      const char *message, uint16_t color,
-      uint16_t shadow_color, bool draw_shadow)
+static void blit_line(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color, bool draw_shadow)
 {
-   /* We're going to do some ugly loop unswitching here
-    * because rendering text is *very* expensive and I don't
-    * want to rely on the compiler to optimise this properly... */
-   if (draw_shadow)
+   size_t pitch = menu_display_get_framebuffer_pitch();
+   const uint8_t *font_fb = menu_display_get_font_framebuffer();
+
+   if (font_fb)
    {
-      /* Drop shadow version */
-      while (!string_is_empty(message))
+      /* We're going to do some ugly loop unswitching here
+       * because rendering text is *very* expensive and I don't
+       * want to rely on the compiler to optimise this properly... */
+      if (draw_shadow)
       {
-         unsigned i, j;
-         char symbol = *message++;
-
-         for (j = 0; j < FONT_HEIGHT; j++)
+         /* Drop shadow version */
+         while (!string_is_empty(message))
          {
-            for (i = 0; i < FONT_WIDTH; i++)
+            unsigned i, j;
+            char symbol = *message++;
+
+            for (j = 0; j < FONT_HEIGHT; j++)
             {
-               uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-               int offset  = (i + j * FONT_WIDTH) >> 3;
-
-               if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
+               for (i = 0; i < FONT_WIDTH; i++)
                {
-                  unsigned pixel_x = x + i;
-                  unsigned pixel_y = y + j;
+                  uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+                  int offset  = (i + j * FONT_WIDTH) >> 3;
 
-                  /* Text pixel */
-                  rgui_frame_buf.data[pixel_y * (pitch >> 1) + pixel_x] = color;
+                  if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
+                  {
+                     unsigned pixel_x = x + i;
+                     unsigned pixel_y = y + j;
 
-                  /* Shadow pixels */
-                  rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) +  pixel_x     ] = shadow_color;
-                  rgui_frame_buf.data[ pixel_y      * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
-                  rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
+                     /* Text pixel */
+                     rgui_frame_buf.data[pixel_y * (pitch >> 1) + pixel_x] = color;
+
+                     /* Shadow pixels */
+                     rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) +  pixel_x     ] = shadow_color;
+                     rgui_frame_buf.data[ pixel_y      * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
+                     rgui_frame_buf.data[(pixel_y + 1) * (pitch >> 1) + (pixel_x + 1)] = shadow_color;
+                  }
                }
             }
-         }
 
-         x += FONT_WIDTH_STRIDE;
+            x += FONT_WIDTH_STRIDE;
+         }
       }
-   }
-   else
-   {
-      /* Normal version */
-      while (!string_is_empty(message))
+      else
       {
-         unsigned i, j;
-         char symbol = *message++;
-
-         for (j = 0; j < FONT_HEIGHT; j++)
+         /* Normal version */
+         while (!string_is_empty(message))
          {
-            for (i = 0; i < FONT_WIDTH; i++)
+            unsigned i, j;
+            char symbol = *message++;
+
+            for (j = 0; j < FONT_HEIGHT; j++)
             {
-               uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-               int offset  = (i + j * FONT_WIDTH) >> 3;
+               for (i = 0; i < FONT_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+                  int offset  = (i + j * FONT_WIDTH) >> 3;
 
-               if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
-                  rgui_frame_buf.data[(y + j) * (pitch >> 1) + (x + i)] = color;
+                  if ((font_fb[FONT_OFFSET(symbol) + offset] & rem) > 0)
+                     rgui_frame_buf.data[(y + j) * (pitch >> 1) + (x + i)] = color;
+               }
             }
-         }
 
-         x += FONT_WIDTH_STRIDE;
+            x += FONT_WIDTH_STRIDE;
+         }
       }
    }
 }
@@ -1660,8 +1662,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    unsigned width, glyphs_width, height;
    struct string_list *list   = NULL;
    settings_t *settings       = config_get_ptr();
-   size_t pitch               = menu_display_get_framebuffer_pitch();
-   const uint8_t *font_fb     = menu_display_get_font_framebuffer();
+
    (void)settings;
 
    if (!message || !*message)
@@ -1743,18 +1744,15 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       }
    }
 
-   if (rgui_frame_buf.data)
+   for (i = 0; i < list->size; i++)
    {
-      for (i = 0; i < list->size; i++)
-      {
-         const char *msg = list->elems[i].data;
-         int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
-         int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
+      const char *msg = list->elems[i].data;
+      int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
+      int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
-         rgui_blit_line(pitch, font_fb,
-               x + 8 + offset_x, y + 8 + offset_y, msg,
+      if (rgui_frame_buf.data)
+         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
-      }
    }
 
 end:
@@ -1790,8 +1788,6 @@ static void rgui_render(void *data, bool is_idle)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   size_t pitch                   = menu_display_get_framebuffer_pitch();
-   const uint8_t *font_fb         = menu_display_get_font_framebuffer();
 
    static bool display_kb         = false;
    bool current_display_cb        = false;
@@ -1955,10 +1951,8 @@ static void rgui_render(void *data, bool is_idle)
                            title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
 
             /* Draw thumbnail title */
-            if (font_fb)
-               rgui_blit_line(pitch, font_fb,
-                     (int)title_x, 0, thumbnail_title_buf,
-                     rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
+            blit_line((int)title_x, 0, thumbnail_title_buf,
+                  rgui->colors.hover_color, rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
          }
       }
    }
@@ -2012,7 +2006,7 @@ static void rgui_render(void *data, bool is_idle)
       string_to_upper(title_buf);
 
       if (rgui_frame_buf.data)
-         rgui_blit_line(pitch, font_fb,
+         blit_line(
                (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
                      - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
                RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE,
@@ -2156,8 +2150,7 @@ static void rgui_render(void *data, bool is_idle)
          }
 
          if (rgui_frame_buf.data)
-            rgui_blit_line(pitch, font_fb,
-                  x, y, message,
+            blit_line(x, y, message,
                   entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color,
                   rgui->colors.shadow_color, settings->bools.menu_rgui_shadows);
 
@@ -2189,7 +2182,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          if (rgui_frame_buf.data)
-            rgui_blit_line(pitch, font_fb,
+            blit_line(
                   RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
@@ -2211,7 +2204,7 @@ static void rgui_render(void *data, bool is_idle)
             menu_animation_ticker(&ticker);
 
             if (rgui_frame_buf.data)
-               rgui_blit_line(pitch, font_fb,
+               blit_line(
                      RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                      (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                      RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
@@ -2234,7 +2227,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_display_timedate(&datetime);
 
          if (rgui_frame_buf.data)
-            rgui_blit_line(pitch, font_fb,
+            blit_line(
                   timedate_x,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, timedate,
