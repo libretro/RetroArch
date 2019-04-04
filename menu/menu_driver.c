@@ -183,6 +183,7 @@ static bool menu_display_has_windowed            = false;
 static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
+static const uint8_t *menu_display_font_framebuf = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 /* when enabled, on next iteration the 'Quick Menu' list will
@@ -499,6 +500,16 @@ void menu_display_coords_array_reset(void)
 video_coord_array_t *menu_display_get_coords_array(void)
 {
    return &menu_disp_ca;
+}
+
+const uint8_t *menu_display_get_font_framebuffer(void)
+{
+   return menu_display_font_framebuf;
+}
+
+void menu_display_set_font_framebuffer(const uint8_t *buffer)
+{
+   menu_display_font_framebuf = buffer;
 }
 
 bool menu_display_libretro_running(
