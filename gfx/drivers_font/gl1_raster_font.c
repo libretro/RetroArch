@@ -550,7 +550,6 @@ static void gl1_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
-
 static int gl1_get_line_height(void *data)
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
