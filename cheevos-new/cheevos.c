@@ -527,11 +527,14 @@ static unsigned cheevos_peek(unsigned address, unsigned num_bytes, void* ud)
       address, cheevos_locals.patchdata.console_id);
    unsigned value = 0;
 
-   switch (num_bytes)
+   if (data)
    {
-      case 4: value |= data[2] << 16 | data[3] << 24;
-      case 2: value |= data[1] << 8;
-      case 1: value |= data[0];
+      switch (num_bytes)
+      {
+         case 4: value |= data[2] << 16 | data[3] << 24;
+         case 2: value |= data[1] << 8;
+         case 1: value |= data[0];
+      }
    }
 
    return value;
