@@ -182,11 +182,13 @@ namespace
 		/* Look for a matching directory we can use */
 		for each (StorageFolder^ folder in accessible_directories)
 		{
+			std::wstring file_path;
 			std::wstring folder_path = folder->Path->Data();
 			/* Could be C:\ or C:\Users\somebody - remove the trailing slash to unify them */
 			if (folder_path[folder_path.size() - 1] == '\\')
 				folder_path.erase(folder_path.size() - 1);
-			std::wstring file_path = path->Data();
+			file_path = path->Data();
+
 			if (file_path.find(folder_path) == 0)
 			{
 				/* Found a match */
@@ -267,8 +269,11 @@ struct libretro_vfs_implementation_file
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
-	char *dirpath         = NULL;
-	wchar_t *dirpath_wide = NULL;
+	char *filename         = NULL;
+	char *dirpath          = NULL;
+	wchar_t *dirpath_wide  = NULL;
+	wchar_t *filename_wide = NULL;
+
 	if (!path || !*path)
 		return NULL;
 
@@ -297,9 +302,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 	free(dirpath_wide);
 	free(dirpath);
 
-	char* filename = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	filename = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(filename, path, PATH_MAX_LENGTH);
-	wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
+	filename_wide = utf8_to_utf16_string_alloc(filename);
 	Platform::String^ filename_str = ref new Platform::String(filename_wide);
 	free(filename_wide);
 	free(filename);
@@ -307,26 +312,32 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 	retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
 	return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([=]() {
-		return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).then([=](StorageFolder^ dir) {
-			if (mode == RETRO_VFS_FILE_ACCESS_READ)
-				return dir->GetFileAsync(filename_str);
-			else
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).
+			then([=](StorageFolder^ dir)
+			{
+				if (mode == RETRO_VFS_FILE_ACCESS_READ)
+					return dir->GetFileAsync(filename_str);
 				return dir->CreateFileAsync(filename_str, (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
 					CreationCollisionOption::OpenIfExists : CreationCollisionOption::ReplaceExisting);
-		}).then([=](StorageFile^ file) {
-			FileAccessMode accessMode = mode == RETRO_VFS_FILE_ACCESS_READ ?
+			}
+			).then([=](StorageFile^ file)
+			{
+				FileAccessMode accessMode = mode == RETRO_VFS_FILE_ACCESS_READ ?
 				FileAccessMode::Read : FileAccessMode::ReadWrite;
-			return file->OpenAsync(accessMode);
-		}).then([=](IRandomAccessStream^ fpstream) {
-			libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
-			if (!stream)
-				return (libretro_vfs_implementation_file*)NULL;
+				return file->OpenAsync(accessMode);
+			}
+			).then([=](IRandomAccessStream^ fpstream)
+			{
+				libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
+				if (!stream)
+					return (libretro_vfs_implementation_file*)NULL;
 
-			stream->orig_path = strdup(path);
-			stream->fp = fpstream;
-			stream->fp->Seek(0);
-			return stream;
-		});
+				stream->orig_path = strdup(path);
+				stream->fp = fpstream;
+				stream->fp->Seek(0);
+				return stream;
+			}
+			);
 	}, NULL);
 }
 
@@ -499,10 +510,11 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
+	wchar_t *path_wide = NULL;
 	if (!path || !*path)
 		return -1;
 
-	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+	path_wide = utf8_to_utf16_string_alloc(path);
 	windowsize_path(path_wide);
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
@@ -519,22 +531,27 @@ int retro_vfs_file_remove_impl(const char *path)
 /* TODO: this may not work if trying to move a directory */
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
+	wchar_t *old_path_wide     = NULL;
+	wchar_t *new_dir_path_wide = NULL;
+	char *new_dir_path         = NULL;
+	char *new_file_name        = NULL;
+
 	if (!old_path || !*old_path || !new_path || !*new_path)
 		return -1;
 
-	wchar_t* old_path_wide = utf8_to_utf16_string_alloc(old_path);
+	old_path_wide = utf8_to_utf16_string_alloc(old_path);
 	Platform::String^ old_path_str = ref new Platform::String(old_path_wide);
 	free(old_path_wide);
 
-	char* new_dir_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	new_dir_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_basedir(new_dir_path, new_path, PATH_MAX_LENGTH);
-	wchar_t *new_dir_path_wide = utf8_to_utf16_string_alloc(new_dir_path);
+	new_dir_path_wide = utf8_to_utf16_string_alloc(new_dir_path);
 	windowsize_path(new_dir_path_wide);
 	Platform::String^ new_dir_path_str = ref new Platform::String(new_dir_path_wide);
 	free(new_dir_path_wide);
 	free(new_dir_path);
 
-	char* new_file_name = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	new_file_name = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(new_file_name, new_path, PATH_MAX_LENGTH);
 	wchar_t *new_file_name_wide = utf8_to_utf16_string_alloc(new_file_name);
 	Platform::String^ new_file_name_str = ref new Platform::String(new_file_name_wide);
@@ -600,25 +617,31 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
 int retro_vfs_mkdir_impl(const char *dir)
 {
+	char *dir_local           = NULL;
+	char *tmp                 = NULL;
+	char *dir_name            = NULL;
+	char *parent_path         = NULL;
+	wchar_t *dir_name_wide    = NULL;
+	wchar_t *parent_path_wide = NULL;
 	if (!dir || !*dir)
 		return -1;
 
-	char* dir_local = strdup(dir);
+	dir_local = strdup(dir);
 	/* If the path ends with a slash, we have to remove it for basename to work */
-	char* tmp = dir_local + strlen(dir_local) - 1;
+	tmp = dir_local + strlen(dir_local) - 1;
 	if (path_char_is_slash(*tmp))
 		*tmp = 0;
 
-	char* dir_name = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	dir_name      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(dir_name, dir_local, PATH_MAX_LENGTH);
-	wchar_t *dir_name_wide = utf8_to_utf16_string_alloc(dir_name);
+	dir_name_wide = utf8_to_utf16_string_alloc(dir_name);
 	Platform::String^ dir_name_str = ref new Platform::String(dir_name_wide);
 	free(dir_name_wide);
 	free(dir_name);
 
-	char* parent_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	parent_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_parent_dir(parent_path, dir_local, PATH_MAX_LENGTH);
-	wchar_t *parent_path_wide = utf8_to_utf16_string_alloc(parent_path);
+	parent_path_wide = utf8_to_utf16_string_alloc(parent_path);
 	windowsize_path(parent_path_wide);
 	Platform::String^ parent_path_str = ref new Platform::String(parent_path_wide);
 	free(parent_path_wide);
@@ -660,7 +683,8 @@ struct libretro_vfs_implementation_dir
 
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool include_hidden)
 {
-	libretro_vfs_implementation_dir *rdir;
+	libretro_vfs_implementation_dir *rdir = NULL;
+	wchar_t *name_wide                    = NULL;
 
 	if (!name || !*name)
 		return NULL;
@@ -669,7 +693,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
 	if (!rdir)
 		return NULL;
 
-	wchar_t *name_wide = utf8_to_utf16_string_alloc(name);
+	name_wide = utf8_to_utf16_string_alloc(name);
 	windowsize_path(name_wide);
 	Platform::String^ name_str = ref new Platform::String(name_wide);
 	free(name_wide);
@@ -694,10 +718,8 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 		rdir->entry = rdir->directory->First();
 		return rdir->entry->HasCurrent;
 	}
-	else
-	{
-		return rdir->entry->MoveNext();
-	}
+
+	return rdir->entry->MoveNext();
 }
 
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
@@ -729,10 +751,12 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 
 bool uwp_is_path_accessible_using_standard_io(const char *path)
 {
+	bool result                = false;
 	char *relative_path_abbrev = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
 	fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));
 
-	bool result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
+	result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
 
 	free(relative_path_abbrev);
 	return result;
@@ -740,10 +764,11 @@ bool uwp_is_path_accessible_using_standard_io(const char *path)
 
 bool uwp_drive_exists(const char *path)
 {
+	wchar_t *path_wide = NULL;
 	if (!path || !*path)
 		return 0;
 
-	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+	path_wide = utf8_to_utf16_string_alloc(path);
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
