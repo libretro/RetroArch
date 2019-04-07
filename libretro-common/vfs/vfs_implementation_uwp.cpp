@@ -55,69 +55,63 @@ using namespace Windows::Storage::FileProperties;
 
 namespace
 {
-	/* Dear Microsoft
-	 * I really appreciate all the effort you took to not provide any
-	 * synchronous file APIs and block all attempts to synchronously
-	 * wait for the results of async tasks for "smooth user experience",
-	 * but I'm not going to run and rewrite all RetroArch cores for
-	 * async I/O. I hope you like this hack I made instead.
-	 */
 	template<typename T>
-	T RunAsync(std::function<concurrency::task<T>()> func)
-	{
-		volatile bool finished = false;
-		volatile Platform::Exception^ exception = nullptr;
-		volatile T result;
-		func().then([&finished, &exception, &result](concurrency::task<T> t) {
-			try
-			{
-				result = t.get();
-			}
-			catch (Platform::Exception^ exception_)
-			{
-				exception = exception_;
-			}
-			finished = true;
-		});
-
-		/* Don't stall the UI thread - prevents a deadlock */
-		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-		while (!finished)
-		{
-			if (corewindow)
-				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-		}
-
-		if (exception != nullptr)
-			throw exception;
-		return result;
-	}
-
-	template<typename T>
-	T RunAsyncAndCatchErrors(std::function<concurrency::task<T>()> func, T valueOnError)
+	static T RunAsyncAndCatchErrors(std::function<concurrency::task<T>()> func, T valueOnError)
 	{
 		try
 		{
-			return RunAsync<T>(func);
+			/* Dear Microsoft
+	         * I really appreciate all the effort you took to not provide any
+	         * synchronous file APIs and block all attempts to synchronously
+	         * wait for the results of async tasks for "smooth user experience",
+	         * but I'm not going to run and rewrite all RetroArch cores for
+	         * async I/O. I hope you like this hack I made instead.
+	         */
+			volatile bool finished = false;
+			volatile Platform::Exception^ exception = nullptr;
+			volatile T result;
+			func().then([&finished, &exception, &result](concurrency::task<T> t) {
+				try
+				{
+					result = t.get();
+				}
+				catch (Platform::Exception^ exception_)
+				{
+					exception = exception_;
+				}
+				finished = true;
+			});
+
+			/* Don't stall the UI thread - prevents a deadlock */
+			Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+			while (!finished)
+			{
+				if (corewindow)
+					corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+			}
+
+			if (exception != nullptr)
+				throw exception;
+			return result;
 		}
 		catch (Platform::Exception^ e)
 		{
 			return valueOnError;
 		}
 	}
+}
 
-	void windowsize_path(wchar_t* path)
+static void windowsize_path(wchar_t* path)
+{
+	/* UWP deals with paths containing / instead of \ way worse than normal Windows */
+	/* and RetroArch may sometimes mix them (e.g. on archive extraction) */
+	if (!path)
+		return;
+	while (*path)
 	{
-		/* UWP deals with paths containing / instead of \ way worse than normal Windows */
-		/* and RetroArch may sometimes mix them (e.g. on archive extraction) */
-		if (!path)
-			return;
-		while (*path)
-		{
-			if (*path == '/')
-				*path = '\\';
-			++path;
-		}
+		if (*path == '/')
+			*path = '\\';
+		++path;
 	}
 }
 
@@ -166,7 +160,7 @@ namespace
 	/* A list of all StorageFolder objects returned using from the file picker */
 	Platform::Collections::Vector<StorageFolder^> accessible_directories;
 
-	concurrency::task<Platform::String^> TriggerPickerAddDialog()
+	static concurrency::task<Platform::String^> TriggerPickerAddDialog()
 	{
 		auto folderPicker = ref new Windows::Storage::Pickers::FolderPicker();
 		folderPicker->SuggestedStartLocation = Windows::Storage::Pickers::PickerLocationId::Desktop;
@@ -183,7 +177,7 @@ namespace
 	}
 
 	template<typename T>
-	concurrency::task<T^> LocateStorageItem(Platform::String^ path)
+	static concurrency::task<T^> LocateStorageItem(Platform::String^ path)
 	{
 		/* Look for a matching directory we can use */
 		for each (StorageFolder^ folder in accessible_directories)
@@ -231,7 +225,7 @@ namespace
 		});
 	}
 
-	IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
+	static IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
 	{
 		if (!path || path->IsEmpty())
 			return nullptr;
@@ -273,6 +267,8 @@ struct libretro_vfs_implementation_file
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
+	char *dirpath         = NULL;
+	wchar_t *dirpath_wide = NULL;
 	if (!path || !*path)
 		return NULL;
 
@@ -288,9 +284,14 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 		return NULL;
 	}
 
-	char* dirpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	dirpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+	if (!dirpath)
+		return NULL;
+
 	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);
-	wchar_t *dirpath_wide = utf8_to_utf16_string_alloc(dirpath);
+
+	dirpath_wide = utf8_to_utf16_string_alloc(dirpath);
 	windowsize_path(dirpath_wide);
 	Platform::String^ dirpath_str = ref new Platform::String(dirpath_wide);
 	free(dirpath_wide);
@@ -570,11 +571,17 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
+	wchar_t *path_wide = NULL;
 	if (!path || !*path)
 		return 0;
 
-	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+	path_wide = utf8_to_utf16_string_alloc(path);
+
+	if (!path_wide)
+		return 0;
+
 	windowsize_path(path_wide);
+
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
