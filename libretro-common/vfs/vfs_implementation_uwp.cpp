@@ -119,35 +119,38 @@ namespace
 {
 	/* Damn you, UWP, why no functions for that either */
 	template<typename T>
-	concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
+	static concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		static_assert(false, "StorageFile and StorageFolder only");
 	}
+
 	template<>
-	concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
+	static concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		return concurrency::create_task(StorageFile::GetFileFromPathAsync(path));
 	}
 	template<>
-	concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
+	static concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
 	}
 
 	template<typename T>
-	concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	static concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		static_assert(false, "StorageFile and StorageFolder only");
 	}
+
 	template<>
-	concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	static concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		if (path->IsEmpty())
 			retro_assert(false); /* Attempt to read a folder as a file - this really should have been caught earlier */
 		return concurrency::create_task(folder->GetFileAsync(path));
 	}
+
 	template<>
-	concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	static concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		if (path->IsEmpty())
 			return concurrency::create_task(concurrency::create_async([folder]() { return folder; }));
@@ -242,8 +245,7 @@ namespace
 		else
 		{
 			/* No final slash - probably a file (since RetroArch usually slash-terminates dirs), but there is still a chance it's a directory */
-			IStorageItem^ item;
-			item = RunAsyncAndCatchErrors<StorageFile^>([=]() {
+			IStorageItem ^item = RunAsyncAndCatchErrors<StorageFile^>([=]() {
 				return concurrency::create_task(LocateStorageItem<StorageFile>(path));
 			}, nullptr);
 			if (!item)
@@ -420,9 +422,10 @@ public:
 
 	HRESULT __stdcall RuntimeClassInitialize(byte *buffer, uint32_t capacity, uint32_t length)
 	{
-		m_buffer = buffer;
+		m_buffer   = buffer;
 		m_capacity = capacity;
-		m_length = length;
+		m_length   = length;
+
 		return S_OK;
 	}
 
@@ -465,7 +468,7 @@ IBuffer^ CreateNativeBuffer(void* buf, uint32_t capacity, uint32_t length)
 	Microsoft::WRL::ComPtr<NativeBuffer> nativeBuffer;
 	Microsoft::WRL::Details::MakeAndInitialize<NativeBuffer>(&nativeBuffer, (byte *)buf, capacity, length);
 	auto iinspectable = (IInspectable *)reinterpret_cast<IInspectable *>(nativeBuffer.Get());
-	IBuffer ^buffer = reinterpret_cast<IBuffer ^>(iinspectable);
+	IBuffer ^buffer   = reinterpret_cast<IBuffer ^>(iinspectable);
 	return buffer;
 }
 
@@ -535,6 +538,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
 	wchar_t *old_path_wide             = NULL;
 	wchar_t *new_dir_path_wide         = NULL;
+	wchar_t *new_file_name_wide        = NULL;
 	char *new_dir_path                 = NULL;
 	char *new_file_name                = NULL;
 
@@ -555,7 +559,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 
 	new_file_name                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(new_file_name, new_path, PATH_MAX_LENGTH);
-	wchar_t *new_file_name_wide         = utf8_to_utf16_string_alloc(new_file_name);
+	new_file_name_wide                  = utf8_to_utf16_string_alloc(new_file_name);
 	Platform::String^ new_file_name_str = ref new Platform::String(new_file_name_wide);
 	free(new_file_name_wide);
 	free(new_file_name);
