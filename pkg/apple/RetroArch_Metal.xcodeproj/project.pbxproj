@@ -1703,6 +1703,17 @@
 					"@executable_path/../Frameworks",
 				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"$(QT_CFLAGS)",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1723,6 +1734,17 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"$(QT_CFLAGS)",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1742,6 +1764,18 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHAVE_MAIN",
+					"-DHAVE_COCOA_METAL",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-UHAVE_OPENGL",
+					"-UHAVE_GLSL",
+				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
@@ -1758,6 +1792,18 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INSTALL_PATH = "$(HOME)/Applications";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHAVE_MAIN",
+					"-DHAVE_COCOA_METAL",
+					"-UHAVE_GLSL",
+					"-UHAVE_OPENGL",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-UHAVE_OPENGL",
+					"-UHAVE_GLSL",
+				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
