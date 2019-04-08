@@ -43,6 +43,8 @@ typedef struct switch_input
    bool touch_state[MULTITOUCH_LIMIT];
    uint32_t touch_x[MULTITOUCH_LIMIT];
    uint32_t touch_y[MULTITOUCH_LIMIT];
+   uint32_t touch_previous_x[MULTITOUCH_LIMIT];
+   uint32_t touch_previous_y[MULTITOUCH_LIMIT];
    bool keyboard_state[SWITCH_MAX_SCANCODE + 1];
 
    int32_t mouse_x;
@@ -70,9 +72,11 @@ static void switch_input_poll(void *data)
    unsigned keyCode = 0;
    uint16_t mod = 0;
    MousePosition mouse_pos;
+   bool previous_touch_state[MULTITOUCH_LIMIT];
 
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
+      previous_touch_state[i] = sw->touch_state[i];
       sw->touch_state[i] = touch_count > i;
 
       if (sw->touch_state[i])
@@ -80,8 +84,16 @@ static void switch_input_poll(void *data)
          touchPosition touch_position;
          hidTouchRead(&touch_position, i);
 
+         sw->touch_previous_x[i] = sw->touch_x[i];
+         sw->touch_previous_y[i] = sw->touch_y[i];
          sw->touch_x[i] = touch_position.px;
          sw->touch_y[i] = touch_position.py;
+         // prevent jumps in mouse pointer when putting down finger
+         if (!previous_touch_state[i]) 
+         {
+            sw->touch_previous_x[i] = sw->touch_x[i];
+            sw->touch_previous_y[i] = sw->touch_y[i];
+         }
       }
    }
 
@@ -141,9 +153,19 @@ static void switch_input_poll(void *data)
 
    sw->mouse_x_delta = mouse_pos.velocityX;
    sw->mouse_y_delta = mouse_pos.velocityY;
-   
-   sw->mouse_x += mouse_pos.velocityX;
-   sw->mouse_y += mouse_pos.velocityY;
+
+   // allow finger to move mouse pointer like on a laptop touchpad
+   for (i = 0; i < MULTITOUCH_LIMIT; i++)
+   {
+      if (sw->touch_state[i])
+      {
+         sw->mouse_x_delta += sw->touch_x[i] - sw->touch_previous_x[i];
+         sw->mouse_y_delta += sw->touch_y[i] - sw->touch_previous_y[i];
+      }
+   }
+
+   sw->mouse_x += sw->mouse_x_delta;
+   sw->mouse_y += sw->mouse_y_delta;
    if (sw->mouse_x < 0)
    {
       sw->mouse_x = 0;
