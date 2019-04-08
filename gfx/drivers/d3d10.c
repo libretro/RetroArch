@@ -76,11 +76,11 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
 
 static void d3d10_clear_scissor(d3d10_video_t *d3d10, video_frame_info_t *video_info)
 {
-   D3D10_RECT scissor_rect = {0};
+   D3D10_RECT scissor_rect;
 
-   scissor_rect.left = 0;
-   scissor_rect.top = 0;
-   scissor_rect.right = video_info->width;
+   scissor_rect.left   = 0;
+   scissor_rect.top    = 0;
+   scissor_rect.right  = video_info->width;
    scissor_rect.bottom = video_info->height;
 
    D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
