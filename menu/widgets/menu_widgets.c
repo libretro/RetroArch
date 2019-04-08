@@ -208,7 +208,7 @@ static char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
    "menu_info.png"
 };
 
-static menu_texture_item menu_widgets_icons_textures[MENU_WIDGETS_ICON_LAST];
+static menu_texture_item menu_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {0};
 
 /* Volume */
 static float volume_db              = 0.0f;
@@ -1775,6 +1775,9 @@ void menu_widgets_context_destroy(void)
 void menu_widgets_free(void)
 {
    int i;
+
+   if (!menu_widgets_inited)
+      return;
 
    menu_widgets_inited = false;
 

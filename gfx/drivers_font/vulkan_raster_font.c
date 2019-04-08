@@ -203,8 +203,8 @@ static void vulkan_raster_font_render_line(
       height = glyph->height;
 
       vulkan_write_quad_vbo(font->pv + font->vertices,
-            (x + off_x + delta_x * scale) * inv_win_width,
-            (y + off_y + delta_y * scale) * inv_win_height,
+            (x + (off_x + delta_x) * scale) * inv_win_width,
+            (y + (off_y + delta_y) * scale) * inv_win_height,
             width * scale * inv_win_width,
             height * scale * inv_win_height,
             tex_x * inv_tex_size_x,
