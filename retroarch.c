@@ -4137,10 +4137,20 @@ static enum runloop_state runloop_check_state(
 
       s[0] = '\0';
 
-      if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-               settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
-         runloop_msg_queue_push(s, 0, t, true, NULL, 
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      bool rewinding = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!video_driver_has_widgets())
+#endif
+         if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+                  settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
+            runloop_msg_queue_push(s, 0, t, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_set_rewind(rewinding);
+#endif
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
