@@ -67,9 +67,8 @@ static void menu_display_d3d12_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d12_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   int                      vertex_count;
-   d3d12_video_t*           d3d12 = video_info ?
-      (d3d12_video_t*)video_info->userdata : NULL;
+   int vertex_count;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
 
    if (!d3d12 || !draw || !draw->texture)
       return;
@@ -205,8 +204,7 @@ static void menu_display_d3d12_draw(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d12_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   d3d12_video_t           *d3d12 = video_info ?
-      (d3d12_video_t*)video_info->userdata : NULL;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
 
    if (!d3d12 || !draw)
       return;
@@ -269,7 +267,7 @@ static void menu_display_d3d12_restore_clear_color(void) {}
 static void menu_display_d3d12_clear_color(
       menu_display_ctx_clearcolor_t* clearcolor, video_frame_info_t *video_info)
 {
-   d3d12_video_t* d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
 
    if (!d3d12 || !clearcolor)
       return;
@@ -297,34 +295,32 @@ static bool menu_display_d3d12_font_init_first(
 
 void menu_display_d3d12_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
-   D3D12_RECT rect = {0};
-   d3d12_video_t *d3d12 = video_info ?
-      (d3d12_video_t*)video_info->userdata : NULL;
-
-   rect.left = x;
-   rect.top = y;
-   rect.right = width + x;
-   rect.bottom = height + y;
+   D3D12_RECT rect;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
 
    if (!d3d12 || !width || !height)
       return;
+
+   rect.left            = x;
+   rect.top             = y;
+   rect.right           = width + x;
+   rect.bottom          = height + y;
 
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &rect);
 }
 
 void menu_display_d3d12_scissor_end(video_frame_info_t *video_info)
 {
-   D3D12_RECT rect = {0};
-   d3d12_video_t *d3d12 = video_info ?
-      (d3d12_video_t*)video_info->userdata : NULL;
+   D3D12_RECT rect;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
 
    if (!d3d12)
       return;
 
-   rect.left = d3d12->vp.x;
-   rect.top = d3d12->vp.y;
-   rect.right = d3d12->vp.width;
-   rect.bottom = d3d12->vp.height;
+   rect.left            = d3d12->vp.x;
+   rect.top             = d3d12->vp.y;
+   rect.right           = d3d12->vp.width;
+   rect.bottom          = d3d12->vp.height;
 
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &rect);
 }

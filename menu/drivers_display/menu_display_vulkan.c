@@ -121,13 +121,12 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
 {
 #ifdef HAVE_SHADERPIPELINE
    static uint8_t ubo_scratch_data[768];
-   static float t                = 0.0f;
-   float yflip                   = 0.0f;
+   static float t                   = 0.0f;
+   float yflip                      = 0.0f;
    static struct video_coords blank_coords;
    float output_size[2];
-   video_coord_array_t *ca       = NULL;
-   vk_t *vk                      = video_info ?
-      (vk_t*)video_info->userdata : NULL;
+   video_coord_array_t *ca          = NULL;
+   vk_t *vk                         = (vk_t*)video_info->userdata;
 
    if (!vk || !draw)
       return;
@@ -161,7 +160,8 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
          draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 4 * sizeof(float);
+         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) 
+            + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
@@ -177,11 +177,13 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
          else
             yflip = 1.0f;
 
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 2 * sizeof(float), &t, sizeof(t));
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 3 * sizeof(float), &yflip, sizeof(yflip));
-         draw->coords = &blank_coords;
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+               + 2 * sizeof(float), &t, sizeof(t));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+               + 3 * sizeof(float), &yflip, sizeof(yflip));
+         draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
-         draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+         draw->prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
          break;
    }
 
@@ -199,8 +201,7 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
-   vk_t *vk                      = video_info ?
-      (vk_t*)video_info->userdata : NULL;
+   vk_t *vk                      = (vk_t*)video_info->userdata;
 
    if (!vk || !draw)
       return;
@@ -305,7 +306,7 @@ static void menu_display_vk_clear_color(
 {
    VkClearRect rect;
    VkClearAttachment attachment;
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
    if (!vk || !clearcolor)
       return;
 
@@ -327,7 +328,7 @@ static void menu_display_vk_clear_color(
 
 static void menu_display_vk_blend_begin(video_frame_info_t *video_info)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
 
    if (vk)
       vk->display.blend = true;
@@ -335,7 +336,7 @@ static void menu_display_vk_blend_begin(video_frame_info_t *video_info)
 
 static void menu_display_vk_blend_end(video_frame_info_t *video_info)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
 
    if (vk)
       vk->display.blend = false;
@@ -360,7 +361,7 @@ static bool menu_display_vk_font_init_first(
 static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   vk_t *vk = (vk_t*)video_info->userdata;
+   vk_t *vk                          = (vk_t*)video_info->userdata;
 
    vk->tracker.use_scissor           = true;
    vk->tracker.scissor.offset.x      = x;
@@ -372,7 +373,8 @@ static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
 
 static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
-   vk_t *vk = (vk_t*)video_info->userdata;
+   vk_t *vk                 = (vk_t*)video_info->userdata;
+
    vk->tracker.use_scissor  = false;
    vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;
 }

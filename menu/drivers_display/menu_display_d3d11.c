@@ -65,8 +65,8 @@ static void menu_display_d3d11_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d11_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   int                      vertex_count;
-   d3d11_video_t*           d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   int vertex_count;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
 
    if (!d3d11 || !draw || !draw->texture)
       return;
@@ -187,8 +187,7 @@ static void menu_display_d3d11_draw(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   d3d11_video_t*           d3d11 = video_info ?
-      (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
 
    if (!d3d11 || !draw)
       return;
@@ -247,8 +246,7 @@ static void menu_display_d3d11_clear_color(
       menu_display_ctx_clearcolor_t* clearcolor,
       video_frame_info_t *video_info)
 {
-   d3d11_video_t *d3d11 = video_info ?
-      (d3d11_video_t*)video_info->userdata : NULL;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
 
    if (!d3d11 || !clearcolor)
       return;
@@ -276,34 +274,32 @@ static bool menu_display_d3d11_font_init_first(
 
 void menu_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
-   D3D11_RECT rect = {0};
-   d3d11_video_t *d3d11 = video_info ?
-      (d3d11_video_t*)video_info->userdata : NULL;
-
-   rect.left = x;
-   rect.top = y;
-   rect.right = width + x;
-   rect.bottom = height + y;
+   D3D11_RECT rect;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
 
    if (!d3d11 || !width || !height)
       return;
+
+   rect.left            = x;
+   rect.top             = y;
+   rect.right           = width + x;
+   rect.bottom          = height + y;
 
    D3D11SetScissorRects(d3d11->context, 1, &rect);
 }
 
 void menu_display_d3d11_scissor_end(video_frame_info_t *video_info)
 {
-   D3D11_RECT rect = {0};
-   d3d11_video_t *d3d11 = video_info ?
-      (d3d11_video_t*)video_info->userdata : NULL;
+   D3D11_RECT rect;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
 
    if (!d3d11)
       return;
 
-   rect.left = d3d11->vp.x;
-   rect.top = d3d11->vp.y;
-   rect.right = d3d11->vp.width;
-   rect.bottom = d3d11->vp.height;
+   rect.left            = d3d11->vp.x;
+   rect.top             = d3d11->vp.y;
+   rect.right           = d3d11->vp.width;
+   rect.bottom          = d3d11->vp.height;
 
    D3D11SetScissorRects(d3d11->context, 1, &rect);
 }

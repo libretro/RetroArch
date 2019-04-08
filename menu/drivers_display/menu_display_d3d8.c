@@ -80,8 +80,7 @@ static INT32 menu_display_prim_to_d3d8_enum(
 
 static void menu_display_d3d8_blend_begin(video_frame_info_t *video_info)
 {
-   d3d8_video_t *d3d = video_info ?
-      (d3d8_video_t*)video_info->userdata : NULL;
+   d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
 
    if (!d3d)
       return;
@@ -91,8 +90,7 @@ static void menu_display_d3d8_blend_begin(video_frame_info_t *video_info)
 
 static void menu_display_d3d8_blend_end(video_frame_info_t *video_info)
 {
-   d3d8_video_t *d3d = video_info ?
-      (d3d8_video_t*)video_info->userdata : NULL;
+   d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
 
    if (!d3d)
       return;
@@ -123,8 +121,7 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
-   d3d8_video_t *d3d              = video_info ?
-      (d3d8_video_t*)video_info->userdata : NULL;
+   d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -239,9 +236,8 @@ static void menu_display_d3d8_restore_clear_color(void)
 static void menu_display_d3d8_clear_color(
       menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
-   DWORD    clear_color = 0;
-   d3d8_video_t     *d3d = video_info ?
-      (d3d8_video_t*)video_info->userdata : NULL;
+   DWORD    clear_color  = 0;
+   d3d8_video_t     *d3d = (d3d8_video_t*)video_info->userdata;
 
    if (!d3d || !clearcolor)
       return;

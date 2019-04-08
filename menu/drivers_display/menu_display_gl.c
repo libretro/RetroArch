@@ -52,7 +52,7 @@ static const float *menu_display_gl_get_default_tex_coords(void)
 
 static void *menu_display_gl_get_default_mvp(video_frame_info_t *video_info)
 {
-   gl_t *gl = video_info ? (gl_t*)video_info->userdata : NULL;
+   gl_t *gl = (gl_t*)video_info->userdata;
 
    if (!gl)
       return NULL;
