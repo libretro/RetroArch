@@ -4048,8 +4048,17 @@ static enum runloop_state runloop_check_state(
 
       /* Display the fast forward state to the user, if needed. */
       if (runloop_fastmotion)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets() || !menu_widgets_set_fast_forward(true))
+#endif
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      else
+         menu_widgets_set_fast_forward(false);
+#endif
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
@@ -4137,10 +4146,20 @@ static enum runloop_state runloop_check_state(
 
       s[0] = '\0';
 
-      if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-               settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
-         runloop_msg_queue_push(s, 0, t, true, NULL, 
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      bool rewinding = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!video_driver_has_widgets())
+#endif
+         if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+                  settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
+            runloop_msg_queue_push(s, 0, t, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_set_rewind(rewinding);
+#endif
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -4176,15 +4195,22 @@ static enum runloop_state runloop_check_state(
             if (!runloop_idle)
                video_driver_cached_frame();
 
-         if (state_manager_frame_is_reversed())
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL, 
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false, 
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets())
+         {
+#endif
+            if (state_manager_frame_is_reversed())
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       }
+#endif
 
       old_slowmotion_button_state                  = new_slowmotion_button_state;
       old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
