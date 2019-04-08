@@ -507,11 +507,6 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
-if [ "$HAVE_MENU_WIDGETS" != 'no' ]; then
-   die : 'Notice: Menu widgets are not fully implemented and should not be enabled' \
-         'Please do not report any bug concerning widgets until this message is removed'
-fi
-
 check_macro NEON __ARM_NEON__
 
 add_define MAKEFILE OS "$OS"
