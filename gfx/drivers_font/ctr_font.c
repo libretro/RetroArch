@@ -215,8 +215,8 @@ static void ctr_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-      v->x0 = x + off_x + delta_x * scale;
-      v->y0 = y + off_y + delta_y * scale;
+      v->x0 = x + (off_x + delta_x) * scale;
+      v->y0 = y + (off_y + delta_y) * scale;
       v->u0 = tex_x;
       v->v0 = tex_y;
       v->x1 = v->x0 + width * scale;

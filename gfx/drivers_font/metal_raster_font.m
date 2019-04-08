@@ -298,8 +298,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
       height = glyph->height;
 
       write_quad6(v,
-                  (x + off_x + delta_x * scale) * inv_win_width,
-                  (y + off_y + delta_y * scale) * inv_win_height,
+                  (x + (off_x + delta_x) * scale) * inv_win_width,
+                  (y + (off_y + delta_y) * scale) * inv_win_height,
                   width * scale * inv_win_width,
                   height * scale * inv_win_height,
                   tex_x * inv_tex_size_x,
