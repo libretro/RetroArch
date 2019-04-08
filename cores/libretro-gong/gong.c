@@ -393,11 +393,11 @@ void GONG_CORE_PREFIX(retro_init)(void)
    else
       GONG_CORE_PREFIX(log_cb) = NULL;
 
-   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned));
+   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned char));
 
-   game_buffer.width = WIDTH;
+   game_buffer.width  = WIDTH;
    game_buffer.height = HEIGHT;
-   game_buffer.pitch = WIDTH * sizeof(unsigned);
+   game_buffer.pitch  = WIDTH * sizeof(unsigned);
    game_buffer.memory = video_buf;
 }
 

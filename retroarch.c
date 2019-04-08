@@ -4152,8 +4152,7 @@ static enum runloop_state runloop_check_state(
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (!video_driver_has_widgets())
 #endif
-         if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-                  settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
+         if (rewinding)
             runloop_msg_queue_push(s, 0, t, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
