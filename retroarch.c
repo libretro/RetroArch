@@ -700,6 +700,13 @@ void driver_uninit(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
    {
+#if defined(HAVE_MENU_WIDGETS)
+      /* This absolutely has to be done before video_driver_free()
+       * is called/completes, otherwise certain menu drivers
+       * (e.g. Vulkan) will segfault */
+      menu_widgets_context_destroy();
+      menu_widgets_free();
+#endif
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
       menu_driver_free();
    }

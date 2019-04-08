@@ -178,8 +178,8 @@ static void d3d10_font_render_line(
       if (!glyph)
          continue;
 
-      v->pos.x = (x + glyph->draw_offset_x) * scale / (float)d3d10->viewport.Width;
-      v->pos.y = (y + glyph->draw_offset_y) * scale / (float)d3d10->viewport.Height;
+      v->pos.x = (x + (glyph->draw_offset_x * scale)) / (float)d3d10->viewport.Width;
+      v->pos.y = (y + (glyph->draw_offset_y * scale)) / (float)d3d10->viewport.Height;
       v->pos.w = glyph->width * scale / (float)d3d10->viewport.Width;
       v->pos.h = glyph->height * scale / (float)d3d10->viewport.Height;
 

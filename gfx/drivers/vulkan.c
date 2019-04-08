@@ -2366,7 +2366,7 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
 {
    vk_t *vk                         = (vk_t*)data;
    struct vk_texture *texture       = (struct vk_texture*)handle;
-   if (!texture)
+   if (!texture || !vk)
       return;
 
    /* TODO: We really want to defer this deletion instead,
