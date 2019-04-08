@@ -2008,7 +2008,13 @@ static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
    switch (type)
    {
       case RARCH_WRAP_BORDER:
+#ifdef HAVE_OPENGLES3
+         /* GLES does not support CLAMP_TO_BORDER until GLES 3.2.
+          * It is a deprecated feature in general. */
+         return GL_CLAMP_TO_EDGE;
+#else
          return GL_CLAMP_TO_BORDER;
+#endif
       case RARCH_WRAP_EDGE:
          return GL_CLAMP_TO_EDGE;
       case RARCH_WRAP_REPEAT:
@@ -2016,7 +2022,7 @@ static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
       default:
-	 break;
+         break;
    }
 
    return 0;
