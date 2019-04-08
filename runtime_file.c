@@ -775,7 +775,7 @@ void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned sec
 /* Convert from microseconds to hours, minutes, seconds */
 void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *minutes, unsigned *seconds)
 {
-   *seconds  = usec / 1000000;
+   *seconds  = (unsigned)(usec / 1000000);
    *minutes  = *seconds / 60;
    *hours    = *minutes / 60;
    

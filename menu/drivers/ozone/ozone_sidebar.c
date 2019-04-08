@@ -116,14 +116,12 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    uint32_t text_alpha  = ozone->animations.sidebar_text_alpha * 255.0f;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer        = ticker_spacer;
 
    selection_y          = 0;
    selection_old_y      = 0;
    horizontal_list_size = 0;
-
-   entry_width = 0;
 
    if (!ozone->draw_sidebar)
       return;
@@ -150,14 +148,14 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    {
       if (i == ozone->categories_selection_ptr)
       {
-         selection_y = y;
+         selection_y = (unsigned)y;
          if (ozone->categories_selection_ptr > ozone->system_tab_end)
             selection_y += ozone->dimensions.sidebar_entry_padding_vertical + 1;
       }
 
       if (i == ozone->categories_active_idx_old)
       {
-         selection_old_y = y;
+         selection_old_y = (unsigned)y;
          if (ozone->categories_active_idx_old > ozone->system_tab_end)
             selection_old_y += ozone->dimensions.sidebar_entry_padding_vertical + 1;
       }

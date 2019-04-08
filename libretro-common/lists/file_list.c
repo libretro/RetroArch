@@ -116,7 +116,7 @@ bool file_list_insert(file_list_t *list,
       free(copy);
    }
 
-   file_list_add(list, idx, path, label, type,
+   file_list_add(list, (unsigned)idx, path, label, type,
          directory_ptr, entry_idx);
 
    return true;

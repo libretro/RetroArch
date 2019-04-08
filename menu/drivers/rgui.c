@@ -1891,8 +1891,8 @@ static void rgui_render(void *data, bool is_idle)
          ticker.selected = true;
          menu_animation_ticker(&ticker);
 
-         title_width = utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE;
-         title_x = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
+         title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
+         title_x         = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
 
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
@@ -2159,7 +2159,6 @@ static void rgui_render(void *data, bool is_idle)
          time_t current_time;
          struct tm * time_info;
          char timedate[16];
-         int n;
 
          timedate[0] = '\0';
 
@@ -2172,11 +2171,8 @@ static void rgui_render(void *data, bool is_idle)
 
          if (time_info)
          {
-            n = snprintf(timedate, sizeof(timedate), "%02u:%02u",
+            snprintf(timedate, sizeof(timedate), "%02u:%02u",
                   (unsigned)time_info->tm_hour, (unsigned)time_info->tm_min);
-
-            if ((n < 0) || (n >= 16))
-               n = 0; /* Silence GCC warnings... */
 
             blit_line(
                   timedate_x,

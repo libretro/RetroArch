@@ -2302,7 +2302,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
             (entry_type >= MENU_SETTINGS_INPUT_BEGIN) &&
             (entry_type < MENU_SETTINGS_INPUT_END)
          )
-          entry_type = MENU_SETTINGS_INPUT_BEGIN + count;
+          entry_type = (unsigned)(MENU_SETTINGS_INPUT_BEGIN + count);
       if (entry_type == 0)
           entry_type = menu_setting_set_flags(setting);
 

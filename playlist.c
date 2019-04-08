@@ -1104,9 +1104,7 @@ static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
    if (pCtx->object_depth == 1)
    {
       if (string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 1)
-      {
          pCtx->in_items = true;
-      }
    }
 
    return JSON_Parser_Continue;
@@ -1144,14 +1142,10 @@ static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
       if (pCtx->array_depth == 1)
       {
          if (pCtx->playlist->size < pCtx->playlist->cap)
-         {
             pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
-         }
          else
-         {
             /* hit max item limit */
             return JSON_Parser_Abort;
-         }
       }
    }
 
@@ -1165,9 +1159,7 @@ static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
    if (pCtx->in_items && pCtx->object_depth == 2)
    {
       if (pCtx->array_depth == 1)
-      {
          pCtx->playlist->size++;
-      }
    }
 
    retro_assert(pCtx->object_depth > 0);
@@ -1229,13 +1221,9 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
       if (pCtx->array_depth == 1)
       {
          if (pCtx->current_entry_int_val && length && !string_is_empty(pValue))
-         {
-            *pCtx->current_entry_int_val = strtoul(pValue, NULL, 10);
-         }
+            *pCtx->current_entry_int_val = (int)strtoul(pValue, NULL, 10);
          else if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
-         {
-            *pCtx->current_entry_uint_val = strtoul(pValue, NULL, 10);
-         }
+            *pCtx->current_entry_uint_val = (unsigned)strtoul(pValue, NULL, 10);
          else
          {
             /* must be a value for an unknown member we aren't tracking, skip it */

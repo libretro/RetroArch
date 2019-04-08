@@ -1279,11 +1279,9 @@ static int generic_action_ok_command(enum event_command cmd)
 /* TO-DO: Localization for errors */
 static bool file_copy(const char *src_path, const char *dst_path, char *msg, size_t size)
 {
-   RFILE *src, *dst;
-   int numr, numw;
-   bool ret = true;
-
-   src = filestream_open(src_path,
+   RFILE *dst = NULL;
+   bool ret   = true;
+   RFILE *src = filestream_open(src_path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -1305,8 +1303,9 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
 
    while (!filestream_eof(src))
    {
+      int64_t numw;
       char buffer[100] = {0};
-      numr = filestream_read(src, buffer, sizeof(buffer));
+      int64_t numr = filestream_read(src, buffer, sizeof(buffer));
 
       if (filestream_error(dst) != 0)
       {
@@ -4954,13 +4953,13 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
 
    pch = strtok(str, "x");
    if (pch)
-      width = strtoul(pch, NULL, 0);
+      width = (unsigned)strtoul(pch, NULL, 0);
    pch = strtok(NULL, " ");
    if (pch)
-      height = strtoul(pch, NULL, 0);
+      height = (unsigned)strtoul(pch, NULL, 0);
    pch = strtok(NULL, "(");
    if (pch)
-      refreshrate = strtoul(pch, NULL, 0);
+      refreshrate = (unsigned)strtoul(pch, NULL, 0);
 
    if (video_display_server_set_resolution(width, height,
          refreshrate, (float)refreshrate, 0, 0, 0))
