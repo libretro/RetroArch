@@ -76,6 +76,10 @@ convert_rumble.awk
 *~
 assets
 info
+content_image_history.lpl
+saves
+screenshots
+
 
 # Wii U
 *.depend
