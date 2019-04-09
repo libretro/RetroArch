@@ -477,7 +477,7 @@ typedef struct settings
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
-unsigned input_mousemapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_mousemapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned led_map[MAX_LEDS];
 

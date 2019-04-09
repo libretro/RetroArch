@@ -3431,6 +3431,14 @@ MSG_HASH(
     "User"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INPUT_DEVICE,
+    "Core Input Device"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_INPUT_DEVICE,
+    "Input Device"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_KEYBOARD,
     "Kbd"
     )

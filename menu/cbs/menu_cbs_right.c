@@ -155,7 +155,7 @@ int action_right_input_desc_mouse(unsigned type, const char *label,
          break;
    }
 
-   if (key_id < (RARCH_MAX_KEYS - 1) + MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN)
+   if (key_id < (RARCH_MAX_MOUSE_INPUTS - 1) + MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN)
       key_id++;
    else
       key_id = 0;

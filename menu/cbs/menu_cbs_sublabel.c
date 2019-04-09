@@ -656,24 +656,107 @@ static int action_bind_sublabel_subsystem_load(
    return 0;
 }
 
+static void get_string_representation_for_libretro_device(unsigned port, char *s, size_t len)
+{
+   unsigned device;
+   const struct retro_controller_description *desc = NULL;
+   const char *name            = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
+
+   device = input_config_get_device(port);
+
+   if (system)
+   {
+      if (port < system->ports.size)
+         desc = libretro_find_controller_description(
+               &system->ports.data[port],
+               device);
+   }
+
+   if (desc)
+      name = desc->desc;
+
+   if (!name)
+   {
+      /* Find generic name. */
+      switch (device)
+      {
+         case RETRO_DEVICE_NONE:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+            break;
+         case RETRO_DEVICE_JOYPAD:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
+            break;
+         case RETRO_DEVICE_ANALOG:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
+            break;
+         default:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+            break;
+      }
+   }
+
+   if (!string_is_empty(name))
+      strlcpy(s, name, len);
+}
+
 static int action_bind_sublabel_remap_kbd_sublabel(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   char libretro_device[256];
 
-   snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   libretro_device[0] = '\0';
+
+   get_string_representation_for_libretro_device(user_idx, libretro_device, sizeof(libretro_device));
+
+   snprintf(s, len, "%s #%d:\n%s: %s\n%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          user_idx + 1,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_INPUT_DEVICE),
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
          (input_config_get_device_name(user_idx) ?
             input_config_get_device_name(user_idx) :
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_DEVICE),
+         libretro_device[0] != '\0' ? libretro_device : 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    return 0;
 }
+
+
+static int action_bind_sublabel_remap_mouse_sublabel(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char libretro_device[256];
+
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   libretro_device[0] = '\0';
+
+   get_string_representation_for_libretro_device(user_idx, libretro_device, sizeof(libretro_device));
+
+   snprintf(s, len, "%s #%d:\n%s: %s\n%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         user_idx + 1,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_INPUT_DEVICE),
+         input_config_get_device_display_name(user_idx) ?
+         input_config_get_device_display_name(user_idx) :
+         (input_config_get_device_name(user_idx) ?
+            input_config_get_device_name(user_idx) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_DEVICE),
+         libretro_device[0] != '\0' ? libretro_device : 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   return 0;
+}
+
 
 static int action_bind_sublabel_audio_mixer_stream(
       file_list_t *list,
@@ -721,17 +804,25 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-      / (RARCH_FIRST_CUSTOM_BIND + 8);
+   char libretro_device[256];
 
-   snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
-         offset + 1,
-         input_config_get_device_display_name(offset) ?
-         input_config_get_device_display_name(offset) :
-         (input_config_get_device_name(offset) ?
-          input_config_get_device_name(offset) :
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
+      / (RARCH_FIRST_CUSTOM_BIND + 8);;
+
+   get_string_representation_for_libretro_device(user_idx, libretro_device, sizeof(libretro_device));
+
+   snprintf(s, len, "%s #%d:\n%s: %s\n%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         user_idx + 1,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_INPUT_DEVICE),
+         input_config_get_device_display_name(user_idx) ?
+         input_config_get_device_display_name(user_idx) :
+         (input_config_get_device_name(user_idx) ?
+            input_config_get_device_name(user_idx) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_DEVICE),
+         libretro_device[0] != '\0' ? libretro_device : 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    return 0;
 }
 
@@ -967,6 +1058,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_MOUSE_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_mouse_sublabel);
    }
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)

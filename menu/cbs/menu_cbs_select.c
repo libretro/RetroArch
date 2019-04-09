@@ -152,6 +152,13 @@ static int action_select_input_desc_kbd(const char *path,
    return action_right_input_desc_kbd(type, label, true);
 }
 
+static int action_select_input_desc_mouse(const char *path,
+      const char *label, unsigned type,
+   size_t idx)
+{
+   return action_right_input_desc_mouse(type, label, true);
+}
+
 #ifdef HAVE_NETWORKING
 static int action_select_netplay_connect_room(const char *path,
       const char *label, unsigned type,
@@ -213,6 +220,11 @@ static int menu_cbs_init_bind_select_compare_type(
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_MOUSE_END)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc_mouse);
    }
    else
    {
