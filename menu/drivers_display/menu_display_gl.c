@@ -237,7 +237,8 @@ static bool menu_display_gl_font_init_first(
    return true;
 }
 
-static void menu_display_gl_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void menu_display_gl_scissor_begin(
+      video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
    glScissor(x, video_info->height - y - height, width, height);

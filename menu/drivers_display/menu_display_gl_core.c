@@ -136,8 +136,6 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          if (draw->pipeline.id == VIDEO_SHADER_MENU_5)
             yflip = 1.0f;
-         else
-            yflip = 0.0f;
 
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
                + 2 * sizeof(float), &t, sizeof(t));
