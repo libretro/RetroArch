@@ -3510,6 +3510,45 @@ static int menu_displaylist_parse_options_remappings(
                   (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0);
          }
       }
+      else if (device == RETRO_DEVICE_MOUSE)
+      {
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+         {
+            char desc_label[400];
+            char descriptor[300];
+            const struct retro_keybind *auto_bind = NULL;
+            const struct retro_keybind *keybind   = NULL;
+
+            keybind   = &input_config_binds[p][retro_id];
+            auto_bind = (const struct retro_keybind*)
+               input_config_get_bind_auto(p, retro_id);
+
+            input_config_get_bind_string(descriptor,
+                  keybind, auto_bind, sizeof(descriptor));
+
+            if(!strstr(descriptor, "Auto"))
+            {
+               const struct retro_keybind *keyptr =
+                  &input_config_binds[p][retro_id];
+
+               strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+            }
+
+            /* Add user index when display driver == rgui and sublabels
+             * are disabled, but only if there is more than one user */
+            if (is_rgui && (max_users > 1) && !settings->bools.menu_show_sublabels)
+            {
+               snprintf(desc_label, sizeof(desc_label),
+                        "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+               strlcpy(descriptor, desc_label, sizeof(descriptor));
+            }
+
+            menu_entries_append_enum(info->list, descriptor, "",
+                  MSG_UNKNOWN,
+                  MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN +
+                  (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0);
+         }
+      }
    }
 
    return 0;

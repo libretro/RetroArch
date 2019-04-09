@@ -32,6 +32,46 @@ static void menu_cbs_init_log(const char *entry_label, const char *bind_label, c
 #endif
 }
 
+enum rarch_mouse_input
+{
+   RARCH_MOUSE_UNMAPPED = 0,
+   RARCH_MOUSE_X_PLUS,
+   RARCH_MOUSE_X_MINUS,
+   RARCH_MOUSE_Y_PLUS,
+   RARCH_MOUSE_Y_MINUS,
+   RARCH_MOUSE_LEFT,
+   RARCH_MOUSE_RIGHT,
+   RARCH_MOUSE_WHEEL_UP,
+   RARCH_MOUSE_WHEEL_DOWN,
+   RARCH_MOUSE_MIDDLE,
+   RARCH_MOUSE_HWHEEL_UP,
+   RARCH_MOUSE_HWHEEL_DOWN,
+   RARCH_MOUSE_BTN4,
+   RARCH_MOUSE_BTN5,
+   RARCH_MOUSE_MOD_SLOW,
+   RARCH_MOUSE_MOD_FAST,
+};
+
+struct mouse_desc mouse_descriptors[RARCH_MAX_MOUSE_INPUTS] =
+{
+   {RARCH_MOUSE_UNMAPPED,     "Unmapped",              RARCH_UNMAPPED},
+   {RARCH_MOUSE_X_PLUS,       "Horizontal Movement +", RETRO_DEVICE_ID_MOUSE_X},
+   {RARCH_MOUSE_X_MINUS,      "Horizontal Movement -", RETRO_DEVICE_ID_MOUSE_X},
+   {RARCH_MOUSE_Y_PLUS,       "Vertical Movement +",   RETRO_DEVICE_ID_MOUSE_X},
+   {RARCH_MOUSE_Y_MINUS,      "Vertical Movement -",   RETRO_DEVICE_ID_MOUSE_X},
+   {RARCH_MOUSE_LEFT,         "Left Click",            RETRO_DEVICE_ID_MOUSE_LEFT},
+   {RARCH_MOUSE_RIGHT,        "Right Click",           RETRO_DEVICE_ID_MOUSE_LEFT},
+   {RARCH_MOUSE_WHEEL_UP,     "Wheel Up",              RETRO_DEVICE_ID_MOUSE_WHEELUP},
+   {RARCH_MOUSE_WHEEL_DOWN,   "Wheel Down",            RETRO_DEVICE_ID_MOUSE_WHEELDOWN},
+   {RARCH_MOUSE_HWHEEL_UP,    "Horizontal Wheel Up",   RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP},
+   {RARCH_MOUSE_HWHEEL_DOWN,  "Horizontal Wheel Down", RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN},
+   {RARCH_MOUSE_MIDDLE,       "Middle Click",          RETRO_DEVICE_ID_MOUSE_MIDDLE},
+   {RARCH_MOUSE_BTN4,         "Button 4",              RETRO_DEVICE_ID_MOUSE_BUTTON_4},
+   {RARCH_MOUSE_BTN5,         "Button 5",              RETRO_DEVICE_ID_MOUSE_BUTTON_5},
+   {RARCH_MOUSE_MOD_SLOW,     "Slowdown Modifier",     RARCH_UNMAPPED},
+   {RARCH_MOUSE_MOD_FAST,     "Speedup Modifier",      RARCH_UNMAPPED}
+};
+
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
    {RETROK_FIRST,         "Unmapped"},

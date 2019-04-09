@@ -55,6 +55,7 @@
 #endif
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+extern struct mouse_desc mouse_descriptors[RARCH_MAX_MOUSE_INPUTS];
 
 static void menu_action_setting_audio_mixer_stream_name(
       file_list_t* list,
@@ -538,6 +539,48 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
       snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+      strlcpy(s, desc, len);
+   }
+   else
+      strlcpy(s, "---", len);
+
+   *w = 19;
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_input_desc_mouse(
+   file_list_t* list,
+   unsigned *w, unsigned type, unsigned i,
+   const char *label,
+   char *s, size_t len,
+   const char *entry_label,
+   const char *path,
+   char *s2, size_t len2)
+{
+   char desc[PATH_MAX_LENGTH];
+   unsigned mouse_id, btn_idx;
+   unsigned remap_id;
+   unsigned user_idx = 0;
+
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   remap_id =
+      settings->uints.input_mousemapper_ids[user_idx][btn_idx];
+
+   for (mouse_id = 0; mouse_id < RARCH_MAX_MOUSE_INPUTS - 1; mouse_id++)
+   {
+      if (remap_id == mouse_descriptors[mouse_id].key)
+         break;
+   }
+
+   if (mouse_descriptors[mouse_id].key != RETROK_FIRST)
+   {
+      snprintf(desc, sizeof(desc), "Mouse %s", mouse_descriptors[mouse_id].desc);
       strlcpy(s, desc, len);
    }
    else
@@ -1448,6 +1491,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
    {
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_input_desc_kbd);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_MOUSE_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_input_desc_mouse);
    }
    else
    {

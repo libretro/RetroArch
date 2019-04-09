@@ -50,6 +50,7 @@
 #endif
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+extern struct mouse_desc mouse_descriptors[RARCH_MAX_MOUSE_INPUTS];
 
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
@@ -128,6 +129,38 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
       key_id = 0;
 
    settings->uints.input_keymapper_ids[user_idx][btn_idx] = key_descriptors[key_id].key;
+
+   return 0;
+}
+
+int action_right_input_desc_mouse(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned key_id, user_idx, btn_idx;
+   unsigned remap_id;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return 0;
+
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+
+   remap_id =
+      settings->uints.input_mousemapper_ids[user_idx][btn_idx];
+
+   for (key_id = 0; key_id < RARCH_MAX_MOUSE_INPUTS - 1; key_id++)
+   {
+      if (remap_id == mouse_descriptors[key_id].key)
+         break;
+   }
+
+   if (key_id < (RARCH_MAX_KEYS - 1) + MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN)
+      key_id++;
+   else
+      key_id = 0;
+
+   settings->uints.input_mousemapper_ids[user_idx][btn_idx] = mouse_descriptors[key_id].key;
 
    return 0;
 }
@@ -501,6 +534,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_MOUSE_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_MOUSE_END)
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_input_desc_mouse);
    }
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {

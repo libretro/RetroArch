@@ -28,7 +28,9 @@ RETRO_BEGIN_DECLS
 
 #define MAX_INPUT_DEVICES              16
 
-#define RARCH_MAX_KEYS 137
+#define RARCH_MAX_KEYS                 137
+
+#define RARCH_MAX_MOUSE_INPUTS         16
 
 #define RARCH_FIRST_CUSTOM_BIND        16
 #define RARCH_FIRST_LIGHTGUN_BIND      RARCH_ANALOG_BIND_LIST_END

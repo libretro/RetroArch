@@ -42,6 +42,19 @@ typedef struct key_desc
    char desc[32];
 } key_desc_t;
 
+
+typedef struct mouse_desc
+{
+   /* frontend mouse input id */
+   unsigned key;
+
+   /* description */
+   char desc[32];
+
+   /* libretro mouse input id*/
+   unsigned libretro_id;
+} mouse_desc_t;
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -185,6 +198,9 @@ int action_right_input_desc(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_input_desc_kbd(unsigned type, const char *label,
+      bool wraparound);
+
+int action_right_input_desc_mouse(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_cheat(unsigned type, const char *label,
