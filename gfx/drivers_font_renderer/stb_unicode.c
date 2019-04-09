@@ -152,11 +152,22 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
          + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
 
-   stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
-         self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
-
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
-   stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1);
+   if (stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1))
+   {
+      stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
+            self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
+   }
+   else
+   {
+      /* This means the glyph is empty. In this case, stbtt_MakeGlyphBitmap()
+       * fills the corresponding region of the atlas buffer with garbage,
+       * so just zero it */
+      unsigned x, y;
+      for (x = 0; x < self->max_glyph_width; x++)
+         for (y = 0; y < self->max_glyph_height; y++)
+            dst[x + (y * self->atlas.width)] = 0;
+   }
 
    atlas_slot->glyph.width          = self->max_glyph_width;
    atlas_slot->glyph.height         = self->max_glyph_height;
