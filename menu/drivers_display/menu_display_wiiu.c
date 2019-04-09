@@ -63,8 +63,7 @@ static void menu_display_wiiu_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   wiiu_video_t             *wiiu  = video_info ?
-      (wiiu_video_t*)video_info->userdata : NULL;
+   wiiu_video_t             *wiiu  = (wiiu_video_t*)video_info->userdata;
 
    if (!wiiu || !draw)
       return;
@@ -234,8 +233,7 @@ static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    video_coord_array_t *ca        = NULL;
-   wiiu_video_t             *wiiu = video_info ?
-      (wiiu_video_t*)video_info->userdata : NULL;
+   wiiu_video_t             *wiiu = (wiiu_video_t*)video_info->userdata;
 
    if (!wiiu || !draw)
       return;

@@ -50,7 +50,7 @@ static const float vk_colors[] = {
 
 static void *menu_display_vk_get_default_mvp(video_frame_info_t *video_info)
 {
-   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk = (vk_t*)video_info->userdata;
    if (!vk)
       return NULL;
    return &vk->mvp_no_rot;
@@ -102,8 +102,7 @@ static unsigned to_menu_pipeline(
 static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata
-      : NULL;
+   vk_t *vk                      = (vk_t*)video_info->userdata;
 
    if (!vk || !draw)
       return;
