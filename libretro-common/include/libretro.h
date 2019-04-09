@@ -1086,6 +1086,11 @@ enum retro_mod
                                             * The core can use the returned value to set an ideal 
                                             * refresh rate/framerate.
                                             */
+#define RETRO_ENVIRONMENT_SET_MIRROR     51 /* const unsigned * --
+                                            * Indicates to frontend to 'mirror' graphics.
+                                            * Valid values are 0, 1, and 2 which correspond to not mirroring the
+                                            * graphics, mirroring graphics with respect to the the vertical axis, 
+                                            * and mirroring the screen with respect to the horizontal axis, respectively.
 
 /* VFS functionality */
 
