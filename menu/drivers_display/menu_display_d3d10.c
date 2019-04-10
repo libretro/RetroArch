@@ -297,10 +297,10 @@ void menu_display_d3d10_scissor_end(video_frame_info_t *video_info)
    if (!d3d10)
       return;
 
-   rect.left            = d3d10->vp.x;
-   rect.top             = d3d10->vp.y;
-   rect.right           = d3d10->vp.width;
-   rect.bottom          = d3d10->vp.height;
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_info->width;
+   rect.bottom          = video_info->height;
 
    D3D10SetScissorRects(d3d10->device, 1, &rect);
 }

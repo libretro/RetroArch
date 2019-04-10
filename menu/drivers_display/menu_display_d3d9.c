@@ -331,10 +331,10 @@ void menu_display_d3d9_scissor_end(video_frame_info_t *video_info)
    if (!d3d9)
       return;
 
-   rect.left          = d3d9->vp.x;
-   rect.top           = d3d9->vp.y;
-   rect.right         = d3d9->vp.width;
-   rect.bottom        = d3d9->vp.height;
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_info->width;
+   rect.bottom          = video_info->height;
 
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }
