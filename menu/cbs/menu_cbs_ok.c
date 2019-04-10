@@ -278,7 +278,7 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   menu_displaylist_info_t      info;
+   menu_displaylist_info_t info = {0};
    char tmp[PATH_MAX_LENGTH];
    char parent_dir[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
@@ -304,7 +304,7 @@ int generic_action_ok_displaylist_push(const char *path,
        string_is_equal(menu_driver, "null"))
       goto end;
 
-   tmp[0] = '\0';
+   tmp[0] = parent_dir[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -542,27 +542,25 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          {
-            char game_dir[PATH_MAX_LENGTH];
             filebrowser_clear_type();
-            strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
-            path_basedir(game_dir);
+            strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
+            path_basedir(tmp);
 
             info.type          = type;
             info.directory_ptr = idx;
-            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_path          = !string_is_empty(tmp) ? tmp : settings->paths.directory_menu_content;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
          {
-            char game_dir[PATH_MAX_LENGTH];
             filebrowser_clear_type();
             if (content_get_subsystem_rom_id() > 0)
-               strlcpy(game_dir, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(game_dir));
+               strlcpy(tmp, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(tmp));
             else
-               strlcpy(game_dir, path_get(RARCH_PATH_CONTENT), sizeof(game_dir));
-            path_basedir(game_dir);
+               strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
+            path_basedir(tmp);
 
             if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();
@@ -570,7 +568,7 @@ int generic_action_ok_displaylist_push(const char *path,
             filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
             info.type          = type;
             info.directory_ptr = idx;
-            info_path          = !string_is_empty(game_dir) ? game_dir : settings->paths.directory_menu_content;
+            info_path          = !string_is_empty(tmp) ? tmp : settings->paths.directory_menu_content;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }
