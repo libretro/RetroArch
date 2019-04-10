@@ -879,7 +879,7 @@ static INLINE bool input_keys_pressed_iterate(unsigned i,
    return false;
 }
 
-static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port, uint32_t joyaxis)
+static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port, uint32_t joyaxis, bool button)
 {
    int16_t val = 0;
    settings_t *settings = config_get_ptr();
@@ -889,6 +889,10 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
       return 0;
 
    val = drv->axis(port, joyaxis);
+
+   /* no deadzone/sensitivity correction for analog buttons currently */
+   if (button)
+      return val;
 
    if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
    {
@@ -912,7 +916,6 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
       else
          left = false;
    }
-
 
    if (settings->floats.input_analog_deadzone)
    {
@@ -1054,7 +1057,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !sec->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = input_joypad_axis(sec, joypad_info.joy_idx, joyaxis);
+                  int16_t  axis        = input_joypad_axis(sec, joypad_info.joy_idx, joyaxis, false);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
@@ -1066,7 +1069,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !first->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = input_joypad_axis(first, joypad_info.joy_idx, joyaxis);
+                  int16_t  axis        = input_joypad_axis(first, joypad_info.joy_idx, joyaxis, false);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
@@ -1776,7 +1779,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             axis = joypad_info.auto_binds[ident].joyaxis;
 
          /* Analog button. */
-         res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis));
+         res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis, true));
 
          /* If the result is zero, it's got a digital button attached to it */
          if (res == 0)
@@ -1824,8 +1827,8 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (axis_plus == AXIS_NONE)
          axis_plus  = joypad_info.auto_binds[ident_plus].joyaxis;
 
-      pressed_minus = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_minus));
-      pressed_plus  = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_plus));
+      pressed_minus = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_minus, false));
+      pressed_plus  = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_plus, false));
       res           = pressed_plus - pressed_minus;
 
       if (res == 0)
