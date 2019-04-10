@@ -499,6 +499,9 @@ typedef struct
    bool aspect_update_pending;
    rgui_video_settings_t menu_video_settings;
    rgui_video_settings_t content_video_settings;
+#if defined(HAVE_MENU_WIDGETS)
+   bool widgets_supported;
+#endif
    struct scaler_ctx image_scaler;
 } rgui_t;
 
@@ -2529,6 +2532,25 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    *userdata              = rgui;
 
+#if defined(HAVE_MENU_WIDGETS)
+   /* We have to be somewhat careful here, since some
+    * platforms do not like video_driver_texture-related
+    * operations (e.g. 3DS). We would hope that these
+    * platforms will always have HAVE_MENU_WIDGETS disabled,
+    * but for extra safety we will only permit menu widget
+    * additions when the current gfx driver reports that it
+    * has widget support */
+   rgui->widgets_supported = video_driver_has_widgets();
+
+   if (rgui->widgets_supported)
+   {
+      if (!menu_display_init_first_driver(video_is_threaded))
+         goto error;
+
+      menu_display_allocate_white_texture();
+   }
+#endif
+
    rgui->menu_title[0] = '\0';
    rgui->menu_sublabel[0] = '\0';
 
@@ -3130,6 +3152,30 @@ static void rgui_toggle(void *userdata, bool menu_on)
    }
 }
 
+#if defined(HAVE_MENU_WIDGETS)
+static void rgui_context_reset(void *data, bool is_threaded)
+{
+   rgui_t *rgui = (rgui_t*)data;
+
+   if (!rgui)
+      return;
+
+   if (rgui->widgets_supported)
+      menu_display_allocate_white_texture();
+}
+
+static void rgui_context_destroy(void *data)
+{
+   rgui_t *rgui = (rgui_t*)data;
+
+   if (!rgui)
+      return;
+
+   if (rgui->widgets_supported)
+      video_driver_texture_unload(&menu_display_white_texture);
+}
+#endif
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
@@ -3138,8 +3184,13 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_frame,
    rgui_init,
    rgui_free,
+#if defined(HAVE_MENU_WIDGETS)
+   rgui_context_reset,
+   rgui_context_destroy,
+#else
    NULL,
    NULL,
+#endif
    rgui_populate_entries,
    rgui_toggle,
    rgui_navigation_clear,
