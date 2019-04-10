@@ -1926,13 +1926,7 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
    menu_animation_push(&entry);
 }
 
-void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
-{
-   strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
-   strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
-}
-
-void menu_widgets_take_screenshot(void)
+static void menu_widgets_play_screenshot_flash(void)
 {
    menu_animation_ctx_entry_t entry;
 
@@ -1949,6 +1943,14 @@ void menu_widgets_take_screenshot(void)
 
    menu_animation_push(&entry);
 }
+
+void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
+{
+   menu_widgets_play_screenshot_flash();
+   strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
+   strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
+}
+
 
 bool menu_widgets_task_msg_queue_push(retro_task_t *task,
       const char *msg,

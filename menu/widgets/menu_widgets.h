@@ -60,8 +60,6 @@ bool menu_widgets_task_msg_queue_push(retro_task_t *task,
       unsigned prio, unsigned duration,
       bool flush);
 
-void menu_widgets_take_screenshot(void);
-
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
