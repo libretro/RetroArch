@@ -1363,8 +1363,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, check_firmware_before_loading, false);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->bools.multimedia_builtin_mediaplayer_enable, false, false /* TODO */, false);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->bools.multimedia_builtin_imageviewer_enable, true, true, false);
-   SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, fps_show, false);
-   SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, statistics_show, false);
+
+   SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, false, false);
+   SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, false, false);
+   SETTING_BOOL("timedate_show",                 &settings->bools.video_timedate_show, true, false, false);
    SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, framecount_show, false);
    SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, memory_show, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);

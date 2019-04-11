@@ -30,7 +30,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
-
+#include <time.h>
 #include "../audio/audio_driver.h"
 #include "../menu/menu_shader.h"
 
@@ -2532,6 +2532,14 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
+   if (video_info.timedate_show)
+   {
+      time_t time_;
+      time(&time_);
+      strftime(video_info.timedate_text, sizeof(video_info.timedate_text),
+         "%H:%M:%S", localtime(&time_));
+   }
+
    if (video_info.statistics_show)
    {
       audio_statistics_t audio_stats         = {0.0f};
@@ -2604,6 +2612,11 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+
+   /* Display the FPS, with a lower priority. */
+   if (video_info.timedate_show)
+      runloop_msg_queue_push(video_info.timedate_text, 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
@@ -2729,6 +2742,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
    video_info->statistics_show       = settings->bools.video_statistics_show;
+   video_info->timedate_show         = settings->bools.video_timedate_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
@@ -2757,6 +2771,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height = custom_vp->full_height;
 
    video_info->fps_text[0]           = '\0';
+   video_info->timedate_text[0] = '\0';
 
    video_info->width                 = video_driver_width;
    video_info->height                = video_driver_height;

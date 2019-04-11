@@ -405,6 +405,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool timedate_show;
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -459,6 +460,7 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
+   char timedate_text[128];
    char stat_text[512];
    char chat_text[256];
 
