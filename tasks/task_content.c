@@ -1982,6 +1982,28 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
+void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
+{
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+   unsigned i = 0;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data;
+
+   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   {
+      if (string_is_equal(subsystem_name, subsystem->ident))
+         strlcpy(subsystem_friendly_name, subsystem->desc, len);
+   }
+
+   return;
+}
+
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
