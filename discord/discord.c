@@ -349,7 +349,7 @@ void discord_update(enum discord_presence presence)
 
             if (current_playlist)
                playlist_get_index_by_path(
-                  current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL);
+                  current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL, NULL, NULL);
 
             if (!label)
                label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));

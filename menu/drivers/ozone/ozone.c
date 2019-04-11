@@ -1141,7 +1141,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
    {
       const char    *core_label      = NULL;
       playlist_get_index(playlist, selection,
-            NULL, NULL, NULL, &core_name, NULL, NULL);
+            NULL, NULL, NULL, &core_name, NULL, NULL, NULL, NULL);
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))

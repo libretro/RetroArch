@@ -340,7 +340,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    
    /* Read playlist values */
    playlist_get_index(playlist, idx,
-         &content_path, &content_label, NULL, &core_name, NULL, &db_name);
+         &content_path, &content_label, NULL, &core_name, NULL, &db_name, NULL, NULL);
    
    /* Content without a path is invalid by definition */
    if (string_is_empty(content_path))

@@ -905,7 +905,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    {
       const char    *core_name       = NULL;
       playlist_get_index(playlist, i,
-            NULL, NULL, NULL, &core_name, NULL, NULL);
+            NULL, NULL, NULL, &core_name, NULL, NULL, NULL, NULL);
 
       if (string_is_equal(core_name, "imageviewer"))
       {

@@ -176,8 +176,8 @@ static void task_screenshot_handler(retro_task_t *task)
             NULL,
             "builtin",
             "imageviewer",
-            NULL,
-            NULL);
+            NULL, NULL,
+            NULL, NULL);
 #endif
 
    task_set_progress(task, 100);

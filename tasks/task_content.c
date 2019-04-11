@@ -1094,7 +1094,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
                   core_path,
                   core_name,
                   crc32,
-                  db_name);
+                  db_name,
+                  path_get(RARCH_PATH_SUBSYSTEM),
+                  path_get_subsystem_list());
       }
 
       free(tmp);

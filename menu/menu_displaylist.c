@@ -1354,7 +1354,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       /* Read playlist entry */
       playlist_get_index(playlist, i,
-            &path, &label, &core_path, &core_name, NULL, NULL);
+            &path, &label, &core_path, &core_name, NULL, NULL, NULL, NULL);
 
       /* Extract any available runtime values, if required */
       if (get_runtime)
@@ -1741,7 +1741,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
             playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
-                  &crc32, NULL);
+                  &crc32, NULL, NULL, NULL);
 
             if (crc32)
                 tmp_str_list = string_split(crc32, "|");
@@ -2890,7 +2890,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (playlist)
       playlist_get_index(playlist, idx,
-            &entry_path, &label, &core_path, &core_name, NULL, &db_name);
+            &entry_path, &label, &core_path, &core_name, NULL, &db_name, NULL, NULL);
 
    content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);

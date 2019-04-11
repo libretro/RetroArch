@@ -277,7 +277,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             const char *playlist_crc32    = NULL;
             const char *playlist_path     = NULL;
 
-            playlist_get_index(playlist, j, &playlist_path, NULL, NULL, NULL, &playlist_crc32, NULL);
+            playlist_get_index(playlist, j, &playlist_path, NULL, NULL, NULL, &playlist_crc32, NULL, NULL, NULL);
 
             if(have_crc && string_is_equal(playlist_crc32, state->content_crc))
             {
@@ -345,7 +345,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                const char *playlist_crc32    = NULL;
                const char *playlist_path     = NULL;
 
-               playlist_get_index(playlist, k, &playlist_path, NULL, NULL, NULL, &playlist_crc32, NULL);
+               playlist_get_index(playlist, k, &playlist_path, NULL, NULL, NULL, &playlist_crc32, NULL, NULL, NULL);
                get_entry(entry, sizeof(entry), playlist_path);
 
                if(!string_is_empty(entry) &&

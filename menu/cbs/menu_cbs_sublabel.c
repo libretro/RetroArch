@@ -859,7 +859,7 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
    
    /* Read playlist entry */
-   playlist_get_index(playlist, i, NULL, NULL, NULL, &core_name, NULL, NULL);
+   playlist_get_index(playlist, i, NULL, NULL, NULL, &core_name, NULL, NULL, NULL, NULL);
    
    /* Only add sublabel if a core is currently assigned */
    if (string_is_empty(core_name) || string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))

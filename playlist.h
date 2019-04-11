@@ -21,6 +21,7 @@
 
 #include <retro_common_api.h>
 #include <boolean.h>
+#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
@@ -77,7 +78,9 @@ void playlist_get_index(playlist_t *playlist,
       const char **path, const char **label,
       const char **core_path, const char **core_name,
       const char **crc32,
-      const char **db_name);
+      const char **db_name,
+      const char **subsystem_ident,
+      const struct string_list **subsystem_roms);
 
 void playlist_get_runtime_index(playlist_t *playlist,
       size_t idx,
@@ -109,7 +112,9 @@ bool playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
-      const char *db_name);
+      const char *db_name,
+      const char *subsystem_ident,
+      const struct string_list *subsystem_roms);
 
 bool playlist_push_runtime(playlist_t *playlist,
       const char *path, const char *core_path,
@@ -140,7 +145,9 @@ void playlist_get_index_by_path(playlist_t *playlist,
       char **path, char **label,
       char **core_path, char **core_name,
       char **crc32,
-      char **db_name);
+      char **db_name,
+      char **subsystem_ident,
+      struct string_list **subsystem_roms);
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
@@ -169,7 +176,9 @@ void command_playlist_push_write(
       const char *core_path,
       const char *core_name,
       const char *crc32,
-      const char *db_name);
+      const char *db_name,
+      const char *subsystem_ident,
+      const struct string_list *subsystem_roms);
 
 void command_playlist_update_write(
       playlist_t *playlist,

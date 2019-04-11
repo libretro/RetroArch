@@ -967,7 +967,7 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
    const char *path     = NULL;
 
    playlist_get_index(playlist,
-         idx, &path, NULL, NULL, NULL, NULL, NULL);
+         idx, &path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    if (!string_is_empty(path))
    {
@@ -1735,7 +1735,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL, NULL, NULL);
 
    /* Is the core path / name of the playlist entry not yet filled in? */
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
@@ -1794,7 +1794,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
 
    playlist_get_index(playlist,
-         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL);
+         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(
          new_core_path, path, entry_label);
@@ -1820,7 +1820,7 @@ static int action_ok_playlist_entry(const char *path,
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1869,7 +1869,7 @@ static int action_ok_playlist_entry(const char *path,
 
    playlist_get_index(playlist,
          selection_ptr, &path, NULL, NULL, NULL,
-         NULL, NULL);
+         NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(
          new_core_path, path, entry_label);
@@ -1893,7 +1893,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    selection_ptr                       = menu->scratchpad.unsigned_var;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1943,7 +1943,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    }
 
    playlist_get_index(playlist,
-         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL);
+         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
 
@@ -2067,7 +2067,7 @@ static int action_ok_audio_add_to_mixer(const char *path,
       return -1;
 
    playlist_get_index(tmp_playlist, entry_idx,
-         &entry_path, NULL, NULL, NULL, NULL, NULL);
+         &entry_path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
@@ -2089,7 +2089,7 @@ static int action_ok_audio_add_to_mixer_and_play(const char *path,
       return -1;
 
    playlist_get_index(tmp_playlist, entry_idx,
-         &entry_path, NULL, NULL, NULL, NULL, NULL);
+         &entry_path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    if (filestream_exists(entry_path))
       task_push_audio_mixer_load_and_play(entry_path,
@@ -2120,8 +2120,8 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          NULL,
          "builtin",
          "musicplayer",
-         NULL,
-         NULL);
+         NULL, NULL,
+         NULL, NULL);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
@@ -2152,8 +2152,8 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
          NULL,
          "builtin",
          "musicplayer",
-         NULL,
-         NULL);
+         NULL, NULL,
+         NULL, NULL);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
@@ -3803,7 +3803,7 @@ static int action_ok_reset_core_association(const char *path,
 
    playlist_get_index(tmp_playlist,
          menu->rpl_entry_selection_ptr,
-         &tmp_path, NULL, NULL, NULL, NULL, NULL);
+         &tmp_path, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION,
             (void *)&menu->rpl_entry_selection_ptr))
@@ -3947,7 +3947,7 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    /* Read current playlist parameters */
    playlist_get_index(playlist_curr, menu->rpl_entry_selection_ptr,
          &content_path, &content_label, &core_path, &core_name,
-         &crc32, NULL);
+         &crc32, NULL, NULL, NULL);
 
    /* Error checking
     * > If content path is empty, cannot do anything... */

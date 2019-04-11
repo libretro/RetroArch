@@ -27,6 +27,7 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 #include <formats/jsonsax_full.h>
 
 #include "playlist.h"
@@ -46,6 +47,8 @@ struct playlist_entry
    char *core_name;
    char *db_name;
    char *crc32;
+   char *subsystem_ident;
+   struct string_list *subsystem_roms;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -82,8 +85,11 @@ typedef struct
    char **current_entry_val;
    int *current_entry_int_val;
    unsigned *current_entry_uint_val;
+   struct string_list **current_entry_string_list_val;
    char *current_meta_string;
+   char *current_items_string;
    bool in_items;
+   bool in_subsystem_roms;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
@@ -121,7 +127,9 @@ void playlist_get_index(playlist_t *playlist,
       const char **path, const char **label,
       const char **core_path, const char **core_name,
       const char **crc32,
-      const char **db_name)
+      const char **db_name,
+      const char **subsystem_ident,
+      const struct string_list **subsystem_roms)
 {
    if (!playlist)
       return;
@@ -138,6 +146,10 @@ void playlist_get_index(playlist_t *playlist,
       *db_name   = playlist->entries[idx].db_name;
    if (crc32)
       *crc32     = playlist->entries[idx].crc32;
+   if (subsystem_ident)
+      *subsystem_ident = playlist->entries[idx].subsystem_ident;
+   if (subsystem_roms)
+      *subsystem_roms = playlist->entries[idx].subsystem_roms;
 }
 
 void playlist_get_runtime_index(playlist_t *playlist,
@@ -200,7 +212,9 @@ void playlist_get_index_by_path(playlist_t *playlist,
       char **path, char **label,
       char **core_path, char **core_name,
       char **crc32,
-      char **db_name)
+      char **db_name,
+      char **subsystem_ident,
+      struct string_list **subsystem_roms)
 {
    size_t i;
    if (!playlist)
@@ -223,6 +237,10 @@ void playlist_get_index_by_path(playlist_t *playlist,
          *db_name   = playlist->entries[i].db_name;
       if (crc32)
          *crc32     = playlist->entries[i].crc32;
+      if (subsystem_ident)
+         *subsystem_ident    = playlist->entries[i].subsystem_ident;
+      if (subsystem_roms)
+         *subsystem_roms     = playlist->entries[i].subsystem_roms;
       break;
    }
 }
@@ -265,6 +283,10 @@ static void playlist_free_entry(struct playlist_entry *entry)
       free(entry->db_name);
    if (entry->crc32 != NULL)
       free(entry->crc32);
+   if (entry->subsystem_ident != NULL)
+      free(entry->subsystem_ident);
+   if (entry->subsystem_roms != NULL)
+      string_list_free(entry->subsystem_roms);
 
    entry->path      = NULL;
    entry->label     = NULL;
@@ -272,6 +294,8 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->core_name = NULL;
    entry->db_name   = NULL;
    entry->crc32     = NULL;
+   entry->subsystem_ident = NULL;
+   entry->subsystem_roms = NULL;
    entry->runtime_hours = 0;
    entry->runtime_minutes = 0;
    entry->runtime_seconds = 0;
@@ -544,7 +568,9 @@ bool playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
-      const char *db_name)
+      const char *db_name,
+      const char *subsystem_ident,
+      const struct string_list *subsystem_roms)
 {
    size_t i;
    bool core_path_empty = string_is_empty(core_path);
@@ -595,6 +621,37 @@ bool playlist_push(playlist_t *playlist,
       if (!string_is_equal(playlist->entries[i].core_path, core_path))
          continue;
 
+      if (!string_is_empty(subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident) && !string_is_equal(playlist->entries[i].subsystem_ident, subsystem_ident))
+         continue;
+
+      if (string_is_empty(subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident))
+         continue;
+
+      if (!string_is_empty(subsystem_ident) && string_is_empty(playlist->entries[i].subsystem_ident))
+         continue;
+
+      if (subsystem_roms)
+      {
+         int j;
+         const struct string_list *roms = playlist->entries[i].subsystem_roms;
+         bool unequal = false;
+
+         if (subsystem_roms->size != roms->size)
+            continue;
+
+         for (j = 0; j < subsystem_roms->size; j++)
+         {
+            if (!string_is_equal(subsystem_roms->elems[j].data, roms->elems[j].data))
+            {
+               unequal = true;
+               break;
+            }
+         }
+
+         if (unequal)
+            continue;
+      }
+
       /* If top entry, we don't want to push a new entry since
        * the top and the entry to be pushed are the same. */
       if (i == 0)
@@ -629,6 +686,8 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].core_name          = NULL;
       playlist->entries[0].db_name            = NULL;
       playlist->entries[0].crc32              = NULL;
+      playlist->entries[0].subsystem_ident    = NULL;
+      playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].runtime_hours      = 0;
       playlist->entries[0].runtime_minutes    = 0;
       playlist->entries[0].runtime_seconds    = 0;
@@ -650,6 +709,19 @@ bool playlist_push(playlist_t *playlist,
          playlist->entries[0].db_name   = strdup(db_name);
       if (!string_is_empty(crc32))
          playlist->entries[0].crc32     = strdup(crc32);
+      if (!string_is_empty(subsystem_ident))
+         playlist->entries[0].subsystem_ident = strdup(subsystem_ident);
+      if (subsystem_roms)
+      {
+         union string_list_elem_attr attributes = {0};
+
+         playlist->entries[0].subsystem_roms = string_list_new();
+
+         for (i = 0; i < subsystem_roms->size; i++)
+         {
+            string_list_append(playlist->entries[0].subsystem_roms, subsystem_roms->elems[i].data, attributes);
+         }
+      }
    }
 
    playlist->size++;
@@ -1001,6 +1073,49 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "", playlist->entries[i].db_name ? strlen(playlist->entries[i].db_name) : 0, JSON_UTF8);
+
+         if (!string_is_empty(playlist->entries[i].subsystem_ident))
+         {
+            JSON_Writer_WriteComma(context.writer);
+            JSON_Writer_WriteNewLine(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_ident", strlen("subsystem_ident"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 1);
+            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "", playlist->entries[i].subsystem_ident ? strlen(playlist->entries[i].subsystem_ident) : 0, JSON_UTF8);
+         }
+
+         if (playlist->entries[i].subsystem_roms && playlist->entries[i].subsystem_roms->size > 0)
+         {
+            int j;
+
+            JSON_Writer_WriteComma(context.writer);
+            JSON_Writer_WriteNewLine(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_roms", strlen("subsystem_roms"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 1);
+            JSON_Writer_WriteStartArray(context.writer);
+            JSON_Writer_WriteNewLine(context.writer);
+
+            for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
+            {
+               const struct string_list *roms = playlist->entries[i].subsystem_roms;
+               JSON_Writer_WriteSpace(context.writer, 8);
+               JSON_Writer_WriteString(context.writer, !string_is_empty(roms->elems[j].data) ? roms->elems[j].data : "", !string_is_empty(roms->elems[j].data) ? strlen(roms->elems[j].data) : 0, JSON_UTF8);
+
+               if (j < playlist->entries[i].subsystem_roms->size - 1)
+               {
+                  JSON_Writer_WriteComma(context.writer);
+                  JSON_Writer_WriteNewLine(context.writer);
+               }
+            }
+
+            JSON_Writer_WriteNewLine(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 6);
+            JSON_Writer_WriteEndArray(context.writer);
+         }
+
          JSON_Writer_WriteNewLine(context.writer);
 
          JSON_Writer_WriteSpace(context.writer, 4);
@@ -1106,6 +1221,12 @@ static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
       if (string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 1)
          pCtx->in_items = true;
    }
+   else if (pCtx->object_depth == 2)
+   {
+      if (pCtx->array_depth == 2)
+         if (string_is_equal(pCtx->current_items_string, "subsystem_roms"))
+            pCtx->in_subsystem_roms = true;
+   }
 
    return JSON_Parser_Continue;
 }
@@ -1125,6 +1246,19 @@ static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
          free(pCtx->current_meta_string);
          pCtx->current_meta_string = NULL;
          pCtx->in_items = false;
+
+         if (pCtx->current_items_string)
+         {
+            free(pCtx->current_items_string);
+            pCtx->current_items_string = NULL;
+         }
+      }
+   }
+   else if (pCtx->object_depth == 2)
+   {
+      if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
+      {
+         pCtx->in_subsystem_roms = false;
       }
    }
 
@@ -1174,7 +1308,19 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
    (void)attributes; /* unused */
 
-   if (pCtx->in_items && pCtx->object_depth == 2)
+   if (pCtx->in_items && pCtx->in_subsystem_roms && pCtx->object_depth == 2 && pCtx->array_depth == 2)
+   {
+      if (pCtx->current_entry_string_list_val && length && !string_is_empty(pValue))
+      {
+         union string_list_elem_attr attr = {0};
+
+         if (!*pCtx->current_entry_string_list_val)
+            *pCtx->current_entry_string_list_val = string_list_new();
+
+         string_list_append(*pCtx->current_entry_string_list_val, pValue, attr);
+      }
+   }
+   else if (pCtx->in_items && pCtx->object_depth == 2)
    {
       if (pCtx->array_depth == 1)
       {
@@ -1269,6 +1415,13 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
 
          if (length)
          {
+            if (!string_is_empty(pValue))
+            {
+               if (!string_is_empty(pCtx->current_items_string))
+                  free(pCtx->current_items_string);
+               pCtx->current_items_string = strdup(pValue);
+            }
+
             if (string_is_equal(pValue, "path"))
                pCtx->current_entry_val = &pCtx->current_entry->path;
             else if (string_is_equal(pValue, "label"))
@@ -1281,6 +1434,10 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_entry_val = &pCtx->current_entry->crc32;
             else if (string_is_equal(pValue, "db_name"))
                pCtx->current_entry_val = &pCtx->current_entry->db_name;
+            else if (string_is_equal(pValue, "subsystem_ident"))
+               pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
+            else if (string_is_equal(pValue, "subsystem_roms"))
+               pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
             else if (string_is_equal(pValue, "runtime_hours"))
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
             else if (string_is_equal(pValue, "runtime_minutes"))
@@ -1441,6 +1598,9 @@ static bool playlist_read_file(
 
       if (context.current_meta_string)
          free(context.current_meta_string);
+
+      if (context.current_items_string)
+         free(context.current_items_string);
    }
    else
    {
@@ -1464,9 +1624,9 @@ static bool playlist_read_file(
             /* Read playlist entry and terminate string with NUL character
              * regardless of Windows or Unix line endings
              */
-            if((last = strrchr(buf[i], '\r')))
+            if ((last = strrchr(buf[i], '\r')))
                *last = '\0';
-            else if((last = strrchr(buf[i], '\n')))
+            else if ((last = strrchr(buf[i], '\n')))
                *last = '\0';
          }
 
@@ -1577,6 +1737,7 @@ static int playlist_qsort_func(const struct playlist_entry *a,
          goto end;
 
       a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+
       if (!a_fallback_label)
          goto end;
 
@@ -1594,6 +1755,7 @@ static int playlist_qsort_func(const struct playlist_entry *a,
          goto end;
 
       b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+
       if (!b_fallback_label)
          goto end;
 
@@ -1641,7 +1803,9 @@ void command_playlist_push_write(
       const char *core_path,
       const char *core_name,
       const char *crc32,
-      const char *db_name)
+      const char *db_name,
+      const char *subsystem_ident,
+      const struct string_list *subsystem_roms)
 {
    if (!playlist)
       return;
@@ -1653,7 +1817,9 @@ void command_playlist_push_write(
          core_path,
          core_name,
          crc32,
-         db_name
+         db_name,
+         subsystem_ident,
+         subsystem_roms
          ))
       playlist_write_file(playlist);
 }

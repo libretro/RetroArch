@@ -2415,7 +2415,8 @@ TODO: Add a setting for these tweaks */
                      str_list->elems[2].data, /* core_path */
                      str_list->elems[3].data, /* core_name */
                      str_list->elems[4].data, /* crc32 */
-                     str_list->elems[5].data  /* db_name */
+                     str_list->elems[5].data, /* db_name */
+                     NULL, NULL
                      );
                runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }

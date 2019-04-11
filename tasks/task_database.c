@@ -843,13 +843,14 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if (!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
       playlist_push(playlist, entry_path_str,
             db_info_entry->name,
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
-            db_crc, db_playlist_base_str);
+            db_crc, db_playlist_base_str,
+            NULL, NULL);
    }
 
    playlist_write_file(playlist);
@@ -1010,7 +1011,7 @@ static int task_database_iterate_playlist_lutro(
 
    free(db_playlist_path);
 
-   if(!playlist_entry_exists(playlist,
+   if (!playlist_entry_exists(playlist,
             path, file_path_str(FILE_PATH_DETECT)))
    {
       char *game_title = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1025,7 +1026,8 @@ static int task_database_iterate_playlist_lutro(
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_LUTRO_PLAYLIST));
+            file_path_str(FILE_PATH_LUTRO_PLAYLIST),
+            NULL, NULL);
 
       free(game_title);
    }

@@ -602,7 +602,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
 
       playlist_push(playlist, pathData, fileNameNoExten,
-            corePathData, coreNameData, "00000000|crc", databaseData);
+            corePathData, coreNameData, "00000000|crc", databaseData, NULL, NULL);
    }
 
    playlist_write_file(playlist);
@@ -1368,7 +1368,7 @@ void PlaylistModel::getPlaylistItems(QString path)
 
       playlist_get_index(playlist, i,
                          &path, &label, &core_path,
-                         &core_name, &crc32, &db_name);
+                         &core_name, &crc32, &db_name, NULL, NULL);
 
       if (string_is_empty(path))
          continue;
