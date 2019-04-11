@@ -1403,12 +1403,18 @@ static bool d3d10_gfx_frame(
    d3d10->sprites.enabled = true;
 
 #ifdef HAVE_MENU
+#ifndef HAVE_MENU_WIDGETS
    if (d3d10->menu.enabled)
+#endif
    {
       D3D10SetViewports(context, 1, &d3d10->viewport);
       D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-      menu_driver_frame(video_info);
    }
+#endif
+
+#ifdef HAVE_MENU
+   if (d3d10->menu.enabled)
+      menu_driver_frame(video_info);
    else
 #endif
       if (video_info->statistics_show)

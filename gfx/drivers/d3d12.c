@@ -1477,13 +1477,19 @@ static bool d3d12_gfx_frame(
    d3d12->sprites.enabled = true;
 
 #ifdef HAVE_MENU
+#ifndef HAVE_MENU_WIDGETS
    if (d3d12->menu.enabled)
+#endif
    {
       D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-      menu_driver_frame(video_info);
    }
+#endif
+
+#ifdef HAVE_MENU
+   if (d3d12->menu.enabled)
+      menu_driver_frame(video_info);
    else
 #endif
       if (video_info->statistics_show)
