@@ -6246,6 +6246,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   MENU_ENUM_LABEL_MENU_TICKER_SPEED,
                   PARSE_ONLY_FLOAT, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,
