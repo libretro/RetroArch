@@ -3992,7 +3992,7 @@ static bool menu_displaylist_push_internal(
       info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       info->label = strdup(
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
       menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info);
@@ -4011,7 +4011,7 @@ static bool menu_displaylist_push_internal(
       info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       info->label = strdup(
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
       menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info);
@@ -4030,7 +4030,7 @@ static bool menu_displaylist_push_internal(
       info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       info->label = strdup(
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -4062,7 +4062,7 @@ static bool menu_displaylist_push_internal(
       info->exts = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       info->label = strdup(
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       if (string_is_empty(settings->paths.directory_playlist))
       {
@@ -7461,9 +7461,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
 #ifdef HAVE_LIBRETRODB
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-               MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+               MENU_ENUM_LABEL_PLAYLISTS_TAB,
                MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -7730,9 +7730,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             if (string_is_equal(settings->arrays.menu_driver, "rgui") && settings->bools.menu_content_show_playlists)
             {
                menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-                     MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
                      MENU_SETTING_ACTION, 0, 0);
             }
 #endif
@@ -8036,7 +8036,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                free(info->exts);
             info->exts = strdup(
                   file_path_str(FILE_PATH_RDB_EXTENSION));
-            info->enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+            info->enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
             load_content       = false;
             use_filebrowser    = true;
             if (info->path)

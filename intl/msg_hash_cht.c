@@ -646,23 +646,23 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "若要掃瞄遊戲內容，請訪問菜單「%s」 \n"
+               "若要掃瞄遊戲內容，請訪問菜單「%s」\n"
                "並選擇「%s」或者「%s」。\n"
-               " \n"
-               "文件將會同數據庫中的條目進行對比。 \n"
-               "若文件匹配某個條目，則它會被加入收藏中。 \n"
-               " \n"
-               "你可以無需每次都打開文件瀏覽器，而可以直接 \n"
+               "\n"
+               "文件將會同數據庫中的條目進行對比。\n"
+               "若文件匹配某個條目，則它會被加入遊戲列表中。\n"
+               "\n"
+               "你可以無需每次都打開文件瀏覽器，而可以直接\n"
                "通過菜單項「%s」->「%s」 來訪\n"
-               "問這些遊戲內容。 \n"
-               " \n"
+               "問這些遊戲內容。\n"
+               "\n"
                "注意：不是所有核心的遊戲內容都支持掃瞄錄入。"
                ,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:

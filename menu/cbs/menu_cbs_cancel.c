@@ -53,7 +53,7 @@ int action_cancel_pop_default(const char *path,
    {
       if (
          string_is_equal(menu_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)
                ) ||
          string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER)

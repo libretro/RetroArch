@@ -5729,7 +5729,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_remove_game);
             break;
-         case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+         case MENU_ENUM_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_OK(cbs, action_ok_content_collection_list);
             break;
          case MENU_ENUM_LABEL_BROWSE_URL_LIST:
@@ -6100,7 +6100,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case FILE_TYPE_PLAYLIST_ENTRY:
-            if (label_hash == MENU_LABEL_COLLECTION)
+            if (label_hash == MENU_LABEL_PLAYLISTS_TAB)
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }

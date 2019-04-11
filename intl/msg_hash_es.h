@@ -582,10 +582,6 @@ MSG_HASH(
     "Guardar configuración al salir"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Colecciones"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Base de datos"
     )
@@ -4809,8 +4805,8 @@ MSG_HASH(
     "Seleccionar archivo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Seleccionar de la colección"
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+    "Seleccionar de la lista de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
@@ -4973,7 +4969,7 @@ MSG_HASH(
     "Seleccionar el puerto en que los controles en pantalla escucharán las pulsaciones"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "El contenido escaneado aparecerá aquí"
     )
 MSG_HASH(
@@ -5384,11 +5380,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Escanea una carpeta en busca de archivos compatibles y los añade a la colección"
+    "Escanea una carpeta en busca de archivos compatibles."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Escanea un archivo compatible y lo añade a la colección"
+    "Escanea un archivo compatible."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
@@ -5424,7 +5420,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Eliminar esta entrada de la colección"
+    "Eliminar esta entrada de la lista de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5568,7 +5564,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Permitir al usuario eliminar entradas de las colecciones"
+    "Permitir al usuario eliminar entradas de las listas de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5737,7 +5733,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Guardar colecciones en esta carpeta"
+    "Guardar listas de reproducción en esta carpeta"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6061,7 +6057,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Permitir al usuario renombrar entradas en colecciones"
+    "Permitir al usuario renombrar entradas en listas de reproducción"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,

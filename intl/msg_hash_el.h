@@ -555,10 +555,6 @@ MSG_HASH(
     "Απόθηκευση Διαμόρφωσης στην Έξοδο"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Συλλογές"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Βάσεις Δεδομένων"
     )
@@ -4728,10 +4724,6 @@ MSG_HASH(
     "Επιλογή Αρχείου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Επιλογή Από Συλλογή"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
     "Φίλτρα"
     )
@@ -4873,7 +4865,7 @@ MSG_HASH(
     "Επιλογή της θύρας για όταν είναι ενεργοποιημένη η επιλογή 'Εμφάνιση Εισαγωγών Στην Οθόνη'"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "Το σαρωμένο περιεχόμενο θα εμφανίζεται εδώ."
     )
 MSG_HASH(
@@ -5283,11 +5275,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία και τα προσθέτει στην συλλογή."
+    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Σαρώνει ένα συμβατό αρχείο και το προσθέτει στην συλλογή."
+    "Σαρώνει ένα συμβατό αρχείο"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
@@ -5320,10 +5312,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
     "Σάρωση για νέα δωμάτια."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Κατάργηση αυτής της καταχώρησης από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5464,10 +5452,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
     "Perform tasks on a separate thread."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5636,7 +5620,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all collections to this directory."
+    "Save all playlists to this directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -5957,10 +5941,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
     "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις στην συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,

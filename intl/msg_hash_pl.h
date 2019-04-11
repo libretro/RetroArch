@@ -535,10 +535,6 @@ MSG_HASH(
       "Zapisz konfigurację przy wyjściu"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Kolekcje"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Baza danych"
       )
@@ -1244,7 +1240,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
       "Listy odtwarzania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Playlista")
+      "Listy odtwarzania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Listy odtwarzania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -2637,8 +2633,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Pokaż poziom naładowania baterii")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Wybierz plik")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Wybierz z kolekcji")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtr")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2716,7 +2710,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "Wybierz port dla nakładki, aby usłyszeć, czy opcja Pokaż nakładki na nakładkę jest włączona.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Tutaj pojawi się skanowana zawartość."
       )
 MSG_HASH(
@@ -2999,9 +2993,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Odłącz aktywne połączenie gry online.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Skanuje katalog w poszukiwaniu kompatybilnych plików i dodaje je do kolekcji.")
+      "Skanuje katalog w poszukiwaniu kompatybilnych plików.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Skanuje zgodny plik i dodaje go do kolekcji.")
+      "Skanuje zgodny plik.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Używa niestandardowego interwału wymiany dla Vsync. Ustaw, aby efektywnie zmniejszyć o połowę częstotliwość odświeżania monitora."
       )
@@ -3022,8 +3016,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Zeskanuj nowe pokoje.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Usuń ten wpis z kolekcji.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Zobacz więcej informacji o zawartości.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
@@ -3098,8 +3090,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "Pokaż zaawansowane ustawienia dla zaawansowanych użytkowników (domyślnie ukryty).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Wykonuj zadania w oddzielnym wątku.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Pozwól użytkownikowi usuwać wpisy ze zbiorów.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Ustawia katalog systemowy. Rdzenie mogą wysyłać zapytania do tego katalogu, aby załadować BIOS, konfiguracje specyficzne dla systemu itp.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3183,8 +3173,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "Pliki informacji o aplikacji/rdzeniu przechowywane są tutaj .")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Jeśli joypad jest podłączony, to zostanie automatycznie skonfigurowany, jeśli plik konfiguracyjny odpowiadający mu jest obecny w tym katalogu.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Zapisz wszystkie kolekcje w tym katalogu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Jeśli ustawione na katalog, zawartość, która jest czasowo wyodrębniana (np. Z archiwów), zostanie wyodrębniona do tego katalogu."
@@ -3369,8 +3357,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Włącza kartę Ustawienia. Wymagane jest ponowne uruchomienie karty.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Podanie hasła podczas ukrywania karty ustawień pozwala później przywrócić ją z menu, przechodząc do karty Menu główne, wybierając opcję Włącz kartę Ustawienia i wprowadzając hasło.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Zezwalaj użytkownikowi na zmianę nazw wpisów w kolekcjach.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Zezwalaj na zmianę nazw wpisów")
 MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,

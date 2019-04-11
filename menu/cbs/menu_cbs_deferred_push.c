@@ -1238,7 +1238,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_CORE_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
                break;
-            case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+            case MENU_ENUM_LABEL_PLAYLISTS_TAB:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
                break;
             case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -1476,7 +1476,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
                break;
-            case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            case MENU_LABEL_PLAYLISTS_TAB:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
                break;
             case MENU_LABEL_CONFIGURATIONS:
