@@ -458,11 +458,6 @@ bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebu
    bool is_perfcnt_enable = false;
    bool ret               = false;
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!silence)
-      menu_widgets_take_screenshot();
-#endif
-
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 
    ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle,

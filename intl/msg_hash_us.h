@@ -4883,6 +4883,10 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Achievement Unlocked"
+   )
+MSG_HASH(
     MSG_CHANGE_THUMBNAIL_TYPE,
     "Change thumbnail type"
     )
