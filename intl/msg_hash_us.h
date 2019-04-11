@@ -6921,6 +6921,14 @@ MSG_HASH(
     "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+    "Extended ASCII Support"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+    "Enable display of non-standard ASCII characters. Required for compatibility with certain non-English Western languages. Has a moderate performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
     "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )

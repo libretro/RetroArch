@@ -75,6 +75,9 @@
 
 #define RGUI_TICKER_SPACER " | "
 
+#define NUM_FONT_GLYPHS_REGULAR 128
+#define NUM_FONT_GLYPHS_EXTENDED 256
+
 typedef struct
 {
    unsigned start_x;
@@ -479,6 +482,7 @@ typedef struct
    bool border_thickness;
    bool border_enable;
    bool shadow_enable;
+   bool extended_ascii_enable;
    float scroll_y;
    char *msgbox;
    unsigned color_theme;
@@ -508,7 +512,7 @@ typedef struct
 static unsigned mini_thumbnail_max_width = 0;
 static unsigned mini_thumbnail_max_height = 0;
 
-static bool font_lut[128][FONT_WIDTH * FONT_HEIGHT];
+static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 
 typedef struct
 {
@@ -1490,107 +1494,233 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->force_redraw = true;
 }
 
-static void blit_line(int x, int y,
-      const char *message, uint16_t color, uint16_t shadow_color, bool draw_shadow)
+/* ==============================
+ * blit_line() START
+ * ============================== */
+
+/* NOTE: These functions are WET (Write Everything Twice).
+ * This is bad design and difficult to maintain, but we have
+ * no other choice here. blit_line() is so performance
+ * critical that we simply cannot afford to check user
+ * settings internally. */
+
+static void blit_line_regular(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width = rgui_frame_buf.width;
+   unsigned fb_width        = rgui_frame_buf.width;
    uint16_t *frame_buf_data = rgui_frame_buf.data;
 
-   /* Note: We can only display ASCII characters from 0-127.
-    * Everything else is rendered as garbage (incorrect glyphs
-    * from extended ASCII set). This is due to the fact that
-    * char arrays use a signed 8 bit data type [-128 to 127],
-    * so values greater than 127 are 'written' across multiple bytes.
-    * This is a UTF-8 encoding issue, and it's too difficult and
-    * too performance intensive to deal with here.
-    * Since drawing these multi-byte characters is a huge problem
-    * (we could end up with a string that exceeds the dimensions
-    * of the framebuffer, and get a segfault...) we shall
-    * skip drawing any character greater than 127 */
-
-   /* We're going to do some ugly loop unswitching here
-    * because rendering text is *very* expensive and I don't
-    * want to rely on the compiler to optimise this properly... */
-   if (draw_shadow)
+   while (!string_is_empty(message))
    {
-      /* Small performance hack... */
-      uint32_t shadow_colour_32 = shadow_color;
-      shadow_colour_32 |= shadow_colour_32 << 16;
+      unsigned i, j;
+      uint8_t symbol = (uint8_t)*message++;
 
-      /* Drop shadow version */
-      while (!string_is_empty(message))
+      if (symbol >= NUM_FONT_GLYPHS_REGULAR)
+         continue;
+
+      if (symbol != ' ')
       {
-         unsigned i, j;
-         uint8_t symbol = (uint8_t)*message++;
-
-         if (symbol > 127)
-            continue;
-
-         if (symbol != ' ')
+         for (j = 0; j < FONT_HEIGHT; j++)
          {
-            for (j = 0; j < FONT_HEIGHT; j++)
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
             {
-               unsigned buff_offset = ((y + j) * fb_width) + x;
+               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+      }
 
-               for (i = 0; i < FONT_WIDTH; i++)
+      x += FONT_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_regular_shadow(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   unsigned fb_width         = rgui_frame_buf.width;
+   uint16_t *frame_buf_data  = rgui_frame_buf.data;
+   uint32_t shadow_colour_32 = shadow_color;
+
+   /* Small performance hack... */
+   shadow_colour_32 |= shadow_colour_32 << 16;
+
+   while (!string_is_empty(message))
+   {
+      unsigned i, j;
+      uint8_t symbol = (uint8_t)*message++;
+
+      if (symbol >= NUM_FONT_GLYPHS_REGULAR)
+         continue;
+
+      if (symbol != ' ')
+      {
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               if (font_lut[symbol][i + (j * FONT_WIDTH)])
                {
-                  if (font_lut[symbol][i + (j * FONT_WIDTH)])
-                  {
-                     uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-                     /* Text pixel */
-                     *frame_buf_ptr = color;
+                  /* Text pixel */
+                  *frame_buf_ptr = color;
 
-                     /* Shadow pixels */
-                     frame_buf_ptr++;
-                     *frame_buf_ptr = shadow_color;
-                     frame_buf_ptr += fb_width - 1;
-                     /* Small performance hack... */
-                     *(uint32_t *)frame_buf_ptr = shadow_colour_32;
-                  }
+                  /* Shadow pixels */
+                  frame_buf_ptr++;
+                  *frame_buf_ptr = shadow_color;
+                  frame_buf_ptr += fb_width - 1;
+                  /* Small performance hack... */
+                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
                }
             }
          }
-
-         x += FONT_WIDTH_STRIDE;
       }
+
+      x += FONT_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_extended(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   unsigned fb_width        = rgui_frame_buf.width;
+   uint16_t *frame_buf_data = rgui_frame_buf.data;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         uint32_t symbol = utf8_walk(&message);
+
+         /* Stupid cretinous hack: 'oe' ligatures are not
+          * really standard extended ASCII, so we have to
+          * waste CPU cycles performing a conversion from
+          * the unicode values...
+          * (Note: This is only really required for msg_hash_fr.h) */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         if (symbol >= NUM_FONT_GLYPHS_EXTENDED)
+            continue;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+      }
+
+      x += FONT_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_extended_shadow(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   unsigned fb_width         = rgui_frame_buf.width;
+   uint16_t *frame_buf_data  = rgui_frame_buf.data;
+   uint32_t shadow_colour_32 = shadow_color;
+
+   /* Small performance hack... */
+   shadow_colour_32 |= shadow_colour_32 << 16;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         uint32_t symbol = utf8_walk(&message);
+
+         /* Stupid cretinous hack: 'oe' ligatures are not
+          * really standard extended ASCII, so we have to
+          * waste CPU cycles performing a conversion from
+          * the unicode values...
+          * (Note: This is only really required for msg_hash_fr.h) */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         if (symbol >= NUM_FONT_GLYPHS_EXTENDED)
+            continue;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel */
+                  *frame_buf_ptr = color;
+
+                  /* Shadow pixels */
+                  frame_buf_ptr++;
+                  *frame_buf_ptr = shadow_color;
+                  frame_buf_ptr += fb_width - 1;
+                  /* Small performance hack... */
+                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+               }
+            }
+         }
+      }
+
+      x += FONT_WIDTH_STRIDE;
+   }
+}
+
+static void (*blit_line)(int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
+
+static void rgui_set_blit_line_function(bool draw_shadow, bool extended_ascii)
+{
+   if (draw_shadow)
+   {
+      if (extended_ascii)
+         blit_line = blit_line_extended_shadow;
+      else
+         blit_line = blit_line_regular_shadow;
    }
    else
    {
-      /* Normal version */
-      while (!string_is_empty(message))
-      {
-         unsigned i, j;
-         uint8_t symbol = (uint8_t)*message++;
-
-         if (symbol > 127)
-            continue;
-
-         if (symbol != ' ')
-         {
-            for (j = 0; j < FONT_HEIGHT; j++)
-            {
-               unsigned buff_offset = ((y + j) * fb_width) + x;
-
-               for (i = 0; i < FONT_WIDTH; i++)
-               {
-                  if (font_lut[symbol][i + (j * FONT_WIDTH)])
-                     *(frame_buf_data + buff_offset + i) = color;
-               }
-            }
-         }
-
-         x += FONT_WIDTH_STRIDE;
-      }
+      if (extended_ascii)
+         blit_line = blit_line_extended;
+      else
+         blit_line = blit_line_regular;
    }
 }
+
+/* ==============================
+ * blit_line() END
+ * ============================== */
 
 static void rgui_init_font_lut(void)
 {
    unsigned symbol_index, i, j;
    
    /* Loop over all possible characters */
-   for (symbol_index = 0; symbol_index < 128; symbol_index++)
+   for (symbol_index = 0; symbol_index < NUM_FONT_GLYPHS_EXTENDED; symbol_index++)
    {
       for (j = 0; j < FONT_HEIGHT; j++)
       {
@@ -1714,7 +1844,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
       if (rgui_frame_buf.data)
          blit_line(x + 8 + offset_x, y + 8 + offset_y, msg,
-               rgui->colors.normal_color, rgui->colors.shadow_color, rgui->shadow_enable);
+               rgui->colors.normal_color, rgui->colors.shadow_color);
    }
 
 end:
@@ -1903,7 +2033,7 @@ static void rgui_render(void *data, bool is_idle)
 
          /* Draw thumbnail title */
          blit_line((int)title_x, 0, thumbnail_title_buf,
-               rgui->colors.hover_color, rgui->colors.shadow_color, rgui->shadow_enable);
+               rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
    else
@@ -1960,7 +2090,7 @@ static void rgui_render(void *data, bool is_idle)
             (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
                   - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
             RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE,
-            title_buf, rgui->colors.title_color, rgui->colors.shadow_color, rgui->shadow_enable);
+            title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
       x = RGUI_TERM_START_X(fb_width);
@@ -2099,7 +2229,7 @@ static void rgui_render(void *data, bool is_idle)
 
          blit_line(x, y, message,
                entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color,
-               rgui->colors.shadow_color, rgui->shadow_enable);
+               rgui->colors.shadow_color);
 
          menu_entry_free(&entry);
       }
@@ -2131,7 +2261,7 @@ static void rgui_render(void *data, bool is_idle)
                RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
-               rgui->colors.hover_color, rgui->colors.shadow_color, rgui->shadow_enable);
+               rgui->colors.hover_color, rgui->colors.shadow_color);
       }
       else if (settings->bools.menu_core_enable)
       {
@@ -2152,7 +2282,7 @@ static void rgui_render(void *data, bool is_idle)
                   RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
-                  rgui->colors.hover_color, rgui->colors.shadow_color, rgui->shadow_enable);
+                  rgui->colors.hover_color, rgui->colors.shadow_color);
          }
       }
 
@@ -2181,7 +2311,7 @@ static void rgui_render(void *data, bool is_idle)
                   timedate_x,
                   (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                   RGUI_TERM_START_Y(fb_height) + 2, timedate,
-                  rgui->colors.hover_color, rgui->colors.shadow_color, rgui->shadow_enable);
+                  rgui->colors.hover_color, rgui->colors.shadow_color);
          }
       }
    }
@@ -2578,13 +2708,18 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui_init_font_lut();
 
-   rgui->bg_thickness     = settings->bools.menu_rgui_background_filler_thickness_enable;
-   rgui->border_thickness = settings->bools.menu_rgui_border_filler_thickness_enable;
-   rgui->border_enable    = settings->bools.menu_rgui_border_filler_enable;
-   rgui->shadow_enable    = settings->bools.menu_rgui_shadows;
+   rgui->bg_thickness          = settings->bools.menu_rgui_background_filler_thickness_enable;
+   rgui->border_thickness      = settings->bools.menu_rgui_border_filler_thickness_enable;
+   rgui->border_enable         = settings->bools.menu_rgui_border_filler_enable;
+   rgui->shadow_enable         = settings->bools.menu_rgui_shadows;
+   rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
 
    rgui->last_width  = rgui_frame_buf.width;
    rgui->last_height = rgui_frame_buf.height;
+
+   /* Set initial 'blit_line' function */
+   rgui_set_blit_line_function(
+         settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
 
    rgui->thumbnail_path_data = menu_thumbnail_path_init();
    if (!rgui->thumbnail_path_data)
@@ -2647,21 +2782,33 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    {
       rgui->border_thickness = settings->bools.menu_rgui_border_filler_thickness_enable;
       rgui->bg_modified      = true;
-      rgui->force_redraw = true;
+      rgui->force_redraw     = true;
    }
 
    if (settings->bools.menu_rgui_border_filler_enable != rgui->border_enable)
    {
       rgui->border_enable = settings->bools.menu_rgui_border_filler_enable;
       rgui->bg_modified   = true;
-      rgui->force_redraw = true;
+      rgui->force_redraw  = true;
    }
 
    if (settings->bools.menu_rgui_shadows != rgui->shadow_enable)
    {
+      rgui_set_blit_line_function(
+            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
+
       rgui->shadow_enable = settings->bools.menu_rgui_shadows;
       rgui->bg_modified   = true;
-      rgui->force_redraw = true;
+      rgui->force_redraw  = true;
+   }
+
+   if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
+   {
+      rgui_set_blit_line_function(
+            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
+
+      rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
+      rgui->force_redraw          = true;
    }
 
    if (settings->uints.menu_rgui_color_theme != rgui->color_theme)

@@ -8526,6 +8526,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_extended_ascii,
+                  MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+                  rgui_extended_ascii,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
