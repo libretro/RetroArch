@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2015-2018 - Andre Leiradella
+ *  Copyright (C) 2018-2019 - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -81,9 +82,9 @@ static float menu_widgets_pure_white[16] = {
 };
 
 /* Achievement notification */
-static char *cheevo_title  = NULL;
-static char *cheevo_badge  = NULL;
-static float cheevo_unfold = 0.0f;
+static char *cheevo_title              = NULL;
+static menu_texture_item cheevo_badge  = 0;
+static float cheevo_unfold             = 0.0f;
 
 static menu_timer_t cheevo_timer;
 
@@ -1369,6 +1370,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
       unsigned unfold_offet = ((1.0f-cheevo_unfold) * cheevo_width/2);
 
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
+      menu_display_set_alpha(menu_widgets_pure_white, 1.0f);
 
       /* Default icon */
       if (!cheevo_badge)
@@ -1384,7 +1386,6 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          if (menu_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
          {
             menu_display_blend_begin(video_info);
-            menu_display_set_alpha(menu_widgets_pure_white, 1.0f);
             menu_widgets_draw_icon(video_info,
                cheevo_height, cheevo_height,
                menu_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT], 0, cheevo_y,
@@ -1395,7 +1396,10 @@ void menu_widgets_frame(video_frame_info_t *video_info)
       /* Badge */
       else
       {
-         /* TODO: Display the badge */
+         menu_widgets_draw_icon(video_info,
+               cheevo_height, cheevo_height,
+               cheevo_badge, 0, cheevo_y,
+               video_info->width, video_info->height, 0, 1, menu_widgets_pure_white);
       }
 
       if (cheevo_unfold != 1.0f)
@@ -1878,8 +1882,8 @@ static void menu_widgets_achievement_free(void *userdata)
 
    if (cheevo_badge)
    {
-      free(cheevo_badge);
-      cheevo_badge = NULL;
+      video_driver_texture_unload(&cheevo_badge);
+      cheevo_badge = 0;
    }
 }
 
@@ -2266,6 +2270,28 @@ static void menu_widgets_start_achievement_notification()
    menu_animation_push(&entry);
 }
 
+static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *badge)
+{
+   char badge_file[16];
+   char fullpath[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
+   if (!badge || !settings || !settings->bools.cheevos_badges_enable)
+   {
+      *tex = 0;
+      return;
+   }
+
+   snprintf(badge_file, sizeof(badge_file), "%s.png", badge);
+
+   fill_pathname_application_special(fullpath,
+         PATH_MAX_LENGTH * sizeof(char),
+         APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+   menu_display_reset_textures_list(badge_file, fullpath,
+         tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+}
+
 bool menu_widgets_push_achievement(const char *title, const char *badge)
 {
    if (!menu_widgets_inited)
@@ -2276,10 +2302,7 @@ bool menu_widgets_push_achievement(const char *title, const char *badge)
    /* TODO: Make a queue of notifications to display */
 
    cheevo_title = strdup(title);
-
-   /* TODO: Check if badge exists before copying it */
-   /* cheevo_badge = strdup(badge); */
-   cheevo_badge = NULL;
+   menu_widgets_get_badge_texture(&cheevo_badge, badge);
 
    menu_widgets_start_achievement_notification();
 

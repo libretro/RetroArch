@@ -496,7 +496,7 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
    /* Show the OSD message. */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_push_achievement(cheevo->title, cheevo->badge))
+   if (!video_driver_has_widgets() || !menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge))
 #endif
    {
       snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
