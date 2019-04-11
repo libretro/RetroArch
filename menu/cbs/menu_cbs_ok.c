@@ -1720,11 +1720,8 @@ static int action_ok_playlist_entry_collection(const char *path,
               *subsystem_rom_list      = NULL;
    unsigned i                          = 0;
 
-
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
-
-
 
    new_core_path[0]                    = '\0';
    tmp_playlist                        = playlist_get_cached();
@@ -1736,6 +1733,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!tmp_playlist)
          return menu_cbs_exit();
+
       playlist_initialized = true;
    }
 
@@ -1745,14 +1743,16 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL, &subsystem_ident, &subsystem_rom_list);
 
-
    /* Subsystem codepath */
-   if (!string_is_empty(subsystem_ident) && subsystem_rom_list)
+   if (!string_is_empty(subsystem_ident))
    {
-      content_ctx_info_t content_info  = {0};
+      content_ctx_info_t content_info = {0};
+
       task_push_load_new_core(core_path, NULL,
             &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+
       content_clear_subsystem();
+
       if (!content_set_subsystem_by_name(subsystem_ident))
       {
          RARCH_LOG("[playlist] subsystem not found in implementation\n");
@@ -1762,13 +1762,13 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       for (i = 0; i < subsystem_rom_list->size; i++)
          content_add_subsystem(subsystem_rom_list->elems[i].data);
+
       task_push_load_subsystem_with_core_from_menu(
          NULL, &content_info,
          CORE_TYPE_PLAIN, NULL, NULL);
       /* TODO: update playlist entry? move to first position I guess? */
       return 1;
    }
-
 
    /* Is the core path / name of the playlist entry not yet filled in? */
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
