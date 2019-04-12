@@ -37,9 +37,13 @@
 #include <formats/image.h>
 #include <string/stdstring.h>
 
+#ifndef PI
 #define PI 3.14159265359f
+#endif
 
+#ifndef max(x, y)
 #define max(x, y) x >= y ? x : y
+#endif
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 
