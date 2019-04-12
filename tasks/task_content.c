@@ -2011,7 +2011,10 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
    for (i = 0; i < subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
+      {
          strlcpy(subsystem_friendly_name, subsystem->desc, len);
+         break;
+      }
    }
 
    return;
