@@ -3003,6 +3003,14 @@ MSG_HASH(
     "Swaps the display positions of 'Top Thumbnail' and 'Bottom Thumbnail'."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+    "Thumbnail Delay (ms)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+    "Applies a time delay between selecting a playlist entry and loading its associated thumbnails. Setting this to a value of at least 256 ms enables fast lag-free scrolling on even the slowest devices."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
     "Thumbnail Downscaling Method"
     )
