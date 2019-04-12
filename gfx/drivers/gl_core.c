@@ -400,13 +400,13 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    RARCH_LOG("[GLCore]: Max texture size: %d px, renderbuffer size: %d px.\n",
              max_fbo_size, max_rb_size);
 
-   if (width > max_fbo_size)
+   if (width > (unsigned)max_fbo_size)
        width = max_fbo_size;
-   if (width > max_rb_size)
+   if (width > (unsigned)max_rb_size)
        width = max_rb_size;
-   if (height > max_fbo_size)
+   if (height > (unsigned)max_fbo_size)
        height = max_fbo_size;
-   if (height > max_rb_size)
+   if (height > (unsigned)max_rb_size)
        height = max_rb_size;
 
    glGenFramebuffers(1, &gl->hw_render_fbo);

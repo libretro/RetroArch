@@ -56,6 +56,8 @@ extern "C"  {
 #undef UNICODE /* Do not bother with UNICODE at this time. */
 #include <direct.h>
 #include <stddef.h>
+
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 /* Python headers defines ssize_t and sets HAVE_SSIZE_T.

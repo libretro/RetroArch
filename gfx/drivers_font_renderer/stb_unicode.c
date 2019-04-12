@@ -163,7 +163,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
       /* This means the glyph is empty. In this case, stbtt_MakeGlyphBitmap()
        * fills the corresponding region of the atlas buffer with garbage,
        * so just zero it */
-      unsigned x, y;
+      int x, y;
       for (x = 0; x < self->max_glyph_width; x++)
          for (y = 0; y < self->max_glyph_height; y++)
             dst[x + (y * self->atlas.width)] = 0;

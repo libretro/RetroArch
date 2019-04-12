@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -618,7 +618,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
-      tex.image          = NULL;
+      tex.image          = (VkImage)NULL;
       info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
       buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -1580,7 +1580,7 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
-   memcpy(enabled, exts, num_exts * sizeof(*exts));
+   memcpy((void*)enabled, exts, num_exts * sizeof(*exts));
    *enabled_count = num_exts;
 
    for (i = 0; i < num_optional_exts; i++)

@@ -872,7 +872,7 @@ void cpu_features_get_model_name(char *name, int len)
    }
 end:
    /* terminate our string */
-   if (pos < len)
+   if (pos < (size_t)len)
       name[pos] = '\0';
 #elif defined(__MACH__)
    if (!name)
