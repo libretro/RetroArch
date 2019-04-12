@@ -1132,6 +1132,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
    size_t selection           = menu_navigation_get_selection();
    playlist_t *playlist       = playlist_get_cached();
+   const struct playlist_entry *entry  = NULL;
    const char *core_name      = NULL;
    settings_t *settings       = config_get_ptr();
 
@@ -1140,8 +1141,9 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
    if (ozone->is_playlist && playlist)
    {
       const char    *core_label      = NULL;
-      playlist_get_index(playlist, selection,
-            NULL, NULL, NULL, &core_name, NULL, NULL);
+      playlist_get_index(playlist, selection, &entry);
+
+      core_name = entry->core_name;
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))
@@ -1207,7 +1209,6 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
       }
    }
-
 }
 
 static void ozone_set_thumbnail_content(void *data, const char *s)

@@ -439,7 +439,7 @@ static bool load_content_from_compressed_archive(
 
    string_list_append(additional_path_allocs, new_path, attributes);
    info[i].path =
-      additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
+      additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
    if (!string_list_append(content_ctx->temporary_content,
             new_path, attributes))
@@ -1052,6 +1052,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
                 * (As far as I can tell, core_info_get_current_core()
                 * should always provide a valid pointer here...) */
                core_info_get_current_core(&core_info);
+
                if (core_info)
                   core_name         = core_info->display_name;
 
@@ -1087,14 +1088,28 @@ static bool task_load_content(content_ctx_info_t *content_info,
          if (
                content_ctx->history_list_enable
                && playlist_hist)
+         {
+            char subsystem_name[PATH_MAX_LENGTH];
+            struct playlist_entry entry = {0};
+
+            subsystem_name[0] = '\0';
+
+            content_get_subsystem_friendly_name(path_get(RARCH_PATH_SUBSYSTEM), subsystem_name, sizeof(subsystem_name));
+
+            /* the push function reads our entry as const, so these casts are safe */
+            entry.path = (char*)tmp;
+            entry.label = (char*)label;
+            entry.core_path = (char*)core_path;
+            entry.core_name = (char*)core_name;
+            entry.crc32 = (char*)crc32;
+            entry.db_name = (char*)db_name;
+            entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM),
+            entry.subsystem_name = (char*)subsystem_name;
+            entry.subsystem_roms = (struct string_list*)path_get_subsystem_list();
+
             command_playlist_push_write(
-                  playlist_hist,
-                  tmp,
-                  label,
-                  core_path,
-                  core_name,
-                  crc32,
-                  db_name);
+                  playlist_hist, &entry);
+         }
       }
 
       free(tmp);
@@ -1978,6 +1993,31 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    }
 
    return false;
+}
+
+void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
+{
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem;
+   unsigned i = 0;
+
+   /* Core fully loaded, use the subsystem data */
+   if (system->subsystem.data)
+      subsystem = system->subsystem.data;
+   /* Core not loaded completely, use the data we peeked on load core */
+   else
+      subsystem = subsystem_data;
+
+   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   {
+      if (string_is_equal(subsystem_name, subsystem->ident))
+      {
+         strlcpy(subsystem_friendly_name, subsystem->desc, len);
+         break;
+      }
+   }
+
+   return;
 }
 
 /* Add a rom to the subsystem rom buffer */

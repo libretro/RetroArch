@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,10 +22,36 @@
 
 #include <retro_common_api.h>
 #include <boolean.h>
+#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
-typedef struct content_playlist       playlist_t;
+typedef struct content_playlist playlist_t;
+
+struct playlist_entry
+{
+   char *path;
+   char *label;
+   char *core_path;
+   char *core_name;
+   char *db_name;
+   char *crc32;
+   char *subsystem_ident;
+   char *subsystem_name;
+   struct string_list *subsystem_roms;
+   unsigned runtime_hours;
+   unsigned runtime_minutes;
+   unsigned runtime_seconds;
+   /* Note: due to platform dependence, have to record
+    * timestamp as either a string or independent integer
+    * values. The latter is more verbose, but more efficient. */
+   unsigned last_played_year;
+   unsigned last_played_month;
+   unsigned last_played_day;
+   unsigned last_played_hour;
+   unsigned last_played_minute;
+   unsigned last_played_second;
+};
 
 /**
  * playlist_init:
@@ -66,18 +93,12 @@ size_t playlist_size(playlist_t *playlist);
  * playlist_get_index:
  * @playlist               : Playlist handle.
  * @idx                 : Index of playlist entry.
- * @path                : Path of playlist entry.
- * @core_path           : Core path of playlist entry.
- * @core_name           : Core name of playlist entry.
  *
  * Gets values of playlist index:
  **/
 void playlist_get_index(playlist_t *playlist,
       size_t idx,
-      const char **path, const char **label,
-      const char **core_path, const char **core_name,
-      const char **crc32,
-      const char **db_name);
+      const struct playlist_entry **entry);
 
 void playlist_get_runtime_index(playlist_t *playlist,
       size_t idx,
@@ -106,10 +127,7 @@ void playlist_delete_index(playlist_t *playlist,
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
-      const char *path, const char *label,
-      const char *core_path, const char *core_name,
-      const char *crc32,
-      const char *db_name);
+      const struct playlist_entry *entry);
 
 bool playlist_push_runtime(playlist_t *playlist,
       const char *path, const char *core_path,
@@ -118,10 +136,7 @@ bool playlist_push_runtime(playlist_t *playlist,
       unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second);
 
 void playlist_update(playlist_t *playlist, size_t idx,
-      const char *path, const char *label,
-      const char *core_path, const char *core_name,
-      const char *crc32,
-      const char *db_name);
+      const struct playlist_entry *update_entry);
 
 /* Note: register_update determines whether the internal
  * 'playlist->modified' flag is set when updating runtime
@@ -137,10 +152,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
-      char **path, char **label,
-      char **core_path, char **core_name,
-      char **crc32,
-      char **db_name);
+      const struct playlist_entry **entry);
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
@@ -164,22 +176,12 @@ bool playlist_init_cached(const char *path, size_t size);
 
 void command_playlist_push_write(
       playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name,
-      const char *crc32,
-      const char *db_name);
+      const struct playlist_entry *entry);
 
 void command_playlist_update_write(
       playlist_t *playlist,
       size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name);
+      const struct playlist_entry *entry);
 
 /* Returns true if specified playlist index matches
  * specified content/core paths */
