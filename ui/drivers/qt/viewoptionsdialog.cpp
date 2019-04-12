@@ -221,7 +221,6 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    ,m_saveLastTabCheckBox(new QCheckBox(this))
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
-   ,m_thumbnailComboBox(new QComboBox(this))
    ,m_thumbnailCacheSpinBox(new QSpinBox(this))
    ,m_startupPlaylistComboBox(new QComboBox(this))
    ,m_highlightColorPushButton(new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CHOOSE), this))
@@ -238,10 +237,6 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT), MainWindow::THEME_SYSTEM_DEFAULT);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM), MainWindow::THEME_CUSTOM);
-
-   m_thumbnailComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), THUMBNAIL_TYPE_BOXART);
-   m_thumbnailComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT), THUMBNAIL_TYPE_SCREENSHOT);
-   m_thumbnailComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN), THUMBNAIL_TYPE_TITLE_SCREEN);
 
    m_thumbnailCacheSpinBox->setSuffix(" MB");
    m_thumbnailCacheSpinBox->setRange(0, 99999);
@@ -260,7 +255,6 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    /* form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox); */
    /* form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox); */
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST), m_startupPlaylistComboBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE), m_thumbnailComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT), m_thumbnailCacheSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
@@ -274,14 +268,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    loadViewOptions();
 
    connect(m_themeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onThemeComboBoxIndexChanged(int)));
-   connect(m_thumbnailComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onThumbnailComboBoxIndexChanged(int)));
    connect(m_highlightColorPushButton, SIGNAL(clicked()), this, SLOT(onHighlightColorChoose()));
-}
-
-void ViewOptionsWidget::onThumbnailComboBoxIndexChanged(int index)
-{
-   ThumbnailType type = static_cast<ThumbnailType>(m_thumbnailComboBox->currentData().value<int>());
-   m_mainwindow->setCurrentThumbnailType(type);
 }
 
 void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
@@ -342,7 +329,6 @@ void ViewOptionsWidget::loadViewOptions()
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
    QString initialPlaylist = m_settings->value("initial_playlist", m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
    int themeIndex = 0;
-   int thumbnailIndex = 0;
    int playlistIndex = 0;
    int i;
 
@@ -359,11 +345,6 @@ void ViewOptionsWidget::loadViewOptions()
 
    if (m_themeComboBox->count() > themeIndex)
       m_themeComboBox->setCurrentIndex(themeIndex);
-
-   thumbnailIndex = m_thumbnailComboBox->findData(m_mainwindow->getThumbnailTypeFromString(m_settings->value("icon_view_thumbnail_type", "boxart").toString()));
-
-   if (m_thumbnailComboBox->count() > thumbnailIndex)
-      m_thumbnailComboBox->setCurrentIndex(thumbnailIndex);
 
    if (highlightColor.isValid())
    {
@@ -415,7 +396,6 @@ void ViewOptionsWidget::saveViewOptions()
    /* m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value()); */
    /* m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value()); */
    m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
-   m_settings->setValue("icon_view_thumbnail_type", m_mainwindow->getCurrentThumbnailTypeString());
    m_settings->setValue("thumbnail_cache_limit", m_thumbnailCacheSpinBox->value());
 
    if (!m_mainwindow->customThemeString().isEmpty())
