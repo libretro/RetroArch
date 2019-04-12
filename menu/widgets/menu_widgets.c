@@ -41,7 +41,7 @@
 #define PI 3.14159265359f
 #endif
 
-#ifndef max(x, y)
+#ifndef max
 #define max(x, y) x >= y ? x : y
 #endif
 
