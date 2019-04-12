@@ -2407,16 +2407,19 @@ TODO: Add a setting for these tweaks */
          {
             if (str_list->size >= 6)
             {
+               struct playlist_entry entry = {0};
+
+               entry.path = str_list->elems[0].data; /* content_path */
+               entry.label = str_list->elems[1].data; /* content_label */
+               entry.core_path = str_list->elems[2].data; /* core_path */
+               entry.core_name = str_list->elems[3].data; /* core_name */
+               entry.crc32 = str_list->elems[4].data; /* crc32 */
+               entry.db_name = str_list->elems[5].data; /* db_name */
+
                /* Write playlist entry */
                command_playlist_push_write(
                      g_defaults.content_favorites,
-                     str_list->elems[0].data, /* content_path */
-                     str_list->elems[1].data, /* content_label */
-                     str_list->elems[2].data, /* core_path */
-                     str_list->elems[3].data, /* core_name */
-                     str_list->elems[4].data, /* crc32 */
-                     str_list->elems[5].data, /* db_name */
-                     NULL, NULL
+                     &entry
                      );
                runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
@@ -2429,16 +2432,16 @@ TODO: Add a setting for these tweaks */
          const char *core_name          = "DETECT";
          const char *core_path          = "DETECT";
          size_t *playlist_index         = (size_t*)data;
+         struct playlist_entry entry = {0};
+
+         /* the update function reads our entry as const, so these casts are safe */
+         entry.core_path = (char*)core_path;
+         entry.core_name = (char*)core_name;
 
          command_playlist_update_write(
             NULL,
             *playlist_index,
-            NULL,
-            NULL,
-            core_path,
-            core_name,
-            NULL,
-            NULL);
+            &entry);
 
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;

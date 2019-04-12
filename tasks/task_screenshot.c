@@ -170,14 +170,16 @@ static void task_screenshot_handler(retro_task_t *task)
          !state->silence            &&
          state->history_list_enable
          )
-      command_playlist_push_write(
-            g_defaults.image_history,
-            state->filename,
-            NULL,
-            "builtin",
-            "imageviewer",
-            NULL, NULL,
-            NULL, NULL);
+   {
+      struct playlist_entry entry = {0};
+
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path = state->filename;
+      entry.core_path = (char*)"builtin";
+      entry.core_name = (char*)"imageviewer";
+
+      command_playlist_push_write(g_defaults.image_history, &entry);
+   }
 #endif
 
    task_set_progress(task, 100);

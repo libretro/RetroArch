@@ -837,6 +837,7 @@ static int action_bind_sublabel_playlist_entry(
 {
    settings_t *settings = config_get_ptr();
    playlist_t *playlist = NULL;
+   const struct playlist_entry *entry = NULL;
    const char *core_name = NULL;
    unsigned runtime_hours = 0;
    unsigned runtime_minutes = 0;
@@ -853,13 +854,17 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Get current playlist */
    playlist = playlist_get_cached();
+
    if (!playlist)
       return 0;
+
    if (i >= playlist_get_size(playlist))
       return 0;
    
    /* Read playlist entry */
-   playlist_get_index(playlist, i, NULL, NULL, NULL, &core_name, NULL, NULL, NULL, NULL);
+   playlist_get_index(playlist, i, &entry);
+
+   core_name = entry->core_name;
    
    /* Only add sublabel if a core is currently assigned */
    if (string_is_empty(core_name) || string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))

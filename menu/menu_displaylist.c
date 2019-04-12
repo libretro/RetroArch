@@ -1345,22 +1345,18 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    for (i = 0; i < list_size; i++)
    {
       char menu_entry_label[PATH_MAX_LENGTH];
-      const char *path                = NULL;
-      const char *label               = NULL;
-      const char *core_path           = NULL;
-      const char *core_name           = NULL;
+      const struct playlist_entry *entry  = NULL;
 
       menu_entry_label[0] = '\0';
 
       /* Read playlist entry */
-      playlist_get_index(playlist, i,
-            &path, &label, &core_path, &core_name, NULL, NULL, NULL, NULL);
+      playlist_get_index(playlist, i, &entry);
 
       /* Extract any available runtime values, if required */
       if (get_runtime)
       {
          runtime_log_t *runtime_log = NULL;
-         runtime_log = runtime_log_init(path, core_path,
+         runtime_log = runtime_log_init(entry->path, entry->core_path,
                settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE);
 
          if (runtime_log)
@@ -1400,7 +1396,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (!string_is_empty(path))
+      if (!string_is_empty(entry->path))
       {
          /* Standard playlist entry
           * > Base menu entry label is always playlist label
@@ -1408,27 +1404,27 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
           * > If required, add currently associated core (if any), otherwise
           *   no further action is necessary */
 
-         if (string_is_empty(label))
-            fill_short_pathname_representation(menu_entry_label, path, sizeof(menu_entry_label));
+         if (string_is_empty(entry->label))
+            fill_short_pathname_representation(menu_entry_label, entry->path, sizeof(menu_entry_label));
          else
-            strlcpy(menu_entry_label, label, sizeof(menu_entry_label));
+            strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
 
          if (show_inline_core_name)
          {
-            if (!string_is_empty(core_name) && !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
             {
                strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
-               strlcat(menu_entry_label, core_name, sizeof(menu_entry_label));
+               strlcat(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
             }
          }
 
-         menu_entries_append_enum(info->list, menu_entry_label, path,
+         menu_entries_append_enum(info->list, menu_entry_label, entry->path,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
       }
       else
       {
-         if (core_name)
-            strlcpy(menu_entry_label, core_name, sizeof(menu_entry_label));
+         if (entry->core_name)
+            strlcpy(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
 
          menu_entries_append_enum(info->list, menu_entry_label, path_playlist,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
@@ -1735,16 +1731,14 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       {
          for (j = 0; j < playlist_size(playlist); j++)
          {
-            const char *crc32                = NULL;
+            const struct playlist_entry *entry  = NULL;
             bool match_found                 = false;
             struct string_list *tmp_str_list = NULL;
 
-            playlist_get_index(playlist, j,
-                  NULL, NULL, NULL, NULL,
-                  &crc32, NULL, NULL, NULL);
+            playlist_get_index(playlist, j, &entry);
 
-            if (crc32)
-                tmp_str_list = string_split(crc32, "|");
+            if (entry->crc32)
+                tmp_str_list = string_split(entry->crc32, "|");
 
             if (!tmp_str_list)
                continue;
@@ -2878,19 +2872,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_info_t *info)
 {
    bool content_loaded             = false;
-   const char *label               = NULL;
-   const char *entry_path          = NULL;
-   const char *core_path           = NULL;
-   const char *core_name           = NULL;
-   const char *db_name             = NULL;
    playlist_t *playlist            = playlist_get_cached();
    settings_t *settings            = config_get_ptr();
    const char *fullpath            = path_get(RARCH_PATH_CONTENT);
    unsigned idx                    = menu->rpl_entry_selection_ptr;
+   const struct playlist_entry *entry  = NULL;
 
    if (playlist)
-      playlist_get_index(playlist, idx,
-            &entry_path, &label, &core_path, &core_name, NULL, &db_name, NULL, NULL);
+      playlist_get_index(playlist, idx, &entry);
 
    content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
@@ -2901,8 +2890,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
    {
       const char *ext = NULL;
 
-      if (!string_is_empty(entry_path))
-         ext = path_get_extension(entry_path);
+      if (!string_is_empty(entry->path))
+         ext = path_get_extension(entry->path);
 
       if (!string_is_empty(ext) &&
             audio_driver_mixer_extension_supported(ext))
@@ -2956,10 +2945,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
                msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION),
                MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
-
    }
 
-   if (!string_is_empty(db_name) && (!content_loaded ||
+   if (!string_is_empty(entry->db_name) && (!content_loaded ||
       (content_loaded && settings->bools.quick_menu_show_information)))
    {
       char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -2968,7 +2956,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
       fill_pathname_join_noext(db_path,
             settings->paths.path_content_database,
-            db_name,
+            entry->db_name,
             PATH_MAX_LENGTH * sizeof(char));
       strlcat(db_path,
             file_path_str(FILE_PATH_RDB_EXTENSION),
@@ -2977,7 +2965,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       if (filestream_exists(db_path))
          menu_entries_append_enum(
                info->list,
-               label,
+               entry->label,
                db_path,
                MENU_ENUM_LABEL_INFORMATION,
                FILE_TYPE_RDB_ENTRY, 0, idx);

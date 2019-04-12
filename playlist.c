@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2018-2019 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -38,30 +38,6 @@
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
 #endif
-
-struct playlist_entry
-{
-   char *path;
-   char *label;
-   char *core_path;
-   char *core_name;
-   char *db_name;
-   char *crc32;
-   char *subsystem_ident;
-   struct string_list *subsystem_roms;
-   unsigned runtime_hours;
-   unsigned runtime_minutes;
-   unsigned runtime_seconds;
-   /* Note: due to platform dependence, have to record
-    * timestamp as either a string or independent integer
-    * values. The latter is more verbose, but more efficient. */
-   unsigned last_played_year;
-   unsigned last_played_month;
-   unsigned last_played_day;
-   unsigned last_played_hour;
-   unsigned last_played_minute;
-   unsigned last_played_second;
-};
 
 struct content_playlist
 {
@@ -124,32 +100,12 @@ char *playlist_get_conf_path(playlist_t *playlist)
  **/
 void playlist_get_index(playlist_t *playlist,
       size_t idx,
-      const char **path, const char **label,
-      const char **core_path, const char **core_name,
-      const char **crc32,
-      const char **db_name,
-      const char **subsystem_ident,
-      const struct string_list **subsystem_roms)
+      const struct playlist_entry **entry)
 {
-   if (!playlist)
+   if (!playlist || !entry)
       return;
 
-   if (path)
-      *path      = playlist->entries[idx].path;
-   if (label)
-      *label     = playlist->entries[idx].label;
-   if (core_path)
-      *core_path = playlist->entries[idx].core_path;
-   if (core_name)
-      *core_name = playlist->entries[idx].core_name;
-   if (db_name)
-      *db_name   = playlist->entries[idx].db_name;
-   if (crc32)
-      *crc32     = playlist->entries[idx].crc32;
-   if (subsystem_ident)
-      *subsystem_ident = playlist->entries[idx].subsystem_ident;
-   if (subsystem_roms)
-      *subsystem_roms = playlist->entries[idx].subsystem_roms;
+   *entry = &playlist->entries[idx];
 }
 
 void playlist_get_runtime_index(playlist_t *playlist,
@@ -209,15 +165,11 @@ void playlist_delete_index(playlist_t *playlist,
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
-      char **path, char **label,
-      char **core_path, char **core_name,
-      char **crc32,
-      char **db_name,
-      char **subsystem_ident,
-      struct string_list **subsystem_roms)
+      const struct playlist_entry **entry)
 {
    size_t i;
-   if (!playlist)
+
+   if (!playlist || !entry)
       return;
 
    for (i = 0; i < playlist->size; i++)
@@ -225,22 +177,8 @@ void playlist_get_index_by_path(playlist_t *playlist,
       if (!string_is_equal(playlist->entries[i].path, search_path))
          continue;
 
-      if (path)
-         *path      = playlist->entries[i].path;
-      if (label)
-         *label     = playlist->entries[i].label;
-      if (core_path)
-         *core_path = playlist->entries[i].core_path;
-      if (core_name)
-         *core_name = playlist->entries[i].core_name;
-      if (db_name)
-         *db_name   = playlist->entries[i].db_name;
-      if (crc32)
-         *crc32     = playlist->entries[i].crc32;
-      if (subsystem_ident)
-         *subsystem_ident    = playlist->entries[i].subsystem_ident;
-      if (subsystem_roms)
-         *subsystem_roms     = playlist->entries[i].subsystem_roms;
+      *entry = &playlist->entries[i];
+
       break;
    }
 }
@@ -285,6 +223,8 @@ static void playlist_free_entry(struct playlist_entry *entry)
       free(entry->crc32);
    if (entry->subsystem_ident != NULL)
       free(entry->subsystem_ident);
+   if (entry->subsystem_name != NULL)
+      free(entry->subsystem_name);
    if (entry->subsystem_roms != NULL)
       string_list_free(entry->subsystem_roms);
 
@@ -295,6 +235,7 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->db_name   = NULL;
    entry->crc32     = NULL;
    entry->subsystem_ident = NULL;
+   entry->subsystem_name = NULL;
    entry->subsystem_roms = NULL;
    entry->runtime_hours = 0;
    entry->runtime_minutes = 0;
@@ -308,10 +249,7 @@ static void playlist_free_entry(struct playlist_entry *entry)
 }
 
 void playlist_update(playlist_t *playlist, size_t idx,
-      const char *path, const char *label,
-      const char *core_path, const char *core_name,
-      const char *crc32,
-      const char *db_name)
+      const struct playlist_entry *update_entry)
 {
    struct playlist_entry *entry = NULL;
 
@@ -320,52 +258,52 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    entry            = &playlist->entries[idx];
 
-   if (path && (path != entry->path))
+   if (update_entry->path && (update_entry->path != entry->path))
    {
       if (entry->path != NULL)
          free(entry->path);
-      entry->path        = strdup(path);
+      entry->path        = strdup(update_entry->path);
       playlist->modified = true;
    }
 
-   if (label && (label != entry->label))
+   if (update_entry->label && (update_entry->label != entry->label))
    {
       if (entry->label != NULL)
          free(entry->label);
-      entry->label       = strdup(label);
+      entry->label       = strdup(update_entry->label);
       playlist->modified = true;
    }
 
-   if (core_path && (core_path != entry->core_path))
+   if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
       if (entry->core_path != NULL)
          free(entry->core_path);
       entry->core_path   = NULL;
-      entry->core_path   = strdup(core_path);
+      entry->core_path   = strdup(update_entry->core_path);
       playlist->modified = true;
    }
 
-   if (core_name && (core_name != entry->core_name))
+   if (update_entry->core_name && (update_entry->core_name != entry->core_name))
    {
       if (entry->core_name != NULL)
          free(entry->core_name);
-      entry->core_name   = strdup(core_name);
+      entry->core_name   = strdup(update_entry->core_name);
       playlist->modified = true;
    }
 
-   if (db_name && (db_name != entry->db_name))
+   if (update_entry->db_name && (update_entry->db_name != entry->db_name))
    {
       if (entry->db_name != NULL)
          free(entry->db_name);
-      entry->db_name     = strdup(db_name);
+      entry->db_name     = strdup(update_entry->db_name);
       playlist->modified = true;
    }
 
-   if (crc32 && (crc32 != entry->crc32))
+   if (update_entry->crc32 && (update_entry->crc32 != entry->crc32))
    {
       if (entry->crc32 != NULL)
          free(entry->crc32);
-      entry->crc32       = strdup(crc32);
+      entry->crc32       = strdup(update_entry->crc32);
       playlist->modified = true;
    }
 }
@@ -558,30 +496,24 @@ success:
 /**
  * playlist_push:
  * @playlist        	   : Playlist handle.
- * @path                : Path of new playlist entry.
- * @core_path           : Core path of new playlist entry.
- * @core_name           : Core name of new playlist entry.
  *
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
-      const char *path, const char *label,
-      const char *core_path, const char *core_name,
-      const char *crc32,
-      const char *db_name,
-      const char *subsystem_ident,
-      const struct string_list *subsystem_roms)
+      const struct playlist_entry *entry)
 {
    size_t i;
-   bool core_path_empty = string_is_empty(core_path);
-   bool core_name_empty = string_is_empty(core_name);
+   bool core_path_empty = string_is_empty(entry->core_path);
+   bool core_name_empty = string_is_empty(entry->core_name);
+   const char *core_name = entry->core_name;
+   const char *path = entry->path;
 
    if (core_path_empty || core_name_empty)
    {
       if (core_name_empty && !core_path_empty)
       {
          static char base_path[255] = {0};
-         fill_pathname_base_noext(base_path, core_path, sizeof(base_path));
+         fill_pathname_base_noext(base_path, entry->core_path, sizeof(base_path));
          core_name = base_path;
       }
 
@@ -607,9 +539,9 @@ bool playlist_push(playlist_t *playlist,
          (path && playlist->entries[i].path &&
 #ifdef _WIN32
           /*prevent duplicates on case-insensitive operating systems*/
-          string_is_equal_noncase(path,playlist->entries[i].path)
+          string_is_equal_noncase(path, playlist->entries[i].path)
 #else
-          string_is_equal(path,playlist->entries[i].path)
+          string_is_equal(path, playlist->entries[i].path)
 #endif
           );
 
@@ -618,30 +550,39 @@ bool playlist_push(playlist_t *playlist,
       if (!equal_path)
          continue;
 
-      if (!string_is_equal(playlist->entries[i].core_path, core_path))
+      if (!string_is_equal(playlist->entries[i].core_path, entry->core_path))
          continue;
 
-      if (!string_is_empty(subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident) && !string_is_equal(playlist->entries[i].subsystem_ident, subsystem_ident))
+      if (!string_is_empty(entry->subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident) && !string_is_equal(playlist->entries[i].subsystem_ident, entry->subsystem_ident))
          continue;
 
-      if (string_is_empty(subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident))
+      if (string_is_empty(entry->subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (!string_is_empty(subsystem_ident) && string_is_empty(playlist->entries[i].subsystem_ident))
+      if (!string_is_empty(entry->subsystem_ident) && string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (subsystem_roms)
+      if (!string_is_empty(entry->subsystem_name) && !string_is_empty(playlist->entries[i].subsystem_name) && !string_is_equal(playlist->entries[i].subsystem_name, entry->subsystem_name))
+         continue;
+
+      if (string_is_empty(entry->subsystem_name) && !string_is_empty(playlist->entries[i].subsystem_name))
+         continue;
+
+      if (!string_is_empty(entry->subsystem_name) && string_is_empty(playlist->entries[i].subsystem_name))
+         continue;
+
+      if (entry->subsystem_roms)
       {
          int j;
          const struct string_list *roms = playlist->entries[i].subsystem_roms;
          bool unequal = false;
 
-         if (subsystem_roms->size != roms->size)
+         if (entry->subsystem_roms->size != roms->size)
             continue;
 
-         for (j = 0; j < subsystem_roms->size; j++)
+         for (j = 0; j < entry->subsystem_roms->size; j++)
          {
-            if (!string_is_equal(subsystem_roms->elems[j].data, roms->elems[j].data))
+            if (!string_is_equal(entry->subsystem_roms->elems[j].data, roms->elems[j].data))
             {
                unequal = true;
                break;
@@ -687,6 +628,7 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].db_name            = NULL;
       playlist->entries[0].crc32              = NULL;
       playlist->entries[0].subsystem_ident    = NULL;
+      playlist->entries[0].subsystem_name     = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].runtime_hours      = 0;
       playlist->entries[0].runtime_minutes    = 0;
@@ -697,29 +639,31 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].last_played_hour   = 0;
       playlist->entries[0].last_played_minute = 0;
       playlist->entries[0].last_played_second = 0;
-      if (!string_is_empty(path))
-         playlist->entries[0].path      = strdup(path);
-      if (!string_is_empty(label))
-         playlist->entries[0].label     = strdup(label);
-      if (!string_is_empty(core_path))
-         playlist->entries[0].core_path = strdup(core_path);
+      if (!string_is_empty(entry->path))
+         playlist->entries[0].path      = strdup(entry->path);
+      if (!string_is_empty(entry->label))
+         playlist->entries[0].label     = strdup(entry->label);
+      if (!string_is_empty(entry->core_path))
+         playlist->entries[0].core_path = strdup(entry->core_path);
       if (!string_is_empty(core_name))
          playlist->entries[0].core_name = strdup(core_name);
-      if (!string_is_empty(db_name))
-         playlist->entries[0].db_name   = strdup(db_name);
-      if (!string_is_empty(crc32))
-         playlist->entries[0].crc32     = strdup(crc32);
-      if (!string_is_empty(subsystem_ident))
-         playlist->entries[0].subsystem_ident = strdup(subsystem_ident);
-      if (subsystem_roms)
+      if (!string_is_empty(entry->db_name))
+         playlist->entries[0].db_name   = strdup(entry->db_name);
+      if (!string_is_empty(entry->crc32))
+         playlist->entries[0].crc32     = strdup(entry->crc32);
+      if (!string_is_empty(entry->subsystem_ident))
+         playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
+      if (!string_is_empty(entry->subsystem_name))
+         playlist->entries[0].subsystem_name = strdup(entry->subsystem_name);
+      if (entry->subsystem_roms)
       {
          union string_list_elem_attr attributes = {0};
 
          playlist->entries[0].subsystem_roms = string_list_new();
 
-         for (i = 0; i < subsystem_roms->size; i++)
+         for (i = 0; i < entry->subsystem_roms->size; i++)
          {
-            string_list_append(playlist->entries[0].subsystem_roms, subsystem_roms->elems[i].data, attributes);
+            string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
          }
       }
    }
@@ -1085,6 +1029,17 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "", playlist->entries[i].subsystem_ident ? strlen(playlist->entries[i].subsystem_ident) : 0, JSON_UTF8);
          }
 
+         if (!string_is_empty(playlist->entries[i].subsystem_name))
+         {
+            JSON_Writer_WriteComma(context.writer);
+            JSON_Writer_WriteNewLine(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_name", strlen("subsystem_name"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            JSON_Writer_WriteSpace(context.writer, 1);
+            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_name ? playlist->entries[i].subsystem_name : "", playlist->entries[i].subsystem_name ? strlen(playlist->entries[i].subsystem_name) : 0, JSON_UTF8);
+         }
+
          if (playlist->entries[i].subsystem_roms && playlist->entries[i].subsystem_roms->size > 0)
          {
             int j;
@@ -1436,6 +1391,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_entry_val = &pCtx->current_entry->db_name;
             else if (string_is_equal(pValue, "subsystem_ident"))
                pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
+            else if (string_is_equal(pValue, "subsystem_name"))
+               pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
             else if (string_is_equal(pValue, "subsystem_roms"))
                pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
             else if (string_is_equal(pValue, "runtime_hours"))
@@ -1798,28 +1755,14 @@ void playlist_qsort(playlist_t *playlist)
 
 void command_playlist_push_write(
       playlist_t *playlist,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_name,
-      const char *crc32,
-      const char *db_name,
-      const char *subsystem_ident,
-      const struct string_list *subsystem_roms)
+      const struct playlist_entry *entry)
 {
    if (!playlist)
       return;
 
    if (playlist_push(
          playlist,
-         path,
-         label,
-         core_path,
-         core_name,
-         crc32,
-         db_name,
-         subsystem_ident,
-         subsystem_roms
+         entry
          ))
       playlist_write_file(playlist);
 }
@@ -1827,12 +1770,7 @@ void command_playlist_push_write(
 void command_playlist_update_write(
       playlist_t *plist,
       size_t idx,
-      const char *path,
-      const char *label,
-      const char *core_path,
-      const char *core_display_name,
-      const char *crc32,
-      const char *db_name)
+      const struct playlist_entry *entry)
 {
    playlist_t *playlist = plist ? plist : playlist_get_cached();
 
@@ -1842,12 +1780,7 @@ void command_playlist_update_write(
    playlist_update(
          playlist,
          idx,
-         path,
-         label,
-         core_path,
-         core_display_name,
-         crc32,
-         db_name);
+         entry);
 
    playlist_write_file(playlist);
 }

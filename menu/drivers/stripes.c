@@ -903,11 +903,10 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
    if (playlist)
    {
-      const char    *core_name       = NULL;
-      playlist_get_index(playlist, i,
-            NULL, NULL, NULL, &core_name, NULL, NULL, NULL, NULL);
+      const struct playlist_entry *entry  = NULL;
+      playlist_get_index(playlist, i, &entry);
 
-      if (string_is_equal(core_name, "imageviewer"))
+      if (string_is_equal(entry->core_name, "imageviewer"))
       {
          if (pos == 'R' || (pos == 'L' && string_is_equal(stripes_thumbnails_ident('R'),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))

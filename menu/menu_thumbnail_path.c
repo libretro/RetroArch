@@ -316,7 +316,8 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    const char *content_label = NULL;
    const char *core_name     = NULL;
    const char *db_name       = NULL;
-   
+   const struct playlist_entry *entry = NULL;
+
    if (!path_data)
       return false;
    
@@ -339,9 +340,13 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       return false;
    
    /* Read playlist values */
-   playlist_get_index(playlist, idx,
-         &content_path, &content_label, NULL, &core_name, NULL, &db_name, NULL, NULL);
-   
+   playlist_get_index(playlist, idx, &entry);
+
+   content_path = entry->path;
+   content_label = entry->label;
+   core_name = entry->core_name;
+   db_name = entry->db_name;
+
    /* Content without a path is invalid by definition */
    if (string_is_empty(content_path))
       return false;
