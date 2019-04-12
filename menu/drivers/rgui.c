@@ -58,6 +58,7 @@
 #include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
+#include <features/features_cpu.h>
 
 #if defined(GEKKO)
 #define RGUI_TERM_START_X(fb_width)        (fb_width / 21)
@@ -494,6 +495,8 @@ typedef struct
    menu_thumbnail_path_data_t *thumbnail_path_data;
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
+   bool thumbnail_load_pending;
+   retro_time_t thumbnail_load_trigger_time;
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
@@ -2727,6 +2730,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui->thumbnail_queue_size = 0;
    rgui->left_thumbnail_queue_size = 0;
+   rgui->thumbnail_load_pending = false;
+   rgui->thumbnail_load_trigger_time = 0;
    /* Ensure that we start with fullscreen thumbnails disabled */
    rgui->show_fs_thumbnail = false;
 
@@ -2763,89 +2768,6 @@ static void rgui_free(void *data)
    {
       free(rgui_upscale_buf.data);
       rgui_upscale_buf.data = NULL;
-   }
-}
-
-static void rgui_frame(void *data, video_frame_info_t *video_info)
-{
-   rgui_t *rgui                   = (rgui_t*)data;
-   settings_t *settings           = config_get_ptr();
-
-   if (settings->bools.menu_rgui_background_filler_thickness_enable != rgui->bg_thickness)
-   {
-      rgui->bg_thickness = settings->bools.menu_rgui_background_filler_thickness_enable;
-      rgui->bg_modified  = true;
-      rgui->force_redraw = true;
-   }
-
-   if (settings->bools.menu_rgui_border_filler_thickness_enable != rgui->border_thickness)
-   {
-      rgui->border_thickness = settings->bools.menu_rgui_border_filler_thickness_enable;
-      rgui->bg_modified      = true;
-      rgui->force_redraw     = true;
-   }
-
-   if (settings->bools.menu_rgui_border_filler_enable != rgui->border_enable)
-   {
-      rgui->border_enable = settings->bools.menu_rgui_border_filler_enable;
-      rgui->bg_modified   = true;
-      rgui->force_redraw  = true;
-   }
-
-   if (settings->bools.menu_rgui_shadows != rgui->shadow_enable)
-   {
-      rgui_set_blit_line_function(
-            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
-
-      rgui->shadow_enable = settings->bools.menu_rgui_shadows;
-      rgui->bg_modified   = true;
-      rgui->force_redraw  = true;
-   }
-
-   if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
-   {
-      rgui_set_blit_line_function(
-            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
-
-      rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
-      rgui->force_redraw          = true;
-   }
-
-   if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
-   {
-      prepare_rgui_colors(rgui, settings);
-   }
-   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
-   {
-      if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
-      {
-         prepare_rgui_colors(rgui, settings);
-      }
-   }
-
-   /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
-    * normally call command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL)
-    * ## THIS CANNOT BE DONE INSIDE rgui_frame() IF THREADED VIDEO IS ENABLED ##
-    * Attempting to do so creates a deadlock, and causes RetroArch to hang.
-    * We therefore have to set the 'delay_update' argument, which causes
-    * command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL) to be called at
-    * the next instance of rgui_render() */
-   if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
-      rgui_set_aspect_ratio(rgui, true);
-
-   if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
-   {
-      rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
-
-      if (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_NONE)
-      {
-         rgui_set_video_config(rgui, &rgui->content_video_settings, true);
-      }
-      else
-      {
-         rgui_update_menu_viewport(rgui);
-         rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
-      }
    }
 }
 
@@ -2969,54 +2891,79 @@ static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
    menu_thumbnail_set_system(rgui->thumbnail_path_data, s);
 }
 
-static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui)
+static void rgui_load_current_thumbnails(rgui_t *rgui)
 {
+   const char *thumbnail_path      = NULL;
+   const char *left_thumbnail_path = NULL;
+   
+   /* Right (or fullscreen) thumbnail */
+   if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
+         MENU_THUMBNAIL_RIGHT, &thumbnail_path))
+   {
+      rgui->entry_has_thumbnail = request_thumbnail(
+            rgui->show_fs_thumbnail ? &fs_thumbnail : &mini_thumbnail,
+            MENU_THUMBNAIL_RIGHT, &rgui->thumbnail_queue_size, thumbnail_path);
+   }
+   
+   /* Left thumbnail
+    * (Note: there is no need to load this when viewing
+    * fullscreen thumbnails) */
+   if (!rgui->show_fs_thumbnail)
+   {
+      if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
+            MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
+      {
+         rgui->entry_has_left_thumbnail = request_thumbnail(
+               &mini_left_thumbnail, MENU_THUMBNAIL_LEFT, &rgui->left_thumbnail_queue_size, left_thumbnail_path);
+      }
+   }
+   
+   /* Reset 'load pending' state */
+   rgui->thumbnail_load_pending = false;
+   
+   /* Force a redraw (so 'entry_has_thumbnail' values are
+    * applied immediately) */
+   rgui->force_redraw = true;
+}
+
+static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
+{
+   bool has_thumbnail   = false;
    settings_t *settings = config_get_ptr();
    
    if (!settings)
       return;
    
-   rgui->entry_has_thumbnail = false;
+   rgui->entry_has_thumbnail      = false;
    rgui->entry_has_left_thumbnail = false;
+   rgui->thumbnail_load_pending   = false;
    
+   /* Update thumbnail content/path */
    if ((rgui->show_fs_thumbnail || settings->bools.menu_rgui_inline_thumbnails) && rgui->is_playlist)
    {
       if (menu_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
             playlist_get_cached(), menu_navigation_get_selection()))
       {
          if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
-         {
-            if (menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-            {
-               const char *thumbnail_path = NULL;
-               
-               if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
-                     MENU_THUMBNAIL_RIGHT, &thumbnail_path))
-               {
-                  if (rgui->show_fs_thumbnail)
-                     rgui->entry_has_thumbnail = request_thumbnail(
-                           &fs_thumbnail, MENU_THUMBNAIL_RIGHT, &rgui->thumbnail_queue_size, thumbnail_path);
-                  else
-                     rgui->entry_has_thumbnail = request_thumbnail(
-                           &mini_thumbnail, MENU_THUMBNAIL_RIGHT, &rgui->thumbnail_queue_size, thumbnail_path);
-               }
-            }
-         }
+            has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
          
          if (settings->bools.menu_rgui_inline_thumbnails && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
-         {
-            if (menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-            {
-               const char *left_thumbnail_path = NULL;
-               
-               if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
-                     MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
-               {
-                  rgui->entry_has_left_thumbnail = request_thumbnail(
-                        &mini_left_thumbnail, MENU_THUMBNAIL_LEFT, &rgui->left_thumbnail_queue_size, left_thumbnail_path);
-               }
-            }
-         }
+            has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT) ||
+                            has_thumbnail;
+      }
+   }
+   
+   /* Check whether thumbnails should be loaded */
+   if (has_thumbnail)
+   {
+      /* Check whether thumbnails should be loaded immediately */
+      if ((settings->uints.menu_rgui_thumbnail_delay == 0) || force_load)
+         rgui_load_current_thumbnails(rgui);
+      else
+      {
+         /* Schedule a delayed load */
+         rgui->thumbnail_load_pending = true;
+         rgui->thumbnail_load_trigger_time = cpu_features_get_time_usec();
       }
    }
 }
@@ -3055,7 +3002,11 @@ static void rgui_update_thumbnail_image(void *userdata)
       }
    }
 
-   rgui_scan_selected_entry_thumbnail(rgui);
+   /* Note that we always load thumbnails immediately
+    * when toggling via the 'scan' button (scheduling a
+    * delayed load here would make for a poor user
+    * experience...) */
+   rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
 static void rgui_update_menu_sublabel(rgui_t *rgui)
@@ -3116,7 +3067,7 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!rgui)
       return;
 
-   rgui_scan_selected_entry_thumbnail(rgui);
+   rgui_scan_selected_entry_thumbnail(rgui, false);
    rgui_update_menu_sublabel(rgui);
 
    if (!scroll)
@@ -3178,6 +3129,9 @@ static void rgui_populate_entries(void *data,
    
    /* Set menu title */
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
+   
+   /* Cancel any pending thumbnail load operations */
+   rgui->thumbnail_load_pending = false;
    
    rgui_navigation_set(data, true);
    
@@ -3249,6 +3203,101 @@ static int rgui_pointer_tap(void *data,
    }
 
    return 0;
+}
+
+static void rgui_frame(void *data, video_frame_info_t *video_info)
+{
+   rgui_t *rgui                   = (rgui_t*)data;
+   settings_t *settings           = config_get_ptr();
+
+   if (settings->bools.menu_rgui_background_filler_thickness_enable != rgui->bg_thickness)
+   {
+      rgui->bg_thickness = settings->bools.menu_rgui_background_filler_thickness_enable;
+      rgui->bg_modified  = true;
+      rgui->force_redraw = true;
+   }
+
+   if (settings->bools.menu_rgui_border_filler_thickness_enable != rgui->border_thickness)
+   {
+      rgui->border_thickness = settings->bools.menu_rgui_border_filler_thickness_enable;
+      rgui->bg_modified      = true;
+      rgui->force_redraw     = true;
+   }
+
+   if (settings->bools.menu_rgui_border_filler_enable != rgui->border_enable)
+   {
+      rgui->border_enable = settings->bools.menu_rgui_border_filler_enable;
+      rgui->bg_modified   = true;
+      rgui->force_redraw  = true;
+   }
+
+   if (settings->bools.menu_rgui_shadows != rgui->shadow_enable)
+   {
+      rgui_set_blit_line_function(
+            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
+
+      rgui->shadow_enable = settings->bools.menu_rgui_shadows;
+      rgui->bg_modified   = true;
+      rgui->force_redraw  = true;
+   }
+
+   if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
+   {
+      rgui_set_blit_line_function(
+            settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
+
+      rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
+      rgui->force_redraw          = true;
+   }
+
+   if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
+   {
+      prepare_rgui_colors(rgui, settings);
+   }
+   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
+   {
+      if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
+      {
+         prepare_rgui_colors(rgui, settings);
+      }
+   }
+
+   /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
+    * normally call command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL)
+    * ## THIS CANNOT BE DONE INSIDE rgui_frame() IF THREADED VIDEO IS ENABLED ##
+    * Attempting to do so creates a deadlock, and causes RetroArch to hang.
+    * We therefore have to set the 'delay_update' argument, which causes
+    * command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL) to be called at
+    * the next instance of rgui_render() */
+   if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
+      rgui_set_aspect_ratio(rgui, true);
+
+   if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
+   {
+      rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
+
+      if (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_NONE)
+      {
+         rgui_set_video_config(rgui, &rgui->content_video_settings, true);
+      }
+      else
+      {
+         rgui_update_menu_viewport(rgui);
+         rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
+      }
+   }
+
+   /* Handle pending thumbnail load operations */
+   if (rgui->thumbnail_load_pending)
+   {
+      /* Check whether current 'load delay' duration has elapsed
+       * Note: Delay is increased when viewing fullscreen thumbnails,
+       * since the flicker when switching between playlist view and
+       * fullscreen thumbnail view is incredibly jarring...) */
+      if ((cpu_features_get_time_usec() - rgui->thumbnail_load_trigger_time) >=
+          (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
+         rgui_load_current_thumbnails(rgui);
+   }
 }
 
 static void rgui_toggle(void *userdata, bool menu_on)

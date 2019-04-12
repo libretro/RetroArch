@@ -387,6 +387,7 @@ static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
 static bool rgui_inline_thumbnails = false;
 static bool rgui_swap_thumbnails = false;
 static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
+static unsigned rgui_thumbnail_delay = 0;
 static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
 static bool rgui_full_width_layout = true;
 static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
