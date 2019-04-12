@@ -652,33 +652,33 @@ static void rcheevos_test_leaderboards(void)
 {
    rcheevos_lboard_t* lboard = rcheevos_locals.lboards;
    unsigned	 i;
-   unsigned value;
 
    for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
    {
-      if (lboard->active)
+      switch (rc_evaluate_lboard(lboard->lboard, &lboard->last_value, rcheevos_peek, NULL, NULL))
       {
-         value = rc_evaluate_value(&lboard->lboard->value, rcheevos_peek, NULL, NULL);
+         default:
+         case RC_LBOARD_INACTIVE:
+            break;
 
-         if (value != lboard->last_value)
-         {
-            lboard->last_value = value;
-         }
+         case RC_LBOARD_ACTIVE:
+            // this is where we would update the onscreen tracker
+            break;
 
-         if (rc_test_trigger(&lboard->lboard->submit, rcheevos_peek, NULL, NULL))
+         case RC_LBOARD_TRIGGERED:
             rcheevos_lboard_submit(lboard);
+            break;
 
-         if (rc_test_trigger(&lboard->lboard->cancel, rcheevos_peek, NULL, NULL))
+         case RC_LBOARD_CANCELED:
          {
             CHEEVOS_LOG(RCHEEVOS_TAG "Cancel leaderboard %s\n", lboard->info->title);
             lboard->active = 0;
             runloop_msg_queue_push("Leaderboard attempt cancelled!",
                   0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
          }
-      }
-      else
-      {
-         if (rc_test_trigger(&lboard->lboard->start, rcheevos_peek, NULL, NULL))
+
+         case RC_LBOARD_STARTED:
          {
             char buffer[256];
 
@@ -690,6 +690,7 @@ static void rcheevos_test_leaderboards(void)
                   "Leaderboard Active: %s", lboard->info->title);
             runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             runloop_msg_queue_push(lboard->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
          }
       }
    }
