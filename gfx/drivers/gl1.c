@@ -719,6 +719,25 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (gl1->menu_texture_enable)
       menu_driver_frame(video_info);
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = (struct font_params*)
+         &video_info->osd_stat_params;
+
+      if (osd_params)
+      {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+         if (frame_count % 60 == 0)
+            RARCH_LOG("%s\n", video_info->stat_text);
+#if 0
+         osd_params->y               = 0.350f;
+         osd_params->scale           = 0.75f;
+         font_driver_render_msg(video_info, NULL, video_info->chat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+#endif
+      }
+   }
 
 #ifdef HAVE_MENU_WIDGETS
    menu_widgets_frame(video_info);
@@ -760,13 +779,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (gl1->have_sync
-         && video_info->hard_sync
+   if (video_info->hard_sync
          && !video_info->input_driver_nonblock_state
          && !gl1->menu_texture_enable)
    {
       glClear(GL_COLOR_BUFFER_BIT);
-      /* hard sync would go here if possible */
+      glFinish();
    }
 
    gl1_context_bind_hw_render(gl1, true);
@@ -1228,6 +1246,7 @@ static uint32_t gl1_get_flags(void *data)
 {
    uint32_t             flags = 0;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 
