@@ -643,9 +643,9 @@ bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_com
    for (auto &param : reflection->semantic_float_parameters)
    {
       if (param.uniform)
-         RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, param.ubo_offset);
+         RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, (unsigned int)param.ubo_offset);
       if (param.push_constant)
-         RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i, param.push_constant_offset);
+         RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i, (unsigned int)param.push_constant_offset);
       i++;
    }
 

@@ -1369,7 +1369,7 @@ bool Pass::init_pipeline_layout()
       if (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
          push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", reflection.push_constant_size);
+      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
 
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges = &push_range;

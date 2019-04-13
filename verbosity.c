@@ -270,7 +270,7 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
    int padding     = size % 16;
    uint8_t buf[16] = {0};
 
-   RARCH_LOG("== %d-byte buffer ==================\n", size);
+   RARCH_LOG("== %d-byte buffer ==================\n", (int)size);
 
    for(i = 0, offset = 0; i < size; i++)
    {

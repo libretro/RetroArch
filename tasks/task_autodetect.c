@@ -368,7 +368,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (list)
    {
-      RARCH_LOG("[Autoconf]: %d profiles found.\n", list->size);
+      RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
    }
 
    for (i = 0; i < list->size; i++)
