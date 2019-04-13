@@ -341,7 +341,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
       return menu_cbs_exit();
 
    if (pass_count > 0)
-      menu_shader_manager_decrement_amount_passes();
+      shader->passes--;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);

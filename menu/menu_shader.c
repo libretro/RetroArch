@@ -44,26 +44,6 @@ struct video_shader *menu_shader_get(void)
    return NULL;
 }
 
-void menu_shader_manager_decrement_amount_passes(void)
-{
-   struct video_shader *shader = menu_shader_get();
-
-   if (!shader)
-      return;
-
-   shader->passes--;
-}
-
-void menu_shader_manager_increment_amount_passes(void)
-{
-   struct video_shader *shader = menu_shader_get();
-
-   if (!shader)
-      return;
-
-   shader->passes++;
-}
-
 void menu_shader_manager_free(void)
 {
    if (menu_driver_shader)
