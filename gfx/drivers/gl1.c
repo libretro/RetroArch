@@ -728,8 +728,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-         if (frame_count % 60 == 0)
-            RARCH_LOG("%s\n", video_info->stat_text);
 #if 0
          osd_params->y               = 0.350f;
          osd_params->scale           = 0.75f;
