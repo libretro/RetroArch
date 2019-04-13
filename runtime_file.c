@@ -109,8 +109,9 @@ static void RtlJSONLogError(RtlJSONContext *pCtx)
 {
    if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
    {
-      JSON_Error error = JSON_Parser_GetError(pCtx->parser);
+      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
       JSON_Location errorLocation = { 0, 0, 0 };
+
       (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
       RARCH_ERR("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
             (int)errorLocation.line + 1,
@@ -130,27 +131,21 @@ static void RtlJSONLogError(RtlJSONContext *pCtx)
  * Does nothing if log file does not exist. */
 static void runtime_log_read_file(runtime_log_t *runtime_log)
 {
-   unsigned runtime_hours = 0;
-   unsigned runtime_minutes = 0;
-   unsigned runtime_seconds = 0;
+   unsigned runtime_hours      = 0;
+   unsigned runtime_minutes    = 0;
+   unsigned runtime_seconds    = 0;
    
-   unsigned last_played_year = 0;
-   unsigned last_played_month = 0;
-   unsigned last_played_day = 0;
-   unsigned last_played_hour = 0;
+   unsigned last_played_year   = 0;
+   unsigned last_played_month  = 0;
+   unsigned last_played_day    = 0;
+   unsigned last_played_hour   = 0;
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
    
-   RtlJSONContext context = {0};
-   RFILE *file = NULL;
-   int ret = 0;
-   
-   /* Check if log file exists */
-   if (!filestream_exists(runtime_log->path))
-      return;
-   
+   RtlJSONContext context      = {0};
    /* Attempt to open log file */
-   file = filestream_open(runtime_log->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *file                 = filestream_open(runtime_log->path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    
    if (!file)
    {
@@ -159,10 +154,10 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
    
    /* Initialise JSON parser */
-   context.runtime_string = NULL;
+   context.runtime_string     = NULL;
    context.last_played_string = NULL;
-   context.parser = JSON_Parser_Create(NULL);
-   context.file = file;
+   context.parser             = JSON_Parser_Create(NULL);
+   context.file               = file;
    
    if (!context.parser)
    {
@@ -181,7 +176,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    {
       /* Runtime log files are tiny - use small chunk size */
       char chunk[128] = {0};
-      int64_t length = filestream_read(file, chunk, sizeof(chunk));
+      int64_t length  = filestream_read(file, chunk, sizeof(chunk));
       
       /* Error checking... */
       if (!length && !filestream_eof(file))
@@ -216,40 +211,38 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    /* Process string values read from JSON file */
    
    /* Runtime */
-   ret = 0;
    if (!string_is_empty(context.runtime_string))
-      ret = sscanf(context.runtime_string, LOG_FILE_RUNTIME_FORMAT_STR,
-                  &runtime_hours, &runtime_minutes, &runtime_seconds);
-   
-   if (ret != 3)
    {
-      RARCH_ERR("Runtime log file - invalid 'runtime' entry detected: %s\n", runtime_log->path);
-      goto end;
+      if (sscanf(context.runtime_string, LOG_FILE_RUNTIME_FORMAT_STR,
+               &runtime_hours, &runtime_minutes, &runtime_seconds) != 3)
+      {
+         RARCH_ERR("Runtime log file - invalid 'runtime' entry detected: %s\n", runtime_log->path);
+         goto end;
+      }
    }
    
    /* Last played */
-   ret = 0;
    if (!string_is_empty(context.last_played_string))
-      ret = sscanf(context.last_played_string, LOG_FILE_LAST_PLAYED_FORMAT_STR,
-                  &last_played_year, &last_played_month, &last_played_day,
-                  &last_played_hour, &last_played_minute, &last_played_second);
-   
-   if (ret != 6)
    {
-      RARCH_ERR("Runtime log file - invalid 'last played' entry detected: %s\n", runtime_log->path);
-      goto end;
+      if (sscanf(context.last_played_string, LOG_FILE_LAST_PLAYED_FORMAT_STR,
+               &last_played_year, &last_played_month, &last_played_day,
+               &last_played_hour, &last_played_minute, &last_played_second) != 6)
+      {
+         RARCH_ERR("Runtime log file - invalid 'last played' entry detected: %s\n", runtime_log->path);
+         goto end;
+      }
    }
    
    /* If we reach this point then all is well
     * > Assign values to runtime_log object */
-   runtime_log->runtime.hours = runtime_hours;
-   runtime_log->runtime.minutes = runtime_minutes;
-   runtime_log->runtime.seconds = runtime_seconds;
+   runtime_log->runtime.hours      = runtime_hours;
+   runtime_log->runtime.minutes    = runtime_minutes;
+   runtime_log->runtime.seconds    = runtime_seconds;
    
-   runtime_log->last_played.year = last_played_year;
-   runtime_log->last_played.month = last_played_month;
-   runtime_log->last_played.day = last_played_day;
-   runtime_log->last_played.hour = last_played_hour;
+   runtime_log->last_played.year   = last_played_year;
+   runtime_log->last_played.month  = last_played_month;
+   runtime_log->last_played.day    = last_played_day;
+   runtime_log->last_played.hour   = last_played_hour;
    runtime_log->last_played.minute = last_played_minute;
    runtime_log->last_played.second = last_played_second;
    
@@ -270,24 +263,22 @@ end:
  * Returns NULL if content_path and/or core_path are invalid */
 runtime_log_t *runtime_log_init(const char *content_path, const char *core_path, bool log_per_core)
 {
-   settings_t *settings = config_get_ptr();
-   core_info_list_t *core_info = NULL;
-   runtime_log_t *runtime_log = NULL;
-   const char *core_path_basename = path_basename(core_path);
-   
+   unsigned i;
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
+   settings_t *settings           = config_get_ptr();
+   core_info_list_t *core_info    = NULL;
+   runtime_log_t *runtime_log     = NULL;
+   const char *core_path_basename = path_basename(core_path);
    
-   unsigned i;
-   
-   content_name[0] = '\0';
-   core_name[0] = '\0';
-   log_file_dir[0] = '\0';
-   log_file_path[0] = '\0';
-   tmp_buf[0] = '\0';
+   content_name[0]                = '\0';
+   core_name[0]                   = '\0';
+   log_file_dir[0]                = '\0';
+   log_file_path[0]               = '\0';
+   tmp_buf[0]                     = '\0';
    
    /* Error checking */
    if (!settings)
@@ -317,16 +308,14 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    
    for (i = 0; i < core_info->count; i++)
    {
-      if (string_is_equal(path_basename(core_info->list[i].path), core_path_basename))
-      {
-         if (!string_is_empty(core_info->list[i].core_name))
-         {
-            strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
-            break;
-         }
-         else
-            return NULL;
-      }
+      if (!string_is_equal(path_basename(core_info->list[i].path), core_path_basename))
+         continue;
+
+      if (string_is_empty(core_info->list[i].core_name))
+         return NULL;
+
+      strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
+      break;
    }
    
    if (string_is_empty(core_name))
@@ -350,13 +339,11 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
       return NULL;
    
    if (log_per_core)
-   {
       fill_pathname_join(
             log_file_dir,
             tmp_buf,
             core_name,
             sizeof(log_file_dir));
-   }
    else
       strlcpy(log_file_dir, tmp_buf, sizeof(log_file_dir));
    
@@ -397,13 +384,14 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
       /* path_remove_extension() requires a char * (not const)
        * so have to use a temporary buffer... */
       char *tmp_buf_no_ext = NULL;
-      tmp_buf[0] = '\0';
+      tmp_buf[0]           = '\0';
       strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
-      tmp_buf_no_ext = path_remove_extension(tmp_buf);
-      if (!string_is_empty(tmp_buf_no_ext))
-         strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
-      else
+      tmp_buf_no_ext       = path_remove_extension(tmp_buf);
+
+      if (string_is_empty(tmp_buf_no_ext))
          return NULL;
+
+      strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
    }
    
    if (string_is_empty(content_name))
@@ -418,26 +406,27 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
 
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
-   runtime_log = (runtime_log_t*)calloc(1, sizeof(*runtime_log));
+   runtime_log                     = (runtime_log_t*)calloc(1, sizeof(*runtime_log));
    if (!runtime_log)
       return NULL;
    
    /* > Populate default values */
-   runtime_log->runtime.hours = 0;
-   runtime_log->runtime.minutes = 0;
-   runtime_log->runtime.seconds = 0;
+   runtime_log->runtime.hours      = 0;
+   runtime_log->runtime.minutes    = 0;
+   runtime_log->runtime.seconds    = 0;
    
-   runtime_log->last_played.year = 0;
-   runtime_log->last_played.month = 0;
-   runtime_log->last_played.day = 0;
-   runtime_log->last_played.hour = 0;
+   runtime_log->last_played.year   = 0;
+   runtime_log->last_played.month  = 0;
+   runtime_log->last_played.day    = 0;
+   runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
    
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
    
    /* Load existing log file, if it exists */
-   runtime_log_read_file(runtime_log);
+   if (filestream_exists(runtime_log->path))
+      runtime_log_read_file(runtime_log);
    
    return runtime_log;
 }
@@ -519,10 +508,10 @@ void runtime_log_set_last_played(runtime_log_t *runtime_log,
    /* This function should never be needed, so just
     * perform dumb value assignment (i.e. no validation
     * using mktime()) */
-   runtime_log->last_played.year = year;
-   runtime_log->last_played.month = month;
-   runtime_log->last_played.day = day;
-   runtime_log->last_played.hour = hour;
+   runtime_log->last_played.year   = year;
+   runtime_log->last_played.month  = month;
+   runtime_log->last_played.day    = day;
+   runtime_log->last_played.hour   = hour;
    runtime_log->last_played.minute = minute;
    runtime_log->last_played.second = second;
 }
@@ -549,10 +538,10 @@ void runtime_log_set_last_played_now(runtime_log_t *runtime_log)
    }
    
    /* Extract values */
-   runtime_log->last_played.year = (unsigned)time_info->tm_year + 1900;
-   runtime_log->last_played.month = (unsigned)time_info->tm_mon + 1;
-   runtime_log->last_played.day = (unsigned)time_info->tm_mday;
-   runtime_log->last_played.hour = (unsigned)time_info->tm_hour;
+   runtime_log->last_played.year   = (unsigned)time_info->tm_year + 1900;
+   runtime_log->last_played.month  = (unsigned)time_info->tm_mon + 1;
+   runtime_log->last_played.day    = (unsigned)time_info->tm_mday;
+   runtime_log->last_played.hour   = (unsigned)time_info->tm_hour;
    runtime_log->last_played.minute = (unsigned)time_info->tm_min;
    runtime_log->last_played.second = (unsigned)time_info->tm_sec;
 }
@@ -563,14 +552,14 @@ void runtime_log_reset(runtime_log_t *runtime_log)
    if (!runtime_log)
       return;
    
-   runtime_log->runtime.hours = 0;
-   runtime_log->runtime.minutes = 0;
-   runtime_log->runtime.seconds = 0;
+   runtime_log->runtime.hours      = 0;
+   runtime_log->runtime.minutes    = 0;
+   runtime_log->runtime.seconds    = 0;
    
-   runtime_log->last_played.year = 0;
-   runtime_log->last_played.month = 0;
-   runtime_log->last_played.day = 0;
-   runtime_log->last_played.hour = 0;
+   runtime_log->last_played.year   = 0;
+   runtime_log->last_played.month  = 0;
+   runtime_log->last_played.day    = 0;
+   runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
 }
@@ -583,7 +572,7 @@ void runtime_log_get_runtime_hms(runtime_log_t *runtime_log, unsigned *hours, un
    if (!runtime_log)
       return;
    
-   *hours = runtime_log->runtime.hours;
+   *hours   = runtime_log->runtime.hours;
    *minutes = runtime_log->runtime.minutes;
    *seconds = runtime_log->runtime.seconds;
 }
@@ -607,10 +596,10 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
    if (!runtime_log)
       return;
    
-   *year = runtime_log->last_played.year;
-   *month = runtime_log->last_played.month;
-   *day = runtime_log->last_played.day;
-   *hour = runtime_log->last_played.hour;
+   *year   = runtime_log->last_played.year;
+   *month  = runtime_log->last_played.month;
+   *day    = runtime_log->last_played.day;
+   *hour   = runtime_log->last_played.hour;
    *minute = runtime_log->last_played.minute;
    *second = runtime_log->last_played.second;
 }
@@ -621,23 +610,20 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log, time_t *time)
 {
    struct tm time_info;
    
-   if (!runtime_log)
-      return;
-   
-   if (!time)
+   if (!runtime_log || !time)
       return;
    
    /* Set tm values */
-   time_info.tm_year = (int)runtime_log->last_played.year - 1900;
-   time_info.tm_mon = (int)runtime_log->last_played.month - 1;
-   time_info.tm_mday = (int)runtime_log->last_played.day;
-   time_info.tm_hour = (int)runtime_log->last_played.hour;
-   time_info.tm_min = (int)runtime_log->last_played.minute;
-   time_info.tm_sec = (int)runtime_log->last_played.second;
+   time_info.tm_year  = (int)runtime_log->last_played.year  - 1900;
+   time_info.tm_mon   = (int)runtime_log->last_played.month - 1;
+   time_info.tm_mday  = (int)runtime_log->last_played.day;
+   time_info.tm_hour  = (int)runtime_log->last_played.hour;
+   time_info.tm_min   = (int)runtime_log->last_played.minute;
+   time_info.tm_sec   = (int)runtime_log->last_played.second;
    time_info.tm_isdst = -1;
    
    /* Get time */
-   *time = mktime(&time_info);
+   *time              = mktime(&time_info);
 }
 
 /* Status */
@@ -648,7 +634,7 @@ bool runtime_log_has_runtime(runtime_log_t *runtime_log)
    if (!runtime_log)
       return false;
    
-   return !((runtime_log->runtime.hours == 0) &&
+   return !((runtime_log->runtime.hours   == 0) &&
             (runtime_log->runtime.minutes == 0) &&
             (runtime_log->runtime.seconds == 0));
 }
@@ -659,10 +645,10 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
    if (!runtime_log)
       return false;
    
-   return !((runtime_log->last_played.year == 0) &&
-            (runtime_log->last_played.month == 0) &&
-            (runtime_log->last_played.day == 0) &&
-            (runtime_log->last_played.hour == 0) &&
+   return !((runtime_log->last_played.year   == 0) &&
+            (runtime_log->last_played.month  == 0) &&
+            (runtime_log->last_played.day    == 0) &&
+            (runtime_log->last_played.hour   == 0) &&
             (runtime_log->last_played.minute == 0) &&
             (runtime_log->last_played.second == 0));
 }
@@ -672,10 +658,10 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
 /* Saves specified runtime log to disk */
 void runtime_log_save(runtime_log_t *runtime_log)
 {
-   RtlJSONContext context = {0};
-   RFILE *file = NULL;
-   char value_string[64]; /* 64 characters should be enough for a very long runtime... :) */
    int n;
+   char value_string[64]; /* 64 characters should be enough for a very long runtime... :) */
+   RtlJSONContext context = {0};
+   RFILE *file            = NULL;
    
    if (!runtime_log)
       return;
@@ -693,7 +679,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    
    /* Initialise JSON writer */
    context.writer = JSON_Writer_Create(NULL);
-   context.file = file;
+   context.file   = file;
    
    if (!context.writer)
    {
@@ -721,7 +707,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    
    /* > Runtime entry */
    value_string[0] = '\0';
-   n = snprintf(value_string, sizeof(value_string), LOG_FILE_RUNTIME_FORMAT_STR,
+   n               = snprintf(value_string, sizeof(value_string), LOG_FILE_RUNTIME_FORMAT_STR,
          runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds);
    if ((n < 0) || (n >= 64))
       n = 0; /* Silence GCC warnings... */
@@ -736,7 +722,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    
    /* > Last played entry */
    value_string[0] = '\0';
-   n = snprintf(value_string, sizeof(value_string), LOG_FILE_LAST_PLAYED_FORMAT_STR,
+   n               = snprintf(value_string, sizeof(value_string), LOG_FILE_LAST_PLAYED_FORMAT_STR,
          runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
          runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
    if ((n < 0) || (n >= 64))
@@ -757,7 +743,6 @@ void runtime_log_save(runtime_log_t *runtime_log)
    JSON_Writer_Free(context.writer);
    
 end:
-   
    /* Close log file */
    filestream_close(file);
 }
@@ -767,9 +752,9 @@ end:
 /* Convert from hours, minutes, seconds to microseconds */
 void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned seconds, retro_time_t *usec)
 {
-   *usec = ((retro_time_t)hours * 60 * 60 * 1000000) +
-           ((retro_time_t)minutes * 60 * 1000000) +
-           ((retro_time_t)seconds * 1000000);
+   *usec = ((retro_time_t)hours   * 60 * 60 * 1000000) +
+           ((retro_time_t)minutes * 60      * 1000000) +
+           ((retro_time_t)seconds           * 1000000);
 }
 
 /* Convert from microseconds to hours, minutes, seconds */
