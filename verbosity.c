@@ -272,7 +272,7 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)size);
 
-   for(i = 0, offset = 0; i < size; i++)
+   for (i = 0, offset = 0; i < size; i++)
    {
       buf[offset] = data[i];
       offset++;
@@ -285,9 +285,10 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
             buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
       }
    }
-   if(padding)
+
+   if (padding)
    {
-      for(i = padding; i < 16; i++)
+      for (i = padding; i < 16; i++)
          buf[i] = 0xff;
       RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
          buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
