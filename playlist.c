@@ -420,8 +420,9 @@ bool playlist_push_runtime(playlist_t *playlist,
       struct playlist_entry tmp;
       bool equal_path;
 
-      equal_path = (!path && !playlist->entries[i].path) ||
-         (path && playlist->entries[i].path &&
+      equal_path = 
+         (!path && !playlist->entries[i].path) ||
+         (path  && playlist->entries[i].path &&
 #ifdef _WIN32
           /*prevent duplicates on case-insensitive operating systems*/
           string_is_equal_noncase(path,playlist->entries[i].path)
@@ -503,10 +504,10 @@ bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry)
 {
    size_t i;
-   bool core_path_empty = string_is_empty(entry->core_path);
-   bool core_name_empty = string_is_empty(entry->core_name);
+   bool core_path_empty  = string_is_empty(entry->core_path);
+   bool core_name_empty  = string_is_empty(entry->core_name);
    const char *core_name = entry->core_name;
-   const char *path = entry->path;
+   const char *path      = entry->path;
 
    if (core_path_empty || core_name_empty)
    {
@@ -553,29 +554,37 @@ bool playlist_push(playlist_t *playlist,
       if (!string_is_equal(playlist->entries[i].core_path, entry->core_path))
          continue;
 
-      if (!string_is_empty(entry->subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident) && !string_is_equal(playlist->entries[i].subsystem_ident, entry->subsystem_ident))
+      if (     !string_is_empty(entry->subsystem_ident) 
+            && !string_is_empty(playlist->entries[i].subsystem_ident) 
+            && !string_is_equal(playlist->entries[i].subsystem_ident, entry->subsystem_ident))
          continue;
 
-      if (string_is_empty(entry->subsystem_ident) && !string_is_empty(playlist->entries[i].subsystem_ident))
+      if (      string_is_empty(entry->subsystem_ident) 
+            && !string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (!string_is_empty(entry->subsystem_ident) && string_is_empty(playlist->entries[i].subsystem_ident))
+      if (    !string_is_empty(entry->subsystem_ident) 
+            && string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (!string_is_empty(entry->subsystem_name) && !string_is_empty(playlist->entries[i].subsystem_name) && !string_is_equal(playlist->entries[i].subsystem_name, entry->subsystem_name))
+      if (     !string_is_empty(entry->subsystem_name) 
+            && !string_is_empty(playlist->entries[i].subsystem_name) 
+            && !string_is_equal(playlist->entries[i].subsystem_name, entry->subsystem_name))
          continue;
 
-      if (string_is_empty(entry->subsystem_name) && !string_is_empty(playlist->entries[i].subsystem_name))
+      if (      string_is_empty(entry->subsystem_name) 
+            && !string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
-      if (!string_is_empty(entry->subsystem_name) && string_is_empty(playlist->entries[i].subsystem_name))
+      if (     !string_is_empty(entry->subsystem_name) 
+            &&  string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
       if (entry->subsystem_roms)
       {
          int j;
          const struct string_list *roms = playlist->entries[i].subsystem_roms;
-         bool unequal = false;
+         bool                   unequal = false;
 
          if (entry->subsystem_roms->size != roms->size)
             continue;
@@ -640,31 +649,30 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].last_played_minute = 0;
       playlist->entries[0].last_played_second = 0;
       if (!string_is_empty(entry->path))
-         playlist->entries[0].path      = strdup(entry->path);
+         playlist->entries[0].path            = strdup(entry->path);
       if (!string_is_empty(entry->label))
-         playlist->entries[0].label     = strdup(entry->label);
+         playlist->entries[0].label           = strdup(entry->label);
       if (!string_is_empty(entry->core_path))
-         playlist->entries[0].core_path = strdup(entry->core_path);
+         playlist->entries[0].core_path       = strdup(entry->core_path);
       if (!string_is_empty(core_name))
-         playlist->entries[0].core_name = strdup(core_name);
+         playlist->entries[0].core_name       = strdup(core_name);
       if (!string_is_empty(entry->db_name))
-         playlist->entries[0].db_name   = strdup(entry->db_name);
+         playlist->entries[0].db_name         = strdup(entry->db_name);
       if (!string_is_empty(entry->crc32))
-         playlist->entries[0].crc32     = strdup(entry->crc32);
+         playlist->entries[0].crc32           = strdup(entry->crc32);
       if (!string_is_empty(entry->subsystem_ident))
          playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
       if (!string_is_empty(entry->subsystem_name))
-         playlist->entries[0].subsystem_name = strdup(entry->subsystem_name);
+         playlist->entries[0].subsystem_name  = strdup(entry->subsystem_name);
+
       if (entry->subsystem_roms)
       {
          union string_list_elem_attr attributes = {0};
 
-         playlist->entries[0].subsystem_roms = string_list_new();
+         playlist->entries[0].subsystem_roms    = string_list_new();
 
          for (i = 0; i < entry->subsystem_roms->size; i++)
-         {
             string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
-         }
       }
    }
 
@@ -688,8 +696,9 @@ static void JSONLogError(JSONContext *pCtx)
 {
    if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
    {
-      JSON_Error error = JSON_Parser_GetError(pCtx->parser);
+      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
       JSON_Location errorLocation = { 0, 0, 0 };
+
       (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
       RARCH_WARN("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
             (int)errorLocation.line + 1,
@@ -907,7 +916,7 @@ end:
 void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
-   RFILE *file = NULL;
+   RFILE          *file = NULL;
    settings_t *settings = config_get_ptr();
 
    if (!playlist || !playlist->modified)
@@ -1500,7 +1509,9 @@ static bool playlist_read_file(
          goto end;
       }
 
-      /*JSON_Parser_SetTrackObjectMembers(context.parser, JSON_True);*/
+#if 0
+      JSON_Parser_SetTrackObjectMembers(context.parser, JSON_True);
+#endif
       JSON_Parser_SetAllowBOM(context.parser, JSON_True);
       JSON_Parser_SetAllowComments(context.parser, JSON_True);
       JSON_Parser_SetAllowSpecialNumbers(context.parser, JSON_True);
@@ -1508,18 +1519,20 @@ static bool playlist_read_file(
       JSON_Parser_SetAllowUnescapedControlCharacters(context.parser, JSON_True);
       JSON_Parser_SetReplaceInvalidEncodingSequences(context.parser, JSON_True);
 
-      /*JSON_Parser_SetNullHandler(context.parser, &JSONNullHandler);
-      JSON_Parser_SetBooleanHandler(context.parser, &JSONBooleanHandler);
+#if 0
+      JSON_Parser_SetNullHandler(context.parser,          &JSONNullHandler);
+      JSON_Parser_SetBooleanHandler(context.parser,       &JSONBooleanHandler);
       JSON_Parser_SetSpecialNumberHandler(context.parser, &JSONSpecialNumberHandler);
-      JSON_Parser_SetArrayItemHandler(context.parser, &JSONArrayItemHandler);*/
+      JSON_Parser_SetArrayItemHandler(context.parser,     &JSONArrayItemHandler);
+#endif
 
-      JSON_Parser_SetNumberHandler(context.parser, &JSONNumberHandler);
-      JSON_Parser_SetStringHandler(context.parser, &JSONStringHandler);
-      JSON_Parser_SetStartObjectHandler(context.parser, &JSONStartObjectHandler);
-      JSON_Parser_SetEndObjectHandler(context.parser, &JSONEndObjectHandler);
-      JSON_Parser_SetObjectMemberHandler(context.parser, &JSONObjectMemberHandler);
-      JSON_Parser_SetStartArrayHandler(context.parser, &JSONStartArrayHandler);
-      JSON_Parser_SetEndArrayHandler(context.parser, &JSONEndArrayHandler);
+      JSON_Parser_SetNumberHandler(context.parser,        &JSONNumberHandler);
+      JSON_Parser_SetStringHandler(context.parser,        &JSONStringHandler);
+      JSON_Parser_SetStartObjectHandler(context.parser,   &JSONStartObjectHandler);
+      JSON_Parser_SetEndObjectHandler(context.parser,     &JSONEndObjectHandler);
+      JSON_Parser_SetObjectMemberHandler(context.parser,  &JSONObjectMemberHandler);
+      JSON_Parser_SetStartArrayHandler(context.parser,    &JSONStartArrayHandler);
+      JSON_Parser_SetEndArrayHandler(context.parser,      &JSONEndArrayHandler);
       JSON_Parser_SetUserData(context.parser, &context);
 
       while (!filestream_eof(file))
@@ -1681,8 +1694,8 @@ static int playlist_qsort_func(const struct playlist_entry *a,
    if (!a || !b)
       goto end;
 
-   a_str = a->label;
-   b_str = b->label;
+   a_str                  = a->label;
+   b_str                  = b->label;
 
    /* It is quite possible for playlist labels
     * to be blank. If that is the case, have to use
@@ -1824,9 +1837,9 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
 
          /* Only use file basename if this is a 'collection' playlist
           * (i.e. ignore history/favourites) */
-         if (!string_is_empty(conf_path_basename) &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_FAVORITES)) &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_HISTORY)) &&
+         if (!string_is_empty(conf_path_basename)                                                 &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_FAVORITES))     &&
+             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_HISTORY))       &&
              !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) &&
              !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) &&
              !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)))
