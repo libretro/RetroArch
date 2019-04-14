@@ -4930,13 +4930,15 @@ bool rarch_write_debug_info(void)
       gfx_ctx_ident_t ident_info = {0};
       const input_driver_t *input_driver;
       const input_device_driver_t *joypad_driver;
-      const char *driver = menu_driver_ident();
+      const char *driver;
+#ifdef HAVE_MENU
+      driver = menu_driver_ident();
 
       if (string_is_equal(driver, settings->arrays.menu_driver))
          filestream_printf(file, "  - Menu: %s\n", !string_is_empty(driver) ? driver : "n/a");
       else
          filestream_printf(file, "  - Menu: %s (configured for %s)\n", !string_is_empty(driver) ? driver : "n/a", !string_is_empty(settings->arrays.menu_driver) ? settings->arrays.menu_driver : "n/a");
-
+#endif
       driver =
 #ifdef HAVE_THREADS
       (video_driver_is_threaded()) ?
