@@ -55,14 +55,14 @@ QWidget *NetplayPage::widget()
    unsigned row               = 0;
    unsigned column            = 0;
 
-   checksLayout->addCheckBox(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
-   checksLayout->addCheckBox(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
 
-   serverForm->addStringLineEdit(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
-   serverForm->addUIntSpinBox(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
-   serverForm->addPasswordLineEdit(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
-   serverForm->addPasswordLineEdit(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
-   serverForm->addCheckBox(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
 
    serverLayout->addWidget(createMitmServerGroup());
    serverLayout->addSpacing(30);
@@ -70,16 +70,16 @@ QWidget *NetplayPage::widget()
 
    serverGroup->setLayout(serverLayout);
 
-   slaveGroup->addCheckBox(MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES);
-   slaveGroup->addCheckBox(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
+   slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES);
+   slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
 
-   syncGroup->addCheckBox(MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE);
-   syncGroup->addUIntSpinBox(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
-   syncGroup->addUIntSpinBox(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
-   syncGroup->addUIntSpinBox(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
 
-   inputGroup->addUIntComboBox(MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL);
-   inputGroup->addUIntComboBox(MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG);
+   inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL);
+   inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG);
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -167,9 +167,9 @@ QWidget *UpdaterPage::widget()
    QWidget    *widget = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->addStringLineEdit(MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
-   layout->addStringLineEdit(MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL);
-   layout->addCheckBox(MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
+   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
+   layout->add(MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL);
+   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
 
    widget->setLayout(layout);
 
