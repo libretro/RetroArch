@@ -23,20 +23,18 @@ AchievementsPage::AchievementsPage(QObject *parent) :
 
 QWidget *AchievementsPage::widget()
 {
-   QWidget *widget = new QWidget;
-
-   QVBoxLayout *layout = new QVBoxLayout;
-
+   QWidget               *widget = new QWidget;
+   QVBoxLayout           *layout = new QVBoxLayout;
    CheckableSettingsGroup *group = new CheckableSettingsGroup(MENU_ENUM_LABEL_CHEEVOS_ENABLE);
 
-   group->addStringLineEdit(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
-   group->addPasswordLineEdit(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE);
-   group->addCheckBox(MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE);
+   group->add(MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT);
 
    layout->addWidget(group);
 
