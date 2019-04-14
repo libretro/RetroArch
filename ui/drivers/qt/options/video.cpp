@@ -175,17 +175,16 @@ AspectRatioGroup::AspectRatioGroup(const QString &title, QWidget *parent) :
    ,m_radioButton(new AspectRatioRadioButton(ASPECT_RATIO_4_3, ASPECT_RATIO_32_9))
    ,m_comboBox(new UIntComboBox(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX, ASPECT_RATIO_4_3, ASPECT_RATIO_32_9))
 {
-   QHBoxLayout *aspectLayout = new QHBoxLayout;
-   FormLayout *leftAspectForm = new FormLayout;
+   QHBoxLayout *aspectLayout   = new QHBoxLayout;
+   QHBoxLayout *preset         = new QHBoxLayout;
+   QHBoxLayout *custom         = new QHBoxLayout;
+   QVBoxLayout *customRadio    = new QVBoxLayout;
+   QHBoxLayout *config         = new QHBoxLayout;
+   QHBoxLayout *aspectL        = new QHBoxLayout;
+   FormLayout *leftAspectForm  = new FormLayout;
    FormLayout *rightAspectForm = new FormLayout;
-   QHBoxLayout *preset = new QHBoxLayout;
-   //AspectRatioRadioButton *aspectRadioButton = new AspectRatioRadioButton(ASPECT_RATIO_4_3, ASPECT_RATIO_32_9);
-   QHBoxLayout *custom = new QHBoxLayout;
-   QVBoxLayout *customRadio = new QVBoxLayout;
-   QHBoxLayout *config = new QHBoxLayout;
-   QHBoxLayout *aspectL = new QHBoxLayout;
-   FormLayout *leftAspect = new FormLayout;
-   FormLayout *rightAspect = new FormLayout;
+   FormLayout *leftAspect      = new FormLayout;
+   FormLayout *rightAspect     = new FormLayout;
 
    leftAspectForm->addRow("X Pos.:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X));
    leftAspectForm->addRow("Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH));
@@ -267,8 +266,7 @@ CrtSwitchresPage::CrtSwitchresPage(QObject *parent) :
 
 QWidget *CrtSwitchresPage::widget()
 {
-   QWidget *widget = new QWidget;
-
+   QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
    m_crtSuperResolutionCombo->addItem(msg_hash_to_str(MSG_NATIVE), 0);
@@ -276,10 +274,10 @@ QWidget *CrtSwitchresPage::widget()
    m_crtSuperResolutionCombo->addItem("2560", 2560);
    m_crtSuperResolutionCombo->addItem("3840", 3840);
 
-   layout->addUIntComboBox(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION);
+   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION);
    layout->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER), m_crtSuperResolutionCombo);
-   layout->addUIntSpinBox(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING);
-   layout->addCheckBox(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE);
+   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING);
+   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE);
 
    connect(m_crtSuperResolutionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onCrtSuperResolutionComboIndexChanged(int)));
 

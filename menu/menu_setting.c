@@ -4955,6 +4955,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
             (*list)[list_info->index - 1].get_string_representation =
@@ -6532,6 +6533,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_crt_switch_resolutions;
@@ -6566,6 +6568,7 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -3;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -6825,6 +6828,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_audio_resampler_quality;
@@ -6916,6 +6920,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
 #endif
@@ -7112,6 +7117,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_poll_type_behavior;
@@ -7213,6 +7219,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_toggle_gamepad_combo;
@@ -7457,6 +7464,7 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
+               (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
                (*list)[list_info->index - 1].index          = user_value;
                (*list)[list_info->index - 1].index_offset   = user;
 
@@ -7693,7 +7701,8 @@ static bool setting_append_list(
                      strdup(input_config_bind_map_get_desc(i)),
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
-               (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+               (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
+               (*list)[list_info->index - 1].bind_type      = i + MENU_SETTINGS_BIND_BEGIN;
                menu_settings_list_current_add_enum_idx(list, list_info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
             }

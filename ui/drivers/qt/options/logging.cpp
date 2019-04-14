@@ -23,13 +23,12 @@ LoggingPage::LoggingPage(QObject *parent) :
 
 QWidget *LoggingPage::widget()
 {
-   QWidget *widget = new QWidget;
-
+   QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->addCheckBox(MENU_ENUM_LABEL_LOG_VERBOSITY);
-   layout->addUIntRadioButtons(MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL);
-   layout->addCheckBox(MENU_ENUM_LABEL_PERFCNT_ENABLE);
+   layout->add(MENU_ENUM_LABEL_LOG_VERBOSITY);
+   layout->add(MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL);
+   layout->add(MENU_ENUM_LABEL_PERFCNT_ENABLE);
 
    widget->setLayout(layout);
 
