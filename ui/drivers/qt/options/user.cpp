@@ -24,12 +24,11 @@ UserPage::UserPage(QObject *parent) :
 
 QWidget *UserPage::widget()
 {
-   QWidget *widget = new QWidget;
-
+   QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->addStringLineEdit(MENU_ENUM_LABEL_NETPLAY_NICKNAME);
-   layout->addUIntComboBox(MENU_ENUM_LABEL_USER_LANGUAGE);
+   layout->add(MENU_ENUM_LABEL_NETPLAY_NICKNAME);
+   layout->add(MENU_ENUM_LABEL_USER_LANGUAGE);
 
    widget->setLayout(layout);
 
@@ -44,27 +43,24 @@ AccountsPage::AccountsPage(QObject *parent) :
 
 QWidget *AccountsPage::widget()
 {
-   QWidget *widget = new QWidget;
-
-   QVBoxLayout *layout = new QVBoxLayout;
-
+   QWidget *widget             = new QWidget;
+   QVBoxLayout *layout         = new QVBoxLayout;
    SettingsGroup *youtubeGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
-   SettingsGroup *twitchGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
-
+   SettingsGroup *twitchGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
 #ifdef HAVE_CHEEVOS
    SettingsGroup *cheevosGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
 
-   cheevosGroup->addStringLineEdit(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
-   cheevosGroup->addPasswordLineEdit(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
+   cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
+   cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
 
    layout->addWidget(cheevosGroup);
 #endif
 
-   youtubeGroup->addStringLineEdit(MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY);
+   youtubeGroup->add(MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY);
 
    layout->addWidget(youtubeGroup);
 
-   twitchGroup->addStringLineEdit(MENU_ENUM_LABEL_TWITCH_STREAM_KEY);
+   twitchGroup->add(MENU_ENUM_LABEL_TWITCH_STREAM_KEY);
 
    layout->addWidget(twitchGroup);
 
