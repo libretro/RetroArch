@@ -41,10 +41,10 @@ QWidget *RecordingPage::widget()
 
    streamingGroup->addRow(hl);
 
-   streamingGroup->addFileSelector(MENU_ENUM_LABEL_STREAM_CONFIG);
-   streamingGroup->addStringLineEdit(MENU_ENUM_LABEL_STREAMING_TITLE);
-   streamingGroup->addStringLineEdit(MENU_ENUM_LABEL_STREAMING_URL);
-   streamingGroup->addUIntSpinBox(MENU_ENUM_LABEL_UDP_STREAM_PORT);
+   streamingGroup->add(MENU_ENUM_LABEL_STREAM_CONFIG);
+   streamingGroup->add(MENU_ENUM_LABEL_STREAMING_TITLE);
+   streamingGroup->add(MENU_ENUM_LABEL_STREAMING_URL);
+   streamingGroup->add(MENU_ENUM_LABEL_UDP_STREAM_PORT);
 
    layout->addWidget(recordingGroup);
    layout->addWidget(streamingGroup);

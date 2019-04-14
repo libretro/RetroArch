@@ -7533,6 +7533,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
             CONFIG_UINT(
                list, list_info,
@@ -7594,6 +7595,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_FILE_SELECTOR;
 
             CONFIG_STRING(
                list, list_info,
@@ -7608,6 +7610,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
             CONFIG_UINT(
                list, list_info,
