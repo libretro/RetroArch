@@ -46,7 +46,7 @@ QWidget *NotificationsPage::widget()
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE));
-   bgGroup->addFloatSliderAndSpinBox(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY);
+   bgGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY);
 
    notificationsGroup->addRow(bgGroup);
 
@@ -76,7 +76,7 @@ QWidget *OverlayPage::widget()
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU);
 
-   inputsGroup->addUIntSpinBox(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT);
+   inputsGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT);
 
    overlayGroup->addRow(inputsGroup);
 
