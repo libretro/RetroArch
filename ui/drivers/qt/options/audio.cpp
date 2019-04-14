@@ -32,7 +32,7 @@ QWidget *AudioPage::widget()
 
    SettingsGroup *outputGroup = new SettingsGroup("Output");
    SettingsGroup *resamplerGroup = new SettingsGroup("Resampler");
-   SettingsGroup *syncGroup = new SettingsGroup("Synchronization");
+   SettingsGroup *syncGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SYNC));
    SettingsGroup *dspGroup = new SettingsGroup("DSP plugin");
    SettingsGroup *volumeGroup = new SettingsGroup("Volume");
 

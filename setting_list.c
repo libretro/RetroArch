@@ -1798,7 +1798,8 @@ bool CONFIG_BOOL(
 
    if (!settings_list_append(list, list_info))
       return false;
-   (*list)[list_info->index++] = value;
+   (*list)[list_info->index++]             = value;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_CHECKBOX;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
 
@@ -1859,6 +1860,7 @@ bool CONFIG_UINT_ALT(
    if (!(settings_list_append(list, list_info)))
       return false;
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
    return true;
 }
 
@@ -1885,6 +1887,7 @@ bool CONFIG_UINT(
    if (!(settings_list_append(list, list_info)))
       return false;
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
 
 #ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
@@ -1977,6 +1980,7 @@ bool CONFIG_PATH(
    if (!(settings_list_append(list, list_info)))
       return false;
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FILE_SELECTOR;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 #ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
@@ -2071,6 +2075,7 @@ bool CONFIG_STRING_OPTIONS(
       return false;
 
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_COMBOBOX;
 
 #ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);

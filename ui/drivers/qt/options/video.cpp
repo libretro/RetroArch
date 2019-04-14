@@ -130,7 +130,7 @@ QWidget *VideoPage::widget()
       {
          CheckableSettingsGroup *hardSyncGroup = new CheckableSettingsGroup(hardSyncSetting);
 
-         hardSyncGroup->addUIntSpinBox(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
+         hardSyncGroup->addUIntSpinBox(hardSyncSetting->enum_idx);
 
          syncGroup->addRow(hardSyncGroup);
       }
@@ -238,9 +238,7 @@ void AspectRatioGroup::paintEvent(QPaintEvent *event)
       m_radioButton->setChecked(true);
    }
    else
-   {
       m_comboBox->blockSignals(true);
-   }
 
    SettingsGroup::paintEvent(event);
 }
@@ -293,10 +291,10 @@ QWidget *CrtSwitchresPage::widget()
 void VideoPage::onResolutionComboIndexChanged(const QString &text)
 {
    char str[100];
-   char *pch = NULL;
-   const char *path = text.toUtf8().constData();
-   unsigned width = 0;
-   unsigned height = 0;
+   char *pch            = NULL;
+   const char *path     = text.toUtf8().constData();
+   unsigned width       = 0;
+   unsigned height      = 0;
    unsigned refreshrate = 0;
 
    snprintf(str, sizeof(str), "%s", path);
