@@ -25,19 +25,18 @@ NotificationsPage::NotificationsPage(QObject *parent) :
 
 QWidget *NotificationsPage::widget()
 {
-   QWidget *widget = new QWidget;
-   QVBoxLayout *layout = new QVBoxLayout;
-
+   QWidget                            *widget = new QWidget;
+   QVBoxLayout                        *layout = new QVBoxLayout;
    CheckableSettingsGroup *notificationsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_FONT_ENABLE);
-   CheckableSettingsGroup *bgGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE);
+   CheckableSettingsGroup            *bgGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE);
 
-   notificationsGroup->addCheckBox(MENU_ENUM_LABEL_FPS_SHOW);
-   notificationsGroup->addCheckBox(MENU_ENUM_LABEL_FRAMECOUNT_SHOW);
-   notificationsGroup->addCheckBox(MENU_ENUM_LABEL_MEMORY_SHOW);
-   notificationsGroup->addFontSelector(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
-   notificationsGroup->addFloatSpinBox(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
-   notificationsGroup->addFloatSliderAndSpinBox(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
-   notificationsGroup->addFloatSliderAndSpinBox(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
+   notificationsGroup->add(MENU_ENUM_LABEL_FPS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_FRAMECOUNT_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
+   notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
+   notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
+   notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
    notificationsGroup->addRow("Notification Color: ", new FloatColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
@@ -68,22 +67,22 @@ OverlayPage::OverlayPage(QObject *parent) :
 
 QWidget *OverlayPage::widget()
 {
-   QWidget *widget = new QWidget;
-   QVBoxLayout *layout = new QVBoxLayout;
+   QWidget                      *widget = new QWidget;
+   QVBoxLayout                  *layout = new QVBoxLayout;
 
    CheckableSettingsGroup *overlayGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE);
-   CheckableSettingsGroup *inputsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS);
+   CheckableSettingsGroup  *inputsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS);
 
-   overlayGroup->addCheckBox(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
-   overlayGroup->addCheckBox(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
+   overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU);
 
    inputsGroup->addUIntSpinBox(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT);
 
    overlayGroup->addRow(inputsGroup);
 
-   overlayGroup->addFileSelector(MENU_ENUM_LABEL_OVERLAY_PRESET);
-   overlayGroup->addFloatSliderAndSpinBox(MENU_ENUM_LABEL_OVERLAY_OPACITY);
-   overlayGroup->addFloatSliderAndSpinBox(MENU_ENUM_LABEL_OVERLAY_SCALE);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_PRESET);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_OPACITY);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_SCALE);
 
    layout->addWidget(overlayGroup);
 

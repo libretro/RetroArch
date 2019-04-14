@@ -2474,6 +2474,10 @@ void menu_settings_list_current_add_range(
 {
    unsigned idx                   = list_info->index - 1;
 
+   if ((*list)[idx].type == ST_FLOAT)
+      (*list)[list_info->index - 1].ui_type   
+                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
+
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
    (*list)[idx].max               = max;

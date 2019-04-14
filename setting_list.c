@@ -1950,7 +1950,7 @@ bool CONFIG_FLOAT(
    if (!(settings_list_append(list, list_info)))
       return false;
    (*list)[list_info->index++] = value;
-   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SPINBOX;
 
 #ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
