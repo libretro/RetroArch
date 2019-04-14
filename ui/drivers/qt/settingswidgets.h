@@ -87,7 +87,7 @@ public:
             this->addFloatSliderAndSpinBox(enum_idx);
             break;
          case ST_UI_TYPE_SIZE_SPINBOX:
-            /* TODO/FIXME */
+            this->addSizeSpinBox(enum_idx);
             break;
          case ST_UI_TYPE_BIND_BUTTON:
             return this->addBindButton(enum_idx);
@@ -181,7 +181,7 @@ public:
             this->addFloatSliderAndSpinBox(enum_idx);
             break;
          case ST_UI_TYPE_SIZE_SPINBOX:
-            /* TODO/FIXME */
+            this->addSizeSpinBox(enum_idx);
             break;
          case ST_UI_TYPE_BIND_BUTTON:
             /* TODO/FIXME - Why is the returntype void here and bool

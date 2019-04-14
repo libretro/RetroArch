@@ -25,14 +25,13 @@ FrameThrottlePage::FrameThrottlePage(QObject *parent) :
 
 QWidget *FrameThrottlePage::widget()
 {
-   QWidget *widget = new QWidget;
-
+   QWidget    *widget = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->addFloatSpinBox(MENU_ENUM_LABEL_FASTFORWARD_RATIO);
-   layout->addFloatSpinBox(MENU_ENUM_LABEL_SLOWMOTION_RATIO);
-   layout->addCheckBox(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
-   layout->addCheckBox(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE);
+   layout->add(MENU_ENUM_LABEL_FASTFORWARD_RATIO);
+   layout->add(MENU_ENUM_LABEL_SLOWMOTION_RATIO);
+   layout->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
+   layout->add(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE);
 
    widget->setLayout(layout);
 
@@ -47,14 +46,13 @@ RewindPage::RewindPage(QObject *parent) :
 
 QWidget *RewindPage::widget()
 {
-   QWidget *widget = new QWidget;
-
+   QWidget    *widget = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->addCheckBox(MENU_ENUM_LABEL_REWIND_ENABLE);
-   layout->addUIntSpinBox(MENU_ENUM_LABEL_REWIND_GRANULARITY);
-   layout->addSizeSpinBox(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
-   layout->addUIntSpinBox(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP);
+   layout->add(MENU_ENUM_LABEL_REWIND_ENABLE);
+   layout->add(MENU_ENUM_LABEL_REWIND_GRANULARITY);
+   layout->add(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
+   layout->add(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP);
 
    widget->setLayout(layout);
 
