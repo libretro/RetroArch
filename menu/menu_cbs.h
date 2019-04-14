@@ -149,6 +149,8 @@ enum
 };
 
 /* Function callbacks */
+int action_cb_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx);

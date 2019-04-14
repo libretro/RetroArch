@@ -4956,7 +4956,7 @@ static int action_ok_push_dropdown_item(const char *path,
    return 0;
 }
 
-static int action_ok_push_dropdown_item_resolution(const char *path,
+int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char str[100];
@@ -4964,6 +4964,11 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
    unsigned width       = 0;
    unsigned height      = 0;
    unsigned refreshrate = 0;
+
+   (void)label;
+   (void)type;
+   (void)idx;
+   (void)entry_idx;
 
    snprintf(str, sizeof(str), "%s", path);
 
@@ -4987,11 +4992,22 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
       settings->uints.video_fullscreen_x = width;
       settings->uints.video_fullscreen_y = height;
 
+      return 1;
+   }
+
+   return 0;
+}
+
+static int action_ok_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   if (action_cb_push_dropdown_item_resolution(path,
+            label, type, idx, entry_idx) == 1)
+   {
       /* TODO/FIXME - menu drivers like XMB don't rescale
        * automatically */
       return menu_cbs_exit();
    }
-
    return 0;
 }
 

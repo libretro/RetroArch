@@ -290,35 +290,9 @@ QWidget *CrtSwitchresPage::widget()
 
 void VideoPage::onResolutionComboIndexChanged(const QString &text)
 {
-   char str[100];
-   char *pch            = NULL;
    const char *path     = text.toUtf8().constData();
-   unsigned width       = 0;
-   unsigned height      = 0;
-   unsigned refreshrate = 0;
-
-   snprintf(str, sizeof(str), "%s", path);
-
-   pch = strtok(str, "x");
-   if (pch)
-      width = strtoul(pch, NULL, 0);
-   pch = strtok(NULL, " ");
-   if (pch)
-      height = strtoul(pch, NULL, 0);
-   pch = strtok(NULL, "(");
-   if (pch)
-      refreshrate = strtoul(pch, NULL, 0);
-
-   if (video_display_server_set_resolution(width, height,
-      refreshrate, (float)refreshrate, 0, 0, 0))
-   {
-      settings_t *settings = config_get_ptr();
-
-      video_monitor_set_refresh_rate((float)refreshrate);
-
-      settings->uints.video_fullscreen_x = width;
-      settings->uints.video_fullscreen_y = height;
-   }
+   action_cb_push_dropdown_item_resolution(path,
+         NULL, 0, 0, 0);
 }
 
 void CrtSwitchresPage::onCrtSuperResolutionComboIndexChanged(int index)
