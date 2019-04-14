@@ -36,36 +36,36 @@ VideoPage::VideoPage(QObject *parent) :
 
 QWidget *VideoPage::widget()
 {
-   QWidget *widget = new QWidget;
+   QWidget               *widget       = new QWidget;
 
-   QVBoxLayout *layout = new QVBoxLayout;
+   QVBoxLayout        *layout          = new QVBoxLayout;
 
-   SettingsGroup *outputGroup = new SettingsGroup("Output");
-   SettingsGroup *aspectGroup = new SettingsGroup("Scaling");
+   SettingsGroup *outputGroup          = new SettingsGroup("Output");
+   SettingsGroup *aspectGroup          = new SettingsGroup("Scaling");
 
-   SettingsGroup *fullscreenGroup = new SettingsGroup("Fullscreen Mode");
-   SettingsGroup *windowedGroup = new SettingsGroup("Windowed Mode");
+   SettingsGroup *fullscreenGroup      = new SettingsGroup("Fullscreen Mode");
+   SettingsGroup *windowedGroup        = new SettingsGroup("Windowed Mode");
 
-   QHBoxLayout *fullcreenSizeLayout = new QHBoxLayout;
-   FormLayout *leftFullscreenSizeForm = new FormLayout;
+   QHBoxLayout *fullcreenSizeLayout    = new QHBoxLayout;
+   FormLayout *leftFullscreenSizeForm  = new FormLayout;
    FormLayout *rightFullscreenSizeForm = new FormLayout;
 
-   QHBoxLayout *windowedSizeLayout = new QHBoxLayout;
-   FormLayout *leftWindowedSizeForm = new FormLayout;
-   FormLayout *rightWindowedSizeForm = new FormLayout;
+   QHBoxLayout *windowedSizeLayout     = new QHBoxLayout;
+   FormLayout *leftWindowedSizeForm    = new FormLayout;
+   FormLayout *rightWindowedSizeForm   = new FormLayout;
 
-   SettingsGroup *syncGroup = new SettingsGroup("Synchronization");
-   CheckableSettingsGroup *vSyncGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
+   SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
+   CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 
-   QHBoxLayout *outputScalingLayout = new QHBoxLayout;
-   QHBoxLayout *modeLayout = new QHBoxLayout;
-   QHBoxLayout *syncMiscLayout = new QHBoxLayout;
+   QHBoxLayout *outputScalingLayout    = new QHBoxLayout;
+   QHBoxLayout *modeLayout             = new QHBoxLayout;
+   QHBoxLayout *syncMiscLayout         = new QHBoxLayout;
 
-   SettingsGroup *miscGroup = new SettingsGroup("Miscellaneous");
-   SettingsGroup *filterGroup = new SettingsGroup("Video Filter");
+   SettingsGroup *miscGroup            = new SettingsGroup("Miscellaneous");
+   SettingsGroup *filterGroup          = new SettingsGroup("Video Filter");
 
-   unsigned i, size = 0;
-   struct video_display_config *list = (struct video_display_config*) video_display_server_get_resolution_list(&size);
+   unsigned i, size                    = 0;
+   struct video_display_config *list   = (struct video_display_config*) video_display_server_get_resolution_list(&size);
 
    if (list)
    {
@@ -84,14 +84,14 @@ QWidget *VideoPage::widget()
       free(list);
    }
 
-   outputGroup->addStringComboBox(MENU_ENUM_LABEL_VIDEO_DRIVER);
-   outputGroup->addUIntSpinBox(MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX);
-   outputGroup->addUIntComboBox(MENU_ENUM_LABEL_VIDEO_ROTATION);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_DRIVER);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
    outputGroup->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION), m_resolutionCombo);
-   outputGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
 
-   fullscreenGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
-   fullscreenGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
+   fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
+   fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
 
    leftFullscreenSizeForm->addRow("Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X));
    rightFullscreenSizeForm->addRow("Height:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y));
@@ -101,7 +101,7 @@ QWidget *VideoPage::widget()
 
    fullscreenGroup->addRow(fullcreenSizeLayout);
 
-   aspectGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
+   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
    aspectGroup->addRow(new AspectRatioGroup("Aspect Ratio"));
 
    leftWindowedSizeForm->addRow("Scale:", new FloatSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
@@ -115,12 +115,12 @@ QWidget *VideoPage::widget()
 
    windowedGroup->addRow(windowedSizeLayout);
 
-   windowedGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-   windowedGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
+   windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
+   windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
 
-   vSyncGroup->addUIntSpinBox(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
-   vSyncGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
-   vSyncGroup->addUIntSpinBox(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    syncGroup->addRow(vSyncGroup);
 
    {
@@ -130,25 +130,25 @@ QWidget *VideoPage::widget()
       {
          CheckableSettingsGroup *hardSyncGroup = new CheckableSettingsGroup(hardSyncSetting);
 
-         hardSyncGroup->addUIntSpinBox(hardSyncSetting->enum_idx);
+         hardSyncGroup->add(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
 
          syncGroup->addRow(hardSyncGroup);
       }
    }
 
-   syncGroup->addUIntSpinBox(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
 
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_THREADED);
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
-   miscGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_SMOOTH);
+   miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
 
-   filterGroup->addFileSelector(MENU_ENUM_LABEL_VIDEO_FILTER);
+   filterGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER);
 
    modeLayout->addWidget(fullscreenGroup);
    modeLayout->addWidget(windowedGroup);

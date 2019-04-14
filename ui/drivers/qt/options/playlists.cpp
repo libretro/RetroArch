@@ -23,19 +23,17 @@ PlaylistsPage::PlaylistsPage(QObject *parent) :
 
 QWidget *PlaylistsPage::widget()
 {
-   QWidget *widget = new QWidget;
-
-   FormLayout *layout = new FormLayout;
-
+   QWidget *widget                 = new QWidget;
+   FormLayout *layout              = new FormLayout;
    CheckableSettingsGroup *history = new CheckableSettingsGroup(MENU_ENUM_LABEL_HISTORY_LIST_ENABLE);
 
-   history->addUIntSpinBox(MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE);
+   history->add(MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE);
 
    layout->addRow(history);
 
-   layout->addCheckBox(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME);
-   layout->addCheckBox(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE);
-   layout->addCheckBox(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT);
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME);
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE);
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT);
 
    widget->setLayout(layout);
 
