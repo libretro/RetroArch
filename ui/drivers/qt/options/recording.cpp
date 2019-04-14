@@ -23,18 +23,18 @@ RecordingPage::RecordingPage(QObject *parent) :
 
 QWidget *RecordingPage::widget()
 {
-   QWidget * widget = new QWidget;
-   QVBoxLayout *layout = new QVBoxLayout;
+   QWidget              * widget = new QWidget;
+   QVBoxLayout           *layout = new QVBoxLayout;
    SettingsGroup *recordingGroup = new SettingsGroup("Recording");
    SettingsGroup *streamingGroup = new SettingsGroup("Streaming");
-   QHBoxLayout *hl = new QHBoxLayout;
+   QHBoxLayout               *hl = new QHBoxLayout;
 
-   recordingGroup->addUIntComboBox(MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY);
-   recordingGroup->addFileSelector(MENU_ENUM_LABEL_RECORD_CONFIG);
-   recordingGroup->addUIntComboBox(MENU_ENUM_LABEL_VIDEO_RECORD_THREADS);
-   recordingGroup->addDirectorySelector(MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY);
-   recordingGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD);
-   recordingGroup->addCheckBox(MENU_ENUM_LABEL_VIDEO_GPU_RECORD);
+   recordingGroup->add(MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY);
+   recordingGroup->add(MENU_ENUM_LABEL_RECORD_CONFIG);
+   recordingGroup->add(MENU_ENUM_LABEL_VIDEO_RECORD_THREADS);
+   recordingGroup->add(MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY);
+   recordingGroup->add(MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD);
+   recordingGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_RECORD);
 
    hl->addWidget(new UIntRadioButtons(MENU_ENUM_LABEL_STREAMING_MODE));
    hl->addWidget(new UIntRadioButtons(MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY));
