@@ -46,10 +46,10 @@ QWidget *AudioPage::widget()
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE);
 
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_SYNC);
-   syncGroup->addFloatSpinBox(MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
-   syncGroup->addFloatSpinBox(MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA);
 
-   dspGroup->addFileSelector(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
+   dspGroup->add(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
 
    volumeLayout->addWidget(new CheckableIcon(MENU_ENUM_LABEL_AUDIO_MUTE, qApp->style()->standardIcon(QStyle::SP_MediaVolumeMuted)));
    volumeLayout->addLayout(new FloatSliderAndSpinBox(MENU_ENUM_LABEL_AUDIO_VOLUME));
