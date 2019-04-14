@@ -39,21 +39,21 @@ NetplayPage::NetplayPage(QObject *parent) :
 
 QWidget *NetplayPage::widget()
 {
-   QWidget *widget = new QWidget;
-   QGridLayout *layout = new QGridLayout;
-   FormLayout *checksLayout = new FormLayout;
-   QGroupBox *serverGroup = new QGroupBox("Server");
-   SettingsGroup *syncGroup = new SettingsGroup("Synchronization");
-   SettingsGroup *slaveGroup = new SettingsGroup("Slave-Mode");
-   SettingsGroup *inputGroup = new SettingsGroup("Input Sharing");
+   QWidget *widget            = new QWidget;
+   QGridLayout *layout        = new QGridLayout;
+   FormLayout *checksLayout   = new FormLayout;
+   QGroupBox *serverGroup     = new QGroupBox("Server");
+   SettingsGroup *syncGroup   = new SettingsGroup("Synchronization");
+   SettingsGroup *slaveGroup  = new SettingsGroup("Slave-Mode");
+   SettingsGroup *inputGroup  = new SettingsGroup("Input Sharing");
    SettingsGroup *deviceGroup = new SettingsGroup("Device Request");
-   FormLayout *serverForm = new FormLayout;
-   QHBoxLayout *serverLayout = new QHBoxLayout;
-   QVBoxLayout *mainLayout = new QVBoxLayout;
-   QGridLayout *requestGrid = new QGridLayout;
-   unsigned i = 0;
-   unsigned row = 0;
-   unsigned column = 0;
+   FormLayout *serverForm     = new FormLayout;
+   QHBoxLayout *serverLayout  = new QHBoxLayout;
+   QVBoxLayout *mainLayout    = new QVBoxLayout;
+   QGridLayout *requestGrid   = new QGridLayout;
+   unsigned i                 = 0;
+   unsigned row               = 0;
+   unsigned column            = 0;
 
    checksLayout->addCheckBox(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->addCheckBox(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
@@ -112,42 +112,48 @@ QWidget *NetplayPage::widget()
 
 QGroupBox *NetplayPage::createMitmServerGroup()
 {
-   CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
-   QButtonGroup *buttonGroup = new QButtonGroup(this);
-
-   rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
-
    unsigned i;
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(
+         MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
+   QButtonGroup *buttonGroup        = new QButtonGroup(this);
+   unsigned list_len                = ARRAY_SIZE(netplay_mitm_server_list);
+   rarch_setting_t *setting         = menu_setting_find_enum(
+         MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
       return nullptr;
 
    for (i = 0; i < list_len; i++)
    {
-      QRadioButton *radioButton = new QRadioButton(netplay_mitm_server_list[i].description);
+      QRadioButton *radioButton = new QRadioButton(
+            netplay_mitm_server_list[i].description);
 
       /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
-      {
+      if (string_is_equal(setting->value.target.string,
+               netplay_mitm_server_list[i].name))
          radioButton->setChecked(true);
-      }
 
       buttonGroup->addButton(radioButton, i);
 
       groupBox->addRow(radioButton);
    }
 
-   connect(buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onRadioButtonClicked(int)));
+   connect(buttonGroup, SIGNAL(buttonClicked(int)),
+         this, SLOT(onRadioButtonClicked(int)));
 
    return groupBox;
 }
 
 void NetplayPage::onRadioButtonClicked(int id)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
+   rarch_setting_t *setting = 
+      menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
-   strlcpy(setting->value.target.string, netplay_mitm_server_list[id].name, setting->size);
+   if (!setting)
+      return;
+
+   strlcpy(setting->value.target.string,
+         netplay_mitm_server_list[id].name, setting->size);
 }
 
 UpdaterPage::UpdaterPage(QObject *parent) :
@@ -158,7 +164,7 @@ UpdaterPage::UpdaterPage(QObject *parent) :
 
 QWidget *UpdaterPage::widget()
 {
-   QWidget *widget = new QWidget;
+   QWidget    *widget = new QWidget;
    FormLayout *layout = new FormLayout;
 
    layout->addStringLineEdit(MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
