@@ -2014,6 +2014,7 @@ bool CONFIG_DIR(
    if (!(settings_list_append(list, list_info)))
       return false;
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_DIRECTORY_SELECTOR;
    settings_data_list_current_add_flags(
          list,
          list_info,
