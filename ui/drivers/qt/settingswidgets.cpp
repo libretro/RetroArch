@@ -65,10 +65,8 @@ FormLayout::FormLayout(QWidget *parent) :
 {
 }
 
-void FormLayout::addCheckBox(msg_hash_enums enum_idx)
+void FormLayout::addCheckBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(new CheckBox(setting));
 }
@@ -129,10 +127,8 @@ void FormLayout::addSizeSpinBox(msg_hash_enums enum_idx, unsigned scale)
       addRow(formLabel(setting), new SizeSpinBox(setting, scale));
 }
 
-void FormLayout::addFloatSpinBox(msg_hash_enums enum_idx)
+void FormLayout::addFloatSpinBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new FloatSpinBox(setting));
 }
@@ -228,9 +224,9 @@ void SettingsGroup::addRow(QString label, QLayout *layout)
    m_layout->addRow(label, layout);
 }
 
-void SettingsGroup::addCheckBox(msg_hash_enums enum_idx)
+void SettingsGroup::addCheckBox(rarch_setting_t *setting)
 {
-   m_layout->addCheckBox(enum_idx);
+   m_layout->addCheckBox(setting);
 }
 
 void SettingsGroup::addDirectorySelector(msg_hash_enums enum_idx)
@@ -278,9 +274,9 @@ void SettingsGroup::addUIntSpinBox(msg_hash_enums enum_idx)
    m_layout->addUIntSpinBox(enum_idx);
 }
 
-void SettingsGroup::addFloatSpinBox(msg_hash_enums enum_idx)
+void SettingsGroup::addFloatSpinBox(rarch_setting_t *setting)
 {
-   m_layout->addFloatSpinBox(enum_idx);
+   m_layout->addFloatSpinBox(setting);
 }
 
 void SettingsGroup::addFloatSliderAndSpinBox(msg_hash_enums enum_idx)

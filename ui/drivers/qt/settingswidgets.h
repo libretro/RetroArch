@@ -34,20 +34,20 @@ class FormLayout : public QFormLayout
 {
 public:
    FormLayout(QWidget *parent = 0);
-   void addUIntSpinBox(msg_hash_enums enum_idx);
    void addSizeSpinBox(msg_hash_enums enum_idx, unsigned scale = 1024 * 1024);
-   void addFloatSpinBox(msg_hash_enums enum_idx);
+   void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
+   void addUIntSpinBox(msg_hash_enums enum_idx);
+   void addFloatSpinBox(rarch_setting_t *setting);
    void addDirectorySelector(msg_hash_enums enum_idx);
    void addFileSelector(msg_hash_enums enum_idx);
    void addFontSelector(msg_hash_enums enum_idx);
-   void addCheckBox(msg_hash_enums enum_idx);
+   void addCheckBox(rarch_setting_t *setting);
    void addUIntComboBox(msg_hash_enums enum_idx);
    void addUIntRadioButtons(msg_hash_enums enum_idx);
    void addStringComboBox(msg_hash_enums enum_idx);
    void addStringLineEdit(msg_hash_enums enum_idx);
    void addPasswordLineEdit(msg_hash_enums enum_idx);
    void addFloatSliderAndSpinBox(msg_hash_enums enum_idx);
-   void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
    bool addBindButton(msg_hash_enums enum_idx);
 
    bool add(msg_hash_enums enum_idx)
@@ -63,7 +63,7 @@ public:
       switch (ui_type)
       {
          case ST_UI_TYPE_CHECKBOX:
-            this->addCheckBox(enum_idx);
+            this->addCheckBox(setting);
             break;
          case ST_UI_TYPE_UINT_COLOR_BUTTON:
             /* TODO/FIXME */
@@ -81,7 +81,7 @@ public:
             /* TODO/FIXME */
             break;
          case ST_UI_TYPE_FLOAT_SPINBOX:
-            this->addFloatSpinBox(enum_idx);
+            this->addFloatSpinBox(setting);
             break;
          case ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX:
             this->addFloatSliderAndSpinBox(enum_idx);
@@ -129,18 +129,6 @@ public:
    void addRow(QWidget *widget);
    void addRow(QLayout *layout);
    void addRow(QString label, QLayout *layout);
-   void addCheckBox(msg_hash_enums enum_idx);
-   void addFileSelector(msg_hash_enums enum_idx);
-   void addDirectorySelector(msg_hash_enums enum_idx);
-   void addFontSelector(msg_hash_enums enum_idx);
-   void addStringLineEdit(msg_hash_enums enum_idx);
-   void addPasswordLineEdit(msg_hash_enums enum_idx);
-   void addStringComboBox(msg_hash_enums enum_idx);
-   void addUIntSpinBox(msg_hash_enums enum_idx);
-   void addUIntComboBox(msg_hash_enums enum_idx);
-   void addUIntRadioButtons(msg_hash_enums enum_idx);
-   void addFloatSpinBox(msg_hash_enums enum_idx);
-   void addFloatSliderAndSpinBox(msg_hash_enums enum_idx);
    void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
    void addBindButton(msg_hash_enums enum_idx);
 
@@ -157,7 +145,7 @@ public:
       switch (ui_type)
       {
          case ST_UI_TYPE_CHECKBOX:
-            this->addCheckBox(enum_idx);
+            this->addCheckBox(setting);
             break;
          case ST_UI_TYPE_UINT_COLOR_BUTTON:
             /* TODO/FIXME */
@@ -175,7 +163,7 @@ public:
             /* TODO/FIXME */
             break;
          case ST_UI_TYPE_FLOAT_SPINBOX:
-            this->addFloatSpinBox(enum_idx);
+            this->addFloatSpinBox(setting);
             break;
          case ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX:
             this->addFloatSliderAndSpinBox(enum_idx);
@@ -214,6 +202,18 @@ public:
       return true;
    }
 private:
+   void addCheckBox(rarch_setting_t *setting);
+   void addFileSelector(msg_hash_enums enum_idx);
+   void addDirectorySelector(msg_hash_enums enum_idx);
+   void addFontSelector(msg_hash_enums enum_idx);
+   void addStringLineEdit(msg_hash_enums enum_idx);
+   void addPasswordLineEdit(msg_hash_enums enum_idx);
+   void addStringComboBox(msg_hash_enums enum_idx);
+   void addUIntSpinBox(msg_hash_enums enum_idx);
+   void addUIntComboBox(msg_hash_enums enum_idx);
+   void addUIntRadioButtons(msg_hash_enums enum_idx);
+   void addFloatSpinBox(rarch_setting_t *setting);
+   void addFloatSliderAndSpinBox(msg_hash_enums enum_idx);
    FormLayout *m_layout;
 };
 

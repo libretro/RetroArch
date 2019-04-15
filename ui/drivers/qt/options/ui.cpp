@@ -49,7 +49,7 @@ QWidget *UserInterfacePage::widget()
    {
       CheckableSettingsGroup *kioskGroup = new CheckableSettingsGroup(kioskMode, widget);
 
-      kioskGroup->addPasswordLineEdit(MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD);
+      kioskGroup->add(MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD);
 
       menuGroup->addRow(kioskGroup);
    }
