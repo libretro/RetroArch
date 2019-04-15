@@ -25,13 +25,22 @@ FrameThrottlePage::FrameThrottlePage(QObject *parent) :
 
 QWidget *FrameThrottlePage::widget()
 {
-   QWidget    *widget = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget             *widget = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST);
 
-   layout->add(MENU_ENUM_LABEL_FASTFORWARD_RATIO);
-   layout->add(MENU_ENUM_LABEL_SLOWMOTION_RATIO);
-   layout->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
-   layout->add(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE);
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 
@@ -46,13 +55,22 @@ RewindPage::RewindPage(QObject *parent) :
 
 QWidget *RewindPage::widget()
 {
-   QWidget    *widget = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget             *widget = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_REWIND_SETTINGS_LIST);
 
-   layout->add(MENU_ENUM_LABEL_REWIND_ENABLE);
-   layout->add(MENU_ENUM_LABEL_REWIND_GRANULARITY);
-   layout->add(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
-   layout->add(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP);
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 

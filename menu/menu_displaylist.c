@@ -4382,6 +4382,50 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_REWIND_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_REWIND_ENABLE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_REWIND_GRANULARITY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
+               PARSE_ONLY_SIZE, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_REWIND_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_FASTFORWARD_RATIO,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SLOWMOTION_RATIO,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         {
+            settings_t      *settings     = config_get_ptr();
+            if (settings->bools.menu_show_advanced_settings)
+               if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+                     PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+         }
+         break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_MENU_WALLPAPER,
@@ -5691,43 +5735,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_REWIND_SETTINGS,   PARSE_ACTION, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_FASTFORWARD_RATIO,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SLOWMOTION_RATIO,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
-               PARSE_ONLY_BOOL, false);
-
-         {
-            settings_t      *settings     = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-               menu_displaylist_parse_settings_enum(info->list,
-                     MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-                     PARSE_ONLY_BOOL, false);
-         }
+         count = menu_displaylist_build_list(info->list, type);
 
          info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_REWIND_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_REWIND_GRANULARITY,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
-               PARSE_ONLY_SIZE, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
-               PARSE_ONLY_UINT, false);
+         count = menu_displaylist_build_list(info->list, type);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -6253,7 +6268,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         count = menu_displaylist_build_list(info->list, DISPLAYLIST_MENU_SETTINGS_LIST);
+         count = menu_displaylist_build_list(info->list,
+               type);
 
          if (count == 0)
             menu_entries_append_enum(info->list,

@@ -232,8 +232,6 @@ QWidget *AppearancePage::widget()
             layout->add(cbs->enum_idx);
             break;
       }
-
-      file_list_free_actiondata(list, i);
    }
 
    file_list_free(list);
