@@ -4382,6 +4382,33 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_LOGGING_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOG_VERBOSITY,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOG_TO_FILE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         {
+            settings_t      *settings     = config_get_ptr();
+            if (settings->bools.menu_show_advanced_settings)
+              if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_PERFCNT_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+                 count++;
+         }
+         break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_REWIND_ENABLE,
@@ -5709,26 +5736,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOG_VERBOSITY,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOG_TO_FILE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP,
-               PARSE_ONLY_BOOL, false);
-
-         {
-            settings_t      *settings     = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-               menu_displaylist_parse_settings_enum(info->list,
-                     MENU_ENUM_LABEL_PERFCNT_ENABLE,
-                     PARSE_ONLY_BOOL, false);
-         }
+         count = menu_displaylist_build_list(info->list, type);
 
          info->need_refresh = true;
          info->need_push    = true;
