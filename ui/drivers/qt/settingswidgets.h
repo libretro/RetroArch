@@ -34,21 +34,21 @@ class FormLayout : public QFormLayout
 {
 public:
    FormLayout(QWidget *parent = 0);
-   void addSizeSpinBox(msg_hash_enums enum_idx, unsigned scale = 1024 * 1024);
+   void addSizeSpinBox(rarch_setting_t *setting, unsigned scale = 1024 * 1024);
    void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
-   void addUIntSpinBox(msg_hash_enums enum_idx);
+   void addUIntSpinBox(rarch_setting_t *setting);
    void addFloatSpinBox(rarch_setting_t *setting);
-   void addDirectorySelector(msg_hash_enums enum_idx);
-   void addFileSelector(msg_hash_enums enum_idx);
-   void addFontSelector(msg_hash_enums enum_idx);
    void addCheckBox(rarch_setting_t *setting);
-   void addUIntComboBox(msg_hash_enums enum_idx);
-   void addUIntRadioButtons(msg_hash_enums enum_idx);
-   void addStringComboBox(msg_hash_enums enum_idx);
-   void addStringLineEdit(msg_hash_enums enum_idx);
-   void addPasswordLineEdit(msg_hash_enums enum_idx);
-   void addFloatSliderAndSpinBox(msg_hash_enums enum_idx);
-   bool addBindButton(msg_hash_enums enum_idx);
+   void addUIntComboBox(rarch_setting_t *setting);
+   bool addBindButton(rarch_setting_t *setting);
+   void addFileSelector(rarch_setting_t *setting);
+   void addDirectorySelector(rarch_setting_t *setting);
+   void addFloatSliderAndSpinBox(rarch_setting_t *setting);
+   void addFontSelector(rarch_setting_t *setting);
+   void addUIntRadioButtons(rarch_setting_t *setting);
+   void addStringComboBox(rarch_setting_t *setting);
+   void addStringLineEdit(rarch_setting_t *setting);
+   void addPasswordLineEdit(rarch_setting_t *setting);
 
    bool add(msg_hash_enums enum_idx)
    {
@@ -69,13 +69,13 @@ public:
             /* TODO/FIXME */
             break;
          case ST_UI_TYPE_UINT_SPINBOX:
-            this->addUIntSpinBox(enum_idx);
+            this->addUIntSpinBox(setting);
             break;
          case ST_UI_TYPE_UINT_COMBOBOX:
-            this->addUIntComboBox(enum_idx);
+            this->addUIntComboBox(setting);
             break;
          case ST_UI_TYPE_UINT_RADIO_BUTTONS:
-            this->addUIntRadioButtons(enum_idx);
+            this->addUIntRadioButtons(setting);
             break;
          case ST_UI_TYPE_FLOAT_COLOR_BUTTON:
             /* TODO/FIXME */
@@ -84,30 +84,30 @@ public:
             this->addFloatSpinBox(setting);
             break;
          case ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX:
-            this->addFloatSliderAndSpinBox(enum_idx);
+            this->addFloatSliderAndSpinBox(setting);
             break;
          case ST_UI_TYPE_SIZE_SPINBOX:
-            this->addSizeSpinBox(enum_idx);
+            this->addSizeSpinBox(setting);
             break;
          case ST_UI_TYPE_BIND_BUTTON:
-            return this->addBindButton(enum_idx);
+            return this->addBindButton(setting);
          case ST_UI_TYPE_DIRECTORY_SELECTOR:
-            this->addDirectorySelector(enum_idx);
+            this->addDirectorySelector(setting);
             break;
          case ST_UI_TYPE_FILE_SELECTOR:
-            this->addFileSelector(enum_idx);
+            this->addFileSelector(setting);
             break;
          case ST_UI_TYPE_FONT_SELECTOR:
-            this->addFontSelector(enum_idx);
+            this->addFontSelector(setting);
             break;
          case ST_UI_TYPE_STRING_COMBOBOX:
-            this->addStringComboBox(enum_idx);
+            this->addStringComboBox(setting);
             break;
          case ST_UI_TYPE_STRING_LINE_EDIT:
-            this->addStringLineEdit(enum_idx);
+            this->addStringLineEdit(setting);
             break;
          case ST_UI_TYPE_PASSWORD_LINE_EDIT:
-            this->addPasswordLineEdit(enum_idx);
+            this->addPasswordLineEdit(setting);
             break;
          case ST_UI_TYPE_NONE:
          default:
@@ -130,7 +130,6 @@ public:
    void addRow(QLayout *layout);
    void addRow(QString label, QLayout *layout);
    void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
-   void addBindButton(msg_hash_enums enum_idx);
 
    bool add(msg_hash_enums enum_idx)
    {
@@ -151,13 +150,13 @@ public:
             /* TODO/FIXME */
             break;
          case ST_UI_TYPE_UINT_SPINBOX:
-            this->addUIntSpinBox(enum_idx);
+            this->addUIntSpinBox(setting);
             break;
          case ST_UI_TYPE_UINT_COMBOBOX:
-            this->addUIntComboBox(enum_idx);
+            this->addUIntComboBox(setting);
             break;
          case ST_UI_TYPE_UINT_RADIO_BUTTONS:
-            this->addUIntRadioButtons(enum_idx);
+            this->addUIntRadioButtons(setting);
             break;
          case ST_UI_TYPE_FLOAT_COLOR_BUTTON:
             /* TODO/FIXME */
@@ -166,7 +165,7 @@ public:
             this->addFloatSpinBox(setting);
             break;
          case ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX:
-            this->addFloatSliderAndSpinBox(enum_idx);
+            this->addFloatSliderAndSpinBox(setting);
             break;
          case ST_UI_TYPE_SIZE_SPINBOX:
             /* TODO/FIXME */
@@ -174,25 +173,25 @@ public:
          case ST_UI_TYPE_BIND_BUTTON:
             /* TODO/FIXME - Why is the returntype void here and bool
              * for Layout? */
-            this->addBindButton(enum_idx);
+            this->addBindButton(setting);
             break;
          case ST_UI_TYPE_DIRECTORY_SELECTOR:
-            this->addDirectorySelector(enum_idx);
+            this->addDirectorySelector(setting);
             break;
          case ST_UI_TYPE_FILE_SELECTOR:
-            this->addFileSelector(enum_idx);
+            this->addFileSelector(setting);
             break;
          case ST_UI_TYPE_FONT_SELECTOR:
-            this->addFontSelector(enum_idx);
+            this->addFontSelector(setting);
             break;
          case ST_UI_TYPE_STRING_COMBOBOX:
-            this->addStringComboBox(enum_idx);
+            this->addStringComboBox(setting);
             break;
          case ST_UI_TYPE_STRING_LINE_EDIT:
-            this->addStringLineEdit(enum_idx);
+            this->addStringLineEdit(setting);
             break;
          case ST_UI_TYPE_PASSWORD_LINE_EDIT:
-            this->addPasswordLineEdit(enum_idx);
+            this->addPasswordLineEdit(setting);
             break;
          case ST_UI_TYPE_NONE:
          default:
@@ -202,18 +201,19 @@ public:
       return true;
    }
 private:
+   void addBindButton(rarch_setting_t *setting);
    void addCheckBox(rarch_setting_t *setting);
-   void addFileSelector(msg_hash_enums enum_idx);
-   void addDirectorySelector(msg_hash_enums enum_idx);
-   void addFontSelector(msg_hash_enums enum_idx);
-   void addStringLineEdit(msg_hash_enums enum_idx);
-   void addPasswordLineEdit(msg_hash_enums enum_idx);
-   void addStringComboBox(msg_hash_enums enum_idx);
-   void addUIntSpinBox(msg_hash_enums enum_idx);
-   void addUIntComboBox(msg_hash_enums enum_idx);
-   void addUIntRadioButtons(msg_hash_enums enum_idx);
+   void addUIntSpinBox(rarch_setting_t *setting);
+   void addUIntComboBox(rarch_setting_t *setting);
    void addFloatSpinBox(rarch_setting_t *setting);
-   void addFloatSliderAndSpinBox(msg_hash_enums enum_idx);
+   void addFileSelector(rarch_setting_t *setting);
+   void addDirectorySelector(rarch_setting_t *setting);
+   void addFloatSliderAndSpinBox(rarch_setting_t *setting);
+   void addFontSelector(rarch_setting_t *setting);
+   void addUIntRadioButtons(rarch_setting_t *setting);
+   void addStringComboBox(rarch_setting_t *setting);
+   void addStringLineEdit(rarch_setting_t *setting);
+   void addPasswordLineEdit(rarch_setting_t *setting);
    FormLayout *m_layout;
 };
 

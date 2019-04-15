@@ -71,58 +71,44 @@ void FormLayout::addCheckBox(rarch_setting_t *setting)
       addRow(new CheckBox(setting));
 }
 
-void FormLayout::addUIntRadioButtons(msg_hash_enums enum_idx)
+void FormLayout::addUIntRadioButtons(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(new UIntRadioButtons(setting));
 }
 
-void FormLayout::addUIntComboBox(msg_hash_enums enum_idx)
+void FormLayout::addUIntComboBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new UIntComboBox(setting));
 }
 
-void FormLayout::addStringComboBox(msg_hash_enums enum_idx)
+void FormLayout::addStringComboBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new StringComboBox(setting));
 }
 
-void FormLayout::addStringLineEdit(msg_hash_enums enum_idx)
+void FormLayout::addStringLineEdit(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new StringLineEdit(setting));
 }
 
-void FormLayout::addPasswordLineEdit(msg_hash_enums enum_idx)
+void FormLayout::addPasswordLineEdit(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new PasswordLineEdit(setting));
 }
 
-void FormLayout::addUIntSpinBox(msg_hash_enums enum_idx)
+void FormLayout::addUIntSpinBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new UIntSpinBox(setting));
 }
 
-void FormLayout::addSizeSpinBox(msg_hash_enums enum_idx, unsigned scale)
+void FormLayout::addSizeSpinBox(rarch_setting_t *setting, unsigned scale)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new SizeSpinBox(setting, scale));
 }
@@ -133,34 +119,26 @@ void FormLayout::addFloatSpinBox(rarch_setting_t *setting)
       addRow(formLabel(setting), new FloatSpinBox(setting));
 }
 
-void FormLayout::addDirectorySelector(msg_hash_enums enum_idx)
+void FormLayout::addDirectorySelector(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new DirectorySelector(setting));
 }
 
-void FormLayout::addFileSelector(msg_hash_enums enum_idx)
+void FormLayout::addFileSelector(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new FileSelector(setting));
 }
 
-void FormLayout::addFontSelector(msg_hash_enums enum_idx)
+void FormLayout::addFontSelector(rarch_setting_t *setting)
 {
-    rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
     if (setting && setting->short_description)
        addRow(formLabel(setting), new FontSelector(setting));
 }
 
-void FormLayout::addFloatSliderAndSpinBox(msg_hash_enums enum_idx)
+void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (setting && setting->short_description)
       addRow(formLabel(setting), new FloatSliderAndSpinBox(setting));
 }
@@ -175,10 +153,8 @@ void FormLayout::addUIntColorButton(const QString &title, msg_hash_enums r, msg_
       addRow(title, new UIntColorButton(red, green, blue));
 }
 
-bool FormLayout::addBindButton(msg_hash_enums enum_idx)
+bool FormLayout::addBindButton(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = menu_setting_find_enum(enum_idx);
-
    if (!setting || !setting->short_description)
       return false;
 
@@ -229,49 +205,49 @@ void SettingsGroup::addCheckBox(rarch_setting_t *setting)
    m_layout->addCheckBox(setting);
 }
 
-void SettingsGroup::addDirectorySelector(msg_hash_enums enum_idx)
+void SettingsGroup::addDirectorySelector(rarch_setting_t *setting)
 {
-   m_layout->addDirectorySelector(enum_idx);
+   m_layout->addDirectorySelector(setting);
 }
 
-void SettingsGroup::addFileSelector(msg_hash_enums enum_idx)
+void SettingsGroup::addFileSelector(rarch_setting_t *setting)
 {
-   m_layout->addFileSelector(enum_idx);
+   m_layout->addFileSelector(setting);
 }
 
-void SettingsGroup::addFontSelector(msg_hash_enums enum_idx)
+void SettingsGroup::addFontSelector(rarch_setting_t *setting)
 {
-   m_layout->addFontSelector(enum_idx);
+   m_layout->addFontSelector(setting);
 }
 
-void SettingsGroup::addStringLineEdit(msg_hash_enums enum_idx)
+void SettingsGroup::addStringLineEdit(rarch_setting_t *setting)
 {
-   m_layout->addStringLineEdit(enum_idx);
+   m_layout->addStringLineEdit(setting);
 }
 
-void SettingsGroup::addPasswordLineEdit(msg_hash_enums enum_idx)
+void SettingsGroup::addPasswordLineEdit(rarch_setting_t *setting)
 {
-   m_layout->addPasswordLineEdit(enum_idx);
+   m_layout->addPasswordLineEdit(setting);
 }
 
-void SettingsGroup::addStringComboBox(msg_hash_enums enum_idx)
+void SettingsGroup::addStringComboBox(rarch_setting_t *setting)
 {
-   m_layout->addStringComboBox(enum_idx);
+   m_layout->addStringComboBox(setting);
 }
 
-void SettingsGroup::addUIntComboBox(msg_hash_enums enum_idx)
+void SettingsGroup::addUIntComboBox(rarch_setting_t *setting)
 {
-   m_layout->addUIntComboBox(enum_idx);
+   m_layout->addUIntComboBox(setting);
 }
 
-void SettingsGroup::addUIntRadioButtons(msg_hash_enums enum_idx)
+void SettingsGroup::addUIntRadioButtons(rarch_setting_t *setting)
 {
-   m_layout->addUIntRadioButtons(enum_idx);
+   m_layout->addUIntRadioButtons(setting);
 }
 
-void SettingsGroup::addUIntSpinBox(msg_hash_enums enum_idx)
+void SettingsGroup::addUIntSpinBox(rarch_setting_t *setting)
 {
-   m_layout->addUIntSpinBox(enum_idx);
+   m_layout->addUIntSpinBox(setting);
 }
 
 void SettingsGroup::addFloatSpinBox(rarch_setting_t *setting)
@@ -279,9 +255,9 @@ void SettingsGroup::addFloatSpinBox(rarch_setting_t *setting)
    m_layout->addFloatSpinBox(setting);
 }
 
-void SettingsGroup::addFloatSliderAndSpinBox(msg_hash_enums enum_idx)
+void SettingsGroup::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 {
-   m_layout->addFloatSliderAndSpinBox(enum_idx);
+   m_layout->addFloatSliderAndSpinBox(setting);
 }
 
 void SettingsGroup::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
@@ -289,9 +265,9 @@ void SettingsGroup::addUIntColorButton(const QString &title, msg_hash_enums r, m
    m_layout->addUIntColorButton(title, r, g, b);
 }
 
-void SettingsGroup::addBindButton(msg_hash_enums enum_idx)
+void SettingsGroup::addBindButton(rarch_setting_t *setting)
 {
-   m_layout->addBindButton(enum_idx);
+   m_layout->addBindButton(setting);
 }
 
 CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
