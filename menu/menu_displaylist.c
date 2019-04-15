@@ -4382,6 +4382,54 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_DRIVER_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_INPUT_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_JOYPAD_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_VIDEO_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUDIO_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CAMERA_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOCATION_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_MENU_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RECORD_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_MIDI_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+#ifdef HAVE_LAKKA
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_WIFI_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+#endif
+         break;
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_LOG_VERBOSITY,
@@ -5627,47 +5675,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          }
          info->need_push    = true;
          break;
-      case DISPLAYLIST_DRIVER_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_JOYPAD_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CAMERA_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOCATION_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MENU_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RECORD_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MIDI_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-#ifdef HAVE_LAKKA
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_WIFI_DRIVER,
-               PARSE_ONLY_STRING_OPTIONS, false);
-#endif
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(info->list,
@@ -5734,6 +5741,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:

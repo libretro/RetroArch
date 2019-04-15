@@ -24,19 +24,22 @@ DriversPage::DriversPage(QObject *parent) :
 
 QWidget *DriversPage::widget()
 {
-   QWidget *widget    = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget          *widget    = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_DRIVER_SETTINGS_LIST);
 
-   layout->add(MENU_ENUM_LABEL_INPUT_DRIVER);
-   layout->add(MENU_ENUM_LABEL_JOYPAD_DRIVER);
-   layout->add(MENU_ENUM_LABEL_VIDEO_DRIVER);
-   layout->add(MENU_ENUM_LABEL_AUDIO_DRIVER);
-   layout->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER);
-   layout->add(MENU_ENUM_LABEL_CAMERA_DRIVER);
-   layout->add(MENU_ENUM_LABEL_LOCATION_DRIVER);
-   layout->add(MENU_ENUM_LABEL_MENU_DRIVER);
-   layout->add(MENU_ENUM_LABEL_RECORD_DRIVER);
-   layout->add(MENU_ENUM_LABEL_MIDI_DRIVER);
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 
