@@ -295,8 +295,13 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
    {
       rarch_system_info_t* system = runloop_get_system_info();
 
-      if (system->mmaps.num_descriptors != 0)
+      if (system->mmaps.num_descriptors > var->bank_id)
+      {
+         if (var->value >= system->mmaps.descriptors[var->bank_id].core.len)
+             return NULL;
+
          memory = (uint8_t*)system->mmaps.descriptors[var->bank_id].core.ptr;
+      }
       else
       {
          retro_ctx_memory_info_t meminfo = {NULL, 0, 0};
@@ -321,6 +326,10 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
          }
 
          core_get_memory(&meminfo);
+
+         if (var->value >= meminfo.size)
+             return NULL;
+
          memory = (uint8_t*)meminfo.data;
       }
 
