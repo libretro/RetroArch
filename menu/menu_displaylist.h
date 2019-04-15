@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "../msg_hash.h"
 #include "../setting_list.h"
 
 #ifndef COLLECTION_SIZE
@@ -260,6 +261,18 @@ bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);
 #endif
+
+int menu_displaylist_parse_settings_internal_enum(
+      file_list_t *list,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry,
+      rarch_setting_t *setting,
+      enum msg_hash_enums enum_idx
+      );
+
+#define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
+
+#define menu_displaylist_parse_settings(info_list, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(info_list, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
 
 RETRO_END_DECLS
 
