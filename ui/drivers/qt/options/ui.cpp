@@ -164,7 +164,8 @@ QWidget *QuickMenuPage::widget()
    QWidget            * widget = new QWidget;
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
-   unsigned           count    = menu_displaylist_build_list(
+
+   menu_displaylist_build_list(
          list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST);
 
    for (i = 0; i < list->size; i++)
@@ -193,10 +194,9 @@ QWidget *AppearancePage::widget()
    unsigned i;
    QWidget            * widget = new QWidget;
    FormLayout          *layout = new FormLayout;
-   rarch_setting_t *thumbnails = menu_setting_find_enum(
-         MENU_ENUM_LABEL_THUMBNAILS);
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
-   unsigned           count    = menu_displaylist_build_list(
+
+   menu_displaylist_build_list(
          list, DISPLAYLIST_MENU_SETTINGS_LIST);
 
    /* TODO/FIXME - we haven't yet figured out how to 
@@ -233,58 +233,63 @@ QWidget *AppearancePage::widget()
    file_list_free(list);
 
 #if 0
-   layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER);
-   layout->add(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
-   layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
-   layout->add(MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY);
-   layout->add(MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_FULL_WIDTH_LAYOUT);
-   layout->add(MENU_ENUM_LABEL_MENU_LINEAR_FILTER);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK);
-   layout->add(MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME);
-   layout->add(MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET);
-   layout->add(MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE);
-   layout->add(MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE);
-   layout->add(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR);
-   layout->add(MENU_ENUM_LABEL_XMB_SCALE_FACTOR);
-   layout->add(MENU_ENUM_LABEL_XMB_FONT);
-   layout->addUIntColorButton("Menu Font Color: ",
-      MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
-      MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
-      MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE);
-   layout->add(MENU_ENUM_LABEL_XMB_LAYOUT);
-   layout->add(MENU_ENUM_LABEL_XMB_THEME);
-   layout->add(MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE);
-   layout->add(MENU_ENUM_LABEL_XMB_RIBBON_ENABLE);
-   layout->add(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
-   layout->add(MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME);
-   layout->add(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE);
-   layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME);
-   layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY);
-   layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY);
-   layout->add(MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME);
-
-   if (thumbnails)
    {
-      QHBoxLayout       *thumbsLayout = new QHBoxLayout;
-      rarch_setting_t *leftThumbnails = menu_setting_find_enum(MENU_ENUM_LABEL_LEFT_THUMBNAILS);
+      rarch_setting_t *thumbnails = menu_setting_find_enum(
+            MENU_ENUM_LABEL_THUMBNAILS);
 
-      thumbsLayout->addWidget(new UIntRadioButtons(thumbnails));
+      layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER);
+      layout->add(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
+      layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
+      layout->add(MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY);
+      layout->add(MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_FULL_WIDTH_LAYOUT);
+      layout->add(MENU_ENUM_LABEL_MENU_LINEAR_FILTER);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK);
+      layout->add(MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME);
+      layout->add(MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET);
+      layout->add(MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE);
+      layout->add(MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE);
+      layout->add(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR);
+      layout->add(MENU_ENUM_LABEL_XMB_SCALE_FACTOR);
+      layout->add(MENU_ENUM_LABEL_XMB_FONT);
+      layout->addUIntColorButton("Menu Font Color: ",
+            MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
+            MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
+            MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE);
+      layout->add(MENU_ENUM_LABEL_XMB_LAYOUT);
+      layout->add(MENU_ENUM_LABEL_XMB_THEME);
+      layout->add(MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE);
+      layout->add(MENU_ENUM_LABEL_XMB_RIBBON_ENABLE);
+      layout->add(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
+      layout->add(MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME);
+      layout->add(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE);
+      layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME);
+      layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY);
+      layout->add(MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY);
+      layout->add(MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME);
 
-      if (leftThumbnails)
-         thumbsLayout->addWidget(new UIntRadioButtons(leftThumbnails));
+      if (thumbnails)
+      {
+         QHBoxLayout       *thumbsLayout = new QHBoxLayout;
+         rarch_setting_t *leftThumbnails = menu_setting_find_enum(MENU_ENUM_LABEL_LEFT_THUMBNAILS);
 
-      layout->addRow(thumbsLayout);
+         thumbsLayout->addWidget(new UIntRadioButtons(thumbnails));
+
+         if (leftThumbnails)
+            thumbsLayout->addWidget(new UIntRadioButtons(leftThumbnails));
+
+         layout->addRow(thumbsLayout);
+      }
+
+      layout->add(MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS);
+      layout->add(MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER);
+      layout->add(MENU_ENUM_LABEL_MENU_TICKER_TYPE);
+      layout->add(MENU_ENUM_LABEL_MENU_TICKER_SPEED);
    }
-
-   layout->add(MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS);
-   layout->add(MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER);
-   layout->add(MENU_ENUM_LABEL_MENU_TICKER_TYPE);
-   layout->add(MENU_ENUM_LABEL_MENU_TICKER_SPEED);
 #endif
 
    widget->setLayout(layout);

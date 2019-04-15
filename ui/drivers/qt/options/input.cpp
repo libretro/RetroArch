@@ -107,7 +107,6 @@ UserBindsPage::UserBindsPage(QObject *parent) :
 QWidget *UserBindsPage::widget()
 {
    unsigned p, retro_id;
-   unsigned count        = 0;
    unsigned max_users    = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    QWidget *widget       = new QWidget;
    QGridLayout *layout   = new QGridLayout;

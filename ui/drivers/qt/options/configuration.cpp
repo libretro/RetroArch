@@ -27,7 +27,8 @@ QWidget *ConfigurationPage::widget()
    QWidget          *widget    = new QWidget;
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
-   unsigned           count    = menu_displaylist_build_list(
+
+   menu_displaylist_build_list(
          list, DISPLAYLIST_CONFIGURATION_SETTINGS_LIST);
 
    for (i = 0; i < list->size; i++)

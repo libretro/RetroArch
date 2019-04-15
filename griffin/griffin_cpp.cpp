@@ -78,7 +78,6 @@ UI
 #include "../ui/drivers/qt/options/ui.cpp"
 #include "../ui/drivers/qt/options/achievements.cpp"
 #include "../ui/drivers/qt/options/network.cpp"
-#include "../ui/drivers/qt/moc_settingswidgets.cpp"
 #include "../ui/drivers/qt/options/moc_options.cpp"
 #endif
 #include "../ui/drivers/moc_ui_qt.cpp"

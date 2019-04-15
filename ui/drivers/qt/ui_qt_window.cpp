@@ -2070,9 +2070,9 @@ ViewOptionsDialog* MainWindow::viewOptionsDialog()
 void MainWindow::setCoreActions()
 {
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   ViewType viewType = getCurrentViewType();
-   QHash<QString, QString> hash = getCurrentContentHash();
-   QString currentPlaylistFileName = QString();
+   ViewType                    viewType = getCurrentViewType();
+   QHash<QString, QString>         hash = getCurrentContentHash();
+   QString      currentPlaylistFileName = QString();
 
    m_launchWithComboBox->clear();
 
@@ -2097,9 +2097,7 @@ void MainWindow::setCoreActions()
          QString coreName = hash["core_name"];
 
          if (coreName.isEmpty())
-         {
             coreName = "<n/a>";
-         }
          else
          {
             const char *detect_str = file_path_str(FILE_PATH_DETECT);
@@ -2882,9 +2880,8 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
 
 void MainWindow::initContentTableWidget()
 {
-   QListWidgetItem *item = m_listWidget->currentItem();
    QString path;
-   int i = 0;
+   QListWidgetItem *item = m_listWidget->currentItem();
 
    if (!item)
       return;
@@ -2904,10 +2901,10 @@ void MainWindow::initContentTableWidget()
 
    if (path == ALL_PLAYLISTS_TOKEN)
    {
+      unsigned i;
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
       QStringList playlists;
-      int i = 0;
 
       for (i = 0; i < m_playlistFiles.count(); i++)
       {
@@ -2933,12 +2930,13 @@ void MainWindow::initContentTableWidget()
 
 void MainWindow::updateItemsCount()
 {
-   m_itemsCountLabel->setText(m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
+   m_itemsCountLabel->setText(
+         m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-/*
+#if 0
    if (event->key() == Qt::Key_F5)
    {
       event->accept();
@@ -2946,7 +2944,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
       return;
    }
-*/
+#endif
    QMainWindow::keyPressEvent(event);
 }
 
