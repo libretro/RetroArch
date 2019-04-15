@@ -35,6 +35,9 @@ extern "C" {
 
 #ifdef HAVE_MENU
 
+static const int MAX_MIN_WIDTH = 250;
+static const int MAX_MIN_HEIGHT = 250;
+
 QPixmap getColorizedPixmap(const QPixmap& oldPixmap, const QColor& color)
 {
    QPixmap pixmap = oldPixmap;
@@ -52,10 +55,74 @@ QColor getLabelColor(const QString& objectName)
    return dummyColor.palette().color(QPalette::Foreground);
 }
 
+/* stolen from Qt Creator */
+class SmartScrollArea : public QScrollArea
+{
+public:
+   explicit SmartScrollArea(QWidget *parent) :
+      QScrollArea(parent)
+   {
+      setFrameStyle(QFrame::NoFrame | QFrame::Plain);
+      viewport()->setAutoFillBackground(false);
+      setWidgetResizable(true);
+   }
+private:
+   void resizeEvent(QResizeEvent *event) final
+   {
+      QWidget *inner = widget();
+      if (inner)
+      {
+         int fw = frameWidth() * 2;
+         QSize innerSize = event->size() - QSize(fw, fw);
+         QSize innerSizeHint = inner->minimumSizeHint();
+
+         if (innerSizeHint.height() > innerSize.height())
+         { /* Widget wants to be bigger than available space */
+            innerSize.setWidth(innerSize.width() - scrollBarWidth());
+            innerSize.setHeight(innerSizeHint.height());
+         }
+         inner->resize(innerSize);
+      }
+      QScrollArea::resizeEvent(event);
+   }
+
+   QSize minimumSizeHint() const final
+   {
+      QWidget *inner = widget();
+      if (inner) {
+         int fw = frameWidth() * 2;
+
+         QSize minSize = inner->minimumSizeHint();
+         minSize += QSize(fw, fw);
+         minSize += QSize(scrollBarWidth(), 0);
+         minSize.setWidth(qMin(minSize.width(), MAX_MIN_WIDTH));
+         minSize.setHeight(qMin(minSize.height(), MAX_MIN_HEIGHT));
+         return minSize;
+      }
+      return QSize(0, 0);
+   }
+
+   bool event(QEvent *event) final
+   {
+      if (event->type() == QEvent::LayoutRequest)
+         updateGeometry();
+      return QScrollArea::event(event);
+   }
+
+   int scrollBarWidth() const
+   {
+      SmartScrollArea *that = const_cast<SmartScrollArea *>(this);
+      QWidgetList list = that->scrollBarWidgets(Qt::AlignRight);
+      if (list.isEmpty())
+         return 0;
+      return list.first()->sizeHint().width();
+   }
+};
+
 ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(mainwindow)
-   , m_optionsList(new QListWidget(this))
-   , m_optionsStack(new QStackedWidget(this))
+   ,m_optionsList(new QListWidget(this))
+   ,m_optionsStack(new QStackedLayout)
 {
    QGridLayout *layout = new QGridLayout(this);
    QLabel *m_headerLabel = new QLabel(this);
@@ -65,6 +132,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QHBoxLayout *headerHLayout = new QHBoxLayout;
    const int leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
    int width;
+
+   m_optionsStack->setMargin(0);
 
    headerLabelFont.setBold(true);
 
@@ -106,7 +175,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 
    layout->addWidget(m_optionsList, 0, 0, 2, 1);
    layout->addLayout(headerHLayout, 0, 1);
-   layout->addWidget(m_optionsStack, 1, 1);
+   layout->addLayout(m_optionsStack, 1, 1);
 
    connect(m_optionsList, SIGNAL(currentRowChanged(int)), m_optionsStack, SLOT(setCurrentIndex(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)), m_headerLabel, SLOT(setText(const QString&)));
@@ -127,9 +196,11 @@ void ViewOptionsDialog::addCategory(OptionsCategory *category)
 
    for (OptionsPage* page : category->pages())
    {
+      SmartScrollArea *scrollArea = new SmartScrollArea(this);
       QWidget *widget = page->widget();
+      scrollArea->setWidget(widget);
       widget->setAutoFillBackground(false);
-      tabWidget->addTab(widget, page->displayName());
+      tabWidget->addTab(scrollArea, page->displayName());
    }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))

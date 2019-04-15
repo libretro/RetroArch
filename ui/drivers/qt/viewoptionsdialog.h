@@ -16,7 +16,7 @@ class QSpinBox;
 class QWidget;
 class OptionsCategory;
 class QListWidget;
-class QStackedWidget;
+class QStackedLayout;
 #endif
 
 class ViewOptionsWidget : public QWidget
@@ -58,8 +58,6 @@ class ViewOptionsDialog : public QDialog
    Q_OBJECT
 public:
    ViewOptionsDialog(MainWindow *window, QWidget *parent = 0);
-   // Make sure the settings dialog starts up as small as possible.
-   QSize sizeHint() const final { return minimumSize(); }
 #ifdef HAVE_MENU
    void repaintIcons();
 #endif
@@ -74,7 +72,7 @@ private:
    void addCategory(OptionsCategory *category);
    QVector<OptionsCategory*> m_categoryList;
    QListWidget *m_optionsList;
-   QStackedWidget *m_optionsStack;
+   QStackedLayout *m_optionsStack;
 #else
    ViewOptionsWidget *m_viewOptionsWidget;
 #endif

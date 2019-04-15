@@ -522,6 +522,9 @@ static void* ui_companion_qt_init(void)
       if (qsettings->contains("save_geometry"))
          mainwindow->restoreGeometry(qsettings->value("geometry").toByteArray());
 
+   if (qsettings->contains("options_dialog_geometry"))
+      mainwindow->viewOptionsDialog()->restoreGeometry(qsettings->value("options_dialog_geometry").toByteArray());
+
    if (qsettings->contains("save_dock_positions"))
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());

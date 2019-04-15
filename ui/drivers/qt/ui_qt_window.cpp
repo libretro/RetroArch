@@ -3020,6 +3020,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
    m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
    m_settings->setValue("icon_view_zoom", m_lastZoomSliderValue);
    m_settings->setValue("icon_view_thumbnail_type", getCurrentThumbnailTypeString());
+   m_settings->setValue("options_dialog_geometry", m_viewOptionsDialog->saveGeometry());
 
    QMainWindow::closeEvent(event);
 }
