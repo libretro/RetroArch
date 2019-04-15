@@ -9479,6 +9479,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
             CONFIG_UINT(
                   list, list_info,
@@ -9495,6 +9496,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_left_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))

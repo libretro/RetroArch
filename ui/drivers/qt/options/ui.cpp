@@ -1,5 +1,6 @@
 #include "options.h"
 #include "../viewoptionsdialog.h"
+#include "../../verbosity.h"
 
 UserInterfaceCategory::UserInterfaceCategory(QWidget *parent) :
    OptionsCategory(parent)
@@ -193,10 +194,51 @@ AppearancePage::AppearancePage(QObject *parent) :
 
 QWidget *AppearancePage::widget()
 {
+   unsigned i;
    QWidget            * widget = new QWidget;
    FormLayout          *layout = new FormLayout;
-   rarch_setting_t *thumbnails = menu_setting_find_enum(MENU_ENUM_LABEL_THUMBNAILS);
+   rarch_setting_t *thumbnails = menu_setting_find_enum(
+         MENU_ENUM_LABEL_THUMBNAILS);
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_MENU_SETTINGS_LIST);
 
+   /* TODO/FIXME - we haven't yet figured out how to 
+    * put a radio button setting next to another radio 
+    * button on the same row */
+
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      switch (cbs->enum_idx)
+      {
+         /* TODO/FIXME - this is a dirty hack - if we 
+          * detect this setting, we instead replace it with a
+          * color button and ignore the other two font color 
+          * settings since they are already covered by this one
+          * color button */
+         case MENU_ENUM_LABEL_MENU_FONT_COLOR_RED:
+            layout->addUIntColorButton("Menu Font Color: ",
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE);
+            break;
+         case MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN:
+         case MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE:
+            break;
+         default:
+            layout->add(cbs->enum_idx);
+            break;
+      }
+
+      file_list_free_actiondata(list, i);
+   }
+
+   file_list_free(list);
+
+#if 0
    layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER);
    layout->add(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
    layout->add(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
@@ -249,6 +291,7 @@ QWidget *AppearancePage::widget()
    layout->add(MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER);
    layout->add(MENU_ENUM_LABEL_MENU_TICKER_TYPE);
    layout->add(MENU_ENUM_LABEL_MENU_TICKER_SPEED);
+#endif
 
    widget->setLayout(layout);
 
