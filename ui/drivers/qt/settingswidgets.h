@@ -50,9 +50,8 @@ public:
    void addStringLineEdit(rarch_setting_t *setting);
    void addPasswordLineEdit(rarch_setting_t *setting);
 
-   bool add(msg_hash_enums enum_idx)
+   bool add(rarch_setting_t *setting)
    {
-      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
       enum ui_setting_type ui_type = ST_UI_TYPE_NONE;
 
       if (!setting)
@@ -116,6 +115,12 @@ public:
 
       return true;
    }
+
+   bool add(msg_hash_enums enum_idx)
+   {
+      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
+      return add(setting);
+   }
 };
 
 class SettingsGroup : public QGroupBox
@@ -131,9 +136,8 @@ public:
    void addRow(QString label, QLayout *layout);
    void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
 
-   bool add(msg_hash_enums enum_idx)
+   bool add(rarch_setting_t *setting)
    {
-      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
       enum ui_setting_type ui_type = ST_UI_TYPE_NONE;
 
       if (!setting)
@@ -199,6 +203,12 @@ public:
       }
 
       return true;
+   }
+
+   bool add(msg_hash_enums enum_idx)
+   {
+      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
+      return add(setting);
    }
 private:
    void addBindButton(rarch_setting_t *setting);
