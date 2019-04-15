@@ -4382,6 +4382,91 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (video_shader_any_supported())
+         {
+            if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+                  PARSE_ONLY_BOOL, false) == 0)
+               count++;
+         }
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_CORE_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,
@@ -5876,6 +5961,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
       case DISPLAYLIST_CORE_SETTINGS_LIST:
+      case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6325,76 +6411,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
-               PARSE_ONLY_BOOL, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
-               PARSE_ONLY_BOOL, false);
-         if (video_shader_any_supported())
-            menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
-                  PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-               PARSE_ONLY_BOOL, false);
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

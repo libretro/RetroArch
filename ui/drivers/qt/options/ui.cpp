@@ -160,26 +160,22 @@ QuickMenuPage::QuickMenuPage(QObject *parent) :
 
 QWidget *QuickMenuPage::widget()
 {
-   QWidget   * widget = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget            * widget = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST);
 
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS);
-   layout->add(MENU_ENUM_LABEL_CONTENT_SHOW_REWIND);
-   layout->add(MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY);
-   layout->add(MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES);
-   layout->add(MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION);
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 
