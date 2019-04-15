@@ -23,33 +23,22 @@ DirectoryPage::DirectoryPage(QObject *parent) :
 
 QWidget *DirectoryPage::widget()
 {
-   QWidget *widget    = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget          *widget    = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   unsigned           count    = menu_displaylist_build_list(
+         list, DISPLAYLIST_DIRECTORY_SETTINGS_LIST);
 
-   layout->add(MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_ASSETS_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_LIBRETRO_DIR_PATH);
-   layout->add(MENU_ENUM_LABEL_LIBRETRO_INFO_PATH);
-   layout->add(MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_CURSOR_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_CHEAT_DATABASE_PATH);
-   layout->add(MENU_ENUM_LABEL_VIDEO_FILTER_DIR);
-   layout->add(MENU_ENUM_LABEL_AUDIO_FILTER_DIR);
-   layout->add(MENU_ENUM_LABEL_VIDEO_SHADER_DIR);
-   layout->add(MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_OVERLAY_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR);
-   layout->add(MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY);
-   layout->add(MENU_ENUM_LABEL_CACHE_DIRECTORY);
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 

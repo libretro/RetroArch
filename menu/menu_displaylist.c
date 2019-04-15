@@ -4382,6 +4382,116 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_ASSETS_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CURSOR_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CACHE_DIRECTORY,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOG_DIR,
+               PARSE_ONLY_DIR, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_INPUT_DRIVER,
@@ -5745,6 +5855,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
+      case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6687,93 +6798,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
                   MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
                   0, 0, 0);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ASSETS_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CACHE_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOG_DIR,
-               PARSE_ONLY_DIR, false);
 
          info->need_refresh = true;
          info->need_push    = true;
