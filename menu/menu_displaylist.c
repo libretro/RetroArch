@@ -4382,6 +4382,24 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
@@ -5785,24 +5803,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          }
          info->need_push    = true;
          break;
-      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
-               PARSE_ONLY_BOOL, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(info->list,
@@ -5856,6 +5856,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
+      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
