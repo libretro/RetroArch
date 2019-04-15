@@ -53,46 +53,59 @@
  * when reinitialising... */
 static bool ctr_bottom_screen_enabled = true;
 
-static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
+static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum video_mode)
 {
    float slider_val             = *(float*)0x1FF81080;
-   ctr_video_mode_enum old_mode = ctr->video_mode;
 
-   if (slider_val == 0.0)
-      ctr->video_mode = CTR_VIDEO_MODE_NORMAL;
-   else if (slider_val < 0.2)
-      ctr->video_mode = CTR_VIDEO_MODE_800x240;
-   else if (slider_val < 0.5)
-      ctr->video_mode = CTR_VIDEO_MODE_400x240;
-   else
-      ctr->video_mode = CTR_VIDEO_MODE_3D;
-
-   if (ctr->video_mode)
+   if (slider_val == 0.0f)
    {
-      switch (ctr->video_mode)
-      {
-         case CTR_VIDEO_MODE_800x240:
-         case CTR_VIDEO_MODE_400x240:
-            ctr_set_parallax_layer(false);
-            break;
-         case CTR_VIDEO_MODE_3D:
-            {
-               s16 offset = (slider_val - 0.6) * 10.0;
-               ctr->frame_coords[1] = ctr->frame_coords[0];
-               ctr->frame_coords[2] = ctr->frame_coords[0];
+      ctr->video_mode = CTR_VIDEO_MODE_2D;
+      ctr->enable_3d = false;
+      return;
+   }
 
-               ctr->frame_coords[1].x0 -= offset;
-               ctr->frame_coords[1].x1 -= offset;
-               ctr->frame_coords[2].x0 += offset;
-               ctr->frame_coords[2].x1 += offset;
+   switch (video_mode)
+   {
+      case CTR_VIDEO_MODE_3D:
+         {
+            s16 offset = slider_val * 10.0f;
 
-               GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
+            ctr->video_mode = CTR_VIDEO_MODE_3D;
+
+            ctr->frame_coords[1] = ctr->frame_coords[0];
+            ctr->frame_coords[2] = ctr->frame_coords[0];
+
+            ctr->frame_coords[1].x0 -= offset;
+            ctr->frame_coords[1].x1 -= offset;
+            ctr->frame_coords[2].x0 += offset;
+            ctr->frame_coords[2].x1 += offset;
+
+            GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
+
+            if (ctr->supports_parallax_disable)
                ctr_set_parallax_layer(true);
-               break;
-            }
-         default:
-            break;
-      }
+            ctr->enable_3d = true;
+         }
+         break;
+      case CTR_VIDEO_MODE_2D_400x240:
+      case CTR_VIDEO_MODE_2D_800x240:
+         if (ctr->supports_parallax_disable)
+         {
+            ctr->video_mode = video_mode;
+            ctr_set_parallax_layer(false);
+            ctr->enable_3d = true;
+         }
+         else
+         {
+            ctr->video_mode = CTR_VIDEO_MODE_2D;
+            ctr->enable_3d = false;
+         }
+         break;
+      case CTR_VIDEO_MODE_2D:
+      default:
+         ctr->video_mode = CTR_VIDEO_MODE_2D;
+         ctr->enable_3d = false;
+         break;
    }
 }
 
@@ -128,13 +141,12 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
-static void ctr_update_viewport(ctr_video_t* ctr, video_frame_info_t *video_info)
+static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
    float width          = ctr->vp.full_width;
    float height         = ctr->vp.full_height;
-   settings_t *settings = config_get_ptr();
    float desired_aspect = video_driver_get_aspect_ratio();
 
    if(ctr->rotation & 0x1)
@@ -248,7 +260,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       ctr->p3d_event_pending = false;
    }
 
-   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_400x240))
+   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400x240))
    {
       memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
             gfxTopLeftFramebuffers[ctr->current_buffer_top],
@@ -256,7 +268,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       GSPGPU_FlushDataCache(gfxTopRightFramebuffers[ctr->current_buffer_top], 400 * 240 * 3);
    }
 
-   if ((hook == APTHOOK_ONSUSPEND))
+   if ((hook == APTHOOK_ONSUSPEND) && ctr->supports_parallax_disable)
       ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
 
    if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
@@ -317,9 +329,10 @@ static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
    float refresh_rate;
-   void* ctrinput   = NULL;
+   u8 device_model      = 0xFF;
+   void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
-   ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
+   ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
       return NULL;
@@ -455,8 +468,14 @@ static void* ctr_init(const video_info_t* video,
    ctr->should_resize = true;
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
-   ctr->lcd_buttom_on = true; /* Unused */
    ctr->current_buffer_top = 0;
+
+   /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
+    * mode with the parallax barrier disabled
+    * (i.e. these are the only platforms that can use
+    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+   CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
+   ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
 
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
@@ -500,6 +519,7 @@ static bool ctr_frame(void* data, const void* frame,
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
    uint32_t state_tmp      = 0;
+   settings_t    *settings = config_get_ptr();
    ctr_video_t       *ctr  = (ctr_video_t*)data;
    static float        fps = 0.0;
    static int total_frames = 0;
@@ -507,7 +527,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    extern bool select_pressed;
 
-   if (!width || !height)
+   if (!width || !height || !settings)
    {
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
       return true;
@@ -542,7 +562,6 @@ static bool ctr_frame(void* data, const void* frame,
       gspWaitForEvent(GSPGPU_EVENT_PPF, false);
       ctr->ppf_event_pending = false;
    }
-   frames++;
 #ifndef HAVE_THREADS
    if(task_queue_find(&ctr_tasks_finder_data))
    {
@@ -564,68 +583,74 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr->vsync_event_pending = true;
 
-   currentTick = svcGetSystemTick();
-   diff        = currentTick - lastTick;
-   if(diff > CTR_CPU_TICKS_PER_SECOND)
+   /* Internal counters/statistics
+    * > This is only required if the bottom screen is enabled */
+   if (ctr_bottom_screen_enabled)
    {
-      fps = (float)frames * ((float) CTR_CPU_TICKS_PER_SECOND / (float) diff);
-      lastTick = currentTick;
-      frames = 0;
-   }
+      frames++;
+      currentTick = svcGetSystemTick();
+      diff        = currentTick - lastTick;
+      if(diff > CTR_CPU_TICKS_PER_SECOND)
+      {
+         fps = (float)frames * ((float) CTR_CPU_TICKS_PER_SECOND / (float) diff);
+         lastTick = currentTick;
+         frames = 0;
+      }
 
 #ifdef CTR_INSPECT_MEMORY_USAGE
-   uint32_t ctr_get_stack_usage(void);
-   void ctr_linear_get_stats(void);
-   extern u32 __linear_heap_size;
-   extern u32 __heap_size;
+      uint32_t ctr_get_stack_usage(void);
+      void ctr_linear_get_stats(void);
+      extern u32 __linear_heap_size;
+      extern u32 __heap_size;
 
-   MemInfo mem_info;
-   PageInfo page_info;
-   u32 query_addr = 0x08000000;
-   printf(PRINTFPOS(0,0));
-   while (query_addr < 0x40000000)
-   {
-      svcQueryMemory(&mem_info, &page_info, query_addr);
-      printf("0x%08X --> 0x%08X (0x%08X) \n", mem_info.base_addr, mem_info.base_addr + mem_info.size, mem_info.size);
-      query_addr = mem_info.base_addr + mem_info.size;
-      if(query_addr == 0x1F000000)
-         query_addr = 0x30000000;
-   }
+      MemInfo mem_info;
+      PageInfo page_info;
+      u32 query_addr = 0x08000000;
+      printf(PRINTFPOS(0,0));
+      while (query_addr < 0x40000000)
+      {
+         svcQueryMemory(&mem_info, &page_info, query_addr);
+         printf("0x%08X --> 0x%08X (0x%08X) \n", mem_info.base_addr, mem_info.base_addr + mem_info.size, mem_info.size);
+         query_addr = mem_info.base_addr + mem_info.size;
+         if(query_addr == 0x1F000000)
+            query_addr = 0x30000000;
+      }
 
 #if 0
-   static u32* dummy_pointer;
-   if(total_frames == 500)
-      dummy_pointer = malloc(0x2000000);
-   if(total_frames == 1000)
-      free(dummy_pointer);
+      static u32* dummy_pointer;
+      if(total_frames == 500)
+         dummy_pointer = malloc(0x2000000);
+      if(total_frames == 1000)
+         free(dummy_pointer);
 #endif
 
-   printf("========================================");
-   printf("0x%08X 0x%08X 0x%08X\n", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree()));
-   printf("fps: %8.4f frames: %i (%X)\n", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
-   printf("========================================");
-   u32 app_memory = *((u32*)0x1FF80040);
-   u64 mem_used;
-   svcGetSystemInfo(&mem_used, 0, 1);
-   printf("total mem : 0x%08X          \n", app_memory);
-   printf("used: 0x%08X free: 0x%08X      \n", (u32)mem_used, app_memory - (u32)mem_used);
-   static u32 stack_usage = 0;
-   extern u32 __stack_bottom;
-   if(!(total_frames & 0x3F))
-      stack_usage = ctr_get_stack_usage();
-   printf("stack total:0x%08X used: 0x%08X\n", 0x10000000 - __stack_bottom, stack_usage);
+      printf("========================================");
+      printf("0x%08X 0x%08X 0x%08X\n", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree()));
+      printf("fps: %8.4f frames: %i (%X)\n", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
+      printf("========================================");
+      u32 app_memory = *((u32*)0x1FF80040);
+      u64 mem_used;
+      svcGetSystemInfo(&mem_used, 0, 1);
+      printf("total mem : 0x%08X          \n", app_memory);
+      printf("used: 0x%08X free: 0x%08X      \n", (u32)mem_used, app_memory - (u32)mem_used);
+      static u32 stack_usage = 0;
+      extern u32 __stack_bottom;
+      if(!(total_frames & 0x3F))
+         stack_usage = ctr_get_stack_usage();
+      printf("stack total:0x%08X used: 0x%08X\n", 0x10000000 - __stack_bottom, stack_usage);
 
-   printf("========================================");
-   ctr_linear_get_stats();
-   printf("========================================");
+      printf("========================================");
+      ctr_linear_get_stats();
+      printf("========================================");
 
 #else
-   printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
+      printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
 #endif
-   fflush(stdout);
+      fflush(stdout);
+   }
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr, video_info);
+      ctr_update_viewport(ctr, settings, video_info);
 
    ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
                     (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
@@ -658,7 +683,7 @@ static bool ctr_frame(void* data, const void* frame,
       else
       {
          int i;
-         uint8_t      *dst = (uint8_t*)ctr->texture_linear;
+         uint8_t       *dst = (uint8_t*)ctr->texture_linear;
          const uint8_t *src = frame;
 
          for (i = 0; i < height; i++)
@@ -689,7 +714,7 @@ static bool ctr_frame(void* data, const void* frame,
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
 
-   ctr_check_3D_slider(ctr);
+   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)settings->uints.video_3ds_display_mode);
 
    /* ARGB --> RGBA  */
    if (ctr->rgb32)
@@ -720,7 +745,7 @@ static bool ctr_frame(void* data, const void* frame,
    GPU_SetViewport(NULL,
                    VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                   ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    if (ctr->video_mode == CTR_VIDEO_MODE_3D)
    {
@@ -769,7 +794,7 @@ static bool ctr_frame(void* data, const void* frame,
          GPU_SetViewport(NULL,
                          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                         ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
          if (ctr->video_mode == CTR_VIDEO_MODE_3D)
@@ -813,16 +838,16 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
                         240,
-                        ctr->video_mode == CTR_VIDEO_MODE_800x240 ? 800 : 400,
+                        ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? 800 : 400,
                         CTRGU_RGBA8,
-                        gfxTopLeftFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
+                        gfxTopLeftFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   if ((ctr->video_mode == CTR_VIDEO_MODE_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
+   if ((ctr->video_mode == CTR_VIDEO_MODE_2D_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
       ctrGuDisplayTransfer(true, ctr->drawbuffers.top.right,
                            240,
                            400,
                            CTRGU_RGBA8,
-                           gfxTopRightFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
+                           gfxTopRightFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
    /* Swap buffers : */
 
@@ -831,7 +856,7 @@ static bool ctr_frame(void* data, const void* frame,
    topFramebufferInfo.
       framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
 
-   if(ctr->video_mode == CTR_VIDEO_MODE_800x240)
+   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800x240)
    {
       topFramebufferInfo.
          framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
@@ -840,13 +865,19 @@ static bool ctr_frame(void* data, const void* frame,
    }
    else
    {
-      topFramebufferInfo.
-         framebuf1_vaddr        = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      if (ctr->enable_3d)
+         topFramebufferInfo.
+            framebuf1_vaddr     = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      else
+         topFramebufferInfo.
+            framebuf1_vaddr      = topFramebufferInfo.framebuf0_vaddr;
+
       topFramebufferInfo.
          framebuf_widthbytesize = 240 * 3;
    }
 
-   topFramebufferInfo.format    = (1<<8)|(1<<5)|GSP_BGR8_OES;
+   u8 bit5                      = (ctr->enable_3d != 0);
+   topFramebufferInfo.format    = (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES;
    topFramebufferInfo.
       framebuf_dispselect       = ctr->current_buffer_top;
    topFramebufferInfo.unk       = 0x00000000;

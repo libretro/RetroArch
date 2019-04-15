@@ -6542,7 +6542,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
                PARSE_ONLY_BOOL, false);
 #endif
-#ifdef _3DS
+#if defined(_3DS)
+         menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
                PARSE_ONLY_BOOL, false);

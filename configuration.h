@@ -430,6 +430,7 @@ typedef struct settings
       unsigned video_stream_quality;
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
+      unsigned video_3ds_display_mode;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;

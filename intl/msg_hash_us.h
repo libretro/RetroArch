@@ -3482,10 +3482,40 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
     "Disable Desktop Composition"
     )
+#if defined(_3DS)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
     "3DS Bottom Screen"
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+    "Enable display of status information on bottom screen. Disable to increase battery life and improve performance."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+    "3DS Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+    "Selects between 3D and 2D display modes. In '3D' mode, pixels are square and a depth effect is applied when viewing the Quick Menu. '2D' mode provides the best performance."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
+    "3D"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D,
+    "2D"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240,
+    "2D (Pixel Grid Effect)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240,
+    "2D (High Resolution)"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Video"

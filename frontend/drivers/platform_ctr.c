@@ -133,6 +133,7 @@ static void frontend_ctr_deinit(void* data)
    Handle lcd_handle;
    u32 parallax_layer_reg_state;
    u8 not_2DS;
+   u8 device_model = 0xFF;
 
    extern PrintConsole* currentConsole;
 
@@ -167,8 +168,16 @@ static void frontend_ctr_deinit(void* data)
       svcCloseHandle(lcd_handle);
    }
 
-   parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0) ? 0x0 : 0x00010001;
-   GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
+   /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
+    * mode with the parallax barrier disabled
+    * (i.e. these are the only platforms that can use
+    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+   CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
+   if ((device_model == 0) || (device_model == 1))
+   {
+      parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0) ? 0x0 : 0x00010001;
+      GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
+   }
 
    mcuHwcExit();
    ptmuExit();
