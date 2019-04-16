@@ -18,6 +18,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #if defined(_3DS)
 #include <3ds.h>
@@ -463,5 +464,13 @@ const char* frontend_driver_get_cpu_model_name(void)
    if (!frontend || !frontend->get_cpu_model_name)
       return NULL;
    return frontend->get_cpu_model_name();
+}
+
+enum retro_language frontend_driver_get_user_language(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_user_language)
+      return RETRO_LANGUAGE_ENGLISH;
+   return frontend->get_user_language();
 }
 #endif

@@ -575,6 +575,61 @@ static const char* frontend_win32_get_cpu_model_name(void)
 #endif
 }
 
+enum retro_language frontend_win32_get_user_language(void)
+{
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+#if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
+#if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
+   LANGID langid = GetUserDefaultUILanguage();
+   unsigned i;
+
+   struct lang_pair
+   {
+      unsigned short lang_ident;
+      enum retro_language lang;
+   };
+
+   /* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
+   const struct lang_pair pairs[] =
+   {
+      {0x9, RETRO_LANGUAGE_ENGLISH},
+      {0x11, RETRO_LANGUAGE_JAPANESE},
+      {0xc, RETRO_LANGUAGE_FRENCH},
+      {0xa, RETRO_LANGUAGE_SPANISH},
+      {0x7, RETRO_LANGUAGE_GERMAN},
+      {0x10, RETRO_LANGUAGE_ITALIAN},
+      {0x13, RETRO_LANGUAGE_DUTCH},
+      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x19, RETRO_LANGUAGE_RUSSIAN},
+      {0x12, RETRO_LANGUAGE_KOREAN},
+      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
+      {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
+      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
+      {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
+      /* MS does not support Esperanto */
+      /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
+      {0x15, RETRO_LANGUAGE_POLISH},
+      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
+      {0x1, RETRO_LANGUAGE_ARABIC},
+      {0x8, RETRO_LANGUAGE_GREEK},
+   };
+
+   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   {
+      if ((langid & pairs[i].lang_ident) == pairs[i].lang_ident)
+      {
+         lang = pairs[i].lang;
+         break;
+      }
+   }
+#endif
+#endif
+   return lang;
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
    frontend_win32_init,
@@ -603,5 +658,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
+   frontend_win32_get_user_language,
    "win32"
 };

@@ -44,6 +44,7 @@
 #include <retro_timers.h>
 
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
@@ -5414,4 +5415,53 @@ void rarch_log_file_deinit(void)
       /* ...initialise logging to console */
       retro_main_log_file_init(NULL, false);
    }
+}
+
+enum retro_language rarch_get_language_from_iso(const char *iso639)
+{
+   unsigned i;
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+
+   struct lang_pair
+   {
+      const char *iso639;
+      enum retro_language lang;
+   };
+
+   const struct lang_pair pairs[] =
+   {
+      {"en", RETRO_LANGUAGE_ENGLISH},
+      {"ja", RETRO_LANGUAGE_JAPANESE},
+      {"fr", RETRO_LANGUAGE_FRENCH},
+      {"es", RETRO_LANGUAGE_SPANISH},
+      {"de", RETRO_LANGUAGE_GERMAN},
+      {"it", RETRO_LANGUAGE_ITALIAN},
+      {"nl", RETRO_LANGUAGE_DUTCH},
+      {"pt_BR", RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {"pt_PT", RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {"pt", RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {"ru", RETRO_LANGUAGE_RUSSIAN},
+      {"ko", RETRO_LANGUAGE_KOREAN},
+      {"zh_CN", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"zh_SG", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"zh_HK", RETRO_LANGUAGE_CHINESE_TRADITIONAL},
+      {"zh_TW", RETRO_LANGUAGE_CHINESE_TRADITIONAL},
+      {"zh", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"eo", RETRO_LANGUAGE_ESPERANTO},
+      {"pl", RETRO_LANGUAGE_POLISH},
+      {"vi", RETRO_LANGUAGE_VIETNAMESE},
+      {"ar", RETRO_LANGUAGE_ARABIC},
+      {"el", RETRO_LANGUAGE_GREEK},
+   };
+
+   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   {
+      if (strcasestr(iso639, pairs[i].iso639))
+      {
+         lang = pairs[i].lang;
+         break;
+      }
+   }
+
+   return lang;
 }

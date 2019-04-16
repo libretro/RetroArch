@@ -2052,6 +2052,8 @@ static void frontend_unix_init(void *data)
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
          "doVibrate", "(IIII)V");
+   GET_METHOD_ID(env, android_app->getUserLanguageString, class,
+         "getUserLanguageString", "()Ljava/lang/String;");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
@@ -2494,6 +2496,37 @@ static const char* frontend_unix_get_cpu_model_name(void)
 #endif
 }
 
+enum retro_language frontend_unix_get_user_language(void)
+{
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+#ifdef HAVE_LANGEXTRA
+#ifdef ANDROID
+   jstring jstr = NULL;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return lang;
+
+   if (g_android->getUserLanguageString)
+   {
+      CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz, g_android->getUserLanguageString);
+
+      if (jstr)
+      {
+         const char *langStr = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         lang = rarch_get_language_from_iso(langStr);
+
+         (*env)->ReleaseStringUTFChars(env, jstr, langStr);
+      }
+   }
+#else
+   lang = rarch_get_language_from_iso(getenv("LANG"));
+#endif
+#endif
+   return lang;
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2539,6 +2572,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_check_for_path_changes,
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
+   frontend_unix_get_user_language,
 #ifdef ANDROID
    "android"
 #else

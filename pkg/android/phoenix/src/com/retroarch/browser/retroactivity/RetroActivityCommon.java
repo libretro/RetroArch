@@ -21,6 +21,7 @@ import android.os.VibrationEffect;
 import android.util.Log;
 import java.lang.Math;
 import java.util.concurrent.CountDownLatch;
+import java.util.Locale;
 
 /**
  * Class which provides common methods for RetroActivity related classes.
@@ -151,6 +152,20 @@ public class RetroActivityCommon extends RetroActivityLocation
         setRequestedOrientation(screenOrientation);
       }
     });
+  }
+
+  public String getUserLanguageString()
+  {
+    String lang = Locale.getDefault().getLanguage();
+    String country = Locale.getDefault().getCountry();
+
+    if (lang.length() == 0)
+      return "en";
+
+    if (country.length() == 0)
+      return lang;
+
+    return lang + '_' + country;
   }
 
   @TargetApi(24)

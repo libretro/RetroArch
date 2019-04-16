@@ -613,5 +613,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "ctr",
 };
