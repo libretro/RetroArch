@@ -520,6 +520,11 @@ default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU
 default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
+#if defined(_3DS)
+default_sublabel_macro(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
+default_sublabel_macro(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
+#endif
+
 default_sublabel_macro(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
@@ -2397,6 +2402,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_backlight_control);
+            break;
+#endif
+#if defined(_3DS)
+         case MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_lcd_bottom);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
             break;
 #endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:

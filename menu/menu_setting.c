@@ -95,6 +95,12 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+/* Required for 3DS display mode setting */
+#if defined(_3DS)
+#include "gfx/common/ctr_common.h"
+#include <3ds/services/cfgu.h>
+#endif
+
 enum settings_list_type
 {
    SETTINGS_LIST_NONE = 0,
@@ -1423,6 +1429,44 @@ static void setting_get_string_representation_uint_playlist_inline_core_display_
          break;
    }
 }
+
+#if defined(_3DS)
+static void setting_get_string_representation_uint_video_3ds_display_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case CTR_VIDEO_MODE_3D:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D),
+               len);
+         break;
+      case CTR_VIDEO_MODE_2D:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D),
+               len);
+         break;
+      case CTR_VIDEO_MODE_2D_400x240:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240),
+               len);
+         break;
+      case CTR_VIDEO_MODE_2D_800x240:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240),
+               len);
+         break;
+   }
+}
+#endif
 
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
@@ -9807,7 +9851,35 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-#ifdef _3DS
+#if defined(_3DS)
+         {
+            u8 device_model = 0xFF;
+
+            /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
+             * mode with the parallax barrier disabled
+             * (i.e. these are the only platforms that can use
+             * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+            CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_3ds_display_mode,
+                  MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+                  video_3ds_display_mode,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_video_3ds_display_mode;
+            menu_settings_list_current_add_range(list, list_info, 0,
+                  CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
+                  1, true, true);
+         }
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_3ds_lcd_bottom,

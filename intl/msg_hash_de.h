@@ -1656,8 +1656,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Bildränder (Overscan) zuschneiden (Neustart erforderlich)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Deaktiviere Desktop-Gestaltung")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "3DS-Bildschirm unten")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Videotreiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

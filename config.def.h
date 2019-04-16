@@ -32,6 +32,11 @@
 #include "network/netplay/netplay.h"
 #endif
 
+/* Required for 3DS display mode setting */
+#if defined(_3DS)
+#include "gfx/common/ctr_common.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -518,9 +523,11 @@ static const float crt_refresh_rate = 60/1.001;
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
 
-#ifdef _3DS
+#if defined(_3DS)
 /* Enable bottom LCD screen */
 static const bool video_3ds_lcd_bottom = true;
+/* Sets video display mode (3D, 2D, etc.) */
+static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
 
 /* AUDIO */

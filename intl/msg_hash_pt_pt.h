@@ -1572,8 +1572,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Cortar sobreexploração (recarregar)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Desativar composição do ambiente de trabalho")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "Tela Inferior 3DS")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Controlador de vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

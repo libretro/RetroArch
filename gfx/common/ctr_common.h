@@ -42,11 +42,12 @@ typedef struct
 
 typedef enum
 {
-   CTR_VIDEO_MODE_NORMAL,
-   CTR_VIDEO_MODE_800x240,
-   CTR_VIDEO_MODE_400x240,
-   CTR_VIDEO_MODE_3D
-}ctr_video_mode_enum;
+	CTR_VIDEO_MODE_3D = 0,
+	CTR_VIDEO_MODE_2D,
+	CTR_VIDEO_MODE_2D_400x240,
+	CTR_VIDEO_MODE_2D_800x240,
+	CTR_VIDEO_MODE_LAST
+} ctr_video_mode_enum;
 
 typedef struct ctr_video
 {
@@ -95,8 +96,9 @@ typedef struct ctr_video
    unsigned rotation;
    bool keep_aspect;
    bool should_resize;
-   bool lcd_buttom_on;
    bool msg_rendering_enabled;
+   bool supports_parallax_disable;
+   bool enable_3d;
 
    void* empty_framebuffer;
 
