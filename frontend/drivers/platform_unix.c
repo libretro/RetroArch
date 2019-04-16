@@ -1570,6 +1570,10 @@ static void frontend_unix_get_env(int *argc,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
                   "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], app_dir,
+                  "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
@@ -1916,6 +1920,10 @@ static void frontend_unix_get_env(int *argc,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
          "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], base_path,
+         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,

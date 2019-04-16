@@ -123,6 +123,12 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "overlays",
          sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "layouts",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
