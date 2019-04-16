@@ -106,6 +106,9 @@ typedef struct settings
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
+#ifdef HAVE_VIDEO_LAYOUT
+      bool video_layout_enable;
+#endif
 
       /* Audio */
       bool audio_enable;
@@ -168,6 +171,9 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
+#ifdef HAVE_VIDEO_LAYOUT
+      bool menu_show_video_layout;
+#endif
       bool menu_materialui_icons_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
@@ -435,6 +441,9 @@ typedef struct settings
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
       unsigned video_3ds_display_mode;
+#ifdef HAVE_VIDEO_LAYOUT
+      unsigned video_layout_selected_view;
+#endif
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
@@ -565,6 +574,9 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+#ifdef HAVE_VIDEO_LAYOUT
+      char path_video_layout[PATH_MAX_LENGTH];
+#endif
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
       char path_stream_url[8192];
@@ -593,6 +605,9 @@ typedef struct settings
       char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
+#ifdef HAVE_VIDEO_LAYOUT
+      char directory_video_layout[PATH_MAX_LENGTH];
+#endif
       char directory_resampler[PATH_MAX_LENGTH];
       char directory_screenshot[PATH_MAX_LENGTH];
       char directory_system[PATH_MAX_LENGTH];

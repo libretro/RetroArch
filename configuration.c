@@ -1248,6 +1248,12 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTING_PATH("video_layout_path",
+         settings->paths.path_video_layout, false, NULL, true);
+   SETTING_PATH("video_layout_directory",
+         settings->paths.directory_video_layout, true, NULL, true);
+#endif
    SETTING_PATH("video_record_config",
          settings->paths.path_record_config, false, NULL, true);
    SETTING_PATH("video_stream_config",
@@ -1303,6 +1309,10 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #ifdef HAVE_OVERLAY
    SETTING_PATH("overlay_directory",
          settings->paths.directory_overlay, true, NULL, true);
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTING_PATH("video_layout_directory",
+         settings->paths.directory_video_layout, true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path",
@@ -1500,6 +1510,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_show_latency",      &settings->bools.menu_show_latency, true, true, false);
    SETTING_BOOL("menu_show_rewind",      &settings->bools.menu_show_rewind, true, true, false);
    SETTING_BOOL("menu_show_overlays",      &settings->bools.menu_show_overlays, true, true, false);
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTING_BOOL("menu_show_video_layout",        &settings->bools.menu_show_video_layout, true, true, false);
+#endif
    SETTING_BOOL("menu_show_help",                &settings->bools.menu_show_help, true, menu_show_help, false);
    SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, menu_show_quit_retroarch, false);
    SETTING_BOOL("menu_show_reboot",              &settings->bools.menu_show_reboot, true, menu_show_reboot, false);
@@ -1548,6 +1561,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("input_overlay_enable_autopreferred", &settings->bools.input_overlay_enable_autopreferred, true, true, false);
    SETTING_BOOL("input_overlay_show_physical_inputs", &settings->bools.input_overlay_show_physical_inputs, true, false, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->bools.input_overlay_hide_in_menu, true, overlay_hide_in_menu, false);
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
 #endif
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",           &settings->bools.network_cmd_enable, true, network_cmd_enable, false);
@@ -1697,6 +1713,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_fullscreen_x",           &settings->uints.video_fullscreen_x,  true, fullscreen_x, false);
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTING_UINT("video_layout_selected_view",   &settings->uints.video_layout_selected_view, true, 0, false);
+#endif
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif
@@ -2142,6 +2161,9 @@ void config_set_defaults(void)
    *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
+#ifdef HAVE_VIDEO_LAYOUT
+   *settings->paths.path_video_layout      = '\0';
+#endif
    *settings->paths.path_record_config     = '\0';
    *settings->paths.path_stream_config     = '\0';
    *settings->paths.path_stream_url     = '\0';
@@ -2236,6 +2258,14 @@ void config_set_defaults(void)
                   "gamepads/flat/retropad.cfg",
                   sizeof(settings->paths.path_overlay));
 #endif
+   }
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]))
+   {
+      fill_pathname_expand_special(settings->paths.directory_video_layout,
+            g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+            sizeof(settings->paths.directory_video_layout));
    }
 #endif
 
@@ -2997,6 +3027,10 @@ static bool config_load_file(const char *path, settings_t *settings)
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->paths.directory_overlay, "default"))
       *settings->paths.directory_overlay = '\0';
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   if (string_is_equal(settings->paths.directory_video_layout, "default"))
+      *settings->paths.directory_video_layout = '\0';
 #endif
    if (string_is_equal(settings->paths.directory_system, "default"))
       *settings->paths.directory_system = '\0';
