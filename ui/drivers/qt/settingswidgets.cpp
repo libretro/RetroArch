@@ -55,9 +55,14 @@ inline void addSublabelAndWhatsThis(QWidget *widget, rarch_setting_t *setting)
       widget->setWhatsThis(tmp);
 }
 
+static QString sanitizeAmpersand(QString input)
+{
+   return input.replace("&", "&&");
+}
+
 inline QString formLabel(rarch_setting_t *setting)
 {
-   return QString(setting->short_description) + ":";
+   return QString(sanitizeAmpersand(setting->short_description)) + ":";
 }
 
 FormLayout::FormLayout(QWidget *parent) :
@@ -271,7 +276,7 @@ void SettingsGroup::addBindButton(rarch_setting_t *setting)
 }
 
 CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
-   QCheckBox(setting->short_description, parent)
+   QCheckBox(sanitizeAmpersand(setting->short_description), parent)
    ,m_setting(setting)
    ,m_value(setting->value.target.boolean)
 {
