@@ -163,6 +163,7 @@ struct android_app
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
    jmethodID setScreenOrientation;
+   jmethodID getUserLanguageString;
    jmethodID doVibrate;
 };
 

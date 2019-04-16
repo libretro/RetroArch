@@ -2052,6 +2052,8 @@ static void frontend_unix_init(void *data)
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
          "doVibrate", "(IIII)V");
+   GET_METHOD_ID(env, android_app->getUserLanguageString, class,
+         "getUserLanguageString", "()Ljava/lang/String;");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
@@ -2499,7 +2501,25 @@ enum retro_language frontend_unix_get_user_language(void)
    enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
 #ifdef HAVE_LANGEXTRA
 #ifdef ANDROID
-   return RETRO_LANGUAGE_ENGLISH;
+   jstring jstr = NULL;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return lang;
+
+   if (g_android->getUserLanguageString)
+   {
+      CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz, g_android->getUserLanguageString);
+
+      if (jstr)
+      {
+         const char *langStr = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         lang = rarch_get_language_from_iso(langStr);
+
+         (*env)->ReleaseStringUTFChars(env, jstr, langStr);
+      }
+   }
 #else
    lang = rarch_get_language_from_iso(getenv("LANG"));
 #endif
