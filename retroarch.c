@@ -44,6 +44,7 @@
 #include <retro_timers.h>
 
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
