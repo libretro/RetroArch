@@ -2496,11 +2496,15 @@ static const char* frontend_unix_get_cpu_model_name(void)
 
 enum retro_language frontend_unix_get_user_language(void)
 {
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+#ifdef HAVE_LANGEXTRA
 #ifdef ANDROID
    return RETRO_LANGUAGE_ENGLISH;
 #else
-   return rarch_get_language_from_iso(getenv("LANG"));
+   lang = rarch_get_language_from_iso(getenv("LANG"));
 #endif
+#endif
+   return lang;
 }
 
 frontend_ctx_driver_t frontend_ctx_unix = {
