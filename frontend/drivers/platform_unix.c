@@ -2494,6 +2494,15 @@ static const char* frontend_unix_get_cpu_model_name(void)
 #endif
 }
 
+enum retro_language frontend_unix_get_user_language(void)
+{
+#ifdef ANDROID
+   return RETRO_LANGUAGE_ENGLISH;
+#else
+   return rarch_get_language_from_iso(getenv("LANG"));
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2539,6 +2548,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_check_for_path_changes,
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
+   frontend_unix_get_user_language,
 #ifdef ANDROID
    "android"
 #else

@@ -603,5 +603,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
+   NULL,                            /* get_user_language */
    "win32"
 };
