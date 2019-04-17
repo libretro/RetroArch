@@ -95,12 +95,6 @@
 #include "../network/netplay/netplay.h"
 #endif
 
-/* Required for 3DS display mode setting */
-#if defined(_3DS)
-#include "gfx/common/ctr_common.h"
-#include <3ds/services/cfgu.h>
-#endif
-
 enum settings_list_type
 {
    SETTINGS_LIST_NONE = 0,
@@ -1430,44 +1424,6 @@ static void setting_get_string_representation_uint_playlist_inline_core_display_
    }
 }
 
-#if defined(_3DS)
-static void setting_get_string_representation_uint_video_3ds_display_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case CTR_VIDEO_MODE_3D:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D_400x240:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D_800x240:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240),
-               len);
-         break;
-   }
-}
-#endif
-
 static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
    unsigned port = 0;
@@ -2476,6 +2432,7 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
    modes[RETRO_LANGUAGE_ARABIC]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ARABIC);
    modes[RETRO_LANGUAGE_GREEK]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GREEK);
+   modes[RETRO_LANGUAGE_TURKISH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_TURKISH);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
@@ -2517,10 +2474,6 @@ void menu_settings_list_current_add_range(
       bool enforce_minrange_enable, bool enforce_maxrange_enable)
 {
    unsigned idx                   = list_info->index - 1;
-
-   if ((*list)[idx].type == ST_FLOAT)
-      (*list)[list_info->index - 1].ui_type   
-                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
 
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
@@ -5003,7 +4956,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
             (*list)[list_info->index - 1].get_string_representation =
@@ -6290,7 +6242,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_video_rotation;
@@ -6317,7 +6268,7 @@ static bool setting_append_list(
             START_SUB_GROUP(
                   list,
                   list_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SYNC),
+                  "Synchronization",
                   &group_info,
                   &subgroup_info,
                   parent_group);
@@ -6581,7 +6532,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_crt_switch_resolutions;
@@ -6616,7 +6566,6 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -3;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -6827,7 +6776,7 @@ static bool setting_append_list(
          START_SUB_GROUP(
                list,
                list_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SYNC),
+               "Synchronization",
                &group_info,
                &subgroup_info,
                parent_group);
@@ -6876,7 +6825,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_audio_resampler_quality;
@@ -6968,7 +6916,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
 #endif
@@ -7165,7 +7112,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_poll_type_behavior;
@@ -7267,7 +7213,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_toggle_gamepad_combo;
@@ -7512,7 +7457,6 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
                (*list)[list_info->index - 1].index          = user_value;
                (*list)[list_info->index - 1].index_offset   = user;
 
@@ -7548,7 +7492,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_record_quality;
             menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_GIF, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_PATH(
                list, list_info,
@@ -7577,7 +7520,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
             CONFIG_UINT(
                list, list_info,
@@ -7639,7 +7581,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_FILE_SELECTOR;
 
             CONFIG_STRING(
                list, list_info,
@@ -7654,7 +7595,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
             CONFIG_UINT(
                list, list_info,
@@ -7670,7 +7610,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 1, 8, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_DIR(
                list, list_info,
@@ -7754,8 +7693,7 @@ static bool setting_append_list(
                      strdup(input_config_bind_map_get_desc(i)),
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
-               (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
-               (*list)[list_info->index - 1].bind_type      = i + MENU_SETTINGS_BIND_BEGIN;
+               (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
                menu_settings_list_current_add_enum_idx(list, list_info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
             }
@@ -7847,7 +7785,6 @@ static bool setting_append_list(
             parent_group,
             general_write_handler,
             general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by = 1;
          menu_settings_list_current_add_range(list, list_info, 1, 6, 1, true, true);
@@ -8510,7 +8447,6 @@ static bool setting_append_list(
                      &setting_get_string_representation_uint_rgui_internal_upscale_level;
                menu_settings_list_current_add_range(list, list_info, 0, RGUI_UPSCALE_LAST-1, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
 
 #if !defined(GEKKO)
@@ -8546,7 +8482,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_aspect_ratio_lock;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_UINT(
                   list, list_info,
@@ -8563,7 +8498,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_THEME_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_PATH(
                   list, list_info,
@@ -8585,21 +8519,6 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,
                   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
                   rgui_shadows,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_rgui_extended_ascii,
-                  MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,
-                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
-                  rgui_extended_ascii,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8650,7 +8569,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_ticker_type;
          menu_settings_list_current_add_range(list, list_info, 0, TICKER_TYPE_LAST-1, 1, true, true);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
          CONFIG_FLOAT(
                list, list_info,
@@ -8735,7 +8653,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          }
 
 #ifdef HAVE_THREADS
@@ -8845,7 +8762,6 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
 
             CONFIG_UINT(
                   list, list_info,
@@ -8907,7 +8823,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_xmb_layout;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_UINT(
                   list, list_info,
@@ -8924,7 +8839,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_xmb_icon_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -8959,7 +8873,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_xmb_shader_pipeline;
                menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
 #endif
 
@@ -8978,7 +8891,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_xmb_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
        }
 #endif
          if (string_is_equal(settings->arrays.menu_driver, "ozone"))
@@ -9198,7 +9110,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          }
 #endif
 
@@ -9366,7 +9277,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_materialui_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THEME_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_FLOAT(
                   list, list_info,
@@ -9397,8 +9307,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            (*list)[list_info->index - 1].ui_type   
-                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
          }
 #endif
 
@@ -9420,7 +9328,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -9523,7 +9430,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
             CONFIG_UINT(
                   list, list_info,
@@ -9540,7 +9446,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_left_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -9578,20 +9483,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_thumbnail_scaler;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_THUMB_SCALE_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_rgui_thumbnail_delay,
-                  MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DELAY,
-                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
-                  rgui_thumbnail_delay,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0f, 1024.0f, 64.0f, true, true);
          }
 
          CONFIG_BOOL(
@@ -9623,7 +9514,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
          menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(
                list, list_info,
@@ -9851,35 +9741,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-#if defined(_3DS)
-         {
-            u8 device_model = 0xFF;
-
-            /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
-             * mode with the parallax barrier disabled
-             * (i.e. these are the only platforms that can use
-             * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
-            CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_3ds_display_mode,
-                  MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-                  video_3ds_display_mode,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_video_3ds_display_mode;
-            menu_settings_list_current_add_range(list, list_info, 0,
-                  CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
-                  1, true, true);
-         }
-
+#ifdef _3DS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_3ds_lcd_bottom,
@@ -10561,7 +10423,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          CONFIG_STRING(
                list, list_info,
@@ -10576,7 +10437,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          CONFIG_BOOL(
                list, list_info,
@@ -10673,7 +10533,6 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
             CONFIG_UINT(
                   list, list_info,
@@ -10704,7 +10563,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
 
             CONFIG_STRING(
                   list, list_info,
@@ -10719,7 +10577,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -10795,7 +10652,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
             menu_settings_list_current_add_range(list, list_info, -600, 600, 1, false, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -10810,7 +10666,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 
@@ -10825,7 +10680,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 
@@ -10860,7 +10714,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_netplay_share_digital;
             menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_DIGITAL_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_UINT(
                   list, list_info,
@@ -10877,7 +10730,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_netplay_share_analog;
             menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_ANALOG_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             for (user = 0; user < MAX_USERS; user++)
             {
@@ -11123,7 +10975,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          CONFIG_STRING(
                list, list_info,
@@ -11162,7 +11013,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_user_language;
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -11228,7 +11078,6 @@ static bool setting_append_list(
                update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -11255,7 +11104,6 @@ static bool setting_append_list(
                update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -11283,7 +11131,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
 
          CONFIG_STRING(
                list, list_info,
@@ -11300,7 +11147,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_cheevos_password;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
