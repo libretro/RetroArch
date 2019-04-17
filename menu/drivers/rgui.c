@@ -47,6 +47,7 @@
 #include "../menu_animation.h"
 
 #include "../widgets/menu_input_dialog.h"
+#include "../widgets/menu_osk.h"
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
@@ -516,6 +517,98 @@ static unsigned mini_thumbnail_max_width = 0;
 static unsigned mini_thumbnail_max_height = 0;
 
 static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
+
+/* ==============================
+ * Custom Symbols (glyphs) START
+ * ============================== */
+
+enum rgui_symbol_type
+{
+   RGUI_SYMBOL_BACKSPACE = 0,
+   RGUI_SYMBOL_ENTER,
+   RGUI_SYMBOL_SHIFT_UP,
+   RGUI_SYMBOL_SHIFT_DOWN,
+   RGUI_SYMBOL_NEXT,
+   RGUI_SYMBOL_TEXT_CURSOR
+};
+
+/* All custom symbols must have dimensions
+ * of exactly FONT_WIDTH * FONT_HEIGHT */
+static const uint8_t rgui_symbol_data_backspace[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 1, 0, 0, 0,
+      1, 1, 1, 1, 1,
+      0, 1, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_enter[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 1,
+      0, 0, 0, 0, 1,
+      0, 0, 0, 0, 1,
+      0, 0, 1, 0, 1,
+      0, 1, 0, 0, 1,
+      1, 1, 1, 1, 1,
+      0, 1, 0, 0, 0, /* Baseline */
+      0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_shift_up[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 1, 1, 1, 0,
+      1, 1, 0, 1, 1,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 1, 1, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_shift_down[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      1, 1, 0, 1, 1,
+      0, 1, 1, 1, 0,
+      0, 0, 1, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_next[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      1, 0, 1, 0, 1,
+      1, 1, 1, 1, 1,
+      1, 0, 1, 0, 1,
+      0, 1, 1, 1, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_text_cursor[FONT_WIDTH * FONT_HEIGHT] = {
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, /* Baseline */
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1};
+
+/* ==============================
+ * Custom Symbols (glyphs) END
+ * ============================== */
 
 typedef struct
 {
@@ -1498,7 +1591,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 }
 
 /* ==============================
- * blit_line() START
+ * blit_line/symbol() START
  * ============================== */
 
 /* NOTE: These functions are WET (Write Everything Twice).
@@ -1506,6 +1599,8 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
  * no other choice here. blit_line() is so performance
  * critical that we simply cannot afford to check user
  * settings internally. */
+
+/* blit_line() */
 
 static void blit_line_regular(int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -1696,7 +1791,95 @@ static void blit_line_extended_shadow(int x, int y,
 static void (*blit_line)(int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
 
-static void rgui_set_blit_line_function(bool draw_shadow, bool extended_ascii)
+/* blit_symbol() */
+
+static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
+{
+   switch (symbol)
+   {
+      case RGUI_SYMBOL_BACKSPACE:
+         return rgui_symbol_data_backspace;
+      case RGUI_SYMBOL_ENTER:
+         return rgui_symbol_data_enter;
+      case RGUI_SYMBOL_SHIFT_UP:
+         return rgui_symbol_data_shift_up;
+      case RGUI_SYMBOL_SHIFT_DOWN:
+         return rgui_symbol_data_shift_down;
+      case RGUI_SYMBOL_NEXT:
+         return rgui_symbol_data_next;
+      case RGUI_SYMBOL_TEXT_CURSOR:
+         return rgui_symbol_data_text_cursor;
+      default:
+         return NULL;
+   }
+}
+
+static void blit_symbol_regular(int x, int y,
+      enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
+{
+   unsigned i, j;
+   unsigned fb_width          = rgui_frame_buf.width;
+   uint16_t *frame_buf_data   = rgui_frame_buf.data;
+   const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
+
+   if (!symbol_data)
+      return;
+
+   for (j = 0; j < FONT_HEIGHT; j++)
+   {
+      unsigned buff_offset = ((y + j) * fb_width) + x;
+
+      for (i = 0; i < FONT_WIDTH; i++)
+      {
+         if (*symbol_data++ == 1)
+            *(frame_buf_data + buff_offset + i) = color;
+      }
+   }
+}
+
+static void blit_symbol_shadow(int x, int y,
+      enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
+{
+   unsigned i, j;
+   unsigned fb_width          = rgui_frame_buf.width;
+   uint16_t *frame_buf_data   = rgui_frame_buf.data;
+   uint32_t shadow_colour_32  = shadow_color;
+   const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
+
+   if (!symbol_data)
+      return;
+
+   /* Small performance hack... */
+   shadow_colour_32 |= shadow_colour_32 << 16;
+
+   for (j = 0; j < FONT_HEIGHT; j++)
+   {
+      unsigned buff_offset = ((y + j) * fb_width) + x;
+
+      for (i = 0; i < FONT_WIDTH; i++)
+      {
+         if (*symbol_data++ == 1)
+         {
+            uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+            /* Symbol pixel */
+            *frame_buf_ptr = color;
+
+            /* Shadow pixels */
+            frame_buf_ptr++;
+            *frame_buf_ptr = shadow_color;
+            frame_buf_ptr += fb_width - 1;
+            /* Small performance hack... */
+            *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+         }
+      }
+   }
+}
+
+static void (*blit_symbol)(int x, int y,
+      enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color) = blit_symbol_regular;
+
+static void rgui_set_blit_functions(bool draw_shadow, bool extended_ascii)
 {
    if (draw_shadow)
    {
@@ -1704,6 +1887,8 @@ static void rgui_set_blit_line_function(bool draw_shadow, bool extended_ascii)
          blit_line = blit_line_extended_shadow;
       else
          blit_line = blit_line_regular_shadow;
+      
+      blit_symbol = blit_symbol_shadow;
    }
    else
    {
@@ -1711,11 +1896,13 @@ static void rgui_set_blit_line_function(bool draw_shadow, bool extended_ascii)
          blit_line = blit_line_extended;
       else
          blit_line = blit_line_regular;
+      
+      blit_symbol = blit_symbol_regular;
    }
 }
 
 /* ==============================
- * blit_line() END
+ * blit_line/symbol() END
  * ============================== */
 
 static void rgui_init_font_lut(void)
@@ -1871,6 +2058,250 @@ static void rgui_blit_cursor(void)
    }
 }
 
+static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
+{
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   size_t key_index;
+   
+   unsigned input_label_max_length;
+   unsigned input_str_max_length;
+   unsigned input_offset_x, input_offset_y;
+   
+   unsigned key_width, key_height;
+   unsigned key_text_offset_x, key_text_offset_y;
+   unsigned ptr_width, ptr_height;
+   unsigned ptr_offset_x, ptr_offset_y;
+   
+   unsigned keyboard_width, keyboard_height;
+   unsigned keyboard_offset_x, keyboard_offset_y;
+   
+   unsigned osk_width, osk_height;
+   unsigned osk_x, osk_y;
+   
+   int osk_ptr             = menu_event_get_osk_ptr();
+   char **osk_grid         = menu_event_get_osk_grid();
+   const char *input_str   = menu_input_dialog_get_buffer();
+   const char *input_label = menu_input_dialog_get_label_buffer();
+   
+   /* Sanity check 1 */
+   if (!rgui_frame_buf.data || osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0])
+      return;
+   
+   /* Get dimensions/layout */
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   
+   key_text_offset_x      = 8;
+   key_text_offset_y      = 6;
+   key_width              = FONT_WIDTH  + (key_text_offset_x * 2);
+   key_height             = FONT_HEIGHT + (key_text_offset_y * 2);
+   ptr_offset_x           = 2;
+   ptr_offset_y           = 2;
+   ptr_width              = key_width  - (ptr_offset_x * 2);
+   ptr_height             = key_height - (ptr_offset_y * 2);
+   keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
+   keyboard_height        = key_height * 4;
+   keyboard_offset_x      = 10;
+   keyboard_offset_y      = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
+   input_label_max_length = (keyboard_width / FONT_WIDTH_STRIDE);
+   input_str_max_length   = input_label_max_length - 1;
+   input_offset_x         = 10 + (keyboard_width - (input_label_max_length * FONT_WIDTH_STRIDE)) / 2;
+   input_offset_y         = 10;
+   osk_width              = keyboard_width + 20;
+   osk_height             = keyboard_offset_y + keyboard_height + 10;
+   osk_x                  = (fb_width - osk_width) / 2;
+   osk_y                  = (fb_height - osk_height) / 2;
+   
+   /* Sanity check 2 */
+   if ((osk_width + 2 > fb_width) || (osk_height + 2 > fb_height))
+   {
+      /* This can never happen, but have to make sure...
+       * If OSK cannot physically fit on the screen,
+       * fallback to old style 'message box' implementation */
+      char msg[255];
+      msg[0] = '\0';
+      
+      snprintf(msg, sizeof(msg), "%s\n%s", input_label, input_str);
+      rgui_render_messagebox(rgui, msg);
+      
+      return;
+   }
+   
+   /* Draw background */
+   rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+         osk_x + 5, osk_y + 5, osk_width - 10, osk_height - 10, rgui_bg_filler);
+   
+   /* Draw border */
+   if (rgui->border_enable)
+   {
+      /* Draw drop shadow, if required */
+      if (rgui->shadow_enable)
+      {
+         /* Frame */
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_x + 5, osk_y + 5, osk_width - 10, 1, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_x + osk_width, osk_y + 1, 1, osk_height, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_x + 1, osk_y + osk_height, osk_width, 1, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_x + 5, osk_y + 5, 1, osk_height - 10, rgui->colors.shadow_color);
+         /* Divider */
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, rgui->colors.shadow_color);
+      }
+      
+      /* Frame */
+      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+            osk_x, osk_y, osk_width - 5, 5, rgui_border_filler);
+      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+            osk_x + osk_width - 5, osk_y, 5, osk_height - 5, rgui_border_filler);
+      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+            osk_x + 5, osk_y + osk_height - 5, osk_width - 5, 5, rgui_border_filler);
+      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+            osk_x, osk_y + 5, 5, osk_height - 5, rgui_border_filler);
+      /* Divider */
+      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
+            osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5, rgui_border_filler);
+   }
+   
+   /* Draw input label text */
+   if (!string_is_empty(input_label))
+   {
+      char input_label_buf[255];
+      unsigned input_label_length;
+      int input_label_x, input_label_y;
+      
+      input_label_buf[0] = '\0';
+      
+      ticker->s        = input_label_buf;
+      ticker->len      = input_label_max_length;
+      ticker->str      = input_label;
+      ticker->selected = true;
+      menu_animation_ticker(ticker);
+
+      input_label_length = (unsigned)(utf8len(input_label_buf) * FONT_WIDTH_STRIDE);
+      input_label_x      = osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
+      input_label_y      = osk_y + input_offset_y;
+      
+      blit_line(input_label_x, input_label_y, input_label_buf,
+            rgui->colors.normal_color, rgui->colors.shadow_color);
+   }
+   
+   /* Draw input buffer text */
+   {
+      unsigned input_str_length;
+      unsigned input_str_char_offset;
+      int input_str_x, input_str_y;
+      int text_cursor_x;
+      
+      input_str_length = strlen(input_str);
+      if (input_str_length > input_str_max_length)
+      {
+         input_str_char_offset = input_str_length - input_str_max_length;
+         input_str_length      = input_str_max_length;
+      }
+      else
+         input_str_char_offset = 0;
+      
+      input_str_x = osk_x + input_offset_x;
+      input_str_y = osk_y + input_offset_y + FONT_HEIGHT_STRIDE;
+      
+      if (!string_is_empty(input_str + input_str_char_offset))
+         blit_line(input_str_x, input_str_y, input_str + input_str_char_offset,
+               rgui->colors.hover_color, rgui->colors.shadow_color);
+      
+      /* Draw text cursor */
+      text_cursor_x = osk_x + input_offset_x + (input_str_length * FONT_WIDTH_STRIDE);
+      
+      blit_symbol(text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
+            rgui->colors.normal_color, rgui->colors.shadow_color);
+   }
+   
+   /* Draw keyboard 'keys' */
+   for (key_index = 0; key_index < 44; key_index++)
+   {
+      unsigned key_row     = key_index / OSK_CHARS_PER_LINE;
+      unsigned key_column  = key_index - (key_row * OSK_CHARS_PER_LINE);
+      
+      int key_text_x       = osk_x + keyboard_offset_x + key_text_offset_x + (key_column * key_width);
+      int key_text_y       = osk_y + keyboard_offset_y + key_text_offset_y + (key_row    * key_height);
+      
+      const char *key_text = osk_grid[key_index];
+      
+      /* 'Command' keys use custom symbols - have to
+       * detect them and use blit_symbol(). Everything
+       * else is plain text, and can be drawn directly
+       * using blit_line(). */
+#ifdef HAVE_LANGEXTRA
+      if (     string_is_equal(key_text, "\xe2\x87\xa6")) /* backspace character */
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "\xe2\x8f\x8e")) /* return character */
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "\xe2\x87\xa7")) /* up arrow */
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "\xe2\x87\xa9")) /* down arrow */
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "\xe2\x8a\x95")) /* plus sign (next button) */
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+#else
+      if (     string_is_equal(key_text, "Bksp"))
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "Enter"))
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "Upper"))
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "Lower"))
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else if (string_is_equal(key_text, "Next"))
+         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+#endif
+      else
+         blit_line(key_text_x, key_text_y, key_text,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      
+      /* Draw selection pointer */
+      if (key_index == osk_ptr)
+      {
+         unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
+         unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+         
+         /* Draw drop shadow, if required */
+         if (rgui->shadow_enable)
+         {
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  osk_ptr_x + 1, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  osk_ptr_x + 1, osk_ptr_y + 1, ptr_width, 1, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  osk_ptr_x + ptr_width, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+                  osk_ptr_x + 1, osk_ptr_y + ptr_height, ptr_width, 1, rgui->colors.shadow_color);
+         }
+         
+         /* Draw selection rectangle */
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_ptr_x, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_ptr_x, osk_ptr_y, ptr_width, 1, rgui->colors.hover_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_ptr_x + ptr_width - 1, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+               osk_ptr_x, osk_ptr_y + ptr_height - 1, ptr_width, 1, rgui->colors.hover_color);
+      }
+   }
+}
+
 static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
@@ -2000,15 +2431,19 @@ static void rgui_render(void *data, bool is_idle)
    ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
    ticker.spacer = ticker_spacer;
 
-   /* If fullscreen thumbnails are enabled and we are viewing a playlist,
-    * switch to fullscreen thumbnail view mode if either current thumbnail
-    * is valid or we are waiting for current thumbnail to load
-    * (if load is pending we'll get a blank screen + title, but
-    * this is better than switching back to the text playlist
-    * view, which causes ugly flickering when scrolling quickly
-    * through a list...) */
-   if (rgui->show_fs_thumbnail && rgui->entry_has_thumbnail && (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
+   /* Note: On-screen keyboard takes precedence over
+    * normal menu thumbnail/text list display modes */
+   if (current_display_cb)
+      rgui_render_osk(rgui, &ticker);
+   else if (rgui->show_fs_thumbnail && rgui->entry_has_thumbnail && (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
+      /* If fullscreen thumbnails are enabled and we are viewing a playlist,
+       * switch to fullscreen thumbnail view mode if either current thumbnail
+       * is valid or we are waiting for current thumbnail to load
+       * (if load is pending we'll get a blank screen + title, but
+       * this is better than switching back to the text playlist
+       * view, which causes ugly flickering when scrolling quickly
+       * through a list...) */
       const char *thumbnail_title = NULL;
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
@@ -2317,17 +2752,6 @@ static void rgui_render(void *data, bool is_idle)
                   rgui->colors.hover_color, rgui->colors.shadow_color);
          }
       }
-   }
-
-   if (current_display_cb)
-   {
-      char msg[255];
-      const char *str   = menu_input_dialog_get_buffer();
-      const char *label = menu_input_dialog_get_label_buffer();
-      msg[0] = '\0';
-
-      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      rgui_render_messagebox(rgui, msg);
    }
 
    if (!string_is_empty(rgui->msgbox))
@@ -2720,8 +3144,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->last_width  = rgui_frame_buf.width;
    rgui->last_height = rgui_frame_buf.height;
 
-   /* Set initial 'blit_line' function */
-   rgui_set_blit_line_function(
+   /* Set initial 'blit_line/symbol' functions */
+   rgui_set_blit_functions(
          settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
 
    rgui->thumbnail_path_data = menu_thumbnail_path_init();
@@ -3233,7 +3657,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (settings->bools.menu_rgui_shadows != rgui->shadow_enable)
    {
-      rgui_set_blit_line_function(
+      rgui_set_blit_functions(
             settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
 
       rgui->shadow_enable = settings->bools.menu_rgui_shadows;
@@ -3243,7 +3667,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
    {
-      rgui_set_blit_line_function(
+      rgui_set_blit_functions(
             settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
 
       rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
