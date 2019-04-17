@@ -1079,6 +1079,7 @@ RETROARCH
 #include "../intl/msg_hash_cht.c"
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
+#include "../intl/msg_hash_tr.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1199,8 +1200,6 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
-#include "../menu/menu_shader.c"
-
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_input.c"
@@ -1237,6 +1236,7 @@ MENU
 #include "../menu/cbs/menu_cbs_up.c"
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
+#include "../menu/menu_shader.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_thumbnail_path.c"
