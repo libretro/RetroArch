@@ -1079,6 +1079,7 @@ RETROARCH
 #include "../intl/msg_hash_cht.c"
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
+#include "../intl/msg_hash_tr.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
