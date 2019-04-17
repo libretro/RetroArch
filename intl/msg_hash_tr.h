@@ -1,0 +1,8564 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "GPU Hız aşırtma"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Switch GPU'sunu Hız aşırtma veya hız düşürme yap"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Ekran parlaklığı"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Switch'in ekran parlaklığını arttırın veya azaltın"
+    )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "CPU Hızaşırtma"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Switch CPU'suna hız aşırtma yap"
+    )
+#endif
+MSG_HASH(
+    MSG_COMPILER,
+    "Derleyici"
+    )
+MSG_HASH(
+    MSG_UNKNOWN_COMPILER,
+    "Bilinmeyen derleyici"
+    )
+MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
+    MSG_DEVICE_DISCONNECTED_FROM_PORT,
+    "Cihaz bağlantı noktasından çıkarıldı"
+    )
+MSG_HASH(
+    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+    "Bilinmeyen netplay komutu alındı"
+    )
+MSG_HASH(
+    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+    "Dosya zaten mevcut. Yedekleme arabelleğine kaydetme"
+    )
+MSG_HASH(
+    MSG_GOT_CONNECTION_FROM,
+    "Şuradan gelen bağlantı: \"%s\""
+    )
+MSG_HASH(
+    MSG_GOT_CONNECTION_FROM_NAME,
+    "Şuradan gelen bağlantı: \"%s (%s)\""
+    )
+MSG_HASH(
+    MSG_PUBLIC_ADDRESS,
+    "Bağlantı Noktası Eşleme Başarılı"
+    )
+MSG_HASH(
+    MSG_UPNP_FAILED,
+    "Bağlantı Noktası Eşlemesi Başarısız Oldu"
+    )
+MSG_HASH(
+    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+    "Argüman yok ve menü yerleşik değil, yardım görüntüleniyor..."
+    )
+MSG_HASH(
+    MSG_SETTING_DISK_IN_TRAY,
+    "Setting disk in tray"
+    )
+MSG_HASH(
+    MSG_WAITING_FOR_CLIENT,
+    "İstemci bekleniyor..."
+    )
+MSG_HASH(
+    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+    "Oyundan çıktın"
+    )
+MSG_HASH(
+    MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+    "%u oyuncu olarak katıldınız"
+    )
+MSG_HASH(
+    MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+    "%.*s Giriş cihazlarıyla katıldınız"
+    )
+MSG_HASH(
+    MSG_NETPLAY_PLAYER_S_LEFT,
+    "Oyuncu %.*s oyunu terk etti"
+    )
+MSG_HASH(
+    MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+    "%.*s oyuncu olarak katıldı %u"
+    )
+MSG_HASH(
+    MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+    "%.*s giriş cihazlarıyla birlikte katıldı %.*s"
+    )
+MSG_HASH(
+    MSG_NETPLAY_NOT_RETROARCH,
+    "Eşiniz RetroArch'ı çalıştırmadığından veya RetroArch'ın eski bir sürümünü çalıştırdığından netplay bağlantı girişimi başarısız oldu."
+    )
+MSG_HASH(
+    MSG_NETPLAY_OUT_OF_DATE,
+    "Netplay eşi RetroArch'ın eski bir sürümünü kullanıyor. Bağlantı gerçekleştiremez."
+    )
+MSG_HASH(
+    MSG_NETPLAY_DIFFERENT_VERSIONS,
+    "UYARI: Bir netplay eşi RetroArch'ın farklı bir sürümünü çalıştırıyor. Sorun oluşursa, aynı sürümü kullanın."
+    )
+MSG_HASH(
+    MSG_NETPLAY_DIFFERENT_CORES,
+    "Netplay eşi farklı bir Core kullanıyor. Bağlantı gerçekleştiremez."
+    )
+MSG_HASH(
+    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+    "UYARI: Netplay eşi, Cor'un farklı bir sürümünü çalıştırıyor. Sorun oluşursa, aynı sürümü kullanın."
+    )
+MSG_HASH(
+    MSG_NETPLAY_ENDIAN_DEPENDENT,
+    "Bu Core, sistemler arasında mimariler arası Netplay'i desteklemiyor"
+    )
+MSG_HASH(
+    MSG_NETPLAY_PLATFORM_DEPENDENT,
+    "Bu Core, mimariler arası Netplay'i desteklemiyor"
+    )
+MSG_HASH(
+    MSG_NETPLAY_ENTER_PASSWORD,
+    "Netplay sunucu şifresini girin:"
+    )
+MSG_HASH(
+    MSG_DISCORD_CONNECTION_REQUEST,
+    "Bu kullanıcıdan bağlantıya izin vermek istiyor musunuz:"
+    )
+MSG_HASH(
+    MSG_NETPLAY_INCORRECT_PASSWORD,
+    "Yanlış parola"
+    )
+MSG_HASH(
+    MSG_NETPLAY_SERVER_NAMED_HANGUP,
+    "\"%s\" bağlantısı koptu"
+    )
+MSG_HASH(
+    MSG_NETPLAY_SERVER_HANGUP,
+    "Bir netplay istemcisinin bağlantısı kesildi"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CLIENT_HANGUP,
+    "Netplay bağlantısı kesildi"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+    "Oynama izniniz yok"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+    "Boş oyuncu slotu yok"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+    "İstenen giriş cihazları mevcut değil"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CANNOT_PLAY,
+    "Oynatma moduna geçilemiyor"
+    )
+MSG_HASH(
+    MSG_NETPLAY_PEER_PAUSED,
+    "Netplay eşi \"%s\" durdurdu"
+    )
+MSG_HASH(
+    MSG_NETPLAY_CHANGED_NICK,
+    "\"%s\"Takma adınız olarak değiştirildi"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+    "Donanım tarafından oluşturulan Core'lar kendi özel bağlamlarını kullanır. Donanım durumunun çerçeveler arasında değişmesi gerektiğini varsaymaktan kaçınır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+    "Menü için yatay animasyonu etkinleştirin. Performans etkisi olacaktır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+    "Menü ekranı görünüm ayarlarını düzenler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+    "CPU ve GPU’yu sabit senkronize edin. Performansdan ödün vererek geçikmeyi azaltır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+    "Gecikme ve daha fazla video takılma pahasına performansı artırır. Aksi takdirde tam hız elde edemiyorsanız kullanın."
+    )
+MSG_HASH(
+    MSG_AUDIO_VOLUME,
+    "Ses seviyesi"
+    )
+MSG_HASH(
+    MSG_AUTODETECT,
+    "Otomatik tespit"
+    )
+MSG_HASH(
+    MSG_AUTOLOADING_SAVESTATE_FROM,
+    "Belirtilen yoldan otomatik yükleme"
+    )
+MSG_HASH(
+    MSG_CAPABILITIES,
+    "Kabiliyetler"
+    )
+MSG_HASH(
+    MSG_CONNECTING_TO_NETPLAY_HOST,
+    "Netplay sunucusuna bağlanma"
+    )
+MSG_HASH(
+    MSG_CONNECTING_TO_PORT,
+    "Port'a bağlanma"
+    )
+MSG_HASH(
+    MSG_CONNECTION_SLOT,
+    "Bağlantı yuvası"
+    )
+MSG_HASH(
+    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+    "Üzgünüz, uygulanamadı: içerik talep etmeyen Core'lar Netplay'e katılamaz"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+    "Şifre"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
+    "Cheevos Hesapları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+    "Kullanıcı adı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+    "Hesaplar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+    "Hesap Listesi Sonu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
+    "RetroAchievements"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+    "Başarılar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+    "Hardcore Modunda Başarıları Duraklat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+    "Hardcore Modunda Başarıları Sürdür"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+    "Başarılar (Hardcore)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+    "İçeriği Tara"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+    "Yapılandırma Dosyası"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TAB,
+    "İçeriği içe aktar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+    "Netplay Odaları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
+    "Sor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+    "İçerikler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+    "Block Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+    "Cihaz"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+    "Ses"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+    "DSP Eklentisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+    "Ses"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+    "Ses Filtresi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+    "Turbo/Deadzone"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+    "Ses Geçikmesi (ms)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+    "Maksimum Zamanlama Eğimi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+    "Sustur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+    "Çıkış hızı (Hz)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+    "Dinamik Ses Hızı Kontrolü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+    "Ses Resampler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+    "Ses"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+    "Senkronizasyon"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+    "Ses Arttırma (dB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+    "WASAPI Özel mod"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+    "WASAPI Float Biçimi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+    "WASAPI Shared Buffer Length"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+    "SaveRAM Otomatik kaydetme aralığı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+    "Üzerine Yazılmış Dosyaları Otomatik Olarak Yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+    "Remap Dosyalarını Otomatik Olarak Yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+    "Gölgelendirici Hazır Ayarlarını Otomatik Olarak Yükleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+    "Geri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+    "Onayla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+    "Bilgi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+    "Çıkış"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+    "Aşağı kaydır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+    "Yukarı kaydır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+    "Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+    "Klavye aç/kapa"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+    "Menu aç/kapa"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
+    "Temel menü kontrolleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
+    "Onayla/OK"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+    "Bilgi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+    "Çıkış"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+    "Yukarı kaydır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
+    "Varsayılanlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+    "Klavye aç/kapa"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+    "Menu aç/kapa"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+    "Savestate'i yüklerken SaveRAM'in üzerine yazma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
+    "Bluetooth"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+    "Buildbot Varlıkları URL’si"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
+    "Cache"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+    "Kameraya İzin Ver"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+    "Kamera"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT,
+    "Hile"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+    "Değişiklikleri uygula"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
+    "Yeni Hile Kodu Aramaya Başla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
+    "Aramaya Devam Et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+    "Hile Dosyası"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+    "Hile Dosyası"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+    "Hile Dosyası Yükle (Değiştir)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+    "Hile Dosyası Yükle (Ekleme)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+    "Hile Dosyasını Farklı Kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
+    "Hile Geçişleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+    "Açıklama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+    "Hardcore Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+    "Liderler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+    "Başarı Rozetleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
+    "Kilitli Başarılar:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
+    "Kilitli"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
+    "RetroAchievements"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+    "Resmi Olmayan Başarıları Test Et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
+    "Açılmış Başarılar:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
+    "Açılmış"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+    "Hardcore"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+    "Verbose Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+    "Otomatik Ekran Görüntüsü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+    "İçeriği Kapat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONFIG,
+    "Yapılandırma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+    "Yapılandırmayı yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+    "Yapılandırma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+    "Çıkışta Yapılandırmayı Kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
+    "Oynatma listeleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
+    "Veritabanı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
+    "İçerik"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+    "Geçmiş Listesi Boyutu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+    "Girişleri kaldırmaya izin ver"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+    "Hızlı Menü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+    "İndirilenler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+    "İndirilenler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+    "Hileler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+    "Core Sayaçları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+    "Core ismini göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+    "Core Bilgisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+    "Yaratıcı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+    "Kategoriler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+    "Core etiketi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+    "Core ismi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+    "Yazılım(lar)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+    "Lisans(lar)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+    "İzinler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+    "Desteklenen uzantılar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+    "Sistem üreticisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+    "Sistem adı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+    "Kontroller"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_LIST,
+    "Core yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Core Yükleme veya Geri Yükleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+    "Core yüklemesi başarısız oldu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+    "Çekirdek kurulumu başarılı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+    "Seçenekler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+    "Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+    "Otomatik Olarak Bir Core Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+    "İndirilen arşivi otomatik olarak çıkart"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+    "Buildbot Cores URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+    "Core Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+    "Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+    "CPU Mimarisi:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CPU_CORES,
+    "CPU Coreları:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
+    "İmleç"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+    "İmleç Yöneticisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
+    "Özel Orantı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+    "Veritabanı Yöneticisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
+    "Veri Tabanı Seçimi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+    "Kaldır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FAVORITES,
+    "Başlangıç dizini"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+    "<içerik dizini>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+    "<Varsayılan>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
+    "<Yok>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+    "Dizin bulunamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+    "Dizin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
+    "Disk Döngüsü Tepsisi Durumu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    "Disk Görüntüsü Ekleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+    "Disk Dizini"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+    "Disk Kontrolü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DONT_CARE,
+    "Don't care"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+    "İndirilenler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+    "Core indir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+    "İçerik İndirici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
+    "DPI Üzerine yazma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
+    "DPI Üzerine yazma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+    "Sürücüler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+    "Core Kapatmada Kukla Kullan"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+    "Yüklemeden Önce Eksik Ürün Yazılımı Denetimi Yapın"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
+    "Dinamik Arkaplan"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+    "Dinamik Arkaplanlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+    "Başarılar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FALSE,
+    "Yanlış"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+    "Maksimum çalışma hızı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+    "Favoriler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+    "Ekran Hızı Görüntüleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Bellek Ayrıntılarını Dahil Et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
+    "Maksimum Çalışma Hızını Sınırla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+    "Tam İçerik Kare Hızına Eşitle (G-Sync, FreeSync)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+    "Frame Throttle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+    "Frontend Sayaçları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+    "İçeriğe Özgü Çekirdek Seçeneklerini Otomatik Olarak Yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
+    "Oyun seçenekleri dosyası oluştur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
+    "Oyun seçenekleri dosyasını kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP,
+    "Yardım"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+    "Audio/Video Troubleshooting"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
+    "Changing Virtual Gamepad Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
+    "Temel Menü Kontrolleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_LIST,
+    "Yardım"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+    "İçerik Yükleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+    "Scanning For Content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+    "Core Nedir?"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+    "History List"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+    "Geçmiş"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
+    "Horizontal Menu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+    "Görüntü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INFORMATION,
+    "Bilgi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+    "Bilgi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+    "Analog To Digital Type"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+    "All Users Control Menu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
+    "Left Analog X"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+    "Left analog X- (left)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+    "Left analog X+ (right)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
+    "Left Analog Y"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+    "Left analog Y- (up)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+    "Left analog Y+ (down)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
+    "Right Analog X"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+    "Right analog X- (left)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+    "Right analog X+ (right)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
+    "Right Analog Y"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+    "Right analog Y- (up)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+    "Right analog Y+ (down)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+    "Gun Trigger"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+    "Gun Reload"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+    "Gun Aux A"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+    "Gun Aux B"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+    "Gun Aux C"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+    "Gun Start"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+    "Gun Select"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+    "Gun D-pad Up"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+    "Gun D-pad Down"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+    "Gun D-pad Left"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+    "Gun D-pad Right"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+    "Autoconfig"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Input Button Axis Threshold"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+    "Analog Deadzone"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+    "Analog Sensitivity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+    "Menu Swap OK & Cancel Buttons"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+    "Bind All"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+    "Bind Default All"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+    "Bind Timeout"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+    "Bind Hold"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+    "Input Block Timeout"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
+    "Hide Unbound Core Input Descriptors"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
+    "Display Input Descriptor Labels"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+    "Device Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+    "Device Type"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
+    "Mouse Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+    "Input"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+    "Duty Cycle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+    "Hotkey Binds"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+    "Keyboard Gamepad Mapping"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+    "A tuşu (right)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+    "B tuşu (down)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
+    "Down D-pad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+    "L2 tuşu (trigger)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+    "L3 tuşu (thumb)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+    "L tuşu (shoulder)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
+    "Left D-pad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+    "R2 tuşu (trigger)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+    "R3 tuşu (thumb)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+    "R tuşu (shoulder)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
+    "Right D-pad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+    "Select tuşu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+    "Start tuşu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
+    "Up D-pad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+    "X tuşu (top)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+    "Y tuşu (left)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+    "(Key: %s)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
+    "Mouse 1"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+    "Mouse 2"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+    "Mouse 3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
+    "Mouse 4"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
+    "Mouse 5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+    "Wheel Up"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
+    "Wheel Down"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
+    "Wheel Left"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
+    "Wheel Right"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+    "Keyboard Gamepad Mapping Type"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+    "Max Users"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+    "Menu Toggle Gamepad Combo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+    "Cheat index -"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+    "Cheat index +"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+    "Cheat toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+    "Disk eject toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+    "Disk next"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+    "Disk prev"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+    "Kısayol tuşları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+    "Basılı Tutarak Hızlı İleri Sarma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+    "Aç/kapat Yaparak Hızlı İleri Sarma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+    "Frameadvance"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "Send Debug Info"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "FPS toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+    "Netplay hosting toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+    "Fullscreen toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+    "Grab mouse toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+    "Game focus toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+    "Desktop menu toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+    "Load state"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+    "Menu toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+    "Input replay movie record toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+    "Audio mute toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+    "Netplay toggle play/spectate mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+    "On-screen keyboard toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+    "Overlay next"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+    "Pause toggle"
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    "RetroArch'ı yeniden başlat"
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    "RetroArch'dan çık"
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+    "Oyunu sıfırla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+    "Gerisar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+    "Cheat Details"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+    "Start or Continue Cheat Search"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+    "Save state"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+    "Ekran Görüntüsü Al"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+    "Next shader"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+    "Previous shader"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+    "Slow motion hold"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+    "Slow motion toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+    "Savestate slot -"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+    "Savestate slot +"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+    "Volume -"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+    "Volume +"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+    "Display Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+    "Hide Overlay In Menu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+    "Show Inputs On Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+    "Show Inputs Listen Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+    "Poll Type Behavior"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
+    "Early"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+    "Late"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+    "Prefer Front Touch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+    "Input Remapping"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+    "Remap Binds for this core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+    "Save Autoconfig"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+    "Input"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+    "Small Keyboard"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+    "Touch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+    "Turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+    "Turbo Period"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    "User %u Binds"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+    "Gecikme Ayarları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
+    "Internal storage status"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+    "Input Autoconfig"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+    "Joypad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+    "Servisler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
+    "Çince (Basitleştirilmiş)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
+    "Çince (Geleneksel)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
+    "Flemenkçe"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
+    "İngilizce"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
+    "Esperanto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
+    "Fransızca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
+    "Almanca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
+    "İtalyanca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
+    "Japonca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
+    "Korece"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
+    "Polanya Dili"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+    "Portekizce (Brezilya)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
+    "Portekizce (Portekiz)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
+    "Rusça"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
+    "İspanyolca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
+    "Vietnamca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+    "Arapça"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+    "Yunanca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+    "Left Analog"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
+    "Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+    "Core Info"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+    "Core Logging Level"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LINEAR,
+    "Linear"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+    "Load Archive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+    "Load Recent"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+    "İçerik yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+    "Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+    "Konum'u etkinleştir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+    "Konum"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+    "Logging"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+    "Logging Verbosity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Log To File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+    "Redirects system event log messages to file. Requires 'Logging Verbosity' to be enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Timestamped Log Files"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+    "When logging to file, redirects the output from each RetroArch session to a new timestamped file. If disabled, log is overwritten each time RetroArch is restarted."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+    "Ana Menü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
+    "Veri Tabanı Ayarları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+    "Menü Rengi Teması"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
+    "Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+    "Blue Grey"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+    "Dark Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
+    "Green"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
+    "Shield"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
+    "Red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
+    "Yellow"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
+    "Footer Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
+    "Header Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+    "Menu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+    "Throttle Menu Framerate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+    "Ayarlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+    "Menu Linear Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+    "Adds a slight blur to the menu to take the edge off hard pixel edges."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+    "Horizontal Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+    "Appearance"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+    "Background"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+    "Background opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MISSING,
+    "Missing"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MORE,
+    "..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+    "Mouse Support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
+    "Multimedia"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+    "Müzik"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+    "Filter unknown extensions"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+    "Navigation Wrap-Around"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NEAREST,
+    "Nearest"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY,
+    "Netplay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+    "Allow Slave-Mode Clients"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+    "Netplay Check Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+    "Input Latency Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+    "Input Latency Frames Range"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
+    "Netplay Delay Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+    "Disconnect from netplay host"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+    "Netplay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+    "Connect to netplay host"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+    "Netplay host'u başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+    "Netplay host'unu durdur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+    "Sunucu Adresi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+    "Yerel ağı tara"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
+    "Netplay Client"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+    "Kullanıcı Adı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+    "Sunucu Şifresi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+    "Netplay'i Genel Olarak Duyurun"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+    "Request Device %u"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+    "Disallow Non-Slave-Mode Clients"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
+    "Netplay ayarları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+    "Analog Input Sharing"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+    "Max"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+    "Average"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+    "Digital Input Sharing"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+    "Share"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+    "Grapple"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+    "Vote"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+    "None"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+    "No preference"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+    "Netplay Spectator Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
+    "Netplay Stateless Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+    "Server Spectate-Only Password"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
+    "Netplay Spectator"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+    "Netplay TCP Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+    "Netplay NAT Traversal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+    "Network Commands"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+    "Network Command Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+    "Ağ Bilgisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+    "Network Gamepad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+    "Network Remote Base Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+    "Ağ Ayarları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO,
+    "Yok"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NONE,
+    "None"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
+    "Bilinmiyor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+    "Gösterilecek başarı yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_CORE,
+    "Core Yok"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+    "Kullanılabilir Core yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+    "Core bilgisi yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
+    "Core seçenekleri yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+    "No entries to display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+    "Geçmiş yok.."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
+    "Bilgi yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+    "Öğe yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+    "Netplay sunucuları yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+    "Ağ bulunamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
+    "No performance counters."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
+    "Oynatma Listesi yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+    "Oyna listesi girişi yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+    "Ayarlar bulunamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+    "No shader parameters."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OFF,
+    "KAPALI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ON,
+    "AÇIK"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONLINE,
+    "Online"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+    "Çevrimiçi Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+    "Onscreen Display"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+    "Onscreen Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+    "Adjust Bezels and Onscreen controls"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+    "Onscreen Notifications"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+    "Adjust the Onscreen Notifications"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+    "Browse Archive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OPTIONAL,
+    "Optional"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY,
+    "Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+    "Autoload Preferred Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+    "Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+    "Overlay Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+    "Overlay Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
+    "Overlay Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+    "Onscreen Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+    "PAL60 Modunu kullan"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+    "Parent directory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Enable external file access"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+    "Open Windows file access permissions settings"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+    "Aç..."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+    "Open another directory using the system file picker"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+    "Pause when menu activated"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+    "Don't run in background"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+    "Performance Counters"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+    "Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+    "Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+    "Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+    "Touch Support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PORT,
+    "Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PRESENT,
+    "Present"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+    "Gizlilik"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
+    "MIDI"
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+    "RetroArch'ı Yeniden Başlat"
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+    "RetroArch'dan Çık"
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+    "Analog supported"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+    "BBFC Değerlendirmesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+    "CERO Değerlendirmesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+    "Co-op destekli"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
+    "CRC32"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+    "Açıklama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+    "Geliştirici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+    "Edge Magazin Sayısı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+    "Edge Magazin Değerlendirmesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+    "Edge Magazin İncelemesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+    "ELSPA Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+    "Enhancement Hardware"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+    "ESRB Değerlendirmesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+    "Famitsu Magazin Değerlendirmesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+    "Franchise"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+    "Tür"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
+    "MD5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+    "İsim"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+    "Origin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+    "PEGI Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+    "Publisher"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+    "Releasedate Month"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+    "Releasedate Year"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+    "Rumble supported"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+    "Serial"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
+    "SHA1"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
+    "İçeriği Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+    "TGDB Rating"
+    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "RCM'ye yeniden başlat"
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "Yeniden Başlat"
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+    "Recording Config"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+    "Recording Output"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+    "Kayıt Yapma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+    "Custom Record Config"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+    "Custom Stream Config"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+    "Record"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
+    "MIDI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
+    "Recording Support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+    "Save Output Recording as..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
+    "Save Recordings in Output Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+    "Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+    "Load Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+    "Save Core Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+    "Save Content Directory Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+    "Save Game Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+    "Delete Core Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+    "Delete Game Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+    "Delete Game Content Directory Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REQUIRED,
+    "Gerekli"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+    "Yeniden başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+    "RetroArch'ı yeniden başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESUME,
+    "Devam et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+    "Devam et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
+    "RetroKeyboard"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETROPAD,
+    "RetroPad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+    "RetroPad w/ Analog"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+    "Başarılar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+    "Rewind Support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+    "Apply After Toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+    "Auto-Apply Cheats During Game Load"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+    "Rewind Granularity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+    "Rewind Buffer Size (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+    "Rewind Buffer Size Step (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+    "Geri sar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
+    "Hile Ayarları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+    "Hile Detayları"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+    "Start or Continue Cheat Search"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+    "Dosya Gezgini"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+    "Yapılandırma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+    "Display Start Screen"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+    "Right Analog"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+    "Favorilere ekle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+    "Favorilere ekle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
+    "Core ilişkilendirilmesini sıfırla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN,
+    "Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+    "Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
+    "SAMBA"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+    "Savefile"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+    "Save State Auto Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+    "Auto Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+    "Auto Save State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+    "Savestate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+    "Savestate Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+    "Mevcut Yapılandırmayı Kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+    "Save Core Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+    "Save Content Directory Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+    "Save Game Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+    "Yeni Yapılandırmayı Kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+    "Save State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+    "Kaydetme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+    "Dizin Tarama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+    "Dosya Tarama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
+    "<Bu dizini tara>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+    "Ekran görüntüsü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+    "Ekran çözünürlüğü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SEARCH,
+    "Arama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SECONDS,
+    "saniye"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS,
+    "Ayarlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+    "Ayarlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER,
+    "Shader"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+    "Apply Changes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+    "Shaders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
+    "Ribbon"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+    "Ribbon (simplified)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+    "Simple Snow"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
+    "Snow"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+    "Gelişmiş ayarları göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+    "Show Hidden Files and Folders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+    "Kapat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+    "Slow-Motion Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+    "Run-Ahead to Reduce Latency"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+    "Number of Frames to Run Ahead"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+    "RunAhead Use Second Instance"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+    "RunAhead Hide Warnings"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+    "Sort Saves In Folders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+    "Sort Savestates In Folders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+    "Write Savestates to Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+    "Write Saves to Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+    "System Files are in Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+    "Write Screenshots to Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
+    "SSH"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_CORE,
+    "Core'u Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+    "Start Remote RetroPad"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+    "Start Video Processor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+    "State Slot"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATUS,
+    "Durum"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+    "stdin Commands"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
+    "Önerilan Core'lar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+    "Ekran Koruyucuyu önle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
+    "System BGM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
+    "Sistem/BIOS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+    "Sistem bilgisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+    "7zip Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+    "ALSA Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+    "Yapılandırma Tarihi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+    "Cg Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
+    "Cocoa Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
+    "Command interface support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+    "CoreText Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+    "CPU Features"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+    "Display metric DPI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+    "Display metric height (mm)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+    "Display metric width (mm)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+    "DirectSound Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+    "WASAPI Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+    "Dynamic library Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
+    "Dynamic run-time loading of libretro library"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+    "EGL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
+    "OpenGL/Direct3D render-to-texture (multi-pass shaders) support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+    "FFmpeg Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+    "FreeType Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+    "STB TrueType Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+    "Frontend identifier"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+    "Frontend name"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+    "Frontend OS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+    "Git versiyonu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+    "GLSL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+    "HLSL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+    "JACK Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+    "KMS/EGL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+    "Lakka Version"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
+    "LibretroDB support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+    "Libusb Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+    "Netplay (peer-to-peer) support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
+    "Network Command interface support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
+    "Network Gamepad support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+    "OpenAL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
+    "OpenGL ES Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
+    "OpenGL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+    "OpenSL Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+    "OpenVG Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+    "OSS Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
+    "Overlay support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+    "Power source"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+    "Charged"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+    "Charging"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+    "Discharging"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
+    "No source"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+    "PulseAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
+    "Python (script support in shaders) support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
+    "BMP Desteği (RBMP)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
+    "RetroRating level"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
+    "JPEG Desteği (RJPEG)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+    "RoarAudio Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
+    "PNG Desteği (RPNG)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+    "RSound Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
+    "TGA Desteği (RTGA)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
+    "SDL2 Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+    "SDL image Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
+    "SDL1.2 Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
+    "Slang Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
+    "Threading Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+    "Udev Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+    "Video4Linux2 Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+    "Video context driver"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
+    "Vulkan Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
+    "Metal Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+    "Wayland Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+    "X11 Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+    "XAudio2 Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+    "XVideo Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+    "Zlib Desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+    "Ekran Görüntüsü Al"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+    "Threaded tasks"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+    "Küçük Resimler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+    "Top Thumbnail"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+    "Left Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+    "Bottom Thumbnail"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+    "Second Thumbnail"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+    "Thumbnails Vertical Disposition"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+    "Show Playlist Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+    "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+    "Swap Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+    "Swaps the display positions of 'Top Thumbnail' and 'Bottom Thumbnail'."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Thumbnail Downscaling Method"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+    "Resampling method used when shrinking large thumbnails to fit the display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+    "Nearest Neighbour (Fast)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+    "Bilinear"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+    "Sinc/Lanczos3 (Slow)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+    "None"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+    "Auto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
+    "x2"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3,
+    "x3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4,
+    "x4"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5,
+    "x5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6,
+    "x6"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7,
+    "x7"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8,
+    "x8"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
+    "x9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3,
+    "4:3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9,
+    "16:9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+    "16:9 (Centered)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
+    "16:10"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+    "16:10 (Centered)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+    "OFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+    "Ekrana Sığdır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+    "Integer Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+    "Küçük Resimler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+    "Küçük resim Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+    "Boxarts"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+    "Ekran Görüntüleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+    "Title Screens"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+    "Show date / time"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+     "Style of date / time"
+    )
+MSG_HASH(
+     MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+     "Changes the style current date and/or time is shown inside the menu."
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+     "YYYY-MM-DD HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+     "YYYY-MM-DD HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+     "MM-DD-YYYY HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+     "HH:MM:SS"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+     "HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+     "DD/MM HH:MM"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+     "MM/DD HH:MM"
+    )
+ MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+     "HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "Ticker Text Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+    "Select horizontal scrolling method used to display long menu text strings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+    "Bounce Left/Right"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+    "Scroll Left"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+    "Ticker Text Speed"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+    "Animation speed when scrolling long menu text strings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+    "Menu Color Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+    "Select a different color theme. Choosing 'Custom' enables the use of menu theme preset files."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+    "Custom Menu Theme Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+    "Select a menu theme preset from the file browser."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+    "Custom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
+    "Classic Red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
+    "Classic Orange"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
+    "Classic Yellow"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,
+    "Classic Green"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
+    "Classic Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET,
+    "Classic Violet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY,
+    "Classic Grey"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
+    "Legacy Red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
+    "Dark Purple"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+    "Midnight Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
+    "Golden"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
+    "Electric Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
+    "Apple Green"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
+    "Volcanic Red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON,
+    "Lagoon"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER,
+    "Brogrammer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
+    "Dracula"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS,
+    "Fairy Floss"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI,
+    "Flat UI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+    "Gruvbox Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
+    "Gruvbox Light"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
+    "Hacking the Kernel"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD,
+    "Nord"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA,
+    "Nova"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK,
+    "One Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT,
+    "Palenight"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+    "Solarized Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
+    "Solarized Light"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
+    "Tango Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT,
+    "Tango Light"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN,
+    "Zenburn"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN,
+    "Anti-Zenburn"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TRUE,
+    "True"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+    "UI Companion"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+    "UI Companion Start On Boot"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+    "Show desktop menu on startup"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+    "Desktop menu (restart)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+    "Menubar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+    "Unable to read compressed file."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+    "Undo Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+    "Undo Save State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UNKNOWN,
+    "Bilinmeyen"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+    "Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+    "İçerikleri Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+    "Joypad Profillerini Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+    "Cg Gölgelendiricilerini Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+    "Hileleri Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+    "Core Bilgi Dosyalarını Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+    "Veritabanlarını Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+    "GLSL Gölgelendiricileri Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+    "Lakka'yı Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+    "Güncelle Overlays"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+    "Slang Gölgelendiricilerini Güncelle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USER,
+    "Kullanıcı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_KEYBOARD,
+    "Kbd"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+    "Kullanıcı Arayüzü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+    "Dil"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+    "Kullanıcı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+    "Use Builtin Image Viewer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+    "Use Builtin Media Player"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+    "<Bu dizini kullan>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+    "Allow rotation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+    "Config Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
+    "Auto Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+    "Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+    "Siyah Çerçeve Ekleme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+    "Crop Overscan (Reload)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+    "Disable Desktop Composition"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+    "3DS Alt Ekranı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+    "Video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+    "Video Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+    "Video Filtresi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+    "Flicker filter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+    "Ekrandaki Bildirimler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
+    "Bildirim Yazı Tipi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+    "Notification Size"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
+    "En boy oranını zorla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+    "Force-disable sRGB FBO"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+    "Frame Delay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+    "Tam Ekran Modunda Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+    "Video Gamma"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+    "GPU ile Kaydetmeyi kullan"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+    "GPU Screenshot"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+    "Hard GPU Sync"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+    "Hard GPU Sync Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+    "Max swapchain images"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+    "Notification X Position"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+    "Notification Y Position"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+    "Monitor Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+    "Use Post Filter Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+    "Vertical Refresh Rate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+    "Estimated Screen Framerate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+    "Set Display-Reported Refresh Rate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+    "Video Rotation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+    "Screen Orientation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+    "Windowed Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+    "Recording Threads"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+    "Integer Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+    "Video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+    "Video Shader"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+    "Shader Passes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+    "Shader Parameters"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+    "Load Shader Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+    "Save Shader Preset As"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+    "Save Core Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+    "Save Content Directory Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+    "Save Game Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+    "Hardware Shared Context"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+    "Bilinear Filtering"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+    "Soft Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+    "Vertical Sync (Vsync) Swap Interval"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+    "Video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+    "Threaded Video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+    "Deflicker"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+    "Custom Aspect Ratio Height"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+    "Custom Aspect Ratio Width"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+    "Custom Aspect Ratio X Pos."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+    "Custom Aspect Ratio Y Pos."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+    "Set VI Screen Width"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+    "Vertical Sync (Vsync)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+    "Windowed Fullscreen Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+    "Pencere genişliği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+    "Pencere yüksekliği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+    "Tam ekran genişliği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+    "Tam ekran yüksekliği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
+    "Wi-Fi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+    "Wi-Fi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+    "Menu Alpha Factor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+    "Menu Font Red Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+    "Menu Font Green Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+    "Menu Font Blue Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_FONT,
+    "Menu Font"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+    "Custom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
+    "FlatUI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
+    "Monochrome"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
+    "Monochrome Inverted"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+    "Systematic"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
+    "NeoActive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
+    "Pixel"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
+    "RetroActive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+    "Retrosystem"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
+    "Dot-Art"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+    "Automatic"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+    "Automatic Inverted"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+    "Menu Color Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
+    "Elma Yeşili"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+    "Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
+    "Light"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
+    "Morning Blue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
+    "Dark Purple"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
+    "Elektrik Mavisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
+    "Altın"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
+    "Legacy Red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+    "Gece Mavisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
+    "Plain"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
+    "Denizaltı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
+    "Volkanik Kırmızı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+    "Menu Shader Pipeline"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    "Menu Scale Factor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+    "Icon Shadows"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+    "Geçmiş Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
+    "İçerik Ekle Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
+    "Oynatma Listesi Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+    "Favoriler Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
+    "Resim Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
+    "Müzik Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+    "Ayarlar Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
+    "Video Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+    "Netplay Sekmesini Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+    "Menü düzeni"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_THEME,
+    "Menü Simgesi Teması"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_YES,
+    "Var"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+    "Shader Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+    "Klasik oyunlarda özel başarılar kazanmak için yarış.\n"
+    "Daha fazla bilgi için http://retroachievements.org adresini ziyaret edin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+    "Test amaçlı gayri resmi başarıları ve/veya beta özelliklerini kullanın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+    "Double the amount of points earned.\n"
+    "Disables savestates, cheats, rewind, pause, and slow-motion for all games.\n"
+    "Toggling this setting at runtime will restart your game."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+    "Oyuna özgü liderler tablosu.\n"
+    "Hardcore Modu devre dışı bırakılmışsa etkisi yoktur."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+    "Başarı Listesi'ndeki rozetleri görüntüle."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+    "Bildirimlerde daha fazla bilgi göster."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+    "Bir başarı tetiklendiğinde otomatik olarak ekran görüntüsü al."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+    "Sistem tarafından kullanılan sürücüleri değiştir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+    "Başarı ayarlarını değiştir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+    "Core ayarlarını değiştir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+    "Kayıt ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+    "Ekran kaplamasını, klavye kaplamasını ve ekrandaki bildirim ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+    "Geri sarma, ileri sarma ve slow-motion ayarlarını değiştirme."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+    "Kaydetme ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+    "Günlük ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+    "Kullanıcı arayüzü ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_USER_SETTINGS,
+    "Hesap, kullanıcı adı ve dil ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+    "Gizlilik ayarlarınızı değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+    "MIDI ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+    "Dosyaların bulunduğu varsayılan dizinleri değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+    "Çalma listesi ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+    "Sunucu ve ağ ayarlarını yapılandırın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+    "İçeriği tarayın ve veritabanına ekleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+    "Ses çıkışı ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+    "Bluetooth durumunu belirler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+    "Çıkışta yapılandırma dosyasındaki değişiklikleri kaydeder."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+    "Yapılandırma dosyaları için varsayılan ayarları değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+    "Yapılandırma dosyalarını yönetin ve oluşturun."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CPU_CORES,
+    "CPU'nun sahip olduğu çekirdek miktarı."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FPS_SHOW,
+    "Ekrandaki saniye başına geçerli kare hızını görüntüler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+    "Displays the current frame count onscreen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+    "Includes the current memory usage/total onscreen with FPS/Frames."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+    "Kısayol tuşu ayarlarını yapılandırın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+    "Geçiş menüsüne Gamepad düğme kombinasyonu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+    "Joypad, klavye ve fare ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    "Bu kullanıcı için kontrolleri yapılandırın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+    "Video, ses ve giriş gecikmesi ile ilgili ayarları değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+    "Olayları bir terminale veya dosyaya kaydedin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY,
+    "Netplay oturumun kurun veya katılın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
+    "Yerel ağdaki Netplay ana bilgisayarlarını arayın ve bağlanın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+    "Sistem bilgisini göster."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+    "RetroArch için eklentileri, bileşenleri ve içeriği indirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+    "Ağ klasörlerini SMB protokolü ile paylaşın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+    "İşletim sistemi düzeyinde servisleri yönetin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+    "Dosya tarayıcısının içindeki gizli dosyaları/dizinleri göster."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SSH_ENABLE,
+    "Uzaktan komut satırına erişmek için SSH kullanın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+    "Sisteminizin ekran koruyucusunun aktif hale gelmesini önler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+    "Pencere boyutunu Core görünüm alanı boyutuna göre ayarlar. Alternatif olarak, sabit bir pencere boyutu için bir pencere genişliğini ve yüksekliğini ayarlayabilirsiniz."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+    "Arayüzün dilini ayarlar."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+    "Çerçevelerin arasına siyah bir çerçeve ekler. Gölgelenmeyi önlemek için 60Hz içerik oynatmak isteyen 120Hz ekranlı kullanıcılar için kullanışlıdır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+    "Daha fazla video takılma riski pahasına gecikmeyi azaltır. V-Sync'ten sonra gecikme ekler (ms cinsinden)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+    "'Hard GPU Sync'i kullanırken CPU'nun GPU'dan kaç kare çalışabileceğini belirler.."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+    "Video sürücüsüne açıkça belirtilen arabelleğe alma modunu kullanmasını söyler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+    "Hangi ekranın kullanılacağını seçer."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+    "The accurate estimated refresh rate of the screen in Hz."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+    "The refresh rate as reported by the display driver."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+    "Video çıkış ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+    "Kablosuz ağları tarar ve bağlantı kurar."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HELP_LIST,
+    "Programın nasıl çalıştığı hakkında daha fazla bilgi edinin."
+    )
+MSG_HASH(
+    MSG_ADDED_TO_FAVORITES,
+    "Favorilere eklendi"
+    )
+MSG_HASH(
+    MSG_RESET_CORE_ASSOCIATION,
+    "Oynatma listesi ile Core ilişkisi sıfırlandı"
+    )
+MSG_HASH(
+    MSG_APPENDED_DISK,
+    "Appended disk"
+    )
+MSG_HASH(
+    MSG_APPLICATION_DIR,
+    "Application Dir"
+    )
+MSG_HASH(
+    MSG_APPLYING_CHEAT,
+    "Applying cheat changes."
+    )
+MSG_HASH(
+    MSG_APPLYING_SHADER,
+    "Applying shader"
+    )
+MSG_HASH(
+    MSG_AUDIO_MUTED,
+    "Ses kapatıldı"
+    )
+MSG_HASH(
+    MSG_AUDIO_UNMUTED,
+    "Ses açıldı."
+    )
+MSG_HASH(
+    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+    "Otomatik yapılandırma dosyası kaydedilirken hata oluştu."
+    )
+MSG_HASH(
+    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+    "Otomatik yapılandırma dosyası başarıyla kaydedildi."
+    )
+MSG_HASH(
+    MSG_AUTOSAVE_FAILED,
+    "Could not initialize autosave."
+    )
+MSG_HASH(
+    MSG_AUTO_SAVE_STATE_TO,
+    "Auto save state to"
+    )
+MSG_HASH(
+    MSG_BLOCKING_SRAM_OVERWRITE,
+    "Blocking SRAM Overwrite"
+    )
+MSG_HASH(
+    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+    "Bringing up command interface on port"
+    )
+MSG_HASH(
+    MSG_BYTES,
+    "bytes"
+    )
+MSG_HASH(
+    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+    "Cannot infer new config path. Use current time."
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+    "Achievements Hardcore Mode Enabled, savestate & rewind were disabled."
+    )
+MSG_HASH(
+    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+    "Comparing with known magic numbers..."
+    )
+MSG_HASH(
+    MSG_COMPILED_AGAINST_API,
+    "Compiled against API"
+    )
+MSG_HASH(
+    MSG_CONFIG_DIRECTORY_NOT_SET,
+    "Config directory not set. Cannot save new config."
+    )
+MSG_HASH(
+    MSG_CONNECTED_TO,
+    "Connected to"
+    )
+MSG_HASH(
+    MSG_CONTENT_CRC32S_DIFFER,
+    "Content CRC32s differ. Cannot use different games."
+    )
+MSG_HASH(
+    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+    "Content loading skipped. Implementation will load it on its own."
+    )
+MSG_HASH(
+    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+    "Core does not support save states."
+    )
+MSG_HASH(
+    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+    "Core seçenekleri dosyası başarıyla oluşturuldu."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+    "Could not find any next driver"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+    "Could not find compatible system."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+    "Could not find valid data track"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_OPEN_DATA_TRACK,
+    "could not open data track"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_CONTENT_FILE,
+    "Could not read content file"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_MOVIE_HEADER,
+    "Could not read movie header."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+    "Could not read state from movie."
+    )
+MSG_HASH(
+    MSG_CRC32_CHECKSUM_MISMATCH,
+    "CRC32 checksum mismatch between content file and saved content checksum in replay file header. Replay highly likely to desync on playback."
+    )
+MSG_HASH(
+    MSG_CUSTOM_TIMING_GIVEN,
+    "Custom timing given"
+    )
+MSG_HASH(
+    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+    "Decompression already in progress."
+    )
+MSG_HASH(
+    MSG_DECOMPRESSION_FAILED,
+    "Decompression failed."
+    )
+MSG_HASH(
+    MSG_DETECTED_VIEWPORT_OF,
+    "Detected viewport of"
+    )
+MSG_HASH(
+    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+    "Did not find a valid content patch."
+    )
+MSG_HASH(
+    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+    "Disconnect device from a valid port."
+    )
+MSG_HASH(
+    MSG_DISK_CLOSED,
+    "Closed"
+    )
+MSG_HASH(
+    MSG_DISK_EJECTED,
+    "Ejected"
+    )
+MSG_HASH(
+    MSG_DOWNLOADING,
+    "İndiriliyor"
+    )
+MSG_HASH(
+    MSG_INDEX_FILE,
+    "indeks"
+    )
+MSG_HASH(
+    MSG_DOWNLOAD_FAILED,
+    "Yükleme başarısız"
+    )
+MSG_HASH(
+    MSG_ERROR,
+    "Hatta"
+    )
+MSG_HASH(
+    MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+    "Libretro core requires content, but nothing was provided."
+    )
+MSG_HASH(
+    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+    "Libretro core requires special content, but none were provided."
+    )
+MSG_HASH(
+    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+    "Core does not support VFS, and loading from a local copy failed"
+)
+MSG_HASH(
+    MSG_ERROR_PARSING_ARGUMENTS,
+    "Error parsing arguments."
+    )
+MSG_HASH(
+    MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+    "Error saving core options file."
+    )
+MSG_HASH(
+    MSG_ERROR_SAVING_REMAP_FILE,
+    "Error saving remap file."
+    )
+MSG_HASH(
+    MSG_ERROR_REMOVING_REMAP_FILE,
+    "Error removing remap file."
+    )
+MSG_HASH(
+    MSG_ERROR_SAVING_SHADER_PRESET,
+    "Error saving shader preset."
+    )
+MSG_HASH(
+    MSG_EXTERNAL_APPLICATION_DIR,
+    "External Application Dir"
+    )
+MSG_HASH(
+    MSG_EXTRACTING,
+    "Extracting"
+    )
+MSG_HASH(
+    MSG_EXTRACTING_FILE,
+    "Extracting file"
+    )
+MSG_HASH(
+    MSG_FAILED_SAVING_CONFIG_TO,
+    "Failed saving config to"
+    )
+MSG_HASH(
+    MSG_FAILED_TO,
+    "Failed to"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+    "Failed to accept incoming spectator."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+    "Failed to allocate memory for patched content..."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_APPLY_SHADER,
+    "Failed to apply shader."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_BIND_SOCKET,
+    "Failed to bind socket."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+    "Failed to create the directory."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+    "Failed to extract content from compressed file"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+    "Failed to get nickname from client."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_LOAD,
+    "Failed to load"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_LOAD_CONTENT,
+    "Failed to load content"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_LOAD_MOVIE_FILE,
+    "Failed to load movie file"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_LOAD_OVERLAY,
+    "Failed to load overlay."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_LOAD_STATE,
+    "Failed to load state from"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+    "Failed to open libretro core"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_PATCH,
+    "Failed to patch"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+    "Failed to receive header from client."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_RECEIVE_NICKNAME,
+    "Failed to receive nickname."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+    "Failed to receive nickname from host."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+    "Failed to receive nickname size from host."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+    "Failed to receive SRAM data from host."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+    "Failed to remove disk from tray."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+    "Failed to remove temporary file"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_SRAM,
+    "Failed to save SRAM"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_STATE_TO,
+    "Failed to save state to"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_NICKNAME,
+    "Failed to send nickname."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+    "Failed to send nickname size."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+    "Failed to send nickname to client."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+    "Failed to send nickname to host."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+    "Failed to send SRAM data to client."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_START_AUDIO_DRIVER,
+    "Failed to start audio driver. Will continue without audio."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_START_MOVIE_RECORD,
+    "Failed to start movie record."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_START_RECORDING,
+    "Failed to start recording."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_TAKE_SCREENSHOT,
+    "Failed to take screenshot."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_UNDO_LOAD_STATE,
+    "Failed to undo load state."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_UNDO_SAVE_STATE,
+    "Failed to undo save state."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_UNMUTE_AUDIO,
+    "Failed to unmute audio."
+    )
+MSG_HASH(
+    MSG_FATAL_ERROR_RECEIVED_IN,
+    "Fatal error received in"
+    )
+MSG_HASH(
+    MSG_FILE_NOT_FOUND,
+    "File not found"
+    )
+MSG_HASH(
+    MSG_FOUND_AUTO_SAVESTATE_IN,
+    "Found auto savestate in"
+    )
+MSG_HASH(
+    MSG_FOUND_DISK_LABEL,
+    "Found disk label"
+    )
+MSG_HASH(
+    MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+    "Found first data track on file"
+    )
+MSG_HASH(
+    MSG_FOUND_LAST_STATE_SLOT,
+    "Found last state slot"
+    )
+MSG_HASH(
+    MSG_FOUND_SHADER,
+    "Found shader"
+    )
+MSG_HASH(
+    MSG_FRAMES,
+    "Frames"
+    )
+MSG_HASH(
+    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+    "Per-Game Options: game-specific core options found at"
+    )
+MSG_HASH(
+    MSG_GOT_INVALID_DISK_INDEX,
+    "Got invalid disk index."
+    )
+MSG_HASH(
+    MSG_GRAB_MOUSE_STATE,
+    "Grab mouse state"
+    )
+MSG_HASH(
+    MSG_GAME_FOCUS_ON,
+    "Game focus on"
+    )
+MSG_HASH(
+    MSG_GAME_FOCUS_OFF,
+    "Game focus off"
+    )
+MSG_HASH(
+    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+    "Libretro core is hardware rendered. Must use post-shaded recording as well."
+    )
+MSG_HASH(
+    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+    "Inflated checksum did not match CRC32."
+    )
+MSG_HASH(
+    MSG_INPUT_CHEAT,
+    "Input Cheat"
+    )
+MSG_HASH(
+    MSG_INPUT_CHEAT_FILENAME,
+    "Input Cheat Filename"
+    )
+MSG_HASH(
+    MSG_INPUT_PRESET_FILENAME,
+    "Input Preset Filename"
+    )
+MSG_HASH(
+    MSG_INPUT_RENAME_ENTRY,
+    "Rename Title"
+    )
+MSG_HASH(
+    MSG_INTERFACE,
+    "Arayüz"
+    )
+MSG_HASH(
+    MSG_INTERNAL_STORAGE,
+    "Internal Storage"
+    )
+MSG_HASH(
+    MSG_REMOVABLE_STORAGE,
+    "Removable Storage"
+    )
+MSG_HASH(
+    MSG_INVALID_NICKNAME_SIZE,
+    "Invalid nickname size."
+    )
+MSG_HASH(
+    MSG_IN_BYTES,
+    "in bytes"
+    )
+MSG_HASH(
+    MSG_IN_GIGABYTES,
+    "in gigabytes"
+    )
+MSG_HASH(
+    MSG_IN_MEGABYTES,
+    "in megabytes"
+    )
+MSG_HASH(
+    MSG_LIBRETRO_ABI_BREAK,
+    "is compiled against a different version of libretro than this libretro implementation."
+    )
+MSG_HASH(
+    MSG_LIBRETRO_FRONTEND,
+    "Frontend for libretro"
+    )
+MSG_HASH(
+    MSG_LOADED_STATE_FROM_SLOT,
+    "Loaded state from slot #%d."
+    )
+MSG_HASH(
+    MSG_LOADED_STATE_FROM_SLOT_AUTO,
+    "Loaded state from slot #-1 (auto)."
+    )
+MSG_HASH(
+    MSG_LOADING,
+    "Yükleniyor"
+    )
+MSG_HASH(
+    MSG_FIRMWARE,
+    "One or more firmware files are missing"
+    )
+MSG_HASH(
+    MSG_LOADING_CONTENT_FILE,
+    "Loading content file"
+    )
+MSG_HASH(
+    MSG_LOADING_HISTORY_FILE,
+    "Loading history file"
+    )
+MSG_HASH(
+    MSG_LOADING_STATE,
+    "Loading state"
+    )
+MSG_HASH(
+    MSG_MEMORY,
+    "Memory"
+    )
+MSG_HASH(
+    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
+    "Input replay movie file is not a valid BSV1 file."
+    )
+MSG_HASH(
+    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
+    "Input replay movie format seems to have a different serializer version. Will most likely fail."
+    )
+MSG_HASH(
+    MSG_MOVIE_PLAYBACK_ENDED,
+    "Input replay movie playback ended."
+    )
+MSG_HASH(
+    MSG_MOVIE_RECORD_STOPPED,
+    "Stopping movie record."
+    )
+MSG_HASH(
+    MSG_NETPLAY_FAILED,
+    "Failed to initialize netplay."
+    )
+MSG_HASH(
+    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+    "No content, starting dummy core."
+    )
+MSG_HASH(
+    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+    "No save state has been overwritten yet."
+    )
+MSG_HASH(
+    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+    "No state has been loaded yet."
+    )
+MSG_HASH(
+    MSG_OVERRIDES_ERROR_SAVING,
+    "Error saving overrides."
+    )
+MSG_HASH(
+    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+    "Overrides saved successfully."
+    )
+MSG_HASH(
+    MSG_PAUSED,
+    "Durduruldu."
+    )
+MSG_HASH(
+    MSG_PROGRAM,
+    "RetroArch"
+    )
+MSG_HASH(
+    MSG_READING_FIRST_DATA_TRACK,
+    "Reading first data track..."
+    )
+MSG_HASH(
+    MSG_RECEIVED,
+    "received"
+    )
+MSG_HASH(
+    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+    "Recording terminated due to resize."
+    )
+MSG_HASH(
+    MSG_RECORDING_TO,
+    "Recording to"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_CHEATFILE_TO,
+    "Redirecting cheat file to"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_SAVEFILE_TO,
+    "Redirecting save file to"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_SAVESTATE_TO,
+    "Redirecting savestate to"
+    )
+MSG_HASH(
+    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+    "Remap file saved successfully."
+    )
+MSG_HASH(
+    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+    "Remap file removed successfully."
+    )
+MSG_HASH(
+    MSG_REMOVED_DISK_FROM_TRAY,
+    "Removed disk from tray."
+    )
+MSG_HASH(
+    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+    "Removing temporary content file"
+    )
+MSG_HASH(
+    MSG_RESET,
+    "Reset"
+    )
+MSG_HASH(
+    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+    "Restarting recording due to driver reinit."
+    )
+MSG_HASH(
+    MSG_RESTORED_OLD_SAVE_STATE,
+    "Restored old save state."
+    )
+MSG_HASH(
+    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+    "Shaders: restoring default shader preset to"
+    )
+MSG_HASH(
+    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+    "Reverting savefile directory to"
+    )
+MSG_HASH(
+    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+    "Reverting savestate directory to"
+    )
+MSG_HASH(
+    MSG_REWINDING,
+    "Gerisarılıyor."
+    )
+MSG_HASH(
+    MSG_REWIND_INIT,
+    "Initializing rewind buffer with size"
+    )
+MSG_HASH(
+    MSG_REWIND_INIT_FAILED,
+    "Failed to initialize rewind buffer. Rewinding will be disabled."
+    )
+MSG_HASH(
+    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+    "Implementation uses threaded audio. Cannot use rewind."
+    )
+MSG_HASH(
+    MSG_REWIND_REACHED_END,
+    "Reached end of rewind buffer."
+    )
+MSG_HASH(
+    MSG_SAVED_NEW_CONFIG_TO,
+    "Saved new config to"
+    )
+MSG_HASH(
+    MSG_SAVED_STATE_TO_SLOT,
+    "Saved state to slot #%d."
+    )
+MSG_HASH(
+    MSG_SAVED_STATE_TO_SLOT_AUTO,
+    "Saved state to slot #-1 (auto)."
+    )
+MSG_HASH(
+    MSG_SAVED_SUCCESSFULLY_TO,
+    "Saved successfully to"
+    )
+MSG_HASH(
+    MSG_SAVING_RAM_TYPE,
+    "Saving RAM type"
+    )
+MSG_HASH(
+    MSG_SAVING_STATE,
+    "Saving state"
+    )
+MSG_HASH(
+    MSG_SCANNING,
+    "Taranıyor"
+    )
+MSG_HASH(
+    MSG_SCANNING_OF_DIRECTORY_FINISHED,
+    "Dizin taraması tamamlandı"
+    )
+MSG_HASH(
+    MSG_SENDING_COMMAND,
+    "Sending command"
+    )
+MSG_HASH(
+    MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+    "Several patches are explicitly defined, ignoring all..."
+    )
+MSG_HASH(
+    MSG_SHADER,
+    "Shader"
+    )
+MSG_HASH(
+    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+    "Shader preset saved successfully."
+    )
+MSG_HASH(
+    MSG_SKIPPING_SRAM_LOAD,
+    "Skipping SRAM load."
+    )
+MSG_HASH(
+    MSG_SLOW_MOTION,
+    "Slow motion."
+    )
+MSG_HASH(
+    MSG_FAST_FORWARD,
+    "Fast forward."
+    )
+MSG_HASH(
+    MSG_SLOW_MOTION_REWIND,
+    "Slow motion rewind."
+    )
+MSG_HASH(
+    MSG_SRAM_WILL_NOT_BE_SAVED,
+    "SRAM will not be saved."
+    )
+MSG_HASH(
+    MSG_STARTING_MOVIE_PLAYBACK,
+    "Starting movie playback."
+    )
+MSG_HASH(
+    MSG_STARTING_MOVIE_RECORD_TO,
+    "Starting movie record to"
+    )
+MSG_HASH(
+    MSG_STATE_SIZE,
+    "State size"
+    )
+MSG_HASH(
+    MSG_STATE_SLOT,
+    "State slot"
+    )
+MSG_HASH(
+    MSG_TAKING_SCREENSHOT,
+    "Taking screenshot."
+    )
+MSG_HASH(
+    MSG_SCREENSHOT_SAVED,
+    "Screenshot saved"
+    )
+MSG_HASH(
+    MSG_CHANGE_THUMBNAIL_TYPE,
+    "Change thumbnail type"
+    )
+MSG_HASH(
+    MSG_NO_THUMBNAIL_AVAILABLE,
+    "No thumbnail available"
+    )
+MSG_HASH(
+    MSG_PRESS_AGAIN_TO_QUIT,
+    "Press again to quit..."
+    )
+MSG_HASH(
+    MSG_TO,
+    "to"
+    )
+MSG_HASH(
+    MSG_UNDID_LOAD_STATE,
+    "Undid load state."
+    )
+MSG_HASH(
+    MSG_UNDOING_SAVE_STATE,
+    "Undoing save state"
+    )
+MSG_HASH(
+    MSG_UNKNOWN,
+    "Unknown"
+    )
+MSG_HASH(
+    MSG_UNPAUSED,
+    "Unpaused."
+    )
+MSG_HASH(
+    MSG_UNRECOGNIZED_COMMAND,
+    "Unrecognized command"
+    )
+MSG_HASH(
+    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+    "Using core name for new config."
+    )
+MSG_HASH(
+    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+    "Using libretro dummy core. Skipping recording."
+    )
+MSG_HASH(
+    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+    "Connect device from a valid port."
+    )
+MSG_HASH(
+    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+    "Disconnecting device from port"
+    )
+MSG_HASH(
+    MSG_VALUE_REBOOTING,
+    "Rebooting..."
+    )
+MSG_HASH(
+    MSG_VALUE_SHUTTING_DOWN,
+    "Shutting down..."
+    )
+MSG_HASH(
+    MSG_VERSION_OF_LIBRETRO_API,
+    "Version of libretro API"
+    )
+MSG_HASH(
+    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
+    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY,
+    "virtual disk tray."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+    "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+    "Mute/unmute audio."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+    "Helps smooth out imperfections in timing when synchronizing audio and video. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+    "Allow or disallow camera access by cores."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+    "Allow or disallow location services access by cores."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+    "Maximum amount of users supported by RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+    "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+    "Allows any user to control the menu. If disabled, only User 1 can control the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+    "Audio volume (in dB). 0 dB is normal volume, and no gain is applied."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+    "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+    "Use float format for the WASAPI driver, if supported by your audio device."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+    "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+    "Synchronize audio. Recommended."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+    "How far an axis must be tilted to result in a button press."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+    "Amount of seconds to wait until proceeding to the next bind."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+    "Amount of seconds to hold an input to bind it."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+    "Describes the period when turbo-enabled buttons are toggled. Numbers are described in frames."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+    "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+    "Synchronizes the output video of the graphics card to the refresh rate of the screen. Recommended."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+    "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the screen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+    "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
+    "Check if all the required firmware is present before attempting to load content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\n"
+    "NOTE: This will be ignored if 'Threaded Video' is enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+    "Determines if audio is outputted."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+    "The maximum change in audio input rate. Increasing this enables very large changes in timing at the cost of an inaccurate audio pitch (e.g., running PAL cores on NTSC displays)."
+    )
+MSG_HASH(
+    MSG_FAILED,
+    "failed"
+    )
+MSG_HASH(
+    MSG_SUCCEEDED,
+    "succeeded"
+    )
+MSG_HASH(
+    MSG_DEVICE_NOT_CONFIGURED,
+    "not configured"
+    )
+MSG_HASH(
+    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+    "not configured, using fallback"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
+    "Database Cursor List"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+    "Database - Filter : Developer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+    "Database - Filter : Publisher"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISABLED,
+    "Disabled"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLED,
+    "Enabled"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+    "Content History Path"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+    "Database - Filter : Origin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+    "Database - Filter : Franchise"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+    "Database - Filter : ESRB Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+    "Database - Filter : ELSPA Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+    "Database - Filter : PEGI Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+    "Database - Filter : CERO Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+    "Database - Filter : BBFC Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+    "Database - Filter : Max Users"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+    "Database - Filter : Releasedate By Month"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+    "Database - Filter : Releasedate By Year"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+    "Database - Filter : Edge Magazine Issue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+    "Database - Filter : Edge Magazine Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
+    "Veritabanı Bilgisi"
+    )
+MSG_HASH(
+    MSG_WIFI_SCAN_COMPLETE,
+    "Wi-Fi taraması tamamlandı."
+    )
+MSG_HASH(
+    MSG_SCANNING_WIRELESS_NETWORKS,
+    "Kablosuz ağları tarama..."
+    )
+MSG_HASH(
+    MSG_NETPLAY_LAN_SCAN_COMPLETE,
+    "Netplay taraması tamamlandı."
+    )
+MSG_HASH(
+    MSG_NETPLAY_LAN_SCANNING,
+    "Netplay sunucuları aranıyor ..."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+    "RetroArch etkin pencere olmadığında oyunu duraklat."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+    "Pencere yöneticileri, görsel efektleri uygulamak, yanıt vermeyen pencereleri tespit etmek için diğer şeylerin yanı sıra bileşimi kullanır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+    "Son kullanılan oyunların, resimlerin, müziklerin ve videoların oynatma listesini tutar."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+    "Oyunlar, resimler, müzik ve videolar için son oynatma listesindeki giriş sayısını sınırlayın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+    "Unified Menu Controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+    "Use the same controls for both the menu and the game. Applies to the keyboard."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+    "Press quit twice"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+    "Press the quit hotkey twice to exit RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+    "Ekrandaki mesajları göster."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+    "User %d Remote"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+    "Show battery level"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+    "Show menu sublabels"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+    "Shows additional information for the currently selected menu entry."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+    "Select File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
+    "Select from a playlist"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILTER,
+    "Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCALE,
+    "Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+    "Netplay will start when content is loaded."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+    "Couldn't find a suitable core or content file, load manually."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+    "Browse URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+    "URL Path"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BROWSE_START,
+    "Start"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
+    "Bokeh"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
+    "Snowflake"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+    "Refresh Room List"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
+    "Nickname: %s"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
+    "Nickname (lan): %s"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+    "Compatible content found"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+    "Cuts off a few pixels around the edges of the image customarily left blank by developers which sometimes also contain garbage pixels."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+    "Adds a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+    "Apply a CPU-powered video filter.\n"
+    "NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
+    "RetroAchievements hesabınızın kullanıcı adını girin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+    "RetroAchievements hesabınızın şifresini girin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+    "Kullanıcı adınızı buraya girin. Diğer şeylerin yanı sıra Netplay oturumları için de kullanılacak."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+    "Filtreler (ancak gölgelendiriciler değil) uygulandıktan sonra görüntüyü çekin. Videonuz, ekranda gördüğünüz kadar süslü görünecek."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_LIST,
+    "Kullanılacak Core'u seçin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_START_CORE,
+    "İçerik olmadan Core'u başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Çevrimiçi güncelleyiciden bir Core yükleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "İndirilen dizinden bir Core kurun ya da geri yükleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+    "Hangi içeriğin başlayacağını seçin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+    "Ağ arayüzlerini ve ilgili IP adreslerini göster."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+    "Show information specific to the device."
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Programı yeniden başlat."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Programdan çık."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+    "Set the custom width for the display window."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+    "Set the custom height for the display window."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+    "Remember window size and position, enabling this has precedence over Windowed Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+    "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+    "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+    "Specify custom X axis position for onscreen text."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+    "Specify custom Y axis position for onscreen text."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+    "Specify the font size in points."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+    "Hide the overlay while inside the menu, and show it again when exiting the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+    "Show keyboard/controller inputs on the onscreen overlay."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+    "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    "Scanned content will appear here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+    "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+    "Screenshots output of GPU shaded material if available."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+    "Forces a certain rotation of the video. The rotation is added to rotations which the core sets."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+    "Forces a certain orientation of the screen from the operating system."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+    "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+    "Start in fullscreen. Can be changed at runtime. Can be overridden by a command line switch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+    "If fullscreen, prefer using a windowed fullscreen mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+    "Records output of GPU shaded material if available."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+    "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+    "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+    "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+    "When in slow motion, content will slow down by the factor specified/set."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+    "Run core logic one or more frames ahead then load the state back to reduce perceived input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+    "The number of frames to run ahead. Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+    "The number of milliseconds to wait to get a complete input sample, use it if you have issues with simultaneous button presses (Android only)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+    "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+    "Hides the warning message that appears when using RunAhead and the core does not support savestates."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
+    "Made a mistake? Rewind and try again.\n"
+    "Beware that this causes a performance hit when playing."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+    "Apply cheat immediately after toggling."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+    "Auto-apply cheats when game loads."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "The number of times the cheat will be applied.\n"
+    "Use with the other two Iteration options to affect large areas of memory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "After each 'Number of Iterations' the Value will be increased by this amount."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+    "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+    "The amount of memory (in MB) to reserve for the rewind buffer.  Increasing this will increase the amount of rewind history."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+    "Each time you increase or decrease the rewind buffer size value via this UI it will change by this amount"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_IDX,
+    "Index position in list."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+    "Address bitmask when Memory Search Size < 8-bit."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+    "Select the match to view."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+    "Left/Right to change bit-size"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+    "Left/Right to change value"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LTE,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GTE,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+    "Left/Right to change value"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+    "Left/Right to change value"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+    "Big endian  : 258 = 0x0102,\n"
+    "Little endian : 258 = 0x0201"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+    "Sets log level for cores. If a log level issued by a core is below this value, it is ignored."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+    "Performance counters for RetroArch (and cores).\n"
+    "The counter data can help determine system bottlenecks and fine-tune system and application performance"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+    "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+    "Automatically load the auto save state on startup."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+    "Show thumbnails of save states inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+    "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+    "If enabled, overrides the input binds with the remapped binds set for the current core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+    "If enabled attempts to autoconfigure controllers, Plug-and-Play style."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+    "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+    "If disabled, the content will keep running in the background when RetroArch's menu is toggled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+    "Video driver to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+    "Audio driver to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+    "Kullanılacak giriş sürücüsü. Video sürücüsüne bağlı olarak, farklı bir giriş sürücüsünü zorlayabilir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+    "kullanılacak Joypad sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+    "Audio resampler driver to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+    "Kullanılacak kamera sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+    "Kullanılacak konum sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_DRIVER,
+    "Kullanılacak menü sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+    "Kullanılacak kayıt sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+    "Kullanılacak MIDI sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+    "Kullanılacak WiFi sürücüsü."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+    "Filter files being shown in filebrowser by supported extensions."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+    "Select an image to set as menu wallpaper."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+    "Dynamically load a new wallpaper depending on context."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+    "Override the default audio device the audio driver uses. This is driver dependent."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+    "Audio DSP plugin that processes audio before it's sent to the driver."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+    "Audio output sample rate."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+    "Opacity of all UI elements of the overlay."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
+    "Scale of all UI elements of the overlay."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+    "Overlays are used for borders and on-screen controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+    "Select an overlay from the file browser."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+    "The address of the host to connect to."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+    "The port of the host IP address. Can be either a TCP or UDP port."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+    "The password for connecting to the netplay host. Used only in host mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+    "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+    "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+    "Whether to start netplay in spectator mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+    "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+    "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
+    "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+    "The frequency in frames with which netplay will verify that the host and client are in sync."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+    "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+    "stdin command interface."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+    "Allows the menu to be controlled with the mouse."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+    "Allows the menu to be controlled with screen touches."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS,
+    "Type of thumbnail to display."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+    "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+    "Type of thumbnail to display at the left."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+    "Type of thumbnail to display at the bottom right of playlists."
+    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Replace the content metadata panel by another thumbnail."
+   )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+    "Display the left thumbnail under the right one, on the right side of the screen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+    "Shows current date and/or time inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+    "Shows current battery level inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+    "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+    "Enables netplay in host (server) mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+    "Netplay sunucu adresini girin ve istemci modunda bağlanın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+    "Disconnects an active Netplay connection."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+    "Uyumlu içerik için bir dizin tarar. Bulunduğunda, içerik oynatma listesine eklenir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCAN_FILE,
+    "Uyumlu içerik için bir dosyayı tarar. Bulunduğunda, içerik oynatma listesine eklenir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+    "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+    "Sort save files in folders named after the core used."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+    "Sort save states in folders named after the core used."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+    "Request to play with the given input device."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+    "URL to core updater directory on the Libretro buildbot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+    "URL to assets updater directory on the Libretro buildbot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+    "İndirdikten sonra, indirilen arşivlerde bulunan dosyaları otomatik olarak çıkartın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+    "Yeni odalar için tarayın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+    "Bu girişi Oyatma listesinden kaldır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INFORMATION,
+    "İçerikle ilgili daha fazla bilgi görüntüleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+    "Girişi favorilerinize ekleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+    "Girdiyi favorilerinize ekleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN,
+    "İçeriği çalıştırın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+    "Filebrowser ayarlarını düzenler."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+    "Özelleştirilmiş kontrolleri başlangıçta yükleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+    "Özelleştirilmiş yapılandırmayı başlangıçta yükleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+    "Özelleştirilmiş Core seçeneklerini başlangıçta varsayılan olarak yükleyin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_ENABLE,
+    "Menüdeki geçerli Core adını gösterir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+    "Veritabanlarını görüntüle."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+    "Önceki aramaları görüntüle."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
+    "Ekranın görüntüsünü yakalar."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+    "Closes the current content. Any unsaved changes might be lost."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOAD_STATE,
+    "Load a saved state from the currently selected slot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_STATE,
+    "Save a state to the currently selected slot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESUME,
+    "Çalışmakta olan içeriği devam ettirin ve Hızlı Menüden çıkın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+    "Çalışmakta olan içeriği devam ettirin ve Hızlı Menüden çıkın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STATE_SLOT,
+    "Changes the currently selected state slot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+    "If a state was loaded, content will go back to the state prior to loading."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+    "If a state was overwritten, it will roll back to the previous save state."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+    "RetroAchievements hizmeti. Daha fazla bilgi için http://retroachievements.org adresini ziyaret edin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+    "Yapılandırılmış hesapları yönetir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+    "Geri sarma ayarlarını yönetir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
+    "Hile ayrıntıları ayarlarını yönetir."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
+    "Hile kodu aramayı başlatın veya devam edin."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+    "İçeriği baştan yeniden başlatır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+    "Core'da yüklü olan tüm içerik için geçerli olacak bir üzerine yazma dosyasını kaydeder. Ana yapılandırmadan öncelikli olacaktır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+    "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+    "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+    "Set up cheat codes."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+    "Set up shaders to visually augment the image."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+    "Change the controls for the currently running content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+    "Change the options for the currently running content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+    "Show advanced settings for power users (hidden by default)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+    "Perform tasks on a separate thread."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+    "Kullanıcının girişleri listelerden kaldırmasına izin ver."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+    "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+    "Sets start directory for the filebrowser."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_DIR,
+    "Usually set by developers who bundle libretro/RetroArch apps to point to assets."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+    "Directory to store wallpapers dynamically loaded by the menu depending on context."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
+    "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+    "Sets start directory for menu configuration browser."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+    "The number of frames of input latency for netplay to use to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+    "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
+    "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. "
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_INDEX,
+    "Change the disk index."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+    "Disk image management."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+    "Select a disk image to insert."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+    "Makes sure the framerate is capped while inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+    "No deviation from core requested timing. Use for Variable Refresh Rate screens, G-Sync, FreeSync."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+    "Select a different layout for the XMB interface."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_THEME,
+    "Select a different icon theme for RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+    "Draw drop shadows for all icons.\n"
+    "This will have a minor performance hit."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+    "Select a different background color gradient theme."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+    "Modify the opacity of the background wallpaper."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+    "Select a different background color gradient theme."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+    "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_FONT,
+    "Select a different main font to be used by the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+    "Show the favorites tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+    "Show the image tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+    "Show the music tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+    "Show the video tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+    "Show the netplay tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+    "Show the settings tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+    "Show the recent history tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
+    "Show the import content tab inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+    "Show playlist tabs inside the main menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+    "Show startup screen in menu. This is automatically set to false after the program starts for the first time."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+    "Modify the opacity of the header graphic."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+    "Modify the opacity of the footer graphic."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
+    "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
+    "Set the custom scaling size here.\n"
+    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+    "Save all downloaded files to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+    "Save all remapped controls to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+    "Directory where the program searches for content/cores."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+    "Application/core information files are stored here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+    "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+    "Save all playlists to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+    "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
+    "Saved queries are stored to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+    "Databases are stored to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+    "This location is queried by default when menu interfaces try to look for loadable assets, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+    "Save all save files to this directory. If not set, will try to save inside the content file's working directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+    "Save all save states to this directory. If not set, will try to save inside the content file's working directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+    "Directory to dump screenshots to."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+    "Defines a directory where overlays are kept for easy access."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+    "Cheat files are kept here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+    "Directory where audio DSP filter files are kept."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+    "Directory where CPU-based video filter files are kept."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+    "Defines a directory where GPU-based video shader files are kept for easy access."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+    "Recordings will be dumped to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+    "Recording configurations will be kept here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+    "Select a different font for onscreen notifications."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+    "Changes to the shader configuration will take effect immediately. Use this if you changed the amount of shader passes, filtering, FBO scale, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+    "Increase or decrease the amount of shader pipeline passes. You can bind a separate shader to each pipeline pass and configure its scale and filtering."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+    "Load a shader preset. The shader pipeline will be automatically set-up."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+    "Save the current shader settings as a new shader preset."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+    "Save the current shader settings as the default settings for this application/core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+    "Save the current shader settings as the default settings for all files in the current content directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+    "Save the current shader settings as the default settings for the content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+    "Modifies the current shader directly. Changes will not be saved to the preset file."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+    "Modifies the shader preset itself currently used in the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
+    "Increase or decrease the amount of cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+    "Cheat changes will take effect immediately."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+    "Start search for a new cheat.  Number of bits can be changed."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+    "Continue search for a new cheat."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+    "Load a cheat file and replace existing cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+    "Load a cheat file and append to existing cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+    "Save current cheats as a save file."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+    "Quickly access all relevant in-game settings."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+    "View information pertaining to the application/core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+    "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config'."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+    "Custom viewport height that is used if the Aspect Ratio is set to 'Custom'."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+    "Custom viewport width that is used if the Aspect Ratio is set to 'Custom'."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+    "Custom viewport offset used for defining the X-axis position of the viewport. These are ignored if 'Integer Scale' is enabled. It will be automatically centered then."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+    "Custom viewport offset used for defining the Y-axis position of the viewport. These are ignored if 'Integer Scale' is enabled. It will be automatically centered then."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+    "Use Relay Server"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+    "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+    "Relay Server Location"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+    "Choose a specific relay server to use. Geographically closer locations tend to have lower latency."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+    "Add to mixer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+    "Add to mixer and play"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+    "Add to mixer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+    "Add to mixer and play"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+    "Filter by current core"
+    )
+MSG_HASH(
+    MSG_AUDIO_MIXER_VOLUME,
+    "Global audio mixer volume"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+    "Global audio mixer volume (in dB). 0 dB is normal volume, and no gain is applied."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+    "Mixer Volume Gain (dB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+    "Mixer Mute"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+    "Mute/unmute mixer audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+    "Show Online Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+    "Show/hide the 'Online Updater' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+    "Views"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+    "Show or hide elements on the menu screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+    "Show Core Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+    "Show/hide the ability to update cores (and core info files)."
+    )
+MSG_HASH(
+    MSG_PREPARING_FOR_CONTENT_SCAN,
+    "Preparing for content scan..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+    "Delete core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_DELETE,
+    "Remove this core from disk."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+    "Framebuffer Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+    "Modify the opacity of the framebuffer."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+    "Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+    "Content which you have added to 'Favorites' will appear here."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+    "Music"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+    "Music which has been previously played will appear here."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+    "Image"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+    "Images which have been previously viewed will appear here."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+    "Video"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+    "Videos which have been previously played will appear here."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+    "Menu Icons"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+    "Show icons at the left of the menu entries."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+    "Settings Tab"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+    "Set Password For Enabling Settings Tab"
+    )
+MSG_HASH(
+    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+    "Enter Password"
+    )
+MSG_HASH(
+    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+    "Password correct."
+    )
+MSG_HASH(
+    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+    "Password incorrect."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+    "Enables the Settings tab. A restart is required for the tab to appear."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+    "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+    "Allow the user to rename entries in playlists."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+    "Allow to rename entries"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+    "Rename the title of the entry."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+    "Rename"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+    "Show Load Core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+    "Show/hide the 'Load Core' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
+    "Show Load Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
+    "Show/hide the 'Load Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+    "Show Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+    "Show/hide the 'Information' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+    "Show Configuration File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+    "Show/hide the 'Configuration File' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+    "Show Help"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+    "Show/hide the 'Help' option."
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Show Restart RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Show/hide the 'Restart RetroArch' option."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Show Quit RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Show/hide the 'Quit RetroArch' option."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+    "Show Reboot"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+    "Show/hide the 'Reboot' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+    "Show Shutdown"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+    "Show/hide the 'Shutdown' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+    "Quick Menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+    "Show or hide elements on the Quick Menu screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+    "Show Take Screenshot"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+    "Show/hide the 'Take Screenshot' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+    "Show Save/Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+    "Show/hide the options for saving/loading state."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+    "Show Undo Save/Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+    "Show/hide the options for undoing save/load state."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+    "Show Add to Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+    "Show/hide the 'Add to Favorites' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+    "Show Start Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+    "Show/hide the 'Start Recording' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+    "Show Start Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+    "Show/hide the 'Start Streaming' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show Reset Core Association"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show/hide the 'Reset Core Association' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+    "Show Options"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+    "Show/hide the 'Options' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+    "Show Controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+    "Show/hide the 'Controls' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+    "Show Cheats"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+    "Show/hide the 'Cheats' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+    "Show Shaders"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+    "Show/hide the 'Shaders' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+    "Show Save Core Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+    "Show/hide the 'Save Core Overrides' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+    "Show Save Game Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+    "Show/hide the 'Save Game Overrides' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+    "Show Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+    "Show/hide the 'Information' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+    "Notification Background"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+    "Notification Background Red Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+    "Notification Background Green Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+    "Notification Background Blue Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+    "Notification Background Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+    "Disable Kiosk Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+    "Disables kiosk mode. A restart is required for the change to take full effect."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+    "Kiosk Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+    "Protects the setup by hiding all configuration related settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+    "Set Password For Disabling Kiosk Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+    "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password."
+    )
+MSG_HASH(
+    MSG_INPUT_KIOSK_MODE_PASSWORD,
+    "Enter Password"
+    )
+MSG_HASH(
+    MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+    "Password correct."
+    )
+MSG_HASH(
+    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+    "Password incorrect."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+    "Notification Red Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+    "Notification Green Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+    "Notification Blue Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+    "Display Frame Count"
+    )
+MSG_HASH(
+    MSG_CONFIG_OVERRIDE_LOADED,
+    "Configuration override loaded."
+    )
+MSG_HASH(
+    MSG_GAME_REMAP_FILE_LOADED,
+    "Game remap file loaded."
+    )
+MSG_HASH(
+    MSG_CORE_REMAP_FILE_LOADED,
+    "Core remap file loaded."
+    )
+MSG_HASH(
+    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+    "RunAhead has been disabled because this core does not support save states."
+    )
+MSG_HASH(
+    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+    "Failed to save state.  RunAhead has been disabled."
+    )
+MSG_HASH(
+    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+    "Failed to load state.  RunAhead has been disabled."
+    )
+MSG_HASH(
+    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+    "Failed to create second instance.  RunAhead will now use only one instance."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+    "Automatically add content to playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+    "Automatically scans loaded content with the playlist scanner."
+    )
+MSG_HASH(
+    MSG_SCANNING_OF_FILE_FINISHED,
+    "Scanning of file finished"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+    "Window Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+    "Resampler Quality"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+    "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+    "Watch shader files for changes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+    "Auto-apply changes made to shader files on disk."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+    "Show Window Decorations"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+    "İstatistikleri göster"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+    "Ekrandaki teknik istatistikleri göster."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Border filler"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Display menu border."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Border filler thickness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu border chequerboard pattern."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Background filler thickness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Increase coarseness of menu background chequerboard pattern."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+    "Lock Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+    "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Internal Upscaling"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+    "Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+    "Select menu aspect ratio. Widescreen ratios increase the horizontal resolution of the menu interface. (May require a restart if 'Lock Menu Aspect Ratio' is disabled)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+    "Use Full-Width Layout"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+    "Resize and position menu entries to make best use of available screen space. Disable this to use classic fixed-width two column layout."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+    "Shadow Effects"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+    "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+    "Switch among native and ultrawide super resolutions."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+    "CRT Super Resolution"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+    "Show Rewind Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+    "Show/hide the Rewind options."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+    "Show/hide the Latency options."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+    "Show Latency Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+    "Show/hide the Overlay options."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+    "Show Overlay Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+    "Mixer"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+    "Play simultaneous audio streams even in the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+    "Mixer Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+    "View and/or modify audio mixer settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_INFO,
+    "Info"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+    "&File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+    "&Load Core..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+    "&Unload Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+    "E&xit"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+    "&Edit"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+    "&Search"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+    "&View"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+    "Closed Docks"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+    "Shader Parameters"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
+    "&Options..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+    "Remember dock positions:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+    "Remember window geometry:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+    "Remember last content browser tab:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+    "Theme:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+    "<System Default>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+    "Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+    "Custom..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+    "Options"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+    "&Tools"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+    "&Yardım"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
+    "RetroArch Hakkında"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
+    "Documentation"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+    "Load Custom Core..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+    "Load Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+    "Loading Core..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_NAME,
+    "Name"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+    "Version"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+    "Oynatma listeleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+    "Dosya tarayıcısı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+    "Top"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+    "Up"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+    "İçerik Tarayıcı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+    "Boxart"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+    "Ekran görütüsü"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+    "Title Screen"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+    "All Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE,
+    "Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+    "Core Bilgisi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+    "<Bana Sor>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+    "Bilgi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_WARNING,
+    "Uyarı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ERROR,
+    "Hata"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+    "Ağ hatası"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+    "Değişikliklerin etkili olması için lütfen programı yeniden başlatın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_LOG,
+    "Günlük"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+    "%1 items"
+    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
+   "Resmi buraya bırakın"
+   )
+#ifdef HAVE_QT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+    "Tarama bitti.<br><br>\n"
+    "In order for content to be correctly scanned, you must:\n"
+    "<ul><li>have a compatible core already downloaded</li>\n"
+    "<li>have \"Core Info Files\" updated via Online Updater</li>\n"
+    "<li>have \"Databases\" updated via Online Updater</li>\n"
+    "<li>restart RetroArch if any of the above was just done</li></ul>\n"
+    "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+    "Masaüstü Menüsünü Göster"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHOW_WIMP,
+    "Kapalıysa, masaüstü menüsünü açar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+    "Bunu bir daha gösterme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_STOP,
+    "Durdur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+    "Bağdaştırılmış Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+    "Hidden Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_HIDE,
+    "Sakla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+    "Highlight color:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+    "&Seç..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+    "Select Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+    "Select Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+    "Custom Theme"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+    "Dosya yolu boş."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+    "Dosya boş."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+    "Dosya okumak için açılamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
+    "Dosya yazmak için açılamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+    "Dosya bulunmuyor."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+    "Suggest loaded core first:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ZOOM,
+    "Zoom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_VIEW,
+    "View"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
+    "İkonlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
+    "Liste"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+    "Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+    "Options for overriding the global configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+    "Ses akışının oynatılmasını başlatır. Tamamlandığında, mevcut ses akışını bellekten kaldıracak."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+    "Ses akışının oynatılmasını başlatır. Tamamlandığında, tekrar baştan başlayıp tekrar çalmaya başlayacaktır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+    "Ses akışının oynatılmasını başlatır. Tamamlandığında, sıralı sırayla bir sonraki ses akışına atlar ve bu davranışı tekrarlar. Albüm çalma modu olarak kullanışlıdır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+    "Ses akışının çalınmasını durdurur, ancak bellekten çıkarmaz. 'Oynat' seçeneğini seçerek tekrar oynamaya başlayabilirsiniz."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+    "Ses akışının çalınmasını durdurur ve tamamen bellekten kaldırır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+    "Ses akışının sesini ayarlayın."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+    "Ses parçasını kullanılabilir bir ses akışı yuvasına ekleyin. Şu anda mevcut slot bulunmuyorsa, dikkate alınmaz."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+    "Ses parçasını kullanılabilir bir ses akışı yuvasına ekleyin ve oynatın. Şu anda mevcut slot bulunmuyorsa, dikkate alınmaz."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+    "Oynat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+    "Oynat (Döngüsel)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+    "Oynat (Ardışık)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+    "Durdur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+    "Kaldır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+    "Ses"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+    "Geçerli Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+    "Temizle"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+    "Mevcut oturum için başarıları duraklatın (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve slow-motion etkinleştirir)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+    "Mevcut oturum için başarıları sürdürün (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve slow-motion'ı devre dışı bırakır ve mevcut oyunu sıfırlar)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+    "Menü-İçinde"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+    "Oyun-İçinde"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+    "Oyun-İçinde (Durdurulduğunda)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+    "Oynatılıyor"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+    "Durduruldu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+    "Discord Rich Presence"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+    "Discord uygulamasının, oynatılan içerik hakkında daha fazla veri göstermesine izin verir.\n"
+    "NOT: Tarayıcı sürümüyle çalışmaz, yalnızca masaüstü istemcisiyle çalışır."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+    "Input"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIDI_INPUT,
+    "Select input device."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+    "Output"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+    "Select output device."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+    "Ses"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+    "Set output volume (%)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+    "Güç yönetimi"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+    "Güç yönetimi ayarlarını değiştirin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+    "Sürdürülebilir Performans Modu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+    "mpv desteği"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
+    "Indeks"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
+    "View Match #"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+    "Match Address: %08X Mask: %02X"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+    "Create Code Match #"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+    "Delete Match #"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+    "Browse Address: %08X"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+    "Açıklama"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+    "Etkinleştirildi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+    "Code"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+    "Handler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+    "Memory Search Size"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+    "Tip"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+    "Değer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+    "Memory Address"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+    "Memory Address Mask"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
+    "Rumble When Memory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+    "Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+    "Rumble Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+    "Rumble Primary Strength"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+    "Rumble Primary Duration (ms)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+    "Rumble Secondary Strength"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+    "Rumble Secondary Duration (ms)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+    "Number of Iterations"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Value Increase Each Iteration"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Address Increase Each Iteration"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+    "Add New Cheat After This One"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+    "Add New Cheat Before This One"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+    "Copy This Cheat After"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+    "Copy This Cheat Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+    "Delete This Cheat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
+    "Emulator"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_RETRO,
+    "RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
+    "<Disabled>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+    "Set To Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+    "Increase By Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
+    "Decrease By Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
+    "Run next cheat if value = memory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+    "Run next cheat if value != memory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
+    "Run next cheat if value < memory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
+    "Run next cheat if value > memory"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
+    "<Disabled>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+    "Değişiklikler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+    "Does Not Change"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
+    "Increases"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
+    "Decreases"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
+    "= Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
+    "!= Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
+    "< Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
+    "> Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+    "Increases by Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+    "Decreases by Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+    "1-bit, maksimum değer = 0x01"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+    "2-bit, maksimum değer = 0x03"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+    "4-bit, maksimum değer = 0x0F"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+    "8-bit, maksimum değer = 0xFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+    "16-bit, maksimum değer = 0xFFFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+    "32-bit, maksimum değer = 0xFFFFFFFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_0,
+    "1"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_1,
+    "2"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_2,
+    "3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_3,
+    "4"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_4,
+    "5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_5,
+    "6"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_6,
+    "7"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_7,
+    "8"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_8,
+    "9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_9,
+    "10"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_10,
+    "11"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_11,
+    "12"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_12,
+    "13"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_13,
+    "14"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_14,
+    "15"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_15,
+    "16"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_PORT_16,
+    "All"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+    "Hile Aramaya Başla veya Devam Et"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+    "Hile Aramasını Başlat veya Yeniden Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+    "Search Memory For Values"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+    "Add the %u Matches to Your List"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
+    "View the List of %u Matches"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+    "Create Code From This Match"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+    "Delete This Match"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+    "Add New Code to Top"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+    "Add New Code to Bottom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+    "Delete All Codes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+    "Reload Game-Specific Cheats"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+    "Equal to %u (%X)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+    "Less Than Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+    "Greater Than Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+    "Less Than or Equal To Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+    "Greater Than or Equal To Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+    "Equal to Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+    "Not Equal to Before"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+    "Equal to Before+%u (%X)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+    "Equal to Before-%u (%X)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
+    "Start or Continue Cheat Search"
+    )
+MSG_HASH(
+    MSG_CHEAT_INIT_SUCCESS,
+    "Successfully started cheat search"
+    )
+MSG_HASH(
+    MSG_CHEAT_INIT_FAIL,
+    "Failed to start cheat search"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+    "Searching has not been initialized/started"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_FOUND_MATCHES,
+    "New match count = %u"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
+    "Big Endian"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+    "Added %u matches"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+    "Failed to add matches"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+    "Created code from match"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+    "Failed to create code"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+    "Deleted match"
+    )
+MSG_HASH(
+    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+    "Not enough room.  The total number of cheats you can have is 100."
+    )
+MSG_HASH(
+    MSG_CHEAT_ADD_TOP_SUCCESS,
+    "New cheat added to top of list."
+    )
+MSG_HASH(
+    MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+    "New cheat added to bottom of list."
+    )
+MSG_HASH(
+    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+    "Press right five times to delete all cheats."
+    )
+MSG_HASH(
+    MSG_CHEAT_DELETE_ALL_SUCCESS,
+    "All cheats deleted."
+    )
+MSG_HASH(
+    MSG_CHEAT_ADD_BEFORE_SUCCESS,
+    "New cheat added before this one."
+    )
+MSG_HASH(
+    MSG_CHEAT_ADD_AFTER_SUCCESS,
+    "New cheat added after this one."
+    )
+MSG_HASH(
+    MSG_CHEAT_COPY_BEFORE_SUCCESS,
+    "Cheat copied before this one."
+    )
+MSG_HASH(
+    MSG_CHEAT_COPY_AFTER_SUCCESS,
+    "Cheat copied after this one."
+    )
+MSG_HASH(
+    MSG_CHEAT_DELETE_SUCCESS,
+    "Cheat deleted."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+    "Progress:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+    "\"All Playlists\" max list entries:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+    "\"All Playlists\" max grid entries:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+    "Show hidden files and folders:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+    "Yeni Oynatma Listesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+    "Lütfen yeni oynatma listesi adını girin:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+    "Oynatma Listesini Sil"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+    "Oynatma Listesini Yeniden Adlandır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+    "\"%1\" oynatma listesini silmek istediğine emin misin?"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_QUESTION,
+    "Question"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
+    "Dosya silinemedi."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
+    "Dosya yeniden adlandırılamadı."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+    "Dosyaların toplanıyor ..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
+    "Çalma listesine dosyalar ekleniyor ..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+    "Playlist Entry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+    "Ad:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
+    "Dizin:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+    "Core:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+    "Veritabanı:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Uzantılar:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(space-separated; includes all by default)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filter inside archives"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+    "(used to find thumbnails)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+    "Are you sure you want to delete the item \"%1\"?"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+    "Lütfen önce tek bir oynatma listesi seçin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DELETE,
+    "Kaldır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
+    "Giriş Ekle..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
+    "Dosya(lar) ekle..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER,
+    "Klasör Ekle..."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_EDIT,
+    "Düzenle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
+    "Dosyaları Seç"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
+    "Klasörleri Seç"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
+    "<multiple>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
+    "Oyatma listesi girişi güncellenirken hata oluştu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+    "Lütfen tüm gerekli alanları doldurunuz."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+    "RetroArch'ı güncelle (nightly)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+    "RetroArch başarıyla güncellendi. Değişikliklerin etkili olması için lütfen uygulamayı yeniden başlatın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+    "Güncelleme başarısız oldu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
+    "Katkıda bulunanlar"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+    "Geçerli gölgelendirici"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
+    "Move Down"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
+    "Move Up"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_LOAD,
+    "Yükle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SAVE,
+    "Kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+    "Kaldır"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_APPLY,
+    "Uygula"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+    "Add Pass"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+    "Clear All Passes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+    "No shader passes."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
+    "Reset Pass"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
+    "Reset All Passes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
+    "Reset Parameter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+    "Download thumbnail"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+    "Bir indirme işlemi zaten devam ediyor."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+    "Oynatma listesinde başla:"
+    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+   "Simge görünümü küçük resmi türü:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   "Küçük resim önbellek sınırı:"
+   )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+    "Tüm Küçük Resimleri İndir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+    "Tüm sistemin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+    "Bu Oynatma Listesinin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+    "Küçük resimler başarıyla indirildi."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+    "Başarılı: %1 Başarısız: %2"
+    )
+MSG_HASH(
+    MSG_DEVICE_CONFIGURED_IN_PORT,
+    "Configured in port:"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SET_DISK,
+    "Failed to set disk"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Core Seçenekleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+    "Adaptive Vsync"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+    "V-Sync is enabled until performance falls below the target refresh rate.\n"
+    "This can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "Output native, low-resolution signals for use with CRT displays."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+    "Görüntü ekranda doğru şekilde ortalanmamışsa bu seçenekler arasında gezinin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+    "X-Axis Centering"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Gerekirse, yapılandırma dosyasında belirtilen özel bir yenileme hızı kullanın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Özel Yenileme Hızını Kullan"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Select the output port connected to the CRT display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Output Display ID"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+    "Kayda başla"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+    "Kaydı başlatır."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+    "Kaydetmeyi durdur"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+    "Kaydı durdurur."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+    "Yayın Yapmayı Başlat"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+    "Yayın yapmayı başlatır."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+    "Yayın yapmayı durdur"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+    "Yayın yapmayı durdurur."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+    "Recording toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+    "Streaming toggle"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+    "Kayıt Kalitesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+    "Yayın Kalitesi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+    "Akış URL’si"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+    "UDP Stream Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
+    "Twitch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
+    "YouTube"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+    "Twitch Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+    "YouTube Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+    "Yayıncı Modu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+    "Yayın Başlığı"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Split Joy-Con"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Varsayılanlara dön"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Geçerli yapılandırmayı varsayılan değerlere sıfırlayın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+    "Tamam"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+    "Menü Renk Teması"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+    "Temel Beyaz"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+    "Temel Siyah"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+    "Farklı bir renk teması seçin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+    "Kenar çubuğunu daralt"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+    "Sol kenar çubuğunu daima daraltın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "Tercih edilen sistem renk temasını kullan"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+    "İşletim sisteminizin renk temasını kullanın (varsa) - tema ayarlarını geçersiz kılar."
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWEST,
+    "En düşük"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_LOWER,
+    "Düşük"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHER,
+    "Yüksek"
+    )
+MSG_HASH(
+    MSG_RESAMPLER_QUALITY_HIGHEST,
+    "En Yüksek"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+    "Kullanılabilir bir müzik yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+    "Kullanılabilir bir video yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+    "Kullanılabilir bir resim yok."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+    "Favoriler yok."
+    )
+MSG_HASH(
+    MSG_MISSING_ASSETS,
+    "Uyarı: Kayıp içerikler, varsa Çevrimiçi Güncelleyiciyi kullanın"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+    "Pencere Konumunu ve Boyutunu hatırla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HOLD_START,
+    "Start'a Basılı Tutun (2 saniye)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Eski formatı kullanarak oynatma listelerini kaydet"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Oynatma listelerinde ilişkili Core'ları göster"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Oynatma listesi girişlerinin o anda ilişkilendirilmiş olan Corela (varsa) ne zaman etiketleneceğini belirleyin. NOT: Oynatma listesi alt etiketleri etkinleştirildiğinde bu ayar dikkate alınmaz."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+    "Geçmiş & Favoriler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+    "Her zaman"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+    "Asla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+    "Oynatma listelerini alfabetik olarak sırala"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+    "İçerik çalma listelerini alfabetik sıraya göre sıralar. Son kullanılan oyunların, resimlerin, müziklerin ve videoların 'geçmiş' oynatma listelerinin hariç tutulduğunu unutmayın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+    "Menü Sesleri"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+    "Tamam sesini etkinleştir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+    "İptal sesini etkinleştir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+    "Bildirim sesini etkinleştir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+    "Enable BGM sound"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+    "Down + Select"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+    "Grafik sürücünüz RetroArch'taki mevcut video sürücüsü ile uyumlu değil ve %s sürücüsüne geri dönülüyor. Lütfen değişikliklerin geçerli olması için RetroArch'ı yeniden başlatın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+    "Save runtime log (per core)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+    "Her bir içerik öğesinin ne kadar süre çalıştığını, kayıtlar Core'a ayrılmış olarak izler."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Çalışma günlüğünü kaydet (toplam)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Tüm içeriğin toplamının toplam olarak kaydedildiği her bir içerik öğesinin ne kadar süre çalıştığını takip eder."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+    "Çalışma Zamanı Günlükleri"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+    "Oynatma zamanı günlük dosyalarını bu dizine kaydedin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+    "Oynatma listesi alt etiketlerini göster"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+    "Geçerli Core ilişkilendirme ve çalışma zamanı (varsa) gibi her oynatma listesi girişi için ek bilgi gösterir. Performansı etkiler(değişken)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+    "Core:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
+    "Oyun süresi:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+    "Son oynatma:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Playlist sublabel runtime"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Oynatma listesinin alt etiketlerinde hangi çalışma zamanı günlüğü kaydının görüntüleneceğini seçer. (İlgili çalışma zamanı günlüğünün 'Kaydetme' seçenekler menüsünden etkinleştirilmesi gerektiğini unutmayın))"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+    "Core başına"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+    "Toplam"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Hata Ayıklama Bilgisi Gönder"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_DEBUG_INFO,
+    "Hata ayıklama bilgisi kaydedilemedi."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_DEBUG_INFO,
+    "Sunucuya hata ayıklama bilgisi gönderilemedi."
+    )
+MSG_HASH(
+    MSG_SENDING_DEBUG_INFO,
+    "Hata ayıklama bilgisi gönderiliyor ..."
+    )
+MSG_HASH(
+    MSG_SENT_DEBUG_INFO,
+    "Sunucuya hata ayıklama bilgisi başarıyla gönderildi. Kimlik numaranız %u."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+    "Analiz için cihazların ve RetroArch yapılandırmasına ilişkin teşhis bilgilerini gönderir."
+    )
+MSG_HASH(
+    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+    "RetroArch ekibine tanılama bilgileri göndermek için iki kez daha basın."
+    )
+MSG_HASH(
+    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+    "RetroArch ekibine tanılama bilgileri göndermek için bir kez daha basın."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+    "Vibrate on key press"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+    "Cihaz titreşimini etkinleştir (desteklenen Corelar için)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_DIR,
+    "Sistem Olayı Günlükleri"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_DIR,
+    "Sistem olay günlüğü dosyalarını bu dizine kaydedin."
+    )
