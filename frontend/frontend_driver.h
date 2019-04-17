@@ -24,6 +24,8 @@
 #include <retro_common_api.h>
 #include <lists/string_list.h>
 
+#include <libretro.h>
+
 RETRO_BEGIN_DECLS
 
 enum frontend_powerstate
