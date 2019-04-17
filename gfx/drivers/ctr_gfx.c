@@ -579,7 +579,49 @@ static bool ctr_frame(void* data, const void* frame,
    }
 #endif
    if (ctr->vsync)
-      gspWaitForEvent(GSPGPU_EVENT_VBlank0, false);
+   {
+      /* If we are running at the display refresh rate,
+       * then all is well - just wait on the *current* VBlank0
+       * event and carry on.
+       * 
+       * If we are running at below the display refresh rate,
+       * then we have problems: frame updates will happen
+       * entirely out of sync with VBlank0 events. To elaborate,
+       * we'll wait for a VBlank0 here, but it will already have
+       * happened partway through the previous frame. So it's:
+       * 'oh good - let's render the current frame', but the next
+       * VBlank0 will occur in less time than it takes to draw the
+       * current frame, resulting in 'overlap' and screen tearing.
+       * 
+       * This seems to be a consequence of using the GPU directly.
+       * Other 3DS homebrew typically uses the ctrulib function
+       * gfxSwapBuffers(), which ensures an immediate buffer
+       * swap every time, and no tearing. We can't do this:
+       * instead, we use a variant of the ctrulib function
+       * gfxSwapBuffersGpu(), which seems to send a notification,
+       * and the swap happens when it happens...
+       * 
+       * I don't know how to fix this 'properly' (probably needs
+       * some low level rewriting, maybe switching to an implementation
+       * based on citro3d), but I can at least implement a hack/workaround
+       * that allows 50Hz content to be run without tearing. This involves
+       * the following:
+       * 
+       * If content frame rate is more than 10% lower than the 3DS
+       * display refresh rate, don't wait on the *current* VBlank0
+       * event (because it is 'tainted'), but instead wait on the
+       * *next* VBlank0 event (which will ensure we have enough time
+       * to write/flush the display buffers).
+       * 
+       * This fixes screen tearing, but it has a significant impact on
+       * performance...
+       * */
+      bool next_event = false;
+      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      if (av_info)
+         next_event = av_info->timing.fps < video_info->refresh_rate * 0.9f;
+      gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);
+   }
 
    ctr->vsync_event_pending = true;
 
