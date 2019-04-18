@@ -8095,11 +8095,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
-    "Reset Parameter"
+    "Parametreleri Sıfırla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
-    "Download thumbnail"
+    "Küçük Resim İndir"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,

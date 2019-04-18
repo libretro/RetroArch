@@ -920,7 +920,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
 
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             snprintf(s, len,
-                     "Load Shader Preset. \n"
+                     "Shader Öne Ayarı yükleyin. \n"
                              " \n"
                              " Load a shader preset directly. \n"
                              "The menu shader menu is updated accordingly. \n"
