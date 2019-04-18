@@ -68,11 +68,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
-                   "Toggle between paused and non-paused state.");
+                   "Duraklatılmış ve duraklatılmamış durum arasında geçiş yap.");
              break;
           case RARCH_FRAMEADVANCE:
              snprintf(s, len,
-                   "Frame advance when content is paused.");
+                   "İçerik duraklatıldığında kare ilerlemesi.");
              break;
           case RARCH_SHADER_NEXT:
              snprintf(s, len,
@@ -122,7 +122,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
-                   "Enable other hotkeys. \n"
+                   "Diğer kısayol tuşlarını etkinleştirin. \n"
                    " \n"
                    "If this hotkey is bound to either\n"
                    "a keyboard, joybutton or joyaxis, \n"
@@ -380,12 +380,12 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
             snprintf(s, len,
-                     "Some cores might need \n"
-                             "firmware or bios files. \n"
+                     "Bazı Core'lar için firmware \n"
+                             "veya bios dosyasına ihtiyaç duyulabilir. \n"
                              " \n"
-                             "If this option is disabled, \n"
-                             "it will try to load even if such \n"
-                             "firmware is missing. \n");
+                             "Eğer bu seçenek etkisizleştirilirse, \n"
+                             "firmware olmasa bile yüklemeyi \n"
+                             "deneyecektir. \n");
             break;
         case MENU_ENUM_LABEL_PARENT_DIRECTORY:
             snprintf(s, len,
@@ -599,7 +599,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
             snprintf(s, len,
-                     "Enable or disable the current overlay.");
+                     "Geçerli kaplamayı etkinleştirin veya devre dışı bırakın.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
             snprintf(s, len,
@@ -618,11 +618,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
-                     "Path to input overlay.");
+                     "Kaplamanın girdi yolu.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_OPACITY:
             snprintf(s, len,
-                     "Overlay opacity.");
+                     "Kaplama opaklığı.");
             break;
         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             snprintf(s, len,
@@ -637,11 +637,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
-                     "Overlay scale.");
+                     "Kaplama ölçeği.");
             break;
         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             snprintf(s, len,
-                     "Audio output samplerate.");
+                     "Ses çıkışı örneklemesi.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
             snprintf(s, len,
@@ -655,15 +655,15 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Core yükle. \n"
                              " \n"
-                             "Browse for a libretro core \n"
-                             "implementation. Where the browser \n"
-                             "starts depends on your Core Directory \n"
-                             "path. If blank, it will start in root. \n"
+                             "Libretro Core uygulaması \n"
+                             "için göz atın. Tarayıcının başladığı yer \n"
+                             "Core Dizin yolunuza bağlıdır \n"
+                             "Boşsa, root'ta başlayacaktır. \n"
                              " \n"
-                             "If Core Directory is a directory, the menu \n"
-                             "will use that as top folder. If Core \n"
-                             "Directory is a full path, it will start \n"
-                             "in the folder where the file is.");
+                             "Core Dizini bir dizinse, menü bunu üst klasör olarak kullanır. \n"
+                             "Core Dizini tam yol ise, \n"
+                             "dosyanın bulunduğu klasörde \n"
+                             "başlayacaktır.");
             break;
         case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
             snprintf(s, len,
@@ -710,21 +710,20 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,
-                     "To scan for content, go to '%s' and\n"
-                             "select either '%s' or %s'.\n"
+                     "İçerik taramak için, '%s' gidin ve \n"
+                             "'%s' veya %s' seçin.\n"
                              " \n"
-                             "Files will be compared to database entries.\n"
-                             "If there is a match, it will add an entry\n"
-                             "to a collection.\n"
+                             "Dosyalar veritabanı girişleriyle karşılaştırılacak.\n"
+                             "Bir eşleşme varsa, koleksiyona bir giriş ekler.\n"
                              " \n"
-                             "You can then easily access this content by\n"
-                             "going to '%s' ->\n"
+                             "Bu içeriğe daha sonra kolayca erişebilmek için\n"
+                             "'%s' gidin. ->\n"
                              "'%s'\n"
-                             "instead of having to go through the\n"
-                             "filebrowser everytime.\n"
+                             "Her seferinde dosya tarayıcısına\n"
+                             "gitmek zorunda kalmazsınız.\n"
                              " \n"
-                             "NOTE: Content for some cores might still not be\n"
-                             "scannable.",
+                             "NOTE: Bazı içerikler Corelar tarafından\n"
+                             "taranmayabilir.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
@@ -746,7 +745,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
 
                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
                      snprintf(s, len,
-                           "udev Input driver. \n"
+                           "udev sürücüsü. \n"
                            " \n"
                            "It uses the recent evdev joypad API \n"
                            "for joystick support. It supports \n"
@@ -763,7 +762,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                else if (string_is_equal(lbl,
                         msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                      snprintf(s, len,
-                           "linuxraw Input driver. \n"
+                           "linuxraw sürücüsü. \n"
                            " \n"
                            "This driver requires an active TTY. Keyboard \n"
                            "events are read directly from the TTY which \n"
@@ -821,82 +820,79 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                 snprintf(s, len,
                          "OpenGL Video sürücüsü. \n"
                                  " \n"
-                                 "This driver allows libretro GL cores to  \n"
-                                 "be used in addition to software-rendered \n"
-                                 "core implementations.\n"
+                                 "Bu sürücü, yazılım tarafından oluşturulan \n"
+                                 "Core uygulamalarına ek olarak libretro GL \n"
+                                 "çekirdeklerinin kullanılmasına izin verir.\n"
                                  " \n"
-                                 "Performance for software-rendered and \n"
-                                 "libretro GL core implementations is \n"
-                                 "dependent on your graphics card's \n"
-                                 "underlying GL driver).");
+                                 "Yazılım tarafından oluşturulan ve libretro GL \n"
+                                 "Core uygulamaları için performans, \n"
+                                 "grafik kartınızın temelindeki GL sürücüsüne bağlıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
             {
                 snprintf(s, len,
                          "SDL 2 Video sürücüsü.\n"
                                  " \n"
-                                 "This is an SDL 2 software-rendered video \n"
-                                 "driver.\n"
+                                 "Bu bir SDL 2 yazılımı tarafından oluşturulan \n"
+                                 "video sürücüsüdür.\n"
                                  " \n"
-                                 "Performance for software-rendered libretro \n"
-                                 "core implementations is dependent \n"
-                                 "on your platform SDL implementation.");
+                                 "Yazılım tarafından oluşturulan libretro Core uygulamaları \n"
+                                 "için performans, SDL uygulamanıza bağlıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
             {
                 snprintf(s, len,
                          "SDL Video sürücüsü.\n"
                                  " \n"
-                                 "This is an SDL 1.2 software-rendered video \n"
-                                 "driver.\n"
+                                 "Bu bir SDL 1.2 yazılımı tarafından üretilmiş \n"
+                                 "video sürücüsüdür.\n"
                                  " \n"
-                                 "Performance is considered to be suboptimal. \n"
-                                 "Consider using it only as a last resort.");
+                                 "Performansın yetersiz olduğu kabul edilir. \n"
+                                 "Sadece son çare olarak kullanmayı düşünün.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "d3d"))
             {
                 snprintf(s, len,
                          "Direct3D Video sürücüsü. \n"
                                  " \n"
-                                 "Performance for software-rendered cores \n"
-                                 "is dependent on your graphic card's \n"
-                                 "underlying D3D driver).");
+                                 "Yazılım tarafından oluşturulan Core performansı,\n"
+                                 "grafik kartınızın temelindeki D3D \n"
+                                 "sürücüsüne bağlıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "exynos"))
             {
                 snprintf(s, len,
                          "Exynos-G2D Video sürücüsü. \n"
                                  " \n"
-                                 "This is a low-level Exynos video driver. \n"
-                                 "Uses the G2D block in Samsung Exynos SoC \n"
-                                 "for blit operations. \n"
+                                 "Bu, düşük seviye bir Exynos video sürücüsüdür. \n"
+                                 "Karışım işlemleri için Samsung Exynos SoC'daki \n"
+                                 " G2D bloğunu kullanır. \n"
                                  " \n"
-                                 "Performance for software rendered cores \n"
-                                 "should be optimal.");
+                                 "Yazılım tarafından oluşturulan Core performansı \n"
+                                 "optimum olmalıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "drm"))
             {
                 snprintf(s, len,
                          "Plain DRM Video sürücüsü. \n"
                                  " \n"
-                                 "This is a low-level video driver using. \n"
-                                 "libdrm for hardware scaling using \n"
-                                 "GPU overlays.");
+                                 "Bu düşük bir seviye video sürücüsüdür. \n"
+                                 "GPU kaplamalarını için libdrm donanım ölçeklendirmesi kullanır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
             {
                 snprintf(s, len,
                          "Sunxi-G2D Video sürücüsü. \n"
                                  " \n"
-                                 "This is a low-level Sunxi video driver. \n"
-                                 "Uses the G2D block in Allwinner SoCs.");
+                                 "Bu düşük seviye bir Sunxi video sürücüsü. \n"
+                                 "Allwinner SoC'lerde G2D bloğunu kullanır.");
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             snprintf(s, len,
                      "Audio DSP plugin.\n"
-                             " Processes audio before it's sent to \n"
-                             "the driver."
+                             "Sesi sürücüye gönderilmeden \n"
+                             "önce işler."
             );
             break;
         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
@@ -978,9 +974,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             snprintf(s, len,
-                     "Shader Preset Parameters. \n"
+                     "Gölgelendirici Ön Ayar Parametreleri. \n"
                              " \n"
-                             "Modifies shader preset currently in menu."
+                             "Şu anda menüde gölgelendirici hazır ayarını değiştirir."
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
@@ -1023,18 +1019,18 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-            snprintf(s, len, "Are you sure you want to quit?");
+            snprintf(s, len, "Çıkmak istediğinden emin misin?");
             break;
         case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
-            snprintf(s, len, "Show hidden files\n"
-                    "and folders.");
+            snprintf(s, len, "Gizli dosya ve \n"
+                    "klasörleri göster.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
             snprintf(s, len,
-                     "Hardware filter for this pass. \n"
+                     "Bu geçiş için donanım filtresi. \n"
                              " \n"
-                             "If 'Don't Care' is set, 'Default \n"
-                             "Filter' will be used."
+                             "'Umurumda Değil' olarak ayarlanmışsa, \n"
+                             "'Varsayılan Filtre' kullanılacaktır. "
             );
             break;
         case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
@@ -1760,7 +1756,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_TIMEDATE_STYLE:
            snprintf(s, len,
-              "Style to show the current date and/or time in.");
+              "İçinde geçerli tarih ve/veya saati gösterecek stil.");
            break;
         case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
             snprintf(s, len,
@@ -1813,21 +1809,21 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
             snprintf(s, len,
-                     "Overlay Directory. \n"
+                     "Kaplama Dizini. \n"
                              " \n"
-                             "Defines a directory where overlays are \n"
-                             "kept for easy access.");
+                             "Kolay erişim için kaplamaların \n"
+                             "tutulduğu bir dizini tanımlar.");
             break;
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
-                     "Maximum amount of users supported by \n"
-                             "RetroArch.");
+                     "RetroArch tarafından desteklenen maksimum \n"
+                             "kullanıcı sayısı.");
             break;
         case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
             snprintf(s, len,
-                     "After downloading, automatically extract \n"
-                             "archives that the downloads are contained \n"
-                             "inside.");
+                     "İndirdikten sonra, indirme işlemlerinin \n"
+                             "içinde bulunduğu arşivleri otomatik \n"
+                             "olarak çıkarır.");
             break;
         case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
             snprintf(s, len,

@@ -902,7 +902,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             snprintf(s, len,
                      "Audio DSP plugin.\n"
-                             " Processes audio before it's sent to \n"
+                             "Processes audio before it's sent to \n"
                              "the driver."
             );
             break;
