@@ -115,7 +115,7 @@ void menu_event_osk_append(int ptr)
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
    else if (string_is_equal(osk_grid[ptr], "Next"))
 #endif
-      if (menu_event_get_osk_idx() < (is_rgui ? OSK_HIRAGANA_PAGE1 - 1 : OSK_TYPE_LAST - 1))
+      if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
          menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
       else
          menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));

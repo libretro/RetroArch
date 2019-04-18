@@ -273,12 +273,12 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
             menu_event_set_osk_idx((enum osk_type)(
                      menu_event_get_osk_idx() - 1));
          else
-            menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_HIRAGANA_PAGE1 - 1 : OSK_TYPE_LAST - 1));
+            menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (menu_event_get_osk_idx() < (is_rgui ? OSK_HIRAGANA_PAGE1 - 1 : OSK_TYPE_LAST - 1))
+         if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
             menu_event_set_osk_idx((enum osk_type)(
                      menu_event_get_osk_idx() + 1));
          else
