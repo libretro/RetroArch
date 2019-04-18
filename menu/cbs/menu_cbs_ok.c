@@ -6223,7 +6223,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || menu_label_hash == MENU_LABEL_SUBSYSTEM_ADD
                   || menu_label_hash == MENU_LABEL_VIDEO_FONT_PATH
                   || menu_label_hash == MENU_LABEL_XMB_FONT
-                  || menu_label_hash == MENU_LABEL_AUDIO_DSP_PLUGIN)
+                  || menu_label_hash == MENU_LABEL_AUDIO_DSP_PLUGIN
+                  || menu_label_hash == MENU_LABEL_VIDEO_FILTER)
                BIND_ACTION_OK(cbs, action_ok_directory_push);
             else
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
