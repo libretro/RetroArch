@@ -265,11 +265,6 @@ inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, 
    return lhs.value("name").toLower() < rhs.value("name").toLower();
 }
 
-inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
-{
-   return lhs.value("label").toLower() < rhs.value("label").toLower();
-}
-
 bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions)
 {
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();

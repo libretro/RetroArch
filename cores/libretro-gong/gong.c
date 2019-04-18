@@ -351,12 +351,6 @@ static void load_state(const void *data, size_t size)
    check_variables();
 }
 
-static INLINE bool pressed(Game_Button_State state)
-{
-   return state.half_transition_count > 1 ||
-      (state.half_transition_count == 1 && state.ended_down);
-}
-
 static INLINE bool is_down(Game_Button_State state)
 {
    return state.ended_down;
