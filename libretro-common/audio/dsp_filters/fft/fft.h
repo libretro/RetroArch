@@ -41,6 +41,4 @@ void fft_process_forward(fft_t *fft,
 void fft_process_inverse(fft_t *fft,
       float *out, const fft_complex_t *in, unsigned step);
 
-
 #endif
-

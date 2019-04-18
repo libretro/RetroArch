@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -666,30 +666,29 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          }
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
-         snprintf(s, len,
-               "To scan for content, go to '%s' and\n"
-               "select either '%s' or %s'.\n"
-               " \n"
-               "Files will be compared to database entries.\n"
-               "If there is a match, it will add an entry\n"
-               "to a collection.\n"
-               " \n"
-               "You can then easily access this content by\n"
-               "going to '%s' ->\n"
-               "'%s'\n"
-               "instead of having to go through the\n"
-               "filebrowser everytime.\n"
-               " \n"
-               "NOTE: Content for some cores might still not be\n"
-               "scannable."
-               ,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
-               );
-         break;
+          snprintf(s, len,
+             "To scan for content, go to '%s' and\n"
+                 "select either '%s' or %s'.\n"
+                 "\n"
+                 "Files will be compared to database entries.\n"
+                 "If there is a match, it will add an entry\n"
+                 "to a playlist.\n"
+                 "\n"
+                 "You can then easily access this content by\n"
+                 "going to '%s' ->\n"
+                 "'%s'\n"
+                 "instead of having to go through the\n"
+                 "file browser every time.\n"
+                 "\n"
+                 "NOTE: Content for some cores might still not be\n"
+                 "scannable.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
+          );
+          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          snprintf(s, len,
                "Welcome to RetroArch\n"
@@ -1475,14 +1474,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "When slowmotion, content will slow\n"
                "down by factor.");
-         break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Defines axis threshold.\n"
-               " \n"
-               "How far an axis must be tilted to result\n"
-               "in a button press.\n"
-               " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,

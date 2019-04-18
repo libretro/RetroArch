@@ -66,4 +66,3 @@ typedef float vec3_t[3];
 RETRO_END_DECLS
 
 #endif
-

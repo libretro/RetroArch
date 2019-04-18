@@ -258,7 +258,6 @@ typedef u16 uip_stats_t;
 
 #define UIP_TCP_SEGS				32
 
-
 /**
  * Determines if support for TCP urgent data notification should be
  * compiled in.
@@ -301,7 +300,6 @@ typedef u16 uip_stats_t;
  */
 #define UIP_TCP_MSS				(1460)
 
-
 #define UIP_TCP_SND_BUF			(4*UIP_TCP_MSS)
 
 #define UIP_TCP_SND_QUEUELEN	(4*UIP_TCP_SND_BUF/UIP_TCP_MSS)
@@ -315,7 +313,6 @@ typedef u16 uip_stats_t;
  * left untouched.
  */
 #define UIP_TIME_WAIT_TIMEOUT	120
-
 
 /** @} */
 /*------------------------------------------------------------------------------*/
@@ -366,7 +363,6 @@ typedef u16 uip_stats_t;
 #define UIP_PBUF_POOL_BUFSIZE		1600
 
 #define UIP_PBUF_ROM_NUM			128
-
 
 /**
  * Determines if statistics support should be compiled in.

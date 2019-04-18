@@ -33,4 +33,3 @@ uint32_t SwapAtomic32(uint32_t *ptr, uint32_t value)
 {
    return __sync_lock_test_and_set(ptr, value);
 }
-

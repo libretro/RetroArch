@@ -62,7 +62,6 @@ static struct
    },
 };
 
-
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
@@ -1404,7 +1403,6 @@ static GX2UniformVar uniform_vars[] = {
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},
 };
 
-
 GX2Shader snow_shader =
 {
    {
@@ -1459,6 +1457,6 @@ GX2Shader snow_shader =
       .program = (uint8_t*)&ps_program,
       .mode = GX2_SHADER_MODE_UNIFORM_BLOCK,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

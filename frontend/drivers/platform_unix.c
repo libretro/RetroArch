@@ -68,6 +68,7 @@
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+#include <features/features_cpu.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
@@ -113,6 +114,7 @@ static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
 static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/ACAD";
 static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
+static char unix_cpu_model_name[64] = {0};
 #endif
 
 static volatile sig_atomic_t unix_sighandler_quit;
@@ -1562,8 +1564,6 @@ static void frontend_unix_get_env(int *argc,
          {
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], app_dir,
-                  "tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
@@ -1628,6 +1628,10 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_app_path, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        internal_storage_app_path, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+
                   if(!string_is_empty(screenshot_dir)
                      && test_permissions(screenshot_dir))
                   {
@@ -1655,6 +1659,10 @@ static void frontend_unix_get_env(int *argc,
                            internal_storage_app_path, "downloads",
                            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
                   }
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        internal_storage_app_path, "logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
                   break;
 
@@ -1686,6 +1694,10 @@ static void frontend_unix_get_env(int *argc,
                         app_dir, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        app_dir, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+
                   if(      !string_is_empty(screenshot_dir)
                         &&  test_permissions(screenshot_dir))
                   {
@@ -1714,6 +1726,10 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
                   }
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        app_dir, "logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
                   break;
                /* sdcard is writable, this should be the case most of the time*/
                case INTERNAL_STORAGE_WRITABLE:
@@ -1734,6 +1750,10 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_path, "RetroArch/downloads",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
 
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                        internal_storage_path, "RetroArch/logs",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         internal_storage_path, "RetroArch/config",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
@@ -1749,6 +1769,10 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         internal_storage_path, "RetroArch/cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                        internal_storage_path, "temp",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
                default:
                   break;
             }
@@ -1813,7 +1837,6 @@ static void frontend_unix_get_env(int *argc,
    }
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
-
 
    /* For gamepad-like/console devices:
     *
@@ -1897,6 +1920,8 @@ static void frontend_unix_get_env(int *argc,
          "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
@@ -2023,6 +2048,12 @@ static void frontend_unix_init(void *data)
          "getBatteryLevel", "()I");
    GET_METHOD_ID(env, android_app->setSustainedPerformanceMode, class,
          "setSustainedPerformanceMode", "(Z)V");
+   GET_METHOD_ID(env, android_app->setScreenOrientation, class,
+         "setScreenOrientation", "(I)V");
+   GET_METHOD_ID(env, android_app->doVibrate, class,
+         "doVibrate", "(IIII)V");
+   GET_METHOD_ID(env, android_app->getUserLanguageString, class,
+         "getUserLanguageString", "()Ljava/lang/String;");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
@@ -2400,14 +2431,14 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
          {
             unsigned j;
 
-            /* A successful close does not guarantee that the 
-             * data has been successfully saved to disk, 
-             * as the kernel defers writes. It is 
-             * not common for a file system to flush 
+            /* A successful close does not guarantee that the
+             * data has been successfully saved to disk,
+             * as the kernel defers writes. It is
+             * not common for a file system to flush
              * the buffers when the stream is closed.
              *
-             * So we manually fsync() here to flush the data 
-             * to disk, to make sure that the new data is 
+             * So we manually fsync() here to flush the data
+             * to disk, to make sure that the new data is
              * immediately available when the file is re-read.
              */
             for (j = 0; j < inotify_data->wd_list->count; j++)
@@ -2455,6 +2486,47 @@ static void frontend_unix_set_sustained_performance_mode(bool on)
 #endif
 }
 
+static const char* frontend_unix_get_cpu_model_name(void)
+{
+#ifdef ANDROID
+   return NULL;
+#else
+   cpu_features_get_model_name(unix_cpu_model_name, sizeof(unix_cpu_model_name));
+   return unix_cpu_model_name;
+#endif
+}
+
+enum retro_language frontend_unix_get_user_language(void)
+{
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+#ifdef HAVE_LANGEXTRA
+#ifdef ANDROID
+   jstring jstr = NULL;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return lang;
+
+   if (g_android->getUserLanguageString)
+   {
+      CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz, g_android->getUserLanguageString);
+
+      if (jstr)
+      {
+         const char *langStr = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         lang = rarch_get_language_from_iso(langStr);
+
+         (*env)->ReleaseStringUTFChars(env, jstr, langStr);
+      }
+   }
+#else
+   lang = rarch_get_language_from_iso(getenv("LANG"));
+#endif
+#endif
+   return lang;
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2499,6 +2571,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_watch_path_for_changes,
    frontend_unix_check_for_path_changes,
    frontend_unix_set_sustained_performance_mode,
+   frontend_unix_get_cpu_model_name,
+   frontend_unix_get_user_language,
 #ifdef ANDROID
    "android"
 #else

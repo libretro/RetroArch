@@ -40,7 +40,6 @@
 
 #include "lwip/err.h"
 
-
 void ip_init(void);
 struct netif *ip_route(struct ip_addr *dest);
 err_t ip_input(struct pbuf *p, struct netif *inp);
@@ -64,7 +63,6 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest,
 #undef IP_HDRINCL
 #endif /* IP_HDRINCL */
 #define IP_HDRINCL  NULL
-
 
 /* This is the common part of all PCB types. It needs to be at the
    beginning of a PCB type definition. It is located here so that
@@ -92,8 +90,6 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest,
 #define	SOF_LINGER	    (u16_t)0x0080U		/* linger on close if data present */
 #define	SOF_OOBINLINE	(u16_t)0x0100U		/* leave received OOB data in line */
 #define	SOF_REUSEPORT	(u16_t)0x0200U		/* allow local address & port reuse */
-
-
 
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
@@ -150,5 +146,3 @@ void ip_debug_print(struct pbuf *p);
 #endif /* IP_DEBUG */
 
 #endif /* __LWIP_IP_H__ */
-
-

@@ -18,10 +18,10 @@ typedef struct ocr_driver
 {
 	void* (*init)(int game_character_set);
 	void  (*free)(void* data);
-	
+
 	/* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to get_text */
 	char* (*get_text)(void* data, struct ocr_image_info image);
-	
+
 	const char *ident;
 } ocr_driver_t;
 

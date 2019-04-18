@@ -53,7 +53,6 @@ PACK_STRUCT_END
 struct uip_pbuf;
 struct uip_netif;
 
-
 void uip_icmpinput(struct uip_pbuf *p,struct uip_netif *inp);
 void uip_icmp_destunreach(struct uip_pbuf *p,enum uip_icmp_dur_type t);
 

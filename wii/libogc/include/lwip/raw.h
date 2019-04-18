@@ -70,5 +70,4 @@ err_t            raw_send       (struct raw_pcb *pcb, struct pbuf *p);
 u8_t              raw_input      (struct pbuf *p, struct netif *inp);
 void             raw_init       (void);
 
-
 #endif /* __LWIP_RAW_H__ */

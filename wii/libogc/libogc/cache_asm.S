@@ -25,9 +25,7 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #include <asm.h>
 
@@ -102,7 +100,7 @@ DCInvalidateRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -119,7 +117,7 @@ DCFlushRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -137,7 +135,7 @@ DCStoreRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -155,7 +153,7 @@ DCFlushRangeNoSync:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -172,7 +170,7 @@ DCStoreRangeNoSync:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -189,7 +187,7 @@ DCZeroRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -206,7 +204,7 @@ DCTouchRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -223,7 +221,7 @@ ICInvalidateRange:
 	blelr
 	clrlwi. r5, r3, 27  # check for lower bits set in address
 	beq 1f
-	addi r4, r4, 0x20 
+	addi r4, r4, 0x20
 1:
 	addi r4, r4, 0x1f
 	srwi r4, r4, 5
@@ -468,4 +466,3 @@ LCStoreBlocks:
 	ori			r6,r6,0x0002
 	mtspr		DMAL,r6
 	blr
-	

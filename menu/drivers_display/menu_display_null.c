@@ -64,7 +64,7 @@ static void menu_display_null_clear_color(
 
 static bool menu_display_null_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size,
+      const char *font_path, float menu_font_size,
       bool is_threaded)
 {
    return true;

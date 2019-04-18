@@ -152,8 +152,6 @@ a lot of data that needs to be copied, this should be set high. */
 #define PBUF_LINK_HLEN                  14
 #endif
 
-
-
 /* ---------- ARP options ---------- */
 
 /** Number of active hardware address, IP address pairs cached */
@@ -274,7 +272,6 @@ a lot of data that needs to be copied, this should be set high. */
 #define TCP_SYNMAXRTX                   6
 #endif
 
-
 /* Controls if TCP should queue segments that arrive out of
    order. Define to 0 if your device is low on memory. */
 #ifndef TCP_QUEUE_OOSEQ
@@ -296,7 +293,6 @@ a lot of data that needs to be copied, this should be set high. */
 #ifndef TCP_SND_QUEUELEN
 #define TCP_SND_QUEUELEN                4 * TCP_SND_BUF/TCP_MSS
 #endif
-
 
 /* Maximum number of retransmissions of data segments. */
 
@@ -326,7 +322,6 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_COMPAT_SOCKETS             1
 #endif
 
-
 #ifndef TCPIP_THREAD_PRIO
 #define TCPIP_THREAD_PRIO               1
 #endif
@@ -343,13 +338,11 @@ a lot of data that needs to be copied, this should be set high. */
 #define DEFAULT_THREAD_PRIO             1
 #endif
 
-
 /* ---------- Socket Options ---------- */
 /* Enable SO_REUSEADDR and SO_REUSEPORT options */
 #ifndef SO_REUSE
 # define SO_REUSE 0
 #endif
-
 
 /* ---------- Statistics options ---------- */
 #ifndef LWIP_STATS
@@ -433,8 +426,6 @@ a lot of data that needs to be copied, this should be set high. */
 
 #define NUM_PPP                         1      /* Max PPP sessions. */
 
-
-
 #ifndef PAP_SUPPORT
 #define PAP_SUPPORT                     0      /* Set for PAP. */
 #endif
@@ -455,7 +446,6 @@ a lot of data that needs to be copied, this should be set high. */
 #define MD5_SUPPORT                     0      /* Set for MD5 (see also CHAP) */
 #endif
 
-
 /*
  * Timeouts.
  */
@@ -469,7 +459,6 @@ a lot of data that needs to be copied, this should be set high. */
 
 #define CHAP_DEFTIMEOUT                 6       /* Timeout time in seconds */
 #define CHAP_DEFTRANSMITS               10      /* max # times to send challenge */
-
 
 /* Interval in seconds between keepalive echo requests, 0 to disable. */
 #if 1
@@ -503,7 +492,6 @@ a lot of data that needs to be copied, this should be set high. */
 #define PPP_MAXMRU                      1500     /* Largest MRU we allow */
 #define PPP_DEFMRU                      296             /* Try for this */
 #define PPP_MINMRU                      128             /* No MRUs below this */
-
 
 #define MAXNAMELEN                      256     /* max length of hostname or name for auth */
 #define MAXSECRETLEN                    256     /* max length of password or secret */
@@ -658,12 +646,8 @@ a lot of data that needs to be copied, this should be set high. */
 #define DHCP_DEBUG                      DBG_OFF
 #endif
 
-
 #ifndef DBG_MIN_LEVEL
 #define DBG_MIN_LEVEL                   DBG_LEVEL_OFF
 #endif
 
 #endif /* __LWIP_OPT_H__ */
-
-
-

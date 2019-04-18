@@ -404,7 +404,6 @@ typedef struct elf32_sym
 #define STV_HIDDEN      2		/* Symbol unavailable in other mods */
 #define STV_PROTECTED	3		/* Not preemptible, not exported */
 
-
 /* Relocation entry with implicit addend */
 
 typedef struct

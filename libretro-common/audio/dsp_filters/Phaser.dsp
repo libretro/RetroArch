@@ -8,4 +8,3 @@ filter0 = phaser
 # phaser_depth = 0.4
 # phaser_dry_wet = 0.5
 # phaser_stages = 2
-

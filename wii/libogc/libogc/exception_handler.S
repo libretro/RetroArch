@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <asm.h>
 
 #define EXCEPTION_PROLOG			\
@@ -57,7 +56,7 @@ distribution.
 	stw      r13,GPR13_OFFSET(sp);	\
 	stw      r14,GPR14_OFFSET(sp);	\
 	stw      r15,GPR15_OFFSET(sp);
-	
+
 #define EXCEPTION_EPILOG			\
 	lwz		r4,GQR0_OFFSET(sp);		\
 	mtspr	912,r4;					\
@@ -86,7 +85,6 @@ distribution.
 	lwz		r7,GPR7_OFFSET(sp);		\
 	lwz		r6,GPR6_OFFSET(sp);		\
 	lwz		r5,GPR5_OFFSET(sp)
-
 
 	.globl exceptionhandler_start,exceptionhandler_end,exceptionhandler_patch
 exceptionhandler_start:
@@ -117,11 +115,11 @@ exceptionhandler_start:
 	mfsrr1		r3
 	stw			r3,SRR1_OFFSET(r4)
 	mr			r5,r3
-	nop		
+	nop
 	mfmsr		r3
 	ori			r3,r3,MSR_IR|MSR_DR
 	mtsrr1		r3
-	
+
 exceptionhandler_patch:
 	li			r3,0
 	stw			r3,EXCEPTION_NUMBER(r4)
@@ -135,19 +133,19 @@ exceptionhandler_patch:
 	clrlwi		r5,r5,2
 	clrlslwi	r3,r3,24,2
 	lwzx		r5,r3,r5
-1:	
+1:
 	mtsrr0		r5
 	rfi
 exceptionhandler_end:
 	nop
-	
+
 	.extern		c_default_exceptionhandler
 	.globl		default_exceptionhandler
 default_exceptionhandler:
 	stwu		sp,-EXCEPTION_FRAME_END(sp)		//now we're able to adjust the stackpointer with it's cached address
 
 	EXCEPTION_PROLOG
-	
+
 	stmw		r16,GPR16_OFFSET(sp)
 
 	addi		r3,sp,0x08
@@ -238,6 +236,3 @@ systemcallhandler_start:
 	rfi
 systemcallhandler_end:
 	nop
-
-
-

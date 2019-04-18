@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __MESSAGE_H__
 #define __MESSAGE_H__
 
@@ -46,24 +45,19 @@ distribution.
 #define MQ_MSG_BLOCK			0
 #define MQ_MSG_NOBLOCK			1
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /*! \typedef u32 mqbox_t
 \brief typedef for the message queue handle
 */
 typedef u32 mqbox_t;
 
-
 /*! \typedef void* mqmsg_t
 \brief typedef for the message pointer
 */
 typedef void* mqmsg_t;
-
-
 
 /*! \fn u32 MQ_Init(mqbox_t *mqbox,u32 count)
 \brief Initializes a message queue
@@ -74,7 +68,6 @@ typedef void* mqmsg_t;
 */
 s32 MQ_Init(mqbox_t *mqbox,u32 count);
 
-
 /*! \fn void MQ_Close(mqbox_t mqbox)
 \brief Closes the message queue and releases all memory.
 \param[in] mqbox handle to the mqbox_t structure.
@@ -82,7 +75,6 @@ s32 MQ_Init(mqbox_t *mqbox,u32 count);
 \return none
 */
 void MQ_Close(mqbox_t mqbox);
-
 
 /*! \fn BOOL MQ_Send(mqbox_t mqbox,mqmsg_t msg,u32 flags)
 \brief Sends a message to the given message queue.
@@ -94,7 +86,6 @@ void MQ_Close(mqbox_t mqbox);
 */
 BOOL MQ_Send(mqbox_t mqbox,mqmsg_t msg,u32 flags);
 
-
 /*! \fn BOOL MQ_Jam(mqbox_t mqbox,mqmsg_t msg,u32 flags)
 \brief Sends a message to the given message queue and jams it in front of the queue.
 \param[in] mqbox mqbox_t handle to the message queue
@@ -104,7 +95,6 @@ BOOL MQ_Send(mqbox_t mqbox,mqmsg_t msg,u32 flags);
 \return bool result
 */
 BOOL MQ_Jam(mqbox_t mqbox,mqmsg_t msg,u32 flags);
-
 
 /*! \fn BOOL MQ_Receive(mqbox_t mqbox,mqmsg_t *msg,u32 flags)
 \brief Sends a message to the given message queue.

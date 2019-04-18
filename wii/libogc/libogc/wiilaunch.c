@@ -76,7 +76,6 @@ typedef struct {
 #define RETURN_TO_SETTINGS 1
 #define RETURN_TO_ARGS 2
 
-
 static NANDBootInfo nandboot ATTRIBUTE_ALIGN(32);
 
 static StateFlags stateflags ATTRIBUTE_ALIGN(32);

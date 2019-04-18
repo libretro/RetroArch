@@ -4,7 +4,10 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
@@ -13,7 +16,10 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
@@ -150,14 +156,14 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);*/
    }
 
+   m_playlistModel->reloadThumbnailPath(m_playlistThumbnailDownloadFile.fileName());
+
    if (!m_playlistThumbnailDownloadWasCanceled && m_pendingPlaylistThumbnails.count() > 0)
    {
       QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
       ViewType viewType = getCurrentViewType();
 
-      if (viewType == VIEW_TYPE_ICONS)
-         emit gridItemChanged(reply->property("title").toString());
-
+      updateVisibleItems();
       downloadNextPlaylistThumbnail(nextThumbnail.value("db_name"), nextThumbnail.value("label_noext"), nextThumbnail.value("type"));
    }
    else
@@ -290,9 +296,9 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    QString system;
    QString title;
    QString type;
-   QVector<QHash<QString, QString> > playlistItems = getPlaylistItems(playlistPath);
    settings_t *settings = config_get_ptr();
    int i;
+   int count;
 
    if (!settings || !playlistFile.exists())
       return;
@@ -302,12 +308,14 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    m_failedThumbnails = 0;
    m_playlistThumbnailDownloadWasCanceled = false;
 
-   if (playlistItems.count() == 0)
+   count = m_playlistModel->rowCount();
+
+   if (count == 0)
       return;
 
-   for (i = 0; i < playlistItems.count(); i++)
+   for (i = 0; i < count; i++)
    {
-      const QHash<QString, QString> &itemHash = playlistItems.at(i);
+      const QHash<QString, QString> &itemHash = m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
       QHash<QString, QString> hash;
       QHash<QString, QString> hash2;
       QHash<QString, QString> hash3;

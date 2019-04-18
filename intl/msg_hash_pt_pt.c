@@ -781,14 +781,6 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Quando ativo, o conteúdo será executado numa velocidade\n"
                "reduzida por esse fator.");
          break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Define o limite de eixo.\n"
-               " \n"
-               "Representa o valor que deve ser atingido para\n"
-               "significar o pressionamento de um botão.\n"
-               " Valores possíveis são [0.0, 1.0].");
-         break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
                "Período de turbo.\n"

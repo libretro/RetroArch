@@ -26,7 +26,6 @@
 #include "ir.h"
 #include "io.h"
 
-
 static void event_data_read(struct wiimote_t *wm,ubyte *msg)
 {
 	ubyte err;

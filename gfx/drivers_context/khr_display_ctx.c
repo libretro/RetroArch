@@ -13,12 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 typedef struct
 {
@@ -219,6 +223,9 @@ static uint32_t gfx_ctx_khr_display_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+#ifdef HAVE_SLANG
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
    return flags;
 }
 
@@ -231,6 +238,26 @@ static void *gfx_ctx_khr_display_get_context_data(void *data)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    return &khr->vk.context;
+}
+
+static void gfx_ctx_khr_display_update_window_title(void *data, void *data2)
+{
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
+
+   if (settings->bools.video_memory_show)
+   {
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
 }
 
 const gfx_ctx_driver_t gfx_ctx_khr_display = {
@@ -247,7 +274,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   NULL, /* update_title */
+   gfx_ctx_khr_display_update_window_title,
    gfx_ctx_khr_display_check_window,
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,
@@ -266,4 +293,3 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_get_context_data,
    NULL
 };
-

@@ -2,7 +2,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2017 - Andrés Suárez
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,7 +27,7 @@
 #include <string/stdstring.h>
 
 #ifdef HAVE_NETWORKING
-#include <net/net_http_parse.h>
+#include <net/net_http.h>
 #endif
 
 #include "menu_driver.h"
@@ -39,6 +39,7 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../msg_hash.h"
+#include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
 
 void print_buf_lines(file_list_t *list, char *buf,
@@ -179,7 +180,8 @@ void print_buf_lines(file_list_t *list, char *buf,
     * with a newline, just ignore the partial last line. */
 }
 
-void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
+void cb_net_generic_subdir(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
 #ifdef HAVE_NETWORKING
    char subdir_path[PATH_MAX_LENGTH];
@@ -221,7 +223,8 @@ finish:
 #endif
 }
 
-void cb_net_generic(void *task_data, void *user_data, const char *err)
+void cb_net_generic(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
 #ifdef HAVE_NETWORKING
    bool refresh                   = false;
@@ -265,9 +268,11 @@ finish:
    if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
       char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *parent_dir_encoded         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       file_transfer_t *transf     = NULL;
 
-      parent_dir[0] = '\0';
+      parent_dir[0]         = '\0';
+      parent_dir_encoded[0] = '\0';
 
       fill_pathname_parent_dir(parent_dir,
             state->path, PATH_MAX_LENGTH * sizeof(char));
@@ -280,10 +285,12 @@ finish:
       transf->enum_idx = MSG_UNKNOWN;
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
 
-      task_push_http_transfer(parent_dir, true,
+      net_http_urlencode_full(parent_dir_encoded, parent_dir, PATH_MAX_LENGTH * sizeof(char));
+      task_push_http_transfer(parent_dir_encoded, true,
             "index_dirs", cb_net_generic_subdir, transf);
 
       free(parent_dir);
+      free(parent_dir_encoded);
    }
 
    if (state)

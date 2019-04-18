@@ -13,7 +13,6 @@
 #include "btmemb.h"
 #include "physbusif.h"
 
-
 #define STACKSIZE						32768
 #define MQ_BOX_SIZE						256
 
@@ -111,7 +110,6 @@ err_t bte_hci_initsub_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u
 err_t bte_inquiry_complete(void *arg,struct hci_pcb *pcb,struct hci_inq_res *ires,u16_t result);
 err_t bte_read_stored_link_key_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u8_t result);
 err_t bte_read_bd_addr_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u8_t result);
-
 
 MEMB(bte_pcbs,sizeof(struct bte_pcb),MEMP_NUM_BTE_PCB);
 MEMB(bte_ctrl_reqs,sizeof(struct ctrl_req_t),MEMP_NUM_BTE_CTRLS);
@@ -1358,4 +1356,3 @@ err_t bte_hci_initsub_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u
 	if(err!=ERR_OK) __bte_cmdfinish(state,err);
 	return err;
 }
-

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -93,6 +93,7 @@ const blissbox_pad_type_t blissbox_pad_types[] =
    {"V_BOY", 29},
    {"WII_CLASSIC", 31},
    {"WII_MPLUS", 32},
+   {"PSX_JOGCON", 227},
    {NULL, 0}, /* used to mark unconnected ports, do not remove */
 };
 

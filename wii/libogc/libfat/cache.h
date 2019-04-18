@@ -125,4 +125,3 @@ CACHE* _FAT_cache_constructor (unsigned int numberOfPages, unsigned int sectorsP
 void _FAT_cache_destructor (CACHE* cache);
 
 #endif // _CACHE_H
-

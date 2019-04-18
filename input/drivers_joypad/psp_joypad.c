@@ -375,7 +375,6 @@ static bool psp_joypad_rumble(unsigned pad,
 #endif
 }
 
-
 static void psp_joypad_destroy(void)
 {
 }

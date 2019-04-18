@@ -68,11 +68,9 @@ DECLARE_INTERFACE_(ID3DXBuffer, IUnknown)
 typedef interface ID3DXSprite ID3DXSprite;
 typedef interface ID3DXSprite *LPD3DXSPRITE;
 
-
 /* {BA0B762D-7D28-43ec-B9DC-2F84443B0614} */
 DEFINE_GUID(IID_ID3DXSprite,
 0xba0b762d, 0x7d28, 0x43ec, 0xb9, 0xdc, 0x2f, 0x84, 0x44, 0x3b, 0x6, 0x14);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXSprite
@@ -101,7 +99,6 @@ DECLARE_INTERFACE_(ID3DXSprite, IUnknown)
     STDMETHOD(OnLostDevice)(THIS) PURE;
     STDMETHOD(OnResetDevice)(THIS) PURE;
 };
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,14 +151,12 @@ typedef D3DXFONT_DESCA D3DXFONT_DESC;
 typedef LPD3DXFONT_DESCA LPD3DXFONT_DESC;
 #endif
 
-
 typedef interface ID3DXFont ID3DXFont;
 typedef interface ID3DXFont *LPD3DXFONT;
 
 /* {D79DBB70-5F21-4d36-BBC2-FF525C213CDC} */
 DEFINE_GUID(IID_ID3DXFont,
 0xd79dbb70, 0x5f21, 0x4d36, 0xbb, 0xc2, 0xff, 0x52, 0x5c, 0x21, 0x3c, 0xdc);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXFont
@@ -221,11 +216,9 @@ DECLARE_INTERFACE_(ID3DXFont, IUnknown)
 #endif
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus */
-
 
 HRESULT WINAPI
     D3DXCreateFontA(
@@ -263,7 +256,6 @@ HRESULT WINAPI
 #define D3DXCreateFont D3DXCreateFontA
 #endif
 
-
 HRESULT WINAPI
     D3DXCreateFontIndirectA(
         LPDIRECT3DDEVICE9       pDevice,
@@ -282,7 +274,6 @@ HRESULT WINAPI
 #define D3DXCreateFontIndirect D3DXCreateFontIndirectA
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
@@ -297,14 +288,12 @@ typedef struct _D3DXRTS_DESC
 
 } D3DXRTS_DESC, *LPD3DXRTS_DESC;
 
-
 typedef interface ID3DXRenderToSurface ID3DXRenderToSurface;
 typedef interface ID3DXRenderToSurface *LPD3DXRENDERTOSURFACE;
 
 /* {6985F346-2C3D-43b3-BE8B-DAAE8A03D894} */
 DEFINE_GUID(IID_ID3DXRenderToSurface,
 0x6985f346, 0x2c3d, 0x43b3, 0xbe, 0x8b, 0xda, 0xae, 0x8a, 0x3, 0xd8, 0x94);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXRenderToSurface
@@ -326,7 +315,6 @@ DECLARE_INTERFACE_(ID3DXRenderToSurface, IUnknown)
     STDMETHOD(OnLostDevice)(THIS) PURE;
     STDMETHOD(OnResetDevice)(THIS) PURE;
 };
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -356,14 +344,12 @@ typedef struct _D3DXRTE_DESC
 
 } D3DXRTE_DESC, *LPD3DXRTE_DESC;
 
-
 typedef interface ID3DXRenderToEnvMap ID3DXRenderToEnvMap;
 typedef interface ID3DXRenderToEnvMap *LPD3DXRenderToEnvMap;
 
 /* {313F1B4B-C7B0-4fa2-9D9D-8D380B64385E} */
 DEFINE_GUID(IID_ID3DXRenderToEnvMap,
 0x313f1b4b, 0xc7b0, 0x4fa2, 0x9d, 0x9d, 0x8d, 0x38, 0xb, 0x64, 0x38, 0x5e);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXRenderToEnvMap
@@ -399,7 +385,6 @@ DECLARE_INTERFACE_(ID3DXRenderToEnvMap, IUnknown)
     STDMETHOD(OnLostDevice)(THIS) PURE;
     STDMETHOD(OnResetDevice)(THIS) PURE;
 };
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -469,11 +454,9 @@ DECLARE_INTERFACE_(ID3DXLine, IUnknown)
     STDMETHOD(OnResetDevice)(THIS) PURE;
 };
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus */
-
 
 HRESULT WINAPI
     D3DXCreateLine(

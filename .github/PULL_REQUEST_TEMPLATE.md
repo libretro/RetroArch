@@ -4,7 +4,6 @@
 2. If you are sending several unrelated fixes or features, use a branch and a separate pull request for each
 3. If possible try squashing everything in a single commit. This is particularly beneficial in the case of feature merges since it allows easy bisecting when a problem arises
 
-
 ## Description
 
 [Description of the pull request, detail any issues you are fixing or any features you are implementing]

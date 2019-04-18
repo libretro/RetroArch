@@ -123,23 +123,23 @@ DEFINE_ENUM_FLAG_OPERATORS(DWRITE_GLYPH_IMAGE_FORMATS);
 /// </summary>
 typedef enum D2D1_ALPHA_MODE
 {
-        
+
         /// <summary>
         /// Alpha mode should be determined implicitly. Some target surfaces do not supply
         /// or imply this information in which case alpha must be specified.
         /// </summary>
         D2D1_ALPHA_MODE_UNKNOWN = 0,
-        
+
         /// <summary>
         /// Treat the alpha as premultipled.
         /// </summary>
         D2D1_ALPHA_MODE_PREMULTIPLIED = 1,
-        
+
         /// <summary>
         /// Opacity is in the 'A' component only.
         /// </summary>
         D2D1_ALPHA_MODE_STRAIGHT = 2,
-        
+
         /// <summary>
         /// Ignore any alpha channel information.
         /// </summary>
@@ -191,7 +191,6 @@ typedef struct D2D_VECTOR_2F
 
 } D2D_VECTOR_2F;
 
-
 /// <summary>
 /// A vector of 3 FLOAT values (x, y, z).
 /// </summary>
@@ -202,7 +201,6 @@ typedef struct D2D_VECTOR_3F
     FLOAT z;
 
 } D2D_VECTOR_3F;
-
 
 /// <summary>
 /// A vector of 4 FLOAT values (x, y, z, w).
@@ -216,7 +214,6 @@ typedef struct D2D_VECTOR_4F
 
 } D2D_VECTOR_4F;
 
-
 /// <summary>
 /// Represents a rectangle defined by the coordinates of the upper-left corner
 /// (left, top) and the coordinates of the lower-right corner (right, bottom).
@@ -229,7 +226,6 @@ typedef struct D2D_RECT_F
     FLOAT bottom;
 
 } D2D_RECT_F;
-
 
 /// <summary>
 /// Represents a rectangle defined by the coordinates of the upper-left corner
@@ -256,7 +252,6 @@ typedef struct D2D_SIZE_F
 
 } D2D_SIZE_F;
 
-
 /// <summary>
 /// Stores an ordered pair of integers, typically the width and height of a
 /// rectangle.
@@ -267,7 +262,6 @@ typedef struct D2D_SIZE_U
     UINT32 height;
 
 } D2D_SIZE_U;
-
 
 /// <summary>
 /// Represents a 3-by-2 matrix.
@@ -321,8 +315,6 @@ typedef struct D2D_MATRIX_3X2_F
 
 } D2D_MATRIX_3X2_F;
 
-
-
 /// <summary>
 /// Represents a 4-by-3 matrix.
 /// </summary>
@@ -343,7 +335,6 @@ typedef struct D2D_MATRIX_4X3_F
 
 } D2D_MATRIX_4X3_F;
 
-
 /// <summary>
 /// Represents a 4-by-4 matrix.
 /// </summary>
@@ -351,7 +342,7 @@ typedef struct D2D_MATRIX_4X4_F
 {
     union
     {
-        struct 
+        struct
         {
             FLOAT _11, _12, _13, _14;
             FLOAT _21, _22, _23, _24;
@@ -364,7 +355,6 @@ typedef struct D2D_MATRIX_4X4_F
 
 } D2D_MATRIX_4X4_F;
 
-
 /// <summary>
 /// Represents a 5-by-4 matrix.
 /// </summary>
@@ -372,7 +362,7 @@ typedef struct D2D_MATRIX_5X4_F
 {
     union
     {
-        struct 
+        struct
         {
             FLOAT _11, _12, _13, _14;
             FLOAT _21, _22, _23, _24;
@@ -386,7 +376,6 @@ typedef struct D2D_MATRIX_5X4_F
 
 } D2D_MATRIX_5X4_F;
 
-
 typedef D2D_POINT_2F D2D1_POINT_2F;
 typedef D2D_POINT_2U D2D1_POINT_2U;
 typedef D2D_POINT_2L D2D1_POINT_2L;
@@ -396,7 +385,6 @@ typedef D2D_RECT_L D2D1_RECT_L;
 typedef D2D_SIZE_F D2D1_SIZE_F;
 typedef D2D_SIZE_U D2D1_SIZE_U;
 typedef D2D_MATRIX_3X2_F D2D1_MATRIX_3X2_F;
-
 
 #pragma warning(pop)
 

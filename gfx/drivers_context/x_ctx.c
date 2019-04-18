@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +25,6 @@
 
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
-#include <gfx/gl_capabilities.h>
 
 #ifndef GLX_SAMPLE_BUFFERS
 #define GLX_SAMPLE_BUFFERS 100000
@@ -42,6 +41,7 @@
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
@@ -490,7 +490,6 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 
    if (!x11_connect())
       goto error;
-
 
    switch (x_api)
    {
@@ -1078,7 +1077,7 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES2
          {
-            Display *dpy = XOpenDisplay(NULL);
+            Display     *dpy = XOpenDisplay(NULL);
             const char *exts = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
             bool ret         = exts && strstr(exts,
                   "GLX_EXT_create_context_es2_profile");
@@ -1170,6 +1169,28 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
          {
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
          }
+         if (string_is_equal(video_driver_get_ident(), "gl1")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore"))
+		 {
+#ifdef HAVE_SLANG
+			 BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+		 }
+         else
+         {
+#ifdef HAVE_CG
+            if (!(x->core_hw_context_enable || x->g_core_es))
+               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+#endif
+#ifdef HAVE_GLSL
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         }
+         break;
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_SLANG
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
          break;
       case GFX_CTX_NONE:
       default:

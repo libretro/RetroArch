@@ -240,4 +240,3 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
 
    return validate_filter(ctx);
 }
-

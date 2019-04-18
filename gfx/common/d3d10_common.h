@@ -54,7 +54,6 @@ typedef ID3D10Debug*              D3D10Debug;
 typedef ID3D10SwitchToRef*        D3D10SwitchToRef;
 typedef ID3D10InfoQueue*          D3D10InfoQueue;
 
-
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void D3D10SetResourceEvictionPriority(D3D10Resource resource, UINT eviction_priority)
 {
@@ -1155,6 +1154,12 @@ typedef struct
    bool                  resize_render_targets;
    bool                  init_history;
    d3d10_shader_t        shaders[GFX_MAX_SHADERS];
+#ifdef __WINRT__
+   DXGIFactory2 factory;
+#else
+   DXGIFactory factory;
+#endif
+   DXGIAdapter adapter;
 
 	struct
    {

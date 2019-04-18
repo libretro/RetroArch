@@ -277,7 +277,6 @@ void __ntd_set_pid_vid(u16 vid,u16 pid)
 	__ntd_vid_pid_specified = 1;
 }
 
-
 void physbusif_init()
 {
 	s32 ret;

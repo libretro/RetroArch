@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,8 +20,10 @@
 #include "video_driver.h"
 #include "../verbosity.h"
 
-static const video_display_server_t *current_display_server = NULL;
+static const video_display_server_t *current_display_server = &dispserv_null;
 static void                    *current_display_server_data = NULL;
+static enum rotation initial_screen_orientation          = ORIENTATION_NORMAL;
+static enum rotation current_screen_orientation          = ORIENTATION_NORMAL;
 
 const char *video_display_server_get_ident(void)
 {
@@ -39,7 +41,7 @@ void* video_display_server_init(void)
    switch (type)
    {
       case RARCH_DISPLAY_WIN32:
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          current_display_server = &dispserv_win32;
 #endif
          break;
@@ -49,7 +51,11 @@ void* video_display_server_init(void)
 #endif
          break;
       default:
+#if defined(ANDROID)
+         current_display_server = &dispserv_android;
+#else
          current_display_server = &dispserv_null;
+#endif
          break;
    }
 
@@ -58,11 +64,16 @@ void* video_display_server_init(void)
    RARCH_LOG("[Video]: Found display server: %s\n",
 		   current_display_server->ident);
 
+   initial_screen_orientation = video_display_server_get_screen_orientation();
+
    return current_display_server_data;
 }
 
 void video_display_server_destroy(void)
 {
+   if (initial_screen_orientation != current_screen_orientation)
+      video_display_server_set_screen_orientation(initial_screen_orientation);
+
    if (current_display_server && current_display_server->destroy)
       if (current_display_server_data)
          current_display_server->destroy(current_display_server_data);
@@ -89,13 +100,19 @@ bool video_display_server_set_window_decorations(bool on)
    return false;
 }
 
-
-bool video_display_server_switch_resolution(unsigned width, unsigned height,
-      int int_hz, float hz, int center)
+bool video_display_server_set_resolution(unsigned width, unsigned height,
+      int int_hz, float hz, int center, int monitor_index, int xoffset)
 {
-   if (current_display_server && current_display_server->switch_resolution)
-      return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz, center);
+   if (current_display_server && current_display_server->set_resolution)
+      return current_display_server->set_resolution(current_display_server_data, width, height, int_hz, hz, center, monitor_index, xoffset);
    return false;
+}
+
+void *video_display_server_get_resolution_list(unsigned *size)
+{
+   if (current_display_server && current_display_server->get_resolution_list)
+      return current_display_server->get_resolution_list(current_display_server_data, size);
+   return NULL;
 }
 
 const char *video_display_server_get_output_options(void)
@@ -103,4 +120,28 @@ const char *video_display_server_get_output_options(void)
    if (current_display_server && current_display_server->get_output_options)
       return current_display_server->get_output_options(current_display_server_data);
    return NULL;
+}
+
+void video_display_server_set_screen_orientation(enum rotation rotation)
+{
+   if (current_display_server && current_display_server->set_screen_orientation)
+   {
+      RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
+      current_screen_orientation = rotation;
+      current_display_server->set_screen_orientation(rotation);
+   }
+}
+
+bool video_display_server_can_set_screen_orientation(void)
+{
+   if (current_display_server && current_display_server->set_screen_orientation)
+      return true;
+   return false;
+}
+
+enum rotation video_display_server_get_screen_orientation(void)
+{
+   if (current_display_server && current_display_server->get_screen_orientation)
+      return current_display_server->get_screen_orientation();
+   return ORIENTATION_NORMAL;
 }

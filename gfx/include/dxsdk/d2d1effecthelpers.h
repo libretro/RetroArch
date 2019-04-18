@@ -403,7 +403,7 @@ T GetType(T t) { return t; };
     }
 
 #endif // #ifdef D2D1_SIMPLE_BINDING_MACROS
-    
+
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
 

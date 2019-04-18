@@ -18,7 +18,7 @@
 	mfspr    r0,919;				\
 	stw      r0,GQR7_OFFSET(sp);	\
 	stmw     r6,GPR6_OFFSET(sp)
-	
+
 #define EXCEPTION_EPILOG			\
 	lwz		r4,GQR0_OFFSET(sp);		\
 	mtspr	912,r4;					\
@@ -66,11 +66,11 @@ dbg_exceptionhandler:
 nested:
 	addi	r6,r6,1
 	stw		r6,__debug_nestlevel@l(r15)
-		
+
 	addi	r3,r14,0x08
 	bl		_cpu_context_save_fp
 	bl		c_debug_handler
-	
+
 	lwz		r6,__debug_nestlevel@l(r15)
 	addi	r6,r6,-1
 	stw		r6,__debug_nestlevel@l(r15)

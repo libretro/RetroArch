@@ -36,6 +36,9 @@ UI
 #ifndef __APPLE__
 #define HAVE_MAIN /* also requires defining in frontend.c */
 #endif
+
+#undef mkdir
+
 #include "../ui/drivers/ui_qt.cpp"
 
 #include "../ui/drivers/qt/ui_qt_window.cpp"
@@ -43,23 +46,45 @@ UI
 #include "../ui/drivers/qt/ui_qt_browser_window.cpp"
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
-#include "../ui/drivers/qt/flowlayout.cpp"
+#include "../ui/drivers/qt/gridview.cpp"
 #include "../ui/drivers/qt/shaderparamsdialog.cpp"
 #include "../ui/drivers/qt/coreoptionsdialog.cpp"
 #include "../ui/drivers/qt/filedropwidget.cpp"
 #include "../ui/drivers/qt/coreinfodialog.cpp"
 #include "../ui/drivers/qt/playlistentrydialog.cpp"
 #include "../ui/drivers/qt/viewoptionsdialog.cpp"
-#include "../ui/drivers/qt/playlist.cpp"
+#include "../ui/drivers/qt/qt_playlist.cpp"
 #include "../ui/drivers/qt/updateretroarch.cpp"
 #include "../ui/drivers/qt/thumbnaildownload.cpp"
 #include "../ui/drivers/qt/thumbnailpackdownload.cpp"
 #include "../ui/drivers/qt/playlistthumbnaildownload.cpp"
+#ifdef HAVE_MENU
+#include "../ui/drivers/qt/settingswidgets.cpp"
+#include "../ui/drivers/qt/options/drivers.cpp"
+#include "../ui/drivers/qt/options/video.cpp"
+#include "../ui/drivers/qt/options/audio.cpp"
+#include "../ui/drivers/qt/options/saving.cpp"
+#include "../ui/drivers/qt/options/throttle.cpp"
+#include "../ui/drivers/qt/options/osd.cpp"
+#include "../ui/drivers/qt/options/input.cpp"
+#include "../ui/drivers/qt/options/directory.cpp"
+#include "../ui/drivers/qt/options/logging.cpp"
+#include "../ui/drivers/qt/options/core.cpp"
+#include "../ui/drivers/qt/options/configuration.cpp"
+#include "../ui/drivers/qt/options/latency.cpp"
+#include "../ui/drivers/qt/options/playlists.cpp"
+#include "../ui/drivers/qt/options/user.cpp"
+#include "../ui/drivers/qt/options/recording.cpp"
+#include "../ui/drivers/qt/options/ui.cpp"
+#include "../ui/drivers/qt/options/achievements.cpp"
+#include "../ui/drivers/qt/options/network.cpp"
+#include "../ui/drivers/qt/options/moc_options.cpp"
+#endif
 #include "../ui/drivers/moc_ui_qt.cpp"
 #include "../ui/drivers/qt/moc_coreinfodialog.cpp"
 #include "../ui/drivers/qt/moc_coreoptionsdialog.cpp"
 #include "../ui/drivers/qt/moc_filedropwidget.cpp"
-#include "../ui/drivers/qt/moc_flowlayout.cpp"
+#include "../ui/drivers/qt/moc_gridview.cpp"
 #include "../ui/drivers/qt/moc_playlistentrydialog.cpp"
 #include "../ui/drivers/qt/moc_shaderparamsdialog.cpp"
 #include "../ui/drivers/qt/moc_ui_qt_load_core_window.cpp"
@@ -71,6 +96,10 @@ VIDEO DRIVER
 ============================================================ */
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
+#endif
+
+#if defined(HAVE_OPENGL) && defined(HAVE_OPENGL_CORE)
+#include "../gfx/drivers_shader/shader_gl_core.cpp"
 #endif
 
 #if defined(HAVE_SPIRV_CROSS)

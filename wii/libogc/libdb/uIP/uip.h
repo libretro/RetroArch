@@ -14,7 +14,6 @@
  *
  */
 
-
 /*
  * Copyright (c) 2001-2003, Adam Dunkels.
  * All rights reserved.
@@ -171,6 +170,4 @@ u16_t htons(u16_t val);
 
 #endif /* __UIP_H__ */
 
-
 /** @} */
-

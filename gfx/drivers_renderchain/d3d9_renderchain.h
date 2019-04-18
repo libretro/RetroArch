@@ -114,7 +114,7 @@ static INLINE void d3d9_renderchain_set_vertices_on_change(
    struct D3D9Vertex vert[4];
    unsigned i;
    void *verts       = NULL;
-   const struct 
+   const struct
       LinkInfo *info = (const struct LinkInfo*)&pass->info;
    float _u          = (float)(width)  / info->tex_w;
    float _v          = (float)(height) / info->tex_h;
@@ -403,7 +403,7 @@ static INLINE void d3d9_recompute_pass_sizes(
 {
    unsigned i;
    struct LinkInfo link_info;
-   unsigned input_scale              = d3d->video_info.input_scale 
+   unsigned input_scale              = d3d->video_info.input_scale
       * RARCH_SCALE_BASE;
    unsigned current_width            = input_scale;
    unsigned current_height           = input_scale;
@@ -413,7 +413,6 @@ static INLINE void d3d9_recompute_pass_sizes(
    link_info.pass                    = &d3d->shader.pass[0];
    link_info.tex_w                   = current_width;
    link_info.tex_h                   = current_height;
-
 
    if (!d3d9_renderchain_set_pass_size(dev,
             (struct shader_pass*)&chain->passes->data[0],

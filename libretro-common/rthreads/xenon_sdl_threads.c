@@ -56,4 +56,3 @@ int SDL_CondSignal(SDL_cond *cond)
    *(volatile bool*)cond = false;
    return 0;
 }
-

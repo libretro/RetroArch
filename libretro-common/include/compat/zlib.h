@@ -31,7 +31,6 @@
   Jean-loup Gailly        Mark Adler
   jloup@gzip.org          madler@alumni.caltech.edu
 
-
   The data format used by the zlib library is described by RFCs (Request for
   Comments) 1950 to 1952 in the files http://tools.ietf.org/html/rfc1950
   (zlib format), rfc1951 (deflate format) and rfc1952 (gzip format).
@@ -220,7 +219,6 @@ typedef gz_header FAR *gz_headerp;
 #define zlib_version zlibVersion()
 /* for compatibility with versions < 1.0.2 */
 
-
                         /* basic functions */
 
  const char * zlibVersion (void);
@@ -251,7 +249,6 @@ typedef gz_header FAR *gz_headerp;
    if there is no error message.  deflateInit does not perform any compression:
    this will be done by deflate().
 */
-
 
  int deflate (z_streamp strm, int flush);
 /*
@@ -359,7 +356,6 @@ typedef gz_header FAR *gz_headerp;
   space to continue compressing.
 */
 
-
  int deflateEnd (z_streamp strm);
 /*
      All dynamically allocated data structures for this stream are freed.
@@ -372,7 +368,6 @@ typedef gz_header FAR *gz_headerp;
    may be set but then points to a static string (which must not be
    deallocated).
 */
-
 
 /*
  int inflateInit (z_streamp strm);
@@ -397,7 +392,6 @@ typedef gz_header FAR *gz_headerp;
    of inflateInit() does not process any header information -- that is deferred
    until inflate() is called.
 */
-
 
  int inflate (z_streamp strm, int flush);
 /*
@@ -514,7 +508,6 @@ typedef gz_header FAR *gz_headerp;
   recovery of the data is desired.
 */
 
-
  int inflateEnd (z_streamp strm);
 /*
      All dynamically allocated data structures for this stream are freed.
@@ -525,7 +518,6 @@ typedef gz_header FAR *gz_headerp;
    was inconsistent.  In the error case, msg may be set but then points to a
    static string (which must not be deallocated).
 */
-
 
                         /* Advanced functions */
 
@@ -1633,7 +1625,6 @@ uint32_t adler32 (uint32_t adler, const uint8_t *buf, size_t len);
    check value of seq1 and seq2 concatenated, requiring only crc1, crc2, and
    len2.
 */
-
 
                         /* various hacks, don't look :) */
 

@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined (HAVE_EMSCRIPTEN)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -183,6 +183,68 @@ static bool gl_font_init_first(
 
    return false;
 }
+
+#ifdef HAVE_OPENGL1
+static const font_renderer_t *gl1_font_backends[] = {
+   &gl1_raster_font,
+   NULL,
+};
+
+static bool gl1_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; gl1_font_backends[i]; i++)
+   {
+      void *data = gl1_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = gl1_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#ifdef HAVE_OPENGL_CORE
+static const font_renderer_t *gl_core_font_backends[] = {
+   &gl_core_raster_font,
+   NULL,
+};
+
+static bool gl_core_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; gl_core_font_backends[i]; i++)
+   {
+      void *data = gl_core_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = gl_core_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
 #endif
 
 #ifdef HAVE_CACA
@@ -278,7 +340,7 @@ static bool vga_font_init_first(
 }
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 static const font_renderer_t *gdi_font_backends[] = {
    &gdi_font,
    NULL,
@@ -464,6 +526,36 @@ static bool d3d12_font_init_first(
 }
 #endif
 
+#ifdef PS2
+static const font_renderer_t *ps2_font_backends[] = {
+   &ps2_font
+};
+
+static bool ps2_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; ps2_font_backends[i]; i++)
+   {
+      void *data = ps2_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = ps2_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VITA2D
 static const font_renderer_t *vita2d_font_backends[] = {
    &vita2d_vita_font
@@ -524,7 +616,7 @@ static bool ctr_font_init_first(
 }
 #endif
 
-#ifdef HAVE_LIBNX 
+#ifdef HAVE_LIBNX
 static const font_renderer_t *switch_font_backends[] = {
    &switch_font,
    NULL
@@ -600,6 +692,16 @@ static bool font_init_first(
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
+#ifdef HAVE_OPENGL1
+      case FONT_DRIVER_RENDER_OPENGL1_API:
+         return gl1_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_OPENGL_CORE
+      case FONT_DRIVER_RENDER_OPENGL_CORE_API:
+         return gl_core_font_init_first(font_driver, font_handle,
+                                        video_data, font_path, font_size, is_threaded);
+#endif
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
@@ -641,6 +743,11 @@ static bool font_init_first(
          return vita2d_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
+#ifdef PS2
+      case FONT_DRIVER_RENDER_PS2:
+         return ps2_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
@@ -666,7 +773,7 @@ static bool font_init_first(
          return switch_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       case FONT_DRIVER_RENDER_GDI:
          return gdi_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
@@ -767,7 +874,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
       unsigned      result         = 0;
       bool          prev_connected = false;
       bool          next_connected = false;
-      unsigned char id             = (src[0] << 6) | (src[1] & 0x3F);
+      unsigned char id             = ((unsigned char)src[0] << 6) | ((unsigned char)src[1] & 0x3F);
       const char*   prev1          = src - 2;
       const char*   prev2          = src - 4;
 
@@ -786,7 +893,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
          unsigned char prev1_id = 0;
 
          if (prev1)
-            prev1_id = (prev1[0] << 6) | (prev1[1] & 0x3F);
+            prev1_id = ((unsigned char)prev1[0] << 6) | ((unsigned char)prev1[1] & 0x3F);
 
          if (prev1_id == 0x44)
          {
@@ -816,7 +923,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
 
       if ((src[2] & 0xFC) == 0xD8)
       {
-         unsigned char next_id = (src[2] << 6) | (src[3] & 0x3F);
+         unsigned char next_id = ((unsigned char)src[2] << 6) | ((unsigned char)src[3] & 0x3F);
 
          if (next_id > 0x20 || next_id < 0x50)
             next_connected = true;
@@ -847,7 +954,12 @@ static char* font_driver_reshape_msg(const char* msg)
       {
          src--;
          while (IS_MBCONT(src))
+         {
             src--;
+
+            if (src == (const unsigned char*)msg)
+               goto end;
+         }
 
          if (IS_RTL(src) || IS_DIR_NEUTRAL(src))
          {
@@ -910,7 +1022,7 @@ static char* font_driver_reshape_msg(const char* msg)
             *dst++ = *src++;
       }
    }
-
+end:
    *dst = '\0';
 
    return (char*)buffer;
@@ -923,7 +1035,7 @@ void font_driver_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   font_data_t *font = (font_data_t*)(font_data 
+   font_data_t *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
 
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)
@@ -958,14 +1070,29 @@ void font_driver_flush(unsigned width, unsigned height, void *font_data,
       font->renderer->flush(width, height, font->renderer_data, video_info);
 }
 
-
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   if (len == 0 && msg)
+      len = (unsigned)strlen(msg);
    if (font && font->renderer && font->renderer->get_message_width)
       return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
+}
+
+int font_driver_get_line_height(void *font_data, float scale)
+{
+   int line_height;
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+
+   /* First try the line height implementation */
+   if (font && font->renderer && font->renderer->get_line_height)
+      if ((line_height = font->renderer->get_line_height(font->renderer_data)) != -1)
+         return (int)(line_height * roundf(scale));
+
+   /* Else return an approximation (width of 'a') */
+   return font_driver_get_message_width(font_data, "a", 1, scale);
 }
 
 void font_driver_free(void *font_data)
@@ -1022,7 +1149,6 @@ font_data_t *font_driver_init_first(
 
    return NULL;
 }
-
 
 void font_driver_init_osd(
       void *video_data,

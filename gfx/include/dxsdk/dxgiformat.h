@@ -130,7 +130,6 @@ typedef enum DXGI_FORMAT
     DXGI_FORMAT_V208                        = 131,
     DXGI_FORMAT_V408                        = 132,
 
-
     DXGI_FORMAT_FORCE_UINT                  = 0xffffffff
 } DXGI_FORMAT;
 

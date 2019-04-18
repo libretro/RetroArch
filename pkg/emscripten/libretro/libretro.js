@@ -149,7 +149,7 @@ function selectFiles(files)
    $('#icnAdd').addClass('fa-spinner spinning');
    var count = files.length;
 
-   for (var i = 0; i < files.length; i++)
+   for (var i = 0; i < count; i++)
    {
       filereader = new FileReader();
       filereader.file_name = files[i].name;

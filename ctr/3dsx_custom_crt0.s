@@ -72,4 +72,3 @@ ClrLoop:
 	bne   ClrLoop
 
 	bx lr
-

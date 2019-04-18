@@ -23,6 +23,8 @@
 #include <retro_common_api.h>
 #include <lists/string_list.h>
 
+#include "../gfx/video_driver.h"
+
 RETRO_BEGIN_DECLS
 
 struct core_option

@@ -1,0 +1,32 @@
+# Build directory
+build/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+*.raw
+*.rgb
+*.bgr
+*.h264
+*.264
+*.yuyv
+*.uyvy
+*.yvyu
+*.vyuy
+*.i420
+*.yuv
+*.jpg
+*.avi
+*.pts
+*.ppm
+*.mkv

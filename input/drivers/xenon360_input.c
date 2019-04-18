@@ -27,7 +27,7 @@
 
 #define MAX_PADS 4
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 static uint64_t state[MAX_PADS];

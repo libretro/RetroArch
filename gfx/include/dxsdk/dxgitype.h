@@ -51,7 +51,6 @@
 #define DXGI_CPU_ACCESS_SCRATCH                 ( 3 )
 #define DXGI_CPU_ACCESS_FIELD                   15
 
-
 typedef struct DXGI_RGB
 {
     float Red;
@@ -140,4 +139,3 @@ typedef struct DXGI_JPEG_QUANTIZATION_TABLE
 } DXGI_JPEG_QUANTIZATION_TABLE;
 
 #endif // __dxgitype_h__
-

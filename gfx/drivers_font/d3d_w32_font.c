@@ -30,7 +30,6 @@
 
 #include "../../configuration.h"
 
-
 typedef struct d3dx_font_desc
 {
     INT Height;
@@ -75,7 +74,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 #ifdef UNICODE
    strlcpy(desc.FaceName, T(L"Verdana"), sizeof(desc.FaceName));
 #else
-   strlcpy(desc.FaceName, _T("Verdana"), sizeof(desc.FaceName));
+   strlcpy(desc.FaceName, (const char*)_T("Verdana"), sizeof(desc.FaceName));
 #endif
 
    d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */
@@ -86,7 +85,6 @@ static void *d3dfonts_w32_init_font(void *video_data,
    if (!d3d9x_create_font_indirect(d3dfonts->d3d->dev,
             &desc, (void**)&d3dfonts->font))
       goto error;
-
 
    d3d9x_font_get_text_metrics(d3dfonts->font, &metrics);
 
@@ -112,7 +110,6 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
    free(d3dfonts);
 }
 
-
 static int d3dfonts_w32_get_message_width(void* data, const char* msg,
       unsigned msg_len, float scale)
 {
@@ -127,7 +124,6 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
 
    return box.right - box.left;
 }
-
 
 static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
       void *data, const char *msg, const struct font_params *params)

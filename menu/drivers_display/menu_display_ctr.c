@@ -59,14 +59,12 @@ static void menu_display_ctr_viewport(menu_display_ctx_draw_t *draw,
 
 }
 
-
 static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
-   ctr_video_t             *ctr     = video_info ? 
-      (ctr_video_t*)video_info->userdata : NULL;
+   ctr_video_t             *ctr     = (ctr_video_t*)video_info->userdata;
 
    if (!ctr || !draw)
       return;
@@ -133,11 +131,10 @@ static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
          GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
          GPU_RGBA8);
 
-
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_800x240 ?
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ?
          CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);

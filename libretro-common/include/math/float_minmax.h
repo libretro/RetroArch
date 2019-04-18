@@ -58,5 +58,4 @@ static INLINE float float_max(float a, float b)
 #endif
 }
 
-
 #endif

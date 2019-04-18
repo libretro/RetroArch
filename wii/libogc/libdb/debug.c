@@ -426,7 +426,6 @@ static void gdbstub_report_exception(frame_context *frame,s32 thread)
 
 }
 
-
 void c_debug_handler(frame_context *frame)
 {
 	char *ptr;
@@ -650,4 +649,3 @@ void DEBUG_Init(s32 device_type,s32 channel_port)
 	}
 	__lwp_thread_dispatchenable();
 }
-

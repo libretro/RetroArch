@@ -157,7 +157,6 @@ raw_connect(struct raw_pcb *pcb, struct ip_addr *ipaddr)
   return ERR_OK;
 }
 
-
 /**
  * Set the callback function for received packets that match the
  * raw PCB's protocol and binding.

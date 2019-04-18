@@ -23,6 +23,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../common/gl_common.h"
 
 #include "SDL.h"

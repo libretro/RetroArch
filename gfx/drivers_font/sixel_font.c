@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -76,7 +76,7 @@ static const struct font_glyph *sixel_font_get_glyph(
 
 static void sixel_render_msg(video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *userdata)
 {
    float x, y, scale;
    unsigned width, height;

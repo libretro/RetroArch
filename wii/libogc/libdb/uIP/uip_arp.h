@@ -14,7 +14,6 @@
  * \author Adam Dunkels <adam@dunkels.com>
  */
 
-
 /*
  * Copyright (c) 2001-2003, Adam Dunkels.
  * All rights reserved.
@@ -100,7 +99,6 @@ struct uip_ethip_hdr {
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 
-
 extern struct uip_eth_addr uip_ethaddr;
 
 struct uip_pbuf;
@@ -146,5 +144,3 @@ s8_t uip_arp_arpquery(struct uip_netif *netif,struct uip_ip_addr *ipaddr,struct 
 s8_t uip_arp_arprequest(struct uip_netif *netif,struct uip_ip_addr *ipaddr);
 
 #endif /* __UIP_ARP_H__ */
-
-

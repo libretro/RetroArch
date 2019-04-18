@@ -27,7 +27,7 @@
 #define GETBIT				\
 	slwi		r5,r5,1;	\
 	extrwi		r8,r5,1,23;	\
-	clrlwi.		r5,r5,24	
+	clrlwi.		r5,r5,24
 
 #define COPYRAW				\
 	lbzu		r11,1(r29);	\
@@ -49,7 +49,7 @@ depackrnc2:
 	li		r8,1
 	addi	r30,r30,-1
 	addi	r29,r29,17
-	
+
 	LOAD
 	GETBIT
 	b		_xloop
@@ -109,13 +109,13 @@ _back3:
 	insrwi	r7,r8,1,31
 	extrwi	r8,r7,1,23
 	clrlwi	r7,r7,24
-	
+
 	GETBIT
 	beq		_fetch4
 _back4:
 	rlwinm.	r0,r8,0,31,31
 	beq		_copy
-	
+
 	GETBIT
 	beq		_fetch5
 _back5:
@@ -127,7 +127,7 @@ _back5:
 
 	cmpwi	r7,9
 	beq		_raw
-	
+
 _copy:
 	GETBIT
 	beq		_fetch6
@@ -137,7 +137,7 @@ _back6:
 
 	GETBIT
 	bne		_skip0
-	
+
 	LOAD
 _skip0:
 	slwi	r6,r6,1				//ROL(X)
@@ -150,7 +150,7 @@ _skip0:
 	extrwi	r8,r5,1,23
 	clrlwi.	r5,r5,24
 	bne		_skip1
-	
+
 	LOAD
 _skip1:
 	rlwinm.	r0,r8,0,31,31
@@ -158,11 +158,11 @@ _skip1:
 	cmpwi	r6,0
 	bne		_bytedisp
 	addic	r6,r6,1
-	
+
 _another:
 	GETBIT
 	bne		_dispx
-	
+
 	LOAD
 _dispx:
 	slwi	r6,r6,1				//ROL(X)
@@ -197,7 +197,7 @@ _xloop:
 	GETBIT
 	rlwinm.	r0,r8,0,31,31
 	bne		_chkz
-	
+
 	COPYRAW
 
 	GETBIT

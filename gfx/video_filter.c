@@ -557,4 +557,3 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       filt->packets[i].work(filt->impl_data, filt->packets[i].thread_data);
 #endif
 }
-

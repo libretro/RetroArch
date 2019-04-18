@@ -197,7 +197,6 @@ static INLINE bool matrix_3x3_square_to_quad(
       e = dy3 - dy0 + h * dy3;
    }
 
-
    matrix_3x3_init(*mat,
          a, d, g,
          b, e, h,

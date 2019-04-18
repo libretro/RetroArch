@@ -24,7 +24,6 @@ extern "C" {
 #define SO_NBIO         0x1014
 #define SO_NONBLOCK     0x1016
 
-
 /* return codes */
 #define SO_SUCCESS      0
 #define SO_EWOULDBLOCK  6

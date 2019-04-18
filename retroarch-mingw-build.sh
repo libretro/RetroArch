@@ -1,10 +1,10 @@
 #!/bin/sh
-############### 
+###############
 # Build script which builds and packages RetroArch for MinGW 32/64-bit.
 # Preferably build on Linux with a cross chain ... :D
 ##########
 
-#### 
+####
 ## Tweak these to suit your environment.
 ## Not defining the variable will avoid building that target.
 ## Set MINGW32_BASE and/or MINGW64_BASE to set toolchain prefix:
@@ -137,7 +137,7 @@ do_build()
    cp -v "$ZIP_BASE" "../$ZIP_FULL" || die "Failed to move final build ..."
    mv -v "$ZIP_BASE" ..
    zip "../$ZIP_BASE" *.dll retroarch-redist-version || die "Failed to build full/redist ..."
-   
+
    cd ..
 }
 

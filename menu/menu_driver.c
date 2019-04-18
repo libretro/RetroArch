@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -85,29 +85,23 @@ float osk_dark[16] =  {
 
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_OZONE)
-   &menu_ctx_ozone,
-#endif
-#if defined(HAVE_XUI)
-   &menu_ctx_xui,
-#endif
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
-#if defined(HAVE_NUKLEAR)
-   &menu_ctx_nuklear,
-#endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
-#endif
-#if defined(HAVE_STRIPES)
-   &menu_ctx_stripes,
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
 #endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
-#if defined(HAVE_ZARCH)
-   &menu_ctx_zarch,
+#if defined(HAVE_STRIPES)
+   &menu_ctx_stripes,
+#endif
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
+#if defined(HAVE_XUI)
+   &menu_ctx_xui,
 #endif
    &menu_ctx_null,
    NULL
@@ -133,6 +127,12 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif
+#ifdef HAVE_OPENGL1
+   &menu_display_ctx_gl1,
+#endif
+#ifdef HAVE_OPENGL_CORE
+   &menu_display_ctx_gl_core,
+#endif
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
 #endif
@@ -148,7 +148,7 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef WIIU
    &menu_display_ctx_wiiu,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &menu_display_ctx_gdi,
 #endif
 #ifdef DJGPP
@@ -181,9 +181,7 @@ static unsigned menu_display_header_height       = 0;
 
 static bool menu_display_has_windowed            = false;
 static bool menu_display_msg_force               = false;
-static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
-static const uint8_t *menu_display_font_framebuf = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 /* when enabled, on next iteration the 'Quick Menu' list will
@@ -278,6 +276,14 @@ static bool menu_display_check_compatibility(
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (string_is_equal(video_driver, "gl"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL1:
+         if (string_is_equal(video_driver, "gl1"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL_CORE:
+         if (string_is_equal(video_driver, "glcore"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
@@ -392,7 +398,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
          strftime(datetime->s, datetime->len,
-            "%r", localtime(&time_));
+            "%I : %M : %S %p", localtime(&time_));
 #else
          {
             char *local;
@@ -451,7 +457,7 @@ void menu_display_font_free(font_data_t *font)
  * to the menu driver */
 font_data_t *menu_display_font(
       enum application_special_type type,
-      float font_size,
+      float menu_font_size,
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
@@ -464,18 +470,19 @@ font_data_t *menu_display_font(
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   return menu_display_font_file(fontpath, font_size, is_threaded);
+   return menu_display_font_file(fontpath, menu_font_size, is_threaded);
 }
 
-font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+font_data_t *menu_display_font_file(char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
+
    if (!menu_disp)
       return NULL;
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            fontpath, font_size, is_threaded))
+            fontpath, menu_font_size, is_threaded))
       return NULL;
 
    return font_data;
@@ -491,16 +498,6 @@ void menu_display_coords_array_reset(void)
 video_coord_array_t *menu_display_get_coords_array(void)
 {
    return &menu_disp_ca;
-}
-
-const uint8_t *menu_display_get_font_framebuffer(void)
-{
-   return menu_display_font_framebuf;
-}
-
-void menu_display_set_font_framebuffer(const uint8_t *buffer)
-{
-   menu_display_font_framebuf = buffer;
 }
 
 bool menu_display_libretro_running(
@@ -529,6 +526,7 @@ bool menu_display_libretro(bool is_idle,
          input_driver_set_libretro_input_blocked();
 
       core_run();
+      rarch_core_runtime_tick();
       input_driver_unset_libretro_input_blocked();
 
       return true;
@@ -542,8 +540,7 @@ bool menu_display_libretro(bool is_idle,
 
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
-      return true; /* Maybe return false here
-                      for indication of idleness? */
+      return false; /* Return false here for indication of idleness */
    }
    return video_driver_cached_frame();
 }
@@ -597,16 +594,6 @@ bool menu_display_get_msg_force(void)
 void menu_display_set_msg_force(bool state)
 {
    menu_display_msg_force = state;
-}
-
-bool menu_display_get_font_data_init(void)
-{
-   return menu_display_font_alloc_framebuf;
-}
-
-void menu_display_set_font_data_init(bool state)
-{
-   menu_display_font_alloc_framebuf = state;
 }
 
 /* Returns true if an animation is still active or
@@ -786,7 +773,8 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
 
-   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
+   if (menu_disp && menu_disp->get_default_mvp)
+      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
 }
 
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
@@ -1258,7 +1246,8 @@ static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
    return false;
 }
 
-void menu_display_handle_thumbnail_upload(void *task_data,
+void menu_display_handle_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1274,7 +1263,8 @@ void menu_display_handle_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
-void menu_display_handle_left_thumbnail_upload(void *task_data,
+void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1290,7 +1280,8 @@ void menu_display_handle_left_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
-void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1309,7 +1300,8 @@ void menu_display_handle_savestate_thumbnail_upload(void *task_data,
 /* Function that gets called when we want to load in a
  * new menu wallpaper.
  */
-void menu_display_handle_wallpaper_upload(void *task_data,
+void menu_display_handle_wallpaper_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
@@ -1580,10 +1572,13 @@ void menu_display_draw_text(
 {
    struct font_params params;
 
+   if ((color & 0x000000FF) == 0)
+      return;
+
    /* Don't draw outside of the screen */
-   if (     ((x < -64 || x > width  + 64)
+   if (!draw_outside &&
+           ((x < -64 || x > width  + 64)
          || (y < -64 || y > height + 64))
-         && !draw_outside
       )
       return;
 
@@ -1609,7 +1604,8 @@ void menu_display_draw_text(
 
 bool menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type)
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
 {
    struct texture_image ti;
    char texpath[PATH_MAX_LENGTH] = {0};
@@ -1627,6 +1623,12 @@ bool menu_display_reset_textures_list(
 
    if (!image_texture_load(&ti, texpath))
       return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
 
    video_driver_texture_load(&ti,
          filter_type, item);
@@ -1694,7 +1696,8 @@ const char *config_get_menu_driver_options(void)
  * when we need to extract the APK contents/zip file. This
  * file contains assets which then get extracted to the
  * user's asset directories. */
-static void bundle_decompressed(void *task_data,
+static void bundle_decompressed(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
@@ -1739,13 +1742,18 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->bools.menu_show_start_screen)
    {
+      /* We don't want the welcome dialog screen to show up
+       * again after the first startup, so we save to config
+       * file immediately. */
+
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
-
+#if !(defined(PS2) && defined(DEBUG)) /* TODO: PS2 IMPROVEMENT */
       if (settings->bools.config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
    }
 
    if (      settings->bools.bundle_assets_extract_enable
@@ -1764,7 +1772,7 @@ static bool menu_init(menu_handle_t *menu_data)
       task_push_decompress(settings->arrays.bundle_assets_src,
             settings->arrays.bundle_assets_dst,
             NULL, settings->arrays.bundle_assets_dst_subdir,
-            NULL, bundle_decompressed, NULL);
+            NULL, bundle_decompressed, NULL, NULL);
 #endif
    }
 
@@ -1846,6 +1854,9 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
 
@@ -1872,6 +1883,9 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
+      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
@@ -1891,6 +1905,12 @@ void menu_driver_frame(video_frame_info_t *video_info)
 {
    if (menu_driver_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
+}
+
+bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name)
+{
+   return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
+      && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
 bool menu_driver_render(bool is_idle, bool rarch_is_inited,
@@ -1923,9 +1943,6 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
-      settings_t *settings = config_get_ptr();
-      menu_animation_update_time(settings->bools.menu_timedate_enable);
-
       if (menu_driver_ctx->render)
          menu_driver_ctx->render(menu_userdata, is_idle);
    }
@@ -1978,6 +1995,8 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
          menu_driver_pending_quit     = false;
          return false;
       }
+
+      menu_navigation_set_selection(0);
 
       return true;
    }
@@ -2069,8 +2088,9 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    if (menu_driver_data)
       return true;
 
-   menu_driver_data               = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+   if (menu_driver_ctx->init)
+      menu_driver_data               = (menu_handle_t*)
+         menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;
@@ -2099,9 +2119,15 @@ static bool menu_driver_context_reset(bool video_is_threaded)
 
 bool menu_driver_init(bool video_is_threaded)
 {
+   menu_animation_init();
    if (menu_driver_init_internal(video_is_threaded))
       return menu_driver_context_reset(video_is_threaded);
    return false;
+}
+
+void menu_driver_free(void)
+{
+   menu_animation_free();
 }
 
 void menu_driver_navigation_set(bool scroll)
@@ -2136,7 +2162,7 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
 void menu_driver_set_thumbnail_content(char *s, size_t len)
 {
    if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_content)
-      menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
+      menu_driver_ctx->set_thumbnail_content(menu_userdata, s);
 }
 
 /* Teardown function for the menu driver. */
@@ -2653,4 +2679,172 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
    rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
    rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
    rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
+}
+
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   /* Note: Create this string here explicitly (rather than
+    * using a #define elsewhere) since we need to be aware of
+    * its length... */
+#if defined(__APPLE__)
+   /* UTF-8 support is currently broken on Apple devices... */
+   static const char utf8_star_char[] = "*";
+#else
+   /* <BLACK STAR>
+    * UCN equivalent: "\u2605" */
+   static const char utf8_star_char[] = "\xE2\x98\x85";
+#endif
+   char star_char[16];
+   unsigned i = 0;
+   int n = 0;
+   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
+   
+   /* Select approriate 'star' marker for subsystem menu entries
+    * (i.e. RGUI does not support unicode, so use a 'standard'
+    * character fallback) */
+   snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
+   
+   if (subsystem && subsystem_current_count > 0)
+   {
+      for (i = 0; i < subsystem_current_count; i++, subsystem++)
+      {
+         char s[PATH_MAX_LENGTH];
+         if (content_get_subsystem() == i)
+         {
+            if (content_get_subsystem_rom_id() < subsystem->num_roms)
+            {
+               snprintf(s, sizeof(s),
+                  "Load %s %s",
+                  subsystem->desc,
+                  star_char);
+               
+               /* If using RGUI with sublabels disabled, add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui && !settings->bools.menu_show_sublabels)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  n = snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[content_get_subsystem_rom_id()].desc);
+
+                  /* Stupid gcc will warn about snprintf() truncation even though
+                   * we couldn't care less about it (if the menu entry label gets
+                   * truncated then the string will already be too long to view in
+                   * any usable manner on screen, so the fact that the end is
+                   * missing is irrelevant). There are two ways to silence this noise:
+                   * 1) Make the destination buffers large enough that text cannot be
+                   *    truncated. This is a waste of memory.
+                   * 2) Check the snprintf() return value (and take action). This is
+                   *    the most harmless option, so we just print a warning if anything
+                   *    is truncated.
+                   * To reiterate: The actual warning generated here is pointless, and
+                   * should be ignored. */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+
+                  strlcpy(s, tmp, sizeof(s));
+               }
+               
+               menu_entries_append_enum(info->list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                  MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                  MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+            }
+            else
+            {
+               snprintf(s, sizeof(s),
+                  "Start %s %s",
+                  subsystem->desc,
+                  star_char);
+               
+               /* If using RGUI with sublabels disabled, add the
+                * appropriate text to the menu entry itself... */
+               if (is_rgui && !settings->bools.menu_show_sublabels)
+               {
+                  unsigned j = 0;
+                  char rom_buff[PATH_MAX_LENGTH];
+                  char tmp[PATH_MAX_LENGTH];
+                  rom_buff[0] = '\0';
+
+                  for (j = 0; j < content_get_subsystem_rom_id(); j++)
+                  {
+                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     if (j != content_get_subsystem_rom_id() - 1)
+                        strlcat(rom_buff, "|", sizeof(rom_buff));
+                  }
+
+                  if (!string_is_empty(rom_buff))
+                  {
+                     n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
+                     
+                     /* More snprintf() gcc warning suppression... */
+                     if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                     {
+                        if (verbosity_is_enabled())
+                        {
+                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        }
+                     }
+                     
+                     strlcpy(s, tmp, sizeof(s));
+                  }
+               }
+               
+               menu_entries_append_enum(info->list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
+                  MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
+                  MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
+            }
+         }
+         else
+         {
+            snprintf(s, sizeof(s),
+               "Load %s",
+               subsystem->desc);
+            
+            /* If using RGUI with sublabels disabled, add the
+             * appropriate text to the menu entry itself... */
+            if (is_rgui && !settings->bools.menu_show_sublabels)
+            {
+               /* This check is probably not required (it's not done
+                * in menu_cbs_sublabel.c action_bind_sublabel_subsystem_add(),
+                * anyway), but no harm in being safe... */
+               if (subsystem->num_roms > 0)
+               {
+                  char tmp[PATH_MAX_LENGTH];
+                  
+                  n = snprintf(tmp, sizeof(tmp),
+                     "%s [%s %s]", s, "Current Content:",
+                     subsystem->roms[0].desc);
+                  
+                  /* More snprintf() gcc warning suppression... */
+                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                  {
+                     if (verbosity_is_enabled())
+                     {
+                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                     }
+                  }
+                  
+                  strlcpy(s, tmp, sizeof(s));
+               }
+            }
+            
+            menu_entries_append_enum(info->list,
+               s,
+               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+               MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+               MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+         }
+      }
+   }
 }

@@ -194,6 +194,7 @@ static bool nbio_stdio_iterate(void *data)
 
 static void nbio_stdio_resize(void *data, size_t len)
 {
+   void *new_data              = NULL;
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
@@ -209,10 +210,14 @@ static void nbio_stdio_resize(void *data, size_t len)
       abort();
    }
 
-   handle->len  = len;
-   handle->data = realloc(handle->data, handle->len);
-   handle->op   = -1;
-   handle->progress = handle->len;
+   handle->len      = len;
+   handle->progress = len;
+   handle->op       = -1;
+
+   new_data         = realloc(handle->data, handle->len);
+
+   if (new_data)
+      handle->data  = new_data;
 }
 
 static void *nbio_stdio_get_ptr(void *data, size_t* len)

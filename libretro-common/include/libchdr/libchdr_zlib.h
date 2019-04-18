@@ -36,7 +36,6 @@ struct _zlib_codec_data
 	zlib_allocator			allocator;
 };
 
-
 /* codec-private data for the CDZL codec */
 typedef struct _cdzl_codec_data cdzl_codec_data;
 struct _cdzl_codec_data {

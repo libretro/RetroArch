@@ -55,7 +55,6 @@ typedef struct _D3DXMACRO
 
 } D3DXMACRO, *LPD3DXMACRO;
 
-
 /*
  * D3DXSEMANTIC:
  */
@@ -66,8 +65,6 @@ typedef struct _D3DXSEMANTIC
     UINT UsageIndex;
 
 } D3DXSEMANTIC, *LPD3DXSEMANTIC;
-
-
 
 /*
  * D3DXREGISTER_SET:
@@ -84,7 +81,6 @@ typedef enum _D3DXREGISTER_SET
     D3DXRS_FORCE_DWORD = 0x7fffffff
 
 } D3DXREGISTER_SET, *LPD3DXREGISTER_SET;
-
 
 /*
  * D3DXPARAMETER_CLASS:
@@ -103,7 +99,6 @@ typedef enum _D3DXPARAMETER_CLASS
     D3DXPC_FORCE_DWORD = 0x7fffffff
 
 } D3DXPARAMETER_CLASS, *LPD3DXPARAMETER_CLASS;
-
 
 /*
  * D3DXPARAMETER_TYPE:
@@ -137,7 +132,6 @@ typedef enum _D3DXPARAMETER_TYPE
 
 } D3DXPARAMETER_TYPE, *LPD3DXPARAMETER_TYPE;
 
-
 /*
  * D3DXCONSTANTTABLE_DESC:
  */
@@ -149,7 +143,6 @@ typedef struct _D3DXCONSTANTTABLE_DESC
     UINT Constants;                     /* Number of constants */
 
 } D3DXCONSTANTTABLE_DESC, *LPD3DXCONSTANTTABLE_DESC;
-
 
 /*
  * D3DXCONSTANT_DESC:
@@ -176,8 +169,6 @@ typedef struct _D3DXCONSTANT_DESC
 
 } D3DXCONSTANT_DESC, *LPD3DXCONSTANT_DESC;
 
-
-
 /*
  * ID3DXConstantTable:
  */
@@ -188,7 +179,6 @@ typedef interface ID3DXConstantTable *LPD3DXCONSTANTTABLE;
 /* {AB3C758F-093E-4356-B762-4DB18F1B3A01} */
 DEFINE_GUID(IID_ID3DXConstantTable,
 0xab3c758f, 0x93e, 0x4356, 0xb7, 0x62, 0x4d, 0xb1, 0x8f, 0x1b, 0x3a, 0x1);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXConstantTable
@@ -308,7 +298,6 @@ DECLARE_INTERFACE(ID3DXInclude)
     STDMETHOD(Close)(THIS_ LPCVOID pData) PURE;
 };
 
-
 /*
  * APIs
  */
@@ -341,7 +330,6 @@ HRESULT WINAPI
 #define D3DXAssembleShaderFromFile D3DXAssembleShaderFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DXAssembleShaderFromResourceA(
         HMODULE                         hSrcModule,
@@ -367,7 +355,6 @@ HRESULT WINAPI
 #else
 #define D3DXAssembleShaderFromResource D3DXAssembleShaderFromResourceA
 #endif
-
 
 HRESULT WINAPI
     D3DXAssembleShader(
@@ -409,7 +396,6 @@ HRESULT WINAPI
 #define D3DXCompileShaderFromFile D3DXCompileShaderFromFileA
 #endif
 
-
 HRESULT WINAPI
     D3DXCompileShaderFromResourceA(
         HMODULE                         hSrcModule,
@@ -441,7 +427,6 @@ HRESULT WINAPI
 #else
 #define D3DXCompileShaderFromResource D3DXCompileShaderFromResourceA
 #endif
-
 
 HRESULT WINAPI
     D3DXCompileShader(
@@ -575,11 +560,9 @@ HRESULT WINAPI
         LPD3DXBUFFER*                ppShaderText,
         LPD3DXBUFFER*                ppErrorMsgs);
 
-
 #ifdef __cplusplus
 }
 #endif
-
 
 /*
  * Shader comment block layouts
@@ -605,7 +588,6 @@ typedef struct _D3DXSHADER_CONSTANTTABLE
 
 } D3DXSHADER_CONSTANTTABLE, *LPD3DXSHADER_CONSTANTTABLE;
 
-
 typedef struct _D3DXSHADER_CONSTANTINFO
 {
     DWORD Name;             /* LPCSTR offset */
@@ -617,7 +599,6 @@ typedef struct _D3DXSHADER_CONSTANTINFO
     DWORD DefaultValue;     /* offset of default value */
 
 } D3DXSHADER_CONSTANTINFO, *LPD3DXSHADER_CONSTANTINFO;
-
 
 typedef struct _D3DXSHADER_TYPEINFO
 {
@@ -631,14 +612,11 @@ typedef struct _D3DXSHADER_TYPEINFO
 
 } D3DXSHADER_TYPEINFO, *LPD3DXSHADER_TYPEINFO;
 
-
 typedef struct _D3DXSHADER_STRUCTMEMBERINFO
 {
     DWORD Name;             /* LPCSTR offset */
     DWORD TypeInfo;         /* D3DXSHADER_TYPEINFO offset */
 
 } D3DXSHADER_STRUCTMEMBERINFO, *LPD3DXSHADER_STRUCTMEMBERINFO;
-
-
 
 #endif /* __D3DX9SHADER_H__ */

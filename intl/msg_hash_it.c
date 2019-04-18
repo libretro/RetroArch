@@ -98,7 +98,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "I files saranno comparati alle entrate del database.\n"
                "Se c'è un riscontro, sarà aggiunta un'entrata\n"
-               "alla collezione.\n"
+               "alla playlist.\n"
                " \n"
                "Puoi accedere facilmente a questo contenuto\n"
                "andando su '%s' ->\n"
@@ -114,7 +114,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                   );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
@@ -285,7 +285,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                strlcpy(s,
                      "Implementazione SINC in modalità finestra.", len);
             else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
-               strlcpy(s, 
+               strlcpy(s,
                      "Implementazione coseno complesso.", len);
          }
          break;
@@ -878,14 +878,6 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "When slowmotion, content will slow\n"
                "down by factor.");
-         break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Defines axis threshold.\n"
-               " \n"
-               "How far an axis must be tilted to result\n"
-               "in a button press.\n"
-               " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,

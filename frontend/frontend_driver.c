@@ -18,6 +18,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #if defined(_3DS)
 #include <3ds.h>
@@ -28,6 +29,12 @@
 #endif
 
 #include "frontend_driver.h"
+
+#ifndef __WINRT__
+#if defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define __WINRT__
+#endif
+#endif
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
@@ -65,8 +72,11 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(SWITCH) && defined(HAVE_LIBNX)
    &frontend_ctx_switch,
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &frontend_ctx_win32,
+#endif
+#if defined(__WINRT__)
+   &frontend_ctx_uwp,
 #endif
 #ifdef XENON
    &frontend_ctx_xenon,
@@ -76,6 +86,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef SWITCH
    &frontend_ctx_switch,
+#endif
+#if defined(ORBIS)
+   &frontend_ctx_orbis,
 #endif
    &frontend_ctx_null,
    NULL
@@ -445,4 +458,19 @@ void frontend_driver_set_sustained_performance_mode(bool on)
    frontend->set_sustained_performance_mode(on);
 }
 
+const char* frontend_driver_get_cpu_model_name(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_cpu_model_name)
+      return NULL;
+   return frontend->get_cpu_model_name();
+}
+
+enum retro_language frontend_driver_get_user_language(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_user_language)
+      return RETRO_LANGUAGE_ENGLISH;
+   return frontend->get_user_language();
+}
 #endif

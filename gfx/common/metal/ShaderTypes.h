@@ -89,4 +89,3 @@ typedef struct
 } FontFragmentIn;
 
 #endif /* ShaderTypes_h */
-

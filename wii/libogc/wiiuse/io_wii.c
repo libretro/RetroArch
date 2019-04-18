@@ -155,7 +155,6 @@ void wiiuse_sensorbar_enable(int enable)
 	__wiiuse_sensorbar_enable(enable);
 }
 
-
 void wiiuse_init_cmd_queue(struct wiimote_t *wm)
 {
 	u32 size;

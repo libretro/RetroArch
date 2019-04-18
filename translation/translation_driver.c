@@ -37,7 +37,7 @@ bool  translation_driver_init(void)
    current_translation_backend = translation_find_backend(
          settings->arrays.translation_driver);
 	translation_data = NULL;
-	
+
 	if (current_translation_backend)
 		translation_data = (*current_translation_backend->init)();
 	return translation_data != NULL;
@@ -58,7 +58,7 @@ char* translation_driver_translate_image(struct ocr_image_info image)
       if (current_translation_backend->translate_image)
          translated_text = (*current_translation_backend->translate_image)
             (translation_data, image);
-      else 
+      else
          translated_text = (*current_translation_backend->translate_text)
             (translation_data, ocr_driver_get_text(image));
    }

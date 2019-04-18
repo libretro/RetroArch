@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
  *  Copyright (C) 2018      - natinusala
  *
@@ -28,19 +28,19 @@
 enum OZONE_TEXTURE {
    OZONE_TEXTURE_RETROARCH = 0,
    OZONE_TEXTURE_CURSOR_BORDER,
-
+#if 0
+   OZONE_TEXTURE_DISCORD_OWN_AVATAR,
+#endif
    OZONE_TEXTURE_LAST
 };
 
-static char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
+static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
    "retroarch",
    "cursor_border"
 };
 
 enum OZONE_THEME_TEXTURES {
-   OZONE_THEME_TEXTURE_BUTTON_A = 0,
-   OZONE_THEME_TEXTURE_BUTTON_B,
-   OZONE_THEME_TEXTURE_SWITCH,
+   OZONE_THEME_TEXTURE_SWITCH = 0,
    OZONE_THEME_TEXTURE_CHECK,
 
    OZONE_THEME_TEXTURE_CURSOR_NO_BORDER,
@@ -49,11 +49,10 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_LAST
 };
 
-static char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
-   "button_a",
-   "button_b",
+static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "switch",
    "check",
+
    "cursor_noborder",
    "cursor_static"
 };
@@ -72,7 +71,7 @@ enum OZONE_TAB_TEXTURES {
    OZONE_TAB_TEXTURE_LAST
 };
 
-static char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
+static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
    "retroarch",
    "settings",
    "history",
@@ -193,10 +192,20 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LT,
    OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT,
    OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK,
+   OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD,
+   OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS,
+   OZONE_ENTRIES_ICONS_TEXTURE_PAUSE,
+   OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_TOGGLE,
+   OZONE_ENTRIES_ICONS_TEXTURE_MENU_APPLY_COG,
+   OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC,
+   OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL,
+   OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE,
+   OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN,
+   OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO,
    OZONE_ENTRIES_ICONS_TEXTURE_LAST
 };
 
-const char *ozone_entries_icon_texture_path(ozone_handle_t *ozone, unsigned id);
+const char *ozone_entries_icon_texture_path(unsigned id);
 
 menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active);

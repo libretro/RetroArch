@@ -1,0 +1,20 @@
+Building on Pi
+++++++++++++++
+
+To build the test apps on the pi, first build the libs:
+make -C libs/ilclient
+make -C libs/vgfont
+
+then by entering each test app directory and run make. E.g.
+  cd hello_world
+  make
+  ./hello_world.bin
+
+Running ./rebuild.sh will rebuild the all libs and and apps.
+
+Building on a different PC
+++++++++++++++++++++++++++
+
+If you want to build the samples on a different machine (cross-compile) then set:
+SDKSTAGE=<path/to/firmware-directory> and CC=<path/to/cross-compiler>
+before running make.

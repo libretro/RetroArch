@@ -158,4 +158,3 @@ GAMECONTROLLER_EXPORT
 + (void)stopWirelessControllerDiscovery;
 
 @end
-

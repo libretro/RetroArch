@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <asm.h>
 
 	.globl __VIClearFramebuffer

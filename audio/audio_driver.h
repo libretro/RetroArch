@@ -22,46 +22,21 @@
 #include <sys/types.h>
 
 #include <boolean.h>
-#include <audio/audio_mixer.h>
-#include <audio/audio_resampler.h>
 #include <retro_common_api.h>
 
+#include <audio/audio_mixer.h>
+
+#include "audio_defines.h"
+
 RETRO_BEGIN_DECLS
-
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-
-#define AUDIO_MIXER_MAX_STREAMS        16
-
-enum audio_action
-{
-   AUDIO_ACTION_NONE = 0,
-   AUDIO_ACTION_RATE_CONTROL_DELTA,
-   AUDIO_ACTION_MIXER_MUTE_ENABLE,
-   AUDIO_ACTION_MUTE_ENABLE,
-   AUDIO_ACTION_VOLUME_GAIN,
-   AUDIO_ACTION_MIXER_VOLUME_GAIN,
-   AUDIO_ACTION_MIXER
-};
-
-enum audio_mixer_state
-{
-   AUDIO_STREAM_STATE_NONE = 0,
-   AUDIO_STREAM_STATE_STOPPED,
-   AUDIO_STREAM_STATE_PLAYING,
-   AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL
-};
 
 typedef struct audio_mixer_stream
 {
    audio_mixer_sound_t *handle;
    audio_mixer_voice_t *voice;
    audio_mixer_stop_cb_t stop_cb;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type type;
    enum audio_mixer_state state;
    float volume;
    void *buf;
@@ -69,14 +44,19 @@ typedef struct audio_mixer_stream
    size_t bufsize;
 } audio_mixer_stream_t;
 
-typedef struct audio_statistics
+typedef struct audio_mixer_stream_params
 {
-   float average_buffer_saturation;
-   float std_deviation_percentage;
-   float close_to_underrun;
-   float close_to_blocking;
-   unsigned samples;
-} audio_statistics_t;
+   float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type  type;
+   enum audio_mixer_state state;
+   void *buf;
+   char *basename;
+   size_t bufsize;
+   audio_mixer_stop_cb_t cb;
+} audio_mixer_stream_params_t;
 
 typedef struct audio_driver
 {
@@ -160,22 +140,7 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-typedef struct audio_mixer_stream_params
-{
-   float volume;
-   enum audio_mixer_type  type;
-   enum audio_mixer_state state;
-   void *buf;
-   char *basename;
-   size_t bufsize;
-   audio_mixer_stop_cb_t cb;
-} audio_mixer_stream_params_t;
-
 void audio_driver_destroy_data(void);
-
-void audio_driver_set_own_driver(void);
-
-void audio_driver_unset_own_driver(void);
 
 void audio_driver_suspend(void);
 
@@ -267,8 +232,6 @@ bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
 
-bool audio_driver_owns_driver(void);
-
 void audio_driver_unset_callback(void);
 
 void audio_driver_frame_is_reverse(void);
@@ -295,6 +258,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 void audio_driver_mixer_play_stream(unsigned i);
 
+void audio_driver_mixer_play_menu_sound(unsigned i);
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i);
+
 void audio_driver_mixer_play_stream_sequential(unsigned i);
 
 void audio_driver_mixer_play_stream_looped(unsigned i);
@@ -307,15 +274,18 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
 
 void audio_driver_mixer_remove_stream(unsigned i);
 
-enum resampler_quality audio_driver_get_resampler_quality(void);
-
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
+void audio_driver_load_menu_sounds(void);
+
+const char* audio_driver_get_ident(void);
+
 extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
 extern audio_driver_t audio_alsathread;
@@ -330,6 +300,7 @@ extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_dsound;
 extern audio_driver_t audio_wasapi;
 extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_coreaudio3;
 extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;
 extern audio_driver_t audio_gx;

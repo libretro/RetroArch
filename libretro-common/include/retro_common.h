@@ -34,4 +34,3 @@ in a public API, you may need this.
 #include <compat/msvc.h>
 
 #endif
-

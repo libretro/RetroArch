@@ -21,6 +21,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <queues/task_queue.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -45,6 +47,7 @@ enum
    ACTION_OK_DL_DEFAULT = 0,
    ACTION_OK_DL_DROPDOWN_BOX_LIST,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_MUSIC,
@@ -101,6 +104,7 @@ enum
    ACTION_OK_DL_CHEAT_FILE,
    ACTION_OK_DL_CHEAT_FILE_APPEND,
    ACTION_OK_DL_CORE_LIST,
+   ACTION_OK_DL_SIDELOAD_CORE_LIST,
    ACTION_OK_DL_LAKKA_LIST,
    ACTION_OK_DL_CONFIGURATIONS_LIST,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
@@ -127,6 +131,7 @@ enum
    ACTION_OK_DL_MENU_SETTINGS_LIST,
    ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST,
    ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST,
+   ACTION_OK_DL_MENU_SOUNDS_LIST,
    ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST,
    ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    ACTION_OK_DL_UPDATER_SETTINGS_LIST,
@@ -139,10 +144,13 @@ enum
    ACTION_OK_DL_PRIVACY_SETTINGS_LIST,
    ACTION_OK_DL_MIDI_SETTINGS_LIST,
    ACTION_OK_DL_BROWSE_URL_START,
-   ACTION_OK_DL_CONTENT_SETTINGS
+   ACTION_OK_DL_CONTENT_SETTINGS,
+   ACTION_OK_DL_RGUI_MENU_THEME_PRESET
 };
 
 /* Function callbacks */
+int action_cb_push_dropdown_item_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx);
@@ -283,6 +291,10 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx);
 
 int menu_cbs_exit(void);
+
+void cb_generic_download(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err);
 
 RETRO_END_DECLS
 

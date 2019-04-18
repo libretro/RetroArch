@@ -5,10 +5,15 @@
 #include "coreinfodialog.h"
 #include "../ui_qt.h"
 
-extern "C"
-{
+#ifndef CXX_BUILD
+extern "C" {
+#endif
+
 #include "../../../msg_hash.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 CoreInfoDialog::CoreInfoDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(parent)
@@ -93,4 +98,3 @@ void CoreInfoDialog::showCoreInfo()
 
    show();
 }
-

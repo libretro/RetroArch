@@ -35,7 +35,6 @@ typedef void (*HIDCallback)(uint32_t handle,int32_t error,uint8_t *p_buffer,uint
 extern "C" {
 #endif
 
-
 int32_t
 HIDSetup(void);
 

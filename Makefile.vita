@@ -55,6 +55,7 @@ else
 	endif
 
 	include Makefile.common
+	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
@@ -63,7 +64,6 @@ else
 	OBJ += audio/drivers/psp_audio.o
 	OBJ += frontend/drivers/platform_psp.o
 endif
-
 
 ifeq ($(strip $(VITASDK)),)
 $(error "Please set VITASDK in your environment. export VITASDK=<path to>vitasdk")
@@ -116,7 +116,7 @@ endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub \
-	-lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub \
+	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz
 
@@ -126,7 +126,6 @@ TARGETS := $(TARGET).vpk
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
 POSTCOMPILE = mv -f $*.Tdepend $*.depend
-
 
 all: $(TARGETS)
 
@@ -139,7 +138,6 @@ all: $(TARGETS)
 %.o: %.c %.depend
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
 	$(POSTCOMPILE)
-
 
 %.o: %.S
 %.o: %.S %.depend

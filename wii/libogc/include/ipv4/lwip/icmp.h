@@ -109,4 +109,3 @@ PACK_STRUCT_END
 #define ICMPH_CODE_SET(hdr, code) ((hdr)->_type_code = htons((code) | (ICMPH_TYPE(hdr) << 8)))
 
 #endif /* __LWIP_ICMP_H__ */
-

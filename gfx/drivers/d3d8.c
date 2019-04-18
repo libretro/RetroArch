@@ -37,6 +37,7 @@
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../frontend/frontend_driver.h"
 #include "../video_driver.h"
 
 #ifdef HAVE_THREADS
@@ -47,9 +48,6 @@
 
 #ifdef _XBOX
 #define D3D8_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
-#else
-#define HAVE_MONITOR
-#define HAVE_WINDOW
 #endif
 
 #ifdef HAVE_MENU
@@ -60,6 +58,10 @@
 
 #include "../../core.h"
 #include "../../verbosity.h"
+
+#ifdef __WINRT__
+#error "UWP does not support D3D8"
+#endif
 
 static LPDIRECT3D8 g_pD3D8;
 
@@ -84,23 +86,20 @@ typedef struct d3d8_renderchain
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
-static void d3d8_renderchain_set_mvp(
-      d3d8_video_t *d3d,
-      void *chain_data,
-      void *shader_data,
-      const void *mat_data)
+void d3d8_set_mvp(void *data, const void *mat_data)
 {
    struct d3d_matrix matrix;
+   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)data;
 
    d3d_matrix_identity(&matrix);
 
-   d3d8_set_transform(d3d->dev, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
-   d3d8_set_transform(d3d->dev, D3DTS_VIEW, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_VIEW, (D3DMATRIX*)&matrix);
 
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
 
-   d3d8_set_transform(d3d->dev, D3DTS_WORLD, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
 static bool d3d8_renderchain_create_first_pass(
@@ -164,7 +163,6 @@ static void d3d8_renderchain_set_vertices(
       vert[0].x        =  0.0f;
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
-
 
       vert[1].x        =  1.0f;
       vert[1].y        =  1.0f;
@@ -287,7 +285,7 @@ static void d3d8_renderchain_render_pass(
          D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
          NULL);
    d3d8_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp_rotate);
+   d3d8_set_mvp(d3d->dev, &d3d->mvp_rotate);
    d3d8_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
@@ -424,15 +422,6 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 
    if (d3d)
       d3d8_renderchain_viewport_info(d3d, vp);
-}
-
-static void d3d8_set_mvp(void *data,
-      void *shader_data,
-      const void *mat_data)
-{
-   d3d8_video_t *d3d = (d3d8_video_t*)data;
-   if (d3d)
-      d3d8_renderchain_set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
 }
 
 static void d3d8_overlay_render(d3d8_video_t *d3d,
@@ -1003,7 +992,6 @@ static bool d3d8_restore(void *data)
    return true;
 }
 
-
 static void d3d8_set_nonblock_state(void *data, bool state)
 {
    int      interval            = 0;
@@ -1137,37 +1125,6 @@ static void d3d8_set_osd_msg(void *data,
    d3d8_end_scene(d3d->dev);
 }
 
-static void d3d8_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-   const char *name     = settings ? 
-      settings->arrays.input_joypad_driver : NULL;
-#ifdef _XBOX
-   void *xinput         = input_xinput.init(name);
-   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data          = xinput;
-#else
-#if _WIN32_WINNT >= 0x0501
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_winraw.init(name);
-      if (*input_data)
-      {
-         *input = &input_winraw;
-         dinput = NULL;
-         return;
-      }
-   }
-#endif
-
-   dinput               = input_dinput.init(name);
-   *input               = dinput ? &input_dinput : NULL;
-   *input_data          = dinput;
-#endif
-}
-
 static bool d3d8_init_internal(d3d8_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
@@ -1255,7 +1212,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d8_input_driver(input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    RARCH_LOG("[D3D8]: Init complete.\n");
    return true;
@@ -1524,21 +1481,25 @@ static void d3d8_get_overlay_interface(void *data,
 
 static void d3d8_update_title(video_frame_info_t *video_info)
 {
+   const settings_t *settings = config_get_ptr();
 #ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
-   if (video_info->fps_show)
+   if (settings->bools.video_memory_show)
    {
-      MEMORYSTATUS stat;
-      char mem[128];
+#ifndef __WINRT__
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
 
       mem[0] = '\0';
 
-      GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
-            stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+#endif
    }
 
 #ifndef _XBOX
@@ -1622,11 +1583,10 @@ static bool d3d8_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_set_mvp(d3d->dev, &d3d->mvp);
       d3d8_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1651,7 +1611,7 @@ static bool d3d8_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d8_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
@@ -1696,7 +1656,7 @@ static void d3d8_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (    !d3d->menu->tex            || 
+   if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
@@ -1762,7 +1722,6 @@ static void d3d8_set_menu_texture_frame(void *data,
             }
          }
       }
-
 
       if (d3d->menu)
          d3d8_unlock_rectangle(d3d->menu->tex);
@@ -1883,14 +1842,13 @@ static uint32_t d3d8_get_flags(void *data)
 
 static const video_poke_interface_t d3d_poke_interface = {
    d3d8_get_flags,
-   NULL, /* set_coords */
-   d3d8_set_mvp,
    d3d8_load_texture,
    d3d8_unload_texture,
    d3d8_set_video_mode,
-#ifdef _XBOX
+#if defined(_XBOX) || defined(__WINRT__)
    NULL,
 #else
+   /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
    NULL,

@@ -65,7 +65,6 @@ float snow(float2 pos, float time, float scale)
    return random_dots(pos / scale) * (scale * 0.5 + 0.5);
 }
 
-
 float4 PSMain(PSInput input) : SV_TARGET
 {
    float tim = global.time * 0.4 * speed;

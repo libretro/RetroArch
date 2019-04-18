@@ -113,6 +113,5 @@ Of course, another school of thought is that you should do as little damage as p
 in as few places as possible...
 */
 
-
 /* _LIBRETRO_COMMON_RETRO_COMMON_API_H */
 #endif

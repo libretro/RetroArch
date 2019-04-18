@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -22,16 +22,23 @@
 
 #include "../video_driver.h"
 #include "../font_driver.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 
-#include "../../menu/menu_driver.h"
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
+#endif
 
 #include "wiiu/wiiu_dbg.h"
 
@@ -864,8 +871,12 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->device);
    Release(d3d12->adapter);
 
+#ifdef HAVE_MONITOR
    win32_monitor_from_window();
+#endif
+#ifdef HAVE_WINDOW
    win32_destroy_window();
+#endif
 
    free(d3d12);
 }
@@ -873,29 +884,39 @@ static void d3d12_gfx_free(void* data)
 static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+#ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
    WNDCLASSEX     wndclass = { 0 };
+#endif
    settings_t*    settings = config_get_ptr();
    d3d12_video_t* d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
    if (!d3d12)
       return NULL;
 
+#ifdef HAVE_WINDOW
    win32_window_reset();
+#endif
+#ifdef HAVE_MONITOR
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
+#endif
 
    win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
+#endif
 
    d3d12->vp.full_width  = video->width;
    d3d12->vp.full_height = video->height;
 
+#ifdef HAVE_MONITOR
    if (!d3d12->vp.full_width)
       d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d12->vp.full_height)
       d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+#endif
 
    if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
    {
@@ -903,7 +924,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       goto error;
    }
 
-   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d12_init_base(d3d12))
       goto error;
@@ -917,8 +938,13 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_queue(d3d12))
       goto error;
 
+#ifdef __WINRT__
+   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, uwp_get_corewindow()))
+      goto error;
+#else
    if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
       goto error;
+#endif
 
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth);
@@ -1450,14 +1476,23 @@ static bool d3d12_gfx_frame(
 
    d3d12->sprites.enabled = true;
 
+#ifdef HAVE_MENU
+#ifndef HAVE_MENU_WIDGETS
    if (d3d12->menu.enabled)
+#endif
    {
       D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-      menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+#endif
+
+#ifdef HAVE_MENU
+   if (d3d12->menu.enabled)
+      menu_driver_frame(video_info);
+   else
+#endif
+      if (video_info->statistics_show)
    {
       struct font_params *osd_params = (struct font_params*)
          &video_info->osd_stat_params;
@@ -1506,6 +1541,12 @@ static bool d3d12_gfx_frame(
          D3D12DrawInstanced(d3d12->queue.cmd, 1, 1, i, 0);
       }
    }
+#endif
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
 #endif
 
    if (msg && *msg)
@@ -1604,13 +1645,13 @@ static void d3d12_set_menu_texture_frame(
 {
    d3d12_video_t* d3d12    = (d3d12_video_t*)data;
    settings_t*    settings = config_get_ptr();
-   int            pitch    = width * 
+   int            pitch    = width *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM 
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d12->menu.texture.desc.Width  != width || 
+         d3d12->menu.texture.desc.Width  != width ||
          d3d12->menu.texture.desc.Height != height)
    {
       d3d12->menu.texture.desc.Width  = width;
@@ -1753,18 +1794,24 @@ static uint32_t d3d12_get_flags(void *data)
    uint32_t             flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
 
    return flags;
 }
 
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
    d3d12_gfx_load_texture,
    d3d12_gfx_unload_texture,
    NULL, /* set_video_mode */
+#ifndef __WINRT__
    win32_get_refresh_rate,
+#else
+   /* UWP does not expose this information easily */
+   NULL,
+#endif
    d3d12_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
@@ -1788,6 +1835,14 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d12_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool d3d12_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_d3d12 = {
    d3d12_gfx_init,
    d3d12_gfx_frame,
@@ -1809,4 +1864,8 @@ video_driver_t video_d3d12 = {
    d3d12_get_overlay_interface,
 #endif
    d3d12_gfx_get_poke_interface,
+   NULL, /* d3d12_wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   d3d12_menu_widgets_enabled
+#endif
 };

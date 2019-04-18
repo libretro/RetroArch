@@ -64,7 +64,7 @@ asflags := $(ASFLAGS) -fPIC  $(extra_flags)
 objects :=
 
 ifeq (1,$(use_neon))
-   ASMFLAGS := -INEON/asm 
+   ASMFLAGS := -INEON/asm
    asflags += -mfpu=neon
 endif
 

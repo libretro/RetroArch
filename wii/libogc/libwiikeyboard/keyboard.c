@@ -661,4 +661,3 @@ s32 KEYBOARD_FlushEvents(void)
 
 	return res;
 }
-

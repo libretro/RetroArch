@@ -5,4 +5,3 @@
 
 *startfile:
 ctr/3dsx_custom_crt0%O%s crti%O%s crtbegin%O%s
-

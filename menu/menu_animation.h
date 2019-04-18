@@ -25,6 +25,8 @@
 
 RETRO_BEGIN_DECLS
 
+#define TICKER_SPACER_DEFAULT "   |   "
+
 typedef float (*easing_cb) (float, float, float, float);
 typedef void  (*tween_cb)  (void*);
 
@@ -84,11 +86,15 @@ enum menu_animation_easing_type
    EASING_LAST
 };
 
-typedef struct menu_animation_ctx_delta
+/* TODO:
+ * Add a reverse loop ticker for languages
+ * that read right to left */
+enum menu_animation_ticker_type
 {
-   float current;
-   float ideal;
-} menu_animation_ctx_delta_t;
+   TICKER_TYPE_BOUNCE = 0,
+   TICKER_TYPE_LOOP,
+   TICKER_TYPE_LAST
+};
 
 typedef uintptr_t menu_animation_ctx_tag;
 
@@ -114,8 +120,10 @@ typedef struct menu_animation_ctx_ticker
    bool selected;
    size_t len;
    uint64_t idx;
+   enum menu_animation_ticker_type type_enum;
    char *s;
    const char *str;
+   const char *spacer;
 } menu_animation_ctx_ticker_t;
 
 typedef float menu_timer_t;
@@ -127,17 +135,25 @@ typedef struct menu_timer_ctx_entry
    void *userdata;
 } menu_timer_ctx_entry_t;
 
+typedef struct menu_delayed_animation
+{
+   menu_timer_t timer;
+   menu_animation_ctx_entry_t entry;
+} menu_delayed_animation_t;
+
 void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
-bool menu_animation_update(float delta_time);
+void menu_animation_init(void);
 
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
+void menu_animation_free(void);
 
-bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
+bool menu_animation_update(void);
 
-void menu_animation_update_time(bool timedate_enable);
+bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
+
+float menu_animation_get_delta_time(void);
 
 bool menu_animation_is_active(void);
 
@@ -147,9 +163,13 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject);
 
 bool menu_animation_push(menu_animation_ctx_entry_t *entry);
 
-float menu_animation_get_delta_time(void);
+void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
+
+uint64_t menu_animation_get_ticker_idx(void);
+
+uint64_t menu_animation_get_ticker_slow_idx(void);
 
 RETRO_END_DECLS
 

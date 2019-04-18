@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -90,6 +90,9 @@ static void *gdi_gfx_init(const video_info_t *video,
    settings_t *settings                 = config_get_ptr();
    gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
 
+   if (!gdi)
+      return NULL;
+
    *input                               = NULL;
    *input_data                          = NULL;
 
@@ -115,7 +118,8 @@ static void *gdi_gfx_init(const video_info_t *video,
    if (ctx_data)
       gdi->ctx_data = ctx_data;
 
-   gdi->ctx_driver = ctx_driver;
+   gdi->ctx_driver  = ctx_driver;
+
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);
@@ -189,6 +193,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   BITMAPINFO *info;
    gfx_ctx_mode_t mode;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
@@ -197,10 +202,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    gdi_t *gdi                = (gdi_t*)data;
    HWND hwnd                 = win32_get_window();
-   BITMAPINFO *info;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
-   video_info->xmb_shadows_enable = false;
+   video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
 
    if (!frame || !frame_width || !frame_height)
@@ -210,13 +214,15 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    menu_driver_frame(video_info);
 #endif
 
-   if (gdi_video_width != frame_width || gdi_video_height != frame_height || gdi_video_pitch != pitch)
+   if (  gdi_video_width  != frame_width  ||
+         gdi_video_height != frame_height ||
+         gdi_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gdi_video_width = frame_width;
+         gdi_video_width  = frame_width;
          gdi_video_height = frame_height;
-         gdi_video_pitch = pitch;
+         gdi_video_pitch  = pitch;
       }
    }
 
@@ -234,7 +240,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       height        = gdi_video_height;
       pitch         = gdi_video_pitch;
 
-      if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+      if (  frame_width  == 4 &&
+            frame_height == 4 &&
+            (frame_width < width && frame_height < height)
+         )
          draw = false;
 
       if (video_info->menu_is_alive)
@@ -243,11 +252,12 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (hwnd && !gdi->winDC)
    {
-      gdi->winDC = GetDC(hwnd);
-      gdi->memDC = CreateCompatibleDC(gdi->winDC);
-      gdi->video_width = width;
+      gdi->winDC        = GetDC(hwnd);
+      gdi->memDC        = CreateCompatibleDC(gdi->winDC);
+      gdi->video_width  = width;
       gdi->video_height = height;
-      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
+      gdi->bmp          = CreateCompatibleBitmap(
+            gdi->winDC, gdi->video_width, gdi->video_height);
    }
 
    gdi->bmp_old  = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
@@ -257,28 +267,34 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       SelectObject(gdi->memDC, gdi->bmp_old);
       DeleteObject(gdi->bmp);
 
-      gdi->video_width = width;
+      gdi->video_width  = width;
       gdi->video_height = height;
-      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
-      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+      gdi->bmp          = CreateCompatibleBitmap(
+            gdi->winDC, gdi->video_width, gdi->video_height);
+      gdi->bmp_old      = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
       if (gdi_lte_win98)
       {
-         if (gdi_temp_buf)
-         {
-            free(gdi_temp_buf);
-         }
+         unsigned short *tmp = NULL;
 
-         gdi_temp_buf = (unsigned short*)malloc(width * height * sizeof(unsigned short));
+         if (gdi_temp_buf)
+            free(gdi_temp_buf);
+
+         tmp = (unsigned short*)malloc(width * height
+               * sizeof(unsigned short));
+
+         if (tmp)
+            gdi_temp_buf = tmp;
       }
    }
 
    video_context_driver_get_video_size(&mode);
 
-   gdi->screen_width = mode.width;
-   gdi->screen_height = mode.height;
+   gdi->screen_width           = mode.width;
+   gdi->screen_height          = mode.height;
 
-   info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+   info                        = (BITMAPINFO*)
+      calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
 
    info->bmiHeader.biBitCount  = bits;
    info->bmiHeader.biWidth     = pitch / (bits / 8);
@@ -334,10 +350,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       info->bmiHeader.biCompression = BI_RGB;
 
    if (draw)
-   {
       StretchDIBits(gdi->memDC, 0, 0, width, height, 0, 0, width, height,
             frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
-   }
 
    SelectObject(gdi->memDC, gdi->bmp_old);
 
@@ -495,9 +509,19 @@ static void gdi_set_texture_frame(void *data,
       gdi_menu_frame = NULL;
    }
 
-   if (!gdi_menu_frame || gdi_menu_width != width || gdi_menu_height != height || gdi_menu_pitch != pitch)
+   if ( !gdi_menu_frame            ||
+         gdi_menu_width != width   ||
+         gdi_menu_height != height ||
+         gdi_menu_pitch != pitch)
+   {
       if (pitch && height)
-         gdi_menu_frame = (unsigned char*)malloc(pitch * height);
+      {
+         unsigned char *tmp = (unsigned char*)malloc(pitch * height);
+
+         if (tmp)
+            gdi_menu_frame = tmp;
+      }
+   }
 
    if (gdi_menu_frame && frame && pitch && height)
    {
@@ -514,7 +538,8 @@ static void gdi_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+   font_driver_render_msg(video_info, font,
+         msg, (const struct font_params *)params);
 }
 
 static void gdi_get_video_output_size(void *data,
@@ -551,21 +576,27 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 static uintptr_t gdi_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
+   void *tmpdata               = NULL;
+   gdi_texture_t *texture      = NULL;
    struct texture_image *image = (struct texture_image*)data;
-   int size = image->width * image->height * sizeof(uint32_t);
-   gdi_texture_t *texture = NULL;
-   void *tmpdata = NULL;
+   int size                    = image->width *
+      image->height * sizeof(uint32_t);
 
    if (!image || image->width > 2048 || image->height > 2048)
       return 0;
 
-   texture = calloc(1, sizeof(*texture));
-   texture->width = image->width;
-   texture->height = image->height;
-   texture->active_width = image->width;
-   texture->active_height = image->height;
-   texture->data = calloc(1, texture->width * texture->height * sizeof(uint32_t));
-   texture->type = filter_type;
+   texture                     = (gdi_texture_t*)calloc(1, sizeof(*texture));
+
+   if (!texture)
+      return 0;
+
+   texture->width              = image->width;
+   texture->height             = image->height;
+   texture->active_width       = image->width;
+   texture->active_height      = image->height;
+   texture->data               = calloc(1,
+         texture->width * texture->height * sizeof(uint32_t));
+   texture->type               = filter_type;
 
    if (!texture->data)
    {
@@ -573,7 +604,8 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
       return 0;
    }
 
-   memcpy(texture->data, image->pixels, texture->width * texture->height * sizeof(uint32_t));
+   memcpy(texture->data, image->pixels,
+         texture->width * texture->height * sizeof(uint32_t));
 
    return (uintptr_t)texture;
 }
@@ -599,8 +631,6 @@ static void gdi_unload_texture(void *data, uintptr_t handle)
 
 static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* get_flags */
-   NULL,                      /* set_coords */
-   NULL,                      /* set_mvp */
    gdi_load_texture,
    gdi_unload_texture,
    gdi_set_video_mode,

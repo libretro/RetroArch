@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <lwp.h>
@@ -254,4 +253,3 @@ u32 ARQ_RemoveOwnerRequest(u32 owner)
 
 	return cnt;
 }
-

@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "../msg_hash.h"
 #include "../setting_list.h"
 
 #ifndef COLLECTION_SIZE
@@ -56,6 +57,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_DROPDOWN_LIST,
    DISPLAYLIST_DROPDOWN_LIST_SPECIAL,
+   DISPLAYLIST_DROPDOWN_LIST_RESOLUTION,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
    DISPLAYLIST_HELP_SCREEN_LIST,
@@ -77,6 +79,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_FILE_BROWSER_SCAN_DIR,
    DISPLAYLIST_FILE_BROWSER_SELECT_FILE,
    DISPLAYLIST_FILE_BROWSER_SELECT_CORE,
+   DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE,
    DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION,
    DISPLAYLIST_CORES,
    DISPLAYLIST_CORES_SUPPORTED,
@@ -103,6 +106,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_REMAP_FILES,
    DISPLAYLIST_RECORD_CONFIG_FILES,
    DISPLAYLIST_STREAM_CONFIG_FILES,
+   DISPLAYLIST_RGUI_THEME_PRESETS,
    DISPLAYLIST_CONFIG_FILES,
    DISPLAYLIST_CONTENT_HISTORY,
    DISPLAYLIST_IMAGES,
@@ -141,6 +145,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_MENU_SETTINGS_LIST,
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST,
+   DISPLAYLIST_MENU_SOUNDS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    DISPLAYLIST_UPDATER_SETTINGS_LIST,
    DISPLAYLIST_WIFI_SETTINGS_LIST,
@@ -182,6 +187,8 @@ enum menu_displaylist_ctl_state
 #ifdef HAVE_LAKKA_SWITCH
    DISPLAYLIST_SWITCH_GPU_PROFILE,
    DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    DISPLAYLIST_SWITCH_CPU_PROFILE,
 #endif
    DISPLAYLIST_PENDING_CLEAR
@@ -245,6 +252,8 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
 
 void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
+unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type);
+
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
@@ -254,6 +263,18 @@ bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);
 #endif
+
+int menu_displaylist_parse_settings_internal_enum(
+      file_list_t *list,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry,
+      rarch_setting_t *setting,
+      enum msg_hash_enums enum_idx
+      );
+
+#define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
+
+#define menu_displaylist_parse_settings(info_list, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(info_list, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
 
 RETRO_END_DECLS
 

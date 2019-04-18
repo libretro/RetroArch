@@ -25,9 +25,7 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #ifndef __IRQ_H__
 #define __IRQ_H__
@@ -125,14 +123,12 @@ distribution.
    extern "C" {
 #endif /* __cplusplus */
 
-
 /*! \typedef void (*raw_irq_handler_t)(u32 irq,void *ctx)
 \brief function pointer typedef for the interrupt handler callback
 \param[in] irq interrupt number of triggered interrupt.
 \param[in] ctx pointer to the user data.
 */
 typedef void (*raw_irq_handler_t)(u32 irq,void *ctx);
-
 
 /*! \fn raw_irq_handler_t IRQ_Request(u32 nIrq,raw_irq_handler_t pHndl,void *pCtx)
 \brief Register an interrupt handler.
@@ -144,7 +140,6 @@ typedef void (*raw_irq_handler_t)(u32 irq,void *ctx);
 */
 raw_irq_handler_t IRQ_Request(u32 nIrq,raw_irq_handler_t pHndl,void *pCtx);
 
-
 /*! \fn raw_irq_handler_t IRQ_Free(u32 nIrq)
 \brief Free an interrupt handler.
 \param[in] nIrq interrupt number for which to free the handler
@@ -152,7 +147,6 @@ raw_irq_handler_t IRQ_Request(u32 nIrq,raw_irq_handler_t pHndl,void *pCtx);
 \return Old interrupt handler, else NULL
 */
 raw_irq_handler_t IRQ_Free(u32 nIrq);
-
 
 /*! \fn raw_irq_handler_t IRQ_GetHandler(u32 nIrq)
 \brief Get the handler from interrupt number
@@ -162,14 +156,12 @@ raw_irq_handler_t IRQ_Free(u32 nIrq);
 */
 raw_irq_handler_t IRQ_GetHandler(u32 nIrq);
 
-
 /*! \fn u32 IRQ_Disable()
 \brief Disable the complete IRQ subsystem. No interrupts will be served. Multithreading kernel fully disabled.
 
 \return Old state of the IRQ subsystem
 */
 u32 IRQ_Disable(void);
-
 
 /*! \fn u32 IRQ_Restore(u32 level)
 \brief Restore the IRQ subsystem with the given level. This is function should be used together with IRQ_Disable()

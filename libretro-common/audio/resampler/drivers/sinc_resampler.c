@@ -564,7 +564,7 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
 }
 
 static void *resampler_sinc_new(const struct resampler_config *config,
-      double bandwidth_mod, enum resampler_quality quality, 
+      double bandwidth_mod, enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {
    double cutoff                  = 0.0;
@@ -661,6 +661,8 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
    if (!re->main_buffer)
       goto error;
+
+   memset(re->main_buffer, 0, sizeof(float) * elems);
 
    re->phase_table = re->main_buffer;
    re->buffer_l    = re->main_buffer + phase_elems;

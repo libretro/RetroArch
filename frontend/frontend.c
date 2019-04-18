@@ -29,23 +29,26 @@
 #endif
 
 #include "frontend.h"
+#include "frontend_driver.h"
 #include "../configuration.h"
 #include "../ui/ui_companion_driver.h"
-#include "../tasks/tasks_internal.h"
+#include "../tasks/task_content.h"
 
 #include "../driver.h"
 #include "../paths.h"
 #include "../retroarch.h"
+#include "../verbosity.h"
+#include "../record/record_driver.h"
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <objbase.h>
+#endif
 
 /* griffin hack */
 #ifdef HAVE_QT
 #ifndef HAVE_MAIN
 #define HAVE_MAIN
 #endif
-#endif
-
-#ifndef HAVE_MAIN
-#include "../retroarch.h"
 #endif
 
 /**
@@ -89,6 +92,10 @@ void main_exit(void *args)
    driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
    ui_companion_driver_free();
    frontend_driver_free();
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
+#endif
 }
 
 /**
@@ -107,6 +114,14 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
 #if defined(HAVE_MAIN) && defined(HAVE_QT)
    const ui_application_t *ui_application = NULL;
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (FAILED(CoInitialize(NULL)))
+   {
+      RARCH_ERR("FATAL: Failed to initialize the COM interface\n");
+      return 1;
+   }
 #endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);

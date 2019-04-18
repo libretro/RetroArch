@@ -62,6 +62,8 @@ static task_queue_t tasks_finished = {NULL, NULL};
 static struct retro_task_impl *impl_current = NULL;
 static bool task_threaded_enable            = false;
 
+static uint32_t task_count                  = 0;
+
 static void task_queue_msg_push(retro_task_t *task,
       unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
@@ -76,7 +78,7 @@ static void task_queue_msg_push(retro_task_t *task,
    va_end(ap);
 
    if (impl_current->msg_push)
-      impl_current->msg_push(buf, prio, duration, flush);
+      impl_current->msg_push(task, buf, prio, duration, flush);
 }
 
 static void task_queue_push_progress(retro_task_t *task)
@@ -138,7 +140,7 @@ static void retro_task_internal_gather(void)
       task_queue_push_progress(task);
 
       if (task->callback)
-         task->callback(task->task_data, task->user_data, task->error);
+         task->callback(task, task->task_data, task->user_data, task->error);
 
       if (task->cleanup)
           task->cleanup(task);
@@ -401,7 +403,6 @@ static void retro_task_threaded_reset(void)
    slock_unlock(running_lock);
 }
 
-
 static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {
@@ -609,7 +610,7 @@ void task_queue_check(void)
    impl_current->gather();
 }
 
-void task_queue_push(retro_task_t *task)
+bool task_queue_push(retro_task_t *task)
 {
    /* Ignore this task if a related one is already running */
    if (task->type == TASK_TYPE_BLOCKING)
@@ -633,12 +634,14 @@ void task_queue_push(retro_task_t *task)
 
       /* skip this task, user must try again later */
       if (found)
-         return;
+         return false;
    }
 
    /* The lack of NULL checks in the following functions
     * is proposital to ensure correct control flow by the users. */
    impl_current->push_running(task);
+
+   return true;
 }
 
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)
@@ -820,4 +823,19 @@ char* task_get_title(retro_task_t *task)
    SLOCK_UNLOCK(property_lock);
 
    return title;
+}
+
+static uint32_t task_get_next_ident(void)
+{
+   return task_count++;
+}
+
+retro_task_t *task_init(void)
+{
+   retro_task_t *task      = (retro_task_t*)calloc(1, sizeof(*task));
+
+   task->ident             = task_get_next_ident();
+   task->frontend_userdata = NULL;
+
+   return task;
 }

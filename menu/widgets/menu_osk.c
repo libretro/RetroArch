@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,6 +31,7 @@
 #include "menu_osk.h"
 
 #include "../../input/input_driver.h"
+#include "../../configuration.h"
 
 static char *osk_grid[45]        = {NULL};
 
@@ -83,8 +84,13 @@ void menu_event_set_osk_ptr(int i)
 
 void menu_event_osk_append(int ptr)
 {
-   if (ptr < 0)
+   settings_t *settings = config_get_ptr();
+   bool is_rgui;
+
+   if (ptr < 0 || !settings)
       return;
+
+   is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
 
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
@@ -109,7 +115,7 @@ void menu_event_osk_append(int ptr)
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
    else if (string_is_equal(osk_grid[ptr], "Next"))
 #endif
-      if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
+      if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
          menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
       else
          menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));

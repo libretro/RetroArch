@@ -166,7 +166,7 @@ void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    IMAGE_CORE_PREFIX(environ_cb) = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
-   
+
 #ifndef RARCH_INTERNAL
    /* I don't trust filestream_vfs_init to work inside rarch */
    if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
@@ -254,7 +254,7 @@ static bool imageviewer_load(const char *path, int image_index)
    buf = malloc(len);
    filestream_read(f, buf, len);
    filestream_close(f);
-   
+
    image_buffer           = (uint32_t*)stbi_load_from_memory(
          buf, len,
          &image_width, &image_height,
@@ -275,7 +275,6 @@ static bool imageviewer_load(const char *path, int image_index)
 
    process_new_image = true;
 
-
    return true;
 }
 
@@ -292,7 +291,6 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          false,true,false,false);
    dir_list_sort(file_list, false);
    free(dir);
-
 
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
@@ -311,7 +309,6 @@ bool IMAGE_CORE_PREFIX(retro_load_game_special)(unsigned a, const struct retro_g
 {
    return false;
 }
-
 
 void IMAGE_CORE_PREFIX(retro_unload_game)(void)
 {
@@ -334,7 +331,6 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
 {
    return 0;
 }
-
 
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {

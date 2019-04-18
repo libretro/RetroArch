@@ -45,7 +45,7 @@
 
          "group": {
             "kind": "build",
-            "isDefault": true 
+            "isDefault": true
          },
 
          "command": "./configure; make -j2",

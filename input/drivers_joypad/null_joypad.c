@@ -56,7 +56,6 @@ static bool null_joypad_query_pad(unsigned pad)
    return true;
 }
 
-
 static void null_joypad_destroy(void)
 {
 }

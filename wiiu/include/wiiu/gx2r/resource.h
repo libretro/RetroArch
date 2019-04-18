@@ -36,7 +36,6 @@ typedef enum
    GX2R_RESOURCE_LOCKED                   = 1 << 30,
 } GX2RResourceFlags;
 
-
 #ifdef __cplusplus
 }
 #endif

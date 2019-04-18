@@ -82,4 +82,3 @@ char *x11_get_wm_name(Display *dpy);
 bool x11_has_net_wm_fullscreen(Display *dpy);
 
 #endif
-

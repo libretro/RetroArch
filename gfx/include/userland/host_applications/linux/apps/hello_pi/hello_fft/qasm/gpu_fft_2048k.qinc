@@ -1,0 +1,91 @@
+# BCM2835 "GPU_FFT" release 3.0
+#
+# Copyright (c) 2015, Andrew Holme.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the copyright holder nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+##############################################################################
+# Macro baseline
+
+.include "gpu_fft_ex.qinc"
+
+##############################################################################
+# Redefining some macros
+
+.macro body_ra_save_64
+    mov -, vw_wait
+
+    .rep i, 7
+        mov -, srel(i+1) # Master releases slaves
+    .endr
+
+    write_vpm_64
+
+    .rep i, 7
+        mov -, sacq(i+9) # Master waits for slaves
+    .endr
+
+    mov r0, vdw_setup_0(1, 16, dma_h32(0,0))
+    mov r1, 0x40
+    add ra_save_ptr, ra_save_ptr, r1; mov r1, ra_save_ptr
+    mov r2, vdw_setup_0(1, 16, dma_h32(1,0)) - vdw_setup_0(1, 16, dma_h32(0,0))
+    mov r3, PASS64_STRIDE
+
+    .rep i, 64
+        add r0, r0, r2; mov vw_setup, r0
+        add r1, r1, r3; mov vw_addr,  r1
+    .endr
+
+    bra -, ra_link_1
+    nop
+    nop
+    nop
+.endm
+
+.macro bit_rev, shift, mask
+    mov r2, mask
+    and r1, r0, r2
+    shr r0, r0, shift
+    and r0, r0, r2
+    shl r1, r1, shift
+    or  r0, r0, r1
+.endm
+
+.macro read_rev, stride
+    add ra_load_idx, ra_load_idx, stride; mov r0, ra_load_idx
+
+    bit_rev 1,       0x55555555  # 16 SIMD
+    bit_rev 2,       0x33333333
+    bit_rev 4,       0x0F0F0F0F
+    bit_rev 8,       0x00FF00FF
+    bit_rev rb_0x10, 0x0000FFFF
+
+    shr r0, r0, 32-STAGES-3 # r0 = re = {idx[0:STAGES-1], 1'b0, 2'b0}
+    add r1, r0, 4           # r1 = im = {idx[0:STAGES-1], 1'b1, 2'b0}
+
+    interleave
+
+    add t0s, ra_addr_x, r0
+    add t0s, ra_addr_x, r1
+.endm

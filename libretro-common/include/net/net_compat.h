@@ -46,7 +46,6 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-
 #elif defined(_XBOX)
 
 #define NOD3D

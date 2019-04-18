@@ -650,12 +650,10 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     [message show];
 }
 
-
 -(void)msgQueuePush:(NSString *)msg
 {
    self.osdmessage.text = msg;
 }
-
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {

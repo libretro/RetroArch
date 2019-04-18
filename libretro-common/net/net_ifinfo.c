@@ -121,7 +121,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    /*
       actual interface
       can be wlan or eth (with a wiiu adapter)
-      so we just use "switch" as a name 
+      so we just use "switch" as a name
    */
    rc = nifmGetCurrentIpAddress(&id);
 

@@ -73,4 +73,3 @@ s32 USBKeyboard_ToggleLed(const USBKeyboard_led led);
 #endif /* __cplusplus */
 
 #endif /* __USBKEYBOARD_H__ */
-

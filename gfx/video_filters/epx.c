@@ -210,7 +210,6 @@ static void epx_work_cb_rgb565(void *data, void *thread_data)
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
 
-
 static void epx_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,

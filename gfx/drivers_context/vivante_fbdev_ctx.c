@@ -30,6 +30,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -93,7 +94,7 @@ static void *gfx_ctx_vivante_init(video_frame_info_t *video_info, void *video_dr
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
-            &n, attribs))
+            &n, attribs, NULL))
    {
       egl_report_error();
       goto error;
@@ -261,6 +262,7 @@ static uint32_t gfx_ctx_vivante_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

@@ -1,12 +1,8 @@
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
-
 
  /* File created by MIDL compiler version 8.00.0613 */
 /* @@MIDL_FILE_HEADING(  ) */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -37,7 +33,7 @@
 #pragma once
 #endif
 
-/* Forward Declarations */ 
+/* Forward Declarations */
 
 #ifndef __ID3D11ShaderTrace_FWD_DEFINED__
 #define __ID3D11ShaderTrace_FWD_DEFINED__
@@ -45,13 +41,11 @@ typedef interface ID3D11ShaderTrace ID3D11ShaderTrace;
 
 #endif 	/* __ID3D11ShaderTrace_FWD_DEFINED__ */
 
-
 #ifndef __ID3D11ShaderTraceFactory_FWD_DEFINED__
 #define __ID3D11ShaderTraceFactory_FWD_DEFINED__
 typedef interface ID3D11ShaderTraceFactory ID3D11ShaderTraceFactory;
 
 #endif 	/* __ID3D11ShaderTraceFactory_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -59,13 +53,12 @@ typedef interface ID3D11ShaderTraceFactory ID3D11ShaderTraceFactory;
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
-
+#endif
 
 /* interface __MIDL_itf_d3d11ShaderTracing_0000_0000 */
-/* [local] */ 
+/* [local] */
 
-typedef 
+typedef
 enum D3D11_SHADER_TYPE
     {
         D3D11_VERTEX_SHADER	= 1,
@@ -123,7 +116,7 @@ typedef struct D3D11_SHADER_TRACE_DESC
     {
     D3D11_SHADER_TYPE Type;
     UINT Flags;
-    union 
+    union
         {
         D3D11_VERTEX_SHADER_TRACE_DESC VertexShaderTraceDesc;
         D3D11_HULL_SHADER_TRACE_DESC HullShaderTraceDesc;
@@ -134,7 +127,7 @@ typedef struct D3D11_SHADER_TRACE_DESC
         } 	;
     } 	D3D11_SHADER_TRACE_DESC;
 
-typedef 
+typedef
 enum D3D11_TRACE_GS_INPUT_PRIMITIVE
     {
         D3D11_TRACE_GS_INPUT_PRIMITIVE_UNDEFINED	= 0,
@@ -178,7 +171,7 @@ typedef struct D3D11_TRACE_VALUE
     D3D11_TRACE_COMPONENT_MASK ValidMask;
     } 	D3D11_TRACE_VALUE;
 
-typedef 
+typedef
 enum D3D11_TRACE_REGISTER_TYPE
     {
         D3D11_TRACE_OUTPUT_NULL_REGISTER	= 0,
@@ -216,14 +209,14 @@ enum D3D11_TRACE_REGISTER_TYPE
         D3D11_TRACE_OUTPUT_DEPTH_LESS_EQUAL_REGISTER	= ( D3D11_TRACE_OUTPUT_DEPTH_GREATER_EQUAL_REGISTER + 1 ) ,
         D3D11_TRACE_IMMEDIATE64	= ( D3D11_TRACE_OUTPUT_DEPTH_LESS_EQUAL_REGISTER + 1 ) ,
         D3D11_TRACE_INPUT_CYCLE_COUNTER_REGISTER	= ( D3D11_TRACE_IMMEDIATE64 + 1 ) ,
-        D3D11_TRACE_INTERFACE_POINTER	= ( D3D11_TRACE_INPUT_CYCLE_COUNTER_REGISTER + 1 ) 
+        D3D11_TRACE_INTERFACE_POINTER	= ( D3D11_TRACE_INPUT_CYCLE_COUNTER_REGISTER + 1 )
     } 	D3D11_TRACE_REGISTER_TYPE;
 
 #define D3D11_TRACE_REGISTER_FLAGS_RELATIVE_INDEXING 0x1
 typedef struct D3D11_TRACE_REGISTER
     {
     D3D11_TRACE_REGISTER_TYPE RegType;
-    union 
+    union
         {
         UINT16 Index1D;
         UINT16 Index2D[ 2 ];
@@ -233,12 +226,12 @@ typedef struct D3D11_TRACE_REGISTER
     } 	D3D11_TRACE_REGISTER;
 
 #define D3D11_TRACE_MISC_GS_EMIT 0x1
-#define D3D11_TRACE_MISC_GS_CUT  0x2 
-#define D3D11_TRACE_MISC_PS_DISCARD 0x4 
-#define D3D11_TRACE_MISC_GS_EMIT_STREAM 0x8 
-#define D3D11_TRACE_MISC_GS_CUT_STREAM 0x10 
-#define D3D11_TRACE_MISC_HALT 0x20 
-#define D3D11_TRACE_MISC_MESSAGE 0x40 
+#define D3D11_TRACE_MISC_GS_CUT  0x2
+#define D3D11_TRACE_MISC_PS_DISCARD 0x4
+#define D3D11_TRACE_MISC_GS_EMIT_STREAM 0x8
+#define D3D11_TRACE_MISC_GS_CUT_STREAM 0x10
+#define D3D11_TRACE_MISC_HALT 0x20
+#define D3D11_TRACE_MISC_MESSAGE 0x40
 typedef UINT16 D3D11_TRACE_MISC_OPERATIONS_MASK;
 
 typedef struct D3D11_TRACE_STEP
@@ -252,8 +245,6 @@ typedef struct D3D11_TRACE_STEP
     UINT64 CurrentGlobalCycle;
     } 	D3D11_TRACE_STEP;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0000_v0_0_s_ifspec;
 
@@ -261,138 +252,136 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0000_v0_0_s_ifspec;
 #define __ID3D11ShaderTrace_INTERFACE_DEFINED__
 
 /* interface ID3D11ShaderTrace */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D11ShaderTrace;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("36b013e6-2811-4845-baa7-d623fe0df104")
     ID3D11ShaderTrace : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE TraceReady( 
-            /* [annotation] */ 
+        virtual HRESULT STDMETHODCALLTYPE TraceReady(
+            /* [annotation] */
             _Out_opt_  UINT64 *pTestCount) = 0;
-        
+
         virtual void STDMETHODCALLTYPE ResetTrace( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetTraceStats( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE GetTraceStats(
+            /* [annotation] */
             _Out_  D3D11_TRACE_STATS *pTraceStats) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE PSSelectStamp( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE PSSelectStamp(
+            /* [annotation] */
             _In_  UINT stampIndex) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetInitialRegisterContents( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE GetInitialRegisterContents(
+            /* [annotation] */
             _In_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetStep( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE GetStep(
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_STEP *pTraceStep) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetWrittenRegister( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE GetWrittenRegister(
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT writtenRegisterIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetReadRegister( 
-            /* [annotation] */ 
+
+        virtual HRESULT STDMETHODCALLTYPE GetReadRegister(
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT readRegisterIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D11ShaderTraceVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D11ShaderTrace * This,
             /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
+            /* [annotation][iid_is][out] */
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D11ShaderTrace * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D11ShaderTrace * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *TraceReady )( 
+
+        HRESULT ( STDMETHODCALLTYPE *TraceReady )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_opt_  UINT64 *pTestCount);
-        
-        void ( STDMETHODCALLTYPE *ResetTrace )( 
+
+        void ( STDMETHODCALLTYPE *ResetTrace )(
             ID3D11ShaderTrace * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetTraceStats )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetTraceStats )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_STATS *pTraceStats);
-        
-        HRESULT ( STDMETHODCALLTYPE *PSSelectStamp )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PSSelectStamp )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT stampIndex);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetInitialRegisterContents )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetInitialRegisterContents )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetStep )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetStep )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_STEP *pTraceStep);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetWrittenRegister )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetWrittenRegister )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT writtenRegisterIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetReadRegister )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetReadRegister )(
             ID3D11ShaderTrace * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT stepIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  UINT readRegisterIndex,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_REGISTER *pRegister,
-            /* [annotation] */ 
+            /* [annotation] */
             _Out_  D3D11_TRACE_VALUE *pValue);
-        
+
         END_INTERFACE
     } ID3D11ShaderTraceVtbl;
 
@@ -401,109 +390,98 @@ EXTERN_C const IID IID_ID3D11ShaderTrace;
         CONST_VTBL struct ID3D11ShaderTraceVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D11ShaderTrace_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D11ShaderTrace_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D11ShaderTrace_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D11ShaderTrace_TraceReady(This,pTestCount)	\
-    ( (This)->lpVtbl -> TraceReady(This,pTestCount) ) 
+    ( (This)->lpVtbl -> TraceReady(This,pTestCount) )
 
 #define ID3D11ShaderTrace_ResetTrace(This)	\
-    ( (This)->lpVtbl -> ResetTrace(This) ) 
+    ( (This)->lpVtbl -> ResetTrace(This) )
 
 #define ID3D11ShaderTrace_GetTraceStats(This,pTraceStats)	\
-    ( (This)->lpVtbl -> GetTraceStats(This,pTraceStats) ) 
+    ( (This)->lpVtbl -> GetTraceStats(This,pTraceStats) )
 
 #define ID3D11ShaderTrace_PSSelectStamp(This,stampIndex)	\
-    ( (This)->lpVtbl -> PSSelectStamp(This,stampIndex) ) 
+    ( (This)->lpVtbl -> PSSelectStamp(This,stampIndex) )
 
 #define ID3D11ShaderTrace_GetInitialRegisterContents(This,pRegister,pValue)	\
-    ( (This)->lpVtbl -> GetInitialRegisterContents(This,pRegister,pValue) ) 
+    ( (This)->lpVtbl -> GetInitialRegisterContents(This,pRegister,pValue) )
 
 #define ID3D11ShaderTrace_GetStep(This,stepIndex,pTraceStep)	\
-    ( (This)->lpVtbl -> GetStep(This,stepIndex,pTraceStep) ) 
+    ( (This)->lpVtbl -> GetStep(This,stepIndex,pTraceStep) )
 
 #define ID3D11ShaderTrace_GetWrittenRegister(This,stepIndex,writtenRegisterIndex,pRegister,pValue)	\
-    ( (This)->lpVtbl -> GetWrittenRegister(This,stepIndex,writtenRegisterIndex,pRegister,pValue) ) 
+    ( (This)->lpVtbl -> GetWrittenRegister(This,stepIndex,writtenRegisterIndex,pRegister,pValue) )
 
 #define ID3D11ShaderTrace_GetReadRegister(This,stepIndex,readRegisterIndex,pRegister,pValue)	\
-    ( (This)->lpVtbl -> GetReadRegister(This,stepIndex,readRegisterIndex,pRegister,pValue) ) 
+    ( (This)->lpVtbl -> GetReadRegister(This,stepIndex,readRegisterIndex,pRegister,pValue) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D11ShaderTrace_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D11ShaderTraceFactory_INTERFACE_DEFINED__
 #define __ID3D11ShaderTraceFactory_INTERFACE_DEFINED__
 
 /* interface ID3D11ShaderTraceFactory */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D11ShaderTraceFactory;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("1fbad429-66ab-41cc-9617-667ac10e4459")
     ID3D11ShaderTraceFactory : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE CreateShaderTrace( 
-            /* [annotation] */ 
+        virtual HRESULT STDMETHODCALLTYPE CreateShaderTrace(
+            /* [annotation] */
             _In_  IUnknown *pShader,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  D3D11_SHADER_TRACE_DESC *pTraceDesc,
-            /* [annotation] */ 
+            /* [annotation] */
             _COM_Outptr_  ID3D11ShaderTrace **ppShaderTrace) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D11ShaderTraceFactoryVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D11ShaderTraceFactory * This,
             /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
+            /* [annotation][iid_is][out] */
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D11ShaderTraceFactory * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D11ShaderTraceFactory * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *CreateShaderTrace )( 
+
+        HRESULT ( STDMETHODCALLTYPE *CreateShaderTrace )(
             ID3D11ShaderTraceFactory * This,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  IUnknown *pShader,
-            /* [annotation] */ 
+            /* [annotation] */
             _In_  D3D11_SHADER_TRACE_DESC *pTraceDesc,
-            /* [annotation] */ 
+            /* [annotation] */
             _COM_Outptr_  ID3D11ShaderTrace **ppShaderTrace);
-        
+
         END_INTERFACE
     } ID3D11ShaderTraceFactoryVtbl;
 
@@ -512,37 +490,28 @@ EXTERN_C const IID IID_ID3D11ShaderTraceFactory;
         CONST_VTBL struct ID3D11ShaderTraceFactoryVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D11ShaderTraceFactory_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D11ShaderTraceFactory_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D11ShaderTraceFactory_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D11ShaderTraceFactory_CreateShaderTrace(This,pShader,pTraceDesc,ppShaderTrace)	\
-    ( (This)->lpVtbl -> CreateShaderTrace(This,pShader,pTraceDesc,ppShaderTrace) ) 
+    ( (This)->lpVtbl -> CreateShaderTrace(This,pShader,pTraceDesc,ppShaderTrace) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D11ShaderTraceFactory_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d11ShaderTracing_0000_0002 */
-/* [local] */ 
+/* [local] */
 
 HRESULT WINAPI
 D3DDisassemble11Trace(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
@@ -552,7 +521,6 @@ D3DDisassemble11Trace(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
                       _In_ UINT NumSteps,
                       _In_ UINT Flags,
                       _COM_Outptr_ interface ID3D10Blob** ppDisassembly);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0002_v0_0_s_ifspec;
@@ -566,5 +534,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d11ShaderTracing_0000_0002_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

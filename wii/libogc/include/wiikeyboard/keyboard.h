@@ -83,10 +83,8 @@ s32 KEYBOARD_Deinit(void);
 s32 KEYBOARD_GetEvent(keyboard_event *event);
 s32 KEYBOARD_FlushEvents(void);
 
-
 #ifdef __cplusplus
    }
 #endif /* __cplusplus */
 
 #endif /* __KEYBOARD_H__ */
-

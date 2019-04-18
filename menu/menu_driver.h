@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,13 +27,15 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
+#include <queues/task_queue.h>
 
-#include "widgets/menu_entry.h"
+#include "menu_defines.h"
 #include "menu_input.h"
 #include "menu_entries.h"
 
+#include "widgets/menu_entry.h"
+
 #include "../audio/audio_driver.h"
-#include "../gfx/video_driver.h"
 #include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 #include "../gfx/video_coord_array.h"
@@ -57,77 +59,20 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
+#define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
+
+#define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
+#define HEX_G(hex) ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f)
+#define HEX_B(hex) ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f)
+
+#define COLOR_HEX_TO_FLOAT(hex, alpha) { \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
+}
+
 extern float osk_dark[16];
-
-enum menu_image_type
-{
-   MENU_IMAGE_NONE = 0,
-   MENU_IMAGE_WALLPAPER,
-   MENU_IMAGE_THUMBNAIL,
-   MENU_IMAGE_LEFT_THUMBNAIL,
-   MENU_IMAGE_SAVESTATE_THUMBNAIL
-};
-
-enum menu_environ_cb
-{
-   MENU_ENVIRON_NONE = 0,
-   MENU_ENVIRON_RESET_HORIZONTAL_LIST,
-   MENU_ENVIRON_ENABLE_MOUSE_CURSOR,
-   MENU_ENVIRON_DISABLE_MOUSE_CURSOR,
-   MENU_ENVIRON_LAST
-};
-
-enum menu_state_changes
-{
-   MENU_STATE_RENDER_FRAMEBUFFER = 0,
-   MENU_STATE_RENDER_MESSAGEBOX,
-   MENU_STATE_BLIT,
-   MENU_STATE_POP_STACK,
-   MENU_STATE_POST_ITERATE
-};
-
-enum rarch_menu_ctl_state
-{
-   RARCH_MENU_CTL_NONE = 0,
-   RARCH_MENU_CTL_SET_PENDING_QUICK_MENU,
-   RARCH_MENU_CTL_SET_PENDING_QUIT,
-   RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
-   RARCH_MENU_CTL_DEINIT,
-   RARCH_MENU_CTL_SET_PREVENT_POPULATE,
-   RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
-   RARCH_MENU_CTL_IS_PREVENT_POPULATE,
-   RARCH_MENU_CTL_IS_TOGGLE,
-   RARCH_MENU_CTL_SET_TOGGLE,
-   RARCH_MENU_CTL_UNSET_TOGGLE,
-   RARCH_MENU_CTL_SET_OWN_DRIVER,
-   RARCH_MENU_CTL_UNSET_OWN_DRIVER,
-   RARCH_MENU_CTL_OWNS_DRIVER,
-   RARCH_MENU_CTL_FIND_DRIVER,
-   RARCH_MENU_CTL_LIST_FREE,
-   RARCH_MENU_CTL_ENVIRONMENT,
-   RARCH_MENU_CTL_DRIVER_DATA_GET,
-   RARCH_MENU_CTL_POINTER_TAP,
-   RARCH_MENU_CTL_POINTER_DOWN,
-   RARCH_MENU_CTL_POINTER_UP,
-   RARCH_MENU_CTL_OSK_PTR_AT_POS,
-   RARCH_MENU_CTL_BIND_INIT,
-   RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH,
-   RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE,
-   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
-   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
-   MENU_NAVIGATION_CTL_CLEAR,
-   MENU_NAVIGATION_CTL_INCREMENT,
-   MENU_NAVIGATION_CTL_DECREMENT,
-   MENU_NAVIGATION_CTL_SET_LAST,
-   MENU_NAVIGATION_CTL_DESCEND_ALPHABET,
-   MENU_NAVIGATION_CTL_ASCEND_ALPHABET,
-   MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES,
-   MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX,
-   MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
-   MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL
-};
-
-#define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_STREAMS-1)
 
 enum menu_settings_type
 {
@@ -143,6 +88,7 @@ enum menu_settings_type
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
+   MENU_SETTING_DROPDOWN_ITEM_RESOLUTION,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -229,7 +175,7 @@ enum menu_settings_type
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
    MENU_SETTINGS_INPUT_BEGIN,
-   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
@@ -244,120 +190,13 @@ enum menu_settings_type
 #ifdef HAVE_LAKKA_SWITCH
    MENU_SET_SWITCH_GPU_PROFILE,
    MENU_SET_SWITCH_BRIGHTNESS,
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
    MENU_SETTINGS_LAST
 };
-
-enum materialui_color_theme
-{
-   MATERIALUI_THEME_BLUE = 0,
-   MATERIALUI_THEME_BLUE_GREY,
-   MATERIALUI_THEME_DARK_BLUE,
-   MATERIALUI_THEME_GREEN,
-   MATERIALUI_THEME_RED,
-   MATERIALUI_THEME_YELLOW,
-   MATERIALUI_THEME_NVIDIA_SHIELD,
-   MATERIALUI_THEME_LAST
-};
-
-enum xmb_color_theme
-{
-   XMB_THEME_LEGACY_RED  = 0,
-   XMB_THEME_DARK_PURPLE,
-   XMB_THEME_MIDNIGHT_BLUE,
-   XMB_THEME_GOLDEN,
-   XMB_THEME_ELECTRIC_BLUE,
-   XMB_THEME_APPLE_GREEN,
-   XMB_THEME_UNDERSEA,
-   XMB_THEME_VOLCANIC_RED,
-   XMB_THEME_DARK,
-   XMB_THEME_LIGHT,
-   XMB_THEME_WALLPAPER,
-   XMB_THEME_MORNING_BLUE,
-   XMB_THEME_LAST
-};
-
-enum xmb_icon_theme
-{
-   XMB_ICON_THEME_MONOCHROME = 0,
-   XMB_ICON_THEME_FLATUI,
-   XMB_ICON_THEME_RETROACTIVE,
-   XMB_ICON_THEME_PIXEL,
-   XMB_ICON_THEME_NEOACTIVE,
-   XMB_ICON_THEME_SYSTEMATIC,
-   XMB_ICON_THEME_DOTART,
-   XMB_ICON_THEME_CUSTOM,
-   XMB_ICON_THEME_RETROSYSTEM,
-   XMB_ICON_THEME_MONOCHROME_INVERTED,
-   XMB_ICON_THEME_AUTOMATIC,
-   XMB_ICON_THEME_LAST
-};
-
-enum xmb_shader_pipeline
-{
-   XMB_SHADER_PIPELINE_WALLPAPER = 0,
-   XMB_SHADER_PIPELINE_SIMPLE_RIBBON,
-   XMB_SHADER_PIPELINE_RIBBON,
-   XMB_SHADER_PIPELINE_SIMPLE_SNOW,
-   XMB_SHADER_PIPELINE_SNOW,
-   XMB_SHADER_PIPELINE_BOKEH,
-   XMB_SHADER_PIPELINE_SNOWFLAKE,
-   XMB_SHADER_PIPELINE_LAST
-};
-
-enum menu_display_prim_type
-{
-   MENU_DISPLAY_PRIM_NONE = 0,
-   MENU_DISPLAY_PRIM_TRIANGLESTRIP,
-   MENU_DISPLAY_PRIM_TRIANGLES
-};
-
-enum menu_display_driver_type
-{
-   MENU_VIDEO_DRIVER_GENERIC = 0,
-   MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_VULKAN,
-   MENU_VIDEO_DRIVER_METAL,
-   MENU_VIDEO_DRIVER_DIRECT3D8,
-   MENU_VIDEO_DRIVER_DIRECT3D9,
-   MENU_VIDEO_DRIVER_DIRECT3D10,
-   MENU_VIDEO_DRIVER_DIRECT3D11,
-   MENU_VIDEO_DRIVER_DIRECT3D12,
-   MENU_VIDEO_DRIVER_VITA2D,
-   MENU_VIDEO_DRIVER_CTR,
-   MENU_VIDEO_DRIVER_WIIU,
-   MENU_VIDEO_DRIVER_CACA,
-   MENU_VIDEO_DRIVER_SIXEL,
-   MENU_VIDEO_DRIVER_GDI,
-   MENU_VIDEO_DRIVER_SWITCH,
-   MENU_VIDEO_DRIVER_VGA
-};
-
-enum menu_toggle_reason
-{
-  MENU_TOGGLE_REASON_NONE = 0,
-  MENU_TOGGLE_REASON_USER,
-  MENU_TOGGLE_REASON_MESSAGE
-};
-
-typedef uintptr_t menu_texture_item;
-
-typedef struct menu_display_ctx_clearcolor
-{
-   float r;
-   float g;
-   float b;
-   float a;
-} menu_display_ctx_clearcolor_t;
-
-typedef struct menu_display_frame_info
-{
-   bool shadows_enable;
-} menu_display_frame_info_t;
-
-typedef struct menu_display_ctx_draw menu_display_ctx_draw_t;
 
 typedef struct menu_display_ctx_driver
 {
@@ -395,7 +234,6 @@ typedef struct menu_display_ctx_driver
    void (*scissor_begin)(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
    void (*scissor_end)(video_frame_info_t *video_info);
 } menu_display_ctx_driver_t;
-
 
 typedef struct
 {
@@ -540,7 +378,7 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   void (*set_thumbnail_content)(void *data, char* s, size_t len);
+   void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
@@ -550,6 +388,7 @@ typedef struct menu_ctx_driver
    int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
+   bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
 } menu_ctx_driver_t;
 
 typedef struct menu_ctx_displaylist
@@ -655,6 +494,8 @@ void menu_driver_set_binding_state(bool on);
 
 void menu_driver_frame(video_frame_info_t *video_info);
 
+bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
+
 /* Is a background texture set for the current menu driver?  Should
  * return true for RGUI, for instance. */
 bool menu_driver_is_texture_set(void);
@@ -674,6 +515,8 @@ void menu_driver_populate_entries(menu_displaylist_info_t *info);
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
+
+void menu_driver_free(void);
 
 void menu_driver_set_thumbnail_system(char *s, size_t len);
 
@@ -706,8 +549,6 @@ void menu_display_font_free(font_data_t *font);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);
-const uint8_t *menu_display_get_font_framebuffer(void);
-void menu_display_set_font_framebuffer(const uint8_t *buffer);
 bool menu_display_libretro(bool is_idle, bool is_inited, bool is_dummy);
 bool menu_display_libretro_running(bool rarch_is_inited,
       bool rarch_is_dummy_core);
@@ -723,8 +564,6 @@ void menu_display_set_framebuffer_pitch(size_t pitch);
 
 bool menu_display_get_msg_force(void);
 void menu_display_set_msg_force(bool state);
-bool menu_display_get_font_data_init(void);
-void menu_display_set_font_data_init(bool state);
 bool menu_display_get_update_pending(void);
 void menu_display_set_viewport(unsigned width, unsigned height);
 void menu_display_unset_viewport(unsigned width, unsigned height);
@@ -783,16 +622,20 @@ bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
 
-void menu_display_handle_wallpaper_upload(void *task_data,
+void menu_display_handle_wallpaper_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err);
 
-void menu_display_handle_thumbnail_upload(void *task_data,
+void menu_display_handle_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err);
 
-void menu_display_handle_left_thumbnail_upload(void *task_data,
+void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err);
 
-void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
+      void *task_data,
       void *user_data, const char *err);
 
 void menu_display_push_quad(
@@ -826,10 +669,9 @@ font_data_t *menu_display_font(
 font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
 
 bool menu_display_reset_textures_list(
-      const char *texture_path,
-      const char *iconpath,
-      uintptr_t *item,
-      enum texture_filter_type filter_type);
+      const char *texture_path, const char *iconpath,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height);
 
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -841,9 +683,13 @@ void menu_driver_destroy(void);
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_gl_core;
+extern menu_display_ctx_driver_t menu_display_ctx_gl1;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_metal;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d8;
@@ -865,10 +711,8 @@ extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
-extern menu_ctx_driver_t menu_ctx_nuklear;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
-extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;
 
 RETRO_END_DECLS

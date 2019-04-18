@@ -697,7 +697,6 @@ static err_t dhcp_decline(struct netif *netif)
 }
 #endif
 
-
 /**
  * Start the DHCP process, discover a DHCP server.
  *
@@ -750,7 +749,6 @@ static err_t dhcp_discover(struct netif *netif)
   LWIP_DEBUGF(DHCP_DEBUG | DBG_TRACE | DBG_STATE, ("dhcp_discover(): set request timeout %"U16_F" msecs\n", msecs));
   return result;
 }
-
 
 /**
  * Bind the interface to the offered IP address.
@@ -1146,7 +1144,6 @@ static void dhcp_free_reply(struct dhcp *dhcp)
   LWIP_DEBUGF(DHCP_DEBUG, ("dhcp_free_reply(): free'd\n"));
 }
 
-
 /**
  * If an incoming DHCP message is in response to us, then trigger the state machine
  */
@@ -1249,7 +1246,6 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   pbuf_free(p);
   dhcp->p = NULL;
 }
-
 
 static err_t dhcp_create_request(struct netif *netif)
 {

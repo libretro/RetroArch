@@ -55,7 +55,6 @@ static bool __gcsd_startup(int n)
 	return __gcsd_isInserted(n);
 }
 
-
 static bool __gcsd_readSectors(int n, u32 sector, u32 numSectors, void *buffer)
 {
 	s32 ret;
@@ -89,7 +88,6 @@ static bool __gcsd_shutdown(int n)
 	return true;
 }
 
-
 static bool __gcsda_startup(void)
 {
 	return __gcsd_startup(0);
@@ -119,8 +117,6 @@ static bool __gcsda_shutdown(void)
 {
 	return __gcsd_shutdown(0);
 }
-
-
 
 static bool __gcsdb_startup(void)
 {

@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -133,7 +133,6 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
 
    return true;
 }
-
 
 bool core_deinit(void *data)
 {
@@ -401,7 +400,6 @@ bool core_unload(void)
 
    return true;
 }
-
 
 bool core_unload_game(void)
 {

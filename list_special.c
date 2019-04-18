@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,17 +31,13 @@
 #include "menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CAMERA
 #include "camera/camera_driver.h"
-#endif
 
 #ifdef HAVE_WIFI
 #include "wifi/wifi_driver.h"
 #endif
 
-#ifdef HAVE_LOCATION
 #include "location/location_driver.h"
-#endif
 
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
@@ -99,34 +95,42 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
          {
             union string_list_elem_attr attr;
-            bool is_preset                   = false;
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
                return NULL;
-            
+
             ext_shaders[0]                   = '\0';
 
             attr.i = 0;
 
-            if (video_shader_is_supported(RARCH_SHADER_CG) &&
-                  video_shader_get_type_from_ext("cgp", &is_preset))
-               string_list_append(str_list, "cgp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_CG) &&
-                  video_shader_get_type_from_ext("cg", &is_preset))
-               string_list_append(str_list, "cg", attr);
-            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-                  video_shader_get_type_from_ext("glsl", &is_preset))
-               string_list_append(str_list, "glsl", attr);
-            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-                  video_shader_get_type_from_ext("glslp", &is_preset))
-               string_list_append(str_list, "glslp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-                  video_shader_get_type_from_ext("slang", &is_preset))
-               string_list_append(str_list, "slang", attr);
-            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-                  video_shader_get_type_from_ext("slangp", &is_preset))
-               string_list_append(str_list, "slangp", attr);
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+               {
+                  string_list_append(str_list, "cgp", attr);
+                  string_list_append(str_list, "cg", attr);
+               }
+            }
+
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+               {
+                  string_list_append(str_list, "glslp", attr);
+                  string_list_append(str_list, "glsl", attr);
+               }
+            }
+
+            {
+               gfx_ctx_flags_t flags;
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+               {
+                  string_list_append(str_list, "slangp", attr);
+                  string_list_append(str_list, "slang", attr);
+               }
+            }
+
             string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");
             string_list_free(str_list);
             exts = ext_shaders;
@@ -179,7 +183,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_CAMERA_DRIVERS:
-#ifdef HAVE_CAMERA
          for (i = 0; camera_driver_find_handle(i); i++)
          {
             const char *opt  = camera_driver_find_ident(i);
@@ -188,7 +191,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
-#endif
       case STRING_LIST_WIFI_DRIVERS:
 #ifdef HAVE_WIFI
          for (i = 0; wifi_driver_find_handle(i); i++)
@@ -201,15 +203,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_LOCATION_DRIVERS:
-#ifdef HAVE_LOCATION
          for (i = 0; location_driver_find_handle(i); i++)
          {
             const char *opt  = location_driver_find_ident(i);
             *len            += strlen(opt) + 1;
-            string_list_append(options_l, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
-#endif
       case STRING_LIST_AUDIO_DRIVERS:
          for (i = 0; audio_driver_find_handle(i); i++)
          {

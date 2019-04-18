@@ -6,6 +6,7 @@ layout(location = 0) out vec3 vEC;
 layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
+   float yflip;
 } constants;
 
 float iqhash(float n)
@@ -49,4 +50,5 @@ void main()
 
    vEC = v;
    gl_Position = vec4(v, 1.0);
+   gl_Position.y *= constants.yflip;
 }

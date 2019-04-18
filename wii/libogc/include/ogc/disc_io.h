@@ -33,7 +33,6 @@
 #include <stdint.h>
 #include <gctypes.h>
 
-
 #define FEATURE_MEDIUM_CANREAD      0x00000001
 #define FEATURE_MEDIUM_CANWRITE     0x00000002
 #define FEATURE_GAMECUBE_SLOTA      0x00000010

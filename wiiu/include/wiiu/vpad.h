@@ -96,7 +96,6 @@ typedef enum VPADTouchPadValidity
    VPAD_INVALID_Y       = 0x2,
 } VPADTouchPadValidity;
 
-
 typedef enum VPADReadError
 {
    VPAD_READ_SUCCESS             = 0,

@@ -68,7 +68,7 @@
 #if defined(PS2)
 #include <kernel.h>
 #include <timer.h>
-#include <SDL/SDL.h>
+#include <time.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -128,7 +128,6 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #define ra_clock_gettime clock_gettime
 #endif
 
-
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 #endif
@@ -174,9 +173,9 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
-#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__)
+#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_X64) || defined(_M_AMD64)
    __asm__ volatile ("rdtsc" : "=A" (time_ticks));
-#elif defined(__GNUC__) && defined(__x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__) || defined(_M_IX86)
    unsigned a, d;
    __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
@@ -191,7 +190,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif defined(VITA)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(PS2)
-   time_ticks = SDL_GetTicks()*294912; // 294,912MHZ / 1000 msecs
+   time_ticks = clock()*294912; // 294,912MHZ / 1000 msecs
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
@@ -200,6 +199,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(HAVE_LIBNX)
+   time_ticks = armGetSystemTick();
 #endif
 
    return time_ticks;
@@ -241,7 +242,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
-      return SDL_GetTicks()*1000;
+      return clock()*1000;
 #elif defined(__mips__) || defined(DJGPP)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -255,7 +256,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 }
 
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86)  && _MSC_VER > 1310)
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
 #endif
 
@@ -482,10 +483,14 @@ static void cpulist_read_from(CpuList* list, const char* filename)
  **/
 unsigned cpu_features_get_core_amount(void)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   GetNativeSystemInfo(&sysinfo);
+#else
    GetSystemInfo(&sysinfo);
+#endif
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;
@@ -505,13 +510,13 @@ unsigned cpu_features_get_core_amount(void)
 		case 3:
 			/*Old 3/2DS*/
 			return 2;
-	   
+
 		case 2:
 		case 4:
 		case 5:
 			/*New 3/2DS*/
 			return 4;
-	   
+
 		default:
 			/*Unknown Device Or Check Failed*/
 			break;
@@ -704,7 +709,6 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_MMXEXT;
    }
 
-
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
 
@@ -728,7 +732,6 @@ uint64_t cpu_features_get(void)
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
-
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
@@ -824,4 +827,63 @@ uint64_t cpu_features_get(void)
    if (cpu & RETRO_SIMD_ASIMD)  strlcat(buf, " ASIMD", sizeof(buf));
 
    return cpu;
+}
+
+void cpu_features_get_model_name(char *name, int len)
+{
+#if defined(CPU_X86) && !defined(__MACH__)
+   union {
+      int i[4];
+      unsigned char s[16];
+   } flags;
+   int i, j;
+   size_t pos = 0;
+   bool start = false;
+
+   if (!name)
+      return;
+
+   x86_cpuid(0x80000000, flags.i);
+
+   if (flags.i[0] < 0x80000004)
+      return;
+
+   for (i = 0; i < 3; i++)
+   {
+      memset(flags.i, 0, sizeof(flags.i));
+      x86_cpuid(0x80000002 + i, flags.i);
+
+      for (j = 0; j < sizeof(flags.s); j++)
+      {
+         if (!start && flags.s[j] == ' ')
+            continue;
+         else
+            start = true;
+
+         if (pos == len - 1)
+         {
+            /* truncate if we ran out of room */
+            name[pos] = '\0';
+            goto end;
+         }
+
+         name[pos++] = flags.s[j];
+      }
+   }
+end:
+   /* terminate our string */
+   if (pos < (size_t)len)
+      name[pos] = '\0';
+#elif defined(__MACH__)
+   if (!name)
+      return;
+   {
+      size_t len_size = len;
+      sysctlbyname("machdep.cpu.brand_string", name, &len_size, NULL, 0);
+   }
+#else
+   if (!name)
+      return;
+   return;
+#endif
 }

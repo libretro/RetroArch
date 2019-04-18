@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,6 +30,11 @@
 
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
+#endif
+
+/* Required for 3DS display mode setting */
+#if defined(_3DS)
+#include "gfx/common/ctr_common.h"
 #endif
 
 #if defined(HW_RVL)
@@ -68,8 +73,8 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
-static const int crt_switch_resolution_super = 2560; 
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
+static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;
@@ -117,13 +122,17 @@ static const unsigned monitor_index = 0;
 /* Window */
 /* Window size. A value of 0 uses window scale
  * multiplied by the core framebuffer size. */
-static const unsigned window_x = 0;
-static const unsigned window_y = 0;
+static const unsigned window_width = 1280;
+static const unsigned window_height = 720;
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
 static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
+
+/* Number of threads to use for video recording */
+
+static const unsigned video_record_threads = 2;
 
 /* Amount of transparency to use for the main window.
  * 1 is the most transparent while 100 is opaque.
@@ -236,9 +245,14 @@ static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
 /* 1:1 PAR */
 static const bool aspect_ratio_auto = false;
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360) || defined(ANDROID_AARCH64)
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#elif defined(_3DS)
+/* Previously defaulted to ASPECT_RATIO_4_3.
+ * Non-4:3 content looks dreadful when stretched
+ * to 4:3 on the 3DS screen... */
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
@@ -263,6 +277,7 @@ static const float default_input_overlay_opacity = 0.7f;
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_animation.h"
 
 static bool default_block_config_read    = true;
 
@@ -272,10 +287,17 @@ static bool menu_use_preferred_system_color_theme = true;
 static bool menu_use_preferred_system_color_theme = false;
 #endif
 
+#ifdef HAVE_OZONE
+static bool ozone_collapse_sidebar = false;
+#endif
+
 static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;
 static bool quick_menu_show_add_to_favorites            = true;
+static bool quick_menu_show_start_recording             = true;
+static bool quick_menu_show_start_streaming             = true;
+static bool quick_menu_show_reset_core_association      = true;
 static bool quick_menu_show_options                     = true;
 static bool quick_menu_show_controls                    = true;
 static bool quick_menu_show_cheats                      = true;
@@ -290,6 +312,7 @@ static bool quick_menu_show_save_content_dir_overrides  = true;
 
 static bool kiosk_mode_enable            = false;
 
+static bool menu_horizontal_animation    = true;
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
@@ -308,6 +331,10 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
+static bool menu_show_sublabels          = false;
+
+static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
+static float menu_ticker_speed           = 1.0f;
 
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
@@ -359,10 +386,19 @@ static unsigned menu_shader_pipeline = 1;
 static unsigned menu_shader_pipeline = 2;
 #endif
 
-static bool show_advanced_settings            = false;
-static const uint32_t menu_entry_normal_color = 0xffffffff;
-static const uint32_t menu_entry_hover_color  = 0xff64ff64;
-static const uint32_t menu_title_color        = 0xff64ff64;
+static bool show_advanced_settings        = false;
+
+static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+static bool rgui_inline_thumbnails = false;
+static bool rgui_swap_thumbnails = false;
+static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
+static unsigned rgui_thumbnail_delay = 0;
+static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
+static bool rgui_full_width_layout = true;
+static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
+static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
+static bool rgui_shadows = false;
+static bool rgui_extended_ascii = false;
 
 #else
 static bool default_block_config_read = false;
@@ -384,10 +420,14 @@ static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
+#elif defined(PS2) || defined(PSP)
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
-#elif defined(SWITCH)
+#elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+#elif TARGET_OS_TV
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
 #else
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
@@ -406,6 +446,11 @@ static bool menu_swap_ok_cancel_buttons = true;
 #else
 static bool menu_swap_ok_cancel_buttons = false;
 #endif
+
+static bool quit_press_twice = false;
+
+static bool default_log_to_file = false;
+static bool log_to_file_timestamp = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
@@ -478,15 +523,24 @@ static const float crt_refresh_rate = 60/1.001;
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
 
-#ifdef _3DS
+#if defined(_3DS)
 /* Enable bottom LCD screen */
 static const bool video_3ds_lcd_bottom = true;
+/* Sets video display mode (3D, 2D, etc.) */
+static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
 
 /* AUDIO */
 
 /* Will enable audio or not. */
 static const bool audio_enable = true;
+
+/* Enable menu audio sounds. */
+static const bool audio_enable_menu = false;
+static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu_cancel = false;
+static const bool audio_enable_menu_notice = false;
+static const bool audio_enable_menu_bgm = false;
 
 /* Output samplerate. */
 #ifdef GEKKO
@@ -545,8 +599,14 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-/* Show frame count on FPS display */
-static const bool framecount_show = true;
+/* Enables displaying the current frame count. */
+static const bool framecount_show = false;
+
+/* Includes displaying the current memory usage/total with FPS/Frames. */
+static const bool memory_show = false;
+
+/* Enables displaying various timing statistics. */
+static const bool statistics_show = false;
 
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
@@ -577,7 +637,13 @@ static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
+/* Flush to file every 10 seconds on modern platforms by default */
+static const unsigned autosave_interval = 10;
+#else
+/* Default to disabled on I/O-constrained platforms */
 static const unsigned autosave_interval = 0;
+#endif
 
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;
@@ -660,6 +726,22 @@ static const uint16_t network_remote_base_port = 55400;
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
 
+/* Sort all playlists (apart from histories) alphabetically */
+static const bool playlist_sort_alphabetical = true;
+
+/* File format to use when writing playlists to disk */
+static const bool playlist_use_old_format = false;
+
+#ifdef HAVE_MENU
+/* Specify when to display 'core name' inline on playlist entries */
+static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
+
+/* Specifies which runtime record to use on playlist sublabels */
+static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#endif
+
+static const bool playlist_show_sublabels = false;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
@@ -688,7 +770,11 @@ static const unsigned libretro_log_level = 1;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold = 0.5;
+static const float axis_threshold = 0.5f;
+
+static const float analog_deadzone = 0.0f;
+
+static const float analog_sensitivity = 1.0f;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period = 6;
@@ -710,7 +796,7 @@ static const unsigned input_poll_type_behavior = 2;
 
 static const unsigned input_bind_timeout = 5;
 
-static const unsigned input_bind_hold = 2;
+static const unsigned input_bind_hold = 1;
 
 static const unsigned menu_thumbnails_default = 3;
 
@@ -734,6 +820,12 @@ static const bool ui_companion_toggle = false;
 /* Only init the WIMP UI for this session if this is enabled */
 static const bool desktop_menu_enable = true;
 
+/* Keep track of how long each core+content has been running for over time */
+static const bool content_runtime_log = false;
+
+/* Keep track of how long each content has been running for over time (ignores core) */
+static const bool content_runtime_log_aggregate = false;
+
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2)
@@ -749,6 +841,9 @@ static const unsigned midi_volume = 100;
 
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
+
+static const bool vibrate_on_keypress = false;
+static const bool enable_device_vibration = false;
 
 #if defined(HAKCHI)
 static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
@@ -779,7 +874,25 @@ static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
-#if _MSC_VER == 1600
+#if _MSC_VER >= 1910
+#ifndef __WINRT__
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
+#elif  defined(__arm__) || defined(_M_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/";
+#endif
+#else
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
+#elif  defined(__arm__) || defined(_M_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
+#endif
+#endif
+#elif _MSC_VER == 1600
 #if defined(__x86_64__) || defined(_M_X64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)

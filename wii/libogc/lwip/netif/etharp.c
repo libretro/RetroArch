@@ -448,7 +448,6 @@ etharp_ip_input(struct netif *netif, struct pbuf *p)
   update_arp_entry(netif, &(hdr->ip.src), &(hdr->eth.src), 0);
 }
 
-
 /**
  * Responds to ARP requests to us. Upon ARP replies to us, add entry to cache
  * send out queued IP packets. Updates cache with snooped address pairs.

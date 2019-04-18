@@ -416,7 +416,7 @@ enum DWRITE_INFORMATIONAL_STRING_ID
     DWRITE_INFORMATIONAL_STRING_TYPOGRAPHIC_FAMILY_NAMES,
 
     /// <summary>
-    /// Typographic subfamily name preferred by the designer. This name is typically only present if it differs from the GDI-compatible subfamily name. 
+    /// Typographic subfamily name preferred by the designer. This name is typically only present if it differs from the GDI-compatible subfamily name.
     /// </summary>
     DWRITE_INFORMATIONAL_STRING_TYPOGRAPHIC_SUBFAMILY_NAMES,
 
@@ -464,7 +464,6 @@ enum DWRITE_INFORMATIONAL_STRING_ID
     DWRITE_INFORMATIONAL_STRING_WWS_FAMILY_NAME = DWRITE_INFORMATIONAL_STRING_WEIGHT_STRETCH_STYLE_FAMILY_NAME,
 };
 
-
 /// <summary>
 /// The DWRITE_FONT_METRICS structure specifies the metrics of a font face that
 /// are applicable to all glyphs within the font face.
@@ -495,8 +494,8 @@ struct DWRITE_FONT_METRICS
 
     /// <summary>
     /// Line gap in font design units.
-    /// Recommended additional white space to add between lines to improve legibility. The recommended line spacing 
-    /// (baseline-to-baseline distance) is thus the sum of ascent, descent, and lineGap. The line gap is usually 
+    /// Recommended additional white space to add between lines to improve legibility. The recommended line spacing
+    /// (baseline-to-baseline distance) is thus the sum of ascent, descent, and lineGap. The line gap is usually
     /// positive or zero but can be negative, in which case the recommended line spacing is less than the height
     /// of the character alignment box.
     /// </summary>
@@ -882,13 +881,13 @@ enum DWRITE_PIXEL_GEOMETRY
     DWRITE_PIXEL_GEOMETRY_FLAT,
 
     /// <summary>
-    /// Each pixel comprises three vertical stripes, with red on the left, green in the center, and 
+    /// Each pixel comprises three vertical stripes, with red on the left, green in the center, and
     /// blue on the right. This is the most common pixel geometry for LCD monitors.
     /// </summary>
     DWRITE_PIXEL_GEOMETRY_RGB,
 
     /// <summary>
-    /// Each pixel comprises three vertical stripes, with blue on the left, green in the center, and 
+    /// Each pixel comprises three vertical stripes, with blue on the left, green in the center, and
     /// red on the right.
     /// </summary>
     DWRITE_PIXEL_GEOMETRY_BGR
@@ -907,14 +906,14 @@ enum DWRITE_RENDERING_MODE
     DWRITE_RENDERING_MODE_DEFAULT,
 
     /// <summary>
-    /// Specifies that no antialiasing is performed. Each pixel is either set to the foreground 
+    /// Specifies that no antialiasing is performed. Each pixel is either set to the foreground
     /// color of the text or retains the color of the background.
     /// </summary>
     DWRITE_RENDERING_MODE_ALIASED,
 
     /// <summary>
     /// Specifies that antialiasing is performed in the horizontal direction and the appearance
-    /// of glyphs is layout-compatible with GDI using CLEARTYPE_QUALITY. Use DWRITE_MEASURING_MODE_GDI_CLASSIC 
+    /// of glyphs is layout-compatible with GDI using CLEARTYPE_QUALITY. Use DWRITE_MEASURING_MODE_GDI_CLASSIC
     /// to get glyph advances. The antialiasing may be either ClearType or grayscale depending on
     /// the text antialiasing mode.
     /// </summary>
@@ -946,13 +945,13 @@ enum DWRITE_RENDERING_MODE
     DWRITE_RENDERING_MODE_NATURAL_SYMMETRIC,
 
     /// <summary>
-    /// Specifies that rendering should bypass the rasterizer and use the outlines directly. 
+    /// Specifies that rendering should bypass the rasterizer and use the outlines directly.
     /// This is typically used at very large sizes.
     /// </summary>
     DWRITE_RENDERING_MODE_OUTLINE,
 
     // The following names are obsolete, but are kept as aliases to avoid breaking existing code.
-    // Each of these rendering modes may result in either ClearType or grayscale antialiasing 
+    // Each of these rendering modes may result in either ClearType or grayscale antialiasing
     // depending on the DWRITE_TEXT_ANTIALIASING_MODE.
     DWRITE_RENDERING_MODE_CLEARTYPE_GDI_CLASSIC         = DWRITE_RENDERING_MODE_GDI_CLASSIC,
     DWRITE_RENDERING_MODE_CLEARTYPE_GDI_NATURAL         = DWRITE_RENDERING_MODE_GDI_NATURAL,
@@ -1015,7 +1014,7 @@ interface DWRITE_DECLARE_INTERFACE("2f0da53a-2add-47cd-82ee-d9ec34688e75") IDWri
     STDMETHOD_(FLOAT, GetEnhancedContrast)() PURE;
 
     /// <summary>
-    /// Gets the ClearType level. Valid values range from 0.0f (no ClearType) 
+    /// Gets the ClearType level. Valid values range from 0.0f (no ClearType)
     /// to 1.0f (full ClearType).
     /// </summary>
     STDMETHOD_(FLOAT, GetClearTypeLevel)() PURE;
@@ -1134,7 +1133,7 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
         UINT32 codePointCount,
         _Out_writes_(codePointCount) UINT16* glyphIndices
         ) PURE;
- 
+
     /// <summary>
     /// Finds the specified OpenType font table if it exists and returns a pointer to it.
     /// The function accesses the underlying font data via the IDWriteFontFileStream interface
@@ -1217,7 +1216,7 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
     /// Determines the recommended rendering mode for the font given the specified size and rendering parameters.
     /// </summary>
     /// <param name="emSize">Logical size of the font in DIP units. A DIP ("device-independent pixel") equals 1/96 inch.</param>
-    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this 
+    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this
     /// value is 1.0f. If the DPI is 120, this value is 120.0f/96.</param>
     /// <param name="measuringMode">Specifies measuring mode that will be used for glyphs in the font.
     /// Renderer implementations may choose different rendering modes for given measuring modes, but
@@ -1226,7 +1225,7 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
     /// DWRITE_RENDERING_MODE_CLEARTYPE_GDI_CLASSIC for DWRITE_MEASURING_MODE_GDI_CLASSIC
     /// DWRITE_RENDERING_MODE_CLEARTYPE_GDI_NATURAL for DWRITE_MEASURING_MODE_GDI_NATURAL
     /// </param>
-    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters 
+    /// <param name="renderingParams">Rendering parameters object. This parameter is necessary in case the rendering parameters
     /// object overrides the rendering mode.</param>
     /// <param name="renderingMode">Receives the recommended rendering mode to use.</param>
     /// <returns>
@@ -1245,7 +1244,7 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
     /// These metrics are applicable to all the glyphs within a fontface and are used by applications for layout calculations.
     /// </summary>
     /// <param name="emSize">Logical size of the font in DIP units. A DIP ("device-independent pixel") equals 1/96 inch.</param>
-    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this 
+    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this
     /// value is 1.0f. If the DPI is 120, this value is 120.0f/96.</param>
     /// <param name="transform">Optional transform applied to the glyphs and their positions. This transform is applied after the
     /// scaling specified by the font size and pixelsPerDip.</param>
@@ -1263,7 +1262,7 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
     /// Glyphs metrics are used for positioning of individual glyphs.
     /// </summary>
     /// <param name="emSize">Logical size of the font in DIP units. A DIP ("device-independent pixel") equals 1/96 inch.</param>
-    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this 
+    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this
     /// value is 1.0f. If the DPI is 120, this value is 120.0f/96.</param>
     /// <param name="transform">Optional transform applied to the glyphs and their positions. This transform is applied after the
     /// scaling specified by the font size and pixelsPerDip.</param>
@@ -1294,7 +1293,6 @@ interface DWRITE_DECLARE_INTERFACE("5f49804d-7024-4d43-bfa9-d25984f53849") IDWri
         BOOL isSideways = FALSE
         ) PURE;
 };
-
 
 interface IDWriteFactory;
 interface IDWriteFontFileEnumerator;
@@ -1378,7 +1376,7 @@ interface DWRITE_DECLARE_INTERFACE("08256209-099a-4b34-b86d-c22b110e7771") IDWri
     /// <param name="index">Receives the zero-based index of the locale name/string pair.</param>
     /// <param name="exists">Receives TRUE if the locale name exists or FALSE if not.</param>
     /// <returns>
-    /// Standard HRESULT error code. If the specified locale name does not exist, the return value is S_OK, 
+    /// Standard HRESULT error code. If the specified locale name does not exist, the return value is S_OK,
     /// but *index is UINT_MAX and *exists is FALSE.
     /// </returns>
     STDMETHOD(FindLocaleName)(
@@ -1488,7 +1486,7 @@ interface DWRITE_DECLARE_INTERFACE("a84cee02-3eea-4eee-a827-87c1a02a0fcc") IDWri
         ) PURE;
 
     /// <summary>
-    /// Gets the font object that corresponds to the same physical font as the specified font face object. The specified physical font must belong 
+    /// Gets the font object that corresponds to the same physical font as the specified font face object. The specified physical font must belong
     /// to the font collection.
     /// </summary>
     /// <param name="fontFace">Font face object that specifies the physical font.</param>
@@ -1532,7 +1530,7 @@ interface DWRITE_DECLARE_INTERFACE("1a0d8438-1d97-4ec1-aef9-a2fb86ed6acb") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     STDMETHOD(GetFont)(
-        UINT32 index, 
+        UINT32 index,
         _COM_Outptr_ IDWriteFont** font
         ) PURE;
 };
@@ -1643,7 +1641,7 @@ interface DWRITE_DECLARE_INTERFACE("acd16696-8c14-4f5d-877e-fe3fc1d32737") IDWri
     /// <param name="informationalStrings">Receives a pointer to the newly created localized strings object.</param>
     /// <param name="exists">Receives the value TRUE if the font contains the specified string ID or FALSE if not.</param>
     /// <returns>
-    /// Standard HRESULT error code. If the font does not contain the specified string, the return value is S_OK but 
+    /// Standard HRESULT error code. If the font does not contain the specified string, the return value is S_OK but
     /// informationalStrings receives a NULL pointer and exists receives the value FALSE.
     /// </returns>
     STDMETHOD(GetInformationalStrings)(
@@ -1743,7 +1741,7 @@ enum DWRITE_FLOW_DIRECTION
 };
 
 /// <summary>
-/// Alignment of paragraph text along the reading direction axis relative to 
+/// Alignment of paragraph text along the reading direction axis relative to
 /// the leading and trailing edge of the layout box.
 /// </summary>
 enum DWRITE_TEXT_ALIGNMENT
@@ -1803,7 +1801,7 @@ enum DWRITE_WORD_WRAPPING
 
     /// <summary>
     /// Words are kept within the same line even when it overflows the layout box.
-    /// This option is often used with scrolling to reveal overflow text. 
+    /// This option is often used with scrolling to reveal overflow text.
     /// </summary>
     DWRITE_WORD_WRAPPING_NO_WRAP = 1,
 
@@ -1861,11 +1859,11 @@ enum DWRITE_TRIMMING_GRANULARITY
     /// Trimming occurs at character cluster boundary.
     /// </summary>
     DWRITE_TRIMMING_GRANULARITY_CHARACTER,
-    
+
     /// <summary>
     /// Trimming occurs at word boundary.
     /// </summary>
-    DWRITE_TRIMMING_GRANULARITY_WORD    
+    DWRITE_TRIMMING_GRANULARITY_WORD
 };
 
 /// <summary>
@@ -1990,7 +1988,7 @@ struct DWRITE_FONT_FEATURE
     /// </summary>
     /// <remarks>
     /// The parameter should be non-zero to enable the feature.  Once enabled, a feature can't be disabled again within
-    /// the same range.  Features requiring a selector use this value to indicate the selector index. 
+    /// the same range.  Features requiring a selector use this value to indicate the selector index.
     /// </remarks>
     UINT32 parameter;
 };
@@ -2035,7 +2033,6 @@ struct DWRITE_TRIMMING
     /// </summary>
     UINT32 delimiterCount;
 };
-
 
 interface IDWriteTypography;
 interface IDWriteInlineObject;
@@ -2288,7 +2285,6 @@ interface DWRITE_DECLARE_INTERFACE("9c906818-31d7-4fd3-a151-7c5e225db55a") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// Font typography setting.
 /// </summary>
@@ -2439,13 +2435,13 @@ enum DWRITE_NUMBER_SUBSTITUTION_METHOD
     DWRITE_NUMBER_SUBSTITUTION_METHOD_CONTEXTUAL,
 
     /// <summary>
-    /// Specifies that code points 0x30-0x39 are always rendered as nominal numeral 
+    /// Specifies that code points 0x30-0x39 are always rendered as nominal numeral
     /// shapes (ones of the European number), i.e., no substitution is performed.
     /// </summary>
     DWRITE_NUMBER_SUBSTITUTION_METHOD_NONE,
 
     /// <summary>
-    /// Specifies that number are rendered using the national number shape 
+    /// Specifies that number are rendered using the national number shape
     /// as specified by the LOCALE_SNATIVEDIGITS value of the specified text culture.
     /// </summary>
     DWRITE_NUMBER_SUBSTITUTION_METHOD_NATIONAL,
@@ -2635,7 +2631,7 @@ interface DWRITE_DECLARE_INTERFACE("688e1a58-5094-47c8-adc8-fbcea60ae92b") IDWri
 /// The interface implemented by the text analyzer's client to receive the
 /// output of a given text analysis. The Text analyzer disregards any current
 /// state of the analysis sink, therefore a Set method call on a range
-/// overwrites the previously set analysis result of the same range. 
+/// overwrites the previously set analysis result of the same range.
 /// </summary>
 interface DWRITE_DECLARE_INTERFACE("5810cd44-0ca0-4701-b3fa-bec5182ae4f6") IDWriteTextAnalysisSink : public IUnknown
 {
@@ -2722,7 +2718,7 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
 {
     /// <summary>
     /// Analyzes a text range for script boundaries, reading text attributes
-    /// from the source and reporting the Unicode script ID to the sink 
+    /// from the source and reporting the Unicode script ID to the sink
     /// callback SetScript.
     /// </summary>
     /// <param name="analysisSource">Source object to analyze.</param>
@@ -2816,7 +2812,7 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
     /// <remarks>
     /// Special cases include the first, last, and surrogate characters. Any
     /// text span is treated as if adjacent to inline objects on either side.
-    /// So the rules with contingent-break opportunities are used, where the 
+    /// So the rules with contingent-break opportunities are used, where the
     /// edge between text and inline objects is always treated as a potential
     /// break opportunity, dependent on any overriding rules of the adjacent
     /// objects to prohibit or force the break (see Unicode TR #14).
@@ -2848,14 +2844,14 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
     /// depending on the results obtained from AnalyzeNumberSubstitution. Passing
     /// null indicates that no substitution is needed and that the digits should
     /// receive nominal glyphs.</param>
-    /// <param name="features">An array of pointers to the sets of typographic 
+    /// <param name="features">An array of pointers to the sets of typographic
     /// features to use in each feature range.</param>
-    /// <param name="featureRangeLengths">The length of each feature range, in characters.  
+    /// <param name="featureRangeLengths">The length of each feature range, in characters.
     /// The sum of all lengths should be equal to textLength.</param>
     /// <param name="featureRanges">The number of feature ranges.</param>
     /// <param name="maxGlyphCount">The maximum number of glyphs that can be
     /// returned.</param>
-    /// <param name="clusterMap">The mapping from character ranges to glyph 
+    /// <param name="clusterMap">The mapping from character ranges to glyph
     /// ranges.</param>
     /// <param name="textProps">Per-character output properties.</param>
     /// <param name="glyphIndices">Output glyph indices.</param>
@@ -2896,13 +2892,13 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
         ) PURE;
 
     /// <summary>
-    /// Place glyphs output from the GetGlyphs method according to the font 
+    /// Place glyphs output from the GetGlyphs method according to the font
     /// and the writing system's rendering rules.
     /// </summary>
     /// <param name="textString">The original string the glyphs came from.</param>
-    /// <param name="clusterMap">The mapping from character ranges to glyph 
+    /// <param name="clusterMap">The mapping from character ranges to glyph
     /// ranges. Returned by GetGlyphs.</param>
-    /// <param name="textProps">Per-character properties. Returned by 
+    /// <param name="textProps">Per-character properties. Returned by
     /// GetGlyphs.</param>
     /// <param name="textLength">The length of textString.</param>
     /// <param name="glyphIndices">Glyph indices. See GetGlyphs</param>
@@ -2917,9 +2913,9 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
     /// <param name="localeName">The locale to use when selecting glyphs.
     /// e.g. the same character may map to different glyphs for ja-jp vs zh-chs.
     /// If this is NULL then the default mapping based on the script is used.</param>
-    /// <param name="features">An array of pointers to the sets of typographic 
+    /// <param name="features">An array of pointers to the sets of typographic
     /// features to use in each feature range.</param>
-    /// <param name="featureRangeLengths">The length of each feature range, in characters.  
+    /// <param name="featureRangeLengths">The length of each feature range, in characters.
     /// The sum of all lengths should be equal to textLength.</param>
     /// <param name="featureRanges">The number of feature ranges.</param>
     /// <param name="glyphAdvances">The advance width of each glyph.</param>
@@ -2949,13 +2945,13 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
         ) PURE;
 
     /// <summary>
-    /// Place glyphs output from the GetGlyphs method according to the font 
+    /// Place glyphs output from the GetGlyphs method according to the font
     /// and the writing system's rendering rules.
     /// </summary>
     /// <param name="textString">The original string the glyphs came from.</param>
-    /// <param name="clusterMap">The mapping from character ranges to glyph 
+    /// <param name="clusterMap">The mapping from character ranges to glyph
     /// ranges. Returned by GetGlyphs.</param>
-    /// <param name="textProps">Per-character properties. Returned by 
+    /// <param name="textProps">Per-character properties. Returned by
     /// GetGlyphs.</param>
     /// <param name="textLength">The length of textString.</param>
     /// <param name="glyphIndices">Glyph indices. See GetGlyphs</param>
@@ -2963,7 +2959,7 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
     /// <param name="glyphCount">The number of glyphs.</param>
     /// <param name="fontFace">The font face the glyphs came from.</param>
     /// <param name="fontEmSize">Logical font size in DIP's.</param>
-    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this 
+    /// <param name="pixelsPerDip">Number of physical pixels per DIP. For example, if the DPI of the rendering surface is 96 this
     /// value is 1.0f. If the DPI is 120, this value is 120.0f/96.</param>
     /// <param name="transform">Optional transform applied to the glyphs and their positions. This transform is applied after the
     /// scaling specified by the font size and pixelsPerDip.</param>
@@ -2979,9 +2975,9 @@ interface DWRITE_DECLARE_INTERFACE("b7e6163e-7f46-43b4-84b3-e4e6249c365d") IDWri
     /// <param name="localeName">The locale to use when selecting glyphs.
     /// e.g. the same character may map to different glyphs for ja-jp vs zh-chs.
     /// If this is NULL then the default mapping based on the script is used.</param>
-    /// <param name="features">An array of pointers to the sets of typographic 
+    /// <param name="features">An array of pointers to the sets of typographic
     /// features to use in each feature range.</param>
-    /// <param name="featureRangeLengths">The length of each feature range, in characters.  
+    /// <param name="featureRangeLengths">The length of each feature range, in characters.
     /// The sum of all lengths should be equal to textLength.</param>
     /// <param name="featureRanges">The number of feature ranges.</param>
     /// <param name="glyphAdvances">The advance width of each glyph.</param>
@@ -3037,7 +3033,7 @@ struct DWRITE_GLYPH_RUN
 
     /// <summary>
     /// The indices to render.
-    /// </summary>    
+    /// </summary>
     _Field_size_(glyphCount) UINT16 const* glyphIndices;
 
     /// <summary>
@@ -3092,7 +3088,7 @@ struct DWRITE_GLYPH_RUN_DESCRIPTION
 
     /// <summary>
     /// An array of indices to the glyph indices array, of the first glyphs of
-    /// all the glyph clusters of the glyphs to render. 
+    /// all the glyph clusters of the glyphs to render.
     /// </summary>
     _Field_size_opt_(stringLength) UINT16 const* clusterMap;
 
@@ -3134,15 +3130,15 @@ struct DWRITE_UNDERLINE
     FLOAT runHeight;
 
     /// <summary>
-    /// Reading direction of the text associated with the underline.  This 
-    /// value is used to interpret whether the width value runs horizontally 
+    /// Reading direction of the text associated with the underline.  This
+    /// value is used to interpret whether the width value runs horizontally
     /// or vertically.
     /// </summary>
     DWRITE_READING_DIRECTION readingDirection;
 
     /// <summary>
     /// Flow direction of the text associated with the underline.  This value
-    /// is used to interpret whether the thickness value advances top to 
+    /// is used to interpret whether the thickness value advances top to
     /// bottom, left to right, or right to left.
     /// </summary>
     DWRITE_FLOW_DIRECTION flowDirection;
@@ -3191,13 +3187,13 @@ struct DWRITE_STRIKETHROUGH
 
     /// <summary>
     /// Reading direction of the text associated with the strikethrough.  This
-    /// value is used to interpret whether the width value runs horizontally 
+    /// value is used to interpret whether the width value runs horizontally
     /// or vertically.
     /// </summary>
     DWRITE_READING_DIRECTION readingDirection;
 
     /// <summary>
-    /// Flow direction of the text associated with the strikethrough.  This 
+    /// Flow direction of the text associated with the strikethrough.  This
     /// value is used to interpret whether the thickness value advances top to
     /// bottom, left to right, or right to left.
     /// </summary>
@@ -3257,7 +3253,6 @@ struct DWRITE_LINE_METRICS
     BOOL isTrimmed;
 };
 
-
 /// <summary>
 /// The DWRITE_CLUSTER_METRICS structure contains information about a glyph cluster.
 /// </summary>
@@ -3300,7 +3295,6 @@ struct DWRITE_CLUSTER_METRICS
 
     UINT16 padding : 11;
 };
-
 
 /// <summary>
 /// Overall metrics associated with text after layout.
@@ -3365,7 +3359,6 @@ struct DWRITE_TEXT_METRICS
     UINT32 lineCount;
 };
 
-
 /// <summary>
 /// Properties describing the geometric measurement of an
 /// application-defined inline object.
@@ -3394,7 +3387,6 @@ struct DWRITE_INLINE_OBJECT_METRICS
     /// </summary>
     BOOL  supportsSideways;
 };
-
 
 /// <summary>
 /// The DWRITE_OVERHANG_METRICS structure holds how much any visible pixels
@@ -3429,7 +3421,6 @@ struct DWRITE_OVERHANG_METRICS
     /// </summary>
     FLOAT bottom;
 };
-
 
 /// <summary>
 /// Geometry enclosing of text positions.
@@ -3482,9 +3473,7 @@ struct DWRITE_HIT_TEST_METRICS
     BOOL isTrimmed;
 };
 
-
 interface IDWriteTextRenderer;
-
 
 /// <summary>
 /// The IDWriteInlineObject interface wraps an application defined inline graphic,
@@ -3623,7 +3612,7 @@ interface DWRITE_DECLARE_INTERFACE("ef8a8135-5cc6-45fe-8825-c5a0724eb819") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to
     /// render a run of glyphs.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     /// IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -3635,7 +3624,7 @@ interface DWRITE_DECLARE_INTERFACE("ef8a8135-5cc6-45fe-8825-c5a0724eb819") IDWri
     /// DWRITE_RENDERING_MODE_CLEARTYPE_GDI_NATURAL for DWRITE_MEASURING_MODE_GDI_NATURAL
     /// </param>
     /// <param name="glyphRun">The glyph run to draw.</param>
-    /// <param name="glyphRunDescription">Properties of the characters 
+    /// <param name="glyphRunDescription">Properties of the characters
     /// associated with this run.</param>
     /// <param name="clientDrawingEffect">The drawing effect set in
     /// IDWriteTextLayout::SetDrawingEffect.</param>
@@ -3656,7 +3645,7 @@ interface DWRITE_DECLARE_INTERFACE("ef8a8135-5cc6-45fe-8825-c5a0724eb819") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to draw
     /// an underline.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     /// IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -3691,7 +3680,7 @@ interface DWRITE_DECLARE_INTERFACE("ef8a8135-5cc6-45fe-8825-c5a0724eb819") IDWri
     /// IDWriteTextLayout::Draw calls this function to instruct the client to draw
     /// a strikethrough.
     /// </summary>
-    /// <param name="clientDrawingContext">The context passed to 
+    /// <param name="clientDrawingContext">The context passed to
     /// IDWriteTextLayout::Draw.</param>
     /// <param name="baselineOriginX">X-coordinate of the baseline.</param>
     /// <param name="baselineOriginY">Y-coordinate of the baseline.</param>
@@ -4198,7 +4187,7 @@ interface DWRITE_DECLARE_INTERFACE("53737037-6d14-410b-9bfe-0b182bb70961") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     /// <remarks>
-    /// If maxLineCount is not large enough E_NOT_SUFFICIENT_BUFFER, 
+    /// If maxLineCount is not large enough E_NOT_SUFFICIENT_BUFFER,
     /// which is equivalent to HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER),
     /// is returned and *actualLineCount is set to the number of lines
     /// needed.
@@ -4253,8 +4242,8 @@ interface DWRITE_DECLARE_INTERFACE("53737037-6d14-410b-9bfe-0b182bb70961") IDWri
     /// Standard HRESULT error code.
     /// </returns>
     /// <remarks>
-    /// If maxClusterCount is not large enough E_NOT_SUFFICIENT_BUFFER, 
-    /// which is equivalent to HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER), 
+    /// If maxClusterCount is not large enough E_NOT_SUFFICIENT_BUFFER,
+    /// which is equivalent to HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER),
     /// is returned and *actualClusterCount is set to the number of clusters
     /// needed.
     /// </remarks>
@@ -4344,7 +4333,7 @@ interface DWRITE_DECLARE_INTERFACE("53737037-6d14-410b-9bfe-0b182bb70961") IDWri
     /// corresponding to a range of text positions. The main usage for this
     /// is to draw highlighted selection of the text string.
     ///
-    /// The function returns E_NOT_SUFFICIENT_BUFFER, which is equivalent to 
+    /// The function returns E_NOT_SUFFICIENT_BUFFER, which is equivalent to
     /// HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER), when the buffer size of
     /// hitTestMetrics is too small to hold all the regions calculated by the
     /// function. In such situation, the function sets the output value
@@ -4400,7 +4389,6 @@ interface DWRITE_DECLARE_INTERFACE("53737037-6d14-410b-9bfe-0b182bb70961") IDWri
     using IDWriteTextFormat::GetLocaleName;
 };
 
-
 /// <summary>
 /// Encapsulates a 32-bit device independent bitmap and device context, which can be used for rendering glyphs.
 /// </summary>
@@ -4420,7 +4408,7 @@ interface DWRITE_DECLARE_INTERFACE("5e5a32a3-8dff-4773-9ff6-0696eab77267") IDWri
     /// <param name="glyphRun">Structure containing the properties of the glyph run.</param>
     /// <param name="renderingParams">Object that controls rendering behavior.</param>
     /// <param name="textColor">Specifies the foreground color of the text.</param>
-    /// <param name="blackBoxRect">Optional rectangle that receives the bounding box (in pixels not DIPs) of all the pixels affected by 
+    /// <param name="blackBoxRect">Optional rectangle that receives the bounding box (in pixels not DIPs) of all the pixels affected by
     /// drawing the glyph run. The black box rectangle may extend beyond the dimensions of the bitmap.</param>
     /// <returns>
     /// Standard HRESULT error code.
@@ -4444,7 +4432,7 @@ interface DWRITE_DECLARE_INTERFACE("5e5a32a3-8dff-4773-9ff6-0696eab77267") IDWri
     /// <remarks>
     /// An application can use the device context to draw using GDI functions. An application can obtain the bitmap handle
     /// (HBITMAP) by calling GetCurrentObject. An application that wants information about the underlying bitmap, including
-    /// a pointer to the pixel data, can call GetObject to fill in a DIBSECTION structure. The bitmap is always a 32-bit 
+    /// a pointer to the pixel data, can call GetObject to fill in a DIBSECTION structure. The bitmap is always a 32-bit
     /// top-down DIB.
     /// </remarks>
     STDMETHOD_(HDC, GetMemoryDC)() PURE;
@@ -4471,7 +4459,7 @@ interface DWRITE_DECLARE_INTERFACE("5e5a32a3-8dff-4773-9ff6-0696eab77267") IDWri
         ) PURE;
 
     /// <summary>
-    /// Gets the transform that maps abstract coordinate to DIPs. By default this is the identity 
+    /// Gets the transform that maps abstract coordinate to DIPs. By default this is the identity
     /// transform. Note that this is unrelated to the world transform of the underlying device
     /// context.
     /// </summary>
@@ -4573,7 +4561,7 @@ interface DWRITE_DECLARE_INTERFACE("1edd9491-9853-4299-898f-6432983b6f3a") IDWri
     /// Creates a font face object that corresponds to the currently selected HFONT.
     /// </summary>
     /// <param name="hdc">Handle to a device context into which a font has been selected. It is assumed that the client
-    /// has already performed font mapping and that the font selected into the DC is the actual font that would be used 
+    /// has already performed font mapping and that the font selected into the DC is the actual font that would be used
     /// for rendering glyphs.</param>
     /// <param name="fontFace">Contains the newly created font face object, or NULL in case of failure.</param>
     /// <returns>
@@ -4612,7 +4600,7 @@ enum DWRITE_TEXTURE_TYPE
     DWRITE_TEXTURE_ALIASED_1x1,
 
     /// <summary>
-    /// Specifies an alpha texture for ClearType text rendering, with three bytes per pixel in the horizontal dimension and 
+    /// Specifies an alpha texture for ClearType text rendering, with three bytes per pixel in the horizontal dimension and
     /// one byte per pixel in the vertical dimension.
     /// </summary>
     DWRITE_TEXTURE_CLEARTYPE_3x1
@@ -4692,7 +4680,7 @@ interface DWRITE_DECLARE_INTERFACE("b859ee5a-d838-4b5b-a2e8-1adc7d93db48") IDWri
     /// <param name="fontCollection">Receives a pointer to the system font collection object, or NULL in case of failure.</param>
     /// <param name="checkForUpdates">If this parameter is nonzero, the function performs an immediate check for changes to the set of
     /// installed fonts. If this parameter is FALSE, the function will still detect changes if the font cache service is running, but
-    /// there may be some latency. For example, an application might specify TRUE if it has itself just installed a font and wants to 
+    /// there may be some latency. For example, an application might specify TRUE if it has itself just installed a font and wants to
     /// be sure the font collection contains that font.</param>
     /// <returns>
     /// Standard HRESULT error code.
@@ -5083,7 +5071,6 @@ interface DWRITE_DECLARE_INTERFACE("b859ee5a-d838-4b5b-a2e8-1adc7d93db48") IDWri
 
 }; // interface IDWriteFactory
 
-
 /// <summary>
 /// Creates a DirectWrite factory object that is used for subsequent creation of individual DirectWrite objects.
 /// </summary>
@@ -5116,6 +5103,5 @@ EXTERN_C HRESULT DWRITE_EXPORT DWriteCreateFactory(
 #define MAKE_DWRITE_HR_ERR(code) MAKE_DWRITE_HR(SEVERITY_ERROR, code)
 
 // DWrite errors have moved to winerror.h
-
 
 #endif /* DWRITE_H_INCLUDED */

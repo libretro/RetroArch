@@ -189,7 +189,6 @@ tcp_abort(struct tcp_pcb *pcb)
 #endif /* LWIP_CALLBACK_API */
   void *errf_arg;
 
-
   /* Figure out on which TCP PCB list we are, and remove us. If we
      are in an active state, call the receive function associated with
      the PCB with a NULL argument, and send an RST to the remote end. */
@@ -605,7 +604,6 @@ tcp_slowtmr(void)
     }
   }
 
-
   /* Steps through all of the TIME-WAIT PCBs. */
   prev = NULL;
   pcb = tcp_tw_pcbs;
@@ -617,8 +615,6 @@ tcp_slowtmr(void)
     if ((u32_t)(tcp_ticks - pcb->tmr) > 2 * TCP_MSL / TCP_SLOW_INTERVAL) {
       ++pcb_remove;
     }
-
-
 
     /* If the PCB should be removed, do it. */
     if (pcb_remove) {
@@ -749,7 +745,6 @@ tcp_kill_prio(u8_t prio)
   u32_t inactivity;
   u8_t mprio;
 
-
   mprio = TCP_PRIO_MAX;
 
   /* We kill the oldest active connection that has lower priority than
@@ -772,7 +767,6 @@ tcp_kill_prio(u8_t prio)
   }
 }
 
-
 static void
 tcp_kill_timewait(void)
 {
@@ -793,8 +787,6 @@ tcp_kill_timewait(void)
     tcp_abort(inactive);
   }
 }
-
-
 
 struct tcp_pcb *
 tcp_alloc(u8_t prio)
@@ -927,7 +919,6 @@ tcp_accept(struct tcp_pcb *pcb,
   ((struct tcp_pcb_listen *)pcb)->accept = accept;
 }
 #endif /* LWIP_CALLBACK_API */
-
 
 /**
  * Used to specify the function that should be called periodically
@@ -1159,13 +1150,3 @@ tcp_pcbs_sane(void)
 }
 #endif /* TCP_DEBUG */
 #endif /* LWIP_TCP */
-
-
-
-
-
-
-
-
-
-

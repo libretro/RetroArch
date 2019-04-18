@@ -421,7 +421,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
    if (!video->fullscreen)
       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
 
-
    if (video->fullscreen)
       flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
    else
@@ -663,8 +662,12 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
-   vid->video.force_aspect = true;
-   vid->should_resize = true;
+   /* FIXME: Why is vid NULL here when starting content? */
+   if (vid)
+   {
+      vid->video.force_aspect = true;
+      vid->should_resize = true;
+   }
 }
 
 static void sdl2_poke_apply_state_changes(void *data)
@@ -723,8 +726,6 @@ static void sdl2_grab_mouse_toggle(void *data)
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* get_flags */
-   NULL,       /* set_coords */
-   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -785,4 +786,3 @@ video_driver_t video_sdl2 = {
 #endif
     sdl2_gfx_poke_interface
 };
-

@@ -80,7 +80,6 @@ static void mainLoop(void* data)
 
    RARCH_LOG("[Audio]: start mainLoop cpu %u tid %u\n", svcGetCurrentProcessorNumber(), swa->thread.handle);
 
-
    while (swa->running)
    {
       size_t buf_avail, avail, to_write;
@@ -238,7 +237,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
       if (switch_audio_ipc_output_append_buffer(swa, &swa->buffers[i]) != 0)
          goto fail_audio_output;
    }
-   
+
    compat_mutex_create(&swa->fifoLock);
    swa->fifo = fifo_new(swa->fifoSize);
 

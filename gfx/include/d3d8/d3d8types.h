@@ -43,7 +43,6 @@ typedef DWORD D3DCOLOR;
 #define D3DCOLOR_COLORVALUE(r,g,b,a) \
     D3DCOLOR_RGBA((DWORD)((r)*255.f),(DWORD)((g)*255.f),(DWORD)((b)*255.f),(DWORD)((a)*255.f))
 
-
 #ifndef D3DVECTOR_DEFINED
 typedef struct _D3DVECTOR {
     float x;
@@ -636,7 +635,6 @@ values can be subsequently overwritten (between DrawPrimitive calls)
 during the time a shader is bound to a device via the
 SetVertexShaderConstant method.
 
-
 Declaration arrays are single-dimensional arrays of DWORDs composed of
 multiple tokens each of which is one or more DWORDs.  The single-DWORD
 token value 0xFFFFFFFF is a special token used to indicate the end of the
@@ -865,7 +863,6 @@ typedef enum _D3DVSD_TOKENTYPE
 
 /* Maximum supported number of texture coordinate sets */
 #define D3DDP_MAXTEXCOORD   8
-
 
 /* Instruction Token Bit Definitions */
 #define D3DSI_OPCODE_MASK       0x0000FFFF
@@ -1250,7 +1247,6 @@ typedef enum _D3DMULTISAMPLE_TYPE
                 ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
 #endif /* defined(MAKEFOURCC) */
 
-
 typedef enum _D3DFORMAT
 {
     D3DFMT_UNKNOWN              =  0,
@@ -1300,7 +1296,6 @@ typedef enum _D3DFORMAT
     D3DFMT_D24X8                = 77,
     D3DFMT_D24X4S4              = 79,
 
-
     D3DFMT_VERTEXDATA           =100,
     D3DFMT_INDEX16              =101,
     D3DFMT_INDEX32              =102,
@@ -1326,7 +1321,6 @@ typedef struct _D3DDEVICE_CREATION_PARAMETERS
     DWORD           BehaviorFlags;
 } D3DDEVICE_CREATION_PARAMETERS;
 
-
 /* SwapEffects */
 typedef enum _D3DSWAPEFFECT
 {
@@ -1348,11 +1342,9 @@ typedef enum _D3DPOOL {
     D3DPOOL_FORCE_DWORD             = 0x7fffffff
 } D3DPOOL;
 
-
 /* RefreshRate pre-defines */
 #define D3DPRESENT_RATE_DEFAULT         0x00000000
 #define D3DPRESENT_RATE_UNLIMITED       0x7fffffff
-
 
 /* Resize Optional Parameters */
 typedef struct _D3DPRESENT_PARAMETERS_
@@ -1381,7 +1373,6 @@ typedef struct _D3DPRESENT_PARAMETERS_
 
 #define D3DPRESENTFLAG_LOCKABLE_BACKBUFFER  0x00000001
 
-
 /* Gamma Ramp: Same as DX7 */
 
 typedef struct _D3DGAMMARAMP
@@ -1401,7 +1392,6 @@ typedef enum _D3DBACKBUFFER_TYPE
     D3DBACKBUFFER_TYPE_FORCE_DWORD  = 0x7fffffff
 } D3DBACKBUFFER_TYPE;
 
-
 /* Types */
 typedef enum _D3DRESOURCETYPE {
     D3DRTYPE_SURFACE                =  1,
@@ -1411,7 +1401,6 @@ typedef enum _D3DRESOURCETYPE {
     D3DRTYPE_CUBETEXTURE            =  5,
     D3DRTYPE_VERTEXBUFFER           =  6,
     D3DRTYPE_INDEXBUFFER            =  7,
-
 
     D3DRTYPE_FORCE_DWORD            = 0x7fffffff
 } D3DRESOURCETYPE;
@@ -1473,7 +1462,6 @@ typedef struct _D3DINDEXBUFFER_DESC
     D3DPOOL             Pool;
     UINT                Size;
 } D3DINDEXBUFFER_DESC;
-
 
 /* Surface Description */
 typedef struct _D3DSURFACE_DESC
@@ -1580,15 +1568,12 @@ typedef struct _D3DADAPTER_IDENTIFIER8
 
 } D3DADAPTER_IDENTIFIER8;
 
-
 /* Raster Status structure returned by GetRasterStatus */
 typedef struct _D3DRASTER_STATUS
 {
     BOOL            InVBlank;
     UINT            ScanLine;
 } D3DRASTER_STATUS;
-
-
 
 /* Debug monitor tokens (DEBUG only)
 

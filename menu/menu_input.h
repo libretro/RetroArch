@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,65 +24,10 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
+#include "menu_defines.h"
 #include "../input/input_types.h"
 
 RETRO_BEGIN_DECLS
-
-enum menu_action
-{
-   MENU_ACTION_NOOP = 0,
-   MENU_ACTION_UP,
-   MENU_ACTION_DOWN,
-   MENU_ACTION_LEFT,
-   MENU_ACTION_RIGHT,
-   MENU_ACTION_OK,
-   MENU_ACTION_SEARCH,
-   MENU_ACTION_SCAN,
-   MENU_ACTION_CANCEL,
-   MENU_ACTION_INFO,
-   MENU_ACTION_SELECT,
-   MENU_ACTION_START,
-   MENU_ACTION_SCROLL_DOWN,
-   MENU_ACTION_SCROLL_UP,
-   MENU_ACTION_TOGGLE,
-   MENU_ACTION_POINTER_MOVED,
-   MENU_ACTION_POINTER_PRESSED,
-   MENU_ACTION_QUIT
-};
-
-enum menu_input_pointer_state
-{
-   MENU_POINTER_X_AXIS = 0,
-   MENU_POINTER_Y_AXIS,
-   MENU_POINTER_DELTA_X_AXIS,
-   MENU_POINTER_DELTA_Y_AXIS,
-   MENU_POINTER_PRESSED
-};
-
-enum menu_input_mouse_state
-{
-   MENU_MOUSE_X_AXIS = 0,
-   MENU_MOUSE_Y_AXIS,
-   MENU_MOUSE_LEFT_BUTTON,
-   MENU_MOUSE_RIGHT_BUTTON,
-   MENU_MOUSE_WHEEL_UP,
-   MENU_MOUSE_WHEEL_DOWN,
-   MENU_MOUSE_HORIZ_WHEEL_UP,
-   MENU_MOUSE_HORIZ_WHEEL_DOWN
-};
-
-enum menu_input_ctl_state
-{
-   MENU_INPUT_CTL_NONE = 0,
-   MENU_INPUT_CTL_MOUSE_PTR,
-   MENU_INPUT_CTL_POINTER_PTR,
-   MENU_INPUT_CTL_POINTER_ACCEL_READ,
-   MENU_INPUT_CTL_POINTER_ACCEL_WRITE,
-   MENU_INPUT_CTL_IS_POINTER_DRAGGED,
-   MENU_INPUT_CTL_SET_POINTER_DRAGGED,
-   MENU_INPUT_CTL_UNSET_POINTER_DRAGGED,
-   MENU_INPUT_CTL_DEINIT
-};
 
 typedef struct menu_input
 {

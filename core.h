@@ -65,6 +65,8 @@ typedef struct rarch_system_info
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[255];
 
+   bool supports_vfs;
+
    struct retro_disk_control_callback  disk_control_cb;
    struct retro_location_callback      location_cb;
 

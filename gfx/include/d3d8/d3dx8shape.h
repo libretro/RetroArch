@@ -43,7 +43,6 @@ HRESULT WINAPI
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
-
 /*
  * D3DXCreateBox:
  * --------------
@@ -67,7 +66,6 @@ HRESULT WINAPI
         FLOAT               Depth,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
-
 
 /*
  * D3DXCreateCylinder:
@@ -98,7 +96,6 @@ HRESULT WINAPI
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
-
 /*-------------------------------------------------------------------------
  * D3DXCreateSphere:
  * -----------------
@@ -123,7 +120,6 @@ HRESULT WINAPI
         UINT               Stacks,
         LPD3DXMESH*        ppMesh,
         LPD3DXBUFFER*      ppAdjacency);
-
 
 /*-------------------------------------------------------------------------
  * D3DXCreateTorus:
@@ -152,7 +148,6 @@ HRESULT WINAPI
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
-
 /*-------------------------------------------------------------------------
  * D3DXCreateTeapot:
  * -----------------
@@ -170,7 +165,6 @@ HRESULT WINAPI
         LPDIRECT3DDEVICE8   pDevice,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
-
 
 /*-------------------------------------------------------------------------
  * D3DXCreateText:
@@ -216,7 +210,6 @@ HRESULT WINAPI
 #else
 #define D3DXCreateText D3DXCreateTextA
 #endif
-
 
 #ifdef __cplusplus
 }

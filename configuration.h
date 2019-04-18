@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +25,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "gfx/video_driver.h"
+#include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
@@ -103,12 +103,17 @@ typedef struct settings
       bool video_fps_show;
       bool video_statistics_show;
       bool video_framecount_show;
+      bool video_memory_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
 
       /* Audio */
       bool audio_enable;
       bool audio_enable_menu;
+      bool audio_enable_menu_ok;
+      bool audio_enable_menu_cancel;
+      bool audio_enable_menu_notice;
+      bool audio_enable_menu_bgm;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
@@ -137,6 +142,7 @@ typedef struct settings
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
+      bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
       bool menu_throttle;
       bool menu_mouse_enable;
@@ -165,6 +171,11 @@ typedef struct settings
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
+      bool menu_rgui_full_width_layout;
+      bool menu_rgui_shadows;
+      bool menu_rgui_inline_thumbnails;
+      bool menu_rgui_swap_thumbnails;
+      bool menu_rgui_extended_ascii;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
@@ -183,6 +194,9 @@ typedef struct settings
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_start_recording;
+      bool quick_menu_show_start_streaming;
+      bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
@@ -293,8 +307,25 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+      bool video_window_save_positions;
 
       bool sustained_performance_mode;
+      bool playlist_use_old_format;
+      bool content_runtime_log;
+      bool content_runtime_log_aggregate;
+
+      bool playlist_sort_alphabetical;
+      bool playlist_show_sublabels;
+
+      bool quit_press_twice;
+      bool vibrate_on_keypress;
+      bool enable_device_vibration;
+#ifdef HAVE_OZONE
+      bool ozone_collapse_sidebar;
+#endif
+
+      bool log_to_file;
+      bool log_to_file_timestamp;
    } bools;
 
    struct
@@ -316,6 +347,7 @@ typedef struct settings
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
       float menu_header_opacity;
+      float menu_ticker_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -326,6 +358,8 @@ typedef struct settings
 
       float slowmotion_ratio;
       float fastforward_ratio;
+      float input_analog_deadzone;
+      float input_analog_sensitivity;
    } floats;
 
    struct
@@ -345,6 +379,8 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
+
+      unsigned input_block_timeout;
 
       unsigned audio_resampler_quality;
 
@@ -372,8 +408,6 @@ typedef struct settings
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
-      unsigned video_window_x;
-      unsigned video_window_y;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
@@ -387,6 +421,7 @@ typedef struct settings
       unsigned video_viwidth;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
+      unsigned screen_orientation;
       unsigned video_msg_bgcolor_red;
       unsigned video_msg_bgcolor_green;
       unsigned video_msg_bgcolor_blue;
@@ -395,14 +430,15 @@ typedef struct settings
       unsigned video_stream_quality;
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
+      unsigned video_3ds_display_mode;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_rgui_thumbnail_downscaler;
+      unsigned menu_rgui_thumbnail_delay;
       unsigned menu_dpi_override_value;
-      unsigned menu_entry_normal_color;
-      unsigned menu_entry_hover_color;
-      unsigned menu_title_color;
+      unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
@@ -414,6 +450,13 @@ typedef struct settings
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
+      unsigned menu_rgui_internal_upscale_level;
+      unsigned menu_rgui_aspect_ratio;
+      unsigned menu_rgui_aspect_ratio_lock;
+      unsigned menu_ticker_type;
+
+      unsigned playlist_show_inline_core_name;
+      unsigned playlist_sublabel_runtime_type;
 
       unsigned camera_width;
       unsigned camera_height;
@@ -439,6 +482,15 @@ typedef struct settings
 
       unsigned midi_volume;
       unsigned streaming_mode;
+
+      unsigned window_position_x;
+      unsigned window_position_y;
+      unsigned window_position_width;
+      unsigned window_position_height;
+
+      unsigned video_record_threads;
+
+      unsigned libnx_overclock;
    } uints;
 
    struct
@@ -524,6 +576,7 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
+      char path_rgui_theme_preset[PATH_MAX_LENGTH];
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];
@@ -540,6 +593,7 @@ typedef struct settings
       char directory_system[PATH_MAX_LENGTH];
       char directory_cache[PATH_MAX_LENGTH];
       char directory_playlist[PATH_MAX_LENGTH];
+      char directory_runtime_log[PATH_MAX_LENGTH];
       char directory_core_assets[PATH_MAX_LENGTH];
       char directory_assets[PATH_MAX_LENGTH];
       char directory_dynamic_wallpapers[PATH_MAX_LENGTH];
@@ -547,6 +601,8 @@ typedef struct settings
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
       char streaming_title[PATH_MAX_LENGTH];
+
+      char log_dir[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;

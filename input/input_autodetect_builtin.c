@@ -205,28 +205,28 @@ DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
 DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
 
 #define CTRINPUT_DEFAULT_BINDS \
-DECL_BTN(a, 8) \
-DECL_BTN(b, 0) \
-DECL_BTN(x, 9) \
-DECL_BTN(y, 1) \
-DECL_BTN(start, 3) \
-DECL_BTN(select, 2) \
-DECL_BTN(up, 4) \
-DECL_BTN(down, 5) \
-DECL_BTN(left, 6) \
-DECL_BTN(right, 7) \
-DECL_BTN(l, 10) \
-DECL_BTN(r, 11) \
-DECL_BTN(l2, 12) \
-DECL_BTN(r2, 13) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_BTN_EX(a,           8, "A") \
+DECL_BTN_EX(b,           0, "B") \
+DECL_BTN_EX(x,           9, "X") \
+DECL_BTN_EX(y,           1, "Y") \
+DECL_BTN_EX(start,       3, "Start") \
+DECL_BTN_EX(select,      2, "Select") \
+DECL_BTN_EX(up,          4, "D-Pad Up") \
+DECL_BTN_EX(down,        5, "D-Pad Down") \
+DECL_BTN_EX(left,        6, "D-Pad Left") \
+DECL_BTN_EX(right,       7, "D-Pad Right") \
+DECL_BTN_EX(l,          10, "L") \
+DECL_BTN_EX(r,          11, "R") \
+DECL_BTN_EX(l2,         12, "ZL") \
+DECL_BTN_EX(r2,         13, "ZR") \
+DECL_AXIS_EX(l_x_plus,  +0, "Circle Pad Right") \
+DECL_AXIS_EX(l_x_minus, -0, "Circle Pad Left") \
+DECL_AXIS_EX(l_y_plus,  +1, "Circle Pad Down") \
+DECL_AXIS_EX(l_y_minus, -1, "Circle Pad Up") \
+DECL_AXIS_EX(r_x_plus,  +2, "C Stick Right") \
+DECL_AXIS_EX(r_x_minus, -2, "C Stick Left") \
+DECL_AXIS_EX(r_y_plus,  -3, "C Stick Down") \
+DECL_AXIS_EX(r_y_minus, +3, "C Stick Up")
 
 #define DOSINPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
@@ -302,7 +302,6 @@ DECL_AXIS_EX(r_x_plus,  +3, "R Analog right") \
 DECL_AXIS_EX(r_x_minus, -3, "R Analog left") \
 DECL_AXIS_EX(r_y_plus,  +2, "R Analog up") \
 DECL_AXIS_EX(r_y_minus, -2, "R Analog down")
-
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
@@ -631,6 +630,32 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#define IOS_MFI_DEFAULT_BINDS \
+DECL_BTN(a, 8) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 9) \
+DECL_BTN(y, 1) \
+DECL_BTN(up, 4) \
+DECL_BTN(down, 5) \
+DECL_BTN(left, 6) \
+DECL_BTN(right, 7) \
+DECL_BTN(l, 10) \
+DECL_BTN(r, 11) \
+DECL_BTN(start, 3) \
+DECL_BTN(select, 2) \
+DECL_BTN(l2, 12) \
+DECL_BTN(r2, 13) \
+DECL_BTN(l3, 14) \
+DECL_BTN(r3, 15) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  -1) \
+DECL_AXIS(l_y_minus, +1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
 const char* const input_builtin_autoconfs[] =
 {
 #if defined(_WIN32) && defined(_XBOX)
@@ -659,6 +684,9 @@ const char* const input_builtin_autoconfs[] =
 #ifdef __QNX__
    DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("DS4 Controller", "qnx", QNX_DUALSHOCK_BINDS),
+#endif
+#if defined(ORBIS)
+   DECL_AUTOCONF_DEVICE("PS4 Controller", "ps4", PS3INPUT_DEFAULT_BINDS),
 #endif
 #if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),
@@ -702,6 +730,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef EMSCRIPTEN
    DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
+#endif
+#if TARGET_OS_IPHONE
+   DECL_AUTOCONF_DEVICE("mFi Controller", "mfi", IOS_MFI_DEFAULT_BINDS),
 #endif
    NULL
 };

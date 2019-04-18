@@ -65,7 +65,6 @@ static INLINE Result ctr_set_parallax_layer(bool state)
    return GSPGPU_WriteHWRegs(0x202000, &reg_state, 4);
 }
 
-
 __attribute__((always_inline))
 static INLINE void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data,
       u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
@@ -198,7 +197,6 @@ static INLINE void ctrGuSetVertexShaderFloatUniform(int id, float* data, int cou
    GPUCMD_AddWrites(GPUREG_VSH_FLOATUNIFORM_DATA, (u32*)data, (u32)count * 4);
 }
 
-
 #define CTRGU_ATTRIBFMT(f, n) ((((n)-1)<<2)|((f)&3))
 
 __attribute__((always_inline))
@@ -242,7 +240,6 @@ static INLINE int ctrgu_swizzle_coords(int x, int y, int width)
 {
    int pos = (x & 0x1) << 0 | ((x & 0x2) << 1) | ((x & 0x4) << 2) |
              (y & 0x1) << 1 | ((y & 0x2) << 2) | ((y & 0x4) << 3);
-
 
    return ((x >> 3) << 6) + ((y >> 3) * ((width >> 3) << 6)) + pos;
 

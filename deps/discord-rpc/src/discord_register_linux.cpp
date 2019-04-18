@@ -33,15 +33,17 @@ extern "C" DISCORD_EXPORT void Discord_Register(const char* applicationId, const
 
     char exePath[1024];
     if (!command || !command[0]) {
-        if (readlink("/proc/self/exe", exePath, sizeof(exePath)) <= 0) {
+        ssize_t size = readlink("/proc/self/exe", exePath, sizeof(exePath));
+        if (size <= 0 || size >= (ssize_t)sizeof(exePath)) {
             return;
         }
+        exePath[size] = '\0';
         command = exePath;
     }
 
     const char* destopFileFormat = "[Desktop Entry]\n"
                                    "Name=Game %s\n"
-                                   "Exec=%s %%u\n" // note: it really wants that %u in there
+                                   "Exec=%s\n" // note: it really wants that %u in there
                                    "Type=Application\n"
                                    "NoDisplay=true\n"
                                    "Categories=Discord;Games;\n"

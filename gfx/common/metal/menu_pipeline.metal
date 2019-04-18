@@ -44,10 +44,10 @@ float xmb_noise2(float3 x, const device Uniforms &constants)
 vertex FontFragmentIn ribbon_simple_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &constants [[ buffer(BufferIndexUniforms) ]])
 {
    float4 t = (constants.projectionMatrix * float4(in.position, 0, 1));
-   
+
    float3 v = float3(t.x, 0.0, 1.0-t.y);
    float3 v2 = v;
-   
+
    v2.x = v2.x + constants.time / 2.0;
    v2.z = v.z * 3.0;
    v.y = cos((v.x + v.z / 3.0 + constants.time) * 2.0) / 10.0 + ribbon::noise(v2.xyz) / 4.0;
@@ -70,7 +70,6 @@ typedef struct
    vector_float4 position [[position]];
    vector_float3 vEC;
 } RibbonOutIn;
-
 
 vertex RibbonOutIn ribbon_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &constants [[ buffer(BufferIndexUniforms) ]])
 {

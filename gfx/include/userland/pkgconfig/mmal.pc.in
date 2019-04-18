@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: MMAL
+Description: Multi-Media Abstraction Layer library for RPi
+Version: 1
+Requires: vcsm
+Libs: -L${libdir} -lmmal -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host
+Cflags: -I${includedir}

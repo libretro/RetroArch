@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: bcm_host
+Description: Broadcom VideoCore host API library
+Version: 1
+Libs: -L${libdir} -lbcm_host -lvcos -lvchiq_arm -pthread
+Cflags: -I${includedir} -I${includedir}/interface/vmcs_host/linux -I${includedir}/interface/vcos/pthreads -DUSE_VCHIQ_ARM

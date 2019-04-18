@@ -31,7 +31,7 @@ Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [Discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
 
@@ -105,7 +105,6 @@ OSX port of RetroArch requires latest versions of XCode to build.
 RetroArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
-   - libxml2 (GLSL XML shaders)
    - libfreetype2 (TTF font rendering on screen)
 
 RetroArch needs at least one of these audio driver libraries:
@@ -148,7 +147,7 @@ Instructions for compiling and installing RetroArch can be found in the [Libretr
 
 ## CRT 15Khz Resolution Switching
 
-CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.  
+CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.
 
 If you are running Windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelines for all games to switch correctly are:
 

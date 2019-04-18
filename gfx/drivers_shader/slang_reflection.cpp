@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,6 +15,7 @@
 
 #include "spirv_cross.hpp"
 #include "slang_reflection.h"
+#include "slang_reflection.hpp"
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
@@ -564,7 +565,7 @@ bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_com
 
       slang_texture_semantic index = slang_name_to_texture_semantic(*reflection->texture_semantic_map,
             texture.name, &array_index);
-      
+
       if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
          RARCH_ERR("[slang]: Non-semantic textures not supported yet.\n");
@@ -642,9 +643,9 @@ bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_com
    for (auto &param : reflection->semantic_float_parameters)
    {
       if (param.uniform)
-         RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, param.ubo_offset);
+         RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, (unsigned int)param.ubo_offset);
       if (param.push_constant)
-         RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i, param.push_constant_offset);
+         RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i, (unsigned int)param.push_constant_offset);
       i++;
    }
 
@@ -679,4 +680,3 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
       return false;
    }
 }
-

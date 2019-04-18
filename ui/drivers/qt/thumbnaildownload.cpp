@@ -4,7 +4,10 @@
 
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/archive_file.h>
@@ -13,7 +16,10 @@ extern "C" {
 #include "../../../config.def.h"
 #include "../../../configuration.h"
 #include "../../../version.h"
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #undef USER_AGENT
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
@@ -154,6 +160,8 @@ void MainWindow::onThumbnailDownloadFinished()
          {
             RARCH_LOG("[Qt]: Thumbnail download finished successfully.\n");
             /* reload thumbnail image */
+            m_playlistModel->reloadThumbnailPath(m_thumbnailDownloadFile.fileName());
+            updateVisibleItems();
             emit itemChanged();
          }
          else

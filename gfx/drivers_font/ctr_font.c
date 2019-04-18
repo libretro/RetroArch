@@ -215,9 +215,8 @@ static void ctr_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-
-      v->x0 = x + off_x + delta_x * scale;
-      v->y0 = y + off_y + delta_y * scale;
+      v->x0 = x + (off_x + delta_x) * scale;
+      v->y0 = y + (off_y + delta_y) * scale;
       v->u0 = tex_x;
       v->v0 = tex_y;
       v->x1 = v->x0 + width * scale;
@@ -266,7 +265,7 @@ static void ctr_font_render_line(
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_800x240
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240
          ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
@@ -447,6 +446,16 @@ static const struct font_glyph* ctr_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int ctr_font_get_line_height(void *data)
+{
+   ctr_font_t* font = (ctr_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t ctr_font =
 {
    ctr_font_init_font,
@@ -457,4 +466,5 @@ font_renderer_t ctr_font =
    NULL,                         /* bind_block */
    NULL,                         /* flush_block */
    ctr_font_get_message_width,
+   ctr_font_get_line_height
 };

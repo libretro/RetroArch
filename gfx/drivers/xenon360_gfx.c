@@ -137,7 +137,6 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
 
    edram_init(gl->gl_device);
 
-
    /* enable filtering for now */
 
    float x = -1.0f;

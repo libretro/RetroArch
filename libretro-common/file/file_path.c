@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.c).
@@ -32,7 +32,10 @@
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#define VFS_FRONTEND
+#include <vfs/vfs_implementation.h>
 
+/* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -75,6 +78,11 @@
 #include <unistd.h>
 #endif
 
+#if defined(ORBIS)
+#include <orbisFile.h>
+#include <sys/fcntl.h>
+#include <sys/dirent.h>
+#endif
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
@@ -92,8 +100,14 @@
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP) || defined(PS2)
 #include <unistd.h> /* stat() is defined here */
+#endif
+
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
+#ifdef __WINRT__
+#include <uwp/uwp_func.h>
+#endif
 #endif
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
@@ -105,115 +119,37 @@
 
 #endif
 
-enum stat_mode
+static retro_vfs_stat_t path_stat_cb = NULL;
+static retro_vfs_mkdir_t path_mkdir_cb = NULL;
+
+void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-   IS_DIRECTORY = 0,
-   IS_CHARACTER_SPECIAL,
-   IS_VALID
-};
+   const struct retro_vfs_interface* vfs_iface;
 
-static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
+   path_stat_cb           = NULL;
+   path_mkdir_cb          = NULL;
+
+   vfs_iface              = vfs_info->iface;
+
+   if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
+      return;
+
+   path_stat_cb           = vfs_iface->stat;
+   path_mkdir_cb          = vfs_iface->mkdir;
+}
+
+static int path_stat(const char *path, int32_t *size)
 {
-#if defined(VITA) || defined(PSP)
-   SceIoStat buf;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
-   if (tmp[len-1] == '/')
-      tmp[len-1]='\0';
+   if (path_stat_cb != NULL)
+      return path_stat_cb(path, size);
+   return retro_vfs_stat_impl(path, size);
+}
 
-   if (sceIoGetstat(tmp, &buf) < 0)
-   {
-      free(tmp);
-      return false;
-   }
-   free(tmp);
-#elif defined(PS2)
-   iox_stat_t buf;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
-   if (tmp[len-1] == '/')
-      tmp[len-1]='\0';
-
-   if (fileXioGetStat(tmp, &buf) < 0)
-   {
-      free(tmp);
-      return false;
-   }
-   free(tmp);
-#elif defined(__CELLOS_LV2__)
-    CellFsStat buf;
-    if (cellFsStat(path, &buf) < 0)
-       return false;
-#elif defined(_WIN32)
-   struct _stat buf;
-   char *path_local;
-   wchar_t *path_wide;
-   DWORD file_info;
-
-   if (!path || !*path)
-      return false;
-
-   (void)path_wide;
-   (void)path_local;
-   (void)file_info;
-
-#if defined(LEGACY_WIN32)
-   path_local = utf8_to_local_string_alloc(path);
-   file_info  = GetFileAttributes(path_local);
-
-   _stat(path_local, &buf);
-
-   if (path_local)
-     free(path_local);
-#else
-   path_wide = utf8_to_utf16_string_alloc(path);
-   file_info = GetFileAttributesW(path_wide);
-
-   _wstat(path_wide, &buf);
-
-   if (path_wide)
-      free(path_wide);
-#endif
-
-   if (file_info == INVALID_FILE_ATTRIBUTES)
-      return false;
-#else
-   struct stat buf;
-   if (stat(path, &buf) < 0)
-      return false;
-#endif
-
-   if (size)
-#if defined(PS2)
-      *size = (int32_t)buf.size;
-#else
-      *size = (int32_t)buf.st_size;
-#endif
-   switch (mode)
-   {
-      case IS_DIRECTORY:
-#if defined(VITA) || defined(PSP)
-         return FIO_S_ISDIR(buf.st_mode);
-#elif defined(PS2)
-         return FIO_S_ISDIR(buf.mode);
-#elif defined(__CELLOS_LV2__)
-         return ((buf.st_mode & S_IFMT) == S_IFDIR);
-#elif defined(_WIN32)
-         return (file_info & FILE_ATTRIBUTE_DIRECTORY);
-#else
-         return S_ISDIR(buf.st_mode);
-#endif
-      case IS_CHARACTER_SPECIAL:
-#if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
-         return false;
-#else
-         return S_ISCHR(buf.st_mode);
-#endif
-      case IS_VALID:
-         return true;
-   }
-
-   return false;
+static int path_mkdir_norecurse(const char *dir)
+{
+   if (path_mkdir_cb != NULL)
+      return path_mkdir_cb(dir);
+   return retro_vfs_mkdir_impl(dir);
 }
 
 /**
@@ -226,37 +162,38 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
  */
 bool path_is_directory(const char *path)
 {
-   return path_stat(path, IS_DIRECTORY, NULL);
+#ifdef ORBIS
+   /* TODO: This should be moved to the VFS module */
+   int dfd;
+   if (!path)
+      return false;
+   dfd = orbisDopen(path);
+   if (dfd < 0)
+      return false;
+   orbisDclose(dfd);
+   return true;
+#else
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+#endif
 }
 
 bool path_is_character_special(const char *path)
 {
-   return path_stat(path, IS_CHARACTER_SPECIAL, NULL);
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
 }
 
 bool path_is_valid(const char *path)
 {
-   return path_stat(path, IS_VALID, NULL);
+   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
 int32_t path_get_size(const char *path)
 {
    int32_t filesize = 0;
-   if (path_stat(path, IS_VALID, &filesize))
+   if (path_stat(path, &filesize) != 0)
       return filesize;
 
    return -1;
-}
-
-static bool path_mkdir_error(int ret)
-{
-#if defined(VITA)
-   return (ret == SCE_ERROR_ERRNO_EEXIST);
-#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-   return (ret == -1);
-#else
-   return (ret < 0 && errno == EEXIST);
-#endif
 }
 
 /**
@@ -304,33 +241,10 @@ bool path_mkdir(const char *dir)
 
    if (norecurse)
    {
-#if defined(_WIN32)
-#ifdef LEGACY_WIN32
-      int ret = _mkdir(dir);
-#else
-      wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
-      int ret = -1;
-
-      if (dirW)
-      {
-         ret = _wmkdir(dirW);
-         free(dirW);
-      }
-#endif
-#elif defined(IOS)
-      int ret = mkdir(dir, 0755);
-#elif defined(VITA) || defined(PSP)
-      int ret = sceIoMkdir(dir, 0777);
-#elif defined(PS2)
-      int ret =fileXioMkdir(dir, 0777);
-#elif defined(__QNX__)
-      int ret = mkdir(dir, 0777);
-#else
-      int ret = mkdir(dir, 0750);
-#endif
+      int ret = path_mkdir_norecurse(dir);
 
       /* Don't treat this as an error. */
-      if (path_mkdir_error(ret) && path_is_directory(dir))
+      if (ret == -2 && path_is_directory(dir))
          ret = 0;
 
       if (ret < 0)
@@ -391,7 +305,7 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   const char *ext = !string_is_empty(path) 
+   const char *ext = !string_is_empty(path)
       ? strrchr(path_basename(path), '.') : NULL;
    if (!ext)
       return "";
@@ -406,7 +320,7 @@ const char *path_get_extension(const char *path)
  * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: 
+ * Returns:
  * 1) If path has an extension, returns path with the
  *    extension removed.
  * 2) If there is no extension, returns NULL.
@@ -414,7 +328,7 @@ const char *path_get_extension(const char *path)
  */
 char *path_remove_extension(char *path)
 {
-   char *last = !string_is_empty(path) 
+   char *last = !string_is_empty(path)
       ? (char*)strrchr(path_basename(path), '.') : NULL;
    if (!last)
       return NULL;
@@ -666,6 +580,7 @@ bool fill_pathname_parent_dir_name(char *out_dir,
  *
  * Copies parent directory of @in_dir into @out_dir.
  * Assumes @in_dir is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, @out_dir will be an empty string.
  **/
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
@@ -693,7 +608,7 @@ void fill_dated_filename(char *out_filename,
    time_t cur_time = time(NULL);
 
    strftime(out_filename, size,
-         "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
+         "RetroArch-%m%d-%H%M%S", localtime(&cur_time));
    strlcat(out_filename, ext, size);
 }
 
@@ -752,12 +667,26 @@ void path_basedir(char *path)
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, returns empty string
  **/
 void path_parent_dir(char *path)
 {
+   bool path_was_absolute = path_is_absolute(path);
    size_t len = strlen(path);
    if (len && path_char_is_slash(path[len - 1]))
+   {
       path[len - 1] = '\0';
+      if (path_was_absolute && find_last_slash(path) == NULL)
+      {
+         /* We removed the only slash from what used to be an absolute path.
+          * On Linux, this goes from "/" to an empty string and everything works fine,
+          * but on Windows, we went from C:\ to C:, which is not a valid path and that later
+          * gets errornously treated as a relative one by path_basedir and returns "./".
+          * What we really wanted is an empty string. */
+         path[0] = '\0';
+         return;
+      }
+   }
    path_basedir(path);
 }
 
@@ -930,7 +859,6 @@ void fill_pathname_join_noext(char *out_path,
    path_remove_extension(out_path);
 }
 
-
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path
@@ -955,7 +883,8 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';
 
-   strlcat(out_path, path, size);
+   if (path)
+      strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_delim_concat(char *out_path, const char *dir,
@@ -1005,45 +934,67 @@ void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-   if (*in_path == '~')
+   if (in_path[0] == '~')
    {
-      const char *home = getenv("HOME");
-      if (home)
+      char *home_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      home_dir[0] = '\0';
+
+      fill_pathname_home_dir(home_dir,
+         PATH_MAX_LENGTH * sizeof(char));
+
+      if (*home_dir)
       {
-         size_t src_size = strlcpy(out_path, home, size);
+         size_t src_size = strlcpy(out_path, home_dir, size);
          retro_assert(src_size < size);
 
          out_path  += src_size;
          size      -= src_size;
-         in_path++;
+
+         if (!path_char_is_slash(out_path[-1]))
+         {
+            src_size = strlcpy(out_path, path_default_slash(), size);
+            retro_assert(src_size < size);
+
+            out_path += src_size;
+            size -= src_size;
+         }
+
+         in_path += 2;
       }
+
+      free(home_dir);
    }
-   else if ((in_path[0] == ':') &&
-         (
-         (in_path[1] == '/')
-#ifdef _WIN32
-         || (in_path[1] == '\\')
-#endif
-         )
-            )
+   else if (in_path[0] == ':')
    {
-      size_t src_size;
       char *application_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       application_dir[0]    = '\0';
 
-      fill_pathname_application_path(application_dir,
+      fill_pathname_application_dir(application_dir,
             PATH_MAX_LENGTH * sizeof(char));
-      path_basedir_wrapper(application_dir);
 
-      src_size   = strlcpy(out_path, application_dir, size);
-      retro_assert(src_size < size);
+      if (*application_dir)
+      {
+         size_t src_size   = strlcpy(out_path, application_dir, size);
+         retro_assert(src_size < size);
+
+         out_path  += src_size;
+         size      -= src_size;
+
+         if (!path_char_is_slash(out_path[-1]))
+         {
+            src_size = strlcpy(out_path, path_default_slash(), size);
+            retro_assert(src_size < size);
+
+            out_path += src_size;
+            size -= src_size;
+         }
+
+         in_path += 2;
+      }
 
       free(application_dir);
-
-      out_path  += src_size;
-      size      -= src_size;
-      in_path   += 2;
    }
 #endif
 
@@ -1058,7 +1009,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    const char *candidates[3];
    const char *notations[3];
    char *application_dir     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   const char *home          = getenv("HOME");
+   char *home_dir            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    application_dir[0] = '\0';
 
@@ -1070,16 +1021,17 @@ void fill_pathname_abbreviate_special(char *out_path,
    /* ugly hack - use application_dir pointer
     * before filling it in. C89 reasons */
    candidates[0] = application_dir;
-   candidates[1] = home;
+   candidates[1] = home_dir;
    candidates[2] = NULL;
 
    notations [0] = ":";
    notations [1] = "~";
    notations [2] = NULL;
 
-   fill_pathname_application_path(application_dir,
+   fill_pathname_application_dir(application_dir,
          PATH_MAX_LENGTH * sizeof(char));
-   path_basedir_wrapper(application_dir);
+   fill_pathname_home_dir(home_dir,
+         PATH_MAX_LENGTH * sizeof(char));
 
    for (i = 0; candidates[i]; i++)
    {
@@ -1107,6 +1059,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    }
 
    free(application_dir);
+   free(home_dir);
 #endif
 
    retro_assert(strlcpy(out_path, in_path, size) < size);
@@ -1148,7 +1101,7 @@ void fill_pathname_application_path(char *s, size_t len)
   CFBundleRef bundle = CFBundleGetMainBundle();
 #endif
 #ifdef _WIN32
-   DWORD ret;
+   DWORD ret = 0;
    wchar_t wstr[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
@@ -1160,11 +1113,11 @@ void fill_pathname_application_path(char *s, size_t len)
    if (!len)
       return;
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #ifdef LEGACY_WIN32
-   ret    = GetModuleFileNameA(GetModuleHandle(NULL), s, len);
+   ret    = GetModuleFileNameA(NULL, s, len);
 #else
-   ret    = GetModuleFileNameW(GetModuleHandle(NULL), wstr, ARRAY_SIZE(wstr));
+   ret    = GetModuleFileNameW(NULL, wstr, ARRAY_SIZE(wstr));
 
    if (*wstr)
    {
@@ -1231,6 +1184,29 @@ void fill_pathname_application_path(char *s, size_t len)
          }
       }
    }
+#endif
+}
+
+void fill_pathname_application_dir(char *s, size_t len)
+{
+#ifdef __WINRT__
+   strlcpy(s, uwp_dir_install, len);
+#else
+   fill_pathname_application_path(s, len);
+   path_basedir_wrapper(s);
+#endif
+}
+
+void fill_pathname_home_dir(char *s, size_t len)
+{
+#ifdef __WINRT__
+   strlcpy(s, uwp_dir_data, len);
+#else
+   const char *home = getenv("HOME");
+   if (home)
+      strlcpy(s, home, len);
+   else
+      *s = 0;
 #endif
 }
 #endif

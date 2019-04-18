@@ -74,7 +74,7 @@ typedef struct
 	surface_t surface;
 	revent_h vsync_h;
 	uint32_t image[1280*720];
-	
+
 	struct scaler_ctx scaler;
 	uint32_t last_width;
 	uint32_t last_height;
@@ -144,7 +144,7 @@ static bool switch_frame(void *data, const void *frame,
       const char *msg, video_frame_info_t *video_info)
 {
 	static uint64_t last_frame = 0;
-	
+
    unsigned x, y;
    result_t r;
    int tgtw, tgth, centerx, centery;
@@ -253,9 +253,9 @@ static bool switch_frame(void *data, const void *frame,
    if(r != RESULT_OK)
 	   return true;
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
-   
+
    r = surface_queue_buffer(&sw->surface);
-   
+
    if (r != RESULT_OK)
       return false;
 
@@ -341,7 +341,7 @@ static void switch_set_texture_frame(
 {
    switch_video_t *sw = data;
 
-   if (  !sw->menu_texture.pixels         || 
+   if (  !sw->menu_texture.pixels         ||
          sw->menu_texture.width  != width ||
          sw->menu_texture.height != height)
    {
@@ -360,10 +360,10 @@ static void switch_set_texture_frame(
       xsf                     = 1280 / width;
       ysf                     = 720  / height;
       sf                      = xsf;
-      
+
       if (ysf < sf)
 	      sf = ysf;
-         
+
       sw->menu_texture.width  = width;
       sw->menu_texture.height = height;
       sw->menu_texture.tgtw   = width * sf;
@@ -406,8 +406,6 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 
 static const video_poke_interface_t switch_poke_interface = {
    NULL, /* get_flags */
-	NULL, /* set_coords */
-	NULL, /* set_mvp */
 	NULL, /* load_texture */
 	NULL, /* unload_texture */
 	NULL, /* set_video_mode */

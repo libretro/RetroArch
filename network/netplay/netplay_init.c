@@ -376,8 +376,9 @@ static bool netplay_init_buffers(netplay_t *netplay)
 {
    struct delta_frame *delta_frames = NULL;
 
-   /* Enough to get ahead or behind by MAX_STALL_FRAMES frames */
-   netplay->buffer_size = NETPLAY_MAX_STALL_FRAMES + 1;
+   /* Enough to get ahead or behind by MAX_STALL_FRAMES frames, plus one for
+    * other remote clients, plus one to send the stall message */
+   netplay->buffer_size = NETPLAY_MAX_STALL_FRAMES + 2;
 
    /* If we're the server, we need enough to get ahead AND behind by
     * MAX_STALL_FRAMES frame */

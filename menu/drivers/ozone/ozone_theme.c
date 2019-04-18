@@ -84,7 +84,7 @@ ozone_theme_t *ozone_themes[] = {
 unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 unsigned last_color_theme                   = 0;
 bool last_use_preferred_system_color_theme  = false;
-ozone_theme_t *ozone_default_theme          = &ozone_theme_light; /* also used as a tag for cursor animation */
+ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as a tag for cursor animation */
 
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
@@ -99,6 +99,8 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
          theme = &ozone_theme_dark;
          break;
       case 0:
+         theme = &ozone_theme_light;
+         break;
       default:
          break;
    }
@@ -118,11 +120,11 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    last_color_theme = color_theme;
 }
 
-unsigned ozone_get_system_theme()
+unsigned ozone_get_system_theme(void)
 {
-   unsigned ret = 0;
 #ifdef HAVE_LIBNX
-   if (R_SUCCEEDED(setsysInitialize())) 
+   unsigned ret = 0;
+   if (R_SUCCEEDED(setsysInitialize()))
    {
       ColorSetId theme;
       setsysGetColorSetId(&theme);

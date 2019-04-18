@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <errno.h>
 #include "asm.h"
@@ -98,7 +97,6 @@ static s32 __lwp_cond_waitsupp(cond_t cond,mutex_t mutex,u64 timeout,u8 timedout
 		__lwp_thread_dispatchenable();
 		return EINVAL;
 	}
-
 
 	LWP_MutexUnlock(mutex);
 	if(!timedout) {

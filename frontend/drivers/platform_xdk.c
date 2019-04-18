@@ -132,6 +132,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #elif defined(_XBOX360)
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "game:",
@@ -152,6 +155,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
          "game:\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         "game:\\logs",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
          g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -427,5 +433,7 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "xdk",
 };

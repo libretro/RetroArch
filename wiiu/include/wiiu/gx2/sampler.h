@@ -6,7 +6,6 @@
 extern "C" {
 #endif
 
-
 typedef struct GX2Sampler
 {
    uint32_t regs[3];

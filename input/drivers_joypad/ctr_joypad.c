@@ -185,7 +185,6 @@ static bool ctr_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && pad_state;
 }
 
-
 static void ctr_joypad_destroy(void)
 {
 }

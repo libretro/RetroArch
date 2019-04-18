@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -87,6 +87,9 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_SCREENSHOT,               MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,           RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_MUTE,                     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,                 RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_OSK,                      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,                  RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_FPS_TOGGLE,               MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,           RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_SEND_DEBUG_INFO,          MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,      RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_NETPLAY_HOST_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,  RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_NETPLAY_GAME_WATCH,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,   RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_ENABLE_HOTKEY,            MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,        RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_VOLUME_UP,                MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,            RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
@@ -165,6 +168,9 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_SCREENSHOT,               MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,           RETROK_F8,      NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_MUTE,                     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,                 RETROK_F9,      NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_OSK,                      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,                  RETROK_F12,     NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_FPS_TOGGLE,               MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,           RETROK_F3,      NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_SEND_DEBUG_INFO,          MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,      RETROK_F10,     NO_BTN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_NETPLAY_HOST_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,  RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_NETPLAY_GAME_WATCH,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,   RETROK_i,       NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_ENABLE_HOTKEY,            MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,        RETROK_UNKNOWN, NO_BTN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_VOLUME_UP,                MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,            RETROK_KP_PLUS, NO_BTN, NO_BTN, 0, AXIS_NONE },

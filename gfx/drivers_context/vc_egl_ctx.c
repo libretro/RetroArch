@@ -49,10 +49,11 @@
 #include <EGL/eglext_brcm.h>
 #endif
 
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
+
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -210,7 +211,7 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&vc->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-            &major, &minor, &n, attribute_list))
+            &major, &minor, &n, attribute_list, NULL))
    {
       egl_report_error();
       goto error;
@@ -475,7 +476,7 @@ static void gfx_ctx_vc_destroy(void *data)
       vc->vgimage[i]   = 0;
    }
 
-   /* Stop generating vsync callbacks if we are doing so. 
+   /* Stop generating vsync callbacks if we are doing so.
     * Don't destroy the context while cbs are being generated! */
    if (vc->vsync_callback_set)
       vc_dispmanx_vsync_callback(vc->dispman_display, NULL, NULL);
@@ -535,7 +536,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
    peglCreateImageKHR  = (PFNEGLCREATEIMAGEKHRPROC)egl_get_proc_address("eglCreateImageKHR");
    peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)egl_get_proc_address("eglDestroyImageKHR");
 
-   if (  !peglCreateImageKHR  || 
+   if (  !peglCreateImageKHR  ||
          !peglDestroyImageKHR ||
          !gfx_ctx_vc_egl_query_extension(vc, "KHR_image")
       )
@@ -650,7 +651,7 @@ static void gfx_ctx_vc_swap_buffers(void *data, void *data2)
 
    egl_swap_buffers(&vc->egl);
 
-   /* Wait for vsync immediately if we don't 
+   /* Wait for vsync immediately if we don't
     * want egl_swap_buffers to triple-buffer */
    if (video_info->max_swapchain_images <= 2)
    {
@@ -696,6 +697,7 @@ static uint32_t gfx_ctx_vc_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

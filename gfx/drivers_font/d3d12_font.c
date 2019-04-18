@@ -142,8 +142,8 @@ static void d3d12_font_render_line(
    int             y          = roundf((1.0 - pos_y) * height);
    D3D12_RANGE     range      = { 0, 0 };
 
-   if (  !d3d12                  || 
-         !d3d12->sprites.enabled || 
+   if (  !d3d12                  ||
+         !d3d12->sprites.enabled ||
          msg_len > (unsigned)d3d12->sprites.capacity)
       return;
 
@@ -184,8 +184,8 @@ static void d3d12_font_render_line(
       if (!glyph)
          continue;
 
-      v->pos.x = (x + glyph->draw_offset_x) * scale / (float)d3d12->chain.viewport.Width;
-      v->pos.y = (y + glyph->draw_offset_y) * scale / (float)d3d12->chain.viewport.Height;
+      v->pos.x = (x + (glyph->draw_offset_x * scale)) / (float)d3d12->chain.viewport.Width;
+      v->pos.y = (y + (glyph->draw_offset_y * scale)) / (float)d3d12->chain.viewport.Height;
       v->pos.w = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
       v->pos.h = glyph->height * scale / (float)d3d12->chain.viewport.Height;
 
@@ -263,7 +263,7 @@ static void d3d12_font_render_message(
       return;
    }
 
-   line_height = font->font_driver->get_line_height(font->font_data) 
+   line_height = font->font_driver->get_line_height(font->font_data)
       * scale / video_info->height;
 
    for (;;)
@@ -376,6 +376,16 @@ static const struct font_glyph* d3d12_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int d3d12_font_get_line_height(void *data)
+{
+   d3d12_font_t* font = (d3d12_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t d3d12_font = {
    d3d12_font_init_font,
    d3d12_font_free_font,
@@ -385,4 +395,5 @@ font_renderer_t d3d12_font = {
    NULL, /* bind_block */
    NULL, /* flush */
    d3d12_font_get_message_width,
+   d3d12_font_get_line_height
 };

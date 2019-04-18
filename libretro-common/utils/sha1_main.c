@@ -31,7 +31,6 @@
  */
 void usage(void);
 
-
 /*
  *  main
  *

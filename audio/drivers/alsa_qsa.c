@@ -219,7 +219,6 @@ static int check_pcm_status(void *data, int channel_type)
    return ret;
 }
 
-
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
    alsa_t              *alsa = (alsa_t*)data;
@@ -327,7 +326,6 @@ static void alsa_qsa_set_nonblock_state(void *data, bool state)
 
    alsa->nonblock = state;
 }
-
 
 static bool alsa_qsa_use_float(void *data)
 {

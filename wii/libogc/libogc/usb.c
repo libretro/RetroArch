@@ -28,7 +28,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 /*  Note: There are 3 types of USB interfaces here, the early ones
  *  (V0: /dev/usb/oh0 and /dev/usb/oh1) and two later ones (V5: /dev/usb/ven
  *  and /dev/usb/hid) which are similar but have some small
@@ -1346,7 +1345,6 @@ s32 USB_DeviceChangeNotifyAsync(u8 interface_class, usbcallback cb, void* userda
 	else if (interface_class==USB_CLASS_HID && hid_host)
 		ret = add_devicechange_cb(&hid_host->device_change_notify, cb, userdata);
 
-
 	return ret;
 }
 
@@ -1461,4 +1459,3 @@ s32 USB_ClearHalt(s32 fd, u8 endpoint)
 }
 
 #endif /* defined(HW_RVL) */
-

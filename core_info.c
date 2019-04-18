@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,6 +31,10 @@
 
 #include "core_info.h"
 #include "file_path_special.h"
+
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#include "uwp/uwp_func.h"
+#endif
 
 static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;
@@ -197,7 +201,7 @@ static bool core_info_list_iterate(
    if (!current_path)
       return false;
 
-   info_path_base             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   info_path_base             = (char*)malloc(info_path_base_size);
 
    info_path_base[0] = '\0';
 
@@ -226,17 +230,35 @@ static bool core_info_list_iterate(
 static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
-      bool show_hidden_files)
+      bool dir_show_hidden_files)
 {
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
    const char       *path_basedir   = libretro_info_dir;
-   struct string_list *contents     = dir_list_new(
-                                      path, exts,
-                                      false,
-                                      show_hidden_files,
-                                      false, false);
+   struct string_list *contents     = string_list_new();
+   bool                          ok = dir_list_append(contents, path, exts,
+         false, dir_show_hidden_files, false, false);
+
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* UWP: browse the optional packages for additional cores */
+   struct string_list *core_packages = string_list_new();
+   uwp_fill_installed_core_packages(core_packages);
+   for (i = 0; i < core_packages->size; i++)
+   {
+      dir_list_append(contents, core_packages->elems[i].data, exts,
+            false, dir_show_hidden_files, false, false);
+   }
+   string_list_free(core_packages);
+#else
+   /* Keep the old 'directory not found' behavior */
+   if (!ok)
+   {
+      string_list_free(contents);
+      contents = NULL;
+   }
+#endif
+
    if (!contents)
       return NULL;
 
@@ -430,12 +452,12 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info_list_resolve_all_firmware(core_info_list);
    }
 
-   dir_list_free(contents);
+   string_list_free(contents);
    return core_info_list;
 
 error:
    if (contents)
-      dir_list_free(contents);
+      string_list_free(contents);
    core_info_list_free(core_info_list);
    return NULL;
 }
@@ -517,6 +539,7 @@ static core_info_t *core_info_find_internal(
       const char *core)
 {
    size_t i;
+   const char *core_path_basename = path_basename(core);
 
    for (i = 0; i < list->count; i++)
    {
@@ -524,7 +547,7 @@ static core_info_t *core_info_find_internal(
 
       if (!info || !info->path)
          continue;
-      if (string_is_equal(info->path, core))
+      if (string_is_equal(path_basename(info->path), core_path_basename))
          return info;
    }
 
@@ -550,7 +573,11 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!info)
       return false;
 
-   path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   path                   = (char*)malloc(path_size);
+
+   if (!path)
+      return false;
+
    path[0]                = '\0';
 
    for (i = 0; i < info->firmware_count; i++)
@@ -652,12 +679,12 @@ void core_info_deinit_list(void)
 }
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files)
+      const char *exts, bool dir_show_hidden_files)
 {
    if (!(core_info_curr_list = core_info_list_new(dir_cores,
                !string_is_empty(path_info) ? path_info : dir_cores,
                exts,
-               show_hidden_files)))
+               dir_show_hidden_files)))
       return false;
    return true;
 }
@@ -773,13 +800,16 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files)
+      const char *exts, bool dir_show_hidden_files,
+      bool get_display_name)
 {
    size_t i;
    const char       *path_basedir   = !string_is_empty(path_info) ?
       path_info : dir_cores;
    struct string_list *contents     = dir_list_new(
-         dir_cores, exts, false, show_hidden_files, false, false);
+         dir_cores, exts, false, dir_show_hidden_files, false, false);
+   const char *core_path_basename   = path_basename(path);
+
    if (!contents)
       return;
 
@@ -791,7 +821,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
       char *new_core_name             = NULL;
       const char *current_path        = contents->elems[i].data;
 
-      if (!string_is_equal(current_path, path))
+      if (!string_is_equal(path_basename(current_path), core_path_basename))
          continue;
 
       info_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -813,7 +843,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
          continue;
       }
 
-      if (config_get_string(conf, "corename",
+      if (config_get_string(conf, get_display_name ? "display_name" : "corename",
             &new_core_name))
       {
          strlcpy(s, new_core_name, len);

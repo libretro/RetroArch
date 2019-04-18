@@ -32,7 +32,7 @@
 #include "../input_keymaps.h"
 #include "../input_driver.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct linuxraw_input

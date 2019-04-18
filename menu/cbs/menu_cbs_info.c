@@ -20,6 +20,8 @@
 
 #include "../widgets/menu_dialog.h"
 
+#include "../../configuration.h"
+
 #ifndef BIND_ACTION_INFO
 #define BIND_ACTION_INFO(cbs, name) \
    cbs->action_info = name; \
@@ -35,6 +37,7 @@ static int action_info_default(unsigned type, const char *label)
    menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
+   settings_t *settings         = config_get_ptr();
 
    menu_displaylist_info_init(&info);
 
@@ -46,6 +49,9 @@ static int action_info_default(unsigned type, const char *label)
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       goto error;
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_notice)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
 
    if (!menu_displaylist_process(&info))
       goto error;

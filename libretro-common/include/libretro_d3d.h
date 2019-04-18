@@ -32,7 +32,7 @@
 #ifdef HAVE_D3D11
 
 #include <d3d11.h>
-#include <D3Dcompiler.h>
+#include <d3dcompiler.h>
 
 #define RETRO_HW_RENDER_INTERFACE_D3D11_VERSION 1
 
@@ -53,7 +53,6 @@ struct retro_hw_render_interface_d3d11
   D3D_FEATURE_LEVEL featureLevel;
   pD3DCompile D3DCompile;
 };
-
 
 #endif
 

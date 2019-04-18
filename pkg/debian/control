@@ -8,8 +8,8 @@ Build-Depends:	debhelper (>= 9),
 				libc6-dev (>= 2.13),
 				libpulse-dev,
 				libsdl2-dev,
-				libxml2-dev,
 				libavcodec-dev,
+				libavdevice-dev,
 				libavformat-dev,
 				libavutil-dev,
 				libswscale-dev,
@@ -29,6 +29,9 @@ Build-Depends:	debhelper (>= 9),
 				libegl1-mesa-dev,
 				python3-dev,
 				zlib1g-dev,
+				qt5-default,
+				libusb-1.0-0-dev,
+				libass-dev,
 				nvidia-cg-dev [!armhf]
 Standards-Version: 3.9.5
 Homepage: http://www.libretro.com/
@@ -41,6 +44,7 @@ Depends:		${shlibs:Depends},
 				${misc:Depends},
 				fonts-dejavu-core,
 				python3,
+				libqt5waylandclient5,
 				nvidia-cg-toolkit [!armhf]
 Replaces: ssnes
 Suggests: retroarch-joypad-autoconfig, libretro-common-shaders, libretro-common-overlays, retroarch-assets
@@ -49,5 +53,3 @@ Description: Simple frontend for the libretro library
  It can be used as a modular multi emulator system, game engine, media player 
  and 3D technical demonstration. These features are available through 
  libretro cores.
- .
- It provides a simple built-in GUI, the RGUI.

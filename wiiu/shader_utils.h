@@ -45,7 +45,6 @@ __attribute__((scalar_storage_order ("little-endian")))
    };
 }GX2_vec4;
 
-
 typedef union
 {
    struct
@@ -77,7 +76,6 @@ void GX2SetShader(GX2Shader* shader);
 void check_shader(const void* shader_, u32 shader_size, const void* org_, u32 org_size, const char* name);
 void check_shader_verbose(u32* shader, u32 shader_size, u32* org, u32 org_size, const char* name);
 
-
 typedef struct
 {
    GX2VertexShader* vs;
@@ -91,4 +89,3 @@ void gfd_free(GFDFile* gfd);
 #ifdef __cplusplus
 }
 #endif
-

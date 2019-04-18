@@ -17,7 +17,6 @@ typedef uint32_t socklen_t;
 #define NI_MAXHOST      1025
 #define NI_MAXSERV      32
 
-
 struct addrinfo {
   int     ai_flags;     /* AI_PASSIVE, AI_CANONNAME,
                            AI_NUMERICHOST, .. */
@@ -33,7 +32,6 @@ struct addrinfo {
 int getaddrinfo(const char *node, const char *service, struct addrinfo *hints, struct addrinfo **res);
 void freeaddrinfo(struct addrinfo *__ai);
 int getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags);
-
 
 #ifdef __cplusplus
 }

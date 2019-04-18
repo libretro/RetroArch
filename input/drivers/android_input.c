@@ -42,6 +42,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
+#include "../../configuration.h"
+
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 
@@ -54,6 +56,8 @@ enum {
     AMOTION_EVENT_BUTTON_BACK = 1 << 3,
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
+    AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
+    AINPUT_SOURCE_STYLUS = 0x00004000
 };
 #endif
 
@@ -69,7 +73,7 @@ enum {
 /* Use this to enable/disable using the touch screen as mouse */
 #define ENABLE_TOUCH_SCREEN_MOUSE 1
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct
@@ -109,6 +113,9 @@ typedef struct state_device
    int id;
    int port;
    char name[256];
+   uint16_t rumble_last_strength_strong;
+   uint16_t rumble_last_strength_weak;
+   uint16_t rumble_last_strength;
 } state_device_t;
 
 typedef struct android_input
@@ -419,6 +426,17 @@ static void android_input_poll_main_cmd(void)
          RARCH_LOG("APP_CMD_DESTROY\n");
          android_app->destroyRequested = 1;
          break;
+      case APP_CMD_VIBRATE_KEYPRESS:
+      {
+         JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+
+         if (env && g_android && g_android->doVibrate)
+         {
+            CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+                  g_android->doVibrate, (jint)-1, (jint)RETRO_RUMBLE_STRONG, (jint)255, (jint)1);
+         }
+         break;
+      }
    }
 }
 
@@ -470,7 +488,6 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 #endif
-
 
 static bool android_input_init_handle(void)
 {
@@ -546,7 +563,7 @@ static int android_check_quick_tap(android_input_t *android)
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
    retro_time_t now = cpu_features_get_time_usec();
-   if(android->quick_tap_time && (now/1000 - android->quick_tap_time/1000000) >= 200)
+   if (android->quick_tap_time && (now/1000 - android->quick_tap_time/1000000) >= 200)
    {
       android->quick_tap_time = 0;
       return 1;
@@ -633,7 +650,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float                        y_scale = 1;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if(av_info)
+   if (av_info)
    {
       video_viewport_t          *custom_vp   = video_viewport_get_custom();
       const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
@@ -672,7 +689,7 @@ static INLINE int android_input_poll_event_type_motion(
    int btn;
 
    /* Only handle events from a touchscreen or mouse */
-   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
+   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
       return 1;
 
    getaction  = AMotionEvent_getAction(event);
@@ -722,11 +739,11 @@ static INLINE int android_input_poll_event_type_motion(
 
    if (keyup && motion_ptr < MAX_TOUCH)
    {
-      if(action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
+      if (action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
       {
          /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
-         if((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
+         if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
             android->quick_tap_time = AMotionEvent_getEventTime(event);
          android->mouse_l = 0;
       }
@@ -740,8 +757,12 @@ static INLINE int android_input_poll_event_type_motion(
    else
    {
       int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      settings_t *settings = config_get_ptr();
 
-      if(action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
+      if (settings && settings->bools.vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
+         android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
+
+      if (action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
       {
          /* When touch screen is pressed, set mouse
           * previous position to current position
@@ -752,14 +773,14 @@ static INLINE int android_input_poll_event_type_motion(
          /* If another touch happened within 200ms after a quick tap
           * then cancel the quick tap and register left mouse button
           * as being held down */
-         if((AMotionEvent_getEventTime(event) - android->quick_tap_time)/1000000 < 200)
+         if ((AMotionEvent_getEventTime(event) - android->quick_tap_time)/1000000 < 200)
          {
             android->quick_tap_time = 0;
             android->mouse_l = 1;
          }
       }
 
-      if(action == AMOTION_EVENT_ACTION_MOVE && ENABLE_TOUCH_SCREEN_MOUSE)
+      if ((action == AMOTION_EVENT_ACTION_MOVE || action == AMOTION_EVENT_ACTION_HOVER_MOVE) && ENABLE_TOUCH_SCREEN_MOUSE)
          android_mouse_calculate_deltas(android,event,motion_ptr);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
@@ -864,8 +885,13 @@ static int android_input_get_id_port(android_input_t *android, int id,
          ret = 0; /* touch overlay is always user 1 */
 
    for (i = 0; i < android->pads_connected; i++)
+   {
       if (android->pad_states[i].id == id)
+      {
          ret = i;
+         break;
+      }
+   }
 
    return ret;
 }
@@ -940,7 +966,7 @@ static void handle_hotplug(android_input_t *android,
     * and be grouped with the NVIDIA button of the virtual device.
     *
     */
-   if(strstr(device_model, "SHIELD Android TV") && (
+   if (strstr(device_model, "SHIELD Android TV") && (
       strstr(device_name, "Virtual") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
    {
@@ -983,7 +1009,7 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   else if(strstr(device_model, "SHIELD") && (
+   else if (strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
@@ -1002,7 +1028,7 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   else if(strstr(device_model, "SHIELD") && (
+   else if (strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
    {
@@ -1033,7 +1059,7 @@ static void handle_hotplug(android_input_t *android,
     * This is a simple hack, basically groups the "back"
     * button with the rest of the gamepad
     */
-   else if(strstr(device_model, "XD") && (
+   else if (strstr(device_model, "XD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
       strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
    {
@@ -1057,8 +1083,17 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if((strstr(device_model, "R800") || strstr(device_model, "Xperia Play")) && 
+   else if(
             (
+               strstr(device_model, "R800x") ||
+               strstr(device_model, "R800at") ||
+               strstr(device_model, "R800i") ||
+               strstr(device_model, "R800a") ||
+               strstr(device_model, "R800") ||
+               strstr(device_model, "Xperia Play") ||
+               strstr(device_model, "Play") ||
+               strstr(device_model, "SO-01D")
+            ) && (
                strstr(device_name, "keypad-game-zeus") ||
                strstr(device_name, "keypad-zeus") ||
                strstr(device_name, "Android Gamepad")
@@ -1085,7 +1120,7 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "ARCHOS GAMEPAD") && (
+   else if (strstr(device_model, "ARCHOS GAMEPAD") && (
       strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
    {
       /* only use the hack if the device is one of the built-in devices */
@@ -1105,7 +1140,7 @@ static void handle_hotplug(android_input_t *android,
    }
 
    /* Amazon Fire TV & Fire stick */
-   else if(strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
+   else if (strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
            strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
            strstr(device_model, "AFTRS"))
    {
@@ -1119,7 +1154,7 @@ static void handle_hotplug(android_input_t *android,
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
          /* remove the remote when a gamepad enters */
-         else if(strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
+         else if (strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
          {
             android->pads_connected = 0;
             *port = 0;
@@ -1159,7 +1194,7 @@ static void handle_hotplug(android_input_t *android,
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the
     * maximum number of keyboards are already registered. */
-   else if(source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
+   else if (source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
    {
       kbd_id[kbd_num] = id;
       kbd_num++;
@@ -1329,13 +1364,14 @@ static bool android_input_key_pressed(void *data, int key)
  */
 static void android_input_poll(void *data)
 {
+   settings_t *settings = config_get_ptr();
    int ident;
    unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
             ALooper_pollAll((android_input_key_pressed(data, key))
-               ? -1 : 1,
+               ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
@@ -1404,6 +1440,8 @@ static int16_t android_input_state(void *data,
 
    switch (device)
    {
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && BIT_GET(android_keyboard_state_get(ANDROID_KEYBOARD_PORT), rarch_keysym_lut[id]);
       case RETRO_DEVICE_JOYPAD:
          ret = input_joypad_pressed(android->joypad, joypad_info,
                port, binds[port], id);
@@ -1606,10 +1644,77 @@ static void android_input_grab_mouse(void *data, bool state)
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
+   android_input_t *android = (android_input_t*)data;
+   settings_t *settings = config_get_ptr();
+   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+
+   if (!android || !env || !g_android || !g_android->doVibrate)
+      return false;
+
+   if (settings->bools.enable_device_vibration)
+   {
+      static uint16_t last_strength_strong = 0;
+      static uint16_t last_strength_weak = 0;
+      static uint16_t last_strength = 0;
+      uint16_t new_strength = 0;
+
+      if (port != 0)
+         return false;
+
+      if (effect == RETRO_RUMBLE_STRONG)
+      {
+         new_strength = strength | last_strength_weak;
+         last_strength_strong = strength;
+      }
+      else if (effect == RETRO_RUMBLE_WEAK)
+      {
+         new_strength = strength | last_strength_strong;
+         last_strength_weak = strength;
+      }
+
+      if (new_strength != last_strength)
+      {
+         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
+         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
+
+         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+               g_android->doVibrate, (jint)-1, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
+
+         last_strength = new_strength;
+      }
+
+      return true;
+   }
+   else
+   {
+      uint16_t new_strength = 0;
+      state_device_t *state = &android->pad_states[port];
+
+      if (effect == RETRO_RUMBLE_STRONG)
+      {
+         new_strength = strength | state->rumble_last_strength_weak;
+         state->rumble_last_strength_strong = strength;
+      }
+      else if (effect == RETRO_RUMBLE_WEAK)
+      {
+         new_strength = strength | state->rumble_last_strength_strong;
+         state->rumble_last_strength_weak = strength;
+      }
+
+      if (new_strength != state->rumble_last_strength)
+      {
+         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
+         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
+         int id = state->id;
+
+         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+               g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
+
+         state->rumble_last_strength = new_strength;
+      }
+
+      return true;
+   }
 
    return false;
 }

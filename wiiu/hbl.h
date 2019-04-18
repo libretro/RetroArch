@@ -13,7 +13,6 @@ extern "C" {
 
 #define ARGV_PTR             (*(void* volatile *)(MEM_BASE + 0x1300 + 0x80))
 
-
 #define MAKE_MAGIC(c0, c1, c2, c3)  (((c0) << 24) |((c1) << 16) |((c2) << 8) | c3)
 #define ARGV_MAGIC                  MAKE_MAGIC('_', 'a', 'r', 'g')
 

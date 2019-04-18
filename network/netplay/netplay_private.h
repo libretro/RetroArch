@@ -569,7 +569,6 @@ struct netplay
    bool crcs_valid;
 };
 
-
 /***************************************************************
  * NETPLAY-BUF.C
  **************************************************************/
@@ -639,7 +638,6 @@ void netplay_recv_reset(struct socket_buffer *sbuf);
  */
 void netplay_recv_flush(struct socket_buffer *sbuf);
 
-
 /***************************************************************
  * NETPLAY-DELTA.C
  **************************************************************/
@@ -685,7 +683,6 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
  */
 uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices);
 
-
 /***************************************************************
  * NETPLAY-DISCOVERY.C
  **************************************************************/
@@ -696,7 +693,6 @@ uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices);
  * Respond to any LAN ad queries that the netplay server has received.
  */
 bool netplay_lan_ad_server(netplay_t *netplay);
-
 
 /***************************************************************
  * NETPLAY-FRONTEND.C
@@ -748,7 +744,6 @@ bool netplay_handshake_init_send(netplay_t *netplay,
  */
 bool netplay_handshake(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input);
-
 
 /***************************************************************
  * NETPLAY-INIT.C
@@ -802,7 +797,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
  * Frees netplay data/
  */
 void netplay_free(netplay_t *netplay);
-
 
 /***************************************************************
  * NETPLAY-IO.C
@@ -914,7 +908,6 @@ void netplay_announce_nat_traversal(netplay_t *netplay);
  */
 void netplay_init_nat_traversal(netplay_t *netplay);
 
-
 /***************************************************************
  * NETPLAY-KEYBOARD.C
  **************************************************************/
@@ -940,7 +933,6 @@ uint32_t netplay_key_hton(unsigned key);
 /* Because the hton keymapping has to be generated, call this before using
  * netplay_key_hton */
 void netplay_key_hton_init(void);
-
 
 /***************************************************************
  * NETPLAY-SYNC.C

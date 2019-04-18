@@ -310,7 +310,6 @@ static s32 __card_writecmd0(s32 drv_no)
 		return CARDIO_ERROR_NOCARD;
 	}
 
-
 	cnt = 0;
 	while(cnt<20) {
 		if(EXI_ImmEx(drv_no,dummy,128,EXI_WRITE)==0) {
@@ -1222,7 +1221,6 @@ s32 sdgecko_readSectors(s32 drv_no,u32 sector_no,u32 num_sectors,void *buf)
 
 	if(num_sectors<1) return CARDIO_ERROR_INTERNAL;
 
-
 	// Must be 512b, otherwise fail!
 	if(PAGE_SIZE512!=_ioPageSize[drv_no]) {
 		_ioPageSize[drv_no] = PAGE_SIZE512;
@@ -1257,7 +1255,6 @@ s32 sdgecko_writeSectors(s32 drv_no,u32 sector_no,u32 num_sectors,const void *bu
 	if(ret!=0) return ret;
 
 	if(num_sectors<1) return CARDIO_ERROR_INTERNAL;
-
 
 	if(PAGE_SIZE512!=_ioPageSize[drv_no]) {
 		_ioPageSize[drv_no] = PAGE_SIZE512;

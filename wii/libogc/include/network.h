@@ -40,8 +40,6 @@
 #define  SO_ERROR			0x1007    /* get error status and clear */
 #define  SO_TYPE			0x1008    /* get socket type */
 
-
-
 /*
  * Structure used for manipulating linger option.
  */
@@ -76,7 +74,6 @@ struct linger {
 #define IP_TOS				1
 #define IP_TTL				2
 
-
 #define IPTOS_TOS_MASK      0x1E
 #define IPTOS_TOS(tos)      ((tos) & IPTOS_TOS_MASK)
 #define IPTOS_LOWDELAY      0x10
@@ -98,7 +95,6 @@ struct linger {
 #define IPTOS_PREC_IMMEDIATE            0x40
 #define IPTOS_PREC_PRIORITY             0x20
 #define IPTOS_PREC_ROUTINE              0x00
-
 
 /*
  * Commands for ioctlsocket(),  taken from the BSD file fcntl.h.

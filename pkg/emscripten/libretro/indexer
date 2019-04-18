@@ -32,4 +32,3 @@ rdSync = (dpath, tree, name) ->
 
 fs_listing = rdSync(process.cwd(), {}, '/')
 console.log(JSON.stringify(fs_listing))
-

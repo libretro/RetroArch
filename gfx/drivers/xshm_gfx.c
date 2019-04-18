@@ -205,8 +205,6 @@ static void xshm_grab_mouse_toggle(void *data)
 
 static video_poke_interface_t xshm_video_poke_interface = {
    NULL, /* get_flags */
-   NULL,       /* set_coords */
-   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -267,4 +265,3 @@ video_driver_t video_xshm = {
 #endif
     xshm_gfx_poke_interface
 };
-

@@ -1,8 +1,8 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
-    android:versionCode="74"
-    android:versionName="1.7.5"
+    android:versionCode="75"
+    android:versionName="1.7.6"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
@@ -10,10 +10,11 @@
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
     <uses-sdk
         android:minSdkVersion="9"
-        android:targetSdkVersion="24" />
+        android:targetSdkVersion="26" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -39,5 +40,6 @@
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
+        <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
     </application>
 </manifest>

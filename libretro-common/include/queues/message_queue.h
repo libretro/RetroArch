@@ -29,6 +29,19 @@
 
 RETRO_BEGIN_DECLS
 
+enum message_queue_icon
+{
+   MESSAGE_QUEUE_ICON_DEFAULT = 0 /* default icon is tied to category */
+};
+
+enum message_queue_category
+{
+   MESSAGE_QUEUE_CATEGORY_INFO = 0,
+   MESSAGE_QUEUE_CATEGORY_ERROR,
+   MESSAGE_QUEUE_CATEGORY_WARNING,
+   MESSAGE_QUEUE_CATEGORY_SUCCESS
+};
+
 typedef struct msg_queue msg_queue_t;
 
 /**
@@ -54,7 +67,9 @@ msg_queue_t *msg_queue_new(size_t size);
  * Push a new message onto the queue.
  **/
 void msg_queue_push(msg_queue_t *queue, const char *msg,
-      unsigned prio, unsigned duration);
+      unsigned prio, unsigned duration,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category);
 
 /**
  * msg_queue_pull:

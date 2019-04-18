@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -50,11 +50,27 @@ static bool gfx_ctx_sixel_set_resize(void *data,
 
 static void gfx_ctx_sixel_update_window_title(void *data, void *data2)
 {
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 #if defined(_WIN32) && !defined(_XBOX)
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
    char title[128];
 
    title[0] = '\0';
+
+   if (settings->bools.video_memory_show)
+   {
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
 
    video_driver_get_window_title(title, sizeof(title));
 
@@ -89,7 +105,6 @@ static bool gfx_ctx_sixel_set_video_mode(void *data,
 {
    return true;
 }
-
 
 static void gfx_ctx_sixel_input_driver(void *data,
       const char *joypad_name,
@@ -208,4 +223,3 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    NULL,
    NULL
 };
-

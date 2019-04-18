@@ -428,7 +428,6 @@ static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
    return 0;
 }
 
-
 static bool libusb_hid_joypad_query(void *data, unsigned pad)
 {
    return pad < MAX_USERS;
@@ -638,7 +637,6 @@ error:
       libusb_hid_free(hid);
    return NULL;
 }
-
 
 static void libusb_hid_poll(void *data)
 {

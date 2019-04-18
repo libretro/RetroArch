@@ -212,7 +212,6 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
    return 0;
 }
 
-
 static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;
@@ -285,7 +284,7 @@ static int action_right_cheat_delete_all(unsigned type, const char *label,
             msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
       msg[sizeof(msg) - 1] = 0;
 
-      runloop_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return 0;
@@ -363,7 +362,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
       return menu_cbs_exit();
 
    if (pass_count < GFX_MAX_SHADERS)
-      menu_shader_manager_increment_amount_passes();
+      shader->passes++;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -634,6 +633,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;

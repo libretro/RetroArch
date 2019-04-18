@@ -43,5 +43,3 @@ struct pbuf * ip_reass(struct pbuf *p);
 err_t ip_frag(struct pbuf *p, struct netif *netif, struct ip_addr *dest);
 
 #endif /* __LWIP_IP_FRAG_H__ */
-
-

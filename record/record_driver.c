@@ -155,7 +155,6 @@ const record_driver_t *ffemu_find_backend(const char *ident)
    return NULL;
 }
 
-
 /**
  * gfx_ctx_init_first:
  * @backend                 : Recording backend handle.
@@ -232,7 +231,8 @@ void recording_dump_frame(const void *data, unsigned width,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
-               1, 180, true);
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          return;
       }
@@ -366,10 +366,24 @@ bool recording_init(void)
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-         fill_str_dated_filename(buf, game_name,
-                  "mkv", sizeof(buf));
-         fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
-
+         if (settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "mkv", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
+         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "webm", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
+         else
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "gif", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
       }
    }
 
@@ -392,12 +406,14 @@ bool recording_init(void)
       if (streaming_is_enabled())
       {
          params.config = settings->paths.path_stream_config;
-         params.preset = settings->uints.video_stream_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_stream_quality;
       }
       else
       {
          params.config = settings->paths.path_record_config;
-         params.preset = settings->uints.video_record_quality;
+         params.preset = (enum record_config_type)
+            settings->uints.video_record_quality;
       }
    }
 
@@ -510,14 +526,10 @@ void recording_driver_set_data_ptr(void *data)
    recording_data = data;
 }
 
-unsigned *recording_driver_get_width(void)
+void recording_driver_get_size(unsigned *width, unsigned *height)
 {
-   return &recording_width;
-}
-
-unsigned *recording_driver_get_height(void)
-{
-   return &recording_height;
+   *width  = recording_width;
+   *height = recording_height;
 }
 
 void recording_driver_update_streaming_url(void)

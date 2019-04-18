@@ -136,4 +136,3 @@ static INLINE unsigned int vec2_packHalf2x16(float vec0, float vec1)
 RETRO_END_DECLS
 
 #endif
-

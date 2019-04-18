@@ -12,7 +12,7 @@ INTERNAL_LIBLAME       = 0
 INTERNAL_LIBFAAC       = 0
 INTERNAL_LIBSPEEX      = 0
 INTERNAL_LIBTHEORA     = 0
-INTERNAL_LIBOPUS       = 0  
+INTERNAL_LIBOPUS       = 0
 INTERNAL_LIBVORBIS     = 0
 INTERNAL_WEBP          = 0
 INTERNAL_ZLIB          = 0
@@ -195,7 +195,7 @@ CFLAGS += -D__LIBRETRO__
 
 include Makefile.common
 
-CFLAGS   += $(DEFINES) $(INCFLAGS) $(GLFLAGS)
+CFLAGS += $(DEFINES) $(INCFLAGS) $(GLFLAGS) $(DEF_FLAGS)
 CFLAGS += -Wall $(fpic)
 
 ifeq ($(DEBUG), 1)
@@ -226,4 +226,3 @@ clean:
 	rm -f $(TARGET)
 
 .PHONY: clean
-

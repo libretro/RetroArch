@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -38,6 +38,7 @@ enum menu_dialog_type
    MENU_DIALOG_HELP_WHAT_IS_A_CORE,
    MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD,
    MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   MENU_DIALOG_HELP_SEND_DEBUG_INFO,
    MENU_DIALOG_HELP_SCANNING_CONTENT,
    MENU_DIALOG_QUIT_CONFIRM,
    MENU_DIALOG_INFORMATION,

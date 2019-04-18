@@ -155,7 +155,7 @@ create-core:
 
 create-npdrm-salamander:
 	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) $(EBOOT_PATH)
-	
+
 create-salamander:
 	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
 

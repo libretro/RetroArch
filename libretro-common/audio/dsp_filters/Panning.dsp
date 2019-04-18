@@ -20,4 +20,3 @@ panning_right_mix = "0.0 1.0"
 # Mono on one speaker:
 # panning_left_mix = "0.5 0.5"
 # panning_right_mix = "0.0 0.0"
-

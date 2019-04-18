@@ -1,10 +1,8 @@
 
-
 #include <iostream>
 #include <peglib.h>
 #include <fstream>
 #include <sstream>
-
 
 int main(int argc, const char** argv)
 {
@@ -30,7 +28,6 @@ int main(int argc, const char** argv)
       else if(!strcmp(argv[i], "--verbose"))
          verbose = true;
    }
-
 
    if(!slang_fn || !vs_out_fn || !ps_out_fn || (!vs_asm_fn && ps_asm_fn) || (vs_asm_fn && !ps_asm_fn))
    {
@@ -264,8 +261,6 @@ int main(int argc, const char** argv)
       fs << common.str();
       fs << ps.str();
    }
-
-
 
    return 0;
 }

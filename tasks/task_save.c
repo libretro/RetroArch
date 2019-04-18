@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -44,6 +44,7 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+#include "../content.h"
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
@@ -266,7 +267,6 @@ static void autosave_free(autosave_t *handle)
       free(handle->buffer);
    handle->buffer = NULL;
 }
-
 
 bool autosave_init(void)
 {
@@ -507,9 +507,12 @@ bool content_undo_load_state(void)
    return ret;
 }
 
-static void undo_save_state_cb(void *task_data,
-                               void *user_data, const char *error)
+static void undo_save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
+   save_task_state_t *state = (save_task_state_t*)task_data;
+
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
    undo_save_buf.size    = 0;
@@ -518,6 +521,8 @@ static void undo_save_state_cb(void *task_data,
       free(undo_save_buf.data);
       undo_save_buf.data = NULL;
    }
+
+   free(state);
 }
 
 /**
@@ -562,6 +567,9 @@ void* get_serialized_data(const char *path, size_t serial_size)
    bool ret    = false;
    void *data  = NULL;
 
+   if (!serial_size)
+      return NULL;
+
    data = malloc(serial_size);
 
    if (!data)
@@ -575,12 +583,14 @@ void* get_serialized_data(const char *path, size_t serial_size)
    serial_info.data = data;
    serial_info.size = serial_size;
    ret              = core_serialize(&serial_info);
-   if ( !ret )
+
+   if (!ret)
    {
-      free(data) ;
-      return NULL ;
+      free(data);
+      return NULL;
    }
-   return data ;
+
+   return data;
 }
 
 /**
@@ -606,7 +616,7 @@ static void task_save_handler(retro_task_t *task)
    }
 
    if (!state->data)
-      state->data  = get_serialized_data(state->path, state->size) ;
+      state->data  = get_serialized_data(state->path, state->size);
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
 
@@ -691,7 +701,7 @@ static void task_save_handler(retro_task_t *task)
  **/
 static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
-   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = task_init();
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t     *settings = config_get_ptr();
 
@@ -763,6 +773,10 @@ static void task_load_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+
+   if (!task_data)
+      return;
+
    memcpy(task_data, state, sizeof(*task_data));
 
    task_set_data(task, task_data);
@@ -888,8 +902,9 @@ error:
  * Load a state from disk to memory.
  *
  **/
-static void content_load_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void content_load_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    retro_ctx_serialize_info_t serial_info;
    unsigned i;
@@ -1037,8 +1052,9 @@ error:
  *
  * Called after the save state is done. Takes a screenshot if needed.
  **/
-static void save_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    save_task_state_t *state = (save_task_state_t*)task_data;
    char               *path = strdup(state->path);
@@ -1047,6 +1063,7 @@ static void save_state_cb(void *task_data,
       take_screenshot(path, true, state->has_valid_framebuffer, false, true);
 
    free(path);
+   free(state);
 }
 
 /**
@@ -1059,7 +1076,7 @@ static void save_state_cb(void *task_data,
  **/
 static void task_push_save_state(const char *path, void *data, size_t size, bool autosave)
 {
-   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = task_init();
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t     *settings = config_get_ptr();
 
@@ -1082,7 +1099,16 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->title             = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute              = state->mute;
 
-   task_queue_push(task);
+   if (!task_queue_push(task))
+   {
+      /* Another blocking task is already active. */
+      if (data)
+         free(data);
+      if (task->title)
+         task_free_title(task);
+      free(task);
+      free(state);
+   }
 
    return;
 
@@ -1092,7 +1118,11 @@ error:
    if (state)
       free(state);
    if (task)
+   {
+      if (task->title)
+         task_free_title(task);
       free(task);
+   }
 }
 
 /**
@@ -1101,8 +1131,9 @@ error:
  * Load then save a state.
  *
  **/
-static void content_load_and_save_state_cb(void *task_data,
-                           void *user_data, const char *error)
+static void content_load_and_save_state_cb(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
 {
    load_task_data_t *load_data = (load_task_data_t*)task_data;
    char                  *path = strdup(load_data->path);
@@ -1110,7 +1141,7 @@ static void content_load_and_save_state_cb(void *task_data,
    size_t                 size = load_data->undo_size;
    bool               autosave = load_data->autosave;
 
-   content_load_state_cb(task_data, user_data, error);
+   content_load_state_cb(task, task_data, user_data, error);
 
    task_push_save_state(path, data, size, autosave);
 
@@ -1130,7 +1161,7 @@ static void content_load_and_save_state_cb(void *task_data,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t      *task     = task_init();
    save_task_state_t *state    = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t        *settings = config_get_ptr();
 
@@ -1155,7 +1186,16 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->title       = strdup(msg_hash_to_str(MSG_LOADING_STATE));
    task->mute        = state->mute;
 
-   task_queue_push(task);
+   if (!task_queue_push(task))
+   {
+      /* Another blocking task is already active. */
+      if (data)
+         free(data);
+      if (task->title)
+         task_free_title(task);
+      free(task);
+      free(state);
+   }
 
    return;
 
@@ -1186,14 +1226,13 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    if (info.size == 0)
       return false;
 
-   if ( !save_state_in_background )
+   if (!save_state_in_background)
    {
       RARCH_LOG("%s: \"%s\".\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             path);
 
-      data = get_serialized_data(path, info.size) ;
-
+      data = get_serialized_data(path, info.size);
 
       if (!data)
       {
@@ -1207,7 +1246,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
             msg_hash_to_str(MSG_STATE_SIZE),
             (int)info.size,
             msg_hash_to_str(MSG_BYTES));
-
    }
 
    if (save_to_disk)
@@ -1227,15 +1265,15 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    }
    else
    {
-      if ( data == NULL )
-         data = get_serialized_data(path, info.size) ;
+      if (data == NULL)
+         data = get_serialized_data(path, info.size);
 
-      if ( data == NULL )
+      if (data == NULL)
       {
          RARCH_ERR("%s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                path);
-         return false ;
+         return false;
       }
       /* save_to_disk is false, which means we are saving the state
       in undo_load_buf to allow content_undo_load_state() to restore it */
@@ -1276,7 +1314,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task     = task_init();
    save_task_state_t *state     = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t *settings         = config_get_ptr();
 
@@ -1521,7 +1559,7 @@ bool event_save_files(void)
 {
    unsigned i;
 
-   cheat_manager_save_game_specific_cheats() ;
+   cheat_manager_save_game_specific_cheats();
    if (!task_save_files ||
          !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
       return false;
@@ -1587,5 +1625,5 @@ void *savefile_ptr_get(void)
 
 void set_save_state_in_background(bool state)
 {
-   save_state_in_background = state ;
+   save_state_in_background = state;
 }

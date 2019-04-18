@@ -22,7 +22,7 @@ RARCH_DEFINES = -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE
 LIBDIR =
 LDFLAGS =
 LIBS = -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
-     -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
+     -lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceAudio_stub -lSceFiber_stub\
      -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
      -lSceMotion_stub -lSceAppMgr_stub -lfreetype -lpng -lm -lc
 
@@ -44,6 +44,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/compat_strl.o \
 		 libretro-common/compat/compat_strcasestr.o \
+		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \

@@ -29,7 +29,7 @@ ifneq (,$(findstring Darwin,$(UNAME_S)))
 endif
 
 #---------------------------------------------------------------------------------
-# path to tools 
+# path to tools
 #---------------------------------------------------------------------------------
 export PORTLIBS	:=	$(DEVKITPRO)/portlibs/ppc
 export PATH	:=	$(DEVKITPPC)/bin:$(PORTLIBS)/bin:$(PATH)
@@ -45,7 +45,6 @@ export CXX	:=	$(PREFIX)g++
 export AR	:=	$(PREFIX)ar
 export OBJCOPY	:=	$(PREFIX)objcopy
 
-
 ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSIONSPATH))
 
 #---------------------------------------------------------------------------------
@@ -57,7 +56,7 @@ ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSION
 #---------------------------------------------------------------------------------
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-	
+
 #---------------------------------------------------------------------------------
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -131,7 +130,6 @@ INCLUDES	:=	$(DEFINCS) \
 
 MACHDEP		:= -DBIGENDIAN -DGEKKO -mcpu=750 -meabi -msdata=eabi -mhard-float -ffunction-sections -fdata-sections
 
-
 ifeq ($(PLATFORM),wii)
 MACHDEP		+=	-DHW_RVL
 endif
@@ -158,7 +156,6 @@ VPATH :=	$(LWIPDIR)				\
 			$(SDCARDDIR)			\
 			$(LIBWIIKEYB)		\
 			$(STUBSDIR)
-
 
 #---------------------------------------------------------------------------------
 SOURCES_LWIP := $(LWIPDIR)/network.c \
@@ -263,7 +260,6 @@ SOURCES_OGC_ASM := $(OGCDIR)/cache_asm.S \
 						 $(OGCDIR)/ogc_crt0.S \
 						 $(OGCDIR)/system_asm.S \
 						 $(OGCDIR)/video_asm.S
-
 
 ifneq ($(BUILD_LITE), 1)
 SOURCES_OGC += $(OGCDIR)/dvd.c

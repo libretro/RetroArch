@@ -103,7 +103,6 @@ intfstream_t *intfstream_open_memory(void *data,
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track);
 
-
 RETRO_END_DECLS
 
 #endif

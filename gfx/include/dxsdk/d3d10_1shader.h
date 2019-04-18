@@ -14,8 +14,6 @@
 
 /*#include <winapifamily.h>*/
 
-
-
 //----------------------------------------------------------------------------
 // Shader debugging structures
 //----------------------------------------------------------------------------
@@ -190,7 +188,7 @@ typedef struct _D3D10_SHADER_DEBUG_INST_INFO
 
     // up to two outputs per instruction
     D3D10_SHADER_DEBUG_OUTPUTREG_INFO pOutputs[2];
-    
+
     // index into the list of tokens for this instruction's token
     UINT TokenId;
 
@@ -249,12 +247,11 @@ typedef struct _D3D10_SHADER_DEBUG_INFO
 // Interface definitions
 //
 
-
 typedef interface ID3D10ShaderReflection1 ID3D10ShaderReflection1;
 typedef interface ID3D10ShaderReflection1 *LPD3D10SHADERREFLECTION1;
 
 // {C3457783-A846-47CE-9520-CEA6F66E7447}
-DEFINE_GUID(IID_ID3D10ShaderReflection1, 
+DEFINE_GUID(IID_ID3D10ShaderReflection1,
 0xc3457783, 0xa846, 0x47ce, 0x95, 0x20, 0xce, 0xa6, 0xf6, 0x6e, 0x74, 0x47);
 
 #undef INTERFACE
@@ -267,12 +264,12 @@ DECLARE_INTERFACE_(ID3D10ShaderReflection1, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D10_SHADER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D10ShaderReflectionConstantBuffer*, GetConstantBufferByIndex)(THIS_ UINT Index) PURE;
     STDMETHOD_(ID3D10ShaderReflectionConstantBuffer*, GetConstantBufferByName)(THIS_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ UINT ResourceIndex, _Out_ D3D10_SHADER_INPUT_BIND_DESC *pDesc) PURE;
-    
+
     STDMETHOD(GetInputParameterDesc)(THIS_ UINT ParameterIndex, _Out_ D3D10_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
     STDMETHOD(GetOutputParameterDesc)(THIS_ UINT ParameterIndex, _Out_ D3D10_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
 
@@ -284,7 +281,7 @@ DECLARE_INTERFACE_(ID3D10ShaderReflection1, IUnknown)
     STDMETHOD(GetMovcInstructionCount)(THIS_ _Out_ UINT* pCount) PURE;
     STDMETHOD(GetConversionInstructionCount)(THIS_ _Out_ UINT* pCount) PURE;
     STDMETHOD(GetBitwiseInstructionCount)(THIS_ _Out_ UINT* pCount) PURE;
-    
+
     STDMETHOD(GetGSInputPrimitive)(THIS_ _Out_ D3D10_PRIMITIVE* pPrim) PURE;
     STDMETHOD(IsLevel9Shader)(THIS_ _Out_ BOOL* pbLevel9Shader) PURE;
     STDMETHOD(IsSampleFrequencyShader)(THIS_ _Out_ BOOL* pbSampleFrequency) PURE;
@@ -301,6 +298,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-    
-#endif //__D3D10_1SHADER_H__
 
+#endif //__D3D10_1SHADER_H__

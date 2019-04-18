@@ -15,26 +15,26 @@ class Struct(object):
 	__slots__ = ('__attrs__', '__baked__', '__defs__', '__endian__', '__next__', '__sizes__', '__values__')
 	int8 = StructType(('b', 1))
 	uint8 = StructType(('B', 1))
-	
+
 	int16 = StructType(('h', 2))
 	uint16 = StructType(('H', 2))
-	
+
 	int32 = StructType(('l', 4))
 	uint32 = StructType(('L', 4))
-	
+
 	int64 = StructType(('q', 8))
 	uint64 = StructType(('Q', 8))
-	
+
 	float = StructType(('f', 4))
 
 	def string(cls, len, offset=0, encoding=None, stripNulls=False, value=''):
 		return StructType(('string', (len, offset, encoding, stripNulls, value)))
 	string = classmethod(string)
-	
+
 	LE = '<'
 	BE = '>'
 	__endian__ = '<'
-	
+
 	def __init__(self, func=None, unpack=None, **kwargs):
 		self.__defs__ = []
 		self.__sizes__ = []
@@ -42,7 +42,7 @@ class Struct(object):
 		self.__values__ = {}
 		self.__next__ = True
 		self.__baked__ = False
-		
+
 		if func == None:
 			self.__format__()
 		else:
@@ -51,36 +51,36 @@ class Struct(object):
 			for name in func.func_code.co_varnames:
 				value = self.__frame__.f_locals[name]
 				self.__setattr__(name, value)
-		
+
 		self.__baked__ = True
-		
+
 		if unpack != None:
 			if isinstance(unpack, tuple):
 				self.unpack(*unpack)
 			else:
 				self.unpack(unpack)
-		
+
 		if len(kwargs):
 			for name in kwargs:
 				self.__values__[name] = kwargs[name]
-	
+
 	def __trace__(self, frame, event, arg):
 		self.__frame__ = frame
 		sys.settrace(None)
-	
+
 	def __setattr__(self, name, value):
 		if name in self.__slots__:
 			return object.__setattr__(self, name, value)
-		
+
 		if self.__baked__ == False:
 			if not isinstance(value, list):
 				value = [value]
 				attrname = name
 			else:
 				attrname = '*' + name
-			
+
 			self.__values__[name] = None
-			
+
 			for sub in value:
 				if isinstance(sub, Struct):
 					sub = sub.__class__
@@ -95,7 +95,7 @@ class Struct(object):
 					self.__sizes__.append(size)
 					self.__attrs__.append(attrname)
 					self.__next__ = True
-					
+
 					if attrname[0] != '*':
 						self.__values__[name] = size[3]
 					elif self.__values__[name] == None:
@@ -105,7 +105,7 @@ class Struct(object):
 					self.__sizes__.append(size)
 					self.__attrs__.append(attrname)
 					self.__next__ = True
-					
+
 					if attrname[0] != '*':
 						self.__values__[name] = size()
 					elif self.__values__[name] == None:
@@ -116,11 +116,11 @@ class Struct(object):
 						self.__sizes__.append(0)
 						self.__attrs__.append([])
 						self.__next__ = False
-					
+
 					self.__defs__[-1] += type_
 					self.__sizes__[-1] += size
 					self.__attrs__[-1].append(attrname)
-					
+
 					if attrname[0] != '*':
 						self.__values__[name] = 0
 					elif self.__values__[name] == None:
@@ -130,7 +130,7 @@ class Struct(object):
 				self.__values__[name] = value
 			except KeyError:
 				raise AttributeError(name)
-	
+
 	def __getattr__(self, name):
 		if self.__baked__ == False:
 			return name
@@ -139,14 +139,14 @@ class Struct(object):
 				return self.__values__[name]
 			except KeyError:
 				raise AttributeError(name)
-	
+
 	def __len__(self):
 		ret = 0
 		arraypos, arrayname = None, None
-		
+
 		for i in range(len(self.__defs__)):
 			sdef, size, attrs = self.__defs__[i], self.__sizes__[i], self.__attrs__[i]
-			
+
 			if sdef == Struct.string:
 				size, offset, encoding, stripNulls, value = size
 				if isinstance(size, str):
@@ -158,11 +158,11 @@ class Struct(object):
 						arraypos = 0
 					size = len(self.__values__[attrs[1:]][arraypos])
 				size = len(self.__values__[attrs])
-			
+
 			ret += size
-		
+
 		return ret
-	
+
 	def unpack(self, data, pos=0):
 		for name in self.__values__:
 			if not isinstance(self.__values__[name], Struct):
@@ -170,27 +170,27 @@ class Struct(object):
 			elif self.__values__[name].__class__ == list and len(self.__values__[name]) != 0:
 				if not isinstance(self.__values__[name][0], Struct):
 					self.__values__[name] = None
-		
+
 		arraypos, arrayname = None, None
-		
+
 		for i in range(len(self.__defs__)):
 			sdef, size, attrs = self.__defs__[i], self.__sizes__[i], self.__attrs__[i]
-			
+
 			if sdef == Struct.string:
 				size, offset, encoding, stripNulls, value = size
 				if isinstance(size, str):
 					size = self.__values__[size] + offset
-				
+
 				temp = data[pos:pos+size]
 				if len(temp) != size:
 					raise StructException('Expected %i byte string, got %i' % (size, len(temp)))
-				
+
 				if encoding != None:
 					temp = temp.decode(encoding)
-				
+
 				if stripNulls:
 					temp = temp.rstrip('\0')
-				
+
 				if attrs[0] == '*':
 					name = attrs[1:]
 					if self.__values__[name] == None:
@@ -224,21 +224,21 @@ class Struct(object):
 					else:
 						self.__values__[name] = values[j]
 					j += 1
-		
+
 		return self
-	
+
 	def pack(self):
 		arraypos, arrayname = None, None
-		
+
 		ret = ''
 		for i in range(len(self.__defs__)):
 			sdef, size, attrs = self.__defs__[i], self.__sizes__[i], self.__attrs__[i]
-			
+
 			if sdef == Struct.string:
 				size, offset, encoding, stripNulls, value = size
 				if isinstance(size, str):
 					size = self.__values__[size]+offset
-				
+
 				if attrs[0] == '*':
 					if arrayname != attrs:
 						arraypos = 0
@@ -247,10 +247,10 @@ class Struct(object):
 					arraypos += 1
 				else:
 					temp = self.__values__[attrs]
-				
+
 				if encoding != None:
 					temp = temp.encode(encoding)
-				
+
 				temp = temp[:size]
 				ret += temp + ('\0' * (size - len(temp)))
 			elif sdef == Struct:
@@ -273,10 +273,10 @@ class Struct(object):
 						arraypos += 1
 					else:
 						values.append(self.__values__[name])
-				
+
 				ret += struct.pack(self.__endian__+sdef, *values)
 		return ret
-	
+
 	def __getitem__(self, value):
 		return [('struct', self.__class__)] * value
 
@@ -342,18 +342,18 @@ class MetaHeader(Struct):
 		self.unk2 	= Struct.uint32
 		self.drmType 	= Struct.uint32
 		self.unk4 	= Struct.uint32
-		
+
 		self.unk21 	= Struct.uint32
 		self.unk22 	= Struct.uint32
 		self.unk23 	= Struct.uint32
 		self.unk24 	= Struct.uint32
-		
+
 		self.unk31 	= Struct.uint32
 		self.unk32 	= Struct.uint32
 		self.unk33 	= Struct.uint32
 		self.secondaryVersion 	= Struct.uint16
 		self.unk34 	= Struct.uint16
-		
+
 		self.dataSize 	= Struct.uint32
 		self.unk42 	= Struct.uint32
 		self.unk43 	= Struct.uint32
@@ -371,7 +371,7 @@ class FileHeader(Struct):
 		self.fileNameOff 	= Struct.uint32
 		self.fileNameLength = Struct.uint32
 		self.fileOff 		= Struct.uint64
-		
+
 		self.fileSize 	= Struct.uint64
 		self.flags		= Struct.uint32
 		self.padding 		= Struct.uint32
@@ -391,17 +391,16 @@ class FileHeader(Struct):
 		else:
 			out += " Overwrite NOT allowed.\n"
 		out += "\n"
-		
+
 		out += "[X] File Name offset: %08x\n" % self.fileNameOff
 		out += "[X] File Name Length: %08x\n" % self.fileNameLength
 		out += "[X] Offset To File Data: %016x\n" % self.fileOff
-		
+
 		out += "[X] File Size: %016x\n" % self.fileSize
 		out += "[X] Flags: %08x\n" % self.flags
 		out += "[X] Padding: %08x\n\n" % self.padding
 		assert self.padding == 0, "I guess I was wrong, this is not padding."
-		
-		
+
 		return out
 	def __repr__(self):
 		return self.fileName + ("<FileHeader> Size: 0x%016x" % self.fileSize)
@@ -416,44 +415,41 @@ class Header(Struct):
 		self.type = Struct.uint32
 		self.pkgInfoOff = Struct.uint32
 		self.unk1 = Struct.uint32
-		
+
 		self.headSize = Struct.uint32
 		self.itemCount = Struct.uint32
 		self.packageSize = Struct.uint64
-		
+
 		self.dataOff = Struct.uint64
 		self.dataSize = Struct.uint64
-		
+
 		self.contentID = Struct.uint8[0x30]
 		self.QADigest = Struct.uint8[0x10]
 		self.KLicensee = Struct.uint8[0x10]
-		
-		
-		
+
 	def __str__(self):
 		context = keyToContext(self.QADigest)
 		setContextNum(context, 0xFFFFFFFFFFFFFFFF)
 		licensee = crypt(context, listToString(self.KLicensee), 0x10)
-		
+
 		out  = ""
 		out += "[X] Magic: %08x\n" % self.magic
 		out += "[X] Type: %08x\n" % self.type
 		out += "[X] Offset to package info: %08x\n" % self.pkgInfoOff
 		out += "[ ] unk1: %08x\n" % self.unk1
-		
+
 		out += "[X] Head Size: %08x\n" % self.headSize
 		out += "[X] Item Count: %08x\n" % self.itemCount
 		out += "[X] Package Size: %016x\n" % self.packageSize
-		
+
 		out += "[X] Data Offset: %016x\n" % self.dataOff
 		out += "[X] Data Size: %016x\n" % self.dataSize
-		
+
 		out += "[X] ContentID: '%s'\n" % (nullterm(self.contentID))
-		
+
 		out += "[X] QA_Digest: %s\n" % (nullterm(self.QADigest, True))
 		out += "[X] K Licensee: %s\n" % licensee.encode('hex')
-		
-		
+
 		return out
 def listToString(inlist):
 	if isinstance(inlist, list):
@@ -471,7 +467,7 @@ def nullterm(str_plus, printhex=False):
 		return str_plus[:z]
 	else:
 		return str_plus
-		
+
 def keyToContext(key):
 	if isinstance(key, list):
 		key = listToString(key)
@@ -495,15 +491,14 @@ def manipulate(key):
 	if not isinstance(key, list):
 		return
 	tmp = listToString(key[0x38:])
-	
-	
+
 	tmpnum = struct.unpack('>Q', tmp)[0]
 	tmpnum += 1
 	tmpnum = tmpnum & 0xFFFFFFFFFFFFFFFF
 	setContextNum(key, tmpnum)
 def setContextNum(key, tmpnum):
 	tmpchrs = struct.pack('>Q', tmpnum)
-	
+
 	key[0x38] = ord(tmpchrs[0])
 	key[0x39] = ord(tmpchrs[1])
 	key[0x3a] = ord(tmpchrs[2])
@@ -526,7 +521,6 @@ except:
 	print ""
 	print "This should create a pkgcrypt.so file in the build/ directory. Move that file"
 	print "over to the root of the ps3py directory and try running this script again."
-
 
 def crypt(key, inbuf, length):
 	if not isinstance(key, list):
@@ -553,7 +547,7 @@ def SHA1(data):
 	return m.digest()
 
 pkgcrypt.register_sha1_callback(SHA1)
-	
+
 def getFiles(files, folder, original):
 	oldfolder = folder
 	foundFiles = glob.glob( os.path.join(folder, '*') )
@@ -573,7 +567,7 @@ def getFiles(files, folder, original):
 			folder.fileNameOff 	= 0
 			folder.fileNameLength = len(folder.fileName)
 			folder.fileOff 		= 0
-			
+
 			folder.fileSize 	= 0
 			folder.flags		= TYPE_OVERWRITE_ALLOWED | TYPE_DIRECTORY
 			folder.padding 		= 0
@@ -590,59 +584,57 @@ def getFiles(files, folder, original):
 			if newpath == "USRDIR/EBOOT.BIN":
 				file.fileSize = ((file.fileSize - 0x30 + 63) & ~63) + 0x30
 				file.flags		= TYPE_OVERWRITE_ALLOWED | TYPE_NPDRMSELF
-			
+
 			file.padding 		= 0
 			files.append(file)
-			
+
 def pack(folder, contentid, outname=None):
 
 	qadigest = hashlib.sha1()
-	
+
 	header = Header()
 	header.magic = 0x7F504B47
 	header.type = 0x01
 	header.pkgInfoOff = 0xC0
 	header.unk1 = 0x05
-	
+
 	header.headSize = 0x80
 	header.itemCount = 0
 	header.packageSize = 0
-	
+
 	header.dataOff = 0x140
 	header.dataSize = 0
-	
+
 	for i in range(0, 0x30):
 		header.contentID[i] = 0
-	
+
 	for i in range(0,0x10):
 		header.QADigest[i] = 0
 		header.KLicensee[i] = 0
-	
-	
+
 	metaBlock = MetaHeader()
 	metaBlock.unk1 		= 1 #doesnt change output of --extract
 	metaBlock.unk2 		= 4 #doesnt change output of --extract
 	metaBlock.drmType 	= 3 #1 = Network, 2 = Local, 3 = Free, anything else = unknown
-	metaBlock.unk4 		= 2 
-	
+	metaBlock.unk4 		= 2
+
 	metaBlock.unk21 	= 4
 	metaBlock.unk22 	= 5 #5 == gameexec, 4 == gamedata
 	metaBlock.unk23 	= 3
 	metaBlock.unk24 	= 4
-	
+
 	metaBlock.unk31 	= 0xE   #packageType 0x10 == patch, 0x8 == Demo&Key, 0x0 == Demo&Key (AND UserFiles = NotOverWrite), 0xE == normal, use 0xE for gamexec, and 8 for gamedata
 	metaBlock.unk32 	= 4   #when this is 5 secondary version gets used??
 	metaBlock.unk33 	= 8   #doesnt change output of --extract
 	metaBlock.secondaryVersion 	= 0
 	metaBlock.unk34 	= 0
-	
+
 	metaBlock.dataSize 	= 0
 	metaBlock.unk42 	= 5
 	metaBlock.unk43 	= 4
 	metaBlock.packagedBy 	= 0x1061
 	metaBlock.packageVersion 	= 0
-	
-	
+
 	files = []
 	getFiles(files, folder, folder)
 	header.itemCount = len(files)
@@ -689,7 +681,7 @@ def pack(folder, contentid, outname=None):
 				digestOff += len(digest)
 				if appheader.appType == 8 and found:
 					dataToEncrypt += fileData[0:digestOff]
-					
+
 					meta = EbootMeta()
 					meta.magic = 0x4E504400
 					meta.unk1 			= 1
@@ -711,7 +703,7 @@ def pack(folder, contentid, outname=None):
 					dataToEncrypt += fileData
 			else:
 				dataToEncrypt += fileData
-			
+
 			dataToEncrypt += '\0' * (((file.fileSize + 0x0F) & ~0x0F) - len(fileData))
 	header.dataSize = len(dataToEncrypt)
 	metaBlock.dataSize 	= header.dataSize
@@ -720,20 +712,20 @@ def pack(folder, contentid, outname=None):
 	qadigest.update(head)
 	qadigest.update(dataToEncrypt[0:fileDescLength])
 	QA_Digest = qadigest.digest()
-	
+
 	for i in range(0, 0x10):
 		header.QADigest[i] = ord(QA_Digest[i])
-		
+
 	for i in range(0, min(len(contentid), 0x30)):
 		header.contentID[i] = ord(contentid[i])
-	
+
 	context = keyToContext(header.QADigest)
 	setContextNum(context, 0xFFFFFFFFFFFFFFFF)
 	licensee = crypt(context, listToString(header.KLicensee), 0x10)
-	
+
 	for i in range(0, min(len(contentid), 0x10)):
 		header.KLicensee[i] = ord(licensee[i])
-	
+
 	if outname != None:
 		outFile = open(outname, 'wb')
 	else:
@@ -741,29 +733,28 @@ def pack(folder, contentid, outname=None):
 	outFile.write(header.pack())
 	headerSHA = SHA1(header.pack())[3:19]
 	outFile.write(headerSHA)
-	
-	
+
 	metaData = metaBlock.pack()
 	metaBlockSHA = SHA1(metaData)[3:19]
 	metaBlockSHAPad = '\0' * 0x30
-	
+
 	context = keyToContext([ord(c) for c in metaBlockSHA])
 	metaBlockSHAPadEnc = crypt(context, metaBlockSHAPad, 0x30)
-	
+
 	context = keyToContext([ord(c) for c in headerSHA])
 	metaBlockSHAPadEnc2 = crypt(context, metaBlockSHAPadEnc, 0x30)
 	outFile.write(metaBlockSHAPadEnc2)
 	outFile.write(metaData)
 	outFile.write(metaBlockSHA)
 	outFile.write(metaBlockSHAPadEnc)
-	
+
 	context = keyToContext(header.QADigest)
 	encData = crypt(context, dataToEncrypt, header.dataSize)
 	outFile.write(encData)
 	outFile.write('\0' * 0x60)
 	outFile.close()
 	print header
-	
+
 def usage():
 	print """usage: [based on revision 1061]
 

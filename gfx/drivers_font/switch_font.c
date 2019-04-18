@@ -115,15 +115,19 @@ static void switch_font_render_line(
     float scale, const unsigned int color, float pos_x,
     float pos_y, unsigned text_align)
 {
+      switch_video_t* sw = (switch_video_t*)video_info->userdata;
+
+      if(!sw)
+         return;
+
       int delta_x = 0;
       int delta_y = 0;
 
-      unsigned fbWidth = 0;
-      unsigned fbHeight = 0;
+      unsigned fbWidth = sw->vp.full_width;
+      unsigned fbHeight = sw->vp.full_height;
 
-      uint32_t *out_buffer = (uint32_t *)gfxGetFramebuffer(&fbWidth, &fbHeight);
-      if (out_buffer)
-      {
+      if (sw->out_buffer) {
+
             int x = roundf(pos_x * fbWidth);
             int y = roundf((1.0f - pos_y) * fbHeight);
 
@@ -148,7 +152,7 @@ static void switch_font_render_line(
                         i += skip - 1;
 
                   const struct font_glyph *glyph =
-                      font->font_driver->get_glyph(font->font_data, code);
+                        font->font_driver->get_glyph(font->font_data, code);
 
                   if (!glyph) /* Do something smarter here ... */
                         glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -169,12 +173,12 @@ static void switch_font_render_line(
                         uint8_t *row = &font->atlas->buffer[y * font->atlas->width];
                         for (int x = tex_x; x < tex_x + width; x++)
                         {
-                            if (!row[x])
-                                continue;
+                              if (!row[x])
+                                 continue;
                               int x1 = off_x + (x - tex_x);
                               int y1 = off_y + (y - tex_y);
                               if (x1 < fbWidth && y1 < fbHeight)
-                                  out_buffer[gfxGetFramebufferDisplayOffset(x1, y1)] = color;
+                                    sw->out_buffer[y1 * sw->stride / sizeof(uint32_t) + x1] = color;
                         }
                   }
 
@@ -337,6 +341,15 @@ static void switch_font_bind_block(void *data, void *userdata)
       (void)data;
 }
 
+static int switch_font_get_line_height(void *data)
+{
+      switch_font_t *font = (switch_font_t *)data;
+      if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+      return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t switch_font =
     {
         switch_font_init_font,
@@ -347,4 +360,5 @@ font_renderer_t switch_font =
         switch_font_bind_block,
         NULL, /* flush_block */
         switch_font_get_message_width,
+        switch_font_get_line_height
 };

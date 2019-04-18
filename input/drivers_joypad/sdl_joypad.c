@@ -399,6 +399,8 @@ static void sdl_joypad_poll(void)
             break;
       }
    }
+
+   SDL_FlushEvents(SDL_JOYAXISMOTION, SDL_CONTROLLERDEVICEREMAPPED);
 #else
    SDL_JoystickUpdate();
 #endif

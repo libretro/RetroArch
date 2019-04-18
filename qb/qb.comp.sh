@@ -4,6 +4,11 @@ TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
 TEMP_EXE=.tmp
 
+CC="${CC:-}"
+CXX="${CXX:-}"
+PKG_CONF_PATH="${PKG_CONF_PATH:-}"
+WINDRES="${WINDRES:-}"
+
 # Checking for working C compiler
 cat << EOF > "$TEMP_C"
 #include <stdio.h>
@@ -35,7 +40,7 @@ elif [ -z "$CC" ]; then
 	cc_status='not found'
 fi
 
-echo "Checking for suitable working C compiler ... $CC $cc_status"
+printf %s\\n "Checking for suitable working C compiler ... $CC $cc_status"
 
 if [ "$cc_works" = '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
 	die 1 'Error: Cannot proceed without a working C compiler.'
@@ -72,7 +77,7 @@ elif [ -z "$CXX" ]; then
 	cxx_status='not found'
 fi
 
-echo "Checking for suitable working C++ compiler ... $CXX $cxx_status"
+printf %s\\n "Checking for suitable working C++ compiler ... $CXX $cxx_status"
 
 if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
 	die : 'Warning: A working C++ compiler was not found, C++ features will be disabled.'
@@ -84,27 +89,7 @@ if [ "$OS" = "Win32" ]; then
 		WINDRES="$(exists "${CROSS_COMPILE}windres")" || WINDRES=""
 		[ -z "$WINDRES" ] && die 1 "$echobuf ... Not found. Exiting."
 	fi
-	echo "$echobuf ... $WINDRES"
-fi
-
-if [ "$HAVE_QT" != "no" ]; then
-	echobuf="Checking for moc"
-	if [ -z "$MOC" ]; then
-		MOC_PATH="none"
-		for moc in moc-qt5 moc; do
-			MOC="$(exists "$moc")" || MOC=""
-			[ "${MOC}" ] && {
-				MOC_PATH="$MOC"
-				break
-			}
-		done
-	fi
-
-	echo "$echobuf ... $MOC_PATH"
-
-	if [ "$MOC_PATH" = "none" ]; then
-		die : 'Warning: moc not found, Qt companion support will be disabled.'
-	fi
+	printf %s\\n "$echobuf ... $WINDRES"
 fi
 
 if [ -z "$PKG_CONF_PATH" ]; then
@@ -118,7 +103,7 @@ if [ -z "$PKG_CONF_PATH" ]; then
 	done
 fi
 
-echo "Checking for pkg-config ... $PKG_CONF_PATH"
+printf %s\\n "Checking for pkg-config ... $PKG_CONF_PATH"
 
 if [ "$PKG_CONF_PATH" = "none" ]; then
 	die : 'Warning: pkg-config not found, package checks will fail.'

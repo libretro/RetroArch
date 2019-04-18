@@ -16,4 +16,3 @@
 #include <wiiu/gx2/swap.h>
 #include <wiiu/gx2/tessellation.h>
 #include <wiiu/gx2/texture.h>
-

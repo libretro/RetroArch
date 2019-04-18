@@ -343,7 +343,7 @@ static void input_overlay_enable(input_overlay_t *ol, bool enable)
  * Check whether the given @x and @y coordinates of the overlay
  * descriptor @desc is inside the overlay descriptor's hitbox.
  *
- * Returns: true (1) if X, Y coordinates are inside a hitbox, 
+ * Returns: true (1) if X, Y coordinates are inside a hitbox,
  * otherwise false (0).
  **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
@@ -434,13 +434,13 @@ static void input_overlay_poll(
                float x_val_sat       = x_val / desc->analog_saturate_pct;
                float y_val_sat       = y_val / desc->analog_saturate_pct;
 
-               unsigned int base     = 
-                  (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) 
+               unsigned int base     =
+                  (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
                   ? 2 : 0;
 
-               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) 
+               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
                   * 32767.0f;
-               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) 
+               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
                   * 32767.0f;
             }
             break;
@@ -595,7 +595,8 @@ void input_overlay_free(input_overlay_t *ol)
 }
 
 /* task_data = overlay_task_data_t* */
-void input_overlay_loaded(void *task_data, void *user_data, const char *err)
+void input_overlay_loaded(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    size_t i;
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
@@ -614,8 +615,8 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    }
 #endif
 
-   if (  !data->overlay_enable                   || 
-         !video_driver_overlay_interface(&iface) || 
+   if (  !data->overlay_enable                   ||
+         !video_driver_overlay_interface(&iface) ||
          !iface)
    {
       RARCH_ERR("Overlay interface is not present in video driver,"
@@ -655,7 +656,7 @@ void input_overlay_set_visibility(int overlay_idx,
       enum overlay_visibility vis)
 {
     input_overlay_t *ol = overlay_ptr;
-      
+
     if (!visibility)
     {
        unsigned i;
@@ -685,7 +686,7 @@ static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
 
 static bool input_overlay_is_hidden(int overlay_idx)
 {
-    return (input_overlay_get_visibility(overlay_idx) 
+    return (input_overlay_get_visibility(overlay_idx)
           == OVERLAY_VISIBILITY_HIDDEN);
 }
 

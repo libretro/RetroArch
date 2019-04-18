@@ -1,7 +1,7 @@
 USAGE NOTES
 ===========
 
-This driver is meant for devices with Allwinner SoCs with Mali400 3D block and a 
+This driver is meant for devices with Allwinner SoCs with Mali400 3D block and a
 good fbdev implementation. It is derived from the old Android GLES driver.
 
 It was meant to be used on Cubieboard/Cubieboard2/Cubietruck, but it should not
@@ -19,7 +19,7 @@ First we will clone and build the kernel:
 git clone https://github.com/mireq/linux-sunxi.git -b sunxi-3.4 --depth 1
 
 Now we edit drivers/video/sunxi/disp/dev_fb.c, and uncomment the line 1074:
-// Fb_wait_for_vsync(info); 
+// Fb_wait_for_vsync(info);
 
 It is assumed you have a cross-compiler installed, so we configure and build the kernel and modules:
 
@@ -50,7 +50,7 @@ Now we need the headers. We can get them from here:
 
 http://malideveloper.arm.com/develop-for-mali/sdks/opengl-es-sdk-for-linux/#opengl-es-sdk-for-linux-download
 
-Download whatever version you want. We just get the headers from here, not machine-dependant compiled code. 
+Download whatever version you want. We just get the headers from here, not machine-dependant compiled code.
 
 Extract the files and copy the directories inside inc to /usr/include .
 
@@ -60,27 +60,27 @@ In the end you should have this on your system:
 
    /usr/include/EGL/
       eglext.h
-      egl.h           
-      eglplatform.h   
+      egl.h
+      eglplatform.h
       fbdev_window.h
    /usr/include/GLES/
       glext.h
-      gl.h  
+      gl.h
       glplatform.h
    /usr/include/GLES2
       gl2ext.h
-      gl2.h  
+      gl2.h
       gl2platform.h
    /usr/include/GLES3
       gl3ext.h
-      gl3.h  
+      gl3.h
       gl3platform.h
 
 To enable mali_fbdev you must configure RetroArch with --enable-gles and --enable-mali_fbdev.
 
 This is an example of what you would use on a CubieBoard2 for a lightweight RetroArch:
 
-./configure --enable-gles --enable-mali_fbdev --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip --disable-libxml2
+./configure --enable-gles --enable-mali_fbdev --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip
 
 NOTE: A TTY hack is used to auto-clean the console on exit, and the fbdev ioctls are used to retrieve
 current video mode. Both things work good, but they are not exactly ideal solutions.

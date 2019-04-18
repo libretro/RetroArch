@@ -89,7 +89,7 @@ static int setup_gpio(int gpio)
       fclose(fp);
 
       snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", gpio);
-      fp = fopen(buf, "w");    
+      fp = fopen(buf, "w");
    }
 
    if(!fp)

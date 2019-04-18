@@ -29,7 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/poll.h>
+#include <poll.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
@@ -153,7 +153,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
-
 
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
@@ -497,6 +496,28 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
 }
 
 #ifdef HAVE_EGL
+static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
+{
+   EGLint r, g, b, id;
+   (void)display_data;
+
+   /* Makes sure we have 8 bit color. */
+   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+      return false;
+   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+      return false;
+
+   if (r != 8 || g != 8 || b != 8)
+      return false;
+
+   if (!eglGetConfigAttrib(dpy, config, EGL_NATIVE_VISUAL_ID, &id))
+      return false;
+
+   return id == GBM_FORMAT_XRGB8888;
+}
+
 #define DRM_EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
@@ -575,7 +596,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 #ifdef HAVE_EGL
          if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
                   (EGLNativeDisplayType)g_gbm_dev, &major,
-                  &minor, &n, attrib_ptr))
+                  &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
             goto error;
 
          attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
@@ -685,7 +706,6 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
    }
 
-
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -723,7 +743,6 @@ error:
 
    return false;
 }
-
 
 static void gfx_ctx_drm_destroy(void *data)
 {
@@ -890,6 +909,8 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
    if (drm->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
    return flags;
 }
 
@@ -898,6 +919,26 @@ static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       drm->core_hw_context_enable = true;
+}
+
+void gfx_ctx_drm_update_window_title(void *data, void *data2)
+{
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t* video_info = (video_frame_info_t*)data2;
+
+   if (settings->bools.video_memory_show)
+   {
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm = {
@@ -914,7 +955,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   NULL, /* update_window_title */
+   gfx_ctx_drm_update_window_title,
    gfx_ctx_drm_check_window,
    NULL, /* set_resize */
    gfx_ctx_drm_has_focus,

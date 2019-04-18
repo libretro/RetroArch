@@ -939,8 +939,6 @@ static video_poke_interface_t xv_video_poke_interface = {
    NULL,
    NULL,
    NULL,
-   NULL,
-   NULL,
    x11_get_refresh_rate,
    NULL,
    NULL,

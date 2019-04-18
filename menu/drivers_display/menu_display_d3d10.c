@@ -46,14 +46,14 @@ static void* menu_display_d3d10_get_default_mvp(video_frame_info_t *video_info)
 
 static void menu_display_d3d10_blend_begin(video_frame_info_t *video_info)
 {
-   d3d10_video_t* d3d10 = video_info ? (d3d10_video_t*)video_info->userdata : NULL;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d10_blend_end(video_frame_info_t *video_info)
 {
-   d3d10_video_t* d3d10 = video_info ? (d3d10_video_t*)video_info->userdata : NULL;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
@@ -66,9 +66,8 @@ static void menu_display_d3d10_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   int                      vertex_count;
-   d3d10_video_t*           d3d10 = video_info ? 
-      (d3d10_video_t*)video_info->userdata : NULL;
+   int vertex_count;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
 
    if (!d3d10 || !draw || !draw->texture)
       return;
@@ -114,7 +113,8 @@ static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
       {
          sprite->pos.x = draw->x / (float)d3d10->viewport.Width;
          sprite->pos.y =
-               (d3d10->viewport.Height - draw->y - draw->height) / (float)d3d10->viewport.Height;
+               (d3d10->viewport.Height - draw->y - draw->height) 
+               / (float)d3d10->viewport.Height;
          sprite->pos.w = draw->width / (float)d3d10->viewport.Width;
          sprite->pos.h = draw->height / (float)d3d10->viewport.Height;
 
@@ -188,8 +188,7 @@ static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
 static void menu_display_d3d10_draw_pipeline(menu_display_ctx_draw_t* draw,
       video_frame_info_t *video_info)
 {
-   d3d10_video_t*           d3d10 = video_info ? 
-      (d3d10_video_t*)video_info->userdata : NULL;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
 
    if (!d3d10 || !draw)
       return;
@@ -248,8 +247,7 @@ static void menu_display_d3d10_clear_color(
       menu_display_ctx_clearcolor_t* clearcolor,
       video_frame_info_t *video_info)
 {
-   d3d10_video_t *d3d10 = video_info ? 
-      (d3d10_video_t*)video_info->userdata : NULL;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
 
    if (!d3d10 || !clearcolor)
       return;
@@ -262,17 +260,49 @@ static bool menu_display_d3d10_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
-      float       font_size,
+      float       menu_font_size,
       bool        is_threaded)
 {
    font_data_t** handle     = (font_data_t**)font_handle;
    font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, font_size, true,
+         video_data, font_path, menu_font_size, true,
          is_threaded, FONT_DRIVER_RENDER_D3D10_API);
    if (!new_handle)
       return false;
    *handle = new_handle;
    return true;
+}
+
+void menu_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   D3D10_RECT rect;
+   d3d10_video_t *d3d10 = (d3d10_video_t*)video_info->userdata;
+
+   if (!d3d10 || !width || !height)
+      return;
+
+   rect.left            = x;
+   rect.top             = y;
+   rect.right           = width + x;
+   rect.bottom          = height + y;
+
+   D3D10SetScissorRects(d3d10->device, 1, &rect);
+}
+
+void menu_display_d3d10_scissor_end(video_frame_info_t *video_info)
+{
+   D3D10_RECT rect;
+   d3d10_video_t *d3d10 = (d3d10_video_t*)video_info->userdata;
+
+   if (!d3d10)
+      return;
+
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_info->width;
+   rect.bottom          = video_info->height;
+
+   D3D10SetScissorRects(d3d10->device, 1, &rect);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d10 = {
@@ -290,6 +320,6 @@ menu_display_ctx_driver_t menu_display_ctx_d3d10 = {
    MENU_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
    true,
-   NULL,
-   NULL
+   menu_display_d3d10_scissor_begin,
+   menu_display_d3d10_scissor_end
 };

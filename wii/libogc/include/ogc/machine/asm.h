@@ -13,7 +13,6 @@
 #define	cr6	6
 #define	cr7	7
 
-
 /* General Purpose Registers (GPRs) */
 
 #define	r0	0
@@ -50,7 +49,6 @@
 #define	r29	29
 #define	r30	30
 #define	r31	31
-
 
 /* Floating Point Registers (FPRs) */
 
@@ -134,7 +132,6 @@
 
 #define MMCR0	952
 #define MMCR1	956
-
 
 #define LINK_REGISTER_CALLEE_UPDATE_ROOM 4
 #define EXCEPTION_NUMBER 8

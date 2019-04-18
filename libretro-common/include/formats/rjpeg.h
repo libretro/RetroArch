@@ -46,4 +46,3 @@ rjpeg_t *rjpeg_alloc(void);
 RETRO_END_DECLS
 
 #endif
-

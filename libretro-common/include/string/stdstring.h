@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (stdstring.h).
@@ -44,12 +44,7 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 {
    if (!a || !b)
       return false;
-   while(*a && (*a == *b))
-   {
-      a++;
-      b++;
-   }
-   return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
+   return !strcmp(a, b);
 }
 
 static INLINE bool string_is_not_equal(const char *a, const char *b)

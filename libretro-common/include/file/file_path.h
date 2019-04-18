@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
@@ -28,11 +28,16 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <libretro.h>
 #include <retro_common_api.h>
 
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
+
+#define PATH_REQUIRED_VFS_VERSION 3
+
+void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 /* Order in this enum is equivalent to negative sort order in filelist
  *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
@@ -45,7 +50,6 @@ enum
    RARCH_DIRECTORY,
    RARCH_FILE_UNSUPPORTED
 };
-
 
 /**
  * path_is_compressed_file:
@@ -104,7 +108,7 @@ const char *path_get_extension(const char *path);
  * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: 
+ * Returns:
  * 1) If path has an extension, returns path with the
  *    extension removed.
  * 2) If there is no extension, returns NULL.
@@ -137,6 +141,7 @@ void path_basedir(char *path);
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, returns empty string
  **/
 void path_parent_dir(char *path);
 
@@ -315,6 +320,7 @@ bool fill_pathname_parent_dir_name(char *out_dir,
  *
  * Copies parent directory of @in_dir into @out_dir.
  * Assumes @in_dir is a directory. Keeps trailing '/'.
+ * If the path was already at the root directory, @out_dir will be an empty string.
  **/
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size);
@@ -462,6 +468,8 @@ void fill_pathname_slash(char *path, size_t size);
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 void fill_pathname_application_path(char *buf, size_t size);
+void fill_pathname_application_dir(char *buf, size_t size);
+void fill_pathname_home_dir(char *buf, size_t size);
 #endif
 
 /**

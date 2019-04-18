@@ -6,4 +6,3 @@
 //
 
 OTHER_CFLAGS = $(inherited) -DHAVE_MAIN -DHAVE_COCOA_METAL
-

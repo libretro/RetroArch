@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __ARAM_H__
 #define __ARAM_H__
 
@@ -38,7 +37,6 @@ distribution.
  */
 
 #include <gctypes.h>
-
 
 /*!
  * \addtogroup dmamode ARAM DMA transfer direction
@@ -52,8 +50,6 @@ distribution.
  * @}
  */
 
-
-
 /*!
  * \addtogroup memmode ARAM memory access modes
  * @{
@@ -66,11 +62,9 @@ distribution.
  * @}
  */
 
-
 #ifdef __cplusplus
    extern "C" {
 #endif /* __cplusplus */
-
 
 /*!
  * \typedef void (*ARCallback)(void)
@@ -79,7 +73,6 @@ distribution.
  * \param none
  */
 typedef void (*ARCallback)(void);
-
 
 /*!
  * \fn ARCallback AR_RegisterCallback(ARCallback callback)
@@ -93,7 +86,6 @@ typedef void (*ARCallback)(void);
  */
 ARCallback AR_RegisterCallback(ARCallback callback);
 
-
 /*!
  * \fn u32 AR_GetDMAStatus()
  * \brief Get current status of DMA
@@ -101,7 +93,6 @@ ARCallback AR_RegisterCallback(ARCallback callback);
  * \return zero if DMA is idle, non-zero if a DMA is in progress
  */
 u32 AR_GetDMAStatus();
-
 
 /*!
  * \fn u32 AR_Init(u32 *stack_idx_array,u32 num_entries)
@@ -146,7 +137,6 @@ u32 AR_GetDMAStatus();
  */
 u32 AR_Init(u32 *stack_idx_array,u32 num_entries);
 
-
 /*!
  * \fn void AR_StartDMA(u32 dir,u32 memaddr,u32 aramaddr,u32 len)
  * \brief Initiates a DMA between main memory and ARAM.
@@ -166,7 +156,6 @@ u32 AR_Init(u32 *stack_idx_array,u32 num_entries);
  */
 void AR_StartDMA(u32 dir,u32 memaddr,u32 aramaddr,u32 len);
 
-
 /*!
  * \fn u32 AR_Alloc(u32 len)
  * \brief Allocate a block of memory from ARAM having <i>len</i> bytes.
@@ -179,7 +168,6 @@ void AR_StartDMA(u32 dir,u32 memaddr,u32 aramaddr,u32 len);
  */
 u32 AR_Alloc(u32 len);
 
-
 /*!
  * \fn u32 AR_Free(u32 *len)
  * \brief Free a block from ARAM
@@ -189,7 +177,6 @@ u32 AR_Alloc(u32 len);
  * \return ARAM current baseaddress after free'ing the block
  */
 u32 AR_Free(u32 *len);
-
 
 /*!
  * \fn void AR_Clear(u32 flag)
@@ -201,7 +188,6 @@ u32 AR_Free(u32 *len);
  */
 void AR_Clear(u32 flag);
 
-
 /*!
  * \fn BOOL AR_CheckInit()
  * \brief Get the ARAM subsystem initialization flag
@@ -210,7 +196,6 @@ void AR_Clear(u32 flag);
  *         FALSE if the ARAM subsystem has not been initialized, or has been reset(via AR_Reset())
  */
 BOOL AR_CheckInit();
-
 
 /*!
  * \fn void AR_Reset()
@@ -222,7 +207,6 @@ BOOL AR_CheckInit();
  */
 void AR_Reset();
 
-
 /*!
  * \fn u32 AR_GetSize()
  * \brief Get the total size - in bytes - of ARAM as calculated during AR_Init()
@@ -230,7 +214,6 @@ void AR_Reset();
  * \return size of the specified ARAM block
  */
 u32 AR_GetSize();
-
 
 /*!
  * \fn u32 AR_GetBaseAddress()
@@ -240,7 +223,6 @@ u32 AR_GetSize();
  */
 u32 AR_GetBaseAddress();
 
-
 /*!
  * \fn u32 AR_GetInternalSize()
  * \brief Get the size of the internal ARAM memory
@@ -249,14 +231,12 @@ u32 AR_GetBaseAddress();
  */
 u32 AR_GetInternalSize();
 
-
 /*!
  * \def AR_StartDMARead(maddr,araddr,tlen)
  * \brief Wraps the DMA read operation done by AR_StartDMA()
  */
 #define AR_StartDMARead(maddr,araddr,tlen)	\
 	AR_StartDMA(AR_ARAMTOMRAM,maddr,araddr,tlen);
-
 
 /*!
  * \def AR_StartDMAWrite(maddr,araddr,tlen)

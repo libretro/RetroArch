@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -418,7 +417,6 @@ static void __card_updateiconoffsets(struct card_direntry *entry,card_stat *stat
 				stats->offset_icon[i] = -1;
 				stats->offset_icon_tlut[i] = -1;
 				break;
-
 
 		}
 	}
@@ -893,7 +891,6 @@ static void __timeouthandler(syswd_t alarm,void *cbarg)
 		chn++;
 	}
 	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return;
-
 
 	if(card->attached) {
 		EXI_RegisterEXICallback(chn,NULL);
@@ -2049,7 +2046,6 @@ static s32 __dounlock(s32 chn,u32 *key)
 	len = __card_dummylen();
 
 	if(__card_readarrayunlock(chn,array_addr,tmp_buffer,len,0)<0) return CARD_ERROR_NOCARD;
-
 
 	val = exnor_1st(array_addr,(len<<3)+1);
 	{

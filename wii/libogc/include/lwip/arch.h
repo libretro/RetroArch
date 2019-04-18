@@ -54,8 +54,6 @@
 #define PACK_STRUCT_FIELD(x) x
 #endif /* PACK_STRUCT_FIELD */
 
-
-
 #ifdef LWIP_PROVIDE_ERRNO
 
 #define  EPERM     1  /* Operation not permitted */
@@ -185,7 +183,6 @@
 
 #define  ENOMEDIUM  123  /* No medium found */
 #define  EMEDIUMTYPE  124  /* Wrong medium type */
-
 
 #define	ENSROK		0	/* DNS server returned answer with no data */
 #define	ENSRNODATA	160	/* DNS server returned answer with no data */

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -82,10 +82,13 @@ bool content_reset_savestate_backups(void);
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
 
-/* Clears the pending subsystem rom buffer*/
+/* Checks if launched from the commandline */
+bool content_launched_from_cli(void);
+
+/* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);
 
-/* Clears the pending subsystem rom buffer*/
+/* Clears the pending subsystem rom buffer */
 void content_clear_subsystem(void);
 
 /* Set the current subsystem*/
@@ -102,6 +105,15 @@ unsigned content_get_subsystem_rom_id(void);
 
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void);
+
+/* Get the path to the last selected subsystem rom */
+char* content_get_subsystem_rom(unsigned index);
+
+/* Sets the subsystem by name */
+bool content_set_subsystem_by_name(const char* subsystem_name);
+
+/* Get the current subsystem "friendly name" */
+void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len);
 
 RETRO_END_DECLS
 

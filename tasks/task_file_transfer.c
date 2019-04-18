@@ -21,6 +21,8 @@
 
 #include <string/stdstring.h>
 
+#include "task_audio_mixer.h"
+#include "task_file_transfer.h"
 #include "tasks_internal.h"
 #include "../verbosity.h"
 

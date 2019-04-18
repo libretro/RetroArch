@@ -38,7 +38,6 @@
 #define tick_microsecs(ticks)		((((u64)(ticks)*8)%(u64)(TB_TIMER_CLOCK/125)))
 #define tick_nanosecs(ticks)		((((u64)(ticks)*8000)%(u64)(TB_TIMER_CLOCK/125)))
 
-
 #define secs_to_ticks(sec)			((u64)(sec)*(TB_TIMER_CLOCK*1000))
 #define millisecs_to_ticks(msec)	((u64)(msec)*(TB_TIMER_CLOCK))
 #define microsecs_to_ticks(usec)	(((u64)(usec)*(TB_TIMER_CLOCK/125))/8)

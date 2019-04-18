@@ -46,11 +46,15 @@ enum record_config_type
    RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
    RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_GIF,
    RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
    RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
    RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    RECORD_CONFIG_TYPE_STREAMING_NETPLAY
+
 };
 
 /* Parameters passed to ffemu_new() */
@@ -198,11 +202,9 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
-unsigned *recording_driver_get_width(void);
-
-unsigned *recording_driver_get_height(void);
-
 void recording_driver_free_state(void);
+
+void recording_driver_get_size(unsigned *width, unsigned *height);
 
 bool recording_is_enabled(void);
 

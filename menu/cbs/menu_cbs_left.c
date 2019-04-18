@@ -234,7 +234,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
    else
       push_list = 2;
 
-
    switch (push_list)
    {
       case 1:
@@ -342,7 +341,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
       return menu_cbs_exit();
 
    if (pass_count > 0)
-      menu_shader_manager_decrement_amount_passes();
+      shader->passes--;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -505,6 +504,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;

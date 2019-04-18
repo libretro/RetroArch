@@ -274,6 +274,7 @@ enum retro_language
    RETRO_LANGUAGE_VIETNAMESE          = 15,
    RETRO_LANGUAGE_ARABIC              = 16,
    RETRO_LANGUAGE_GREEK               = 17,
+   RETRO_LANGUAGE_TURKISH             = 18,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -485,7 +486,6 @@ enum retro_mod
 /* Environment commands. */
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  /* const unsigned * --
                                             * Sets screen rotation of graphics.
-                                            * Is only implemented if rotation can be accelerated by hardware.
                                             * Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180,
                                             * 270 degrees counter-clockwise respectively.
                                             */
@@ -875,12 +875,12 @@ enum retro_mod
                                             * types already defined in the libretro API.
                                             *
                                             * The core must pass an array of const struct retro_controller_info which
-                                            * is terminated with a blanked out struct. Each element of the 
+                                            * is terminated with a blanked out struct. Each element of the
                                             * retro_controller_info struct corresponds to the ascending port index
                                             * that is passed to retro_set_controller_port_device() when that function
                                             * is called to indicate to the core that the frontend has changed the
                                             * active device subclass. SEE ALSO: retro_set_controller_port_device()
-                                            * 
+                                            *
                                             * The ascending input port indexes provided by the core in the struct
                                             * are generally presented by frontends as ascending User # or Player #,
                                             * such as Player 1, Player 2, Player 3, etc. Which device subclasses are
@@ -892,7 +892,7 @@ enum retro_mod
                                             * User or Player, beginning with the generic Libretro device that the
                                             * subclasses are derived from. The second inner element of each entry is the
                                             * total number of subclasses that are listed in the retro_controller_description.
-                                            * 
+                                            *
                                             * NOTE: Even if special device types are set in the libretro core,
                                             * libretro should only poll input based on the base input device types.
                                             */
@@ -1079,10 +1079,19 @@ enum retro_mod
                                             * fastforwarding mode.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* float * --
+                                            * Float value that lets us know what target refresh rate 
+                                            * is curently in use by the frontend.
+                                            *
+                                            * The core can use the returned value to set an ideal 
+                                            * refresh rate/framerate.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
- * File paths passed as parameters when using this api shall be well formed unix-style,
+ * File paths passed as parameters when using this api shall be well formed UNIX-style,
  * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
  * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
  * Other than the directory separator, cores shall not make assumptions about path format:
@@ -1099,6 +1108,10 @@ enum retro_mod
 /* Opaque file handle
  * Introduced in VFS API v1 */
 struct retro_vfs_file_handle;
+
+/* Opaque directory handle
+ * Introduced in VFS API v3 */
+struct retro_vfs_dir_handle;
 
 /* File open flags
  * Introduced in VFS API v1 */
@@ -1119,6 +1132,12 @@ struct retro_vfs_file_handle;
 #define RETRO_VFS_SEEK_POSITION_CURRENT  1
 #define RETRO_VFS_SEEK_POSITION_END      2
 
+/* stat() result flags
+ * Introduced in VFS API v3 */
+#define RETRO_VFS_STAT_IS_VALID               (1 << 0)
+#define RETRO_VFS_STAT_IS_DIRECTORY           (1 << 1)
+#define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
+
 /* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
  * Introduced in VFS API v1 */
 typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
@@ -1128,7 +1147,7 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file
  * Introduced in VFS API v1 */
 typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
 
-/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on succes, -1 on failure.
+/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on success, -1 on failure.
  * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
  * Introduced in VFS API v1 */
 typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
@@ -1141,7 +1160,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle 
  * Introduced in VFS API v2 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
 
-/* Get the current read / write position for the file. Returns - 1 for error.
+/* Get the current read / write position for the file. Returns -1 for error.
  * Introduced in VFS API v1 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
 
@@ -1169,6 +1188,39 @@ typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
  * Introduced in VFS API v1 */
 typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
 
+/* Stat the specified file. Retruns a bitmask of RETRO_VFS_STAT_* flags, none are set if path was not valid.
+ * Additionally stores file size in given variable, unless NULL is given.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
+
+/* Create the specified directory. Returns 0 on success, -1 on unknown failure, -2 if already exists.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_mkdir_t)(const char *dir);
+
+/* Open the specified directory for listing. Returns the opaque dir handle, or NULL for error.
+ * Support for the include_hidden argument may vary depending on the platform.
+ * Introduced in VFS API v3 */
+typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const char *dir, bool include_hidden);
+
+/* Read the directory entry at the current position, and move the read pointer to the next position.
+ * Returns true on success, false if already on the last entry.
+ * Introduced in VFS API v3 */
+typedef bool (RETRO_CALLCONV *retro_vfs_readdir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Get the name of the last entry read. Returns a string on success, or NULL for error.
+ * The returned string pointer is valid until the next call to readdir or closedir.
+ * Introduced in VFS API v3 */
+typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Check if the last entry read was a directory. Returns true if it was, false otherwise (or on error).
+ * Introduced in VFS API v3 */
+typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/* Close the directory and release its resources. Must be called if opendir returns non-NULL. Returns 0 on success, -1 on failure.
+ * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
+ * Introduced in VFS API v3 */
+typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
+
 struct retro_vfs_interface
 {
    /* VFS API v1 */
@@ -1185,6 +1237,14 @@ struct retro_vfs_interface
 	retro_vfs_rename_t rename;
    /* VFS API v2 */
    retro_vfs_truncate_t truncate;
+   /* VFS API v3 */
+   retro_vfs_stat_t stat;
+   retro_vfs_mkdir_t mkdir;
+   retro_vfs_opendir_t opendir;
+   retro_vfs_readdir_t readdir;
+   retro_vfs_dirent_get_name_t dirent_get_name;
+   retro_vfs_dirent_is_dir_t dirent_is_dir;
+   retro_vfs_closedir_t closedir;
 };
 
 struct retro_vfs_interface_info
@@ -1207,6 +1267,7 @@ enum retro_hw_render_interface_type
 	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
 	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
 	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
    RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
 };
 

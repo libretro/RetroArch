@@ -17,7 +17,6 @@
 #include "../../command.h"
 #include "string.h"
 
-
 #ifdef HAVE_LIBNX
 
 #ifndef MAX_PADS
@@ -35,6 +34,13 @@
 static uint16_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
+
+#ifdef HAVE_LIBNX
+static u32 vibration_handles[MAX_PADS][2];
+static u32 vibration_handleheld[2];
+static HidVibrationValue vibration_values[MAX_PADS][2];
+static HidVibrationValue vibration_stop;
+#endif
 
 static const char *switch_joypad_name(unsigned pad)
 {
@@ -58,8 +64,21 @@ static bool switch_joypad_init(void *data)
 #ifdef HAVE_LIBNX
    unsigned i;
    hidScanInput();
+
+   // Switch like stop behavior with muted band channels and frequencies set to default.
+   vibration_stop.amp_low   = 0.0f;
+   vibration_stop.freq_low  = 160.0f;
+   vibration_stop.amp_high  = 0.0f;
+   vibration_stop.freq_high = 320.0f;
+
    for (i = 0; i < MAX_PADS; i++)
+   {
       switch_joypad_autodetect_add(i);
+      hidInitializeVibrationDevices(vibration_handles[i], 2, i, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+      memcpy(&vibration_values[i][0], &vibration_stop, sizeof(HidVibrationValue));
+      memcpy(&vibration_values[i][1], &vibration_stop, sizeof(HidVibrationValue));
+   }
+   hidInitializeVibrationDevices(vibration_handleheld, 2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
 #else
    hid_init();
    switch_joypad_autodetect_add(0);
@@ -147,7 +166,16 @@ static bool switch_joypad_query_pad(unsigned pad)
 
 static void switch_joypad_destroy(void)
 {
-#ifndef HAVE_LIBNX
+#ifdef HAVE_LIBNX
+   unsigned i;
+   for (i = 0; i < MAX_PADS; i++)
+   {
+      memcpy(&vibration_values[i][0], &vibration_stop, sizeof(HidVibrationValue));
+      memcpy(&vibration_values[i][1], &vibration_stop, sizeof(HidVibrationValue));
+      hidSendVibrationValues(vibration_handles[i], vibration_values[i], 2);
+   }
+   hidSendVibrationValues(vibration_handleheld, vibration_values[0], 2);
+#else
    hid_finalize();
 #endif
 }
@@ -170,6 +198,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
             }
          }
          lastMode = 1;
@@ -185,6 +214,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeDual(i);
                hidSetNpadJoyAssignmentModeDual(i + 1);
+               hidMergeSingleJoyAsDualJoy(i, i + 1);
             }
          }
          lastMode = 0;
@@ -232,11 +262,39 @@ static void switch_joypad_poll(void)
 	   rsx = ent8.right_stick_x;
 	   rsy = ent8.right_stick_y;
    }
-   
+
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = lsx;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = -lsy;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rsx;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -rsy;
+}
+#endif
+
+#ifdef HAVE_LIBNX
+bool switch_joypad_set_rumble(unsigned pad,
+      enum retro_rumble_effect type, uint16_t strength)
+{
+   u32* handle;
+   float amp;
+
+   if (pad >= MAX_PADS || !vibration_handles[pad])
+      return false;
+
+   amp = (float)strength / 65535.0f;
+   amp *= 0.5f; // Max strength is too strong
+   if (type == RETRO_RUMBLE_STRONG)
+   {
+      vibration_values[pad][0].amp_low = amp;
+      vibration_values[pad][1].amp_low = amp;
+   }
+   else
+   {
+      vibration_values[pad][0].amp_high = amp;
+      vibration_values[pad][1].amp_high = amp;
+   }
+
+   handle = (pad == 0 && hidGetHandheldMode()) ? vibration_handleheld : vibration_handles[pad];
+   return R_SUCCEEDED(hidSendVibrationValues(handle, vibration_values[pad], 2));
 }
 #endif
 
@@ -248,7 +306,11 @@ input_device_driver_t switch_joypad = {
 	switch_joypad_get_buttons,
 	switch_joypad_axis,
 	switch_joypad_poll,
+#ifdef HAVE_LIBNX
+   switch_joypad_set_rumble,
+#else
 	NULL, /* set_rumble */
+#endif
 	switch_joypad_name,
 	"switch"
 };

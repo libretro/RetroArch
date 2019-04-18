@@ -37,7 +37,8 @@
 #endif
 
 #ifdef HAVE_LIBRETRODB
-void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
+void handle_dbscan_finished(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
 {
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
@@ -110,17 +111,29 @@ int action_switch_thumbnail(const char *path,
 
    if (settings->uints.menu_thumbnails == 0)
    {
-      settings->uints.menu_left_thumbnails++;
-      if (settings->uints.menu_left_thumbnails > 3)
-         settings->uints.menu_left_thumbnails = 1;
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      /* RGUI is a special case where thumbnail 'switch' corresponds to
+       * toggling thumbnail view on/off. For other menu drivers, we
+       * cycle through available thumbnail types. */
+      if(!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      {
+			settings->uints.menu_left_thumbnails++;
+			if (settings->uints.menu_left_thumbnails > 3)
+				settings->uints.menu_left_thumbnails = 1;
+			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+		}
    }
    else
    {
-      settings->uints.menu_thumbnails++;
-      if (settings->uints.menu_thumbnails > 3)
-         settings->uints.menu_thumbnails = 1;
+      /* RGUI is a special case where thumbnail 'switch' corresponds to
+       * toggling thumbnail view on/off. For other menu drivers, we
+       * cycle through available thumbnail types. */
+      if(!string_is_equal(settings->arrays.menu_driver, "rgui"))
+      {
+         settings->uints.menu_thumbnails++;
+         if (settings->uints.menu_thumbnails > 3)
+            settings->uints.menu_thumbnails = 1;
+      }
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
    }

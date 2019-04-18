@@ -88,7 +88,6 @@ static const struct exynos_config_default
    {400,  240, EXYNOS_BUFFER_AUX,  G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX, 2}  /* menu */
 };
 
-
 struct exynos_data;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
@@ -1043,7 +1042,6 @@ struct exynos_video
    bool aspect_changed;
 };
 
-
 static int exynos_init_font(struct exynos_video *vid)
 {
    struct exynos_data *pdata = vid->data;
@@ -1327,7 +1325,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    }
    else if (video_info->statistics_show)
    {
-      struct font_params *osd_params = video_info ? 
+      struct font_params *osd_params = video_info ?
          (struct font_params*)&video_info->osd_stat_params : NULL;
 
       if (osd_params)
@@ -1491,8 +1489,6 @@ static void exynos_show_mouse(void *data, bool state)
 
 static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_flags */
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */

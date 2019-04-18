@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -34,7 +34,6 @@
 #define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(uint32_t) + (sizeof(float)* 4) + sizeof(uint16_t) + (sizeof(wchar_t)*(x)) )
 #define FONTFILEVERSION 5
-
 
 #ifdef _XBOX360
 struct XPR_HEADER
@@ -77,7 +76,7 @@ class PackedResource
 
    public:
       /* Loads the resources out of the specified bundle */
-      HRESULT Create(const char *strFilename, DWORD dwNumResourceTags, 
+      HRESULT Create(const char *strFilename, DWORD dwNumResourceTags,
             void *pResourceTags);
 
       void Destroy();
@@ -94,7 +93,7 @@ class PackedResource
 };
 
 LPDIRECT3DTEXTURE9 *PackedResource::GetTexture(const char* strName)
-{ 
+{
    LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
    return (LPDIRECT3DTEXTURE9*)pResource;
 }
@@ -282,7 +281,7 @@ typedef struct
 {
    uint32_t m_dwNumGlyphs;              /* Size of font strike array (First entry is the unknown glyph). */
    GLYPH_ATTR m_Glyphs[1];              /* Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size. */
-} FontFileStrikesImage_t; 
+} FontFileStrikesImage_t;
 
 static PackedResource m_xprResource;
 
@@ -372,7 +371,7 @@ static void *xdk360_init_font(void *video_data,
       goto error;
 
    pFontTexture               = (LPDIRECT3DTEXTURE9)m_xprResource.GetTexture( "FontTexture" );
-   pFontData                  = m_xprResource.GetData( "FontData"); 
+   pFontData                  = m_xprResource.GetData( "FontData");
 
    /* Save a copy of the texture. */
    font->m_pFontTexture       = (LPDIRECT3DTEXTURE9)pFontTexture;
@@ -575,7 +574,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
 
 #ifdef MSB_FIRST
       /* Convert shorts to 32 bit longs for in register merging */
-      tu1 = pGlyph->tu1;        
+      tu1 = pGlyph->tu1;
       tv1 = pGlyph->tv1;
       tu2 = pGlyph->tu2;
       tv2 = pGlyph->tv2;
@@ -587,11 +586,11 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
        *
        * This makes for 16 bytes per vertex data (Easier to read)
        *
-       * Second NOTE: The U/V coordinates are merged and written 
-       * using a DWORD due to the write combining hardware 
+       * Second NOTE: The U/V coordinates are merged and written
+       * using a DWORD due to the write combining hardware
        * being only able to handle 32, 64 and 128 writes.
        *
-       * Never store to write combined memory with 8 or 16bit 
+       * Never store to write combined memory with 8 or 16bit
        * instructions. You've been warned.
        */
 
@@ -621,9 +620,9 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       dwNumChars--;
    }
 
-   /* Since we allocated vertex data space 
+   /* Since we allocated vertex data space
     * based on the string length, we now need to
-    * add some dummy verts for any skipped 
+    * add some dummy verts for any skipped
     * characters (like newlines, etc.)
     */
    while (dwNumChars)

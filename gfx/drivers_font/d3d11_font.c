@@ -136,8 +136,8 @@ static void d3d11_font_render_line(
    int                      x      = roundf(pos_x * width);
    int                      y      = roundf((1.0 - pos_y) * height);
 
-   if (  !d3d11                  || 
-         !d3d11->sprites.enabled || 
+   if (  !d3d11                  ||
+         !d3d11->sprites.enabled ||
          msg_len > (unsigned)d3d11->sprites.capacity)
       return;
 
@@ -176,8 +176,8 @@ static void d3d11_font_render_line(
       if (!glyph)
          continue;
 
-      v->pos.x = (x + glyph->draw_offset_x) * scale / (float)d3d11->viewport.Width;
-      v->pos.y = (y + glyph->draw_offset_y) * scale / (float)d3d11->viewport.Height;
+      v->pos.x = (x + (glyph->draw_offset_x * scale)) / (float)d3d11->viewport.Width;
+      v->pos.y = (y + (glyph->draw_offset_y * scale)) / (float)d3d11->viewport.Height;
       v->pos.w = glyph->width * scale / (float)d3d11->viewport.Width;
       v->pos.h = glyph->height * scale / (float)d3d11->viewport.Height;
 
@@ -306,7 +306,7 @@ static void d3d11_font_render_msg(
       g          = FONT_COLOR_GET_GREEN(params->color);
       b          = FONT_COLOR_GET_BLUE(params->color);
       alpha      = FONT_COLOR_GET_ALPHA(params->color);
-      
+
       color      = DXGI_COLOR_RGBA(r, g, b, alpha);
    }
    else
@@ -359,6 +359,16 @@ static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int d3d11_font_get_line_height(void *data)
+{
+   d3d11_font_t* font = (d3d11_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t d3d11_font = {
    d3d11_font_init_font,
    d3d11_font_free_font,
@@ -368,4 +378,5 @@ font_renderer_t d3d11_font = {
    NULL, /* bind_block */
    NULL, /* flush */
    d3d11_font_get_message_width,
+   d3d11_font_get_line_height
 };

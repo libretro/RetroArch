@@ -32,21 +32,22 @@ ELF_TARGET := retroarch-salamander_wii.elf
 
 INCLUDE := -I. -Ilibretro-common/include -Ideps/libz
 ifeq ($(EXTERNAL_LIBOGC), 1)
-INCLUDE += -I$(DEVKITPRO)/libogc/include 
+INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 else
-INCLUDE += -Iwii/libogc/include 
+INCLUDE += -Iwii/libogc/include
 LIBDIRS := -Lwii/libogc/libs/wii -L.
 endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -lwiiuse -logc -lbte
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
-LIBS += -lfat
+LIBS := -lfat
 endif
+
+LIBS += -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
@@ -66,6 +67,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/encodings/encoding_utf.o \
 		libretro-common/compat/compat_strl.o \
 		libretro-common/compat/compat_strcasestr.o \
+		libretro-common/compat/fopen_utf8.o \
 		libretro-common/file/config_file.o \
 		file_path_str.o \
 		verbosity.o \

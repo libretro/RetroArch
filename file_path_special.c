@@ -51,6 +51,10 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -160,39 +164,6 @@ void fill_pathname_application_special(char *s,
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
          }
          break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:
-#ifdef HAVE_ZARCH
-         {
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
-#ifdef HAVE_ZARCH
-         {
-            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            s1[0]    = '\0';
-
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
-            fill_pathname_join(s,
-                  s1, "Roboto-Condensed.ttf", len);
-
-            free(s1);
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH:
-#ifdef HAVE_ZARCH
-         {
-            settings_t *settings     = config_get_ptr();
-            fill_pathname_join(s,
-                  settings->paths.directory_assets,
-                  "zarch",
-                  len);
-         }
-#endif
-         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
@@ -237,6 +208,70 @@ void fill_pathname_application_special(char *s,
                      len);
                free(s1);
             }
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS:
+         {
+#ifdef HAVE_MENU
+            settings_t *settings = config_get_ptr();
+            const char *menu_ident = settings->arrays.menu_driver;
+            char *s1 = (char*)calloc(1, PATH_MAX_LENGTH * sizeof(char));
+
+            if (string_is_equal(menu_ident, "xmb"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+            else if (string_is_equal(menu_ident, "glui"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+            else if (string_is_equal(menu_ident, "ozone"))
+            {
+               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE);
+
+               if (!string_is_empty(s1))
+                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+            }
+
+            if (string_is_empty(s1))
+            {
+               fill_pathname_join(
+                     s1,
+                     settings->paths.directory_assets,
+                     "sounds",
+                     PATH_MAX_LENGTH * sizeof(char)
+               );
+            }
+
+            strlcpy(s, s1, len);
+            free(s1);
+#endif
+         }
+
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE:
+#ifdef HAVE_OZONE
+         {
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            settings_t *settings     = config_get_ptr();
+
+            s1[0] = '\0';
+
+            fill_pathname_join(
+                  s1,
+                  settings->paths.directory_assets,
+                  "ozone",
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
+            strlcpy(s, s1, len);
+            free(s1);
          }
 #endif
          break;
@@ -338,6 +373,31 @@ void fill_pathname_application_special(char *s,
          }
 #endif
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
+      {
+        char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        settings_t *settings     = config_get_ptr();
+
+        s1[0] = s2[0] = '\0';
+
+        fill_pathname_join(s1,
+              settings->paths.directory_thumbnails,
+              "discord",
+              len);
+        fill_pathname_join(s2,
+              s1, "avatars",
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        fill_pathname_slash(s2,
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        strlcpy(s, s2, len);
+        free(s1);
+        free(s2);
+      }
+      break;
+
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
         char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));

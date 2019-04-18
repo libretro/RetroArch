@@ -63,4 +63,3 @@ if [[ "${ROM}" =~ \.(zip|rar|7z)$ ]] && [[ ! "${FILTER}" =~ ^Arcade ]] ; then
 else
 	exec retroarch "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
 fi
-

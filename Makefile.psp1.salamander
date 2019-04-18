@@ -25,7 +25,7 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
-CFLAGS += $(RARCH_DEFINES) 
+CFLAGS += $(RARCH_DEFINES)
 
 EXTRA_TARGETS   = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch
@@ -42,6 +42,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/lists/dir_list.o \
 		 libretro-common/file/retro_dirent.o \
 		 libretro-common/encodings/encoding_utf.o \
+		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/compat/compat_strl.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
@@ -50,7 +51,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o \
-		 bootstrap/psp1/kernel_functions.o 
+		 bootstrap/psp1/kernel_functions.o
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

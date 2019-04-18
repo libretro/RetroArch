@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ "$DISPLAY" == "" ]; then
+	export DISPLAY=":0.0"
+fi
+CMD="which lxpanelctl >/dev/null 2>&1 && lxpanelctl alsastop >/dev/null"
+if [ $EUID -eq 0 ]; then
+	if [ "$SUDO_USER" != "" ]; then
+		user=$SUDO_USER
+	elif [ "$LOGNAME" != "" ]; then
+		user=$LOGNAME
+	else
+		user=pi
+	fi
+	exec su $user -c "$CMD"
+else
+	exec $CMD
+fi

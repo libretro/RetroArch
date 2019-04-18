@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -31,6 +30,7 @@
 #include <GL/osmesa.h>
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../common/gl_common.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002
@@ -380,7 +380,7 @@ static uint32_t osmesa_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   (void)data;
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

@@ -34,5 +34,3 @@ for( int i=0; i < 6; i++ )
       color *= sqrt(1.5 - 0.5 * length(uv));
    FragColor = vec4(color.r, color.g, color.b , 0.5);
 }
-
-

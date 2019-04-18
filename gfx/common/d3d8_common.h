@@ -72,7 +72,7 @@ typedef struct d3d8_video
 
 static INLINE bool d3d8_swap(void *data, LPDIRECT3DDEVICE8 dev)
 {
-   if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) 
+   if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL)
          == D3DERR_DEVICELOST)
       return false;
    return true;
@@ -388,7 +388,7 @@ static INLINE void d3d8_device_set_render_target(
 static INLINE bool d3d8_get_render_state(LPDIRECT3DDEVICE8 dev,
       D3DRENDERSTATETYPE state, DWORD *value)
 {
-   if (dev && 
+   if (dev &&
          IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
       return true;
    return false;
@@ -433,8 +433,8 @@ bool d3d8_create_device(void *dev,
 bool d3d8_reset(void *dev, void *d3dpp);
 
 static INLINE bool d3d8_device_get_backbuffer(
-      LPDIRECT3DDEVICE8 dev, 
-      unsigned idx, unsigned swapchain_idx, 
+      LPDIRECT3DDEVICE8 dev,
+      unsigned idx, unsigned swapchain_idx,
       unsigned backbuffer_type, void **data)
 {
    if (dev &&
@@ -514,6 +514,8 @@ static INLINE INT32 d3d8_get_xrgb8888_format(void)
    return D3DFMT_X8R8G8B8;
 #endif
 }
+
+void d3d8_set_mvp(void *data, const void *userdata);
 
 RETRO_END_DECLS
 

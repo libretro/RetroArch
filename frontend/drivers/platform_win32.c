@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2011-2017 - Daniel De Matteis
- * Copyright (C) 2016-2017 - Brad Parker
+ * Copyright (C) 2016-2019 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -27,6 +27,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -43,6 +44,10 @@
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 
+#ifndef SM_SERVERR2
+#define SM_SERVERR2 89
+#endif
+
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
@@ -52,6 +57,8 @@
 static dylib_t dwmlib;
 static dylib_t shell32lib;
 #endif
+
+static char win32_cpu_model_name[64] = {0};
 
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
@@ -97,7 +104,7 @@ static bool gfx_init_dwm(void)
 
    DragAcceptFiles_func =
       (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
-   
+
    mmcss =
 	   (HRESULT(WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
 #else
@@ -151,7 +158,6 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    char buildStr[11]      = {0};
    bool server            = false;
    const char *arch       = "";
-   bool serverR2          = false;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
@@ -165,7 +171,6 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    GetVersionEx((OSVERSIONINFO*)&vi);
 
    server = vi.wProductType != VER_NT_WORKSTATION;
-   serverR2 = GetSystemMetrics(SM_SERVERR2);
 
    switch (si.wProcessorArchitecture)
    {
@@ -188,7 +193,6 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* Available from NT 3.5 and Win95 */
    GetVersionEx(&vi);
 #endif
-
 
    if (major)
       *major = vi.dwMajorVersion;
@@ -245,10 +249,11 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             case 2:
                if (server)
-                  if (serverR2)
-                     strlcpy(s, "Windows Server 2003 R2", len);
-                  else
-                     strlcpy(s, "Windows Server 2003", len);
+               {
+                  strlcpy(s, "Windows Server 2003", len);
+                  if (GetSystemMetrics(SM_SERVERR2))
+                     strlcat(s, " R2", len);
+               }
                else
                {
                   /* Yes, XP Pro x64 is a higher version number than XP x86 */
@@ -302,6 +307,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       strlcat(s, " ", len);
       strlcat(s, vi.szCSDVersion, len);
    }
+
 }
 
 static void frontend_win32_init(void *data)
@@ -385,13 +391,13 @@ enum frontend_architecture frontend_win32_get_architecture(void)
 static int frontend_win32_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
+   file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+         MSG_UNKNOWN;
    size_t i          = 0;
    unsigned drives   = GetLogicalDrives();
    char    drive[]   = " :\\";
-   file_list_t *list = (file_list_t*)data;
-   enum msg_hash_enums enum_idx = load_content ?
-      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MSG_UNKNOWN;
 
    for (i = 0; i < 32; i++)
    {
@@ -459,7 +465,8 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
       ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
+      ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    snprintf(g_defaults.settings.menu,
@@ -506,7 +513,6 @@ static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
 #ifdef _WIN32_WINNT_WINXP
-
    /* msys will start the process with FILE_TYPE_PIPE connected.
     *   cmd will start the process with FILE_TYPE_UNKNOWN connected
     *   (since this is subsystem windows application
@@ -547,7 +553,6 @@ static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _WIN32_WINNT_WINXP
-
    if(console_needs_free)
    {
       /* we don't reconnect stdout/stderr to anything here,
@@ -556,9 +561,73 @@ static void frontend_win32_detach_console(void)
       FreeConsole();
       console_needs_free = false;
    }
+#endif
+#endif
+}
 
+static const char* frontend_win32_get_cpu_model_name(void)
+{
+#ifdef ANDROID
+   return NULL;
+#else
+   cpu_features_get_model_name(win32_cpu_model_name, sizeof(win32_cpu_model_name));
+   return win32_cpu_model_name;
+#endif
+}
+
+enum retro_language frontend_win32_get_user_language(void)
+{
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+#if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
+#if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
+   LANGID langid = GetUserDefaultUILanguage();
+   unsigned i;
+
+   struct lang_pair
+   {
+      unsigned short lang_ident;
+      enum retro_language lang;
+   };
+
+   /* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
+   const struct lang_pair pairs[] =
+   {
+      {0x9, RETRO_LANGUAGE_ENGLISH},
+      {0x11, RETRO_LANGUAGE_JAPANESE},
+      {0xc, RETRO_LANGUAGE_FRENCH},
+      {0xa, RETRO_LANGUAGE_SPANISH},
+      {0x7, RETRO_LANGUAGE_GERMAN},
+      {0x10, RETRO_LANGUAGE_ITALIAN},
+      {0x13, RETRO_LANGUAGE_DUTCH},
+      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x19, RETRO_LANGUAGE_RUSSIAN},
+      {0x12, RETRO_LANGUAGE_KOREAN},
+      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
+      {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
+      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
+      {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
+      /* MS does not support Esperanto */
+      /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
+      {0x15, RETRO_LANGUAGE_POLISH},
+      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
+      {0x1, RETRO_LANGUAGE_ARABIC},
+      {0x8, RETRO_LANGUAGE_GREEK},
+   };
+
+   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   {
+      if ((langid & pairs[i].lang_ident) == pairs[i].lang_ident)
+      {
+         lang = pairs[i].lang;
+         break;
+      }
+   }
 #endif
 #endif
+   return lang;
 }
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
@@ -588,5 +657,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
+   frontend_win32_get_cpu_model_name,
+   frontend_win32_get_user_language,
    "win32"
 };

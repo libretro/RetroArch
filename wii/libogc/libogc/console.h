@@ -1,7 +1,6 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-
 #define FONT_XSIZE		8
 #define FONT_YSIZE		16
 #define FONT_XFACTOR	1

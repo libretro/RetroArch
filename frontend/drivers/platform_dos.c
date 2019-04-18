@@ -1,7 +1,7 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  * Copyright (C) 2011-2017 - Daniel De Matteis
- * Copyright (C) 2016-2017 - Brad Parker
+ * Copyright (C) 2016-2019 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -71,5 +71,7 @@ frontend_ctx_driver_t frontend_ctx_dos = {
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "dos",
 };

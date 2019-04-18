@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
 
@@ -44,12 +43,10 @@ distribution.
 	extern "C" {
 #endif
 
-
 /*! \typedef u32 mutex_t
 \brief typedef for the mutex handle
 */
 typedef u32 mutex_t;
-
 
 /*! \fn s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive)
 \brief Initializes a mutex lock.
@@ -60,7 +57,6 @@ typedef u32 mutex_t;
 */
 s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive);
 
-
 /*! \fn s32 LWP_MutexDestroy(mutex_t mutex)
 \brief Close mutex lock, release all threads and handles locked on this mutex.
 \param[in] mutex handle to the mutex_t structure.
@@ -68,7 +64,6 @@ s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive);
 \return 0 on success, <0 on error
 */
 s32 LWP_MutexDestroy(mutex_t mutex);
-
 
 /*! \fn s32 LWP_MutexLock(mutex_t mutex)
 \brief Enter the mutex lock.
@@ -78,7 +73,6 @@ s32 LWP_MutexDestroy(mutex_t mutex);
 */
 s32 LWP_MutexLock(mutex_t mutex);
 
-
 /*! \fn s32 LWP_MutexTryLock(mutex_t mutex)
 \brief Try to enter the mutex lock.
 \param[in] mutex handle to the mutex_t structure.
@@ -86,7 +80,6 @@ s32 LWP_MutexLock(mutex_t mutex);
 \return 0: on first aquire, 1: would lock
 */
 s32 LWP_MutexTryLock(mutex_t mutex);
-
 
 /*! \fn s32 LWP_MutexUnlock(mutex_t mutex)
 \brief Release the mutex lock and let other threads process further on this mutex.

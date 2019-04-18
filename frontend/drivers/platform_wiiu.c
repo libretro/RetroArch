@@ -104,6 +104,8 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
          "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
@@ -132,7 +134,6 @@ static void frontend_wiiu_init(void *data)
    verbosity_enable();
    DEBUG_LINE();
 }
-
 
 static int frontend_wiiu_get_rating(void)
 {
@@ -167,7 +168,6 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
 #endif
    return 0;
 }
-
 
 static void frontend_wiiu_exec(const char *path, bool should_load_game)
 {
@@ -269,7 +269,6 @@ static void frontend_wiiu_exitspawn(char *s, size_t len)
    frontend_wiiu_exec(s, should_load_game);
 }
 
-
 frontend_ctx_driver_t frontend_ctx_wiiu =
 {
    frontend_wiiu_get_environment_settings,
@@ -302,6 +301,8 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "wiiu",
    NULL,                         /* get_video_driver */
 };

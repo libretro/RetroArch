@@ -9,20 +9,22 @@ add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_dirs LIBRARY /opt/local/lib
 
-[ "$GLOBAL_CONFIG_DIR" ] || \
+[ "${GLOBAL_CONFIG_DIR:-}" ] ||
 {	case "$PREFIX" in
 		/usr*) GLOBAL_CONFIG_DIR=/etc ;;
 		*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
 	esac
 }
 
-DYLIB=-ldl;
+DYLIB=-ldl
 CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
 INCLUDES='usr/include usr/local/include'
 SORT='sort'
+EXTRA_GL_LIBS=''
+VC_PREFIX=''
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
@@ -75,86 +77,49 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon -marm"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
-fi
-
 if [ "$HAVE_7ZIP" = "yes" ]; then
    add_dirs INCLUDE ./deps/7zip
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
-   add_define MAKEFILE HAVE_PRESERVE_DYLIB "1"
-fi
-
-if [ "$HAVE_FLOATHARD" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
-   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
-fi
-
-if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfpu=neon -marm"
-   CXXFLAGS="$CXXFLAGS -mfpu=neon -marm"
-   ASFLAGS="$ASFLAGS -mfpu=neon"
+   add_define MAKEFILE NEON_CFLAGS '-mfpu=neon -marm'
+   add_define MAKEFILE NEON_ASFLAGS -mfpu=neon
 fi
 
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=hard"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
-   ASFLAGS="$ASFLAGS -mfloat-abi=hard"
+   add_define MAKEFILE FLOATHARD_CFLAGS -mfloat-abi=hard
 fi
 
 if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
-   CFLAGS="$CFLAGS -mfloat-abi=softfp"
-   CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
-   ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
-fi
-
-if [ "$HAVE_SSE" = "yes" ]; then
-   CFLAGS="$CFLAGS -msse -msse2"
-   CXXFLAGS="$CXXFLAGS -msse -msse2"
+   add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
-   check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
-   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
+   # https://github.com/linux-sunxi/sunxi-mali/pull/8
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
    if [ "$HAVE_EGL" = "yes" ]; then
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
 fi
 
-if [ "$HAVE_SSA" != "no" ]; then
-   check_lib '' SSA -lass ass_library_init
-fi
-
-if [ "$HAVE_EXYNOS" != "no" ]; then
-   check_pkgconf EXYNOS libdrm_exynos
-fi
-
-if [ "$HAVE_DISPMANX" != "no" ]; then
-   PKG_CONF_USED="$PKG_CONF_USED DISPMANX"
-fi
+check_lib '' SSA -lass ass_library_init
+check_lib '' SSE '-msse -msse2'
+check_pkgconf EXYNOS libdrm_exynos
 
 if [ "$LIBRETRO" ]; then
    die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
    HAVE_DYNAMIC='no'
-else LIBRETRO="-lretro"
+else
+   LIBRETRO="-lretro"
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   #check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
-   check_lib '' RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
+   check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" '' '' 'Cannot find libretro, did you forget --with-libretro="-lretro"?'
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
@@ -168,19 +133,13 @@ if [ "$OS" = 'DOS' ]; then
    HAVE_LANGEXTRA=no
 fi
 
+check_lib '' THREADS "$PTHREADLIB" pthread_create
+check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
+check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
+
 if [ "$OS" = 'Win32' ]; then
-   HAVE_THREADS=yes
-   HAVE_THREAD_STORAGE=yes
    HAVE_DYLIB=yes
 else
-   check_lib '' THREADS "$PTHREADLIB" pthread_create
-
-   if [ "$HAVE_THREADS" = 'yes' ]; then
-      check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
-   else
-      HAVE_THREAD_STORAGE=no
-   fi
-
    check_lib '' DYLIB "$DYLIB" dlopen
 fi
 
@@ -214,6 +173,7 @@ else
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
    HAVE_DISCORD='no'
+   HAVE_SSL='no'
 fi
 
 check_lib '' STDIN_CMD "$CLIB" fcntl
@@ -230,10 +190,11 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
    die 1 'Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro="-lretro".'
 fi
 
-check_pkgconf ALSA alsa
-check_val '' ALSA -lasound alsa
+check_val '' ALSA -lasound alsa alsa '' '' false
 check_lib '' CACA -lcaca
 check_lib '' SIXEL -lsixel
+
+check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
 
 if [ "$HAVE_OSS" != 'no' ]; then
    check_header OSS sys/soundcard.h
@@ -262,34 +223,28 @@ fi
 
 check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar
-check_pkgconf JACK jack 0.120.1
-check_pkgconf PULSE libpulse
-check_pkgconf SDL sdl 1.2.10
-check_pkgconf SDL2 sdl2 2.0.0
+check_val '' JACK -ljack '' jack 0.120.1 '' false
+check_val '' PULSE -lpulse '' libpulse '' '' false
+check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
+check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' false
 
-check_val '' JACK -ljack
-check_val '' PULSE -lpulse
-check_val '' SDL -lSDL SDL
-check_val '' SDL2 -lSDL2 SDL2
+if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
+   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
+   HAVE_SDL=no
+fi
 
-check_enabled QT 'Qt companion'
+check_enabled CXX DISCORD discord 'The C++ compiler is' false
+check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
-if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
+if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
    check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
    check_pkgconf QT5NETWORK Qt5Network 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
-   check_pkgconf OPENSSL openssl 1.0.0
 
-   check_val '' QT5CORE -lQt5Core QT5CORE
-   check_val '' QT5GUI -lQt5Gui QT5GUI
-   check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
-   check_val '' QT5CONCURRENT -lQt5Concurrent QT5CONCURRENT
-   check_val '' QT5NETWORK -lQt5Network QT5NETWORK
-   #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
-   check_val '' OPENSSL -lssl OPENSSL
+   # pkg-config is needed to reliably find Qt5 libraries.
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'
@@ -298,25 +253,52 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
       HAVE_QT=yes
    fi
 
+   check_pkgconf OPENSSL openssl 1.0.0
+
    #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
    #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
    #fi
-fi
-
-if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
-   HAVE_SDL=no
 fi
 
 if [ "$HAVE_FLAC" = 'no' ]; then
    HAVE_BUILTINFLAC=no
 fi
 
-check_pkgconf FLAC flac
-check_val '' FLAC '-lFLAC'
+check_val '' FLAC '-lFLAC' '' flac '' '' false
 
-check_pkgconf LIBUSB libusb-1.0 1.0.13
-check_val '' LIBUSB -lusb-1.0 libusb-1.0
+if [ "$HAVE_SSL" = 'no' ]; then
+   HAVE_BUILTINMBEDTLS=no
+fi
+
+if [ "$HAVE_SSL" != 'no' ]; then
+   check_header MBEDTLS \
+      mbedtls/config.h \
+      mbedtls/certs.h \
+      mbedtls/debug.h \
+      mbedtls/platform.h \
+      mbedtls/net_sockets.h \
+      mbedtls/ssl.h \
+      mbedtls/ctr_drbg.h \
+      mbedtls/entropy.h
+
+   check_lib '' MBEDTLS -lmbedtls
+   check_lib '' MBEDX509 -lmbedx509
+   check_lib '' MBEDCRYPTO -lmbedcrypto
+
+   if [ "$HAVE_MBEDTLS" = 'no' ] ||
+      [ "$HAVE_MBEDX509" = 'no' ] ||
+      [ "$HAVE_MBEDCRYPTO" = 'no' ]; then
+      if [ "$HAVE_BUILTINMBEDTLS" != 'yes' ]; then
+         die : 'Notice: System mbedtls libraries not found, disabling SSL support.'
+         HAVE_SSL=no
+      fi
+   else
+      HAVE_SSL=yes
+   fi
+fi
+
+check_enabled THREADS LIBUSB libusb 'Threads are' false
+check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
@@ -366,35 +348,34 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
+if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES3" = 'no' ]; then
+   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
+   HAVE_OPENGL_CORE='no'
+fi
+
 if [ "$HAVE_ZLIB" = 'no' ]; then
    HAVE_BUILTINZLIB=no
 elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
    HAVE_ZLIB=yes
 else
-   check_pkgconf ZLIB zlib
-   check_val '' ZLIB '-lz'
+   check_val '' ZLIB '-lz' '' zlib '' '' false
 fi
 
-if [ "$HAVE_MPV" != 'no' ]; then
-   check_pkgconf MPV libmpv
-fi
+check_val '' MPV -lmpv '' mpv '' '' false
 
-if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
-   check_pkgconf AVCODEC libavcodec 54
-   check_pkgconf AVFORMAT libavformat 54
-   check_pkgconf AVDEVICE libavdevice
-   check_pkgconf SWRESAMPLE libswresample
-   check_pkgconf AVRESAMPLE libavresample
-   check_pkgconf AVUTIL libavutil 51
-   check_pkgconf SWSCALE libswscale 2.1
+check_header DRMINGW exchndl.h
+check_lib '' DRMINGW -lexchndl
 
-   check_val '' AVCODEC -lavcodec
-   check_val '' AVFORMAT -lavformat
-   check_val '' AVDEVICE -lavdevice
-   check_val '' SWRESAMPLE -lswresample
-   check_val '' AVRESAMPLE -lavresample
-   check_val '' AVUTIL -lavutil
-   check_val '' SWSCALE -lswscale
+check_enabled THREADS FFMPEG FFmpeg 'Threads are' false
+
+if [ "$HAVE_FFMPEG" != 'no' ]; then
+   check_val '' AVCODEC -lavcodec '' libavcodec 54 '' false
+   check_val '' AVFORMAT -lavformat '' libavformat 54 '' false
+   check_val '' AVDEVICE -lavdevice '' libavdevice '' '' false
+   check_val '' SWRESAMPLE -lswresample '' libswresample '' '' false
+   check_val '' AVRESAMPLE -lavresample '' libavresample '' '' false
+   check_val '' AVUTIL -lavutil '' libavutil 51 '' false
+   check_val '' SWSCALE -lswscale '' libswscale 2.1 '' false
 
    check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
@@ -404,7 +385,6 @@ if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
       die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
    fi
 else
-   die : 'Notice: Not building with threading support. Will skip FFmpeg.'
    HAVE_FFMPEG='no'
 fi
 
@@ -413,10 +393,8 @@ if [ "$OS" != 'Win32' ]; then
 fi
 
 if [ "$HAVE_KMS" != "no" ]; then
-   check_pkgconf GBM gbm 9.0
-   check_pkgconf DRM libdrm
-   check_val '' GBM -lgbm
-   check_val '' DRM -ldrm libdrm
+   check_val '' GBM -lgbm '' gbm 9.0 '' false
+   check_val '' DRM -ldrm libdrm libdrm '' '' false
 
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
@@ -427,9 +405,6 @@ if [ "$HAVE_KMS" != "no" ]; then
    fi
 fi
 
-check_pkgconf LIBXML2 libxml-2.0
-check_val '' LIBXML2 -lxml2 libxml2
-
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then
@@ -437,59 +412,57 @@ if [ "$HAVE_EGL" = "yes" ]; then
          add_define MAKEFILE OPENGLES_LIBS "$OPENGLES_LIBS"
          add_define MAKEFILE OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
-         HAVE_OPENGLES=auto; check_pkgconf OPENGLES "$VC_PREFIX"glesv2
-         if [ "$HAVE_OPENGLES" = "no" ]; then
-            HAVE_OPENGLES=auto; check_lib '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
-            add_define MAKEFILE OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
-         fi
+         check_val '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS" '' "${VC_PREFIX}glesv2" '' '' true
       fi
    fi
-   check_pkgconf VG "$VC_PREFIX"vg
-   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
+   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
 else
    HAVE_VG=no
    HAVE_OPENGLES=no
 fi
 
-check_pkgconf V4L2 libv4l2
-check_pkgconf FREETYPE freetype2
-check_pkgconf X11 x11
-check_pkgconf XCB xcb
-check_pkgconf WAYLAND wayland-egl
-check_pkgconf WAYLAND_CURSOR wayland-cursor
-check_pkgconf XKBCOMMON xkbcommon 0.3.2
+check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
+check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
+check_val '' X11 -lX11 '' x11 '' '' false
+check_val '' XCB -lxcb '' xcb '' '' false
+check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
+check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
+check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
+check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_pkgconf DBUS dbus-1
-check_pkgconf XEXT xext
-check_pkgconf XF86VM xxf86vm
+check_val '' XEXT -lXext '' xext '' '' false
+check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
-check_val '' V4L2 -lv4l2
-check_val '' FREETYPE -lfreetype freetype2
-check_val '' X11 -lX11
-check_val '' XCB -lxcb
-check_val '' WAYLAND '-lwayland-egl -lwayland-client'
-check_val '' WAYLAND_CURSOR -lwayland-cursor
-check_val '' XKBCOMMON -lxkbcommon
-check_val '' XEXT -lXext
-check_val '' XF86VM -lXxf86vm
-
-if [ "$HAVE_X11" = 'no' ]; then
-   HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
+if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
+   [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
+   [ "$HAVE_WAYLAND" = yes ]; then
+      ./gfx/common/wayland/generate_wayland_protos.sh \
+         -c "$WAYLAND_SCANNER_VERSION" \
+         -p "$HAVE_WAYLAND_PROTOS" \
+         -s "$SHARE_DIR" ||
+         die 1 'Error: Failed generating wayland protocols.'
+else
+    die : 'Notice: wayland libraries not found, disabling wayland support.'
+    HAVE_WAYLAND='no'
 fi
 
-check_pkgconf XINERAMA xinerama
-check_val '' XINERAMA -lXinerama
+if [ "$HAVE_X11" = 'no' ]; then
+	HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no; HAVE_XRANDR=no
+fi
+
+check_lib '' XRANDR -lXrandr
+check_val '' XINERAMA -lXinerama '' xinerama '' '' false
 
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
-   check_pkgconf XVIDEO xv
-   check_val '' XVIDEO -lXv
+   check_val '' XVIDEO -lXv '' xv '' '' false
 else
    die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
 
-check_pkgconf UDEV libudev
-check_val '' UDEV "-ludev"
+check_val '' UDEV "-ludev" '' libudev '' '' false
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
@@ -502,7 +475,9 @@ fi
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
-check_enabled VULKAN vulkan
+check_enabled CXX VULKAN vulkan 'The C++ compiler is' false
+check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
+check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes
@@ -510,31 +485,25 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
-check_pkgconf PYTHON python3
+check_pkgconf PYTHON 'python3 python3 python-3.7 python-3.6 python-3.5 python-3.4 python-3.3 python-3.2'
 
-if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
-   if [ "$HAVE_RGUI" = 'no' ]; then
-      HAVE_MATERIALUI=no
-      HAVE_XMB=no
-      HAVE_STRIPES=no
-      HAVE_ZARCH=no
-      HAVE_OZONE=no
-      die : 'Notice: RGUI not available, MaterialUI, XMB, Ozone and ZARCH will also be disabled.'
-   elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+if [ "$HAVE_MENU" != 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
-         die : 'Notice: Hardware rendering context not available.'
-      elif [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
-         die : 'Notice: Hardware rendering context not available.'
       else
+         if [ "$HAVE_CACA" != 'yes' ] && [ "$HAVE_SIXEL" != 'yes' ] &&
+            [ "$HAVE_SDL" != 'yes' ] && [ "$HAVE_SDL2" != 'yes' ]; then
+            HAVE_RGUI=no
+         fi
          HAVE_MATERIALUI=no
+         HAVE_OZONE=no
          HAVE_XMB=no
          HAVE_STRIPES=no
-         HAVE_ZARCH=no
-         HAVE_OZONE=no
-         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI, Ozone and ZARCH will also be disabled.'
+         HAVE_MENU_WIDGETS=no
       fi
+      die : 'Notice: Hardware rendering context not available.'
    fi
 fi
 
@@ -542,29 +511,18 @@ check_macro NEON __ARM_NEON__
 
 add_define MAKEFILE OS "$OS"
 
-if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
-   HAVE_RPNG=no
-   die : 'Notice: zlib is not available, RPNG will also be disabled.'
+if [ "$HAVE_DEBUG" = 'yes' ]; then
+   add_define MAKEFILE DEBUG 1
+   if [ "$HAVE_OPENGL" = 'yes' ] ||
+      [ "$HAVE_OPENGL1" = 'yes' ] ||
+      [ "$HAVE_OPENGLES" = 'yes' ] ||
+      [ "$HAVE_OPENGLES3" = 'yes' ]; then
+      add_define MAKEFILE GL_DEBUG 1
+   fi
+   if [ "$HAVE_VULKAN" = 'yes' ]; then
+      add_define MAKEFILE VULKAN_DEBUG 1
+   fi
 fi
 
-if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_LIBUSB" != 'no' ]; then
-   HAVE_LIBUSB=no
-   die : 'Notice: Threads are not available, libusb will also be disabled.'
-fi
-
-if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
-   HAVE_VIDEO_PROCESSOR=yes
-fi
-
-# Creates config.mk and config.h.
-add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-set -- $(set | grep ^HAVE_)
-while [ $# -gt 0 ]; do
-   tmpvar="${1%=*}"
-   shift 1
-   var="${tmpvar#HAVE_}"
-   vars="${vars} $var"
-done
-VARS="$(printf %s "$vars" | tr ' ' '\n' | $SORT)"
-create_config_make config.mk $(printf %s "$VARS")
-create_config_header config.h $(printf %s "$VARS")
+check_enabled ZLIB RPNG RPNG 'zlib is' false
+check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true

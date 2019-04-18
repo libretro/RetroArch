@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -497,7 +496,6 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
 
 int file_archive_parse_file_progress(file_archive_transfer_t *state)
 {
-   /* FIXME: this estimate is worse than before */
    ptrdiff_t delta = 0;
 
    if (!state || state->archive_size == 0)
@@ -505,7 +503,10 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state)
 
    delta = state->directory - state->data;
 
-   return (int)(delta * 100 / state->archive_size);
+   if (!state->start_delta)
+      state->start_delta = delta;
+
+   return (int)(((delta - state->start_delta) * 100) / (state->archive_size - state->start_delta));
 }
 
 /**

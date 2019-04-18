@@ -775,7 +775,7 @@ bool task_push_overlay_load_default(
    loader->state                = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment        = (loader->size / 4) ? (loader->size / 4) : 4;
 
-   t                            = (retro_task_t*)calloc(1, sizeof(*t));
+   t                            = task_init();
 
    if (!t)
       goto error;

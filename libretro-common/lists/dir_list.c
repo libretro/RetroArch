@@ -53,7 +53,6 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    int a_type = a->attr.i;
    int b_type = b->attr.i;
 
-
    /* Sort directories before files. */
    if (a_type != b_type)
       return b_type - a_type;
@@ -172,12 +171,10 @@ static int dir_list_read(const char *dir,
       bool include_dirs, bool include_hidden,
       bool include_compressed, bool recursive)
 {
-   struct RDIR *entry = retro_opendir(dir);
+   struct RDIR *entry = retro_opendir_include_hidden(dir, include_hidden);
 
    if (!entry || retro_dirent_error(entry))
       goto error;
-
-   retro_dirent_include_hidden(entry, include_hidden);
 
    while (retro_readdir(entry))
    {
@@ -190,7 +187,7 @@ static int dir_list_read(const char *dir,
       file_path[0] = '\0';
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
-      is_dir = retro_dirent_is_dir(entry, file_path);
+      is_dir = retro_dirent_is_dir(entry, NULL);
 
       if(!is_dir)
          file_ext = path_get_extension(name);
@@ -231,6 +228,42 @@ error:
 }
 
 /**
+ * dir_list_append:
+ * @list               : existing list to append to.
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_hidden     : include hidden files and directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
+ *
+ * Create a directory listing, appending to an existing list
+ *
+ * Returns: true success, false in case of error.
+ **/
+bool dir_list_append(struct string_list *list,
+      const char *dir,
+      const char *ext, bool include_dirs,
+      bool include_hidden, bool include_compressed,
+      bool recursive)
+{
+   struct string_list *ext_list   = NULL;
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   if(dir_list_read(dir, list, ext_list, include_dirs,
+            include_hidden, include_compressed, recursive) == -1)
+   {
+      string_list_free(ext_list);
+      return false;
+   }
+
+   string_list_free(ext_list);
+   return true;
+}
+
+/**
  * dir_list_new:
  * @dir                : directory path.
  * @ext                : allowed extensions of file directory entries to include.
@@ -249,24 +282,17 @@ struct string_list *dir_list_new(const char *dir,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
 
    if (!(list = string_list_new()))
       return NULL;
 
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   if(dir_list_read(dir, list, ext_list, include_dirs,
-            include_hidden, include_compressed, recursive) == -1)
+   if (!dir_list_append(list, dir, ext, include_dirs,
+            include_hidden, include_compressed, recursive))
    {
       string_list_free(list);
-      string_list_free(ext_list);
       return NULL;
    }
 
-   string_list_free(ext_list);
    return list;
 }
-

@@ -500,7 +500,6 @@ static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
    vid->menu.active = state;
 }
 
-
 static void sdl_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -519,8 +518,6 @@ static void sdl_grab_mouse_toggle(void *data)
 
 static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_flags */
-   NULL,                /* set_coords */
-   NULL,                /* set_mvp */
    NULL,
    NULL,
    NULL,

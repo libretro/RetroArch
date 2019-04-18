@@ -128,9 +128,7 @@ For the server:
 7) Receive INFO
 8) Send SYNC
 
-
 * Guarantee not actually a guarantee.
-
 
 Netplay's command format
 
@@ -247,10 +245,15 @@ Payload:
 Description:
     Request to enter player mode. The client must wait for a MODE command
     before sending input. Server may refuse or force slave connections, so the
-    request is not necessarily honored. If no devices are explicitly requested,
-    the server may choose how to assign; the default is to assign the first
-    unassigned device, and share the first device if all devices are assigned
-    and the first device is shareable.
+    request is not necessarily honored. The server may choose to override the
+    share mode, and if no devices are explicitly requested, the server may
+    choose how to assign. The default handling of the share mode is to always
+    accept it if the client is the first to get the device. If the share mode
+    requested is don't-care, then a default share mode is chosen. The default
+    device selection depends on the number of devices available:  If there is
+    only one device, then the default is to share that device. If there are
+    more than one, then the default is to refuse PLAY requests when all are
+    assigned.
 
 Command: MODE
 Payload:
@@ -357,7 +360,6 @@ Unused
 
 Command: CFG_ACK
 Unused
-
 
 Input types
 

@@ -19,12 +19,10 @@
 		5008452F1B89300700CE6073 /* Cg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB01A89E664007336C1 /* Cg.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		500845301B89300700CE6073 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EAC1A89E5B4007336C1 /* OpenGL.framework */; };
 		500845321B89300700CE6073 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
-		500845331B89300700CE6073 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		500845341B89300700CE6073 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
-		84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
 		84DD5EAD1A89E5B4007336C1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EAC1A89E5B4007336C1 /* OpenGL.framework */; };
@@ -105,7 +103,6 @@
 				5008452F1B89300700CE6073 /* Cg.framework in Frameworks */,
 				500845301B89300700CE6073 /* OpenGL.framework in Frameworks */,
 				500845321B89300700CE6073 /* AppKit.framework in Frameworks */,
-				500845331B89300700CE6073 /* CoreVideo.framework in Frameworks */,
 				500845341B89300700CE6073 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -119,7 +116,6 @@
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EAD1A89E5B4007336C1 /* OpenGL.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
-				84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */,
 				84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -391,6 +387,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Debug;
@@ -425,6 +422,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Release;
@@ -457,6 +455,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
 			};
 			name = Debug;
@@ -487,6 +486,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
 			};
 			name = Release;
@@ -503,6 +503,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -568,6 +569,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_SSL",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",

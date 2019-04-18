@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
  *  Copyright (C) 2018      - natinusala
  *
@@ -36,8 +36,6 @@ void ozone_draw_cursor(ozone_handle_t *ozone,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha);
-
-void ozone_color_alpha(float *color, float alpha);
 
 void ozone_draw_icon(
       video_frame_info_t *video_info,

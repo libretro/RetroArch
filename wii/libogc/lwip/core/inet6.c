@@ -30,7 +30,6 @@
  *
  */
 
-
 /* inet6.c
  *
  * Functions common to all TCP/IP modules, such as the Internet checksum and the
@@ -38,13 +37,10 @@
  *
  */
 
-
 #include "lwip/opt.h"
 
 #include "lwip/def.h"
 #include "lwip/inet.h"
-
-
 
 /* chksum:
  *
@@ -60,7 +56,6 @@ chksum(void *dataptr, u16_t len)
 {
   u16_t *sdataptr = dataptr;
   u32_t acc;
-
 
   for(acc = 0; len > 1; len -= 2) {
     acc += *sdataptr++;
@@ -165,4 +160,3 @@ inet_chksum_pbuf(struct pbuf *p)
   }
   return ~(acc & 0xffff);
 }
-

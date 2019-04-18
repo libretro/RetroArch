@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_NETPLAY_DISCOVERY_H
 #define __RARCH_NETPLAY_DISCOVERY_H
 
@@ -44,6 +43,7 @@ struct netplay_host
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
    int  content_crc;
    int  port;
 };
@@ -66,15 +66,15 @@ enum netplay_host_method
 struct netplay_room
 {
    int id;
-   char nickname    [PATH_MAX_LENGTH];
-   char address     [PATH_MAX_LENGTH];
-   char mitm_address[PATH_MAX_LENGTH];
+   char nickname    [2048];
+   char address     [2048];
+   char mitm_address[2048];
    int  port;
    int  mitm_port;
-   char corename    [PATH_MAX_LENGTH];
-   char frontend    [PATH_MAX_LENGTH];
-   char coreversion [PATH_MAX_LENGTH];
-   char gamename    [PATH_MAX_LENGTH];
+   char corename    [2048];
+   char frontend    [2048];
+   char coreversion [2048];
+   char gamename    [2048];
    int  gamecrc;
    int  timestamp;
    int  host_method;
@@ -82,8 +82,9 @@ struct netplay_room
    bool has_spectate_password;
    bool lan;
    bool fixed;
-   char retroarch_version[PATH_MAX_LENGTH];
-   char country[PATH_MAX_LENGTH];
+   char retroarch_version [2048];
+   char subsystem_name    [2048];
+   char country[2048];
    struct netplay_room *next;
 };
 

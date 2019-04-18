@@ -7,7 +7,6 @@ Group:          Applications/Emulators
 License:        GPLv3+
 URL:            http://www.libretro.com/
 
-BuildRequires:  libxml2-devel
 BuildRequires:  mesa-llvmpipe-libwayland-egl-devel
 BuildRequires:  pulseaudio-devel
 BuildRequires:  OpenAL-devel
@@ -82,6 +81,3 @@ sed -i \
 %{_prefix}/share/icons/hicolor/86x86/apps/retroarch.*
 %{_prefix}/share/doc/retroarch/*
 %changelog
-
-
-

@@ -4,7 +4,7 @@
 
 /* Common implementation of NTSC filters */
 
-#include <assert.h>
+#include <retro_assert.h>
 #include <math.h>
 
 /* Copyright (C) 2006 Shay Green. This module is free software; you
@@ -121,7 +121,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 		{
 			int x = kernel_size * 3 / 2 - kernel_half + i;
 			kernels [x] *= sum;
-			assert( kernels [x] == kernels [x] ); /* catch numerical instability */
+			retro_assert( kernels [x] == kernels [x] ); /* catch numerical instability */
 		}
 	}
 
@@ -156,7 +156,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 			for ( x = i; x < kernel_size; x += 2 )
 			{
 				kernels [x] *= sum;
-				assert( kernels [x] == kernels [x] ); /* catch numerical instability */
+				retro_assert( kernels [x] == kernels [x] ); /* catch numerical instability */
 			}
 		}
 	}
@@ -311,7 +311,7 @@ typedef struct pixel_info_t
 		(1.0f - (((ntsc) + 100) & 2))
 #endif
 
-extern pixel_info_t const snes_ntsc_pixels [alignment_count];
+extern pixel_info_t const retroarch_snes_ntsc_pixels [alignment_count];
 
 /* Generate pixel at all burst phases and column alignments */
 static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t* out )
@@ -326,7 +326,7 @@ static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t
 		Convolve these with kernels which: filter respective components, apply
 		sharpening, and rescale horizontally. Convert resulting yiq to rgb and pack
 		into integer. Based on algorithm by NewRisingSun. */
-		pixel_info_t const* pixel = snes_ntsc_pixels;
+		pixel_info_t const* pixel = retroarch_snes_ntsc_pixels;
 		int alignment_remain = alignment_count;
 		do
 		{

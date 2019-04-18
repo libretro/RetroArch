@@ -26,7 +26,6 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef __ASNDLIB_H__
 #define __ASNDLIB_H__
 
@@ -380,4 +379,3 @@ u32 ASND_GetDSP_ProcessTime();
 #endif
 
 #endif
-

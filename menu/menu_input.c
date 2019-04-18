@@ -162,7 +162,6 @@ void menu_event_kb_set(bool down, enum retro_key key)
  */
 unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
-   menu_animation_ctx_delta_t delta;
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
@@ -176,7 +175,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
    bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool input_swap_override                = 
+   bool input_swap_override                =
       input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                    = (!input_swap_override &&
       swap_ok_cancel_btns) ?
@@ -187,6 +186,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
    unsigned ok_current                     = BIT256_GET_PTR(p_input,
          menu_ok_btn );
    unsigned ok_trigger                     = ok_current & ~ok_old;
+   bool is_rgui                            = string_is_equal(settings->arrays.menu_driver, "rgui");
 
    ok_old                                  = ok_current;
 
@@ -198,7 +198,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
           * for old_input_state. */
 
          first_held  = true;
-         delay_timer = initial_held ? 12 : 6;
+         delay_timer = initial_held ? 200 : 100;
          delay_count = 0;
       }
 
@@ -235,10 +235,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   delta.current = menu_animation_get_delta_time();
-
-   if (menu_animation_get_ideal_delta_time(&delta))
-      delay_count += delta.ideal;
+   delay_count += menu_animation_get_delta_time();
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -247,14 +244,14 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (menu_event_get_osk_ptr() < 33)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   + OSK_CHARS_PER_LINE);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() 
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
                   - OSK_CHARS_PER_LINE);
       }
 
@@ -276,12 +273,12 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
             menu_event_set_osk_idx((enum osk_type)(
                      menu_event_get_osk_idx() - 1));
          else
-            menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_LAST - 1));
+            menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
+         if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
             menu_event_set_osk_idx((enum osk_type)(
                      menu_event_get_osk_idx() + 1));
          else
@@ -339,9 +336,6 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       menu_event_kb_set_internal(RETROK_F11, 0);
    }
-
-   if (BIT256_GET_PTR(p_trigger_input, RARCH_QUIT_KEY))
-      return MENU_ACTION_QUIT;
 
    mouse_enabled                      = settings->bools.menu_mouse_enable;
 #ifdef HAVE_OVERLAY
@@ -651,7 +645,6 @@ static int menu_input_mouse_frame(
    return ret;
 }
 
-
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 {
    menu_input_t *menu_input = &menu_input_state;
@@ -740,6 +733,9 @@ static int menu_input_pointer_post_iterate(
       return -1;
 
 #ifdef HAVE_OVERLAY
+   /* If we have overlays enabled, overlay controls take
+    * precedence and we don't want regular menu
+    * pointer controls to be handled */
    if ((       settings->bools.input_overlay_enable
             && input_overlay_is_alive(overlay_ptr)))
       return 0;
@@ -893,4 +889,3 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_free(&entry);
 }
-

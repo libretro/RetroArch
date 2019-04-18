@@ -1,7 +1,6 @@
 /* from https://github.com/smealum/ctrulib
  * modified to allow reducing __linear_heap_size at runtime */
 
-
 #include <3ds.h>
 #include <stdlib.h>
 #include <3ds/util/rbtree.h>
@@ -244,7 +243,6 @@ extern "C" u32 ctr_get_linear_unused(void)
 {
    return __linear_heap + __linear_heap_size - sLinearPool_maxaddr;
 }
-
 
 extern "C" void ctr_linear_free_pages(u32 pages)
 {

@@ -1,0 +1,96 @@
+diff --git a/gfx/drivers_context/wgl_ctx.c b/gfx/drivers_context/wgl_ctx.c
+index b90a8e40c3..e57c4df194 100644
+--- a/gfx/drivers_context/wgl_ctx.c
++++ b/gfx/drivers_context/wgl_ctx.c
+@@ -78,6 +78,47 @@
+ #ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+ #define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
+ #endif
++
++#ifndef WGL_ACCELERATION_ARB
++#define WGL_ACCELERATION_ARB                    0x2003
++#endif
++
++#ifndef WGL_FULL_ACCELERATION_ARB
++#define WGL_FULL_ACCELERATION_ARB               0x2027
++#endif
++
++#ifndef WGL_DRAW_TO_WINDOW_ARB
++#define WGL_DRAW_TO_WINDOW_ARB                  0x2001
++#endif
++
++#ifndef WGL_DOUBLE_BUFFER_ARB
++#define WGL_DOUBLE_BUFFER_ARB                   0x2011
++#endif
++
++#ifndef WGL_RED_BITS_ARB
++#define WGL_RED_BITS_ARB                        0x2015
++#endif
++
++#ifndef WGL_GREEN_BITS_ARB
++#define WGL_GREEN_BITS_ARB                      0x2017
++#endif
++
++#ifndef WGL_BLUE_BITS_ARB
++#define WGL_BLUE_BITS_ARB                       0x2019
++#endif
++
++#ifndef WGL_ALPHA_BITS_ARB
++#define WGL_ALPHA_BITS_ARB                      0x201B
++#endif
++
++#ifndef WGL_PIXEL_TYPE_ARB
++#define WGL_PIXEL_TYPE_ARB                      0x2013
++#endif
++
++#ifndef WGL_TYPE_RGBA_ARB
++#define WGL_TYPE_RGBA_ARB                       0x202B
++#endif
++
+ #endif
+
+ #if defined(HAVE_OPENGL)
+@@ -313,6 +354,43 @@ static void create_gl_context(HWND hwnd, bool *quit)
+          RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+          wgl_adaptive_vsync = true;
+       }
++      if (wgl_has_extension("WGL_ARB_pixel_format", extensions))
++      {
++         BOOL (WINAPI * wglChoosePixelFormatARB)
++         (HDC hdc,
++                                 const int *piAttribIList,
++                                 const FLOAT *pfAttribFList,
++                                 UINT nMaxFormats,
++                                 int *piFormats,
++                                 UINT *nNumFormats);
++         UINT nMatchingFormats;
++         int index = 0;
++         int attribsDesired[] = {
++            WGL_DRAW_TO_WINDOW_ARB, 1,
++            WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
++            WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
++            WGL_RED_BITS_ARB, 10,
++            WGL_GREEN_BITS_ARB, 10,
++            WGL_BLUE_BITS_ARB, 10,
++            WGL_ALPHA_BITS_ARB, 2,
++            WGL_DOUBLE_BUFFER_ARB, 1,
++            0,0
++         };
++         wglChoosePixelFormatARB = (BOOL (WINAPI *) (HDC, const int *,
++                  const FLOAT*, UINT, int*, UINT*))
++            gfx_ctx_wgl_get_proc_address("wglChoosePixelFormatARB");
++
++         RARCH_LOG("[WGL]: ARB pixel format supported.\n");
++
++         if (wglChoosePixelFormatARB(win32_hdc, attribsDesired,
++                  NULL, 1, &index, &nMatchingFormats))
++         {
++            if (nMatchingFormats == 0)
++            {
++               RARCH_WARN("No 10bpc WGL_ARB_pixel_formats found!\n");
++            }
++         }
++      }
+    }
+ }
+ #endif

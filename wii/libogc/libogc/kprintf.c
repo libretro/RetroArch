@@ -214,7 +214,6 @@ int kvsprintf(char *buf, const char *fmt, va_list args)
 				field_width, precision, flags);
 			continue;
 
-
 		case 'n':
 			if (qualifier == 'l') {
 				long * ip = va_arg(args, long *);

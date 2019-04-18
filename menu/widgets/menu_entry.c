@@ -266,15 +266,31 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
 {
+   size_t size, i;
+
    if (!entry || string_is_empty(entry->value))
       return;
-   strlcpy(s, entry->value, len);
+
+   size = strlcpy(s, entry->value, len);
+
+   if (menu_entry_is_password(entry))
+   {
+      for (i = 0; i < size; i++)
+      {
+         s[i] = '*';
+      }
+   }
 }
 
 void menu_entry_set_value(uint32_t i, const char *s)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
    setting_set_with_string_representation(setting, s);
+}
+
+bool menu_entry_is_password(menu_entry_t *entry)
+{
+   return entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD;
 }
 
 uint32_t menu_entry_num_has_range(uint32_t i)

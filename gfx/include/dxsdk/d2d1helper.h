@@ -26,7 +26,7 @@ namespace D2D1
     //
     // Forward declared IdentityMatrix function to allow matrix class to use
     // these constructors.
-    // 
+    //
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
     D2D1_MATRIX_3X2_F
@@ -380,7 +380,7 @@ namespace D2D1
 
     //
     // PixelFormat
-    // 
+    //
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
     D2D1_PIXEL_FORMAT
@@ -399,7 +399,7 @@ namespace D2D1
 
     //
     // Bitmaps
-    // 
+    //
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
     D2D1_BITMAP_PROPERTIES
@@ -420,7 +420,7 @@ namespace D2D1
 
     //
     // Render Targets
-    // 
+    //
     COM_DECLSPEC_NOTHROW
     D2D1FORCEINLINE
     D2D1_RENDER_TARGET_PROPERTIES
@@ -665,7 +665,7 @@ namespace D2D1
         //
         // Construct a color, note that the alpha value from the "rgb" component
         // is never used.
-        // 
+        //
         COM_DECLSPEC_NOTHROW
         D2D1FORCEINLINE
         ColorF(
@@ -751,7 +751,7 @@ namespace D2D1
 
         //
         // Creates an uninitialized matrix
-        // 
+        //
         COM_DECLSPEC_NOTHROW
         D2D1FORCEINLINE
         Matrix3x2F(
@@ -808,7 +808,6 @@ namespace D2D1
         {
             return Translation(SizeF(x, y));
         }
-
 
         static
         COM_DECLSPEC_NOTHROW
@@ -1030,4 +1029,3 @@ operator==(const D2D1_RECT_U &rect1, const D2D1_RECT_U &rect2)
 #endif // #ifndef D2D_USE_C_DEFINITIONS
 
 #endif // #ifndef _D2D1_HELPER_H_
-

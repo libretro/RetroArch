@@ -20,7 +20,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <libretro.h>
-#include <dynamic/dylib.h>
 
 #include "core_type.h"
 
@@ -133,7 +132,7 @@ bool libretro_get_shared_context(void);
 bool init_libretro_sym(enum rarch_core_type type,
       struct retro_core_t *core);
 
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p);
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *lib_handle_p);
 
 /**
  * uninit_libretro_sym:
@@ -146,7 +145,15 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
  **/
 void uninit_libretro_sym(struct retro_core_t *core);
 
+/* Arbitrary twenty subsystems limite */
+#define SUBSYSTEM_MAX_SUBSYSTEMS 20
+/* Arbitrary 10 roms for each subsystem limit */
+#define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
+
+extern struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+extern struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+extern unsigned subsystem_current_count;
+
 RETRO_END_DECLS
 
 #endif
-

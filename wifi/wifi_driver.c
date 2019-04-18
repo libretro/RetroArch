@@ -32,7 +32,6 @@
 static const wifi_driver_t *wifi_driver   = NULL;
 static void *wifi_data                      = NULL;
 static bool wifi_driver_active              = false;
-static bool wifi_driver_data_own            = false;
 
 static const wifi_driver_t *wifi_drivers[] = {
 #ifdef HAVE_LAKKA
@@ -124,18 +123,9 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
    {
       case RARCH_WIFI_CTL_DESTROY:
          wifi_driver_active   = false;
-         wifi_driver_data_own = false;
          wifi_driver          = NULL;
          wifi_data            = NULL;
          break;
-      case RARCH_WIFI_CTL_SET_OWN_DRIVER:
-         wifi_driver_data_own = true;
-         break;
-      case RARCH_WIFI_CTL_UNSET_OWN_DRIVER:
-         wifi_driver_data_own = false;
-         break;
-      case RARCH_WIFI_CTL_OWNS_DRIVER:
-         return wifi_driver_data_own;
       case RARCH_WIFI_CTL_SET_ACTIVE:
          wifi_driver_active = true;
          break;

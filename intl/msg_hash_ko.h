@@ -7,8 +7,9 @@ MSG_HASH(
       "알 수 없는 컴파일러"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "기본"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "장치가 포트에서 연결 해제 되었습니다"
@@ -104,6 +105,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "하드웨어 렌더링된 코어에 고유의 컨텍스트를 부여. 프레임간 하드웨어 상태가 변경된 것으로 가정하지 않도록 함."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "메뉴의 좌우 애니메이션을 활성화 했습니다. 성능에 영향이 갈 수 있습니다."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -458,10 +463,6 @@ MSG_HASH(
       "종료시 환경설정 저장하기"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "컬렉션"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "데이터베이스"
       )
@@ -586,10 +587,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "다이나믹 백그라운드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "도전과제 사용")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "메뉴 항목 하이라이트 색상")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "메뉴 항목 일반 색상")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "False")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -665,31 +662,29 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
       "우 아날로그 Y+ (하)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-      "Gun Trigger")
+      "무기 방아쇠")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-      "Gun Reload")
+      "무기 재장전")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-      "Gun Aux A")
+      "무기 보조(Aux) A")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-      "Gun Aux B")
+      "무기 보조 B")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-      "Gun Aux C")
+      "무기 보조 C")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-      "Gun Start")
+      "무기 시작버튼")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-      "Gun Select")
+      "무기 선택버튼")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-      "Gun D-pad Up")
+      "무기 D-패드 위")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-      "Gun D-pad Down")
+      "무기 D-패드 아래")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-      "Gun D-pad Left")
+      "무기 D-패드 왼쪽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-      "Gun D-pad Right")
+      "무기 D-패드 오른쪽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "자동설정 사용")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "아날로그 스틱 데드존")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "확인/취소 버튼 반전")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -749,23 +744,23 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
       "(키: %s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-      "Mouse 1")
+      "마우스 1")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-      "Mouse 2")
+      "마우스 2")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-      "Mouse 3")
+      "마우스 3")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
-      "Mouse 4")
+      "마우스 4")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
-      "Mouse 5")
+      "마우스 5")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-      "Wheel Up")
+      "마우스 휠 스크롤 업")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-      "Wheel Down")
+      "마우스 휠 스크롤 다운")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-      "Wheel Left")
+      "마우스 휠 스크롤 왼쪽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-      "Wheel Right")
+      "마우스 휠 스크롤 오른쪽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "키보드 게임패드 설정 형식")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -851,7 +846,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "보통")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-      "Prefer Front Touch")
+      "전면 터치 선호")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
       "입력설정 파일")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -911,7 +906,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
       "베트남어")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-      "Arabic")
+      "아랍어")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
       "좌 아날로그")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -970,6 +965,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "설정")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "메뉴 선형 필터")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+      "좌우 애니메이션")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "메뉴")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -1326,9 +1323,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
       "리본 (단순화)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
-      "Simple Snow")
+      "눈 (단순화)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
-      "Snow")
+      "눈")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "고급 설정 보임")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -1425,8 +1422,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "LibretroDB 지원")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Libusb 지원")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "libxml2 XML 파싱 지원")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "넷플레이 (P2P) 지원")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1521,8 +1516,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "타이틀 화면")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "시간/날짜 표시")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-      "메뉴 타이틀 색상")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "True")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -1587,8 +1580,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "오버스캔 잘라내기(재시작)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "데스크탑 구성요소 사용안함")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "3DS 하단 화면")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "비디오 드라이버")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1698,55 +1693,55 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
       "메뉴 알파 요소")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-      "Menu Font Red Color")
+      "메뉴 폰트 빨강")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-      "Menu Font Green Color")
+      "메뉴 폰트 초록")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-      "Menu Font Blue Color")
+      "메뉴 폰트 파랑")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
       "메뉴 폰트")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-      "사용자")
+      "사용자 지정")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
-      "FlatUI")
+      "평면UI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
-      "Monochrome")
+      "흑백")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
-      "Monochrome Inverted")
+      "흑백 색 반전")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
-      "Systematic")
+      "체계적")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
-      "NeoActive")
+      "미래")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
-      "Pixel")
+      "픽셀")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
-      "RetroActive")
+      "레트로풍")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
-      "Retrosystem")
+      "레트로시스템")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
-      "Dot-Art")
+      "점묘법")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
       "메뉴 색상 테마")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
-      "Apple Green")
+      "애플 그린")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-      "Dark")
+      "다크")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
-      "Dark Purple")
+      "어두운 보라")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
-      "Electric Blue")
+      "일렉트릭 블루")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
-      "Golden")
+      "금색")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
-      "Legacy Red")
+      "레거시 레드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-      "Midnight Blue")
+      "미드나잇 블루")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-      "Plain")
+      "산뜻한")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
-      "Undersea")
+      "심해")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
-      "Volcanic Red")
+      "볼캐닉 레드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "메뉴 쉐이더 파이프라인")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
@@ -1768,7 +1763,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
       "넷플레이 탭 보이기")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-      "Menu Layout")
+      "매뉴 형태")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "메뉴 아이콘 테마")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
@@ -1776,7 +1771,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "쉐이더 프리셋")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-      "도전과제 사용 설정. 자세한 정보는 http://retroachievements.org 방문.")
+      "도전과제 사용을 설정했습니다. 자세한 정보는 http://retroachievements.org 방문해주세요.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "비공식 도전과제 또는 테스트 목적의 베타기능 사용 설정/해제.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -1870,7 +1865,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
       "화면의 정확한 리프레시 비율(Hz) 측정치.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-      "The refresh rate as reported by the display driver.")
+      "디스플레이 드라이버가 보고한 화면 주사율입니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
       "비디오 출력 설정 변경.")
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
@@ -2090,7 +2085,7 @@ MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "프리셋 파일명")
 MSG_HASH(MSG_INPUT_RENAME_ENTRY,
-      "Rename Title")
+      "제목 수정")
 MSG_HASH(MSG_INTERFACE,
       "인터페이스")
 MSG_HASH(MSG_INTERNAL_STORAGE,
@@ -2302,10 +2297,6 @@ MSG_HASH(
    "오디오 동기화. 사용 권장."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "축의 기울기가 인식되는 범위를 설정."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "다음 입력 설정으로 넘어가기 전까지 대기하는 시간(초)."
    )
@@ -2440,8 +2431,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "배터리 수준 표시")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "파일 선택")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "컬렉션에서 선택")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "필터")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2509,7 +2498,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "메뉴 화면에서 오버레이를 숨기고 메뉴 종료 시에 다시 표시.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "검색된 컨텐츠가 이곳에 표시됨."
       )
 MSG_HASH(
@@ -2764,10 +2753,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
       "클라이언트 모드로 넷플레이 사용.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "활성 중인 모든 넷플레이 연결 해제.")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "디렉토리에서 실행 가능한 파일을 검색하고 컬렉션에 추가.")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "실행 가능한 파일을 검색하고 컬렉션에 추가.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "수직 동기에 사용자 스왑 간격을 사용. 모니터 재생 빈도를 효과적으로 줄이는데 사용."
       )
@@ -2786,8 +2771,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "새 호스트 검색.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "컬렉션에서 현재 항목 삭제.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "컨텐츠에 대한 자세한 정보 확인.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2858,8 +2841,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "파워 유저를 위한 고급 설정 보이기(기본값은 숨김).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "분할된 스레드에서 작업을 수행.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "사용자가 컬렉션에서 항목을 제거할 수 있게 허용.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "시스템 디렉토리를 설정. 코어는 이 디렉토리에서 BIOS, 시스템 특정 구성 등을 불러들일 수 있습니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2939,8 +2920,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "앱/코어 정보 파일이 저장될 공간.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "조이패드가 연결되면 해당 디렉토리에 설정 파일이 있는 경우 자동으로 구성해줍니다.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "모든 컬렉션이 이 디렉토리에 저장됩니다.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "디렉토리를 설정하면 설정하면 임시로 압축해제된 컨첸츠가 이 디렉토리에 추출됩니다."
@@ -3029,395 +3008,412 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
       "뷰포트의 Y축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋. '정수 단위 화면 크기'가 활성화 된 경우 무시되고 자동으로 중앙이 됩니다.")
 
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-      "Use Relay Server")
+      "중계 서버 사용")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-      "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems.")
+      "넷플레이 접속시 중계 서버를 사용합니다. 방장이 방화벽을 사용하고 있거나 NAT/UPnP 문제가 생겼을경우 유용합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
-      "Add to mixer")
+      "믹서에 추가")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
-      "Add to mixer and play")
+      "믹서에 추가 후 재생")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
-      "Add to mixer")
+      "믹서에 추가")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-      "Add to mixer and play")
+      "믹서에 추가 후 재생")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-      "Filter by current core")
+      "현재 코어에 따라 필터")
 MSG_HASH(
       MSG_AUDIO_MIXER_VOLUME,
-      "Global audio mixer volume"
+      "전역 오디오 믹서 볼륨"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-      "Global audio mixer volume (in dB). 0 dB is normal volume, and no gain is applied."
+      "전역 오디오 믹서 볼륨 (dB 단위). 0 dB이 기본 볼륨, 증폭은 적용되지 않습니다."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-      "Audio Mixer Volume Level (dB)"
+      "오디오 믹서 볼륨 크기 (dB)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-      "Audio Mixer Mute"
+      "오디오 믹서 음소거"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-      "Mute/unmute mixer audio.")
+      "믹서 볼륨을 음소거/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Show Online Updater")
+      "온라인 업데이트 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Show/hide the 'Online Updater' option.")
+      "온라인 업데이트 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-      "Show Core Updater")
+      "코어 업데이트 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Show/hide the ability to update cores (and core info files).")
+      "업데이트 가능한 코어와 코어 정보 파일을 표시/해제 합니다.")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
-      "Preparing for content scan...")
+      "컨텐츠 스캔 준비중...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-      "Delete core")
+      "코어 삭제")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
-      "Remove this core from disk.")
+      "이 코어를 삭제합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-      "Rename the title of the entry.")
+      "엔트리의 제목을 수정합니다.")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
-      "Rename")
+      "수정")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-      "Framebuffer Opacity")
+      "프레임 버퍼 불투명도")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-      "Modify the opacity of the framebuffer.")
+      "프레임 버퍼의 불투명도를 수정합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-      "Favorites")
+      "즐겨찾기")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "Content which you have added to 'Favorites' will appear here.")
+      "즐겨찾기로 등록한 컨텐츠가 이곳에 표시됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-      "Music")
+      "음악")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-      "Music which has been previously played will appear here.")
+      "이전에 재생되었던 노래가 이곳에 표시됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-      "Image")
+      "사진")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-      "Images which have been previously viewed will appear here.")
+      "이전에 열람했던 사진이 이곳에 표시됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-      "Video")
+      "영상")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-      "Videos which have been previously played will appear here.")
+      "이전에 재생되었던 영상들이 이곳에 표시됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Menu Icons")
+      "메뉴 아이콘")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+      "메뉴 엔트리에 왼쪽에 표시되는 메뉴 아이콘들을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enable Settings Tab")
+      "설정 탭 표시")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-      "Set Password For Enabling Settings Tab")
+      "'설정 탭 표시'란에 비밀번호 설정")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-      "Enter Password")
+      "비밀번호 입력")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-      "Password correct.")
+      "비밀번호가 확인되었습니다.")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-      "Password incorrect.")
+      "비밀번호가 틀렸습니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enables the Settings tab. A restart is required for the tab to appear.")
+      "설정 탭을 표시/해제 합니다. 다시 표시하기 위해 재시작이 필요합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Allow the user to rename entries in collections.")
+      "설정 탭을 숨길때 비밀번호를 설정해 나중에 되돌릴수 있게 끔 합니다. 메인 메뉴에서 '설정 탭 표시'를 선택 후 비밀번호를 입력해 되돌릴수 있습니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Allow to rename entries")
+      "엔트리 편집 허용")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-      "Show Load Core")
+      "코어 불러오기 설정 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-      "Show/hide the 'Load Core' option.")
+      "코어 불러오기란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-      "Show Load Content")
+      "컨텐츠 불러오기 설정 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-      "Show/hide the 'Load Content' option.")
+      "컨텐츠 불러오기란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "정보 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-      "Show/hide the 'Information' option.")
+      "정보란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-      "Show Configurations")
+      "설정(Config) 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-      "Show/hide the 'Configurations' option.")
+      "설정(Config)란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
-      "Show Help")
+      "도움말 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-      "Show/hide the 'Help' option.")
+      "도움말을 표시/해제 합니다.")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Show Quit RetroArch")
+      "RetroArch 재시작 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-      "Show/hide the 'Quit RetroArch' option.")
+      "RetroArch 재시작 설정란을 표시/해제 합니다.")
+#else
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+      "RetroArch 나가기 표시")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+      "RetroArch 나가기 설정란을 표시/해제 합니다.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-      "Show Reboot")
+      "재시작 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-      "Show/hide the 'Reboot' option.")
+      "재시작 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
-      "Show Shutdown")
+      "전원 끄기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-      "Show/hide the 'Shutdown' option.")
+      "전원 끄기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-      "Quick Menu")
+      "빠른 메뉴")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-      "Show or hide elements on the Quick Menu screen.")
+      "빠른 메뉴의 컨텐츠를 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Show Take Screenshot")
+      "스크린샷 찍기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Show/hide the 'Take Screenshot' option.")
+      "스크린샷 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Show Save/Load State")
+      "저장/불러오기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Show/hide the options for saving/loading state.")
+      "저장/불러오기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Show Undo Save/Load State")
+      "저장/불러오기 상태 되돌리기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Show/hide the options for undoing save/load state.")
+      "저장/불러오기 상태 되돌리기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show Add to Favorites")
+      "즐겨찾기에 추가 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show/hide the 'Add to Favorites' option.")
+      "즐겨찾기에 추가 설정란을 표시/해제 합니다.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+      "녹화 시작 표시")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+      "녹화 시작 설정란을 표시/해제 합니다.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+      "방송 시작 표시")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+      "방송 시작 설정란을 표시/해제 합니다.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "코어 리스트 초기화 표시")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "코어 리스트 초기화 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-      "Show Options")
+      "설정 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-      "Show/hide the 'Options' option.")
+      "'설정' 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-      "Show Controls")
+      "조작 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-      "Show/hide the 'Controls' option.")
+      "조작 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-      "Show Cheats")
+      "치트 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-      "Show/hide the 'Cheats' option.")
+      "치트 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-      "Show Shaders")
+      "쉐이더 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-      "Show/hide the 'Shaders' option.")
+      "쉐이더 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "Show Save Core Overrides")
+      "코어 덮어쓰기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "Show/hide the 'Save Core Overrides' option.")
+      "코어 덮어쓰기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Show Save Game Overrides")
+      "게임 저장 덮어쓰기 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Show/hide the 'Save Game Overrides' option.")
+      "게임 저장 덮어쓰기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "정보 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-      "Show/hide the 'Information' option.")
+      "정보 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-      "Disable Kiosk Mode")
+      "키오스크 모드 비활성화")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-      "Disables kiosk mode. A restart is required for the change to take full effect.")
+      "키오스크 모드를 비활성화 합니다. 완전한 비활성화를 위해 재시작이 필요합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-      "Enable Kiosk Mode")
+      "공중전화 모드 활성화")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-      "Protects the setup by hiding all configuration related settings.")
+      "모든 설정을 숨겨 편집할수 없게 합니다. 개방된 곳에서 설정이 편집되는 일을 막을때 유용합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-      "Set Password For Disabling Kiosk Mode")
+      "키오스크 모드 비활성화 비밀번호 설정")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-      "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
+      "키오스크 모드를 비활성화할때 비밀번호를 설정해 나중에 설정할 수 있게 끔 합니다. 메인 메뉴에서 '키오스크 모드 비활성화'를 선택 후 비밀번호를 입력해 설정할 수 있습니다.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
-      "Enter Password")
+      "비밀번호 입력")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-      "Password correct.")
+      "비밀번호가 확인되었습니다.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-      "Password incorrect.")
+      "비밀번호가 틀렸습니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatically add content to playlist")
+      "재생 목록에 컨텐츠 검색 후 자동 추가")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatically scans loaded content so they appear inside playlists.")
+      "컨텐츠를 자동으로 검색해 재생 목록에 표시합니다.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
-      "Scanning of file finished")
+      "파일 스캔 완료")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-      "Audio Resampler Quality")
+      "오디오 리샘플러 품질")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-      "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
+      "이 값을 내려서 오디오의 반응 속도를 늘리거나 올려서 오디오의 품질을 개선합니다. 둘중 하나는 포기해야 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "Display Statistics")
+      "통계 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "Show onscreen technical statistics.")
+      "화면에 표시되는 고급 사용자용 통계를 표시합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-      "Enable border filler")
+      "창 테두리 채우기 설정")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-      "Enable border filler thickness")
+      "창 테두리 굵기 설정")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-      "Enable background filler thickness")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "For CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes")
+      "바탕화면 필터 굵기 설정")
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "각 코어/게임에 적합한 해상도와 주사율을 사용합니다. CRT 디스플레이 전용 설정입니다.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT 리소스 전환")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-      "Switch among native and ultrawide super resolutions."
+      "기본/고화질 해상도중 하나를 선택합니다."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Resolution")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-      "Show Rewind Settings")
+      "되감기 설정 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-      "Show/hide the Rewind options.")
+      "되감기 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-      "Show/hide the Latency options.")
+      "레이턴시 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-      "Show Latency Settings")
+      "레이턴시 설정 표시")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-      "Show/hide the Overlay options.")
+      "오버레이 설정란을 표시/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-      "Show Overlay Settings")
+      "오버레이 설정 표시")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-      "Enable menu audio")
+      "메뉴 효과음 활성화")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-      "Enable or disable menu sound.")
+      "메뉴 효과음을 활성화/해제 합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-      "Mixer Settings")
+      "믹서 설정")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "View and/or modify audio mixer settings.")
+      "오디오 설정을 확인하거나 편집합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Overrides")
+      "기존 설정 덮어쓰기")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Options for overriding the global configuration.")
+      "기존의 전역 설정을 덮어 씁니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-      "Will start playback of the audio stream. Once finished, it will remove the current audio stream from memory.")
+      "오디오 스트림을 재생합니다. 재생 후에 오디오 스트림을 메모리에서 제거합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-      "Will start playback of the audio stream. Once finished, it will loop and play the track again from the beginning.")
+      "오디오 스트림을 재생합니다. 재생 후에 다시 반복합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in sequential order and repeat this behavior. Useful as an album playback mode.")
+      "오디오 스트림을 재생합니다. 재생 후에 다음 오디오 스트림으로 넘어갑니다. 앨범 재생 모드에 유용합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-      "This will stop playback of the audio stream, but not remove it from memory. You can start playing it again by selecting 'Play'.")
+      "재생되던 오디오 스트림을 멈추고 메모리는 유지합니다. 재생 버튼을 눌러 다시 재생할 수 있습니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-      "This will stop playback of the audio stream and remove it entirely from memory.")
+      "재생되던 오디오 스트림을 멈추고 메모리에서 완전히 제거합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-      "Adjust the volume of the audio stream.")
+      "오디오 스트림의 볼륨을 설정합니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-      "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored.")
+      "이 오디오 트랙을 가능한 오디오 스트림 슬롯에 추가합니다. 재생 가능한 슬롯이 없으면 무시됩니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored.")
+      "이 오디오 트랙을 가능한 오디오 스트림 슬롯에 추가한 뒤 재생합니다. 재생 가능한 슬롯이 없으면 무시됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-      "Play")
+      "재생")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-      "Play (Looped)")
+      "재생 (반복)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Play (Sequential)")
+      "재생 (연속 재생)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-      "Stop")
+      "중지")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-      "Remove")
+      "삭제")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-      "Volume")
+      "볼륨")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-      "Current core")
+      "현재 코어")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-      "Clear")
+      "초기화")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-      "In-Menu")
+      "메뉴 선택중")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
-      "In-Game")
+      "게임 중")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-      "In-Game (Paused)")
+      "게임 중 (일시 정지됨)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
-      "Playing")
+      "실행 중")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-      "Paused")
+      "일시 정지")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-      "Enable Discord"
+      "Discord 활성화"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-      "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+      "Discord 지원을 활성화/해제 합니다. 클라이언트 버전 이외에 브라우저 버전 Discord에는 적용이 되지 않을 수 있습니다."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-      "Power Management")
+      "전력 관리")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-      "Change power management settings.")
+      "전력 관리 설정들을 수정합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
-      "Sustained Performance Mode")
+      "지속된 성능 모드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-      "mpv support")
+      "mpv 지원")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-    "Adaptive Vsync"
+    "적응형 수직 동기"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 활성화됩니다. 버벅임을 방지할 수 있고 에너지 절약에 도움이 됩니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-    "CRT SwitchRes"
+    "CRT 리소스 변경"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "Output native, low-resolution signals for use with CRT displays."
+    "기본 출력, CRT 디스플레이와 함께 사용하기위한 저해상도 신호를 사용합니다."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-    "Cycle through these options if the image is not centered properly on the display."
+    "이미지가 디스플레이 중앙에 표시될때까지 해당 설정들을 번갈아 가면서 적용해주세요."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-    "X-Axis Centering"
+    "X-축 센터링"
     )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-      "Use a custom refresh rate specified in the config file if needed.")
+      "설정 파일에 쓰여진 사용자 지정 주사율을 사용합니다.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-      "Use Custom Refresh Rate")
+      "주사율 사용자 설정")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Select the output port connected to the CRT display.")
+      "CRT 디스플레이와 연결된 포트를 선택해주세요.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Output Display ID")
+      "출력되는 디스플레이 ID")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-    "Start Recording"
+    "녹화 시작"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-    "Starts recording."
+    "녹화를 시작합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-    "Stop Recording"
+    "녹화 중지"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-    "Stops recording."
+    "녹화를 중지합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-    "Start Streaming"
+    "방송 시작"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-    "Starts streaming."
+    "방송을 시작합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
-    "Stop Streaming"
+    "방송 중지"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
-    "Stops streaming."
+    "방송을 중지합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-    "Recording toggle"
+    "토글 녹화"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-    "Streaming toggle"
+    "토글 스트리밍"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-    "Record Quality"
+    "녹화 품질"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-    "Stream Quality"
+    "방송 품질"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-    "Streaming URL"
+    "스트리밍 URL"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-    "UDP Stream Port"
+    "UDP 스트림 포트"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
@@ -3428,70 +3424,80 @@ MSG_HASH(
     "YouTube"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
+      "Twitch 스트림 키")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
+      "YouTube 스트림 키")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-      "Streaming Mode")
+      "방송 모드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+      "방송 제목")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
+    "Joy-Con 분할하기"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-    "Reset To Defaults"
+    "기본 설정으로 되돌리기"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-    "Reset the current configuration to default values."
+    "현재 설정을 기본 설정으로 되돌립니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-    "OK"
+    "네"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
       "메뉴 테마 색상")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-    "Basic White"
+    "기본 하양색"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-    "Basic Black"
+    "기본 검정색"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Select a different color theme."
+    "다른 색깔 테마를 설정해주세요."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
+      "선호된 시스템 색상 테마 사용")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's color theme (if any) - overrides theme settings.")
+      "(존재할경우)시스템 색상에 따라 색상 테마를 적용합니다. - 기존의 테마 설정은 무시됩니다.")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
-      "Lowest")
+      "매우 낮음")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
-      "Lower")
+      "낮음")
 MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
-      "Normal")
+      "보통")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
-      "Higher")
+      "높음")
 MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
-      "Highest")
+      "매우 높음")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-    "No music available."
+    "음악이 비었습니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-    "No videos available."
+    "영상이 비었습니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-    "No images available."
+    "사진이 비었습니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-    "No favorites available."
+    "즐겨찾기가 비었습니다."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "창 위치와 사이즈를 기억합니다.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

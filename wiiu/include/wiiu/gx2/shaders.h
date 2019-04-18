@@ -94,7 +94,6 @@ typedef struct GX2VertexShader
             unsigned enable: 1;
          } vgt_primitiveid_en;
 
-
          struct
          {
             unsigned : 18;

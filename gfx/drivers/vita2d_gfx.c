@@ -92,7 +92,6 @@ static void *vita2d_gfx_init(const video_info_t *video,
    video_driver_set_size(&temp_width, &temp_height);
    vita2d_gfx_set_viewport(vita, temp_width, temp_height, false, true);
 
-
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
@@ -791,8 +790,6 @@ static bool vita_get_current_sw_framebuffer(void *data,
 
 static const video_poke_interface_t vita_poke_interface = {
    NULL, /* get_flags */
-   NULL,                /* set_coords */
-   NULL,                /* set_mvp */
    vita_load_texture,
    vita_unload_texture,
    NULL,

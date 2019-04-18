@@ -368,7 +368,6 @@ err_t hci_read_stored_link_key()
 		btmemb_free(&hci_link_key_results,tmpres);
 	}
 
-
 	if((p=btpbuf_alloc(PBUF_RAW,HCI_R_STORED_LINK_KEY_PLEN,PBUF_RAM))==NULL) {
 		ERROR("hci_read_stored_link_keys: Could not allocate memory for pbuf\n");
 		return ERR_MEM;
@@ -905,7 +904,6 @@ err_t hci_link_key_req_reply(struct bd_addr *bdaddr, unsigned char *link_key)
         return ERR_OK;
 }
 
-
 /*-----------------------------------------------------------------------------------*/
 /* hci_pin_code_request_neg_reply():
  *
@@ -1323,7 +1321,6 @@ err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch)
 
 	bd_addr_set(&(link->bdaddr), bdaddr);
 	HCI_REG(&(hci_active_links), link);
-
 
 	/* Check if module has been discovered in a recent inquiry */
 	for(inqres = hci_dev->ires; inqres != NULL; inqres = inqres->next) {

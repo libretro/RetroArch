@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,30 +25,33 @@
 
 #include "../menu_driver.h"
 
-static void *menu_display_sixel_get_default_mvp(void)
+static void *menu_display_sixel_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
 
-static void menu_display_sixel_blend_begin(void)
+static void menu_display_sixel_blend_begin(video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_sixel_blend_end(void)
+static void menu_display_sixel_blend_end(video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_sixel_draw(void *data)
-{
-   (void)data;
-}
-
-static void menu_display_sixel_draw_pipeline(void *data)
+static void menu_display_sixel_draw(menu_display_ctx_draw_t *data,
+      video_frame_info_t *video_info)
 {
    (void)data;
 }
 
-static void menu_display_sixel_viewport(void *data)
+static void menu_display_sixel_draw_pipeline(menu_display_ctx_draw_t *data,
+      video_frame_info_t *video_info)
+{
+   (void)data;
+}
+
+static void menu_display_sixel_viewport(menu_display_ctx_draw_t *data,
+      video_frame_info_t *video_info)
 {
    (void)data;
 }
@@ -57,7 +60,9 @@ static void menu_display_sixel_restore_clear_color(void)
 {
 }
 
-static void menu_display_sixel_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_sixel_clear_color(
+      menu_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    (void)clearcolor;
 

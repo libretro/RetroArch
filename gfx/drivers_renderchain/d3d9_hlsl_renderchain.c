@@ -92,7 +92,7 @@ static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
    LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
    D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    if (param)
-      d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog, 
+      d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog,
             (void*)param, (D3DMATRIX*)values);
 }
 
@@ -220,7 +220,7 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    frame_cnt = chain->frame_count;
 
    if (pass->info.pass->frame_count_mod)
-      frame_cnt         = chain->frame_count 
+      frame_cnt         = chain->frame_count
          % pass->info.pass->frame_count_mod;
 
    d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_count",     &frame_cnt);
@@ -250,8 +250,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 {
    unsigned i;
    struct shader_pass pass;
-   unsigned fmt = 
-      (_fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
+   unsigned fmt =
+      (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
       d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
 
    pass.info        = *info;
@@ -318,7 +318,6 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
    d3d9_hlsl_set_param_matrix(pass->vtable,
          chain->chain.dev, "modelViewProj", (const void*)&matrix);
 }
-
 
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,

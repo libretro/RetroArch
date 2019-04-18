@@ -56,7 +56,6 @@ static void ctr_csnd_audio_update_playpos(ctr_csnd_audio_t* ctr)
    ctr->cpu_ticks_last += samples_played * CTR_CSND_CPU_TICKS_PER_SAMPLE;
 }
 
-
 Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
       void* data0, void* data1, u32 size)
 {
@@ -288,7 +287,6 @@ static size_t ctr_csnd_audio_buffer_size(void *data)
    (void)data;
    return CTR_CSND_AUDIO_COUNT;
 }
-
 
 audio_driver_t audio_ctr_csnd = {
    ctr_csnd_audio_init,

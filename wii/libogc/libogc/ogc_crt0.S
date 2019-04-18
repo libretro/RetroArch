@@ -6,7 +6,7 @@
 	# crt0.s file for the GameCube V1.1 by Costis (costis@gbaemu.com)!
 	#
 	# Updates: Added support for clearing the BSS section so that global
-	#	     variables are cleared to 0 upon start-up. 
+	#	     variables are cleared to 0 upon start-up.
 	#
 	# This is start-up code for initializing the GameCube system and hardware
 	# before executing the actual user program code. It clears the GPR's,
@@ -110,7 +110,7 @@ __InitGPRS:
 	lis     r2,_SDA2_BASE_@h
 	ori     r2,r2,_SDA2_BASE_@l  # Set the Small Data 2 (Read Only) base register.
 	lis     r13,_SDA_BASE_@h
-	ori     r13,r13,_SDA_BASE_@l # Set the Small Data (Read\Write) base register.	
+	ori     r13,r13,_SDA_BASE_@l # Set the Small Data (Read\Write) base register.
 	blr
 
 __InitHardware:
@@ -125,7 +125,7 @@ __InitHardware:
 	bl		__InitCache 		# Initialize the system caches
 	mtlr	r31
 	blr
-	
+
 	//r3 = ptr, r4 = fill, r5 = size
 	.globl _memset
 _memset:

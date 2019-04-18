@@ -31,7 +31,7 @@
 #define MAX_PADS 4
 #endif
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct gx_input

@@ -162,7 +162,7 @@ static void salamander_init(char *s, size_t len)
       if (conf)
       {
          config_set_string(conf, "libretro_path", s);
-         config_file_write(conf, g_defaults.path.config);
+         config_file_write(conf, g_defaults.path.config, true);
          config_file_free(conf);
       }
    }

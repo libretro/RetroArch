@@ -22,36 +22,49 @@
 #include <string/stdstring.h>
 
 #include "cocoa_common.h"
-
 #include "../../ui_companion_driver.h"
 
 static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
-   NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
-    NSArray *filetypes    = NULL;
-    
-    if (!string_is_empty(state->filters))
-        filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
-   [panel setAllowedFileTypes:filetypes];
+   NSOpenPanel *panel = [NSOpenPanel openPanel];
+
+   if (!string_is_empty(state->filters))
+   {
+#ifdef HAVE_COCOA_METAL
+      [panel setAllowedFileTypes:@[BOXSTRING(state->filters), BOXSTRING(state->filters_title)]];
+#else
+      NSArray *filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
+      [panel setAllowedFileTypes:filetypes];
+#endif
+   }
+
 #if defined(MAC_OS_X_VERSION_10_6)
    [panel setMessage:BOXSTRING(state->title)];
    if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
-        return false;
+      return false;
 #else
-    [panel setTitle:NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"))];
-    [panel setDirectory:BOXSTRING(state->startdir)];
-    [panel setCanChooseDirectories:NO];
-    [panel setCanChooseFiles:YES];
-    [panel setAllowsMultipleSelection:NO];
-    [panel setTreatsFilePackagesAsDirectories:NO];
-    NSInteger result = [panel runModal];
-    if (result != 1)
-        return false;
+   panel.title                           = NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"));
+   panel.directoryURL                    = [NSURL fileURLWithPath:BOXSTRING(state->startdir)];
+   panel.canChooseDirectories            = NO;
+   panel.canChooseFiles                  = YES;
+   panel.allowsMultipleSelection         = NO;
+   panel.treatsFilePackagesAsDirectories = NO;
+
+#if defined(HAVE_COCOA_METAL)
+   NSModalResponse result = [panel runModal];
+   if (result != NSModalResponseOK)
+       return false;
+#elif defined(HAVE_COCOA)
+   NSInteger result       = [panel runModal];
+   if (result != 1)
+       return false;
 #endif
-    NSURL *url           = (NSURL*)panel.URL;
-    const char *res_path = [url.path UTF8String];
-    state->result        = strdup(res_path);
-                                   
+#endif
+
+   NSURL *url           = (NSURL*)panel.URL;
+   const char *res_path = [url.path UTF8String];
+   state->result        = strdup(res_path);
+
    return true;
 }
 

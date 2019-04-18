@@ -237,11 +237,18 @@ error:
    return NULL;
 }
 
+static bool pulse_start(void *data, bool is_shutdown);
 static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 {
    pa_t           *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t     written = 0;
+
+   /* Workaround buggy menu code.
+    * If a write happens while we're paused, we might never progress. */
+   if (pa->is_paused)
+      if (!pulse_start(pa, false))
+         return -1;
 
    pa_threaded_mainloop_lock(pa->mainloop);
    while (size)
@@ -270,6 +277,8 @@ static bool pulse_stop(void *data)
 {
    bool ret;
    pa_t *pa = (pa_t*)data;
+   if (pa->is_paused)
+      return true;
 
    RARCH_LOG("[PulseAudio]: Pausing.\n");
 
@@ -296,6 +305,8 @@ static bool pulse_start(void *data, bool is_shutdown)
 {
    bool ret;
    pa_t *pa = (pa_t*)data;
+   if (!pa->is_paused)
+      return true;
 
    RARCH_LOG("[PulseAudio]: Unpausing.\n");
 

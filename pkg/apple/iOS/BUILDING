@@ -50,4 +50,3 @@ Paths:
 Simulator:
     To test in iOS Simulator you will need to create the '/var/mobile' directory on you computer, and give yourself full
     access to it.
-

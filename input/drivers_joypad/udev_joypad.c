@@ -23,9 +23,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <libudev.h>
+#ifdef __linux__
 #include <linux/types.h>
+#endif
 #include <linux/input.h>
 
 #include <retro_inline.h>
@@ -115,7 +117,6 @@ static int udev_find_vacant_pad(void)
          return i;
    return -1;
 }
-
 
 static int udev_open_joystick(const char *path)
 {
@@ -223,7 +224,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                by testing if the axis initial value is negative, allowing for
                for some slop (1300 =~ 4%)in an axis centred around 0.
                The actual work is done in udev_joypad_axis.
-               All bets are off if you're sitting on it. Reinitailise it by unpluging 
+               All bets are off if you're sitting on it. Reinitailise it by unpluging
                and plugging back in. */
             if (udev_compute_axis(abs, abs->value) < -1300)
               pad->neg_trigger[i] = true;
@@ -542,8 +543,8 @@ static void udev_joypad_poll(void)
 /* Used for sorting devnodes to appear in the correct order */
 static int sort_devnodes(const void *a, const void *b)
 {
-   const struct joypad_udev_entry *aa = a;
-   const struct joypad_udev_entry *bb = b;
+   const struct joypad_udev_entry *aa = (const struct joypad_udev_entry*)a;
+   const struct joypad_udev_entry *bb = (const struct joypad_udev_entry*)b;
    return strcmp(aa->devnode, bb->devnode);
 }
 

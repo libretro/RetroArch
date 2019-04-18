@@ -80,7 +80,6 @@ static void tcp_parseopt(struct tcp_pcb *pcb);
 static err_t tcp_listen_input(struct tcp_pcb_listen *pcb);
 static err_t tcp_timewait_input(struct tcp_pcb *pcb);
 
-
 /* tcp_input:
  *
  * The initial input processing of TCP. It verifies the TCP header, demultiplexes
@@ -163,7 +162,6 @@ tcp_input(struct pbuf *p, struct netif *inp)
      for an active connection. */
   prev = NULL;
 
-
   for(pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
     LWIP_ASSERT("tcp_input: active pcb->state != CLOSED", pcb->state != CLOSED);
     LWIP_ASSERT("tcp_input: active pcb->state != TIME-WAIT", pcb->state != TIME_WAIT);
@@ -241,7 +239,6 @@ tcp_input(struct pbuf *p, struct netif *inp)
   LWIP_DEBUGF(TCP_INPUT_DEBUG, ("-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n"));
 #endif /* TCP_INPUT_DEBUG */
 
-
   if (pcb != NULL) {
     /* The incoming segment belongs to a connection. */
 #if TCP_INPUT_DEBUG
@@ -304,7 +301,6 @@ tcp_input(struct pbuf *p, struct netif *inp)
   }
       }
     }
-
 
     /* We deallocate the incoming pbuf. If it was buffered by the
        application, the application should have called pbuf_ref() to
@@ -436,7 +432,6 @@ tcp_process(struct tcp_pcb *pcb)
   struct tcp_seg *rseg;
   u8_t acceptable = 0;
   err_t err;
-
 
   err = ERR_OK;
 
@@ -631,7 +626,6 @@ tcp_receive(struct tcp_pcb *pcb)
   u32_t right_wnd_edge;
   u16_t new_tot_len;
 
-
   if (flags & TCP_ACK) {
     right_wnd_edge = pcb->snd_wnd + pcb->snd_wl1;
 
@@ -651,7 +645,6 @@ tcp_receive(struct tcp_pcb *pcb)
       }
 #endif /* TCP_WND_DEBUG */
     }
-
 
     if (pcb->lastack == ackno) {
       pcb->acked = 0;
@@ -1002,12 +995,10 @@ tcp_receive(struct tcp_pcb *pcb)
             recv_flags = TF_GOT_FIN;
           }
 
-
           pcb->ooseq = cseg->next;
           tcp_seg_free(cseg);
         }
 #endif /* TCP_QUEUE_OOSEQ */
-
 
         /* Acknowledge the segment(s). */
         tcp_ack(pcb);
@@ -1195,5 +1186,3 @@ tcp_parseopt(struct tcp_pcb *pcb)
   }
 }
 #endif /* LWIP_TCP */
-
-

@@ -1001,6 +1001,7 @@ static INLINE void D3D12ClearStoredMessages(D3D12InfoQueue info_queue)
 {
    info_queue->lpVtbl->ClearStoredMessages(info_queue);
 }
+#ifndef __WINRT__
 static INLINE HRESULT D3D12GetMessageA(
       D3D12InfoQueue info_queue,
       UINT64         message_index,
@@ -1009,6 +1010,7 @@ static INLINE HRESULT D3D12GetMessageA(
 {
    return info_queue->lpVtbl->GetMessageA(info_queue, message_index, message, message_byte_length);
 }
+#endif
 static INLINE UINT64 D3D12GetNumMessagesAllowedByStorageFilter(D3D12InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetNumMessagesAllowedByStorageFilter(info_queue);
@@ -1341,7 +1343,11 @@ static_assert(
 typedef struct
 {
    unsigned    cur_mon_id;
+#ifdef __WINRT__
+   DXGIFactory2 factory;
+#else
    DXGIFactory factory;
+#endif
    DXGIAdapter adapter;
    D3D12Device device;
 
@@ -1499,7 +1505,7 @@ bool d3d12_init_pipeline(
       D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
       D3D12PipelineState*                 out);
 
-bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd);
+bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 

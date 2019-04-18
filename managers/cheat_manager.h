@@ -24,7 +24,6 @@
 
 RETRO_BEGIN_DECLS
 
-
 enum cheat_handler_type
 {
    CHEAT_HANDLER_TYPE_EMU = 0,
@@ -187,7 +186,7 @@ struct cheat_manager
 
 typedef struct cheat_manager cheat_manager_t;
 
-cheat_manager_t cheat_manager_state;
+extern cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_size(void);
 

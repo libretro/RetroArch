@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <iostream>
 #include <peglib.h>
 #include <fstream>
@@ -25,7 +24,6 @@ using namespace std;
 
 template <typename Annotation>
 AstBase<Annotation> AstBase<Annotation>::empty = AstBase<Annotation>("", 0, 0, "", string(""));
-
 
 //bool use_typedefs = false;
 bool use_typedefs = true;
@@ -252,7 +250,6 @@ string get_prefix(const string &type)
 {
    return get_prefix(type.c_str());
 }
-
 
 string clean_name(const char *name)
 {
@@ -567,7 +564,6 @@ public:
       return out.str();
    }
 
-
 };
 class ComHeader
 {
@@ -747,7 +743,6 @@ basic_ostream<_Elem, _Traits> &operator << (basic_ostream<_Elem, _Traits> &ios, 
    return ios << header.str();
 }
 
-
 int main(int argc, const char **argv)
 {
    const char *header_fn = argv[1];
@@ -779,7 +774,6 @@ int main(int argc, const char **argv)
 
    out << header;
    out.close();
-
 
    return 0;
 }

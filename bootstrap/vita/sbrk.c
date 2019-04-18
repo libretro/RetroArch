@@ -46,7 +46,6 @@ void _init_vita_heap(void) {
 		_newlib_vm_memblock = 0;
 	}
 
-
 	// Create a mutex to use inside _sbrk_r
 	if (sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;

@@ -296,7 +296,6 @@
 #define SNDRV_PCM_MMAP_OFFSET_STATUS   0x80000000
 #define SNDRV_PCM_MMAP_OFFSET_CONTROL  0x81000000
 
-
 /** Audio sample format of a PCM.
  * The first letter specifiers whether the sample is signed or unsigned.
  * The letter 'S' means signed. The letter 'U' means unsigned.

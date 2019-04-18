@@ -34,7 +34,7 @@
 
 :Usage
 
-@echo. VSINSTALLDIR variable is not set. 
+@echo. VSINSTALLDIR variable is not set.
 @echo.
 @echo SYNTAX: %0
 

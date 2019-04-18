@@ -201,7 +201,6 @@ void dhcp_fine_tmr(void);
 #define DHCP_OPTION_MESSAGE_TYPE 53 /* RFC 2132 9.6, important for DHCP */
 #define DHCP_OPTION_MESSAGE_TYPE_LEN 1
 
-
 #define DHCP_OPTION_SERVER_ID 54 /* RFC 2132 9.7, server IP address */
 #define DHCP_OPTION_PARAMETER_REQUEST_LIST 55 /* RFC 2132 9.8, requested option types */
 

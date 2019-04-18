@@ -51,7 +51,6 @@ static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
    return (((value - from_min) * to_range) / from_range) + to_min;
 }
 
-
 static void get_calibrated_point(VPADTouchData *point, struct video_viewport *viewport, VPADStatus *vpad)
 {
    VPADTouchData calibrated720p = {0};
@@ -154,7 +153,6 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
          state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
 #endif
 
-
    if (!touch_clamped)
       *buttons |= VPAD_BUTTON_TOUCH;
    else
@@ -166,7 +164,6 @@ static void check_panic_button(uint32_t held_buttons)
    if ((held_buttons & PANIC_BUTTON_MASK) == PANIC_BUTTON_MASK)
       command_event(CMD_EVENT_QUIT, NULL);
 }
-
 
 static void wpad_poll(void)
 {

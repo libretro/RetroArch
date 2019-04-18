@@ -104,7 +104,6 @@ struct android_app
     * receive user input events. */
    AInputQueue* inputQueue;
 
-
    /* When non-NULL, this is the window surface that the app can draw in. */
    ANativeWindow* window;
 
@@ -163,8 +162,10 @@ struct android_app
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
+   jmethodID setScreenOrientation;
+   jmethodID getUserLanguageString;
+   jmethodID doVibrate;
 };
-
 
 enum
 {
@@ -267,7 +268,9 @@ enum
     */
    APP_CMD_DESTROY,
 
-   APP_CMD_REINIT_DONE
+   APP_CMD_REINIT_DONE,
+
+   APP_CMD_VIBRATE_KEYPRESS
 };
 
 #define JNI_EXCEPTION(env) \

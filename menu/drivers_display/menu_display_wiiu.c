@@ -60,12 +60,10 @@ static void menu_display_wiiu_viewport(menu_display_ctx_draw_t *draw,
 
 }
 
-
 static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   wiiu_video_t             *wiiu  = video_info ? 
-      (wiiu_video_t*)video_info->userdata : NULL;
+   wiiu_video_t             *wiiu  = (wiiu_video_t*)video_info->userdata;
 
    if (!wiiu || !draw)
       return;
@@ -115,16 +113,13 @@ static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
          break;
       }
 
-
    }
    else if(draw->coords->vertex || draw->coords->color[0] != draw->coords->color[12])
    {
       if (wiiu->vertex_cache_tex.current + 4 > wiiu->vertex_cache_tex.size)
          return;
 
-
       tex_shader_vertex_t* v = wiiu->vertex_cache_tex.v + wiiu->vertex_cache_tex.current;
-
 
       GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
       GX2SetShader(&tex_shader);
@@ -188,7 +183,6 @@ static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
          v[i].color.a = draw->coords->color[(i << 2) + 3];
       }
 
-
       if(draw->texture)
          GX2SetPixelTexture((GX2Texture*)draw->texture, tex_shader.ps.samplerVars[0].location);
 
@@ -221,9 +215,6 @@ static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
       return;
    }
 
-
-
-
    GX2SetShaderMode(GX2_SHADER_MODE_GEOMETRY_SHADER);
    GX2SetShader(&sprite_shader);
 //      GX2SetGeometryShaderInputRingBuffer(wiiu->input_ring_buffer, wiiu->input_ring_buffer_size);
@@ -242,8 +233,7 @@ static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    video_coord_array_t *ca        = NULL;
-   wiiu_video_t             *wiiu = video_info ? 
-      (wiiu_video_t*)video_info->userdata : NULL;
+   wiiu_video_t             *wiiu = (wiiu_video_t*)video_info->userdata;
 
    if (!wiiu || !draw)
       return;

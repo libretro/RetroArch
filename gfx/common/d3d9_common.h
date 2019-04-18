@@ -111,7 +111,7 @@ static INLINE bool d3d9_swap(void *data, LPDIRECT3DDEVICE9 dev)
 #ifdef _XBOX
    IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
 #else
-   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) 
+   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL)
          == D3DERR_DEVICELOST)
       return false;
 #endif
@@ -161,7 +161,7 @@ static INLINE bool d3d9_texture_get_surface_level(
       LPDIRECT3DTEXTURE9 tex,
       unsigned idx, void **_ppsurface_level)
 {
-   if (tex && 
+   if (tex &&
          SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(
                tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
       return true;
@@ -457,6 +457,12 @@ static INLINE void d3d9_set_viewports(LPDIRECT3DDEVICE9 dev,
       IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)vp);
 }
 
+static INLINE void d3d9_set_scissor_rect(
+      LPDIRECT3DDEVICE9 dev, RECT *rect)
+{
+   IDirect3DDevice9_SetScissorRect(dev, rect);
+}
+
 static INLINE void d3d9_set_render_state(
       LPDIRECT3DDEVICE9 dev, D3DRENDERSTATETYPE state, DWORD value)
 {
@@ -479,7 +485,7 @@ static INLINE void d3d9_disable_blend_func(LPDIRECT3DDEVICE9 dev)
       d3d9_set_render_state(dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
-static INLINE void 
+static INLINE void
 d3d9_set_vertex_declaration(LPDIRECT3DDEVICE9 dev,
       LPDIRECT3DVERTEXDECLARATION9 vertex_data)
 {
@@ -640,13 +646,13 @@ bool d3d9_create_device(void *dev,
 bool d3d9_reset(void *dev, void *d3dpp);
 
 static INLINE bool d3d9_device_get_backbuffer(
-      LPDIRECT3DDEVICE9 dev, 
-      unsigned idx, unsigned swapchain_idx, 
+      LPDIRECT3DDEVICE9 dev,
+      unsigned idx, unsigned swapchain_idx,
       unsigned backbuffer_type, void **data)
 {
    if (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
-               swapchain_idx, idx, 
+         SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev,
+               swapchain_idx, idx,
                (D3DBACKBUFFER_TYPE)backbuffer_type,
                (LPDIRECT3DSURFACE9*)data)))
       return true;
@@ -805,6 +811,8 @@ static INLINE void d3d9_convert_geometry(
          break;
    }
 }
+
+void d3d9_set_mvp(void *data, const void *userdata);
 
 RETRO_END_DECLS
 

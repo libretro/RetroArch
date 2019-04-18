@@ -81,7 +81,6 @@
 #define SMB_DENY_READ				0x30
 #define SMB_DENY_NONE				0x40
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif

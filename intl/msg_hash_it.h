@@ -7,8 +7,9 @@ MSG_HASH(
       "Compilatore sconosciuto"
       )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native")
+      MSG_NATIVE,
+      "Nativo"
+      )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Dispositivo disconnesso dalla porta"
@@ -106,6 +107,10 @@ MSG_HASH(
       "Fornisce i core hardware nel proprio contesto privato. Evita di assumere cambiamenti di stato hardware tra i fotogrammi."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+      "Abilita l'animazione orizzontale per il menu. Questo avrà un impatto sulle prestazioni."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
       "Regola le impostazioni relative all'aspetto della schermata del menu."
       )
@@ -135,7 +140,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
-      "Connessione al host del netplay"
+      "Connessione all'host del netplay"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_PORT,
@@ -474,10 +479,6 @@ MSG_HASH(
       "Salva la configurazione all' uscita"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Collezioni"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Database"
       )
@@ -559,17 +560,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Rimuovi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
-      "Avvia da directory")
+      "Avvia da cartella")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-      "<Contenuto della directory>")
+      "<Contenuto della cartella>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
       "<Default>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
       "<Nessuno>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-      "Directory non trovata.")
+      "Cartella non trovata.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-      "Directory")
+      "Cartella")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
       "Stato del ciclo nel vassoio del disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -602,10 +603,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "Sfondi dinamici")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Abilita Achievements")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Colore al passaggio del mouse")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Voce di Menu con colore normale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "Falso")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -706,8 +703,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Pistola D-pad Destro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Abilita Autoconfigurazione")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Deadzone dello stick analogico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Scambia i pulsanti OK & Annulla ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1165,7 +1160,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Playlist")
+      "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -1473,8 +1468,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "Supporto LibretroDB ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Supporto Libusb ")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "Supporto libxml2 XML parsing ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "Supporto Netplay (peer-to-peer) ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1569,8 +1562,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "Title Screens")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "Visualizza data / ora")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-      "Colore titolo del Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "Vero")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -1637,8 +1628,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Crop Overscan (Ricarica)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Disattiva composizione del Desktop")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "3DS Bottom Screen")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Driver Video")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2378,10 +2371,6 @@ MSG_HASH(
    "Sincronizza l'audio. Consigliato."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Quanto deve essere inclinato un asse durante la pressione di un pulsante."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Quantità di secondi da attendere fino al prossimo bind."
    )
@@ -2516,8 +2505,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Visualizza il livello della batteria")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Seleziona File")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Seleziona da collezione")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Seleziona da Playlist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtra")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2593,7 +2582,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
       "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Qui vengono visualizzati i contenuti scansionati."
       )
 MSG_HASH(
@@ -2849,9 +2838,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Disconnette da una connessione Netplay attiva")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Effettua la scansione di una directory per i file compatibili e li aggiunge alla raccolta.")
+      "Effettua la scansione di una directory per i file compatibili.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Esegue la scansione di un file compatibile e li aggiunge alla raccolta.")
+      "Esegue la scansione di un file compatibile.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Utilizza un intervallo di scambio personalizzato per Vsync. Impostando un valore corretto dimezza la frequenza di aggiornamento del monitor."
       )
@@ -2871,7 +2860,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Scansiona nuove camere.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Rimuovi questo titolo dalla collezione")
+      "Rimuovi questo titolo dalla playlist")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Visualizza ulteriori informazioni sul contenuto.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
@@ -2947,7 +2936,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Esegue le attività su un thread separato.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Consente all'utente di rimuovere le voci dalla collezione.")
+      "Consente all'utente di rimuovere le voci dalla playlists.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Imposta la directory di sistema. I core possono richiedere questa directory per caricare BIOS, configurazioni specifiche del sistema, ecc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3032,7 +3021,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Se un joypad viene collegato, verrà automaticamente configurato se all'interno di questa directory è presente un file di configurazione corrispondente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Salva tutte le collezioni in questa directory.")
+      "Salva tutte le playlists in questa directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Se non viene impostata una directory, il contenuto estratto temporaneamente (ad esempio dagli archivi) si troverà in questa directory."
@@ -3061,11 +3050,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-      "Directory in cui vengono conservati i file di filtro audio DSP."
+      "Cartella in cui vengono conservati i file di filtro audio DSP."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
-      "Directory dove vengono conservati i file del filtro video basati su CPU."
+      "Cartella dove vengono conservati i file del filtro video basati su CPU."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
       "Definisce una directory in cui i file shader del video basati su GPU vengono mantenuti per un facile accesso.")
@@ -3216,7 +3205,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Fornisce una password quando si nasconde la colonna Impostazioni per poi ripristinarli dal menu, andando alla colonna Menù Principale, selezionando abilita la colonna Impostazioni e immettere la password")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Consente all'utente di rinominare le voci nelle collezioni.")
+      "Consente all'utente di rinominare le voci nelle playlists.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Permette di rinominare le voci")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -3271,6 +3260,18 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Visualizza Aggiungi a Preferiti")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Mostra/nasconde l'opzione Aggiungi a Preferiti.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+      "Visualizza inizia la registrazione")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+      "Mostra/Nasconde l'opzione 'Inizia la Registrazione'.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+      "Visualizza Inizia lo Streaming")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+      "Mostra/Nasconde l'opzione 'Inizia lo streaming'.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Visualizza associazione Reset Core")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+      "Mostra/Nasconde l'opzione 'Associazione Reset Core'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
       "Visualizza Opzioni")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -3341,7 +3342,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Solo per schermi CRT. Tenta 
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-      "Switch among native and ultrawide super resolutions."
+      "Passa dalle risoluzioni native e ultrawide super risoluzione."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Risoluzione")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
@@ -3593,4 +3594,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
     "Nessun preferito disponibile."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Ricorda la dimensione e posizione della finestra")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "Supporto CoreAudio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "Supporto per il CoreAudio V3"
     )

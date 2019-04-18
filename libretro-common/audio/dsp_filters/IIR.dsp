@@ -20,4 +20,3 @@ filter0 = iir
 # LSH: Low-shelf
 # HSH: High-shelf
 # RIAA_CD: CD de-emphasis
-

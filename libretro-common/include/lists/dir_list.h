@@ -30,6 +30,23 @@
 RETRO_BEGIN_DECLS
 
 /**
+ * dir_list_append:
+ * @list               : existing list to append to.
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_hidden     : include hidden files and directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
+ *
+ * Create a directory listing, appending to an existing list
+ *
+ * Returns: true success, false in case of error.
+ **/
+bool dir_list_append(struct string_list *list, const char *dir, const char *ext,
+      bool include_dirs, bool include_hidden, bool include_compressed, bool recursive);
+
+/**
  * dir_list_new:
  * @dir                : directory path.
  * @ext                : allowed extensions of file directory entries to include.

@@ -41,13 +41,14 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../verbosity.h"
+#include "../../frontend/frontend_driver.h"
 #include "../video_driver.h"
 
 #include "../common/win32_common.h"
 
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
-#include <gfx/gl_capabilities.h>
 #endif
 
 #ifdef HAVE_VULKAN
@@ -474,9 +475,27 @@ static bool gfx_ctx_wgl_set_resize(void *data,
 
 static void gfx_ctx_wgl_update_title(void *data, void *data2)
 {
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t* video_info = (video_frame_info_t*)data2;
    char title[128];
 
    title[0] = '\0';
+
+   if (settings->bools.video_memory_show)
+   {
+#ifndef __WINRT__
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+#endif
+   }
 
    video_driver_get_window_title(title, sizeof(title));
 
@@ -529,7 +548,6 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
 #endif
- 
 
    win32_window_reset();
    win32_monitor_init();
@@ -665,7 +683,6 @@ error:
    return false;
 }
 
-
 static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
@@ -709,7 +726,6 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 
    return true;
 }
-
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
@@ -794,6 +810,25 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          {
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
          }
+
+         if (string_is_equal(video_driver_get_ident(), "gl1")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore")) { }
+         else
+         {
+#ifdef HAVE_CG
+            if (!win32_core_hw_context_enable)
+               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+#endif
+#ifdef HAVE_GLSL
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         }
+
+         break;
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_SLANG
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
          break;
       case GFX_CTX_NONE:
       default:
@@ -876,4 +911,3 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
 #endif
    NULL
 };
-

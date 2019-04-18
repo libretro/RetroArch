@@ -22,19 +22,6 @@
 
 #include "../../../retroarch.h"
 
-#define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
-#define HEX_G(hex) ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f)
-#define HEX_B(hex) ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f)
-
-#define COLOR_HEX_TO_FLOAT(hex, alpha) { \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
-}
-
-#define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
-
 static float ozone_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
@@ -86,7 +73,7 @@ static float ozone_sidebar_background_dark[16] = {
 
 static float ozone_sidebar_gradient_top_dark[16] = {
       0.2, 0.2, 0.2, 1.00,
-      0.2, 0.2, 0.2, 1.00,      
+      0.2, 0.2, 0.2, 1.00,
       0.18, 0.18, 0.18, 1.00,
       0.18, 0.18, 0.18, 1.00,
 };
@@ -144,7 +131,7 @@ typedef struct ozone_theme
    float *sidebar_top_gradient;
    float *sidebar_bottom_gradient;
 
-   /* 
+   /*
       Fancy cursor colors
    */
    float *cursor_border_0;
@@ -166,6 +153,6 @@ extern bool last_use_preferred_system_color_theme;
 extern ozone_theme_t *ozone_default_theme;
 
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme);
-unsigned ozone_get_system_theme();
+unsigned ozone_get_system_theme(void);
 
 #endif

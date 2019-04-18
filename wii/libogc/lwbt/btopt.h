@@ -161,7 +161,6 @@ typedef s8 err_t;
 
 #define PBUF_ROM_NUM			45
 
-
 /**
  * Determines if statistics support should be compiled in.
  *
@@ -347,6 +346,5 @@ void bt_log(const char *filename,int line_nb,char *msg);
 /* RFCOMM_FLOW_QUEUEING: Control if a packet should be queued if a channel is out of credits for
    outgoing packets. Only the first packet sent when out of credits will be queued */
 #define RFCOMM_FLOW_QUEUEING			0 /* Default: 0 */
-
 
 #endif /* __BTOPT_H__ */

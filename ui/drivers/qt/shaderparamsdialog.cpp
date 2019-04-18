@@ -19,7 +19,10 @@
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -28,10 +31,11 @@ extern "C" {
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
-#ifdef HAVE_MENU
 #include "../../../menu/menu_shader.h"
-#endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 enum
 {
@@ -146,9 +150,7 @@ void ShaderParamsDialog::clearLayout()
    if (m_scrollArea)
    {
       foreach (QObject *obj, children())
-      {
          obj->deleteLater();
-      }
    }
 
    m_layout = new QVBoxLayout();
@@ -169,33 +171,24 @@ void ShaderParamsDialog::clearLayout()
 void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct video_shader **video_shader)
 {
    video_shader_ctx_t shader_info = {0};
-#ifdef HAVE_MENU
+
    struct video_shader *shader = menu_shader_get();
 
    if (menu_shader)
    {
       if (shader)
-      {
          *menu_shader = shader;
-      }
       else
-      {
          *menu_shader = NULL;
-      }
    }
 
    if (video_shader)
    {
       if (shader)
-      {
          *video_shader = shader_info.data;
-      }
       else
-      {
          *video_shader = NULL;
-      }
    }
-#endif
 
    if (video_shader)
    {
@@ -212,13 +205,9 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
       }
 
       if (shader_info.data)
-      {
          *video_shader = shader_info.data;
-      }
       else
-      {
          *video_shader = NULL;
-      }
    }
 }
 
@@ -269,11 +258,11 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
 
 void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
 {
-   QComboBox *comboBox = qobject_cast<QComboBox*>(sender());
    QVariant passVariant;
-   int pass = 0;
-   bool ok = false;
-   struct video_shader *menu_shader = NULL;
+   QComboBox *comboBox               = qobject_cast<QComboBox*>(sender());
+   int pass                          = 0;
+   bool ok                           = false;
+   struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
 
    getShaders(&menu_shader, &video_shader);
@@ -342,10 +331,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    pass = passVariant.toInt(&ok);
 
-   if (!ok)
-      return;
-
-   if (pass < 0)
+   if (!ok || pass < 0)
       return;
 
    if (video_shader)
@@ -361,13 +347,9 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          struct video_shader_parameter *param = &video_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass += 1;
-         }
          else if (param->pass == pass + 1)
-         {
             param->pass -= 1;
-         }
       }
 
       tempPass = ShaderPass(&video_shader->pass[pass]);
@@ -388,13 +370,9 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          struct video_shader_parameter *param = &menu_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass += 1;
-         }
          else if (param->pass == pass + 1)
-         {
             param->pass -= 1;
-         }
       }
 
       tempPass = ShaderPass(&menu_shader->pass[pass]);
@@ -426,10 +404,7 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    pass = passVariant.toInt(&ok);
 
-   if (!ok)
-      return;
-
-   if (pass <= 0)
+   if (!ok || pass <= 0)
       return;
 
    if (video_shader)
@@ -445,13 +420,9 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
          struct video_shader_parameter *param = &video_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass -= 1;
-         }
          else if (param->pass == pass - 1)
-         {
             param->pass += 1;
-         }
       }
 
       tempPass = ShaderPass(&video_shader->pass[pass - 1]);
@@ -472,13 +443,9 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
          struct video_shader_parameter *param = &menu_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass -= 1;
-         }
          else if (param->pass == pass - 1)
-         {
             param->pass += 1;
-         }
       }
 
       tempPass = ShaderPass(&menu_shader->pass[pass - 1]);
@@ -491,16 +458,13 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
 void ShaderParamsDialog::onShaderLoadPresetClicked()
 {
-#ifdef HAVE_MENU
-   QString path;
-   QString filter;
+   QString path, filter;
    QByteArray pathArray;
-   struct video_shader *menu_shader = NULL;
+   struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
-   const char *pathData = NULL;
-   settings_t *settings = config_get_ptr();
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-   bool is_preset = false;
+   const char *pathData              = NULL;
+   settings_t *settings              = config_get_ptr();
+   enum rarch_shader_type type       = RARCH_SHADER_NONE;
 
    if (!settings)
       return;
@@ -513,20 +477,23 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    filter = "Shader Preset (";
 
    /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
-   if (video_shader_is_supported(RARCH_SHADER_CG) &&
-         video_shader_get_type_from_ext(file_path_str(FILE_PATH_CGP_EXTENSION), &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal("*") + file_path_str(FILE_PATH_CGP_EXTENSION);
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_CGP_EXTENSION);
+   }
 
-   if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-         video_shader_get_type_from_ext(file_path_str(FILE_PATH_GLSLP_EXTENSION), &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
+   }
 
-   if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-         video_shader_get_type_from_ext(file_path_str(FILE_PATH_SLANGP_EXTENSION), &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+         filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
+   }
 
    filter += ")";
 
@@ -541,7 +508,6 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    type = video_shader_parse_type(pathData, RARCH_SHADER_NONE);
 
    menu_shader_manager_set_preset(menu_shader, type, pathData);
-#endif
 }
 
 void ShaderParamsDialog::onShaderResetPass(int pass)
@@ -634,16 +600,13 @@ void ShaderParamsDialog::onShaderResetAllPasses()
 
 void ShaderParamsDialog::onShaderAddPassClicked()
 {
-#ifdef HAVE_MENU
-   QString path;
-   QString filter;
+   QString path, filter;
    QByteArray pathArray;
-   struct video_shader *menu_shader = NULL;
-   struct video_shader *video_shader = NULL;
+   struct video_shader *menu_shader      = NULL;
+   struct video_shader *video_shader     = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   const char *pathData = NULL;
-   settings_t *settings = config_get_ptr();
-   bool is_preset = false;
+   const char *pathData                  = NULL;
+   settings_t *settings                  = config_get_ptr();
 
    if (!settings)
       return;
@@ -656,20 +619,23 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    filter = "Shader (";
 
    /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
-   if (video_shader_is_supported(RARCH_SHADER_CG) &&
-         video_shader_get_type_from_ext(".cg", &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal("*.cg");
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
+         filter += QLatin1Literal(" *.cg");
+   }
 
-   if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
-         video_shader_get_type_from_ext(".glsl", &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal(" *.glsl");
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+         filter += QLatin1Literal(" *.glsl");
+   }
 
-   if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
-         video_shader_get_type_from_ext(".slang", &is_preset)
-         != RARCH_SHADER_NONE)
-      filter += QLatin1Literal(" *.slang");
+   {
+      gfx_ctx_flags_t flags;
+      if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+         filter += QLatin1Literal(" *.slang");
+   }
 
    filter += ")";
 
@@ -682,7 +648,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    pathData = pathArray.constData();
 
    if (menu_shader->passes < GFX_MAX_SHADERS)
-      menu_shader_manager_increment_amount_passes();
+      menu_shader->passes++;
    else
       return;
 
@@ -696,12 +662,10 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    video_shader_resolve_parameters(NULL, menu_shader);
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-#endif
 }
 
 void ShaderParamsDialog::onShaderSavePresetAsClicked()
 {
-#ifdef HAVE_MENU
    settings_t *settings = config_get_ptr();
    QString path;
    QByteArray pathArray;
@@ -716,7 +680,6 @@ void ShaderParamsDialog::onShaderSavePresetAsClicked()
    pathData = pathArray.constData();
 
    saveShaderPreset(pathData, SHADER_PRESET_SAVE_NORMAL);
-#endif
 }
 
 void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type)
@@ -773,11 +736,17 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
    if (menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true);
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO
+            );
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true);
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR
+            );
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
@@ -797,7 +766,6 @@ void ShaderParamsDialog::onShaderSaveGamePresetClicked()
 
 void ShaderParamsDialog::onShaderClearAllPassesClicked()
 {
-#ifdef HAVE_MENU
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
 
@@ -807,15 +775,13 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
       return;
 
    while (menu_shader->passes > 0)
-      menu_shader_manager_decrement_amount_passes();
+      menu_shader->passes--;
 
    onShaderApplyClicked();
-#endif
 }
 
 void ShaderParamsDialog::onShaderRemovePassClicked()
 {
-#ifdef HAVE_MENU
    int i;
    QVariant passVariant;
    QAction                   *action = qobject_cast<QAction*>(sender());
@@ -844,14 +810,11 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
 
    /* move selected pass to the bottom */
    for (i = pass; i < static_cast<int>(menu_shader->passes) - 1; i++)
-   {
       std::swap(menu_shader->pass[i], menu_shader->pass[i + 1]);
-   }
 
-   menu_shader_manager_decrement_amount_passes();
+   menu_shader->passes--;
 
    onShaderApplyClicked();
-#endif
 }
 
 void ShaderParamsDialog::onShaderApplyClicked()

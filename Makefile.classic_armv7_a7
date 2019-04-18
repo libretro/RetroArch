@@ -1,20 +1,20 @@
 # This build was put together and is maintained by ModMyClassic.com for Libretro.
 # The purpose is to give Libretro a proper "official" build platform for classic consoles.
 # If you need any help in building for the classics or have any questions then please visit
-# https://modmyclassic.com/comp and we will help in any way possible! 
+# https://modmyclassic.com/comp and we will help in any way possible!
 
 # Building Prerequisites ##############
-# arm-linux-gnueabihf-gcc-8
-# arm-linux-gnueabihf-g++-8
-# arm-linux-gnueabihf-as
 # arm-linux-gnueabihf-strip
 # patchelf
 # bc
 
-# Classic Readme Variables ############
-CLASSIC_MODS_VER := Official_Retroarch_v1_7_5c_COptimised
-CLASSIC_MODS_NAME := RetroArch v1.7.5c (Official Classic Optimised)
-CLASSIC_VERSION := 1.7.5c \(Classic+\)
+include version.all
+
+# Classic Readme Variables ############
+CLASSIC_ALT_VER := $(shell echo $(RARCH_VERSION) | tr . _)
+CLASSIC_MODS_VER := Official_Retroarch_v$(CLASSIC_ALT_VER)
+CLASSIC_MODS_NAME := RetroArch v$(RARCH_VERSION) (Official Optimised)
+CLASSIC_VERSION := $(RARCH_VERSION)
 MOD_CREATOR := Libretro + ModMyClassic
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
@@ -25,10 +25,6 @@ HAKCHI_GIT := https://github.com/Classicmods/RA_Platform-Hakchi
 
 # General Shared Variables ############
 TARGET := retroarch
-CC_V = arm-linux-gnueabihf-gcc-8
-CXX_V = arm-linux-gnueabihf-g++-8
-AS_V = arm-linux-gnueabihf-as
-CC_AS_V = arm-linux-gnueabihf-gcc-8
 
 # Libretro Defines ####################
 #HAVE_CLASSIC = Classic Hook, disable some features
@@ -38,15 +34,10 @@ CC_AS_V = arm-linux-gnueabihf-gcc-8
 all: $(TARGET)
 
 retroarch:
-	#Backup vanilla version files + ammend version
-	cp version.all version_BACKUP.all && cp version.dtd version_BACKUP.dtd
-	sed -i -e 's/RARCH_VERSION="[^"]*"/RARCH_VERSION="$(CLASSIC_VERSION)"/g' version.all
-	sed -i -e 's/PACKAGE_VERSION "[^"]*"/PACKAGE_VERSION "$(CLASSIC_VERSION)"/g' version.all
-	sed -i -e 's/ENTITY version "[^"]*"/ENTITY version "$(CLASSIC_VERSION)"/g' version.dtd
 	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
 	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
-	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
-	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
+	CFLAGS="-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard" ./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
+	make HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
 	arm-linux-gnueabihf-strip -v retroarch
 	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
 
@@ -75,11 +66,6 @@ retroarch:
 	@echo "** BUILT CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
 	rm -fr /tmp/$(HAKCHI_DIR) #clean up tmp
 
-	#COMMODORE 64 MINI BUILD (WIP)
-	
-	#Clean down dirty files
-	rm -f version.all version.dtd
-	mv version_BACKUP.all version.all && mv version_BACKUP.dtd version.dtd
 	@echo "*********************************************************************"
 	@echo "*** Classic ARM7 Cortex A7 build and packages built successfully! ***"
 	@echo "****************** Winner, Winner, Chicken Dinner! ******************"
@@ -104,7 +90,4 @@ clean:
 	rm -f $(PNDDIR)/readme.html
 	rm -f retroarch
 	rm -f $(CLASSIC_MODS_VER).hmod
-	rm -f version.all version.dtd
-	mv -f version_BACKUP.all version.all || echo "Backup Doesn't Exist - Ignoring..."
-	mv -f version_BACKUP.dtd version.dtd || echo "Backup Doesn't Exist - Ignoring..."
-	rm -f *_BACKUP*
+

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -391,8 +391,6 @@ static void vga_set_osd_msg(void *data,
 
 static const video_poke_interface_t vga_poke_interface = {
    NULL, /* get_flags */
-   NULL,       /* set_coords */
-   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,

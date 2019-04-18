@@ -72,4 +72,3 @@ RETRO_END_DECLS
 
 /* pragma once */
 #endif
-

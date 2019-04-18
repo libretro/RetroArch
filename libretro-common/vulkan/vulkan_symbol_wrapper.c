@@ -176,7 +176,6 @@ PFN_vkGetInstanceProcAddr vulkan_symbol_wrapper_instance_proc_addr(void)
     return GetInstanceProcAddr;
 }
 
-
 VkBool32 vulkan_symbol_wrapper_load_instance_symbol(VkInstance instance, const char *name, PFN_vkVoidFunction *ppSymbol)
 {
     *ppSymbol = GetInstanceProcAddr(instance, name);

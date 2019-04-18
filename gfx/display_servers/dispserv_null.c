@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -48,9 +48,11 @@ const video_display_server_t dispserv_null = {
    null_display_server_destroy,
    null_display_server_set_window_opacity,
    null_display_server_set_window_progress,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* set_window_decorations */
+   NULL, /* set_resolution */
+   NULL, /* get_resolution_list */
+   NULL, /* get_output_options */
+   NULL, /* set_screen_orientation */
+   NULL, /* get_screen_orientation */
    "null"
 };
-

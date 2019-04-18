@@ -50,7 +50,7 @@
 #define UINT32_MAX 0xffffffffu
 #endif
 
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_AMD64) || defined(_M_X64)
 #define CPU_X86
 #endif
 
@@ -394,7 +394,6 @@ static void state_manager_raw_decompress(const void *patch,
  * This means that on average, ~2 * maxcompsize is
  * unused at any given moment. */
 
-
 /* These are called very few constant times per frame,
  * keep it as simple as possible. */
 static INLINE void write_size_t(void *ptr, size_t val)
@@ -659,7 +658,6 @@ void state_manager_event_init(unsigned rewind_buffer_size)
 
    state_manager_push_do(rewind_state.state);
 }
-
 
 bool state_manager_frame_is_reversed(void)
 {

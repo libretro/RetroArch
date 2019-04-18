@@ -160,7 +160,6 @@
 #define WM_ASPECT_4_3_X		560
 #define WM_ASPECT_4_3_Y		420
 
-
 /**
  *	Expansion stuff
  */

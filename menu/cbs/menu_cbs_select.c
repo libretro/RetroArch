@@ -180,7 +180,7 @@ static int action_select_netplay_connect_room(const char *path,
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
          netplay_room_list[idx - 3].gamename,
-         tmp_hostname, netplay_room_list[idx - 3].corename);
+         tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
 
    return 0;
 }

@@ -6,7 +6,6 @@
 
 #include "lwp_heap.h"
 
-
 u32 __lwp_heap_init(heap_cntrl *theheap,void *start_addr,u32 size,u32 pg_size)
 {
 	u32 dsize,level;
@@ -47,7 +46,6 @@ void* __lwp_heap_allocate(heap_cntrl *theheap,u32 size)
 	heap_block *tmp_block;
 	void *ptr;
 	u32 offset,level;
-
 
 	if(size>=(-1-HEAP_BLOCK_USED_OVERHEAD)) return NULL;
 

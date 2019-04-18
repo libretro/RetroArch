@@ -25,7 +25,7 @@
 #include "d3dcompiler_common.h"
 #include "../../verbosity.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
 static dylib_t     d3dcompiler_dll;
@@ -132,10 +132,9 @@ bool d3d_compile(const char* src, size_t size, LPCSTR src_name, LPCSTR entrypoin
    compileflags        |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-   
    if (!size)
       size = strlen(src);
-   
+
    if (FAILED(D3DCompile(
              src, size, src_name, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
    {

@@ -150,7 +150,7 @@ RETRO_BEGIN_DECLS
 #define glUniformBlockBinding       rglUniformBlockBinding
 #define glGetUniformBlockIndex      rglGetUniformBlockIndex
 #define glGetActiveUniformBlockiv   rglGetActiveUniformBlockiv
-#define glBindBufferBase            rglBindBufferBase 
+#define glBindBufferBase            rglBindBufferBase
 #define glGetUniformIndices         rglGetUniformIndices
 #define glGetActiveUniformsiv       rglGetActiveUniformsiv
 #define glGetError                  rglGetError

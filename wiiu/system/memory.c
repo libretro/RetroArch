@@ -111,7 +111,6 @@ void * _valloc_r(struct _reent *r, size_t size)
    return _memalign_r(r, 64, size);
 }
 
-
 /* some wrappers */
 
 void * MEM2_alloc(unsigned int size, unsigned int align)

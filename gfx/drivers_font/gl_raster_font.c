@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,6 +24,7 @@
 #include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_driver.h"
+#include "../../verbosity.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -214,7 +215,6 @@ error:
    return NULL;
 }
 
-
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
@@ -249,21 +249,15 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font,
       const video_coords_t *coords,
       video_frame_info_t *video_info)
 {
-   video_shader_ctx_coords_t coords_data;
-
    if (font->atlas->dirty)
    {
       gl_raster_font_upload_atlas(font);
       font->atlas->dirty   = false;
    }
 
-   coords_data.handle_data = NULL;
-   coords_data.data        = coords;
-
-   video_driver_set_coords(&coords_data);
-
-   video_info->cb_set_mvp(font->gl,
-         video_info->shader_data, &font->gl->mvp_no_rot);
+   font->gl->shader->set_coords(font->gl->shader_data, coords);
+   font->gl->shader->set_mvp(font->gl->shader_data,
+         &font->gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -396,8 +390,6 @@ static void gl_raster_font_render_message(
 static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
       gl_raster_t *font, bool full_screen)
 {
-   video_shader_ctx_info_t shader_info;
-
    video_driver_set_viewport(width, height, full_screen, false);
 
    glEnable(GL_BLEND);
@@ -406,11 +398,9 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   shader_info.data       = NULL;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
+   if (font->gl->shader && font->gl->shader->use)
+      font->gl->shader->use(font->gl,
+            font->gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
 
 static void gl_raster_font_render_msg(
@@ -553,6 +543,16 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
+static int gl_get_line_height(void *data)
+{
+   gl_raster_t *font   = (gl_raster_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t gl_raster_font = {
    gl_raster_font_init_font,
    gl_raster_font_free_font,
@@ -561,5 +561,6 @@ font_renderer_t gl_raster_font = {
    gl_raster_font_get_glyph,
    gl_raster_font_bind_block,
    gl_raster_font_flush_block,
-   gl_get_message_width
+   gl_get_message_width,
+   gl_get_line_height
 };

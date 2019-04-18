@@ -92,7 +92,7 @@ kernel void convert_bgra4444_to_bgra8888(texture2d<ushort, access::read> in  [[ 
                         extract_bits(pix, 12, 4),
                         extract_bits(pix,  0, 4)
                         );
-   
+
    out.write(half4(pix2) / 15.0, gid);
 }
 
@@ -107,6 +107,6 @@ kernel void convert_rgb565_to_bgra8888(texture2d<ushort, access::read> in  [[ te
                         extract_bits(pix,  0, 5),
                         0xf
                         );
-   
+
    out.write(half4(pix2) / half4(0x1f, 0x3f, 0x1f, 0xf), gid);
 }

@@ -63,6 +63,8 @@ void create_gdi_context(HWND hwnd, bool *quit);
 
 bool gdi_has_menu_frame(void);
 
+bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
+
 #if !defined(__WINRT__)
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 

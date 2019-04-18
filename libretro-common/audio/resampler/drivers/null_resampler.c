@@ -41,7 +41,7 @@ static void resampler_null_free(void *re_)
 }
 
 static void *resampler_null_init(const struct resampler_config *config,
-      double bandwidth_mod, 
+      double bandwidth_mod,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {

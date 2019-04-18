@@ -29,7 +29,6 @@ int main(int argc, const char** argv)
          ps_out = argv[i + 1];
    }
 
-
    if(!slang || !vs_out || !ps_out || (!vs_asm && ps_asm) || (vs_asm && !ps_asm))
    {
       printf("Usage :\n");
@@ -97,7 +96,6 @@ int main(int argc, const char** argv)
          continue;
       }
 
-
       char* layout = strstr(line, "layout(");
       if(layout)
       {
@@ -112,10 +110,6 @@ int main(int argc, const char** argv)
          if(!strncmp(layout, "uniform", 7))
             line = layout;
       }
-
-
-
-
 
       if(vson)
       {
@@ -138,5 +132,3 @@ int main(int argc, const char** argv)
 
    return 0;
 }
-
-

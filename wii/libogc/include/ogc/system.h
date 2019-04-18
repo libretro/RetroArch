@@ -25,13 +25,10 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
-
 
 /*! \file system.h
 \brief OS functions and initialization
@@ -67,7 +64,6 @@ distribution.
  *@}
  */
 
-
 /*!
  * \addtogroup sys_mprotchans OS memory protection channels
  * @{
@@ -82,7 +78,6 @@ distribution.
 /*!
  *@}
  */
-
 
 /*!
  * \addtogroup sys_mprotmodes OS memory protection modes
@@ -100,8 +95,6 @@ distribution.
 
 #define SYS_FONTSIZE_ANSI				(288 + 131072)
 #define SYS_FONTSIZE_SJIS				(3840 + 1179648)
-
-
 
 /*!
  * \addtogroup sys_mcastmacros OS memory casting macros
@@ -130,13 +123,11 @@ distribution.
    extern "C" {
 #endif /* __cplusplus */
 
-
 /*!
  * \typedef u32 syswd_t
  * \brief handle typedef for the alarm context
  */
 typedef u32 syswd_t;
-
 
  /*!
  * \typedef struct _syssram syssram
@@ -164,7 +155,6 @@ struct _syssram {
 	u8 lang;
 	u8 flags;
 } ATTRIBUTE_PACKED;
-
 
 /*!
  * \typedef struct _syssramex syssramex
@@ -237,7 +227,6 @@ struct _sys_resetinfo {
 */
 void SYS_Init();
 
-
 /*!
  * \fn void* SYS_AllocateFramebuffer(GXRModeObj *rmode)
  * \brief Allocate cacheline aligned memory for the external framebuffer based on the rendermode object.
@@ -247,12 +236,10 @@ void SYS_Init();
  */
 void* SYS_AllocateFramebuffer(GXRModeObj *rmode);
 
-
 void SYS_ProtectRange(u32 chan,void *addr,u32 bytes,u32 cntrl);
 void SYS_StartPMC(u32 mcr0val,u32 mcr1val);
 void SYS_DumpPMC();
 void SYS_StopPMC();
-
 
 /*! \fn s32 SYS_CreateAlarm(syswd_t *thealarm)
 \brief Create/initialize sysalarm structure
@@ -261,7 +248,6 @@ void SYS_StopPMC();
 \return 0 on succuess, non-zero on error
 */
 s32 SYS_CreateAlarm(syswd_t *thealarm);
-
 
 /*! \fn s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb)
 \brief Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
@@ -272,7 +258,6 @@ s32 SYS_CreateAlarm(syswd_t *thealarm);
 \return 0 on succuess, non-zero on error
 */
 s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb,void *cbarg);
-
 
 /*! \fn s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const struct timespec *tp_period,alarmcallback cb)
 \brief Set the alarm parameters for a periodioc alarm, add to the list of alarms and start. The alarm and interval persists as long as SYS_CancelAlarm() isn't called.
@@ -285,7 +270,6 @@ s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb,voi
 */
 s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const struct timespec *tp_period,alarmcallback cb,void *cbarg);
 
-
 /*! \fn s32 SYS_RemoveAlarm(syswd_t thealarm)
 \brief Remove the given alarm context from the list of contexts and destroy it
 \param[in] thealarm identifier to the alarm context to be removed and destroyed
@@ -294,7 +278,6 @@ s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const 
 */
 s32 SYS_RemoveAlarm(syswd_t thealarm);
 
-
 /*! \fn s32 SYS_CancelAlarm(syswd_t thealarm)
 \brief Cancel the alarm, but do not remove from the list of contexts.
 \param[in] thealarm identifier to the alram context to be canceled
@@ -302,7 +285,6 @@ s32 SYS_RemoveAlarm(syswd_t thealarm);
 \return 0 on succuess, non-zero on error
 */
 s32 SYS_CancelAlarm(syswd_t thealarm);
-
 
 void SYS_SetWirelessID(u32 chan,u32 id);
 u32 SYS_GetWirelessID(u32 chan);

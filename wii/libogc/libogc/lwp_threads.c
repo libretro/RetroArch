@@ -747,4 +747,3 @@ void __lwp_thread_coreinit()
 
 	__sys_state_set(SYS_STATE_BEFORE_MT);
 }
-

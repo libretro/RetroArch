@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,7 +21,19 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
+#include "video_defines.h"
+
 RETRO_BEGIN_DECLS
+
+typedef struct video_display_config
+{
+   unsigned width;
+   unsigned height;
+   unsigned bpp;
+   unsigned refreshrate;
+   unsigned idx;
+   bool current;
+} video_display_config_t;
 
 typedef struct video_display_server
 {
@@ -30,9 +42,13 @@ typedef struct video_display_server
    bool (*set_window_opacity)(void *data, unsigned opacity);
    bool (*set_window_progress)(void *data, int progress, bool finished);
    bool (*set_window_decorations)(void *data, bool on);
-   bool (*switch_resolution)(void *data, unsigned width,
-         unsigned height, int int_hz, float hz, int center);
+   bool (*set_resolution)(void *data, unsigned width,
+         unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset);
+   void *(*get_resolution_list)(void *data,
+         unsigned *size);
    const char *(*get_output_options)(void *data);
+   void (*set_screen_orientation)(enum rotation rotation);
+   enum rotation (*get_screen_orientation)(void);
    const char *ident;
 } video_display_server_t;
 
@@ -46,16 +62,25 @@ bool video_display_server_set_window_progress(int progress, bool finished);
 
 bool video_display_server_set_window_decorations(bool on);
 
-bool video_display_server_switch_resolution(
+bool video_display_server_set_resolution(
       unsigned width, unsigned height,
-      int int_hz, float hz, int center);
+      int int_hz, float hz, int center, int monitor_index, int xoffset);
+
+void *video_display_server_get_resolution_list(unsigned *size);
 
 const char *video_display_server_get_output_options(void);
 
 const char *video_display_server_get_ident(void);
 
+void video_display_server_set_screen_orientation(enum rotation rotation);
+
+bool video_display_server_can_set_screen_orientation(void);
+
+enum rotation video_display_server_get_screen_orientation(void);
+
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_x11;
+extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_null;
 
 RETRO_END_DECLS

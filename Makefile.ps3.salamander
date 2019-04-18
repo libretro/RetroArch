@@ -55,6 +55,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  libretro-common/encodings/encoding_utf.c \
 				  libretro-common/compat/compat_strl.c \
 				  libretro-common/compat/compat_strcasestr.c \
+				  libretro-common/compat/fopen_utf8.c \
 				  libretro-common/streams/file_stream.c \
 				  libretro-common/vfs/vfs_implementation.c \
 				  libretro-common/file/config_file.c \
@@ -62,7 +63,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  verbosity.c
 
 ifeq ($(HAVE_LOGGER), 1)
-PPU_CFLAGS		+= -DHAVE_LOGGER 
+PPU_CFLAGS		+= -DHAVE_LOGGER
 PPU_SRCS		   += network/net_logger.c \
 						libretro-common/net/net_compat.c \
 						libretro-common/net/net_socket.c
@@ -71,7 +72,7 @@ endif
 PPU_TARGET		= retroarch-salamander_ps3.elf
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
-	PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 
+	PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1
 	PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe

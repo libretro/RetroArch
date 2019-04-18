@@ -11,6 +11,8 @@
 .tmp
 .tmp.c
 .tmp.cxx
+.moc.h
+.moc.cpp
 config.log
 /.project
 /.externalToolBuilders/
@@ -53,7 +55,6 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
-menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
@@ -61,7 +62,6 @@ menu/driverspzarch.c
 /freetype2/
 /ft2build.h
 /iconv.h
-/libxml2/
 /phoenix/
 /python/
 /rsound.h
@@ -74,6 +74,12 @@ libretro-super
 run.sh
 convert_rumble.awk
 *~
+assets
+info
+content_image_history.lpl
+saves
+screenshots
+
 
 # Wii U
 *.depend
@@ -84,7 +90,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx
 /wiiu-devel.properties
-
 
 # 3ds
 /.lst
@@ -119,7 +124,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/libretrodb/
 
 pkg/apple/iOS/build/
-pkg/apple/iOS/modules/
 pkg/apple/build/
 ui/drivers/qt/moc_*
 ui/drivers/moc_*
@@ -163,3 +167,17 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+
+# PS2
+ps2/irx/*.c
+ps2/libcdvd/lib/
+
+# Wayland
+gfx/common/wayland/idle-inhibit-unstable-v1.c
+gfx/common/wayland/idle-inhibit-unstable-v1.h
+gfx/common/wayland/xdg-shell-unstable-v6.c
+gfx/common/wayland/xdg-shell-unstable-v6.h
+gfx/common/wayland/xdg-decoration-unstable-v1.h
+gfx/common/wayland/xdg-decoration-unstable-v1.c
+gfx/common/wayland/xdg-shell.c
+gfx/common/wayland/xdg-shell.h

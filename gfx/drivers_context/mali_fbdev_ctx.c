@@ -24,6 +24,8 @@
 #include <linux/fb.h>
 #include <linux/vt.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -37,6 +39,8 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 typedef struct
 {
@@ -116,7 +120,7 @@ static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info, void *video
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&mali->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-            &major, &minor, &n, attribs))
+            &major, &minor, &n, attribs, NULL))
    {
       egl_report_error();
       goto error;
@@ -283,6 +287,7 @@ static uint32_t gfx_ctx_mali_fbdev_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 
    return flags;
 }
@@ -299,6 +304,26 @@ static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
    return mali->refresh_rate;
 }
 
+static void gfx_ctx_mali_fbdev_update_window_title(void *data, void *data2)
+{
+   const settings_t *settings = config_get_ptr();
+   video_frame_info_t* video_info = (video_frame_info_t*)data2;
+
+   if (settings->bools.video_memory_show)
+   {
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
+}
+
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -313,7 +338,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   NULL, /* update_title */
+   gfx_ctx_mali_fbdev_update_window_title,
    gfx_ctx_mali_fbdev_check_window,
    NULL, /* set_resize */
    gfx_ctx_mali_fbdev_has_focus,
@@ -332,4 +357,3 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    NULL
 };
-

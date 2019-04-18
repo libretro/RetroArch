@@ -83,11 +83,14 @@ enum font_driver_render_api
 {
    FONT_DRIVER_RENDER_DONT_CARE,
    FONT_DRIVER_RENDER_OPENGL_API,
+   FONT_DRIVER_RENDER_OPENGL_CORE_API,
+   FONT_DRIVER_RENDER_OPENGL1_API,
    FONT_DRIVER_RENDER_D3D8_API,
    FONT_DRIVER_RENDER_D3D9_API,
    FONT_DRIVER_RENDER_D3D10_API,
    FONT_DRIVER_RENDER_D3D11_API,
    FONT_DRIVER_RENDER_D3D12_API,
+   FONT_DRIVER_RENDER_PS2,
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
    FONT_DRIVER_RENDER_WIIU,
@@ -133,6 +136,16 @@ enum text_alignment
 #define FONT_COLOR_GET_BLUE(col)  (((col) >>  8) & 0xff)
 #define FONT_COLOR_GET_ALPHA(col) (((col) >>  0) & 0xff)
 #define FONT_COLOR_ARGB_TO_RGBA(col) ( (((col) >> 24) & 0xff) | (((unsigned)(col) << 8) & 0xffffff00) )
+
+typedef struct video_viewport
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+   unsigned full_width;
+   unsigned full_height;
+} video_viewport_t;
 
 RETRO_END_DECLS
 

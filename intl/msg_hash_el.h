@@ -147,6 +147,10 @@ MSG_HASH(
     "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+    "Enable horizontal animation for the menu. This will have a performance hit."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
     "Προσαρμόζει τις εμφανισιακές ρυθμίσεις της οθόνης του μενού."
     )
@@ -551,10 +555,6 @@ MSG_HASH(
     "Απόθηκευση Διαμόρφωσης στην Έξοδο"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Συλλογές"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Βάσεις Δεδομένων"
     )
@@ -795,14 +795,6 @@ MSG_HASH(
     "Ενεργοποίηση Επιτευγμάτων"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Χρώμα καταχώρησης μενού όταν το ποντίκι βρίσκεται από πάνω"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Χρώμα καταχώρησης μενού"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
     "Ψευδές"
     )
@@ -1005,10 +997,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
     "Ενεργοποίηση Αυτόματης Διαμόρφωσης"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Νεκρή Ζώνη Αναλογικού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -2675,10 +2663,6 @@ MSG_HASH(
     "Υποστήριξη Libusb"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-    "Υποστήριξη ανάλυσης libxml2 XML"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
     "Υποστήριξη Netplay (peer-to-peer)"
     )
@@ -2919,10 +2903,6 @@ MSG_HASH(
    "ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-    "Χρώμα τίτλου μενού"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "Αληθές"
     )
@@ -3066,10 +3046,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
     "Disable Desktop Composition"
     )
+#if defined(_3DS)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
     "Κάτω οθόνη 3DS"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Οδηγός Βίντεο"
@@ -4551,10 +4533,6 @@ MSG_HASH(
     "Συγχρονισμός ήχου. Προτείνεται."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-    "Πόσο μακριά ένας άξωνας πρέπει να γείρει ώστε να οδηγήσει σε πάτημα κουμπιού."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
     "Χρόνος αναμονής σε δευτερόλεπτα μέχρι την συνέχιση στην επόμενη σύνδεση πλήκτρων."
     )
@@ -4748,10 +4726,6 @@ MSG_HASH(
     "Επιλογή Αρχείου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Επιλογή Από Συλλογή"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
     "Φίλτρα"
     )
@@ -4862,11 +4836,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-    "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution."
+    "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-    "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution"
+    "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -4893,7 +4867,7 @@ MSG_HASH(
     "Επιλογή της θύρας για όταν είναι ενεργοποιημένη η επιλογή 'Εμφάνιση Εισαγωγών Στην Οθόνη'"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "Το σαρωμένο περιεχόμενο θα εμφανίζεται εδώ."
     )
 MSG_HASH(
@@ -5303,11 +5277,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία και τα προσθέτει στην συλλογή."
+    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Σαρώνει ένα συμβατό αρχείο και το προσθέτει στην συλλογή."
+    "Σαρώνει ένα συμβατό αρχείο"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
@@ -5340,10 +5314,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
     "Σάρωση για νέα δωμάτια."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Κατάργηση αυτής της καταχώρησης από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5484,10 +5454,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
     "Perform tasks on a separate thread."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5656,7 +5622,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all collections to this directory."
+    "Save all playlists to this directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -5979,10 +5945,6 @@ MSG_HASH(
     "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις στην συλλογή."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
     "Επίτρεψη μετονομασίας καταχωρήσεων"
     )
@@ -6097,6 +6059,30 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
     "Show/hide the 'Add to Favorites' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+    "Show Start Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+    "Show/hide the 'Start Recording' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+    "Show Start Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+    "Show/hide the 'Start Streaming' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show Reset Core Association"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show/hide the 'Reset Core Association' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6224,7 +6210,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-    "Show frame count on FPS display"
+    "Display Frame Count"
     )
 MSG_HASH(
     MSG_CONFIG_OVERRIDE_LOADED,
@@ -7729,4 +7715,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
     "No favorites available."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+      "Remember Window Position and Size")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+    "CoreAudio support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+    "CoreAudio V3 support"
     )

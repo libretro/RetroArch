@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -148,7 +148,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
    if (!string_is_empty(msg))
    {
 #ifdef RARCH_INTERNAL
-      runloop_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -550,7 +550,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data 
+         if (db->list->elems[i].data
                && string_is_equal(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by gdi: %s\n", path);
@@ -732,6 +732,9 @@ static int database_info_list_iterate_end_no_match(
    if (db_state->crc != 0)
       db_state->crc = 0;
 
+   if (db_state->archive_crc != 0)
+      db_state->archive_crc = 0;
+
    return 0;
 }
 
@@ -840,13 +843,19 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if (!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
-      playlist_push(playlist, entry_path_str,
-            db_info_entry->name,
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            db_crc, db_playlist_base_str);
+      struct playlist_entry entry = {0};
+
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path = entry_path_str;
+      entry.label = db_info_entry->name;
+      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.crc32 = db_crc;
+      entry.db_name = db_playlist_base_str;
+
+      playlist_push(playlist, &entry);
    }
 
    playlist_write_file(playlist);
@@ -857,6 +866,7 @@ static int database_info_list_iterate_found_match(
 
    db_state->info = NULL;
    db_state->crc  = 0;
+   db_state->archive_crc = 0;
 
    free(entry_path_str);
    free(db_playlist_path);
@@ -1006,22 +1016,26 @@ static int task_database_iterate_playlist_lutro(
 
    free(db_playlist_path);
 
-   if(!playlist_entry_exists(playlist,
+   if (!playlist_entry_exists(playlist,
             path, file_path_str(FILE_PATH_DETECT)))
    {
       char *game_title = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      struct playlist_entry entry = {0};
 
       game_title[0] = '\0';
 
       fill_short_pathname_representation_noext(game_title,
             path, PATH_MAX_LENGTH * sizeof(char));
 
-      playlist_push(playlist, path,
-            game_title,
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_LUTRO_PLAYLIST));
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path = (char*)path;
+      entry.label = game_title;
+      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.crc32 = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.db_name = (char*)file_path_str(FILE_PATH_LUTRO_PLAYLIST);
+
+      playlist_push(playlist, &entry);
 
       free(game_title);
    }
@@ -1031,7 +1045,6 @@ static int task_database_iterate_playlist_lutro(
 
    return 0;
 }
-
 
 static int task_database_iterate_serial_lookup(
       db_handle_t *_db,
@@ -1261,7 +1274,7 @@ static void task_database_handler(retro_task_t *task)
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
 #ifdef RARCH_INTERNAL
-            runloop_msg_queue_push(msg, 0, 180, true);
+            runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -1311,7 +1324,7 @@ bool task_push_dbscan(
       const char *content_database,
       const char *fullpath,
       bool directory,
-      bool show_hidden_files,
+      bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
    retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
@@ -1325,7 +1338,7 @@ bool task_push_dbscan(
    t->callback               = cb;
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
-   db->show_hidden_files     = show_hidden_files;
+   db->show_hidden_files     = db_dir_show_hidden_files;
    db->is_directory          = directory;
    db->playlist_directory    = NULL;
    db->fullpath              = strdup(fullpath);

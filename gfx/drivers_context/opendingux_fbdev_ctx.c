@@ -29,6 +29,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -87,7 +88,7 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
 
    if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
-            &n, attribs))
+            &n, attribs, NULL))
    {
       egl_report_error();
       goto error;
@@ -234,7 +235,6 @@ static void gfx_ctx_opendingux_set_swap_interval(
 #endif
 }
 
-
 static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
 {
 #ifdef HAVE_EGL
@@ -255,6 +255,7 @@ static uint32_t gfx_ctx_opendingux_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

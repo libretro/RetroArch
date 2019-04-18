@@ -112,7 +112,7 @@ else ifeq ($(libogc_platform), 1)
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
    INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
- 
+
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
       CXXFLAGS += -DEXTERNAL_LIBOGC
@@ -158,8 +158,6 @@ else ifeq ($(libogc_platform), 1)
       endif
    endif
 
-   LIBS += -logc
-
    ifeq ($(EXTERNAL_LIBOGC), 1)
       LIBS += -lfat
    endif
@@ -175,6 +173,8 @@ else ifeq ($(libogc_platform), 1)
         LIBS += -lbba
       endif
    endif
+
+   LIBS += -logc
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
@@ -271,7 +271,7 @@ else ifeq ($(platform), vita)
    PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
         -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
    LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
-           -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
+           -lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
            -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
            -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
@@ -384,7 +384,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
 
    PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
-   
+
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/include")
@@ -430,9 +430,9 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
-   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
-   
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -DHAVE_EASTEREGG -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
+
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/include")
@@ -479,7 +479,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
-   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
 
    PlatformSuffix = $(subst windows_msvc2010_,,$(platform))
@@ -550,7 +550,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
-   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
 
    PlatformSuffix = $(subst windows_msvc2012_,,$(platform))
@@ -625,7 +625,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
-   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
 
    PlatformSuffix = $(subst windows_msvc2013_,,$(platform))
@@ -700,7 +700,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
-   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
 
    PlatformSuffix = $(subst windows_msvc2015_,,$(platform))
@@ -766,7 +766,7 @@ else
    CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
    INCLUDE += -I./libretro-common/include \
 				  -Ideps \
-				  -Ideps/stb 
+				  -Ideps/stb
 endif
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
@@ -973,8 +973,8 @@ ifneq (,$(findstring msvc,$(platform)))
 	LINKOUT = -out:
 	LINK = link.exe
 else
-	OBJOUT   = -o 
-	LINKOUT  = -o 
+	OBJOUT   = -o
+	LINKOUT  = -o
 	LINK = $(CXX)
 endif
 
@@ -1073,7 +1073,6 @@ overlays-checkout:
    echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
       $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
    fi
-
 
 clean:
 	rm -f $(EXT_TARGET)

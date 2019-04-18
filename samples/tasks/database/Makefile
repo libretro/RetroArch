@@ -60,7 +60,7 @@ CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
 flags   := -I$(LIBRETRO_COMM_DIR)/include
 asflags := $(extra_flags)
-LDFLAGS := 
+LDFLAGS :=
 flags   += -std=c99
 INCFLAGS  := -I$(LIBRETRO_COMM_DIR)/include
 
@@ -107,8 +107,8 @@ CXXFLAGS  += $(DEFINES)
 
 OBJECTS    = $(SOURCES_C:.c=.o)
 
-OBJOUT   = -o 
-LINKOUT  = -o 
+OBJOUT   = -o
+LINKOUT  = -o
 
 ifneq (,$(findstring msvc,$(platform)))
 	OBJOUT = -Fo

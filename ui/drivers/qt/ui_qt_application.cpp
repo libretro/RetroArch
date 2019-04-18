@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -17,7 +17,10 @@
 #include <QApplication>
 #include <QAbstractEventDispatcher>
 
+#ifndef CXX_BUILD
 extern "C" {
+#endif
+
 #include "../../ui_companion_driver.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
@@ -28,7 +31,10 @@ extern "C" {
 #ifdef Q_OS_UNIX
 #include <locale.h>
 #endif
+
+#ifndef CXX_BUILD
 }
+#endif
 
 #include "../ui_qt.h"
 
@@ -174,7 +180,7 @@ static void ui_application_qt_run(void *args)
 }
 
 #ifdef HAVE_MAIN
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CXX_BUILD)
 extern "C"
 #endif
 int main(int argc, char *argv[])

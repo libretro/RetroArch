@@ -52,7 +52,6 @@ typedef struct file_list
    size_t size;
 } file_list_t;
 
-
 void *file_list_get_userdata_at_offset(const file_list_t *list,
       size_t index);
 
@@ -91,6 +90,12 @@ bool file_list_prepend(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
       size_t entry_idx);
+
+bool file_list_insert(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx,
+      size_t idx);
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr);
 

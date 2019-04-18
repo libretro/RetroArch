@@ -46,7 +46,6 @@
 #include "lwip/netif.h"
 #include "lwip/stats.h"
 
-
 /*
  * Copy len bytes from offset in pbuf to buffer
  *

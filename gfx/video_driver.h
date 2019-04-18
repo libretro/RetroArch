@@ -37,9 +37,8 @@
 #include "video_coord_array.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
-#include "video_state_tracker.h"
 
-#include "../input/input_driver.h"
+#include "../input/input_types.h"
 
 #define RARCH_SCALE_BASE 256
 
@@ -107,7 +106,9 @@ enum display_metric_types
    DISPLAY_METRIC_NONE = 0,
    DISPLAY_METRIC_MM_WIDTH,
    DISPLAY_METRIC_MM_HEIGHT,
-   DISPLAY_METRIC_DPI
+   DISPLAY_METRIC_DPI,
+   DISPLAY_METRIC_PIXEL_WIDTH,
+   DISPLAY_METRIC_PIXEL_HEIGHT
 };
 
 enum display_flags
@@ -119,7 +120,11 @@ enum display_flags
    GFX_CTX_FLAGS_HARD_SYNC,
    GFX_CTX_FLAGS_BLACK_FRAME_INSERTION,
    GFX_CTX_FLAGS_MENU_FRAME_FILTERING,
-   GFX_CTX_FLAGS_ADAPTIVE_VSYNC
+   GFX_CTX_FLAGS_ADAPTIVE_VSYNC,
+   GFX_CTX_FLAGS_SHADERS_GLSL,
+   GFX_CTX_FLAGS_SHADERS_CG,
+   GFX_CTX_FLAGS_SHADERS_HLSL,
+   GFX_CTX_FLAGS_SHADERS_SLANG
 };
 
 enum shader_uniform_type
@@ -229,15 +234,15 @@ typedef struct shader_backend
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(void *handle_data,
-         void *shader_data, const struct video_coords *coords);
-   bool (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
+   bool (*set_coords)(void *shader_data, const struct video_coords *coords);
+   bool (*set_mvp)(void *shader_data, const void *mat_data);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);
 
    struct video_shader *(*get_current_shader)(void *data);
+
+   void (*get_flags)(uint32_t*);
 
    enum rarch_shader_type type;
 
@@ -251,6 +256,7 @@ typedef struct video_shader_ctx_init
    const char *path;
    const shader_backend_t *shader;
    void *data;
+   void *shader_data;
    struct
    {
       bool core_context_enabled;
@@ -306,21 +312,10 @@ typedef struct video_shader_ctx_filter
    bool *smooth;
 } video_shader_ctx_filter_t;
 
-typedef struct video_shader_ctx_wrap
-{
-   unsigned idx;
-   enum gfx_wrap_type type;
-} video_shader_ctx_wrap_t;
-
 typedef struct video_shader_ctx
 {
    struct video_shader *data;
 } video_shader_ctx_t;
-
-typedef struct video_shader_ctx_ident
-{
-   const char *ident;
-} video_shader_ctx_ident_t;
 
 typedef struct video_shader_ctx_texture
 {
@@ -437,8 +432,8 @@ typedef struct video_frame_info
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
    unsigned monitor_index;
-   unsigned crt_switch_resolution; 
-   unsigned crt_switch_resolution_super; 
+   unsigned crt_switch_resolution;
+   unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
    unsigned xmb_theme;
@@ -495,20 +490,14 @@ typedef struct video_frame_info
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
-   bool (*cb_set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
-
    void *context_data;
-   void *shader_data;
    void *userdata;
-   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
 typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
-
 
 typedef struct gfx_ctx_driver
 {
@@ -683,16 +672,6 @@ typedef struct gfx_ctx_ident
    const char *ident;
 } gfx_ctx_ident_t;
 
-typedef struct video_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} video_viewport_t;
-
 struct aspect_ratio_elem
 {
    char name[64];
@@ -705,10 +684,6 @@ struct aspect_ratio_elem
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
-   void (*set_coords)(void *handle_data, void *shader_data,
-         const struct video_coords *coords);
-   void (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
@@ -748,7 +723,6 @@ typedef struct video_poke_interface
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
 } video_poke_interface_t;
-
 
 /* msg is for showing a message on the screen
  * along with the video frame. */
@@ -830,8 +804,13 @@ typedef struct video_driver
 #endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
-} video_driver_t;
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   /* if set to true, will use menu widgets when applicable
+    * if set to false, will use OSD as a fallback */
+   bool (*menu_widgets_enabled)(void *data);
+#endif
+} video_driver_t;
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
@@ -875,9 +854,6 @@ bool video_driver_frame_filter_is_32bit(void);
 void video_driver_default_settings(void);
 void video_driver_load_settings(config_file_t *conf);
 void video_driver_save_settings(config_file_t *conf);
-void video_driver_set_own_driver(void);
-void video_driver_unset_own_driver(void);
-bool video_driver_owns_driver(void);
 bool video_driver_is_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
 const struct retro_hw_render_context_negotiation_interface
@@ -899,6 +875,10 @@ bool video_driver_get_hw_render_interface(const struct
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 void video_driver_set_title_buf(void);
 void video_driver_monitor_adjust_system_rates(void);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+bool video_driver_has_widgets(void);
+#endif
 
 /**
  * video_driver_find_handle:
@@ -1069,6 +1049,8 @@ const video_poke_interface_t *video_driver_get_poke(void);
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+void crt_switch_driver_reinit(void);
+
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
 
@@ -1197,43 +1179,7 @@ enum gfx_ctx_api video_context_driver_get_api(void);
 
 void video_context_driver_free(void);
 
-bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);
-
-bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
-
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
-
-bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
-
-bool video_shader_driver_deinit(void);
-
-void video_shader_driver_set_parameter(struct uniform_info *param);
-
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
-
-bool video_shader_driver_init_first(void);
-
-bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-bool video_shader_driver_get_feedback_pass(unsigned *data);
-
-bool video_shader_driver_mipmap_input(unsigned *index);
-
-void video_driver_set_coords(video_shader_ctx_coords_t *coords);
-
-bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
-
-bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
-
-void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
-
-bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
-
-bool video_shader_driver_compile_program(struct shader_program_info *program_info);
-
-void video_shader_driver_use(video_shader_ctx_info_t *shader_info);
-
-bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 float video_driver_get_refresh_rate(void);
 
@@ -1243,10 +1189,22 @@ bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
+
 bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
       enum display_flags flag);
 
-extern video_driver_t video_gl;
+void video_driver_set_gpu_device_string(const char *str);
+
+const char* video_driver_get_gpu_device_string(void);
+
+void video_driver_set_gpu_api_version_string(const char *str);
+
+const char* video_driver_get_gpu_api_version_string(void);
+
+extern video_driver_t video_gl_core;
+extern video_driver_t video_gl2;
+extern video_driver_t video_gl1;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
 extern video_driver_t video_psp1;
@@ -1299,12 +1257,11 @@ extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t switch_ctx;
+extern const gfx_ctx_driver_t orbis_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;
-extern const shader_backend_t shader_null_backend;
 
 RETRO_END_DECLS
 

@@ -15,7 +15,7 @@
 
 #define CINTERFACE
 
-/* For Xbox we will just link statically 
+/* For Xbox we will just link statically
  * to Direct3D libraries instead. */
 
 #if !defined(_XBOX) && defined(HAVE_DYLIB)
@@ -75,7 +75,6 @@ typedef HRESULT (__stdcall
         LPD3DXFONT*             ppFont);
 #endif
 
-
 #ifdef HAVE_D3DX
 static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
@@ -114,7 +113,7 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
    if (!g_d3d8_dll)
       return false;
 #endif
-   
+
    SDKVersion               = 220;
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");
@@ -364,4 +363,3 @@ void d3d8x_font_get_text_metrics(void *data, void *metrics)
       font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
 #endif
 }
-

@@ -26,7 +26,6 @@ extern "C" {
 **
 */
 
-
 #define VK_KHR_android_surface 1
 struct ANativeWindow;
 
@@ -41,7 +40,6 @@ typedef struct VkAndroidSurfaceCreateInfoKHR {
     VkAndroidSurfaceCreateFlagsKHR    flags;
     struct ANativeWindow*             window;
 } VkAndroidSurfaceCreateInfoKHR;
-
 
 typedef VkResult (VKAPI_PTR *PFN_vkCreateAndroidSurfaceKHR)(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 
@@ -102,7 +100,6 @@ typedef struct VkExternalFormatANDROID {
     void*              pNext;
     uint64_t           externalFormat;
 } VkExternalFormatANDROID;
-
 
 typedef VkResult (VKAPI_PTR *PFN_vkGetAndroidHardwareBufferPropertiesANDROID)(VkDevice device, const struct AHardwareBuffer* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties);
 typedef VkResult (VKAPI_PTR *PFN_vkGetMemoryAndroidHardwareBufferANDROID)(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct AHardwareBuffer** pBuffer);

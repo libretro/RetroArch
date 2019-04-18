@@ -56,7 +56,6 @@ fetch_revision_git() {
 	git log -n 1 --pretty=format:%H
 }
 
-
 # fetch_revision: Output SCM-dependent revision string of a module
 #                 (currently just calls fetch_revision_git)
 #
@@ -65,9 +64,7 @@ fetch_revision() {
 	   fetch_revision_git $1
 }
 
-
 ### END OF FETCH-RULES.SH
-
 
 echo "Fetching RetroArch's submodules..."
 fetch_git "https://github.com/libretro/common-shaders.git" "media/shaders_cg"

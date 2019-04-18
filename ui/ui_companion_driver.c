@@ -27,7 +27,7 @@
 #include "ui_companion_driver.h"
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
 #endif
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
@@ -295,7 +295,7 @@ void ui_companion_driver_log_msg(const char *msg)
 #ifdef HAVE_QT
    settings_t *settings = config_get_ptr();
 
-   if (settings->bools.desktop_menu_enable)
+   if (settings && settings->bools.desktop_menu_enable)
       if (ui_companion_qt_data && qt_is_inited)
          ui_companion_qt.log_msg(ui_companion_qt_data, msg);
 #endif

@@ -44,7 +44,6 @@
 #include "filetime.h"
 #include "lock.h"
 
-
 int _FAT_stat_r (struct _reent *r, const char *path, struct stat *st) {
 	PARTITION* partition = NULL;
 	DIR_ENTRY dirEntry;
@@ -126,7 +125,6 @@ int _FAT_unlink_r (struct _reent *r, const char *path) {
 	}
 
 	cluster = _FAT_directory_entryGetCluster (partition, dirEntry.entryData);
-
 
 	// If this is a directory, make sure it is empty
 	if (_FAT_directory_isDirectory (&dirEntry)) {
@@ -424,7 +422,6 @@ int _FAT_mkdir_r (struct _reent *r, const char *path, int mode) {
 	// Write it to the directory, erasing that sector in the process
 	_FAT_cache_eraseWritePartialSector ( partition->cache, newEntryData,
 		_FAT_fat_clusterToSector (partition, dirCluster), 0, DIR_ENTRY_DATA_SIZE);
-
 
 	// Create the double dot entry within the directory
 

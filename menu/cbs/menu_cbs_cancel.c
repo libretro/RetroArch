@@ -18,6 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../configuration.h"
 #include "../../msg_hash.h"
 #include "../../managers/cheat_manager.h"
 
@@ -34,13 +35,17 @@ int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    size_t new_selection_ptr;
-   const char *menu_label      = NULL;
-   enum msg_hash_enums enum_idx = 0;
+   const char *menu_label       = NULL;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   settings_t *settings         = config_get_ptr();
 
    (void)path;
    (void)label;
    (void)type;
    (void)idx;
+
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_cancel)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
@@ -48,7 +53,7 @@ int action_cancel_pop_default(const char *path,
    {
       if (
          string_is_equal(menu_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)
                ) ||
          string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER)
@@ -158,7 +163,6 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
-
 
    BIND_ACTION_CANCEL(cbs, action_cancel_pop_default);
 

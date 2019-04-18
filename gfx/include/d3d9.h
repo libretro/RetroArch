@@ -17,7 +17,6 @@
 /* include this file content only if compiling for DX9 interfaces */
 #if(DIRECT3D_VERSION >= 0x0900)
 
-
 /* This identifier is passed to Direct3DCreate9 in order to ensure that an
  * application was built against the correct header files. This number is
  * incremented whenever a header (or other) change would require applications
@@ -25,7 +24,6 @@
  * (The number itself has no meaning.)*/
 
 #define D3D_SDK_VERSION 31
-
 
 #include <stdlib.h>
 
@@ -114,7 +112,6 @@ DEFINE_GUID(IID_IDirect3DStateBlock9, 0xb07c4fe5, 0x310d, 0x4ba8, 0xa2, 0x3c, 0x
 /* {d9771460-a695-4f26-bbd3-27b840b541cc} */
 DEFINE_GUID(IID_IDirect3DQuery9, 0xd9771460, 0xa695, 0x4f26, 0xbb, 0xd3, 0x27, 0xb8, 0x40, 0xb5, 0x41, 0xcc);
 
-
 #endif
 
 #ifdef __cplusplus
@@ -149,7 +146,6 @@ interface DECLSPEC_UUID("24F416E6-1F67-4aa7-B88E-D33F6F3128A1") IDirect3DVolume9
 interface DECLSPEC_UUID("794950F2-ADFC-458a-905E-10A10B0B503B") IDirect3DSwapChain9;
 interface DECLSPEC_UUID("d9771460-a695-4f26-bbd3-27b840b541cc") IDirect3DQuery9;
 
-
 #if defined(_COM_SMARTPTR_TYPEDEF)
 _COM_SMARTPTR_TYPEDEF(IDirect3D9, __uuidof(IDirect3D9));
 _COM_SMARTPTR_TYPEDEF(IDirect3DDevice9, __uuidof(IDirect3DDevice9));
@@ -175,7 +171,6 @@ _COM_SMARTPTR_TYPEDEF(IDirect3DQuery9, __uuidof(IDirect3DQuery9));
 
 #endif
 #endif
-
 
 typedef interface IDirect3D9                    IDirect3D9;
 typedef interface IDirect3DDevice9              IDirect3DDevice9;
@@ -212,14 +207,9 @@ extern "C" {
 
 IDirect3D9 * WINAPI Direct3DCreate9(UINT SDKVersion);
 
-
 /*
  * Direct3D interfaces
  */
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3D9
@@ -288,27 +278,7 @@ typedef struct IDirect3D9 *LPDIRECT3D9, *PDIRECT3D9;
 #define IDirect3D9_CreateDevice(p,a,b,c,d,e,f) (p)->CreateDevice(a,b,c,d,e,f)
 #endif
 
-
-
-
-
-
-
 /* SwapChain */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DDevice9
@@ -683,7 +653,6 @@ typedef struct IDirect3DDevice9 *LPDIRECT3DDEVICE9, *PDIRECT3DDEVICE9;
 #define IDirect3DDevice9_CreateQuery(p,a,b) (p)->CreateQuery(a,b)
 #endif
 
-
 #undef INTERFACE
 #define INTERFACE IDirect3DStateBlock9
 
@@ -717,8 +686,6 @@ typedef struct IDirect3DStateBlock9 *LPDIRECT3DSTATEBLOCK9, *PDIRECT3DSTATEBLOCK
 #define IDirect3DStateBlock9_Capture(p) (p)->Capture()
 #define IDirect3DStateBlock9_Apply(p) (p)->Apply()
 #endif
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DSwapChain9
@@ -765,8 +732,6 @@ typedef struct IDirect3DSwapChain9 *LPDIRECT3DSWAPCHAIN9, *PDIRECT3DSWAPCHAIN9;
 #define IDirect3DSwapChain9_GetDevice(p,a) (p)->GetDevice(a)
 #define IDirect3DSwapChain9_GetPresentParameters(p,a) (p)->GetPresentParameters(a)
 #endif
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DResource9
@@ -817,8 +782,6 @@ typedef struct IDirect3DResource9 *LPDIRECT3DRESOURCE9, *PDIRECT3DRESOURCE9;
 #define IDirect3DResource9_GetType(p) (p)->GetType()
 #endif
 
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVertexDeclaration9
 
@@ -849,8 +812,6 @@ typedef struct IDirect3DVertexDeclaration9 *LPDIRECT3DVERTEXDECLARATION9, *PDIRE
 #define IDirect3DVertexDeclaration9_GetDevice(p,a) (p)->GetDevice(a)
 #define IDirect3DVertexDeclaration9_GetDeclaration(p,a,b) (p)->GetDeclaration(a,b)
 #endif
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DVertexShader9
@@ -883,8 +844,6 @@ typedef struct IDirect3DVertexShader9 *LPDIRECT3DVERTEXSHADER9, *PDIRECT3DVERTEX
 #define IDirect3DVertexShader9_GetFunction(p,a,b) (p)->GetFunction(a,b)
 #endif
 
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DPixelShader9
 
@@ -915,9 +874,6 @@ typedef struct IDirect3DPixelShader9 *LPDIRECT3DPIXELSHADER9, *PDIRECT3DPIXELSHA
 #define IDirect3DPixelShader9_GetDevice(p,a) (p)->GetDevice(a)
 #define IDirect3DPixelShader9_GetFunction(p,a,b) (p)->GetFunction(a,b)
 #endif
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DBaseTexture9
@@ -985,10 +941,6 @@ typedef struct IDirect3DBaseTexture9 *LPDIRECT3DBASETEXTURE9, *PDIRECT3DBASETEXT
 #define IDirect3DBaseTexture9_GetAutoGenFilterType(p) (p)->GetAutoGenFilterType()
 #define IDirect3DBaseTexture9_GenerateMipSubLevels(p) (p)->GenerateMipSubLevels()
 #endif
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DTexture9
@@ -1072,10 +1024,6 @@ typedef struct IDirect3DTexture9 *LPDIRECT3DTEXTURE9, *PDIRECT3DTEXTURE9;
 #define IDirect3DTexture9_AddDirtyRect(p,a) (p)->AddDirtyRect(a)
 #endif
 
-
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVolumeTexture9
 
@@ -1157,10 +1105,6 @@ typedef struct IDirect3DVolumeTexture9 *LPDIRECT3DVOLUMETEXTURE9, *PDIRECT3DVOLU
 #define IDirect3DVolumeTexture9_UnlockBox(p,a) (p)->UnlockBox(a)
 #define IDirect3DVolumeTexture9_AddDirtyBox(p,a) (p)->AddDirtyBox(a)
 #endif
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DCubeTexture9
@@ -1244,9 +1188,6 @@ typedef struct IDirect3DCubeTexture9 *LPDIRECT3DCUBETEXTURE9, *PDIRECT3DCUBETEXT
 #define IDirect3DCubeTexture9_AddDirtyRect(p,a,b) (p)->AddDirtyRect(a,b)
 #endif
 
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVertexBuffer9
 
@@ -1305,9 +1246,6 @@ typedef struct IDirect3DVertexBuffer9 *LPDIRECT3DVERTEXBUFFER9, *PDIRECT3DVERTEX
 #define IDirect3DVertexBuffer9_GetDesc(p,a) (p)->GetDesc(a)
 #endif
 
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DIndexBuffer9
 
@@ -1365,9 +1303,6 @@ typedef struct IDirect3DIndexBuffer9 *LPDIRECT3DINDEXBUFFER9, *PDIRECT3DINDEXBUF
 #define IDirect3DIndexBuffer9_Unlock(p) (p)->Unlock()
 #define IDirect3DIndexBuffer9_GetDesc(p,a) (p)->GetDesc(a)
 #endif
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DSurface9
@@ -1436,9 +1371,6 @@ typedef struct IDirect3DSurface9 *LPDIRECT3DSURFACE9, *PDIRECT3DSURFACE9;
 #define IDirect3DSurface9_ReleaseDC(p,a) (p)->ReleaseDC(a)
 #endif
 
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVolume9
 
@@ -1488,8 +1420,6 @@ typedef struct IDirect3DVolume9 *LPDIRECT3DVOLUME9, *PDIRECT3DVOLUME9;
 #define IDirect3DVolume9_UnlockBox(p) (p)->UnlockBox()
 #endif
 
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DQuery9
 
@@ -1530,7 +1460,6 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 #define IDirect3DQuery9_GetData(p,a,b,c) (p)->GetData(a,b,c)
 #endif
 
-
 /****************************************************************************
  * Flags for SetPrivateData method on all D3D9 interfaces
  *
@@ -1558,7 +1487,6 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 
 #define D3DCREATE_DISABLE_DRIVER_MANAGEMENT     0x00000100L
 #define D3DCREATE_ADAPTERGROUP_DEVICE           0x00000200L
-
 
 /****************************************************************************
  *
@@ -1617,7 +1545,6 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
  *   Also valid for VertexBuffer::CreateVertexBuffer
  ****************************************************************************/
 
-
 /*
  *  DirectDraw error codes
  */
@@ -1654,7 +1581,6 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 #define D3DERR_DRIVERINVALIDCALL                MAKE_D3DHRESULT(2157)
 #define D3DERR_WASSTILLDRAWING                  MAKE_D3DHRESULT(540)
 #define D3DOK_NOAUTOGEN                         MAKE_D3DSTATUS(2159)
-
 
 #ifdef __cplusplus
 };

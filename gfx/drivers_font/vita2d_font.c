@@ -209,8 +209,8 @@ static void vita2d_font_render_line(
       }
 
       vita2d_draw_texture_tint_part_scale(font->texture,
-            x + off_x + delta_x * scale,
-            y + off_y + delta_y * scale,
+            x + (off_x + delta_x) * scale,
+            y + (off_y + delta_y) * scale,
             tex_x, tex_y, width, height,
             scale,
             scale,
@@ -347,6 +347,16 @@ static const struct font_glyph *vita2d_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static int vita2d_font_get_line_height(void *data)
+{
+   vita_font_t *font = (vita_font_t*)data;
+
+   if (!font || !font->font_driver || !font->font_data)
+      return -1;
+
+   return font->font_driver->get_line_height(font->font_data);
+}
+
 font_renderer_t vita2d_vita_font = {
    vita2d_font_init_font,
    vita2d_font_free_font,
@@ -356,4 +366,5 @@ font_renderer_t vita2d_vita_font = {
    NULL,                      /* bind_block */
    NULL,                      /* flush */
    vita2d_font_get_message_width,
+   vita2d_font_get_line_height
 };

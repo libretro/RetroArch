@@ -492,4 +492,3 @@ s32 USBKeyboard_ToggleLed(const USBKeyboard_led led)
 
 	return 1;
 }
-

@@ -90,7 +90,6 @@ typedef struct omapfb_data
   bool sync;
 } omapfb_data_t;
 
-
 static const char *omapfb_get_fb_device(void)
 {
    static char fbname[12] = {0};
@@ -786,7 +785,6 @@ static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
       memcpy(dst + dst_pitch * i, src + src_pitch * i, dst_pitch);
 }
 
-
 typedef struct omap_video
 {
    omapfb_data_t *omap;
@@ -808,7 +806,6 @@ typedef struct omap_video
       struct scaler_ctx scaler;
    } menu;
 } omap_video_t;
-
 
 static void omap_gfx_free(void *data)
 {
@@ -1141,8 +1138,6 @@ static float omap_get_refresh_rate(void *data)
 
 static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* get_flags  */
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL,

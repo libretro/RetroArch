@@ -25,9 +25,7 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #ifndef __ARQUEUE_H__
 #define __ARQUEUE_H__
@@ -67,7 +65,6 @@ struct _arq_request {
 void ARQ_Init();
 void ARQ_Reset();
 
-
 /*!
  * \fn void ARQ_PostRequest(ARQRequest *req,u32 owner,u32 dir,u32 prio,u32 aram_addr,u32 mram_addr,u32 len)
  * \brief Enqueue a ARAM DMA transfer request.
@@ -84,7 +81,6 @@ void ARQ_Reset();
  * \return none
  */
 void ARQ_PostRequest(ARQRequest *req,u32 owner,u32 dir,u32 prio,u32 aram_addr,u32 mram_addr,u32 len);
-
 
 /*!
  * \fn void ARQ_PostRequestAsync(ARQRequest *req,u32 owner,u32 dir,u32 prio,u32 aram_addr,u32 mram_addr,u32 len,ARQCallback cb)

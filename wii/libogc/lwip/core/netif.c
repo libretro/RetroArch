@@ -285,4 +285,3 @@ netif_init(void)
 {
   netif_list = netif_default = NULL;
 }
-

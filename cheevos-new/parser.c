@@ -148,7 +148,7 @@ int cheevos_get_token(const char* json, char* token, size_t length)
 
    if (!string_is_empty(token))
       return -1;
-   
+
    return cheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length);
 }
 

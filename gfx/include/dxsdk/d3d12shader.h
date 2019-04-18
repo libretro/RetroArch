@@ -17,7 +17,7 @@ typedef enum D3D12_SHADER_VERSION_TYPE
     D3D12_SHVER_PIXEL_SHADER    = 0,
     D3D12_SHVER_VERTEX_SHADER   = 1,
     D3D12_SHVER_GEOMETRY_SHADER = 2,
-    
+
     // D3D11 Shaders
     D3D12_SHVER_HULL_SHADER     = 3,
     D3D12_SHVER_DOMAIN_SHADER   = 4,
@@ -40,7 +40,6 @@ typedef D3D_RESOURCE_RETURN_TYPE D3D12_RESOURCE_RETURN_TYPE;
 
 typedef D3D_CBUFFER_TYPE D3D12_CBUFFER_TYPE;
 
-
 typedef struct _D3D12_SIGNATURE_PARAMETER_DESC
 {
     LPCSTR                      SemanticName;   // Name of the semantic
@@ -50,7 +49,7 @@ typedef struct _D3D12_SIGNATURE_PARAMETER_DESC
     D3D_REGISTER_COMPONENT_TYPE ComponentType;  // Scalar type (e.g. uint, float, etc.)
     BYTE                        Mask;           // Mask to indicate which components of the register
                                                 // are used (combination of D3D10_COMPONENT_MASK values)
-    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is 
+    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is
                                                 // never written (if this is an output signature) or
                                                 // always read (if this is an input signature).
                                                 // (combination of D3D_MASK_* values)
@@ -103,16 +102,16 @@ typedef struct _D3D12_SHADER_DESC
     UINT                    Version;                     // Shader version
     LPCSTR                  Creator;                     // Creator string
     UINT                    Flags;                       // Shader compilation/parse flags
-    
+
     UINT                    ConstantBuffers;             // Number of constant buffers
     UINT                    BoundResources;              // Number of bound resources
     UINT                    InputParameters;             // Number of parameters in the input signature
     UINT                    OutputParameters;            // Number of parameters in the output signature
 
     UINT                    InstructionCount;            // Number of emitted instructions
-    UINT                    TempRegisterCount;           // Number of temporary registers used 
+    UINT                    TempRegisterCount;           // Number of temporary registers used
     UINT                    TempArrayCount;              // Number of temporary arrays used
-    UINT                    DefCount;                    // Number of constant defines 
+    UINT                    DefCount;                    // Number of constant defines
     UINT                    DclCount;                    // Number of declarations (input + output)
     UINT                    TextureNormalInstructions;   // Number of non-categorized texture instructions
     UINT                    TextureLoadInstructions;     // Number of texture load instructions
@@ -173,7 +172,6 @@ typedef struct _D3D12_SHADER_INPUT_BIND_DESC
 #define D3D_SHADER_REQUIRES_ROVS                                                            0x00001000
 #define D3D_SHADER_REQUIRES_VIEWPORT_AND_RT_ARRAY_INDEX_FROM_ANY_SHADER_FEEDING_RASTERIZER  0x00002000
 
-
 typedef struct _D3D12_LIBRARY_DESC
 {
     LPCSTR    Creator;           // The name of the originator of the library.
@@ -186,14 +184,14 @@ typedef struct _D3D12_FUNCTION_DESC
     UINT                    Version;                     // Shader version
     LPCSTR                  Creator;                     // Creator string
     UINT                    Flags;                       // Shader compilation/parse flags
-    
+
     UINT                    ConstantBuffers;             // Number of constant buffers
     UINT                    BoundResources;              // Number of bound resources
 
     UINT                    InstructionCount;            // Number of emitted instructions
-    UINT                    TempRegisterCount;           // Number of temporary registers used 
+    UINT                    TempRegisterCount;           // Number of temporary registers used
     UINT                    TempArrayCount;              // Number of temporary arrays used
-    UINT                    DefCount;                    // Number of constant defines 
+    UINT                    DefCount;                    // Number of constant defines
     UINT                    DclCount;                    // Number of declarations (input + output)
     UINT                    TextureNormalInstructions;   // Number of non-categorized texture instructions
     UINT                    TextureLoadInstructions;     // Number of texture load instructions
@@ -238,7 +236,6 @@ typedef struct _D3D12_PARAMETER_DESC
     UINT                        FirstOutComponent;  // The first output register component for this parameter.
 } D3D12_PARAMETER_DESC;
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Interfaces ////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -264,10 +261,9 @@ typedef interface ID3D12FunctionReflection *LPD3D12FUNCTIONREFLECTION;
 typedef interface ID3D12FunctionParameterReflection ID3D12FunctionParameterReflection;
 typedef interface ID3D12FunctionParameterReflection *LPD3D12FUNCTIONPARAMETERREFLECTION;
 
-
 // {E913C351-783D-48CA-A1D1-4F306284AD56}
 interface DECLSPEC_UUID("E913C351-783D-48CA-A1D1-4F306284AD56") ID3D12ShaderReflectionType;
-DEFINE_GUID(IID_ID3D12ShaderReflectionType, 
+DEFINE_GUID(IID_ID3D12ShaderReflectionType,
 0xe913c351, 0x783d, 0x48ca, 0xa1, 0xd1, 0x4f, 0x30, 0x62, 0x84, 0xad, 0x56);
 
 #undef INTERFACE
@@ -276,7 +272,7 @@ DEFINE_GUID(IID_ID3D12ShaderReflectionType,
 DECLARE_INTERFACE(ID3D12ShaderReflectionType)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_SHADER_TYPE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionType*, GetMemberTypeByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D12ShaderReflectionType*, GetMemberTypeByName)(THIS_ _In_ LPCSTR Name) PURE;
     STDMETHOD_(LPCSTR, GetMemberTypeName)(THIS_ _In_ UINT Index) PURE;
@@ -292,7 +288,7 @@ DECLARE_INTERFACE(ID3D12ShaderReflectionType)
 
 // {8337A8A6-A216-444A-B2F4-314733A73AEA}
 interface DECLSPEC_UUID("8337A8A6-A216-444A-B2F4-314733A73AEA") ID3D12ShaderReflectionVariable;
-DEFINE_GUID(IID_ID3D12ShaderReflectionVariable, 
+DEFINE_GUID(IID_ID3D12ShaderReflectionVariable,
 0x8337a8a6, 0xa216, 0x444a, 0xb2, 0xf4, 0x31, 0x47, 0x33, 0xa7, 0x3a, 0xea);
 
 #undef INTERFACE
@@ -301,7 +297,7 @@ DEFINE_GUID(IID_ID3D12ShaderReflectionVariable,
 DECLARE_INTERFACE(ID3D12ShaderReflectionVariable)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_SHADER_VARIABLE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionType*, GetType)(THIS) PURE;
     STDMETHOD_(ID3D12ShaderReflectionConstantBuffer*, GetBuffer)(THIS) PURE;
 
@@ -310,7 +306,7 @@ DECLARE_INTERFACE(ID3D12ShaderReflectionVariable)
 
 // {C59598B4-48B3-4869-B9B1-B1618B14A8B7}
 interface DECLSPEC_UUID("C59598B4-48B3-4869-B9B1-B1618B14A8B7") ID3D12ShaderReflectionConstantBuffer;
-DEFINE_GUID(IID_ID3D12ShaderReflectionConstantBuffer, 
+DEFINE_GUID(IID_ID3D12ShaderReflectionConstantBuffer,
 0xc59598b4, 0x48b3, 0x4869, 0xb9, 0xb1, 0xb1, 0x61, 0x8b, 0x14, 0xa8, 0xb7);
 
 #undef INTERFACE
@@ -319,7 +315,7 @@ DEFINE_GUID(IID_ID3D12ShaderReflectionConstantBuffer,
 DECLARE_INTERFACE(ID3D12ShaderReflectionConstantBuffer)
 {
     STDMETHOD(GetDesc)(THIS_ D3D12_SHADER_BUFFER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionVariable*, GetVariableByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D12ShaderReflectionVariable*, GetVariableByName)(THIS_ _In_ LPCSTR Name) PURE;
 };
@@ -331,7 +327,7 @@ DECLARE_INTERFACE(ID3D12ShaderReflectionConstantBuffer)
 
 // {5A58797D-A72C-478D-8BA2-EFC6B0EFE88E}
 interface DECLSPEC_UUID("5A58797D-A72C-478D-8BA2-EFC6B0EFE88E") ID3D12ShaderReflection;
-DEFINE_GUID(IID_ID3D12ShaderReflection, 
+DEFINE_GUID(IID_ID3D12ShaderReflection,
 0x5a58797d, 0xa72c, 0x478d, 0x8b, 0xa2, 0xef, 0xc6, 0xb0, 0xef, 0xe8, 0x8e);
 
 #undef INTERFACE
@@ -345,13 +341,13 @@ DECLARE_INTERFACE_(ID3D12ShaderReflection, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_SHADER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionConstantBuffer*, GetConstantBufferByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D12ShaderReflectionConstantBuffer*, GetConstantBufferByName)(THIS_ _In_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ _In_ UINT ResourceIndex,
                                       _Out_ D3D12_SHADER_INPUT_BIND_DESC *pDesc) PURE;
-    
+
     STDMETHOD(GetInputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
                                      _Out_ D3D12_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
     STDMETHOD(GetOutputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
@@ -368,7 +364,7 @@ DECLARE_INTERFACE_(ID3D12ShaderReflection, IUnknown)
     STDMETHOD_(UINT, GetMovcInstructionCount)(THIS) PURE;
     STDMETHOD_(UINT, GetConversionInstructionCount)(THIS) PURE;
     STDMETHOD_(UINT, GetBitwiseInstructionCount)(THIS) PURE;
-    
+
     STDMETHOD_(D3D_PRIMITIVE, GetGSInputPrimitive)(THIS) PURE;
     STDMETHOD_(BOOL, IsSampleFrequencyShader)(THIS) PURE;
 
@@ -385,7 +381,7 @@ DECLARE_INTERFACE_(ID3D12ShaderReflection, IUnknown)
 
 // {8E349D19-54DB-4A56-9DC9-119D87BDB804}
 interface DECLSPEC_UUID("8E349D19-54DB-4A56-9DC9-119D87BDB804") ID3D12LibraryReflection;
-DEFINE_GUID(IID_ID3D12LibraryReflection, 
+DEFINE_GUID(IID_ID3D12LibraryReflection,
 0x8e349d19, 0x54db, 0x4a56, 0x9d, 0xc9, 0x11, 0x9d, 0x87, 0xbd, 0xb8, 0x4);
 
 #undef INTERFACE
@@ -398,13 +394,13 @@ DECLARE_INTERFACE_(ID3D12LibraryReflection, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_LIBRARY_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12FunctionReflection *, GetFunctionByIndex)(THIS_ _In_ INT FunctionIndex) PURE;
 };
 
 // {1108795C-2772-4BA9-B2A8-D464DC7E2799}
 interface DECLSPEC_UUID("1108795C-2772-4BA9-B2A8-D464DC7E2799") ID3D12FunctionReflection;
-DEFINE_GUID(IID_ID3D12FunctionReflection, 
+DEFINE_GUID(IID_ID3D12FunctionReflection,
 0x1108795c, 0x2772, 0x4ba9, 0xb2, 0xa8, 0xd4, 0x64, 0xdc, 0x7e, 0x27, 0x99);
 
 #undef INTERFACE
@@ -413,13 +409,13 @@ DEFINE_GUID(IID_ID3D12FunctionReflection,
 DECLARE_INTERFACE(ID3D12FunctionReflection)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_FUNCTION_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionConstantBuffer *, GetConstantBufferByIndex)(THIS_ _In_ UINT BufferIndex) PURE;
     STDMETHOD_(ID3D12ShaderReflectionConstantBuffer *, GetConstantBufferByName)(THIS_ _In_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ _In_ UINT ResourceIndex,
                                       _Out_ D3D12_SHADER_INPUT_BIND_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D12ShaderReflectionVariable *, GetVariableByName)(THIS_ _In_ LPCSTR Name) PURE;
 
     STDMETHOD(GetResourceBindingDescByName)(THIS_ _In_ LPCSTR Name,
@@ -431,7 +427,7 @@ DECLARE_INTERFACE(ID3D12FunctionReflection)
 
 // {EC25F42D-7006-4F2B-B33E-02CC3375733F}
 interface DECLSPEC_UUID("EC25F42D-7006-4F2B-B33E-02CC3375733F") ID3D12FunctionParameterReflection;
-DEFINE_GUID(IID_ID3D12FunctionParameterReflection, 
+DEFINE_GUID(IID_ID3D12FunctionParameterReflection,
 0xec25f42d, 0x7006, 0x4f2b, 0xb3, 0x3e, 0x2, 0xcc, 0x33, 0x75, 0x73, 0x3f);
 
 #undef INTERFACE
@@ -441,7 +437,6 @@ DECLARE_INTERFACE(ID3D12FunctionParameterReflection)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_PARAMETER_DESC * pDesc) PURE;
 };
-
 
 //////////////////////////////////////////////////////////////////////////////
 // APIs //////////////////////////////////////////////////////////////////////
@@ -454,6 +449,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-    
-#endif //__D3D12SHADER_H__
 
+#endif //__D3D12SHADER_H__

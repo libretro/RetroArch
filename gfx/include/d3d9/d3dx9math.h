@@ -44,7 +44,6 @@
 #define D3DX_16F_RADIX        2                /* exponent radix */
 #define D3DX_16F_ROUNDS       1                /* addition rounding: near */
 
-
 typedef struct D3DXFLOAT16
 {
 #ifdef __cplusplus
@@ -65,15 +64,12 @@ protected:
     WORD value;
 } D3DXFLOAT16, *LPD3DXFLOAT16;
 
-
-
 /*===========================================================================
  *
  * Vectors
  *
  *===========================================================================
  */
-
 
 /*
  * 2D Vector
@@ -111,7 +107,6 @@ public:
 
     BOOL operator == ( CONST D3DXVECTOR2& ) const;
     BOOL operator != ( CONST D3DXVECTOR2& ) const;
-
 
 public:
 #endif /*__cplusplus */
@@ -263,7 +258,6 @@ public:
     FLOAT x, y, z, w;
 } D3DXVECTOR4, *LPD3DXVECTOR4;
 
-
 /*--------------------------
  * 4D Vector (16 bit)
  *--------------------------
@@ -311,7 +305,6 @@ public:
                 FLOAT _31, FLOAT _32, FLOAT _33, FLOAT _34,
                 FLOAT _41, FLOAT _42, FLOAT _43, FLOAT _44 );
 
-
     /* access grants */
     FLOAT& operator () ( UINT Row, UINT Col );
     FLOAT  operator () ( UINT Row, UINT Col ) const;
@@ -348,7 +341,6 @@ public:
 #else /* !__cplusplus */
 typedef struct _D3DMATRIX D3DXMATRIX, *LPD3DXMATRIX;
 #endif /* !__cplusplus */
-
 
 /*---------------------------------------------------------------------------
  * Aligned Matrices
@@ -486,7 +478,6 @@ public:
 #endif /*__cplusplus */
     FLOAT a, b, c, d;
 } D3DXPLANE, *LPD3DXPLANE;
-
 
 /*
  *
@@ -663,8 +654,6 @@ D3DXVECTOR2* WINAPI D3DXVec2TransformCoordArray
 D3DXVECTOR2* WINAPI D3DXVec2TransformNormalArray
     ( D3DXVECTOR2 *pOut, UINT OutStride, CONST D3DXVECTOR2 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
 
-
-
 #ifdef __cplusplus
 }
 #endif
@@ -748,7 +737,6 @@ D3DXVECTOR3* WINAPI D3DXVec3TransformCoord
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormal
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
 
-
 /* Transform Array (x, y, z, 1) by matrix. */
 D3DXVECTOR4* WINAPI D3DXVec3TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
@@ -783,7 +771,6 @@ D3DXVECTOR3* WINAPI D3DXVec3ProjectArray
 D3DXVECTOR3* WINAPI D3DXVec3UnprojectArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DVIEWPORT9 *pViewport,
       CONST D3DXMATRIX *pProjection, CONST D3DXMATRIX *pView, CONST D3DXMATRIX *pWorld, UINT n);
-
 
 #ifdef __cplusplus
 }
@@ -867,7 +854,6 @@ D3DXVECTOR4* WINAPI D3DXVec4TransformArray
 }
 #endif
 
-
 /*
  * 4D Matrix
  */
@@ -879,7 +865,6 @@ D3DXMATRIX* D3DXMatrixIdentity
 
 BOOL D3DXMatrixIsIdentity
     ( CONST D3DXMATRIX *pM );
-
 
 /* non-inline */
 #ifdef __cplusplus
@@ -1144,7 +1129,6 @@ D3DXQUATERNION* WINAPI D3DXQuaternionBaryCentric
 }
 #endif
 
-
 /*
  * Plane
 */
@@ -1277,7 +1261,6 @@ typedef interface ID3DXMatrixStack *LPD3DXMATRIXSTACK;
 /* {C7885BA7-F990-4fe7-922D-8515E477DD85} */
 DEFINE_GUID(IID_ID3DXMatrixStack,
 0xc7885ba7, 0xf990, 0x4fe7, 0x92, 0x2d, 0x85, 0x15, 0xe4, 0x77, 0xdd, 0x85);
-
 
 #undef INTERFACE
 #define INTERFACE ID3DXMatrixStack
@@ -1477,7 +1460,6 @@ HRESULT WINAPI D3DXSHEvalHemisphereLight
 HRESULT WINAPI D3DXSHProjectCubeMap
     ( UINT uOrder, LPDIRECT3DCUBETEXTURE9 pCubeMap,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
-
 
 #ifdef __cplusplus
 }

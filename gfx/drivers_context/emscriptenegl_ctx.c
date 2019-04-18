@@ -27,6 +27,7 @@
 #endif
 
 #include "../video_driver.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
@@ -212,7 +213,7 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
    }
 
    if (!egl_init_context(&emscripten->egl, EGL_NONE,
-      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list))
+      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list, NULL))
    {
       egl_report_error();
       goto error;
@@ -279,7 +280,6 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
    return false;
 }
-
 
 static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,
@@ -359,7 +359,7 @@ static void gfx_ctx_emscripten_bind_hw_render(void *data, bool enable)
 static uint32_t gfx_ctx_emscripten_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

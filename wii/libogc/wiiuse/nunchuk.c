@@ -154,4 +154,3 @@ void nunchuk_event(struct nunchuk_t* nc, ubyte* msg) {
 	calculate_gforce(&nc->accel_calib, &nc->accel, &nc->gforce);
 #endif
 }
-

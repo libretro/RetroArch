@@ -26,7 +26,7 @@
    {
       return nil;
    }
-   
+
    MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
    sd.minFilter = MTLSamplerMinMagFilterNearest;
    sd.magFilter = MTLSamplerMinMagFilterNearest;
@@ -34,7 +34,7 @@
    sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
    sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:sd];
-   
+
    return [[Filter alloc] initWithKernel:kernel sampler:sampler];
 }
 
@@ -53,20 +53,20 @@
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
    ce.label = @"filter kernel";
    [ce pushDebugGroup:@"filter kernel"];
-   
+
    [ce setComputePipelineState:_kernel];
-   
+
    [ce setTexture:tin atIndex:0];
    [ce setTexture:tout atIndex:1];
-   
+
    [self.delegate configure:ce];
-   
+
    MTLSize size = MTLSizeMake(16, 16, 1);
    MTLSize count = MTLSizeMake((tin.width + size.width + 1) / size.width, (tin.height + size.height + 1) / size.height,
                                1);
-   
+
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
-   
+
    [ce popDebugGroup];
    [ce endEncoding];
 }
@@ -76,19 +76,19 @@
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
    ce.label = @"filter kernel";
    [ce pushDebugGroup:@"filter kernel"];
-   
+
    [ce setComputePipelineState:_kernel];
-   
+
    [ce setBuffer:tin offset:0 atIndex:0];
    [ce setTexture:tout atIndex:0];
-   
+
    [self.delegate configure:ce];
-   
+
    MTLSize size = MTLSizeMake(32, 1, 1);
    MTLSize count = MTLSizeMake((tin.length + 00) / 32, 1, 1);
-   
+
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
-   
+
    [ce popDebugGroup];
    [ce endEncoding];
 }

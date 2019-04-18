@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -196,6 +196,11 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
       case MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          menu_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
+         menu_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_SCANNING_CONTENT:

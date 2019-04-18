@@ -174,7 +174,6 @@ u8_t btpbuf_header(struct pbuf *p,s16_t hdr_size_inc)
 
 	if(hdr_size_inc==0 || p==NULL) return 0;
 
-
 	payload = p->payload;
 	if(p->flags==PBUF_FLAG_POOL || p->flags==PBUF_FLAG_RAM) {
 		p->payload = (u8_t*)p->payload-hdr_size_inc;

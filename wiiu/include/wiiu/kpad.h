@@ -63,7 +63,6 @@ typedef struct _KPADData
     u32 unused_7[16];
 } KPADData;
 
-
 void KPADInit (void);
 void KPADShutdown(void);
 s32 KPADRead(s32 chan, void * data, u32 size);
@@ -92,7 +91,6 @@ enum {
 };
 
 typedef void (*WPADConnectCallback) (WPADChannel channel, WPADError reason);
-
 
 #ifdef __cplusplus
 }

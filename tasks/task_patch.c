@@ -380,7 +380,6 @@ static enum patch_error ups_apply_patch(
    while (data.target_offset < data.target_length)
       ups_target_write(&data, ups_source_read(&data));
 
-
    for (i = 0; i < 4; i++)
       source_read_checksum |= ups_patch_read(&data) << (i * 8);
    for (i = 0; i < 4; i++)

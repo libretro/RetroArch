@@ -27,7 +27,6 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __GCCORE_H__
 #define __GCCORE_H__
 
@@ -99,14 +98,12 @@ distribution.
    extern "C" {
 #endif /* __cplusplus */
 
-
 /*!
  * \mainpage
  *
  * - \subpage intro
  * - \subpage api_doc
  */
-
 
 /*!
  * \page intro Introduction

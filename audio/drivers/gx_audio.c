@@ -39,7 +39,6 @@ typedef struct
    volatile unsigned dma_write;
    size_t write_ptr;
 
-   OSCond cond;
    bool nonblock;
    bool is_paused;
 } gx_audio_t;
@@ -63,8 +62,6 @@ static void dma_callback(void)
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
-
-   OSSignalCond(wa->cond);
 }
 
 static void *gx_audio_init(const char *device,
@@ -94,8 +91,6 @@ static void *gx_audio_init(const char *device,
       AISetDSPSampleRate(AI_SAMPLERATE_48KHZ);
       *new_rate = 48000;
    }
-
-   OSInitThreadQueue(&wa->cond);
 
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
@@ -133,8 +128,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
       /* FIXME: Nonblocking audio should break out of loop
        * when it has nothing to write. */
       while ((wa->dma_write == wa->dma_next ||
-               wa->dma_write == wa->dma_busy) && !wa->nonblock)
-         OSSleepThread(wa->cond);
+               wa->dma_write == wa->dma_busy) && !wa->nonblock);
 
       copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
 
@@ -204,10 +198,6 @@ static void gx_audio_free(void *data)
    stop_audio = true;
    AIStopDMA();
    AIRegisterDMACallback(NULL);
-
-   if (wa->cond)
-      OSCloseThreadQueue(wa->cond);
-   wa->cond = 0;
 
    free(data);
 }

@@ -14,7 +14,6 @@
 #pragma region Desktop Family
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 
-
 #include <ole2.h>      // for DECLARE_INTERFACE_ and HRESULT
 
 // This identifier is passed to IDxDiagProvider::Initialize in order to ensure that an
@@ -28,14 +27,12 @@
 extern "C" {
 #endif
 
-
 /****************************************************************************
  *
  * DxDiag Errors
  *
  ****************************************************************************/
 #define DXDIAG_E_INSUFFICIENT_BUFFER       ((HRESULT)0x8007007AL)  // HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)
-
 
 /****************************************************************************
  *
@@ -46,7 +43,6 @@ extern "C" {
 // {A65B8071-3BFE-4213-9A5B-491DA4461CA7}
 DEFINE_GUID(CLSID_DxDiagProvider,
 0xA65B8071, 0x3BFE, 0x4213, 0x9A, 0x5B, 0x49, 0x1D, 0xA4, 0x46, 0x1C, 0xA7);
-
 
 /****************************************************************************
  *
@@ -62,7 +58,6 @@ DEFINE_GUID(IID_IDxDiagProvider,
 DEFINE_GUID(IID_IDxDiagContainer,
 0x7D0F462F, 0x4064, 0x4862, 0xBC, 0x7F, 0x93, 0x3E, 0x50, 0x58, 0xC1, 0x0F);
 
-
 /****************************************************************************
  *
  * DxDiag Interface Pointer definitions
@@ -73,7 +68,6 @@ typedef struct IDxDiagProvider *LPDXDIAGPROVIDER, *PDXDIAGPROVIDER;
 
 typedef struct IDxDiagContainer *LPDXDIAGCONTAINER, *PDXDIAGCONTAINER;
 
-
 /****************************************************************************
  *
  * DxDiag Structures
@@ -82,15 +76,14 @@ typedef struct IDxDiagContainer *LPDXDIAGCONTAINER, *PDXDIAGCONTAINER;
 
 typedef struct _DXDIAG_INIT_PARAMS
 {
-    DWORD   dwSize;                 // Size of this structure. 
-    DWORD   dwDxDiagHeaderVersion;  // Pass in DXDIAG_DX9_SDK_VERSION.  This verifies 
+    DWORD   dwSize;                 // Size of this structure.
+    DWORD   dwDxDiagHeaderVersion;  // Pass in DXDIAG_DX9_SDK_VERSION.  This verifies
                                     // the header and dll are correctly matched.
-    BOOL    bAllowWHQLChecks;       // If true, allow dxdiag to check if drivers are 
-                                    // digital signed as logo'd by WHQL which may 
+    BOOL    bAllowWHQLChecks;       // If true, allow dxdiag to check if drivers are
+                                    // digital signed as logo'd by WHQL which may
                                     // connect via internet to update WHQL certificates.
-    VOID*   pReserved;              // Reserved. Must be NULL. 
+    VOID*   pReserved;              // Reserved. Must be NULL.
 } DXDIAG_INIT_PARAMS;
-
 
 /****************************************************************************
  *
@@ -109,12 +102,11 @@ DECLARE_INTERFACE_(IDxDiagProvider,IUnknown)
     STDMETHOD(QueryInterface)               (THIS_ REFIID riid, LPVOID *ppvObj) PURE;
     STDMETHOD_(ULONG,AddRef)                (THIS) PURE;
     STDMETHOD_(ULONG,Release)               (THIS) PURE;
-    
+
     /*** IDxDiagProvider methods ***/
-    STDMETHOD(Initialize)                   (THIS_ DXDIAG_INIT_PARAMS* pParams) PURE; 
+    STDMETHOD(Initialize)                   (THIS_ DXDIAG_INIT_PARAMS* pParams) PURE;
     STDMETHOD(GetRootContainer)             (THIS_ IDxDiagContainer **ppInstance) PURE;
 };
-
 
 //
 // COM definition for IDxDiagContainer
@@ -127,16 +119,15 @@ DECLARE_INTERFACE_(IDxDiagContainer,IUnknown)
     STDMETHOD(QueryInterface)               (THIS_ REFIID riid, LPVOID *ppvObj) PURE;
     STDMETHOD_(ULONG,AddRef)                (THIS) PURE;
     STDMETHOD_(ULONG,Release)               (THIS) PURE;
-    
+
     /*** IDxDiagContainer methods ***/
     STDMETHOD(GetNumberOfChildContainers)   (THIS_ DWORD *pdwCount) PURE;
     STDMETHOD(EnumChildContainerNames)      (THIS_ DWORD dwIndex, LPWSTR pwszContainer, DWORD cchContainer) PURE;
-    STDMETHOD(GetChildContainer)            (THIS_ LPCWSTR pwszContainer, IDxDiagContainer **ppInstance) PURE;  
+    STDMETHOD(GetChildContainer)            (THIS_ LPCWSTR pwszContainer, IDxDiagContainer **ppInstance) PURE;
     STDMETHOD(GetNumberOfProps)             (THIS_ DWORD *pdwCount) PURE;
     STDMETHOD(EnumPropNames)                (THIS_ DWORD dwIndex, LPWSTR pwszPropName, DWORD cchPropName) PURE;
     STDMETHOD(GetProp)                      (THIS_ LPCWSTR pwszPropName, VARIANT *pvarProp) PURE;
 };
-
 
 /****************************************************************************
  *
@@ -182,15 +173,11 @@ DECLARE_INTERFACE_(IDxDiagContainer,IUnknown)
 
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 #pragma endregion
 
 #endif /* _DXDIAG_H_ */
-
-

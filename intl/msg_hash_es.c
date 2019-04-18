@@ -102,18 +102,18 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "Para escanear contenidos ve a '%s' \n"
+               "Para escanear contenidos ve a '%s'\n"
                "y selecciona '%s' o '%s'.\n"
-               " \n"
-               "Esto comparará los archivos con las entradas en \n"
-               "la base de datos. Si hay una coincidencia, \n"
-               "añadirá una entrada en una colección.\n"
-               " \n"
+               "\n"
+               "Esto comparará los archivos con las entradas en\n"
+               "la base de datos. Si hay una coincidencia,\n"
+               "añadirá una entrada en una lista de reproducción.\n"
+               "\n"
                "Entonces podrás acceder fácilmente al contenido\n"
                "si vas a '%s' -> '%s'\n"
-               "en vez de tener que pasar por el navegador \n"
+               "en vez de tener que pasar por el navegador\n"
                "de archivos constantemente.\n"
-               " \n"
+               "\n"
                "NOTA: El contenido de algunos núcleos podría\n"
                "no ser localizable. Entre los ejemplos están\n"
                "PlayStation, MAME, FBA, y puede que otros.",
@@ -121,7 +121,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
@@ -319,7 +319,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
 
             if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
-               strlcpy(s, 
+               strlcpy(s,
                      "Implementación windowed SINC.", len);
             else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
                strlcpy(s,
@@ -986,15 +986,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Al reducir la velocidad, el contenido \n"
                "se ralentizará según este factor.");
-         break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "Define el margen de los ejes.\n"
-               " \n"
-               "Indica la distancia mínima que debe \n"
-               "recorrer un eje para que provoque \n"
-               "una pulsación del botón.\n"
-               "Los valores posibles son [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,

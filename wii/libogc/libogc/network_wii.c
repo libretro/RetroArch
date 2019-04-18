@@ -27,7 +27,6 @@ distribution.
 
 #if defined(HW_RVL)
 
-
 #define MAX_IP_RETRIES		100
 #define MAX_INIT_RETRIES	32
 
@@ -1046,7 +1045,6 @@ s32 net_fcntl(s32 s, u32 cmd, u32 flags)
 	if (net_ip_top_fd < 0) return -ENXIO;
 	if (cmd != F_GETFL && cmd != F_SETFL) return -EINVAL;
 
-
 	params[0] = s;
 	params[1] = cmd;
 	params[2] = flags;
@@ -1057,7 +1055,6 @@ s32 net_fcntl(s32 s, u32 cmd, u32 flags)
 
 	return ret;
 }
-
 
 /*!
  * \fn s32 net_poll(struct pollsd *sds, u32 nsds, s64 timeout)

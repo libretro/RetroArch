@@ -21,7 +21,7 @@
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct dos_input

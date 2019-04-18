@@ -28,16 +28,16 @@
    const font_renderer_driver_t *_font_driver;
    void *_font_data;
    struct font_atlas *_atlas;
-   
+
    NSUInteger _stride;
    id<MTLBuffer> _buffer;
    id<MTLTexture> _texture;
-   
+
    id<MTLRenderPipelineState> _state;
    id<MTLSamplerState> _sampler;
-   
+
    Context *_context;
-   
+
    Uniforms _uniforms;
    id<MTLBuffer> _vert;
    unsigned _capacity;
@@ -61,7 +61,7 @@
    {
       if (driver == nil)
          return nil;
-      
+
       _driver = driver;
       _context = driver.context;
       if (!font_renderer_create_default(
@@ -71,7 +71,7 @@
          RARCH_WARN("Couldn't initialize font renderer.\n");
          return nil;
       }
-      
+
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas = _font_driver->get_atlas(_font_data);
       _stride = MTL_ALIGN_BUFFER(_atlas->width);
@@ -95,14 +95,14 @@
          }
          [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
       }
-      
+
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
                                                                                     width:_atlas->width
                                                                                    height:_atlas->height
                                                                                 mipmapped:NO];
-      
+
       _texture = [_buffer newTextureWithDescriptor:td offset:0 bytesPerRow:_stride];
-      
+
       _capacity = 12000;
       _vert = [_context.device newBufferWithLength:sizeof(SpriteVertex) *
                                                    _capacity options:MTLResourceStorageModeManaged];
@@ -126,10 +126,10 @@
       vd.attributes[2].format = MTLVertexFormatFloat4;
       vd.layouts[0].stride = sizeof(SpriteVertex);
       vd.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
-      
+
       MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
       psd.label = @"font pipeline";
-      
+
       MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
       ca.pixelFormat = MTLPixelFormatBGRA8Unorm;
       ca.blendingEnabled = YES;
@@ -137,12 +137,12 @@
       ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
       ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
       ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-      
+
       psd.sampleCount = 1;
       psd.vertexDescriptor = vd;
       psd.vertexFunction = [_context.library newFunctionWithName:@"sprite_vertex"];
       psd.fragmentFunction = [_context.library newFunctionWithName:@"sprite_fragment_a8"];
-      
+
       NSError *err;
       _state = [_context.device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
@@ -151,7 +151,7 @@
          return NO;
       }
    }
-   
+
    {
       MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
       sd.minFilter = MTLSamplerMinMagFilterLinear;
@@ -172,11 +172,11 @@
          uint8_t *dst = (uint8_t *)_buffer.contents + row * _stride + glyph->atlas_offset_x;
          memcpy(dst, src, glyph->width);
       }
-      
+
       NSUInteger offset = glyph->atlas_offset_y;
       NSUInteger len = glyph->height * _stride;
       [_buffer didModifyRange:NSMakeRange(offset, len)];
-      
+
       _atlas->dirty = false;
    }
 }
@@ -184,21 +184,20 @@
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
    int delta_x = 0;
-   
+
    for (NSUInteger i = 0; i < length; i++)
    {
       const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
          glyph = _font_driver->get_glyph(_font_data, '?');
-      
-      
+
       if (glyph)
       {
          [self updateGlyph:glyph];
          delta_x += glyph->advance_x;
       }
    }
-   
+
    return (int)(delta_x * scale);
 }
 
@@ -206,13 +205,13 @@
 {
    if (!_font_driver->ident)
       return NULL;
-   
+
    const struct font_glyph *glyph = _font_driver->get_glyph((void *)_font_driver, code);
    if (glyph)
    {
       [self updateGlyph:glyph];
    }
-   
+
    return glyph;
 }
 
@@ -230,7 +229,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       1.0f, 0.0f,
       0.0f, 1.0f,
    };
-   
+
    for (i = 0; i < 6; i++)
    {
       pv[i].position = simd_make_float2(x + strip[2 * i + 0] * width,
@@ -259,37 +258,37 @@ static INLINE void write_quad6(SpriteVertex *pv,
    float inv_tex_size_y = 1.0f / _texture.height;
    float inv_win_width = 1.0f / _driver.viewport->full_width;
    float inv_win_height = 1.0f / _driver.viewport->full_height;
-   
+
    switch (aligned)
    {
       case TEXT_ALIGN_RIGHT:
          x -= [self getWidthForMessage:msg length:length scale:scale];
          break;
-      
+
       case TEXT_ALIGN_CENTER:
          x -= [self getWidthForMessage:msg length:length scale:scale] / 2;
          break;
-      
+
       default:
          break;
    }
-   
+
    SpriteVertex *v = (SpriteVertex *)_vert.contents;
    v += _offset + _vertices;
-   
+
    while (msg < msg_end)
    {
       unsigned code = utf8_walk(&msg);
       const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, code);
-      
+
       if (!glyph) /* Do something smarter here ... */
          glyph = _font_driver->get_glyph(_font_data, '?');
-      
+
       if (!glyph)
          continue;
-      
+
       [self updateGlyph:glyph];
-      
+
       int off_x, off_y, tex_x, tex_y, width, height;
       off_x = glyph->draw_offset_x;
       off_y = glyph->draw_offset_y;
@@ -297,10 +296,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
       tex_y = glyph->atlas_offset_y;
       width = glyph->width;
       height = glyph->height;
-      
+
       write_quad6(v,
-                  (x + off_x + delta_x * scale) * inv_win_width,
-                  (y + off_y + delta_y * scale) * inv_win_height,
+                  (x + (off_x + delta_x) * scale) * inv_win_width,
+                  (y + (off_y + delta_y) * scale) * inv_win_height,
                   width * scale * inv_win_width,
                   height * scale * inv_win_height,
                   tex_x * inv_tex_size_x,
@@ -308,10 +307,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
                   width * inv_tex_size_x,
                   height * inv_tex_size_y,
                   &color);
-      
+
       _vertices += 6;
       v += 6;
-      
+
       delta_x += glyph->advance_x;
       delta_y += glyph->advance_y;
    }
@@ -321,7 +320,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 {
    NSUInteger start = _offset * sizeof(SpriteVertex);
    [_vert didModifyRange:NSMakeRange(start, sizeof(SpriteVertex) * _vertices)];
-   
+
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
 
@@ -333,7 +332,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [rce setFragmentSamplerState:_sampler atIndex:SamplerIndexDraw];
    [rce drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:_vertices];
    [rce popDebugGroup];
-   
+
    _offset += _vertices;
    _vertices = 0;
 }
@@ -352,14 +351,14 @@ static INLINE void write_quad6(SpriteVertex *pv,
       [self _renderLine:msg video:video length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
       return;
    }
-   
+
    int lines = 0;
    float line_height = _font_driver->get_line_height(_font_data) * scale / video->height;
-   
+
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      
+
       /* Draw the line */
       if (delim)
       {
@@ -395,17 +394,17 @@ static INLINE void write_quad6(SpriteVertex *pv,
                 video:(video_frame_info_t *)video
                params:(const struct font_params *)params
 {
-   
+
    if (!msg || !*msg)
       return;
-   
+
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
    vector_float4 color, color_dark;
    unsigned width = video->width;
    unsigned height = video->height;
-   
+
    if (params)
    {
       x = params->x;
@@ -416,13 +415,13 @@ static INLINE void write_quad6(SpriteVertex *pv,
       drop_y = params->drop_y;
       drop_mod = params->drop_mod;
       drop_alpha = params->drop_alpha;
-      
+
       color = simd_make_float4(
          FONT_COLOR_GET_RED(params->color) / 255.0f,
          FONT_COLOR_GET_GREEN(params->color) / 255.0f,
          FONT_COLOR_GET_BLUE(params->color) / 255.0f,
          FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
-      
+
    }
    else
    {
@@ -430,38 +429,38 @@ static INLINE void write_quad6(SpriteVertex *pv,
       y = video->font_msg_pos_y;
       scale = 1.0f;
       text_align = TEXT_ALIGN_LEFT;
-      
+
       color = simd_make_float4(
          video->font_msg_color_r,
          video->font_msg_color_g,
          video->font_msg_color_b,
          1.0f);
-      
+
       drop_x = -2;
       drop_y = -2;
       drop_mod = 0.3f;
       drop_alpha = 1.0f;
    }
-   
+
    @autoreleasepool
    {
-      
+
       NSUInteger max_glyphs = strlen(msg);
       if (drop_x || drop_y)
          max_glyphs *= 2;
-      
+
       if (max_glyphs * 6 + _offset > _capacity)
       {
          _offset = 0;
       }
-      
+
       if (drop_x || drop_y)
       {
          color_dark.x = color.x * drop_mod;
          color_dark.y = color.y * drop_mod;
          color_dark.z = color.z * drop_mod;
          color_dark.w = color.w * drop_alpha;
-         
+
          [self renderMessage:msg
                        video:video
                        scale:scale
@@ -470,7 +469,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                         posY:y + scale * drop_y / height
                      aligned:text_align];
       }
-      
+
       [self renderMessage:msg
                     video:video
                     scale:scale
@@ -478,7 +477,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                      posX:x
                      posY:y
                   aligned:text_align];
-      
+
       [self _flush];
    }
 }
@@ -492,10 +491,10 @@ static void *metal_raster_font_init_font(void *data,
                                          bool is_threaded)
 {
    MetalRaster *r = [[MetalRaster alloc] initWithDriver:(__bridge MetalDriver *)data fontPath:font_path fontSize:(unsigned)font_size];
-   
+
    if (!r)
       return NULL;
-   
+
    return (__bridge_retained void *)r;
 }
 

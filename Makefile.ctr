@@ -53,7 +53,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
 	#DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
-	#-DHAVE_SSL -DMBEDTLS_SSL_DEBUG_ALL
+	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 else
 	HAVE_CC_RESAMPLER = 1
@@ -62,12 +62,12 @@ else
 	HAVE_RPNG = 1
 	HAVE_RJPEG = 1
 	HAVE_RBMP = 1
+	HAVE_MENU = 1
 	HAVE_RGUI = 1
 	HAVE_ZLIB = 1
 	HAVE_7ZIP = 1
 	HAVE_BUILTINZLIB = 1
 	HAVE_LIBRETRODB = 1
-	HAVE_ZARCH = 0
 	HAVE_MATERIALUI = 1
 	HAVE_XMB = 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
@@ -77,8 +77,10 @@ else
 	#HAVE_SOCKET_LEGACY = 1
 	#HAVE_THREADS = 1
 	#HAVE_SSL = 1
+	#HAVE_BUILTINMBEDTLS = 1
 
 	include Makefile.common
+	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	BLACKLIST += input/input_overlay.o
 	BLACKLIST += tasks/task_overlay.o
@@ -103,7 +105,6 @@ MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARG
 
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
-
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
@@ -135,7 +136,6 @@ CFLAGS += -I. \
 			 -Ideps/libz \
 			 -Ideps/7zip \
 			 -Ideps/stb \
-			 -Ideps/rcheevos/include \
 			 -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
@@ -148,7 +148,6 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
-
 LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lm
 
 ifeq ($(DEBUG), 1)
@@ -156,7 +155,6 @@ ifeq ($(DEBUG), 1)
 else
 	LIBS	+= -lctru
 endif
-
 
 ifeq ($(BUILD_3DSX), 1)
 	TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
@@ -267,7 +265,6 @@ $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
-
 clean:
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
@@ -281,5 +278,3 @@ clean:
 	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
-
-

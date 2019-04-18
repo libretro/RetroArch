@@ -34,12 +34,10 @@ class __declspec(uuid("C4137916-2BE1-46FD-8599-441536F49856")) FXMasteringLimite
 class __declspec(uuid("7D9ACA56-CB68-4807-B632-B137352E8596")) FXReverb;
 class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
 
-
 #if !defined(GUID_DEFS_ONLY) // ignore rest if only GUID definitions requested
     #include <windows.h>
     #include <objbase.h>
     #include <float.h>       // float bounds
-
 
     // EQ parameter bounds (inclusive), used with FXEQ:
     #define FXEQ_MIN_FRAMERATE 22000
@@ -60,7 +58,6 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
     #define FXEQ_MAX_BANDWIDTH     2.0f
     #define FXEQ_DEFAULT_BANDWIDTH 1.0f // all bands
 
-
     // Mastering limiter parameter bounds (inclusive), used with FXMasteringLimiter:
     #define FXMASTERINGLIMITER_MIN_RELEASE     1
     #define FXMASTERINGLIMITER_MAX_RELEASE     20
@@ -70,7 +67,6 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
     #define FXMASTERINGLIMITER_MAX_LOUDNESS     1800
     #define FXMASTERINGLIMITER_DEFAULT_LOUDNESS 1000
 
-
     // Reverb parameter bounds (inclusive), used with FXReverb:
     #define FXREVERB_MIN_DIFFUSION     0.0f
     #define FXREVERB_MAX_DIFFUSION     1.0f
@@ -79,7 +75,6 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
     #define FXREVERB_MIN_ROOMSIZE     0.0001f
     #define FXREVERB_MAX_ROOMSIZE     1.0f
     #define FXREVERB_DEFAULT_ROOMSIZE 0.6f
-
 
     // Echo initialization data/parameter bounds (inclusive), used with FXEcho:
     #define FXECHO_MIN_WETDRYMIX     0.0f
@@ -94,10 +89,8 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
     #define FXECHO_MAX_DELAY     2000.0f
     #define FXECHO_DEFAULT_DELAY 500.0f
 
-
 //--------------<D-A-T-A---T-Y-P-E-S>---------------------------------------//
     #pragma pack(push, 1) // set packing alignment to ensure consistency across arbitrary build environments
-
 
     // EQ parameters (4 bands), used with IXAPOParameters::SetParameters:
     // The EQ supports only FLOAT32 audio foramts.
@@ -117,14 +110,12 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
         float Bandwidth3;
     } FXEQ_PARAMETERS;
 
-
     // Mastering limiter parameters, used with IXAPOParameters::SetParameters:
     // The mastering limiter supports only FLOAT32 audio formats.
     typedef struct FXMASTERINGLIMITER_PARAMETERS {
         UINT32 Release;  // release time (tuning factor with no specific units)
         UINT32 Loudness; // loudness target (threshold)
     } FXMASTERINGLIMITER_PARAMETERS;
-
 
     // Reverb parameters, used with IXAPOParameters::SetParameters:
     // The reverb supports only FLOAT32 audio formats with the following
@@ -135,7 +126,6 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
         float Diffusion; // diffusion
         float RoomSize;  // room size
     } FXREVERB_PARAMETERS;
-
 
     // Echo initialization data, used with CreateFX:
     // Use of this structure is optional, the default MaxDelay is FXECHO_DEFAULT_DELAY.
@@ -150,7 +140,6 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
         float Feedback;  // amount of output fed back into input
         float Delay;     // delay (all channels) in milliseconds, must be within [FXECHO_MIN_DELAY, FXECHO_PARAMETERS.MaxDelay]
     } FXECHO_PARAMETERS;
-
 
 //--------------<M-A-C-R-O-S>-----------------------------------------------//
     // function storage-class attribute and calltype
@@ -167,13 +156,11 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
 
     #define FX_IMP_(type) type STDMETHODVCALLTYPE
 
-
 //--------------<F-U-N-C-T-I-O-N-S>-----------------------------------------//
     // creates instance of requested XAPO, use Release to free instance
     //  pInitData        - [in] effect-specific initialization parameters, may be NULL if InitDataByteSize == 0
     //  InitDataByteSize - [in] size of pInitData in bytes, may be 0 if pInitData is NULL
     FX_API_(HRESULT) CreateFX (REFCLSID clsid, _Outptr_ IUnknown** pEffect, _In_reads_bytes_opt_(InitDataByteSize) const void* pInitData=NULL, UINT32 InitDataByteSize=0);
-
 
     #pragma pack(pop) // revert packing alignment
 #endif // !defined(GUID_DEFS_ONLY)
@@ -181,4 +168,3 @@ class __declspec(uuid("5039D740-F736-449A-84D3-A56202557B87")) FXEcho;
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP | WINAPI_PARTITION_TV_APP | WINAPI_PARTITION_TV_TITLE) */
 /*#pragma endregion*/
 //---------------------------------<-EOF->----------------------------------//
-

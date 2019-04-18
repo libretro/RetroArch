@@ -29,7 +29,6 @@ video.c -- VIDEO subsystem
 
 -------------------------------------------------------------*/
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -327,7 +326,6 @@ GXRModeObj TVNtsc480IntAa =
 		 4          // line n+1
 	}
 };
-
 
 GXRModeObj TVNtsc480Prog =
 {
@@ -1233,7 +1231,6 @@ GXRModeObj TVEurgb60Hz480ProgAa =
 		 8          // line n+1
 	}
 };
-
 
 static const u16 taps[26] = {
 	0x01F0,0x01DC,0x01AE,0x0174,0x0129,0x00DB,
@@ -2533,7 +2530,6 @@ GXRModeObj *rmode = NULL;
 	}
 
 	return mode;
-
 
 }
 

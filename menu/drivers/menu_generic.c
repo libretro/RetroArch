@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -41,6 +41,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
          string_is_equal(label, "help_scanning_content") ||
          string_is_equal(label, "help_change_virtual_gamepad") ||
          string_is_equal(label, "help_audio_video_troubleshooting") ||
+         string_is_equal(label, "help_send_debug_info") ||
          string_is_equal(label, "cheevos_description")
          )
       return ITERATE_TYPE_HELP;

@@ -53,6 +53,7 @@ struct vulkan_filter_chain_texture
    VkImageLayout layout;
    unsigned width;
    unsigned height;
+   VkFormat format;
 };
 
 enum vulkan_filter_chain_scale
@@ -167,4 +168,3 @@ struct video_shader *vulkan_filter_chain_get_preset(
 RETRO_END_DECLS
 
 #endif
-

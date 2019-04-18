@@ -42,7 +42,7 @@ NET_IFINFO_C = \
 					net_ifinfo_test.c
 
 ifeq ($(platform), win)
-CFLAGS += -liphlpapi -lws2_32 
+CFLAGS += -liphlpapi -lws2_32
 endif
 
 NET_IFINFO_OBJS := $(NET_IFINFO_C:.c=.o)

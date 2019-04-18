@@ -10,7 +10,9 @@ matrix:
             - g++-mingw-w64-i686
             - mingw-w64-i686-dev
       script:
-        - CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501" ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
+        - ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
+        - make
+      env: CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: mingw-x64
       addons:
         apt:
@@ -18,41 +20,33 @@ matrix:
             - g++-mingw-w64-x86-64
             - mingw-w64-x86-64-dev
       script:
-        - CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501" ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
+        - ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
+        - make
+      env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: gcc
-      addons:
-        # Install a more recent gcc than the default
-        apt:
-          packages:
-            - g++-7
-          sources:
-            - ubuntu-toolchain-r-test
+      # Install a more recent gcc than the default
+      before_install:
+        - sudo apt-get install -y g++-8
+      env: CC=gcc-8 CXX=g++-8
     - compiler: clang
-      addons:
-        # Install a more recent clang than the default
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.8
-          packages:
-            - clang-3.8
-      env: COMPILER_NAME=clang-3.8 CXX=clang++-3.8 CC=clang-3.8
+      # Install a more recent clang than the default
+      before_install:
+        - sudo apt-get install -y libstdc++-7-dev
+        - sudo apt-get install -y clang-6.0
+      env: CC=clang-6.0 CXX=clang++-6.0
     - os: osx
       osx_image: xcode8
       script:
-          - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+        - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.1
       script:
-        - cd ~/
         - brew install --force-bottle qt5
-        - git clone --depth=50 https://github.com/libretro/libretro-super
-        - cd libretro-super/travis
-        - ./build-retroarch-metal.sh
+        - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
         skip_cleanup: true
         provider: script
-        script: cd ../retroarch; bash travis_metal_deploy.sh
+        script: bash travis_metal_deploy.sh
         on:
           branch: master
 
@@ -67,19 +61,13 @@ env:
 addons:
   apt:
     packages:
-      - curl
-      - pkg-config
-      - libglu1-mesa-dev
-      - freeglut3-dev
-      - mesa-common-dev
-      - libsdl1.2-dev
-      - libsdl-image1.2-dev
-      - libsdl-mixer1.2-dev
-      - libsdl-ttf2.0-dev
+      - libsdl2-dev
       - libusb-1.0-0-dev
-      - qt5-default
-      - qt5-qmake
-      - qtbase5-dev-tools
+      - qtbase5-dev
+      - qtdeclarative5-dev
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-6.0
   coverity_scan:
     project:
       name: "RetroArch"

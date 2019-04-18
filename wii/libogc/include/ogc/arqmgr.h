@@ -1,6 +1,5 @@
 /*-------------------------------------------------------------
 
-
 arqmgr.h -- ARAM task queue management
 
 Copyright (C) 2004
@@ -26,13 +25,10 @@ must not be misrepresented as being the original software.
 3.	This notice may not be removed or altered from any source
 distribution.
 
-
 -------------------------------------------------------------*/
-
 
 #ifndef __ARQMGR_H__
 #define __ARQMGR_H__
-
 
 /*!
  * \file arqmgr.h
@@ -40,13 +36,11 @@ distribution.
  *
  */
 
-
 #include <gctypes.h>
 
 #ifdef __cplusplus
    extern "C" {
 #endif /* __cplusplus */
-
 
 /*!
  * \typedef void (*ARQMCallback)()
@@ -54,7 +48,6 @@ distribution.
  * \param none
  */
 typedef void (*ARQMCallback)(s32 result);
-
 
 /*!
  * \fn void ARQM_Init(u32 arambase,s32 len)
@@ -67,7 +60,6 @@ typedef void (*ARQMCallback)(s32 result);
  */
 void ARQM_Init(u32 arambase,s32 len);
 
-
 /*!
  * \fn u32 ARQM_PushData(void *buff,s32 len)
  * \brief Push the data onto the ARAM queue
@@ -79,7 +71,6 @@ void ARQM_Init(u32 arambase,s32 len);
  */
 u32 ARQM_PushData(void *buffer,s32 len);
 
-
 /*!
  * \fn u32 ARQM_GetZeroBuffer()
  * \brief Returns ARAM address of 'zero buffer'
@@ -88,7 +79,6 @@ u32 ARQM_PushData(void *buffer,s32 len);
  */
 u32 ARQM_GetZeroBuffer();
 
-
 /*!
  * \fn u32 ARQM_GetStackPointer()
  * \brief Return the ARAM address of the next free stack pointer
@@ -96,7 +86,6 @@ u32 ARQM_GetZeroBuffer();
  * \return See description
  */
 u32 ARQM_GetStackPointer();
-
 
 /*!
  * \fn u32 ARQM_GetFreeSize()

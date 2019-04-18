@@ -8,7 +8,6 @@
    nop; \
    nop*/
 
-
 #define IMPORT(name) \
 .align 2; \
 .section ".rplTramp.text","ax"; \
@@ -24,8 +23,7 @@
 
 #include "imports.h"
 
-
-#undef IMPORT_BEGIN 
+#undef IMPORT_BEGIN
 #undef IMPORT
 #undef IMPORT_END
 

@@ -14,7 +14,6 @@
 #define _SHIFTR(v, s, w)	\
 	((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
 
-
 static u32 usbgecko_inited = 0;
 static lwpq_t wait_exi_queue[2];
 

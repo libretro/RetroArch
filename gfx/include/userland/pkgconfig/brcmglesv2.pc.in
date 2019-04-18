@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: brcmGLESv2
+Description: Fake brcmGLES2 package for RPi
+Version: 10
+Requires: bcm_host
+Libs: -L${libdir} -lbrcmGLESv2
+Cflags: -I${includedir}

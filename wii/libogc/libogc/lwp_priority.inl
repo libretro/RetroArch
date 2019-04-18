@@ -4,16 +4,16 @@
 static __inline__ void __lwp_priomap_init(prio_cntrl *theprio,u32 prio)
 {
 	u32 mask;
-	
+
 	u32 major = prio/16;
 	u32 minor = prio%16;
-	
+
 	theprio->minor = &_prio_bitmap[major];
-	
+
 	mask = 0x80000000>>major;
 	theprio->ready_major = mask;
 	theprio->block_major = ~mask;
-	
+
 	mask = 0x80000000>>minor;
 	theprio->ready_minor = mask;
 	theprio->block_minor = ~mask;

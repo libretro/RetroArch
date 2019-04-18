@@ -108,7 +108,7 @@ var LibraryRWebCam = {
       if (!RWC.ready(data)) return 0;
       var ret = 0;
 
-      if (RWC.contexts[data].glTexId !== 0 && frame_gl_cb !== 0) {         
+      if (RWC.contexts[data].glTexId !== 0 && frame_gl_cb !== 0) {
          _glGetIntegerv(0x8069 /* GL_TEXTURE_BINDING_2D */, RWC.tmp);
          var prev = {{{ makeGetValue('RWC.tmp', '0', 'i32') }}};
          _glBindTexture(0x0DE1 /* GL_TEXTURE_2D */, RWC.contexts[data].glTexId);

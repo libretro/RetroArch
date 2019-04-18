@@ -22,6 +22,8 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <streams/interface_stream.h>
+#include <retro_miscellaneous.h>
 
 RETRO_BEGIN_DECLS
 
@@ -56,6 +58,40 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_END
 };
 
+struct bsv_state
+{
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+
+   size_t min_file_pos;
+
+   size_t state_size;
+   uint8_t *state;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
 void bsv_movie_deinit(void);
 
 bool bsv_movie_init(void);
@@ -68,19 +104,17 @@ void bsv_movie_set_path(const char *path);
 
 void bsv_movie_set_start_path(const char *path);
 
-void bsv_movie_set_frame_start(void);
-
-void bsv_movie_set_frame_end(void);
-
 bool bsv_movie_get_input(int16_t *bsv_data);
-
-bool bsv_movie_is_end_of_file(void);
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
 bool bsv_movie_check(void);
 
 bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type);
+
+extern bsv_movie_t     *bsv_movie_state_handle;
+
+extern struct bsv_state bsv_movie_state;
 
 RETRO_END_DECLS
 

@@ -56,13 +56,13 @@ static void overlay_set(int led, int state)
       return;
 
    input_overlay_set_visibility(gpio,
-         state ? OVERLAY_VISIBILITY_VISIBLE 
+         state ? OVERLAY_VISIBILITY_VISIBLE
          : OVERLAY_VISIBILITY_HIDDEN);
 
    RARCH_LOG("[LED]: set visibility %d %d\n", gpio, state);
 }
 
-const led_driver_t overlay_led_driver = { 
+const led_driver_t overlay_led_driver = {
    overlay_init,
    overlay_free,
    overlay_set,

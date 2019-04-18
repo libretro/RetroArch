@@ -22,76 +22,13 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-#include "../content.h"
-#include "../core_type.h"
-#include "../msg_hash.h"
-
 RETRO_BEGIN_DECLS
-
-typedef int (*transfer_cb_t)(void *data, size_t len);
-
-enum content_mode_load
-{
-   CONTENT_MODE_LOAD_NONE = 0,
-   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU
-};
-
-enum nbio_status_enum
-{
-   NBIO_STATUS_INIT = 0,
-   NBIO_STATUS_TRANSFER,
-   NBIO_STATUS_TRANSFER_PARSE,
-   NBIO_STATUS_TRANSFER_FINISHED
-};
-
-enum nbio_status_flags
-{
-   NBIO_FLAG_NONE = 0,
-   NBIO_FLAG_IMAGE_SUPPORTS_RGBA
-};
-
-enum nbio_type
-{
-   NBIO_TYPE_NONE = 0,
-   NBIO_TYPE_JPEG,
-   NBIO_TYPE_PNG,
-   NBIO_TYPE_TGA,
-   NBIO_TYPE_BMP,
-   NBIO_TYPE_OGG,
-   NBIO_TYPE_FLAC,
-   NBIO_TYPE_MP3,
-   NBIO_TYPE_MOD,
-   NBIO_TYPE_WAV
-};
-
-typedef struct nbio_handle
-{
-   enum nbio_type type;
-   bool is_finished;
-   unsigned status;
-   unsigned pos_increment;
-   uint32_t status_flags;
-   void *data;
-   char *path;
-   struct nbio_t *handle;
-   msg_queue_t *msg_queue;
-   transfer_cb_t  cb;
-} nbio_handle_t;
-
-typedef struct
-{
-   enum msg_hash_enums enum_idx;
-   char path[PATH_MAX_LENGTH];
-} file_transfer_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -113,7 +50,7 @@ bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename);
+      const char *hostname, const char *corename, const char* subsystem);
 
 bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 
@@ -147,83 +84,13 @@ bool task_push_decompress(
       const char *subdir,
       const char *valid_ext,
       retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_with_current_core_from_companion_ui(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_from_cli(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_new_core(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_start_builtin_core(content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_start_current_core(content_ctx_info_t *content_info);
-
-bool task_push_start_dummy_core(content_ctx_info_t *content_info);
-
-bool task_push_load_content_with_new_core_from_companion_ui(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      retro_task_callback_t cb,
-      void *user_data);
-
-#ifdef HAVE_MENU
-bool task_push_load_content_with_new_core_from_menu(
-      const char *core_path,
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_from_playlist_from_menu(
-      const char *core_path,
-      const char *fullpath,
-      const char *label,
-      content_ctx_info_t *content_info,
-      retro_task_callback_t cb,
-      void *user_data);
-
-bool task_push_load_content_with_core_from_menu(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-bool task_push_load_subsystem_with_core_from_menu(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data);
-#endif
+      void *user_data,
+      void *frontend_userdata);
 
 void task_file_load_handler(retro_task_t *task);
 
-bool task_audio_mixer_load_handler(retro_task_t *task);
-
-bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer, bool fullpath, bool use_thread);
+bool take_screenshot(const char *path, bool silence,
+      bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
 bool event_load_save_files(void);
 
@@ -255,20 +122,9 @@ bool input_autoconfigure_get_swap_override(void);
 
 void input_autoconfigure_joypad_reindex_devices(void);
 
-void task_push_get_powerstate(void);
-
-enum frontend_powerstate get_last_powerstate(int *percent);
-
-bool task_push_audio_mixer_load_and_play(
-      const char *fullpath, retro_task_callback_t cb, void *user_data);
-
-bool task_push_audio_mixer_load(
-      const char *fullpath, retro_task_callback_t cb, void *user_data);
-
 void set_save_state_in_background(bool state);
 
 extern const char* const input_builtin_autoconfs[];
-
 
 RETRO_END_DECLS
 

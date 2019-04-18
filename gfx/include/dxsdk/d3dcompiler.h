@@ -14,8 +14,6 @@
 
 // Current name of the DLL shipped in the same SDK as this header.
 
-
-
 #define D3DCOMPILER_DLL_W L"d3dcompiler_47.dll"
 #define D3DCOMPILER_DLL_A "d3dcompiler_47.dll"
 
@@ -24,7 +22,7 @@
 #define D3D_COMPILER_VERSION 47
 
 #ifdef UNICODE
-    #define D3DCOMPILER_DLL D3DCOMPILER_DLL_W 
+    #define D3DCOMPILER_DLL D3DCOMPILER_DLL_W
 #else
     #define D3DCOMPILER_DLL D3DCOMPILER_DLL_A
 #endif
@@ -39,7 +37,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
@@ -78,9 +75,9 @@ D3DWriteBlobToFile(_In_ ID3DBlob* pBlob,
 //   you KNOW will work.  (ie. have compiled before without this option.)
 //   Shaders are always validated by D3D before they are set to the device.
 //
-// D3DCOMPILE_SKIP_OPTIMIZATION 
+// D3DCOMPILE_SKIP_OPTIMIZATION
 //   Instructs the compiler to skip optimization steps during code generation.
-//   Unless you are trying to isolate a problem in your code using this option 
+//   Unless you are trying to isolate a problem in your code using this option
 //   is not recommended.
 //
 // D3DCOMPILE_PACK_MATRIX_ROW_MAJOR
@@ -88,8 +85,8 @@ D3DWriteBlobToFile(_In_ ID3DBlob* pBlob,
 //   on input and output from the shader.
 //
 // D3DCOMPILE_PACK_MATRIX_COLUMN_MAJOR
-//   Unless explicitly specified, matrices will be packed in column-major 
-//   order on input and output from the shader.  This is generally more 
+//   Unless explicitly specified, matrices will be packed in column-major
+//   order on input and output from the shader.  This is generally more
 //   efficient, since it allows vector-matrix multiplication to be performed
 //   using a series of dot-products.
 //
@@ -99,16 +96,16 @@ D3DWriteBlobToFile(_In_ ID3DBlob* pBlob,
 //
 // D3DCOMPILE_FORCE_VS_SOFTWARE_NO_OPT
 //   Force compiler to compile against the next highest available software
-//   target for vertex shaders.  This flag also turns optimizations off, 
-//   and debugging on.  
+//   target for vertex shaders.  This flag also turns optimizations off,
+//   and debugging on.
 //
 // D3DCOMPILE_FORCE_PS_SOFTWARE_NO_OPT
 //   Force compiler to compile against the next highest available software
-//   target for pixel shaders.  This flag also turns optimizations off, 
+//   target for pixel shaders.  This flag also turns optimizations off,
 //   and debugging on.
 //
 // D3DCOMPILE_NO_PRESHADER
-//   Disables Preshaders. Using this flag will cause the compiler to not 
+//   Disables Preshaders. Using this flag will cause the compiler to not
 //   pull out static expression for evaluation on the host cpu
 //
 // D3DCOMPILE_AVOID_FLOW_CONTROL
@@ -368,7 +365,7 @@ D3DDisassembleRegion(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
                      _In_ SIZE_T NumInsts,
                      _Out_opt_ SIZE_T* pFinishByteOffset,
                      _Out_ ID3DBlob** ppDisassembly);
-    
+
 //----------------------------------------------------------------------------
 // Shader linking and Function Linking Graph (FLG) APIs
 //----------------------------------------------------------------------------
@@ -488,7 +485,7 @@ typedef enum D3D_BLOB_PART
     D3D_BLOB_TEST_COMPILE_REPORT,
 } D3D_BLOB_PART;
 
-HRESULT WINAPI 
+HRESULT WINAPI
 D3DGetBlobPart(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
                _In_ SIZE_T SrcDataSize,
                _In_ D3D_BLOB_PART Part,
@@ -501,7 +498,7 @@ D3DGetBlobPart(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
 // Update information in a compilation result.
 //----------------------------------------------------------------------------
 
-HRESULT WINAPI 
+HRESULT WINAPI
 D3DSetBlobPart(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
                _In_ SIZE_T SrcDataSize,
                _In_ D3D_BLOB_PART Part,
@@ -549,7 +546,7 @@ D3DCompressShaders(_In_ UINT uNumShaders,
 HRESULT WINAPI
 D3DDecompressShaders(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
                      _In_ SIZE_T SrcDataSize,
-                     _In_ UINT uNumShaders,	      
+                     _In_ UINT uNumShaders,
                      _In_ UINT uStartIndex,
                      _In_reads_opt_(uNumShaders) UINT* pIndices,
                      _In_ UINT uFlags,
@@ -558,7 +555,6 @@ D3DDecompressShaders(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
-
 
 /*#pragma region Desktop Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)*/
@@ -571,16 +567,15 @@ D3DDecompressShaders(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
 //----------------------------------------------------------------------------
 
 HRESULT WINAPI
-D3DDisassemble10Effect(_In_ interface ID3D10Effect *pEffect, 
+D3DDisassemble10Effect(_In_ interface ID3D10Effect *pEffect,
                        _In_ UINT Flags,
                        _Out_ ID3DBlob** ppDisassembly);
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 /*#pragma endregion*/
 
-
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-    
+
 #endif // #ifndef __D3DCOMPILER_H__

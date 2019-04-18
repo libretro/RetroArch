@@ -2,4 +2,3 @@
    global: retro_*;
    local: *;
 };
-

@@ -96,7 +96,7 @@ CXXFLAGS += $(SHARED_FLAGS)
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
-   CFLAGS += -O3 -g 
+   CFLAGS += -O3 -g
    CXXFLAGS += -03 -g
 endif
 
@@ -128,4 +128,3 @@ clean:
 	rm -f $(OBJ)
 
 .PHONY: clean
-

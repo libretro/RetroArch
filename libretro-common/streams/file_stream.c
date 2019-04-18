@@ -215,37 +215,37 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    char buf[4096];
    char subfmt[64];
    va_list args;
-   
+
    const char * bufiter = buf;
    int64_t startpos     = filestream_tell(stream);
    int        ret       = 0;
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
 
    buf[maxlen] = '\0';
-   
+
    va_start(args, format);
-   
+
    while (*format)
    {
       if (*format == '%')
       {
          int sublen;
-         
+
          char* subfmtiter = subfmt;
          bool asterisk    = false;
-         
+
          *subfmtiter++    = *format++; /* '%' */
-         
+
          /* %[*][width][length]specifier */
-         
+
          if (*format == '*')
          {
             asterisk = true;
             *subfmtiter++ = *format++;
          }
-         
+
          while (isdigit(*format)) *subfmtiter++ = *format++; /* width */
-         
+
          /* length */
          if (*format == 'h' || *format == 'l')
          {
@@ -256,7 +256,7 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          {
             *subfmtiter++ = *format++;
          }
-         
+
          /* specifier - always a single character (except ]) */
          if (*format == '[')
          {
@@ -264,11 +264,11 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
             *subfmtiter++ = *format++;
          }
          else *subfmtiter++ = *format++;
-         
+
          *subfmtiter++ = '%';
          *subfmtiter++ = 'n';
          *subfmtiter++ = '\0';
-         
+
          if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
          if (asterisk)
          {
@@ -278,7 +278,7 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          {
             if (sscanf(bufiter, subfmt, va_arg(args, void*), &sublen) != 1) break;
          }
-         
+
          ret++;
          bufiter += sublen;
       }
@@ -295,10 +295,10 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          format++;
       }
    }
-   
+
    va_end(args);
    filestream_seek(stream, startpos+(bufiter-buf), RETRO_VFS_SEEK_POSITION_START);
-   
+
    return ret;
 }
 
@@ -322,7 +322,6 @@ int filestream_eof(RFILE *stream)
 {
    return stream->eof_flag;
 }
-
 
 int64_t filestream_tell(RFILE *stream)
 {

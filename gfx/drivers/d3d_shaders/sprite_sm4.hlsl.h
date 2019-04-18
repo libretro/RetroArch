@@ -83,5 +83,4 @@ SRC(
          return float4(input.color.rgb  , input.color.a * t0.Sample(s0, input.texcoord).a);
       };
 
-
 )

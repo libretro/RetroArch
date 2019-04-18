@@ -45,6 +45,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 #define WINDOW_BUFFERS 2
 
@@ -131,10 +132,9 @@ static void *gfx_ctx_qnx_init(video_frame_info_t *video_info, void *video_driver
       }
    }
 
-
 #ifdef HAVE_EGL
    if (!egl_init_context(&qnx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
-            &n, attribs))
+            &n, attribs, NULL))
    {
       egl_report_error();
       goto error;
@@ -239,7 +239,6 @@ static void *gfx_ctx_qnx_init(video_frame_info_t *video_info, void *video_driver
       goto error;
    }
 
-
    if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
    {
@@ -320,7 +319,6 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
    (void)fullscreen;
    return true;
 }
-
 
 static void gfx_ctx_qnx_input_driver(void *data,
       const char *joypad_name,
@@ -455,6 +453,7 @@ static uint32_t gfx_ctx_qnx_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    return flags;
 }
 

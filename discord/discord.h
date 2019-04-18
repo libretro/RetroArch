@@ -20,15 +20,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
 
 #include <boolean.h>
-#include <string/stdstring.h>
-#include <lists/string_list.h>
-#include <retro_timers.h>
-
-#include "../deps/discord-rpc/include/discord_rpc.h"
-#include "verbosity.h"
 
 enum discord_presence
 {
@@ -38,8 +31,9 @@ enum discord_presence
    DISCORD_PRESENCE_GAME_PAUSED,
    DISCORD_PRESENCE_CHEEVO_UNLOCKED,
    DISCORD_PRESENCE_NETPLAY_HOSTING,
-   DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED,
-   DISCORD_PRESENCE_NETPLAY_CLIENT
+   DISCORD_PRESENCE_NETPLAY_CLIENT,
+   DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED,
+   DISCORD_PRESENCE_SHUTDOWN
 };
 
 typedef struct discord_userdata
@@ -53,6 +47,16 @@ void discord_shutdown(void);
 
 void discord_update(enum discord_presence presence);
 
-void discord_run_callbacks();
+void discord_run_callbacks(void);
+
+bool discord_is_ready(void);
+
+void discord_avatar_set_ready(bool ready);
+
+bool discord_avatar_is_ready(void);
+
+char* discord_get_own_username(void);
+
+char* discord_get_own_avatar(void);
 
 #endif /* __RARCH_DISCORD_H */

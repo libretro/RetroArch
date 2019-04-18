@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -30,7 +30,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 {
    unsigned old_num_parameters = shader->num_parameters;
 
-   /* Assumes num_parameters is 
+   /* Assumes num_parameters is
     * initialized to something sane. */
    for (auto &param : meta.parameters)
    {
@@ -46,7 +46,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
       if (itr != shader->parameters + shader->num_parameters)
       {
          dup = true;
-         /* Allow duplicate #pragma parameter, but only 
+         /* Allow duplicate #pragma parameter, but only
           * if they are exactly the same. */
          if (param.desc != itr->desc ||
                param.initial != itr->initial ||
@@ -54,7 +54,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
                param.maximum != itr->maximum ||
                param.step != itr->step)
          {
-            RARCH_ERR("[Vulkan]: Duplicate parameters"
+            RARCH_ERR("[slang]: Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
                   itr->id);
             mismatch_dup = true;
@@ -95,4 +95,3 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       return false;
    return slang_preprocess_parse_parameters(meta, shader);
 }
-

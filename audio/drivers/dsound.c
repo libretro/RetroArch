@@ -51,7 +51,6 @@
 #pragma comment(lib, "dxguid")
 #endif
 
-
 typedef struct dsound
 {
    LPDIRECTSOUND ds;
@@ -173,7 +172,6 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       {
          /* No space to write, or we don't have data in our fifo,
           * but we can wait some time before it underruns ... */
-
 
          /* We could opt for using the notification interface,
           * but it is not guaranteed to work, so use high

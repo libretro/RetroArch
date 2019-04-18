@@ -331,7 +331,6 @@ static GX2UniformVar uniform_vars[] = {
     {"constants.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 0, 0},
 };
 
-
 GX2Shader ribbon_shader =
 {
    {
@@ -384,6 +383,6 @@ GX2Shader ribbon_shader =
       .program = (uint8_t*)&ps_program,
       .mode = GX2_SHADER_MODE_UNIFORM_BLOCK,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

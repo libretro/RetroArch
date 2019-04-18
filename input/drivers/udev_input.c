@@ -14,7 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* TODO/FIXME - set this once the kqueue codepath is implemented and working properly */
+/* TODO/FIXME - set this once the kqueue codepath is implemented and working properly,
+ * also remove libepoll-shim from the Makefile when that happens. */
 #if 1
 #define HAVE_EPOLL
 #else
@@ -43,10 +44,12 @@
 #elif defined(HAVE_KQUEUE)
 #include <sys/event.h>
 #endif
-#include <sys/poll.h>
+#include <poll.h>
 
 #include <libudev.h>
+#ifdef __linux__
 #include <linux/types.h>
+#endif
 #include <linux/input.h>
 #include <linux/kd.h>
 
@@ -130,7 +133,6 @@ struct udev_input
    bool blocked;
    struct udev *udev;
    struct udev_monitor *monitor;
-
 
    const input_device_driver_t *joypad;
 
@@ -222,7 +224,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS)
+   if (port >= MAX_USERS || !video_driver_cb_has_focus())
       return NULL;
 
    for (i = 0; i < udev->num_devices; ++i)
@@ -505,38 +507,36 @@ static bool udev_input_add_device(udev_input_t *udev,
 
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
 
-   /* Touchpads report in absolute coords. */
-   if (type == UDEV_INPUT_TOUCHPAD)
-   {
-      if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) < 0 ||
-            absinfo.minimum >= absinfo.maximum)
-         goto error;
-
-      device->mouse.x_min = absinfo.minimum;
-      device->mouse.x_max = absinfo.maximum;
-
-      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0 ||
-          absinfo.minimum >= absinfo.maximum)
-         goto error;
-
-      device->mouse.y_min = absinfo.minimum;
-      device->mouse.y_max = absinfo.maximum;
-   }
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
-   else if (type == UDEV_INPUT_MOUSE && ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+   if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
-      if (absinfo.minimum >= absinfo.maximum)
-         goto error;
+      if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+      {
+         if (absinfo.minimum >= absinfo.maximum )
+      	 {
+            device->mouse.x_min = -1;
+            device->mouse.x_max = -1;
+         }
+         else
+         {
+            device->mouse.x_min = absinfo.minimum;
+            device->mouse.x_min = absinfo.maximum;
+         }
+      }
 
-      device->mouse.x_min = absinfo.minimum;
-      device->mouse.x_max = absinfo.maximum;
-
-      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0 ||
-          absinfo.minimum >= absinfo.maximum)
-         goto error;
-
-      device->mouse.y_min = absinfo.minimum;
-      device->mouse.y_max = absinfo.maximum;
+      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) >= 0)
+      {
+         if (absinfo.minimum >= absinfo.maximum )
+         {
+            device->mouse.y_min = -1;
+            device->mouse.y_max = -1;
+         }
+	     else
+         {
+           device->mouse.y_min = absinfo.minimum;
+           device->mouse.y_min = absinfo.maximum;
+         }
+      }
    }
 
    tmp = ( udev_input_device_t**)realloc(udev->devices,
@@ -988,9 +988,13 @@ static int16_t udev_input_state(void *data,
          return udev_mouse_state(udev, port, id, true);
 
       case RETRO_DEVICE_POINTER:
-         return udev_pointer_state(udev, port, id, false);
+         if (idx == 0) /* multi-touch unsupported (for now) */
+            return udev_pointer_state(udev, port, id, false);
+         break;
       case RARCH_DEVICE_POINTER_SCREEN:
-         return udev_pointer_state(udev, port, id, true);
+         if (idx == 0) /* multi-touch unsupported (for now) */
+            return udev_pointer_state(udev, port, id, true);
+         break;
 
       case RETRO_DEVICE_LIGHTGUN:
          switch ( id )
@@ -1205,7 +1209,9 @@ static void *udev_input_init(const char *joypad_driver)
    udev->joypad = input_joypad_init_driver(joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
+#ifdef __linux__
    linux_terminal_disable_input();
+#endif
 
 #ifndef HAVE_X11
    RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
@@ -1300,7 +1306,11 @@ input_driver_t input_udev = {
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
+#ifdef __linux__
    linux_terminal_grab_stdin,
+#else
+   NULL,
+#endif
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
    NULL,

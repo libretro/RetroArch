@@ -48,9 +48,6 @@ enum thread_cmd
 
    CMD_POKE_SET_VIDEO_MODE,
    CMD_POKE_SET_FILTERING,
-   CMD_POKE_GET_VIDEO_OUTPUT_SIZE,
-   CMD_POKE_GET_VIDEO_OUTPUT_PREV,
-   CMD_POKE_GET_VIDEO_OUTPUT_NEXT,
 
    CMD_POKE_SET_FBO_STATE,
    CMD_POKE_GET_FBO_STATE,
@@ -433,24 +430,28 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_OVERLAY_LOAD:
-
-         if (thr->overlay && thr->overlay->load)
-            ret = thr->overlay->load(thr->driver_data,
-                  pkt.data.image.data,
-                  pkt.data.image.num);
-
-         pkt.data.b = ret;
-         thr->alpha_mods = pkt.data.image.num;
-         thr->alpha_mod = (float*)realloc(thr->alpha_mod,
-               thr->alpha_mods * sizeof(float));
-
-         for (i = 0; i < thr->alpha_mods; i++)
          {
-            /* Avoid temporary garbage data. */
-            thr->alpha_mod[i] = 1.0f;
-         }
+            float *tmp_alpha_mod = NULL;
 
-         video_thread_reply(thr, &pkt);
+            if (thr->overlay && thr->overlay->load)
+               ret = thr->overlay->load(thr->driver_data,
+                     pkt.data.image.data,
+                     pkt.data.image.num);
+
+            pkt.data.b         = ret;
+            thr->alpha_mods    = pkt.data.image.num;
+            tmp_alpha_mod      = (float*)realloc(thr->alpha_mod,
+                  thr->alpha_mods * sizeof(float));
+
+            if (tmp_alpha_mod)
+               thr->alpha_mod  = tmp_alpha_mod;
+
+            /* Avoid temporary garbage data. */
+            for (i = 0; i < thr->alpha_mods; i++)
+               thr->alpha_mod[i] = 1.0f;
+
+            video_thread_reply(thr, &pkt);
+         }
          break;
 
       case CMD_OVERLAY_TEX_GEOM:
@@ -496,26 +497,6 @@ static bool video_thread_handle_packet(
             thr->poke->set_filtering(thr->driver_data,
                   pkt.data.filtering.index,
                   pkt.data.filtering.smooth);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_SIZE:
-         if (thr->poke && thr->poke->get_video_output_size)
-            thr->poke->get_video_output_size(thr->driver_data,
-                  &pkt.data.output.width,
-                  &pkt.data.output.height);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_PREV:
-         if (thr->poke && thr->poke->get_video_output_prev)
-            thr->poke->get_video_output_prev(thr->driver_data);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_GET_VIDEO_OUTPUT_NEXT:
-         if (thr->poke && thr->poke->get_video_output_next)
-            thr->poke->get_video_output_next(thr->driver_data);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -868,7 +849,7 @@ static bool video_thread_set_shader(void *data,
 }
 
 static void video_thread_set_viewport(void *data, unsigned width,
-      unsigned height, bool force_full, bool allow_rotate)
+      unsigned height, bool force_full, bool video_allow_rotate)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (!thr)
@@ -878,7 +859,7 @@ static void video_thread_set_viewport(void *data, unsigned width,
 
     if (thr->driver && thr->driver->set_viewport)
         thr->driver->set_viewport(thr->driver_data, width, height,
-                                  force_full, allow_rotate);
+                                  force_full, video_allow_rotate);
 
    slock_unlock(thr->lock);
 }
@@ -1075,7 +1056,7 @@ static void video_thread_get_overlay_interface(void *data,
 #endif
 
 static void thread_set_video_mode(void *data, unsigned width, unsigned height,
-      bool fullscreen)
+      bool video_fullscreen)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_POKE_SET_VIDEO_MODE };
@@ -1085,7 +1066,7 @@ static void thread_set_video_mode(void *data, unsigned width, unsigned height,
 
    pkt.data.new_mode.width      = width;
    pkt.data.new_mode.height     = height;
-   pkt.data.new_mode.fullscreen = fullscreen;
+   pkt.data.new_mode.fullscreen = video_fullscreen;
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 }
@@ -1107,37 +1088,36 @@ static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_SIZE };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
-
-   *width  = pkt.data.output.width;
-   *height = pkt.data.output.height;
+   if (thr->poke && thr->poke->get_video_output_size)
+      thr->poke->get_video_output_size(thr->driver_data,
+            width,
+            height);
 }
 
 static void thread_get_video_output_prev(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_PREV };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   if (thr->poke && thr->poke->get_video_output_prev)
+      thr->poke->get_video_output_prev(thr->driver_data);
 }
 
 static void thread_get_video_output_next(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_NEXT };
 
    if (!thr)
       return;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   if (thr->poke && thr->poke->get_video_output_next)
+      thr->poke->get_video_output_next(thr->driver_data);
 }
 
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
@@ -1155,12 +1135,11 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   size_t required;
    thread_video_t *thr = (thread_video_t*)data;
+   size_t required     = width * height *
+      (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    slock_lock(thr->frame.lock);
-   required            = width * height *
-      (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (required > thr->texture.frame_cap)
    {
@@ -1187,7 +1166,7 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
       return;
 
    slock_lock(thr->frame.lock);
-   thr->texture.enable = state;
+   thr->texture.enable      = state;
    thr->texture.full_screen = full_screen;
    slock_unlock(thr->frame.lock);
 }
@@ -1262,8 +1241,6 @@ static uint32_t thread_get_flags(void *data)
 
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
-   NULL,                            /* set_coords */
-   NULL,                            /* set_mvp */
    thread_load_texture,
    thread_unload_texture,
    thread_set_video_mode,
@@ -1303,6 +1280,18 @@ static void video_thread_get_poke_interface(
       *iface = NULL;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool video_thread_wrapper_menu_widgets_enabled(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr && thr->driver)
+      return thr->driver->menu_widgets_enabled(thr->driver_data);
+
+   return false;
+}
+#endif
+
 static const video_driver_t video_thread = {
    video_thread_init_never_call, /* Should never be called directly. */
    video_thread_frame,
@@ -1323,6 +1312,10 @@ static const video_driver_t video_thread = {
    video_thread_get_overlay_interface, /* get_overlay_interface */
 #endif
    video_thread_get_poke_interface,
+   NULL,
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   video_thread_wrapper_menu_widgets_enabled
+#endif
 };
 
 static void video_thread_set_callbacks(
@@ -1424,7 +1417,7 @@ static void video_thread_send_and_wait(thread_video_t *thr,
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
+      void *data, const char *font_path, float video_font_size,
       enum font_driver_render_api api, custom_font_command_method_t func,
       bool is_threaded)
 {
@@ -1440,7 +1433,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.font_handle = font_handle;
    pkt.data.font_init.video_data  = data;
    pkt.data.font_init.font_path   = font_path;
-   pkt.data.font_init.font_size   = font_size;
+   pkt.data.font_init.font_size   = video_font_size;
    pkt.data.font_init.is_threaded = is_threaded;
    pkt.data.font_init.api         = api;
 

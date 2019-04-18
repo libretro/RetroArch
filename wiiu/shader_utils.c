@@ -98,7 +98,6 @@ void GX2SetShader(GX2Shader *shader)
       GX2SetGeometryShader(&shader->gs);
 }
 
-
 void dump_vs_data(GX2VertexShader* vs)
 {
 
@@ -232,7 +231,6 @@ void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 or
       different = true;
       printf("\nsize mismatch : 0x%08X should be 0x%08X", shader_size, org_size);
    }
-
 
    for (int i = 0; i < shader_size / 4; i++)
    {

@@ -239,7 +239,6 @@ static s32 __sdio_gethcr(u8 reg, u8 size, u32 *val)
 	ret = IOS_Ioctl(__sd0_fd,IOCTL_SDIO_READHCREG,(void*)hcr_query,24,hcr_value,sizeof(u32));
 	*val = *hcr_value;
 
-
 	return ret;
 }
 
@@ -255,7 +254,6 @@ static s32 __sdio_sethcr(u8 reg, u8 size, u32 data)
 	hcr_query[4] = data;
 	hcr_query[5] = 0;
 	ret = IOS_Ioctl(__sd0_fd,IOCTL_SDIO_WRITEHCREG,(void*)hcr_query,24,NULL,0);
-
 
 	return ret;
 }
@@ -355,7 +353,6 @@ static s32 __sd0_getcid()
 
 	return ret;
 }
-
 
 static	bool __sd0_initio()
 {
@@ -512,8 +509,6 @@ bool sdio_Startup()
 	__sdio_initialized = 1;
 	return true;
 }
-
-
 
 bool sdio_Shutdown()
 {

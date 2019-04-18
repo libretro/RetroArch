@@ -22,18 +22,50 @@
 
 #include "../menu_driver.h"
 
+static bool g_menu_on = false;
+
+static void* null_init(void **userdata, bool video_is_threaded)
+{
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+
+   if (!menu)
+      return NULL;
+
+   return menu;
+}
+
+static void null_free(void *data)
+{
+}
+
+static void null_toggle(void *userdata, bool menu_on)
+{
+   (void)userdata;
+
+   g_menu_on = menu_on;
+}
+
+static int null_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
+{
+   (void)menu;
+   (void)userdata;
+   (void)action;
+
+   return 1;
+}
+
 menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
   NULL,  /* render_messagebox */
-  NULL,  /* iterate */
+  null_menu_iterate,
   NULL,  /* render */
   NULL,  /* frame */
-  NULL,  /* init */
-  NULL,  /* free */
+  null_init,
+  null_free,
   NULL,  /* context_reset */
   NULL,  /* context_destroy */
   NULL,  /* populate_entries */
-  NULL,  /* toggle */
+  null_toggle,
   NULL,  /* navigation_clear */
   NULL,  /* navigation_decrement */
   NULL,  /* navigation_increment */
@@ -64,4 +96,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* osk_ptr_at_pos */
   NULL,  /* update_savestate_thumbnail_path */
   NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* pointer_down */
+  NULL,  /* pointer_up   */
+  NULL,  /* get_load_content_animation_data */
 };

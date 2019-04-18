@@ -35,4 +35,3 @@ bool scaler_gen_filter(struct scaler_ctx *ctx);
 RETRO_END_DECLS
 
 #endif
-

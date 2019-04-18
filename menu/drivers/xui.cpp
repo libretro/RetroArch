@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2015-     - Swizzy
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -69,7 +69,6 @@ HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue = NULL;
-static uint64_t xui_frame_count   = 0;
 
 class CRetroArch : public CXuiModule
 {
@@ -188,11 +187,11 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
    HXUIRESOURCE hResource          = 0;
    BOOL         bIsMemoryResource  = FALSE;
    IDirect3DDevice9 * d3dDevice    = NULL;
-   HRESULT      hr                 = 
+   HRESULT      hr                 =
       XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
 
    if (FAILED(hr))
-      return hr; 
+      return hr;
 
    if (bIsMemoryResource)
    {
@@ -201,7 +200,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          goto cleanup;
       cbTextureData = XuiResourceGetTotalSize(hResource);
    }
-   else 
+   else
    {
       hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
       if (FAILED(hr))
@@ -232,9 +231,9 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
    /* Create our texture based on our conditions */
    hr = D3DXCreateTextureFromFileInMemoryEx(
          d3dDevice,
-         pbTextureData,  
+         pbTextureData,
          cbTextureData,
-         D3DX_DEFAULT_NONPOW2, 
+         D3DX_DEFAULT_NONPOW2,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
@@ -366,8 +365,6 @@ static void xui_free(void *data)
    (void)data;
    app.Uninit();
 
-   xui_frame_count = 0;
-
    if (xui_msg_queue)
       msg_queue_free(xui_msg_queue);
 }
@@ -421,8 +418,6 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    if (!d3d)
       return;
-
-   xui_frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
 
@@ -514,7 +509,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    XuiTextElementSetText(hTextLeft, leftText);
    XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
 
-   if(XuiHandleIsValid(hTextRight)) 
+   if(XuiHandleIsValid(hTextRight))
    {
       currText = XuiTextElementGetText(hTextRight);
       XuiElementGetBounds(hTextRight, &width, &height);
@@ -544,14 +539,14 @@ static void xui_render(void *data, bool is_idle)
    const char *dir             = NULL;
    const char *label           = NULL;
    unsigned menu_type          = 0;
-   uint64_t frame_count        = xui_frame_count;
    bool              msg_force = menu_display_get_msg_force();
+   settings_t *settings        = config_get_ptr();
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    if (
-         menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
+         menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
          && menu_driver_is_alive()
          && !msg_force
       )
@@ -569,9 +564,13 @@ static void xui_render(void *data, bool is_idle)
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
 
+      /* Initial ticker configuration */
+      ticker.type_enum = settings->uints.menu_ticker_type;
+      ticker.spacer = NULL;
+
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
-	  ticker.idx      = (unsigned int)frame_count / 15;
+	  ticker.idx      = menu_animation_get_ticker_idx();
 	  ticker.str      = title;
 	  ticker.selected = true;
 
@@ -623,7 +622,7 @@ static void xui_render(void *data, bool is_idle)
       const char *label = menu_input_dialog_get_label_buffer();
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      xui_render_messagebox(NULL, msg);			
+      xui_render_messagebox(NULL, msg);
    }
 }
 
@@ -747,5 +746,8 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* set_thumbnail_content */
    NULL,          /* osk_ptr_at_pos */
    NULL,          /* update_savestate_thumbnail_path */
-   NULL           /* update_savestate_thumbnail_image */
+   NULL,          /* update_savestate_thumbnail_image */
+   NULL,          /* pointer_down */
+   NULL,          /* pointer_up */
+   NULL           /* get_load_content_animation_data */
 };

@@ -348,9 +348,7 @@ VkBool32 vulkan_symbol_wrapper_load_device_symbol(VkDevice device, const char *n
 #define VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, name, pfn) vulkan_symbol_wrapper_load_device_symbol(device, name, (PFN_vkVoidFunction*) &(pfn))
 #define VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(device, name) vulkan_symbol_wrapper_load_device_symbol(device, #name, (PFN_vkVoidFunction*) & name)
 
-
 #ifdef __cplusplus
 }
 #endif
 #endif
-

@@ -103,7 +103,6 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
-
 LDFLAGS += $(LIBM)
 
 ifeq ($(platform), win)
@@ -146,4 +145,3 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 .PHONY: clean
-

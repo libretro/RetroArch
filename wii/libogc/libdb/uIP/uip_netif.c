@@ -27,7 +27,6 @@ struct uip_stats uip_stat;
 #define UIP_STAT(s)
 #endif /* UIP_STATISTICS == 1 */
 
-
 struct uip_netif *uip_netif_list;
 struct uip_netif *uip_netif_default;
 

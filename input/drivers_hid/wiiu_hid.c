@@ -240,7 +240,6 @@ static int32_t wiiu_hid_read(void *data, void *buffer, size_t size)
    return result;
 }
 
-
 static void start_polling_thread(wiiu_hid_t *hid)
 {
    OSThreadAttributes attributes = OS_THREAD_ATTRIB_AFFINITY_CPU2;
@@ -285,7 +284,6 @@ error:
    return;
 }
 
-
 static void stop_polling_thread(wiiu_hid_t *hid)
 {
    int thread_result = 0;
@@ -327,7 +325,6 @@ static void log_device(HIDDevice *device)
    RARCH_LOG("    max_packet_size_rx: %d\n", device->max_packet_size_rx);
    RARCH_LOG("    max_packet_size_tx: %d\n", device->max_packet_size_tx);
 }
-
 
 static uint8_t try_init_driver(wiiu_adapter_t *adapter)
 {
@@ -459,7 +456,6 @@ static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event)
    if(adapter)
       adapter->connected = false;
 }
-
 
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
 {
@@ -798,7 +794,6 @@ static void delete_attach_event(wiiu_attach_event *event)
       free(event);
 }
 
-
 void *alloc_zeroed(size_t alignment, size_t size)
 {
    void *result = memalign(alignment, size);
@@ -807,7 +802,6 @@ void *alloc_zeroed(size_t alignment, size_t size)
 
    return result;
 }
-
 
 hid_driver_t wiiu_hid = {
    wiiu_hid_init,
@@ -826,4 +820,3 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_set_protocol,
    wiiu_hid_read,
 };
-

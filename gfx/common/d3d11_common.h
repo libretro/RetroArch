@@ -2159,6 +2159,7 @@ static INLINE HRESULT D3D11ValidateContextForDispatch(D3D11Debug debug, D3D11Dev
 {
    return debug->lpVtbl->ValidateContextForDispatch(debug, context);
 }
+#ifndef __WINRT__
 static INLINE BOOL D3D11SetUseRef(D3D11SwitchToRef switch_to_ref, BOOL use_ref)
 {
    return switch_to_ref->lpVtbl->SetUseRef(switch_to_ref, use_ref);
@@ -2167,6 +2168,7 @@ static INLINE BOOL D3D11GetUseRef(D3D11SwitchToRef switch_to_ref)
 {
    return switch_to_ref->lpVtbl->GetUseRef(switch_to_ref);
 }
+#endif
 static INLINE HRESULT D3D11SetShaderTrackingOptionsByType(
       D3D11TracingDevice tracing_device, UINT resource_type_flags, UINT options)
 {
@@ -2188,6 +2190,7 @@ static INLINE void D3D11ClearStoredMessages(D3D11InfoQueue info_queue)
 {
    info_queue->lpVtbl->ClearStoredMessages(info_queue);
 }
+#ifndef __WINRT__
 static INLINE HRESULT D3D11GetMessageA(
       D3D11InfoQueue info_queue,
       UINT64         message_index,
@@ -2196,6 +2199,7 @@ static INLINE HRESULT D3D11GetMessageA(
 {
    return info_queue->lpVtbl->GetMessageA(info_queue, message_index, message, message_byte_length);
 }
+#endif
 static INLINE UINT64 D3D11GetNumMessagesAllowedByStorageFilter(D3D11InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetNumMessagesAllowedByStorageFilter(info_queue);
@@ -2519,6 +2523,12 @@ typedef struct
    bool                  resize_render_targets;
    bool                  init_history;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
+#ifdef __WINRT__
+   DXGIFactory2 factory;
+#else
+   DXGIFactory factory;
+#endif
+   DXGIAdapter adapter;
 
 	struct
    {

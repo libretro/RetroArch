@@ -14,7 +14,6 @@
 #include <winerror.h>   // For S_OK, E_FAIL
 #include <audiodefs.h>  // Basic data types and constants for audio work
 
-
 /***************************************************************************
  *  Overview
  ***************************************************************************/
@@ -70,7 +69,6 @@
 // blocks, all the same size (as specified in XMA2WAVEFORMAT.BlockSizeInBytes)
 // except for the last one, which may be shorter.
 
-
 // MULTICHANNEL AUDIO: the XMA decoder can only decode raw XMA data into either
 // mono or stereo PCM data.  In order to encode a 6-channel file (say), the file
 // must be deinterleaved into 3 stereo streams that are encoded independently,
@@ -93,7 +91,6 @@
 // one by looking at the frame's 'NextFrameOffsetBits' value (which is stored in
 // its first 15 bits; see XMAFRAME below).  The GetXmaFrameBitPosition function
 // uses this technique.
-
 
 // SEEKING IN XMA2 FILES: Here is some pseudocode to find the byte position and
 // subframe in an XMA2 file which will contain sample S when decoded.
@@ -127,8 +124,6 @@
 //
 // Step 1 can be performed using the GetXmaBlockContainingSample function below,
 // and steps 2-4 by calling GetXmaDecodePositionForSample once for each stream.
-
-
 
 /***************************************************************************
  *  XMA constants
@@ -171,8 +166,6 @@
 #define XMA_MAX_LOOPCOUNT               254u
 #define XMA_INFINITE_LOOP               255u
 
-
-
 /***************************************************************************
  *  XMA format structures
  ***************************************************************************/
@@ -210,7 +203,6 @@ typedef struct XMA2WAVEFORMATEX
     WORD  BlockCount;        // XMA blocks in file (and entries in its seek table)
 } XMA2WAVEFORMATEX, *PXMA2WAVEFORMATEX;
 
-
 // The legacy XMA format structures are described here for reference, but they
 // should not be used in new content.  XMAWAVEFORMAT was the structure used in
 // XMA version 1 files.  XMA2WAVEFORMAT was used in early XMA2 files; it is not
@@ -231,7 +223,6 @@ typedef struct XMA2WAVEFORMATEX
     #define XMA_SPEAKER_LEFT_BACK       0x40
     #define XMA_SPEAKER_RIGHT_BACK      0x80
 #endif
-
 
 // Used in XMAWAVEFORMAT for per-stream data
 typedef struct XMASTREAMFORMAT
@@ -266,7 +257,6 @@ typedef struct XMAWAVEFORMAT
     XMASTREAMFORMAT XmaStreams[1]; // Per-stream format information; the actual
                                    // array length is in the NumStreams field.
 } XMAWAVEFORMAT;
-
 
 // Used in XMA2WAVEFORMAT for per-stream data
 typedef struct XMA2STREAMFORMAT
@@ -303,8 +293,6 @@ typedef struct XMA2WAVEFORMAT
 
 #endif // #ifndef WAVE_FORMAT_XMA
 
-
-
 /***************************************************************************
  *  XMA packet structure (in big-endian form)
  ***************************************************************************/
@@ -326,7 +314,6 @@ typedef struct XMA2PACKET
 //    |          |         |___________ XMA2 signature (always 001)
 //    |          |_____________________ First frame starts 527 bits into packet
 //    |________________________________ Packet contains 12 frames
-
 
 // Helper functions to extract the fields above from an XMA packet.  (Note that
 // the bitfields cannot be read directly on little-endian architectures such as
@@ -354,8 +341,6 @@ __inline DWORD GetXmaPacketSkipCount(__in_bcount(4) const BYTE* pPacket)
     return (DWORD)(pPacket[3]);
 }
 
-
-
 /***************************************************************************
  *  XMA frame structure
  ***************************************************************************/
@@ -376,8 +361,6 @@ __inline DWORD GetXmaPacketSkipCount(__in_bcount(4) const BYTE* pPacket)
 // Special LengthInBits value that marks an invalid final frame
 #define XMA_FINAL_FRAME_MARKER 0x7FFF
 
-
-
 /***************************************************************************
  *  XMA helper functions
  ***************************************************************************/
@@ -391,7 +374,6 @@ __inline DWORD GetXmaPacketSkipCount(__in_bcount(4) const BYTE* pPacket)
         #define XMA2DEFS_ASSERT(a) /* No-op by default */
     #endif
 #endif
-
 
 // GetXmaBlockContainingSample: Use a given seek table to find the XMA block
 // containing a given decoded sample.  Note that the seek table entries in an
@@ -430,7 +412,6 @@ __inline HRESULT GetXmaBlockContainingSample
     return E_FAIL;
 }
 
-
 // GetXmaFrameLengthInBits: Reads a given frame's LengthInBits field.
 
 __inline DWORD GetXmaFrameLengthInBits
@@ -458,7 +439,6 @@ __inline DWORD GetXmaFrameLengthInBits
         return (nRegion >> (9 - nBitOffset)) & 0x7FFF;  // Last 15 bits
     }
 }
-
 
 // GetXmaFrameBitPosition: Calculates the bit offset of a given frame within
 // an XMA block or set of blocks.  Returns 0 on failure.
@@ -523,7 +503,6 @@ __inline DWORD GetXmaFrameBitPosition
     }
 }
 
-
 // GetLastXmaFrameBitPosition: Calculates the bit offset of the last complete
 // frame in an XMA block or set of blocks.
 
@@ -582,7 +561,6 @@ __inline DWORD GetLastXmaFrameBitPosition
     return (DWORD)(pLastPacket - pXmaData) * 8 + nFrameBitOffset;
 }
 
-
 // GetXmaDecodePositionForSample: Obtains the information needed to make the
 // decoder generate audio starting at a given sample position relative to the
 // beginning of the given XMA block: the bit offset of the appropriate frame,
@@ -619,7 +597,6 @@ __inline HRESULT GetXmaDecodePositionForSample
     }
 }
 
-
 // GetXmaSampleRate: Obtains the legal XMA sample rate (24, 32, 44.1 or 48Khz)
 // corresponding to a generic sample rate.
 
@@ -633,7 +610,6 @@ __inline DWORD GetXmaSampleRate(DWORD dwGeneralRate)
 
     return dwXmaRate;
 }
-
 
 // Functions to convert between WAVEFORMATEXTENSIBLE channel masks (combinations
 // of the SPEAKER_xxx flags defined in audiodefs.h) and XMA channel masks (which
@@ -671,7 +647,6 @@ __inline BYTE GetXmaChannelMaskFromStandardMask(DWORD dwStandardMask)
 
     return bXmaMask;
 }
-
 
 // LocalizeXma2Format: Modifies a XMA2WAVEFORMATEX structure in place to comply
 // with the current platform's byte-ordering rules (little- or big-endian).
@@ -713,6 +688,5 @@ __inline HRESULT LocalizeXma2Format(__inout XMA2WAVEFORMATEX* pXma2Format)
     #undef XMASWAP2BYTES
     #undef XMASWAP4BYTES
 }
-
 
 #endif // #ifndef __XMA2DEFS_INCLUDED__

@@ -30,7 +30,6 @@ __attribute__((aligned (16)))
    float time;
 }menu_shader_uniform_t;
 
-
 extern GX2Shader ribbon_shader;
 extern GX2Shader ribbon_simple_shader;
 extern GX2Shader snow_simple_shader;

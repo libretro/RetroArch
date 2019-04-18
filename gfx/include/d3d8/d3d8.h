@@ -25,7 +25,6 @@
 
 #define D3D_SDK_VERSION 220
 
-
 #include <stdlib.h>
 
 #define COM_NO_WINDOWS_H
@@ -116,7 +115,6 @@ interface IDirect3DSwapChain8;
 
 #endif
 
-
 typedef interface IDirect3D8                IDirect3D8;
 typedef interface IDirect3DDevice8          IDirect3DDevice8;
 typedef interface IDirect3DResource8        IDirect3DResource8;
@@ -132,7 +130,6 @@ typedef interface IDirect3DSwapChain8       IDirect3DSwapChain8;
 
 #include "d3d8types.h"
 #include "d3d8caps.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -1129,7 +1126,6 @@ typedef struct IDirect3DVolume8 *LPDIRECT3DVOLUME8, *PDIRECT3DVOLUME8;
 #define D3DCREATE_MIXED_VERTEXPROCESSING        0x00000080L
 
 #define D3DCREATE_DISABLE_DRIVER_MANAGEMENT     0x00000100L
-
 
 /****************************************************************************
  *

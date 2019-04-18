@@ -11,7 +11,6 @@
 #define isspace(c)           (c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v')
 #endif
 
-
  /*
   * Ascii internet address interpretation routine.
   * The value returned is in network order.
@@ -161,7 +160,6 @@ char *inet_ntoa(struct in_addr addr)
   *--rp = 0;
   return str;
 }
-
 
 #ifndef BYTE_ORDER
 #error BYTE_ORDER is not defined

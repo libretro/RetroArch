@@ -6138,7 +6138,6 @@ extern "C" {
 #define GL_TEXTURE_STORAGE_SPARSE_BIT_AMD 0x00000001
 #endif
 
-
 /*************************************************************/
 
 #include <stddef.h>
@@ -12731,7 +12730,6 @@ GLAPI void APIENTRY glTextureStorageSparseAMD (GLuint texture, GLenum target, GL
 typedef void (APIENTRYP PFNGLTEXSTORAGESPARSEAMDPROC) (GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei layers, GLbitfield flags);
 typedef void (APIENTRYP PFNGLTEXTURESTORAGESPARSEAMDPROC) (GLuint texture, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei layers, GLbitfield flags);
 #endif
-
 
 #ifdef __cplusplus
 }

@@ -4,13 +4,9 @@
  *
  *-------------------------------------------------------------------------------------*/
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
-
  /* File created by MIDL compiler version 8.00.0613 */
-
-
 
 /* verify that the <rpcndr.h> version is high enough to compile this file*/
 #ifndef __REQUIRED_RPCNDR_H_VERSION__
@@ -41,7 +37,7 @@
 #pragma once
 #endif
 
-/* Forward Declarations */ 
+/* Forward Declarations */
 
 #ifndef __ID3D12Debug_FWD_DEFINED__
 #define __ID3D12Debug_FWD_DEFINED__
@@ -49,13 +45,11 @@ typedef interface ID3D12Debug ID3D12Debug;
 
 #endif 	/* __ID3D12Debug_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12Debug1_FWD_DEFINED__
 #define __ID3D12Debug1_FWD_DEFINED__
 typedef interface ID3D12Debug1 ID3D12Debug1;
 
 #endif 	/* __ID3D12Debug1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12Debug2_FWD_DEFINED__
 #define __ID3D12Debug2_FWD_DEFINED__
@@ -63,13 +57,11 @@ typedef interface ID3D12Debug2 ID3D12Debug2;
 
 #endif 	/* __ID3D12Debug2_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugDevice1_FWD_DEFINED__
 #define __ID3D12DebugDevice1_FWD_DEFINED__
 typedef interface ID3D12DebugDevice1 ID3D12DebugDevice1;
 
 #endif 	/* __ID3D12DebugDevice1_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12DebugDevice_FWD_DEFINED__
 #define __ID3D12DebugDevice_FWD_DEFINED__
@@ -77,13 +69,11 @@ typedef interface ID3D12DebugDevice ID3D12DebugDevice;
 
 #endif 	/* __ID3D12DebugDevice_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugCommandQueue_FWD_DEFINED__
 #define __ID3D12DebugCommandQueue_FWD_DEFINED__
 typedef interface ID3D12DebugCommandQueue ID3D12DebugCommandQueue;
 
 #endif 	/* __ID3D12DebugCommandQueue_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12DebugCommandList1_FWD_DEFINED__
 #define __ID3D12DebugCommandList1_FWD_DEFINED__
@@ -91,13 +81,11 @@ typedef interface ID3D12DebugCommandList1 ID3D12DebugCommandList1;
 
 #endif 	/* __ID3D12DebugCommandList1_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12DebugCommandList_FWD_DEFINED__
 #define __ID3D12DebugCommandList_FWD_DEFINED__
 typedef interface ID3D12DebugCommandList ID3D12DebugCommandList;
 
 #endif 	/* __ID3D12DebugCommandList_FWD_DEFINED__ */
-
 
 #ifndef __ID3D12SharingContract_FWD_DEFINED__
 #define __ID3D12SharingContract_FWD_DEFINED__
@@ -105,13 +93,11 @@ typedef interface ID3D12SharingContract ID3D12SharingContract;
 
 #endif 	/* __ID3D12SharingContract_FWD_DEFINED__ */
 
-
 #ifndef __ID3D12InfoQueue_FWD_DEFINED__
 #define __ID3D12InfoQueue_FWD_DEFINED__
 typedef interface ID3D12InfoQueue ID3D12InfoQueue;
 
 #endif 	/* __ID3D12InfoQueue_FWD_DEFINED__ */
-
 
 /* header files for imported files */
 #include "oaidl.h"
@@ -120,16 +106,14 @@ typedef interface ID3D12InfoQueue ID3D12InfoQueue;
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
-
+#endif
 
 /* interface __MIDL_itf_d3d12sdklayers_0000_0000 */
-/* [local] */ 
+/* [local] */
 
 /*#include <winapifamily.h>*/
 /*#pragma region App Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_s_ifspec;
@@ -138,42 +122,40 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0000_v0_0_s_ifspec;
 #define __ID3D12Debug_INTERFACE_DEFINED__
 
 /* interface ID3D12Debug */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12Debug;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("344488b7-6846-474b-b989-f027448245e0")
     ID3D12Debug : public IUnknown
     {
     public:
         virtual void STDMETHODCALLTYPE EnableDebugLayer( void) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12Debug * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12Debug * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12Debug * This);
-        
-        void ( STDMETHODCALLTYPE *EnableDebugLayer )( 
+
+        void ( STDMETHODCALLTYPE *EnableDebugLayer )(
             ID3D12Debug * This);
-        
+
         END_INTERFACE
     } ID3D12DebugVtbl;
 
@@ -182,89 +164,78 @@ EXTERN_C const IID IID_ID3D12Debug;
         CONST_VTBL struct ID3D12DebugVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12Debug_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12Debug_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12Debug_EnableDebugLayer(This)	\
-    ( (This)->lpVtbl -> EnableDebugLayer(This) ) 
+    ( (This)->lpVtbl -> EnableDebugLayer(This) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12Debug_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12Debug1_INTERFACE_DEFINED__
 #define __ID3D12Debug1_INTERFACE_DEFINED__
 
 /* interface ID3D12Debug1 */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12Debug1;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("affaa4ca-63fe-4d8e-b8ad-159000af4304")
     ID3D12Debug1 : public IUnknown
     {
     public:
         virtual void STDMETHODCALLTYPE EnableDebugLayer( void) = 0;
-        
-        virtual void STDMETHODCALLTYPE SetEnableGPUBasedValidation( 
+
+        virtual void STDMETHODCALLTYPE SetEnableGPUBasedValidation(
             BOOL Enable) = 0;
-        
-        virtual void STDMETHODCALLTYPE SetEnableSynchronizedCommandQueueValidation( 
+
+        virtual void STDMETHODCALLTYPE SetEnableSynchronizedCommandQueueValidation(
             BOOL Enable) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12Debug1Vtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12Debug1 * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12Debug1 * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12Debug1 * This);
-        
-        void ( STDMETHODCALLTYPE *EnableDebugLayer )( 
+
+        void ( STDMETHODCALLTYPE *EnableDebugLayer )(
             ID3D12Debug1 * This);
-        
-        void ( STDMETHODCALLTYPE *SetEnableGPUBasedValidation )( 
+
+        void ( STDMETHODCALLTYPE *SetEnableGPUBasedValidation )(
             ID3D12Debug1 * This,
             BOOL Enable);
-        
-        void ( STDMETHODCALLTYPE *SetEnableSynchronizedCommandQueueValidation )( 
+
+        void ( STDMETHODCALLTYPE *SetEnableSynchronizedCommandQueueValidation )(
             ID3D12Debug1 * This,
             BOOL Enable);
-        
+
         END_INTERFACE
     } ID3D12Debug1Vtbl;
 
@@ -273,45 +244,36 @@ EXTERN_C const IID IID_ID3D12Debug1;
         CONST_VTBL struct ID3D12Debug1Vtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug1_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12Debug1_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12Debug1_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12Debug1_EnableDebugLayer(This)	\
-    ( (This)->lpVtbl -> EnableDebugLayer(This) ) 
+    ( (This)->lpVtbl -> EnableDebugLayer(This) )
 
 #define ID3D12Debug1_SetEnableGPUBasedValidation(This,Enable)	\
-    ( (This)->lpVtbl -> SetEnableGPUBasedValidation(This,Enable) ) 
+    ( (This)->lpVtbl -> SetEnableGPUBasedValidation(This,Enable) )
 
 #define ID3D12Debug1_SetEnableSynchronizedCommandQueueValidation(This,Enable)	\
-    ( (This)->lpVtbl -> SetEnableSynchronizedCommandQueueValidation(This,Enable) ) 
+    ( (This)->lpVtbl -> SetEnableSynchronizedCommandQueueValidation(This,Enable) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12Debug1_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0002 */
-/* [local] */ 
+/* [local] */
 
-typedef 
+typedef
 enum D3D12_GPU_BASED_VALIDATION_FLAGS
     {
         D3D12_GPU_BASED_VALIDATION_FLAGS_NONE	= 0,
@@ -320,7 +282,6 @@ enum D3D12_GPU_BASED_VALIDATION_FLAGS
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D12_GPU_BASED_VALIDATION_FLAGS)
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_s_ifspec;
 
@@ -328,44 +289,42 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0002_v0_0_s_ifspec;
 #define __ID3D12Debug2_INTERFACE_DEFINED__
 
 /* interface ID3D12Debug2 */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12Debug2;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("93a665c4-a3b2-4e5d-b692-a26ae14e3374")
     ID3D12Debug2 : public IUnknown
     {
     public:
-        virtual void STDMETHODCALLTYPE SetGPUBasedValidationFlags( 
+        virtual void STDMETHODCALLTYPE SetGPUBasedValidationFlags(
             D3D12_GPU_BASED_VALIDATION_FLAGS Flags) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12Debug2Vtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12Debug2 * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12Debug2 * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12Debug2 * This);
-        
-        void ( STDMETHODCALLTYPE *SetGPUBasedValidationFlags )( 
+
+        void ( STDMETHODCALLTYPE *SetGPUBasedValidationFlags )(
             ID3D12Debug2 * This,
             D3D12_GPU_BASED_VALIDATION_FLAGS Flags);
-        
+
         END_INTERFACE
     } ID3D12Debug2Vtbl;
 
@@ -374,39 +333,30 @@ EXTERN_C const IID IID_ID3D12Debug2;
         CONST_VTBL struct ID3D12Debug2Vtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12Debug2_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12Debug2_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12Debug2_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12Debug2_SetGPUBasedValidationFlags(This,Flags)	\
-    ( (This)->lpVtbl -> SetGPUBasedValidationFlags(This,Flags) ) 
+    ( (This)->lpVtbl -> SetGPUBasedValidationFlags(This,Flags) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12Debug2_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0003 */
-/* [local] */ 
+/* [local] */
 
-typedef 
+typedef
 enum D3D12_RLDO_FLAGS
     {
         D3D12_RLDO_NONE	= 0,
@@ -416,36 +366,36 @@ enum D3D12_RLDO_FLAGS
     } 	D3D12_RLDO_FLAGS;
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D12_RLDO_FLAGS)
-typedef 
+typedef
 enum D3D12_DEBUG_DEVICE_PARAMETER_TYPE
     {
         D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS	= 0,
         D3D12_DEBUG_DEVICE_PARAMETER_GPU_BASED_VALIDATION_SETTINGS	= ( D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS + 1 ) ,
-        D3D12_DEBUG_DEVICE_PARAMETER_GPU_SLOWDOWN_PERFORMANCE_FACTOR	= ( D3D12_DEBUG_DEVICE_PARAMETER_GPU_BASED_VALIDATION_SETTINGS + 1 ) 
+        D3D12_DEBUG_DEVICE_PARAMETER_GPU_SLOWDOWN_PERFORMANCE_FACTOR	= ( D3D12_DEBUG_DEVICE_PARAMETER_GPU_BASED_VALIDATION_SETTINGS + 1 )
     } 	D3D12_DEBUG_DEVICE_PARAMETER_TYPE;
 
-typedef 
+typedef
 enum D3D12_DEBUG_FEATURE
     {
         D3D12_DEBUG_FEATURE_NONE	= 0,
         D3D12_DEBUG_FEATURE_ALLOW_BEHAVIOR_CHANGING_DEBUG_AIDS	= 0x1,
         D3D12_DEBUG_FEATURE_CONSERVATIVE_RESOURCE_STATE_TRACKING	= 0x2,
         D3D12_DEBUG_FEATURE_DISABLE_VIRTUALIZED_BUNDLES_VALIDATION	= 0x4,
-        D3D12_DEBUG_FEATURE_VALID_MASK	= ( ( D3D12_DEBUG_FEATURE_ALLOW_BEHAVIOR_CHANGING_DEBUG_AIDS | D3D12_DEBUG_FEATURE_CONSERVATIVE_RESOURCE_STATE_TRACKING )  | D3D12_DEBUG_FEATURE_DISABLE_VIRTUALIZED_BUNDLES_VALIDATION ) 
+        D3D12_DEBUG_FEATURE_VALID_MASK	= ( ( D3D12_DEBUG_FEATURE_ALLOW_BEHAVIOR_CHANGING_DEBUG_AIDS | D3D12_DEBUG_FEATURE_CONSERVATIVE_RESOURCE_STATE_TRACKING )  | D3D12_DEBUG_FEATURE_DISABLE_VIRTUALIZED_BUNDLES_VALIDATION )
     } 	D3D12_DEBUG_FEATURE;
 
 DEFINE_ENUM_FLAG_OPERATORS(D3D12_DEBUG_FEATURE)
-typedef 
+typedef
 enum D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE
     {
         D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_NONE	= 0,
         D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_STATE_TRACKING_ONLY	= ( D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_NONE + 1 ) ,
         D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_UNGUARDED_VALIDATION	= ( D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_STATE_TRACKING_ONLY + 1 ) ,
         D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_GUARDED_VALIDATION	= ( D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_UNGUARDED_VALIDATION + 1 ) ,
-        NUM_D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODES	= ( D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_GUARDED_VALIDATION + 1 ) 
+        NUM_D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODES	= ( D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE_GUARDED_VALIDATION + 1 )
     } 	D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE;
 
-typedef 
+typedef
 enum D3D12_GPU_BASED_VALIDATION_PIPELINE_STATE_CREATE_FLAGS
     {
         D3D12_GPU_BASED_VALIDATION_PIPELINE_STATE_CREATE_FLAG_NONE	= 0,
@@ -468,8 +418,6 @@ typedef struct D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR
     FLOAT SlowdownFactor;
     } 	D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_s_ifspec;
 
@@ -477,66 +425,64 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0003_v0_0_s_ifspec;
 #define __ID3D12DebugDevice1_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugDevice1 */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12DebugDevice1;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("a9b71770-d099-4a65-a698-3dee10020f88")
     ID3D12DebugDevice1 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE SetDebugParameter( 
+        virtual HRESULT STDMETHODCALLTYPE SetDebugParameter(
             D3D12_DEBUG_DEVICE_PARAMETER_TYPE Type,
             _In_reads_bytes_(DataSize)  const void *pData,
             UINT DataSize) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetDebugParameter( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetDebugParameter(
             D3D12_DEBUG_DEVICE_PARAMETER_TYPE Type,
             _Out_writes_bytes_(DataSize)  void *pData,
             UINT DataSize) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE ReportLiveDeviceObjects( 
+
+        virtual HRESULT STDMETHODCALLTYPE ReportLiveDeviceObjects(
             D3D12_RLDO_FLAGS Flags) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugDevice1Vtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12DebugDevice1 * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12DebugDevice1 * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12DebugDevice1 * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetDebugParameter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetDebugParameter )(
             ID3D12DebugDevice1 * This,
             D3D12_DEBUG_DEVICE_PARAMETER_TYPE Type,
             _In_reads_bytes_(DataSize)  const void *pData,
             UINT DataSize);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetDebugParameter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetDebugParameter )(
             ID3D12DebugDevice1 * This,
             D3D12_DEBUG_DEVICE_PARAMETER_TYPE Type,
             _Out_writes_bytes_(DataSize)  void *pData,
             UINT DataSize);
-        
-        HRESULT ( STDMETHODCALLTYPE *ReportLiveDeviceObjects )( 
+
+        HRESULT ( STDMETHODCALLTYPE *ReportLiveDeviceObjects )(
             ID3D12DebugDevice1 * This,
             D3D12_RLDO_FLAGS Flags);
-        
+
         END_INTERFACE
     } ID3D12DebugDevice1Vtbl;
 
@@ -545,95 +491,84 @@ EXTERN_C const IID IID_ID3D12DebugDevice1;
         CONST_VTBL struct ID3D12DebugDevice1Vtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugDevice1_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12DebugDevice1_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12DebugDevice1_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12DebugDevice1_SetDebugParameter(This,Type,pData,DataSize)	\
-    ( (This)->lpVtbl -> SetDebugParameter(This,Type,pData,DataSize) ) 
+    ( (This)->lpVtbl -> SetDebugParameter(This,Type,pData,DataSize) )
 
 #define ID3D12DebugDevice1_GetDebugParameter(This,Type,pData,DataSize)	\
-    ( (This)->lpVtbl -> GetDebugParameter(This,Type,pData,DataSize) ) 
+    ( (This)->lpVtbl -> GetDebugParameter(This,Type,pData,DataSize) )
 
 #define ID3D12DebugDevice1_ReportLiveDeviceObjects(This,Flags)	\
-    ( (This)->lpVtbl -> ReportLiveDeviceObjects(This,Flags) ) 
+    ( (This)->lpVtbl -> ReportLiveDeviceObjects(This,Flags) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugDevice1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DebugDevice_INTERFACE_DEFINED__
 #define __ID3D12DebugDevice_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugDevice */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12DebugDevice;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("3febd6dd-4973-4787-8194-e45f9e28923e")
     ID3D12DebugDevice : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE SetFeatureMask( 
+        virtual HRESULT STDMETHODCALLTYPE SetFeatureMask(
             D3D12_DEBUG_FEATURE Mask) = 0;
-        
+
         virtual D3D12_DEBUG_FEATURE STDMETHODCALLTYPE GetFeatureMask( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE ReportLiveDeviceObjects( 
+
+        virtual HRESULT STDMETHODCALLTYPE ReportLiveDeviceObjects(
             D3D12_RLDO_FLAGS Flags) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugDeviceVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12DebugDevice * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12DebugDevice * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12DebugDevice * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetFeatureMask )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetFeatureMask )(
             ID3D12DebugDevice * This,
             D3D12_DEBUG_FEATURE Mask);
-        
-        D3D12_DEBUG_FEATURE ( STDMETHODCALLTYPE *GetFeatureMask )( 
+
+        D3D12_DEBUG_FEATURE ( STDMETHODCALLTYPE *GetFeatureMask )(
             ID3D12DebugDevice * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *ReportLiveDeviceObjects )( 
+
+        HRESULT ( STDMETHODCALLTYPE *ReportLiveDeviceObjects )(
             ID3D12DebugDevice * This,
             D3D12_RLDO_FLAGS Flags);
-        
+
         END_INTERFACE
     } ID3D12DebugDeviceVtbl;
 
@@ -642,46 +577,36 @@ EXTERN_C const IID IID_ID3D12DebugDevice;
         CONST_VTBL struct ID3D12DebugDeviceVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugDevice_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12DebugDevice_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12DebugDevice_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12DebugDevice_SetFeatureMask(This,Mask)	\
-    ( (This)->lpVtbl -> SetFeatureMask(This,Mask) ) 
+    ( (This)->lpVtbl -> SetFeatureMask(This,Mask) )
 
 #define ID3D12DebugDevice_GetFeatureMask(This)	\
-    ( (This)->lpVtbl -> GetFeatureMask(This) ) 
+    ( (This)->lpVtbl -> GetFeatureMask(This) )
 
 #define ID3D12DebugDevice_ReportLiveDeviceObjects(This,Flags)	\
-    ( (This)->lpVtbl -> ReportLiveDeviceObjects(This,Flags) ) 
+    ( (This)->lpVtbl -> ReportLiveDeviceObjects(This,Flags) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12DebugDevice_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0005 */
-/* [local] */ 
+/* [local] */
 
 DEFINE_GUID(DXGI_DEBUG_D3D12, 0xcf59a98c, 0xa950, 0x4326, 0x91, 0xef, 0x9b, 0xba, 0xa1, 0x7b, 0xfd, 0x95);
-
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_s_ifspec;
@@ -690,48 +615,46 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0005_v0_0_s_ifspec;
 #define __ID3D12DebugCommandQueue_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugCommandQueue */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12DebugCommandQueue;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("09e0bf36-54ac-484f-8847-4baeeab6053a")
     ID3D12DebugCommandQueue : public IUnknown
     {
     public:
-        virtual BOOL STDMETHODCALLTYPE AssertResourceState( 
+        virtual BOOL STDMETHODCALLTYPE AssertResourceState(
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugCommandQueueVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12DebugCommandQueue * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12DebugCommandQueue * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12DebugCommandQueue * This);
-        
-        BOOL ( STDMETHODCALLTYPE *AssertResourceState )( 
+
+        BOOL ( STDMETHODCALLTYPE *AssertResourceState )(
             ID3D12DebugCommandQueue * This,
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State);
-        
+
         END_INTERFACE
     } ID3D12DebugCommandQueueVtbl;
 
@@ -740,39 +663,30 @@ EXTERN_C const IID IID_ID3D12DebugCommandQueue;
         CONST_VTBL struct ID3D12DebugCommandQueueVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandQueue_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12DebugCommandQueue_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12DebugCommandQueue_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12DebugCommandQueue_AssertResourceState(This,pResource,Subresource,State)	\
-    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
+    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12DebugCommandQueue_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0006 */
-/* [local] */ 
+/* [local] */
 
-typedef 
+typedef
 enum D3D12_DEBUG_COMMAND_LIST_PARAMETER_TYPE
     {
         D3D12_DEBUG_COMMAND_LIST_PARAMETER_GPU_BASED_VALIDATION_SETTINGS	= 0
@@ -783,8 +697,6 @@ typedef struct D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS
     D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE ShaderPatchMode;
     } 	D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS;
 
-
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_s_ifspec;
 
@@ -792,70 +704,68 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0006_v0_0_s_ifspec;
 #define __ID3D12DebugCommandList1_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugCommandList1 */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12DebugCommandList1;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("102ca951-311b-4b01-b11f-ecb83e061b37")
     ID3D12DebugCommandList1 : public IUnknown
     {
     public:
-        virtual BOOL STDMETHODCALLTYPE AssertResourceState( 
+        virtual BOOL STDMETHODCALLTYPE AssertResourceState(
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetDebugParameter( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetDebugParameter(
             D3D12_DEBUG_COMMAND_LIST_PARAMETER_TYPE Type,
             _In_reads_bytes_(DataSize)  const void *pData,
             UINT DataSize) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetDebugParameter( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetDebugParameter(
             D3D12_DEBUG_COMMAND_LIST_PARAMETER_TYPE Type,
             _Out_writes_bytes_(DataSize)  void *pData,
             UINT DataSize) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugCommandList1Vtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12DebugCommandList1 * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12DebugCommandList1 * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12DebugCommandList1 * This);
-        
-        BOOL ( STDMETHODCALLTYPE *AssertResourceState )( 
+
+        BOOL ( STDMETHODCALLTYPE *AssertResourceState )(
             ID3D12DebugCommandList1 * This,
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetDebugParameter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetDebugParameter )(
             ID3D12DebugCommandList1 * This,
             D3D12_DEBUG_COMMAND_LIST_PARAMETER_TYPE Type,
             _In_reads_bytes_(DataSize)  const void *pData,
             UINT DataSize);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetDebugParameter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetDebugParameter )(
             ID3D12DebugCommandList1 * This,
             D3D12_DEBUG_COMMAND_LIST_PARAMETER_TYPE Type,
             _Out_writes_bytes_(DataSize)  void *pData,
             UINT DataSize);
-        
+
         END_INTERFACE
     } ID3D12DebugCommandList1Vtbl;
 
@@ -864,99 +774,88 @@ EXTERN_C const IID IID_ID3D12DebugCommandList1;
         CONST_VTBL struct ID3D12DebugCommandList1Vtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandList1_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12DebugCommandList1_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12DebugCommandList1_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12DebugCommandList1_AssertResourceState(This,pResource,Subresource,State)	\
-    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
+    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) )
 
 #define ID3D12DebugCommandList1_SetDebugParameter(This,Type,pData,DataSize)	\
-    ( (This)->lpVtbl -> SetDebugParameter(This,Type,pData,DataSize) ) 
+    ( (This)->lpVtbl -> SetDebugParameter(This,Type,pData,DataSize) )
 
 #define ID3D12DebugCommandList1_GetDebugParameter(This,Type,pData,DataSize)	\
-    ( (This)->lpVtbl -> GetDebugParameter(This,Type,pData,DataSize) ) 
+    ( (This)->lpVtbl -> GetDebugParameter(This,Type,pData,DataSize) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugCommandList1_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12DebugCommandList_INTERFACE_DEFINED__
 #define __ID3D12DebugCommandList_INTERFACE_DEFINED__
 
 /* interface ID3D12DebugCommandList */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12DebugCommandList;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("09e0bf36-54ac-484f-8847-4baeeab6053f")
     ID3D12DebugCommandList : public IUnknown
     {
     public:
-        virtual BOOL STDMETHODCALLTYPE AssertResourceState( 
+        virtual BOOL STDMETHODCALLTYPE AssertResourceState(
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetFeatureMask( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetFeatureMask(
             D3D12_DEBUG_FEATURE Mask) = 0;
-        
+
         virtual D3D12_DEBUG_FEATURE STDMETHODCALLTYPE GetFeatureMask( void) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12DebugCommandListVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12DebugCommandList * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12DebugCommandList * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12DebugCommandList * This);
-        
-        BOOL ( STDMETHODCALLTYPE *AssertResourceState )( 
+
+        BOOL ( STDMETHODCALLTYPE *AssertResourceState )(
             ID3D12DebugCommandList * This,
             _In_  ID3D12Resource *pResource,
             UINT Subresource,
             UINT State);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetFeatureMask )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetFeatureMask )(
             ID3D12DebugCommandList * This,
             D3D12_DEBUG_FEATURE Mask);
-        
-        D3D12_DEBUG_FEATURE ( STDMETHODCALLTYPE *GetFeatureMask )( 
+
+        D3D12_DEBUG_FEATURE ( STDMETHODCALLTYPE *GetFeatureMask )(
             ID3D12DebugCommandList * This);
-        
+
         END_INTERFACE
     } ID3D12DebugCommandListVtbl;
 
@@ -965,94 +864,83 @@ EXTERN_C const IID IID_ID3D12DebugCommandList;
         CONST_VTBL struct ID3D12DebugCommandListVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12DebugCommandList_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12DebugCommandList_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12DebugCommandList_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12DebugCommandList_AssertResourceState(This,pResource,Subresource,State)	\
-    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) ) 
+    ( (This)->lpVtbl -> AssertResourceState(This,pResource,Subresource,State) )
 
 #define ID3D12DebugCommandList_SetFeatureMask(This,Mask)	\
-    ( (This)->lpVtbl -> SetFeatureMask(This,Mask) ) 
+    ( (This)->lpVtbl -> SetFeatureMask(This,Mask) )
 
 #define ID3D12DebugCommandList_GetFeatureMask(This)	\
-    ( (This)->lpVtbl -> GetFeatureMask(This) ) 
+    ( (This)->lpVtbl -> GetFeatureMask(This) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
 
-
-
-
 #endif 	/* __ID3D12DebugCommandList_INTERFACE_DEFINED__ */
-
 
 #ifndef __ID3D12SharingContract_INTERFACE_DEFINED__
 #define __ID3D12SharingContract_INTERFACE_DEFINED__
 
 /* interface ID3D12SharingContract */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12SharingContract;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("a251ff70-cdeb-49fa-9bcf-5ebdf4dbaca9")
     ID3D12SharingContract : public IUnknown
     {
     public:
-        virtual void STDMETHODCALLTYPE Present( 
+        virtual void STDMETHODCALLTYPE Present(
             _In_  ID3D12Resource *pResource,
             UINT Subresource) = 0;
-        
-        virtual void STDMETHODCALLTYPE SharedFenceSignal( 
+
+        virtual void STDMETHODCALLTYPE SharedFenceSignal(
             _In_  ID3D12Fence *pFence,
             UINT64 FenceValue) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12SharingContractVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12SharingContract * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12SharingContract * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12SharingContract * This);
-        
-        void ( STDMETHODCALLTYPE *Present )( 
+
+        void ( STDMETHODCALLTYPE *Present )(
             ID3D12SharingContract * This,
             _In_  ID3D12Resource *pResource,
             UINT Subresource);
-        
-        void ( STDMETHODCALLTYPE *SharedFenceSignal )( 
+
+        void ( STDMETHODCALLTYPE *SharedFenceSignal )(
             ID3D12SharingContract * This,
             _In_  ID3D12Fence *pFence,
             UINT64 FenceValue);
-        
+
         END_INTERFACE
     } ID3D12SharingContractVtbl;
 
@@ -1061,42 +949,33 @@ EXTERN_C const IID IID_ID3D12SharingContract;
         CONST_VTBL struct ID3D12SharingContractVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12SharingContract_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12SharingContract_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12SharingContract_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12SharingContract_Present(This,pResource,Subresource)	\
-    ( (This)->lpVtbl -> Present(This,pResource,Subresource) ) 
+    ( (This)->lpVtbl -> Present(This,pResource,Subresource) )
 
 #define ID3D12SharingContract_SharedFenceSignal(This,pFence,FenceValue)	\
-    ( (This)->lpVtbl -> SharedFenceSignal(This,pFence,FenceValue) ) 
+    ( (This)->lpVtbl -> SharedFenceSignal(This,pFence,FenceValue) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12SharingContract_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0009 */
-/* [local] */ 
+/* [local] */
 
-typedef 
+typedef
 enum D3D12_MESSAGE_CATEGORY
     {
         D3D12_MESSAGE_CATEGORY_APPLICATION_DEFINED	= 0,
@@ -1109,20 +988,20 @@ enum D3D12_MESSAGE_CATEGORY
         D3D12_MESSAGE_CATEGORY_STATE_GETTING	= ( D3D12_MESSAGE_CATEGORY_STATE_SETTING + 1 ) ,
         D3D12_MESSAGE_CATEGORY_RESOURCE_MANIPULATION	= ( D3D12_MESSAGE_CATEGORY_STATE_GETTING + 1 ) ,
         D3D12_MESSAGE_CATEGORY_EXECUTION	= ( D3D12_MESSAGE_CATEGORY_RESOURCE_MANIPULATION + 1 ) ,
-        D3D12_MESSAGE_CATEGORY_SHADER	= ( D3D12_MESSAGE_CATEGORY_EXECUTION + 1 ) 
+        D3D12_MESSAGE_CATEGORY_SHADER	= ( D3D12_MESSAGE_CATEGORY_EXECUTION + 1 )
     } 	D3D12_MESSAGE_CATEGORY;
 
-typedef 
+typedef
 enum D3D12_MESSAGE_SEVERITY
     {
         D3D12_MESSAGE_SEVERITY_CORRUPTION	= 0,
         D3D12_MESSAGE_SEVERITY_ERROR	= ( D3D12_MESSAGE_SEVERITY_CORRUPTION + 1 ) ,
         D3D12_MESSAGE_SEVERITY_WARNING	= ( D3D12_MESSAGE_SEVERITY_ERROR + 1 ) ,
         D3D12_MESSAGE_SEVERITY_INFO	= ( D3D12_MESSAGE_SEVERITY_WARNING + 1 ) ,
-        D3D12_MESSAGE_SEVERITY_MESSAGE	= ( D3D12_MESSAGE_SEVERITY_INFO + 1 ) 
+        D3D12_MESSAGE_SEVERITY_MESSAGE	= ( D3D12_MESSAGE_SEVERITY_INFO + 1 )
     } 	D3D12_MESSAGE_SEVERITY;
 
-typedef 
+typedef
 enum D3D12_MESSAGE_ID
     {
         D3D12_MESSAGE_ID_UNKNOWN	= 0,
@@ -2236,7 +2115,7 @@ enum D3D12_MESSAGE_ID
         D3D12_MESSAGE_ID_ENQUEUE_MAKE_RESIDENT_INVALID_FLAGS	= 1111,
         D3D12_MESSAGE_ID_OPENEXISTINGHEAP_UNSUPPORTED	= 1112,
         D3D12_MESSAGE_ID_VIDEO_PROCESS_FRAMES_INVALID_ARGUMENT	= 1113,
-        D3D12_MESSAGE_ID_D3D12_MESSAGES_END	= ( D3D12_MESSAGE_ID_VIDEO_PROCESS_FRAMES_INVALID_ARGUMENT + 1 ) 
+        D3D12_MESSAGE_ID_D3D12_MESSAGES_END	= ( D3D12_MESSAGE_ID_VIDEO_PROCESS_FRAMES_INVALID_ARGUMENT + 1 )
     } 	D3D12_MESSAGE_ID;
 
 typedef struct D3D12_MESSAGE
@@ -2266,7 +2145,6 @@ typedef struct D3D12_INFO_QUEUE_FILTER
 
 #define D3D12_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT 1024
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_s_ifspec;
 
@@ -2274,268 +2152,266 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0009_v0_0_s_ifspec;
 #define __ID3D12InfoQueue_INTERFACE_DEFINED__
 
 /* interface ID3D12InfoQueue */
-/* [unique][local][object][uuid] */ 
-
+/* [unique][local][object][uuid] */
 
 EXTERN_C const IID IID_ID3D12InfoQueue;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("0742a90b-c387-483f-b946-30a7e4e61458")
     ID3D12InfoQueue : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE SetMessageCountLimit( 
+        virtual HRESULT STDMETHODCALLTYPE SetMessageCountLimit(
             _In_  UINT64 MessageCountLimit) = 0;
-        
+
         virtual void STDMETHODCALLTYPE ClearStoredMessages( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetMessage( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetMessage(
             _In_  UINT64 MessageIndex,
             _Out_writes_bytes_opt_(*pMessageByteLength)  D3D12_MESSAGE *pMessage,
             _Inout_  SIZE_T *pMessageByteLength) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetNumMessagesAllowedByStorageFilter( void) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetNumMessagesDeniedByStorageFilter( void) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetNumStoredMessages( void) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetNumStoredMessagesAllowedByRetrievalFilter( void) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetNumMessagesDiscardedByMessageCountLimit( void) = 0;
-        
+
         virtual UINT64 STDMETHODCALLTYPE GetMessageCountLimit( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE AddStorageFilterEntries( 
+
+        virtual HRESULT STDMETHODCALLTYPE AddStorageFilterEntries(
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetStorageFilter( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetStorageFilter(
             _Out_writes_bytes_opt_(*pFilterByteLength)  D3D12_INFO_QUEUE_FILTER *pFilter,
             _Inout_  SIZE_T *pFilterByteLength) = 0;
-        
+
         virtual void STDMETHODCALLTYPE ClearStorageFilter( void) = 0;
-        
+
         virtual HRESULT STDMETHODCALLTYPE PushEmptyStorageFilter( void) = 0;
-        
+
         virtual HRESULT STDMETHODCALLTYPE PushCopyOfStorageFilter( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE PushStorageFilter( 
+
+        virtual HRESULT STDMETHODCALLTYPE PushStorageFilter(
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter) = 0;
-        
+
         virtual void STDMETHODCALLTYPE PopStorageFilter( void) = 0;
-        
+
         virtual UINT STDMETHODCALLTYPE GetStorageFilterStackSize( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE AddRetrievalFilterEntries( 
+
+        virtual HRESULT STDMETHODCALLTYPE AddRetrievalFilterEntries(
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetRetrievalFilter( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetRetrievalFilter(
             _Out_writes_bytes_opt_(*pFilterByteLength)  D3D12_INFO_QUEUE_FILTER *pFilter,
             _Inout_  SIZE_T *pFilterByteLength) = 0;
-        
+
         virtual void STDMETHODCALLTYPE ClearRetrievalFilter( void) = 0;
-        
+
         virtual HRESULT STDMETHODCALLTYPE PushEmptyRetrievalFilter( void) = 0;
-        
+
         virtual HRESULT STDMETHODCALLTYPE PushCopyOfRetrievalFilter( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE PushRetrievalFilter( 
+
+        virtual HRESULT STDMETHODCALLTYPE PushRetrievalFilter(
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter) = 0;
-        
+
         virtual void STDMETHODCALLTYPE PopRetrievalFilter( void) = 0;
-        
+
         virtual UINT STDMETHODCALLTYPE GetRetrievalFilterStackSize( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE AddMessage( 
+
+        virtual HRESULT STDMETHODCALLTYPE AddMessage(
             _In_  D3D12_MESSAGE_CATEGORY Category,
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  D3D12_MESSAGE_ID ID,
             _In_  LPCSTR pDescription) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE AddApplicationMessage( 
+
+        virtual HRESULT STDMETHODCALLTYPE AddApplicationMessage(
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  LPCSTR pDescription) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetBreakOnCategory( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetBreakOnCategory(
             _In_  D3D12_MESSAGE_CATEGORY Category,
             _In_  BOOL bEnable) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetBreakOnSeverity( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetBreakOnSeverity(
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  BOOL bEnable) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetBreakOnID( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetBreakOnID(
             _In_  D3D12_MESSAGE_ID ID,
             _In_  BOOL bEnable) = 0;
-        
-        virtual BOOL STDMETHODCALLTYPE GetBreakOnCategory( 
+
+        virtual BOOL STDMETHODCALLTYPE GetBreakOnCategory(
             _In_  D3D12_MESSAGE_CATEGORY Category) = 0;
-        
-        virtual BOOL STDMETHODCALLTYPE GetBreakOnSeverity( 
+
+        virtual BOOL STDMETHODCALLTYPE GetBreakOnSeverity(
             _In_  D3D12_MESSAGE_SEVERITY Severity) = 0;
-        
-        virtual BOOL STDMETHODCALLTYPE GetBreakOnID( 
+
+        virtual BOOL STDMETHODCALLTYPE GetBreakOnID(
             _In_  D3D12_MESSAGE_ID ID) = 0;
-        
-        virtual void STDMETHODCALLTYPE SetMuteDebugOutput( 
+
+        virtual void STDMETHODCALLTYPE SetMuteDebugOutput(
             _In_  BOOL bMute) = 0;
-        
+
         virtual BOOL STDMETHODCALLTYPE GetMuteDebugOutput( void) = 0;
-        
+
     };
-    
-    
+
 #else 	/* C style interface */
 
     typedef struct ID3D12InfoQueueVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
             ID3D12InfoQueue * This,
             REFIID riid,
             _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
             ID3D12InfoQueue * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetMessageCountLimit )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetMessageCountLimit )(
             ID3D12InfoQueue * This,
             _In_  UINT64 MessageCountLimit);
-        
-        void ( STDMETHODCALLTYPE *ClearStoredMessages )( 
+
+        void ( STDMETHODCALLTYPE *ClearStoredMessages )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetMessage )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetMessage )(
             ID3D12InfoQueue * This,
             _In_  UINT64 MessageIndex,
             _Out_writes_bytes_opt_(*pMessageByteLength)  D3D12_MESSAGE *pMessage,
             _Inout_  SIZE_T *pMessageByteLength);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesAllowedByStorageFilter )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesAllowedByStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesDeniedByStorageFilter )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesDeniedByStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetNumStoredMessages )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetNumStoredMessages )(
             ID3D12InfoQueue * This);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetNumStoredMessagesAllowedByRetrievalFilter )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetNumStoredMessagesAllowedByRetrievalFilter )(
             ID3D12InfoQueue * This);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesDiscardedByMessageCountLimit )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetNumMessagesDiscardedByMessageCountLimit )(
             ID3D12InfoQueue * This);
-        
-        UINT64 ( STDMETHODCALLTYPE *GetMessageCountLimit )( 
+
+        UINT64 ( STDMETHODCALLTYPE *GetMessageCountLimit )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *AddStorageFilterEntries )( 
+
+        HRESULT ( STDMETHODCALLTYPE *AddStorageFilterEntries )(
             ID3D12InfoQueue * This,
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetStorageFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetStorageFilter )(
             ID3D12InfoQueue * This,
             _Out_writes_bytes_opt_(*pFilterByteLength)  D3D12_INFO_QUEUE_FILTER *pFilter,
             _Inout_  SIZE_T *pFilterByteLength);
-        
-        void ( STDMETHODCALLTYPE *ClearStorageFilter )( 
+
+        void ( STDMETHODCALLTYPE *ClearStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushEmptyStorageFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushEmptyStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushCopyOfStorageFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushCopyOfStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushStorageFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushStorageFilter )(
             ID3D12InfoQueue * This,
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter);
-        
-        void ( STDMETHODCALLTYPE *PopStorageFilter )( 
+
+        void ( STDMETHODCALLTYPE *PopStorageFilter )(
             ID3D12InfoQueue * This);
-        
-        UINT ( STDMETHODCALLTYPE *GetStorageFilterStackSize )( 
+
+        UINT ( STDMETHODCALLTYPE *GetStorageFilterStackSize )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *AddRetrievalFilterEntries )( 
+
+        HRESULT ( STDMETHODCALLTYPE *AddRetrievalFilterEntries )(
             ID3D12InfoQueue * This,
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetRetrievalFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *GetRetrievalFilter )(
             ID3D12InfoQueue * This,
             _Out_writes_bytes_opt_(*pFilterByteLength)  D3D12_INFO_QUEUE_FILTER *pFilter,
             _Inout_  SIZE_T *pFilterByteLength);
-        
-        void ( STDMETHODCALLTYPE *ClearRetrievalFilter )( 
+
+        void ( STDMETHODCALLTYPE *ClearRetrievalFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushEmptyRetrievalFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushEmptyRetrievalFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushCopyOfRetrievalFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushCopyOfRetrievalFilter )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *PushRetrievalFilter )( 
+
+        HRESULT ( STDMETHODCALLTYPE *PushRetrievalFilter )(
             ID3D12InfoQueue * This,
             _In_  D3D12_INFO_QUEUE_FILTER *pFilter);
-        
-        void ( STDMETHODCALLTYPE *PopRetrievalFilter )( 
+
+        void ( STDMETHODCALLTYPE *PopRetrievalFilter )(
             ID3D12InfoQueue * This);
-        
-        UINT ( STDMETHODCALLTYPE *GetRetrievalFilterStackSize )( 
+
+        UINT ( STDMETHODCALLTYPE *GetRetrievalFilterStackSize )(
             ID3D12InfoQueue * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *AddMessage )( 
+
+        HRESULT ( STDMETHODCALLTYPE *AddMessage )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_CATEGORY Category,
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  D3D12_MESSAGE_ID ID,
             _In_  LPCSTR pDescription);
-        
-        HRESULT ( STDMETHODCALLTYPE *AddApplicationMessage )( 
+
+        HRESULT ( STDMETHODCALLTYPE *AddApplicationMessage )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  LPCSTR pDescription);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetBreakOnCategory )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetBreakOnCategory )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_CATEGORY Category,
             _In_  BOOL bEnable);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetBreakOnSeverity )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetBreakOnSeverity )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_SEVERITY Severity,
             _In_  BOOL bEnable);
-        
-        HRESULT ( STDMETHODCALLTYPE *SetBreakOnID )( 
+
+        HRESULT ( STDMETHODCALLTYPE *SetBreakOnID )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_ID ID,
             _In_  BOOL bEnable);
-        
-        BOOL ( STDMETHODCALLTYPE *GetBreakOnCategory )( 
+
+        BOOL ( STDMETHODCALLTYPE *GetBreakOnCategory )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_CATEGORY Category);
-        
-        BOOL ( STDMETHODCALLTYPE *GetBreakOnSeverity )( 
+
+        BOOL ( STDMETHODCALLTYPE *GetBreakOnSeverity )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_SEVERITY Severity);
-        
-        BOOL ( STDMETHODCALLTYPE *GetBreakOnID )( 
+
+        BOOL ( STDMETHODCALLTYPE *GetBreakOnID )(
             ID3D12InfoQueue * This,
             _In_  D3D12_MESSAGE_ID ID);
-        
-        void ( STDMETHODCALLTYPE *SetMuteDebugOutput )( 
+
+        void ( STDMETHODCALLTYPE *SetMuteDebugOutput )(
             ID3D12InfoQueue * This,
             _In_  BOOL bMute);
-        
-        BOOL ( STDMETHODCALLTYPE *GetMuteDebugOutput )( 
+
+        BOOL ( STDMETHODCALLTYPE *GetMuteDebugOutput )(
             ID3D12InfoQueue * This);
-        
+
         END_INTERFACE
     } ID3D12InfoQueueVtbl;
 
@@ -2544,139 +2420,130 @@ EXTERN_C const IID IID_ID3D12InfoQueue;
         CONST_VTBL struct ID3D12InfoQueueVtbl *lpVtbl;
     };
 
-    
-
 #ifdef COBJMACROS
 
-
 #define ID3D12InfoQueue_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
 #define ID3D12InfoQueue_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
+    ( (This)->lpVtbl -> AddRef(This) )
 
 #define ID3D12InfoQueue_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
+    ( (This)->lpVtbl -> Release(This) )
 
 #define ID3D12InfoQueue_SetMessageCountLimit(This,MessageCountLimit)	\
-    ( (This)->lpVtbl -> SetMessageCountLimit(This,MessageCountLimit) ) 
+    ( (This)->lpVtbl -> SetMessageCountLimit(This,MessageCountLimit) )
 
 #define ID3D12InfoQueue_ClearStoredMessages(This)	\
-    ( (This)->lpVtbl -> ClearStoredMessages(This) ) 
+    ( (This)->lpVtbl -> ClearStoredMessages(This) )
 
 #define ID3D12InfoQueue_GetMessage(This,MessageIndex,pMessage,pMessageByteLength)	\
-    ( (This)->lpVtbl -> GetMessage(This,MessageIndex,pMessage,pMessageByteLength) ) 
+    ( (This)->lpVtbl -> GetMessage(This,MessageIndex,pMessage,pMessageByteLength) )
 
 #define ID3D12InfoQueue_GetNumMessagesAllowedByStorageFilter(This)	\
-    ( (This)->lpVtbl -> GetNumMessagesAllowedByStorageFilter(This) ) 
+    ( (This)->lpVtbl -> GetNumMessagesAllowedByStorageFilter(This) )
 
 #define ID3D12InfoQueue_GetNumMessagesDeniedByStorageFilter(This)	\
-    ( (This)->lpVtbl -> GetNumMessagesDeniedByStorageFilter(This) ) 
+    ( (This)->lpVtbl -> GetNumMessagesDeniedByStorageFilter(This) )
 
 #define ID3D12InfoQueue_GetNumStoredMessages(This)	\
-    ( (This)->lpVtbl -> GetNumStoredMessages(This) ) 
+    ( (This)->lpVtbl -> GetNumStoredMessages(This) )
 
 #define ID3D12InfoQueue_GetNumStoredMessagesAllowedByRetrievalFilter(This)	\
-    ( (This)->lpVtbl -> GetNumStoredMessagesAllowedByRetrievalFilter(This) ) 
+    ( (This)->lpVtbl -> GetNumStoredMessagesAllowedByRetrievalFilter(This) )
 
 #define ID3D12InfoQueue_GetNumMessagesDiscardedByMessageCountLimit(This)	\
-    ( (This)->lpVtbl -> GetNumMessagesDiscardedByMessageCountLimit(This) ) 
+    ( (This)->lpVtbl -> GetNumMessagesDiscardedByMessageCountLimit(This) )
 
 #define ID3D12InfoQueue_GetMessageCountLimit(This)	\
-    ( (This)->lpVtbl -> GetMessageCountLimit(This) ) 
+    ( (This)->lpVtbl -> GetMessageCountLimit(This) )
 
 #define ID3D12InfoQueue_AddStorageFilterEntries(This,pFilter)	\
-    ( (This)->lpVtbl -> AddStorageFilterEntries(This,pFilter) ) 
+    ( (This)->lpVtbl -> AddStorageFilterEntries(This,pFilter) )
 
 #define ID3D12InfoQueue_GetStorageFilter(This,pFilter,pFilterByteLength)	\
-    ( (This)->lpVtbl -> GetStorageFilter(This,pFilter,pFilterByteLength) ) 
+    ( (This)->lpVtbl -> GetStorageFilter(This,pFilter,pFilterByteLength) )
 
 #define ID3D12InfoQueue_ClearStorageFilter(This)	\
-    ( (This)->lpVtbl -> ClearStorageFilter(This) ) 
+    ( (This)->lpVtbl -> ClearStorageFilter(This) )
 
 #define ID3D12InfoQueue_PushEmptyStorageFilter(This)	\
-    ( (This)->lpVtbl -> PushEmptyStorageFilter(This) ) 
+    ( (This)->lpVtbl -> PushEmptyStorageFilter(This) )
 
 #define ID3D12InfoQueue_PushCopyOfStorageFilter(This)	\
-    ( (This)->lpVtbl -> PushCopyOfStorageFilter(This) ) 
+    ( (This)->lpVtbl -> PushCopyOfStorageFilter(This) )
 
 #define ID3D12InfoQueue_PushStorageFilter(This,pFilter)	\
-    ( (This)->lpVtbl -> PushStorageFilter(This,pFilter) ) 
+    ( (This)->lpVtbl -> PushStorageFilter(This,pFilter) )
 
 #define ID3D12InfoQueue_PopStorageFilter(This)	\
-    ( (This)->lpVtbl -> PopStorageFilter(This) ) 
+    ( (This)->lpVtbl -> PopStorageFilter(This) )
 
 #define ID3D12InfoQueue_GetStorageFilterStackSize(This)	\
-    ( (This)->lpVtbl -> GetStorageFilterStackSize(This) ) 
+    ( (This)->lpVtbl -> GetStorageFilterStackSize(This) )
 
 #define ID3D12InfoQueue_AddRetrievalFilterEntries(This,pFilter)	\
-    ( (This)->lpVtbl -> AddRetrievalFilterEntries(This,pFilter) ) 
+    ( (This)->lpVtbl -> AddRetrievalFilterEntries(This,pFilter) )
 
 #define ID3D12InfoQueue_GetRetrievalFilter(This,pFilter,pFilterByteLength)	\
-    ( (This)->lpVtbl -> GetRetrievalFilter(This,pFilter,pFilterByteLength) ) 
+    ( (This)->lpVtbl -> GetRetrievalFilter(This,pFilter,pFilterByteLength) )
 
 #define ID3D12InfoQueue_ClearRetrievalFilter(This)	\
-    ( (This)->lpVtbl -> ClearRetrievalFilter(This) ) 
+    ( (This)->lpVtbl -> ClearRetrievalFilter(This) )
 
 #define ID3D12InfoQueue_PushEmptyRetrievalFilter(This)	\
-    ( (This)->lpVtbl -> PushEmptyRetrievalFilter(This) ) 
+    ( (This)->lpVtbl -> PushEmptyRetrievalFilter(This) )
 
 #define ID3D12InfoQueue_PushCopyOfRetrievalFilter(This)	\
-    ( (This)->lpVtbl -> PushCopyOfRetrievalFilter(This) ) 
+    ( (This)->lpVtbl -> PushCopyOfRetrievalFilter(This) )
 
 #define ID3D12InfoQueue_PushRetrievalFilter(This,pFilter)	\
-    ( (This)->lpVtbl -> PushRetrievalFilter(This,pFilter) ) 
+    ( (This)->lpVtbl -> PushRetrievalFilter(This,pFilter) )
 
 #define ID3D12InfoQueue_PopRetrievalFilter(This)	\
-    ( (This)->lpVtbl -> PopRetrievalFilter(This) ) 
+    ( (This)->lpVtbl -> PopRetrievalFilter(This) )
 
 #define ID3D12InfoQueue_GetRetrievalFilterStackSize(This)	\
-    ( (This)->lpVtbl -> GetRetrievalFilterStackSize(This) ) 
+    ( (This)->lpVtbl -> GetRetrievalFilterStackSize(This) )
 
 #define ID3D12InfoQueue_AddMessage(This,Category,Severity,ID,pDescription)	\
-    ( (This)->lpVtbl -> AddMessage(This,Category,Severity,ID,pDescription) ) 
+    ( (This)->lpVtbl -> AddMessage(This,Category,Severity,ID,pDescription) )
 
 #define ID3D12InfoQueue_AddApplicationMessage(This,Severity,pDescription)	\
-    ( (This)->lpVtbl -> AddApplicationMessage(This,Severity,pDescription) ) 
+    ( (This)->lpVtbl -> AddApplicationMessage(This,Severity,pDescription) )
 
 #define ID3D12InfoQueue_SetBreakOnCategory(This,Category,bEnable)	\
-    ( (This)->lpVtbl -> SetBreakOnCategory(This,Category,bEnable) ) 
+    ( (This)->lpVtbl -> SetBreakOnCategory(This,Category,bEnable) )
 
 #define ID3D12InfoQueue_SetBreakOnSeverity(This,Severity,bEnable)	\
-    ( (This)->lpVtbl -> SetBreakOnSeverity(This,Severity,bEnable) ) 
+    ( (This)->lpVtbl -> SetBreakOnSeverity(This,Severity,bEnable) )
 
 #define ID3D12InfoQueue_SetBreakOnID(This,ID,bEnable)	\
-    ( (This)->lpVtbl -> SetBreakOnID(This,ID,bEnable) ) 
+    ( (This)->lpVtbl -> SetBreakOnID(This,ID,bEnable) )
 
 #define ID3D12InfoQueue_GetBreakOnCategory(This,Category)	\
-    ( (This)->lpVtbl -> GetBreakOnCategory(This,Category) ) 
+    ( (This)->lpVtbl -> GetBreakOnCategory(This,Category) )
 
 #define ID3D12InfoQueue_GetBreakOnSeverity(This,Severity)	\
-    ( (This)->lpVtbl -> GetBreakOnSeverity(This,Severity) ) 
+    ( (This)->lpVtbl -> GetBreakOnSeverity(This,Severity) )
 
 #define ID3D12InfoQueue_GetBreakOnID(This,ID)	\
-    ( (This)->lpVtbl -> GetBreakOnID(This,ID) ) 
+    ( (This)->lpVtbl -> GetBreakOnID(This,ID) )
 
 #define ID3D12InfoQueue_SetMuteDebugOutput(This,bMute)	\
-    ( (This)->lpVtbl -> SetMuteDebugOutput(This,bMute) ) 
+    ( (This)->lpVtbl -> SetMuteDebugOutput(This,bMute) )
 
 #define ID3D12InfoQueue_GetMuteDebugOutput(This)	\
-    ( (This)->lpVtbl -> GetMuteDebugOutput(This) ) 
+    ( (This)->lpVtbl -> GetMuteDebugOutput(This) )
 
 #endif /* COBJMACROS */
 
-
 #endif 	/* C style interface */
-
-
-
 
 #endif 	/* __ID3D12InfoQueue_INTERFACE_DEFINED__ */
 
-
 /* interface __MIDL_itf_d3d12sdklayers_0000_0010 */
-/* [local] */ 
+/* [local] */
 
 /*#endif*/ /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) */
 /*#pragma endregion*/
@@ -2691,7 +2558,6 @@ DEFINE_GUID(IID_ID3D12DebugCommandList,0x09e0bf36,0x54ac,0x484f,0x88,0x47,0x4b,0
 DEFINE_GUID(IID_ID3D12SharingContract,0xa251ff70,0xcdeb,0x49fa,0x9b,0xcf,0x5e,0xbd,0xf4,0xdb,0xac,0xa9);
 DEFINE_GUID(IID_ID3D12InfoQueue,0x0742a90b,0xc387,0x483f,0xb9,0x46,0x30,0xa7,0xe4,0xe6,0x14,0x58);
 
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_s_ifspec;
 
@@ -2704,5 +2570,3 @@ extern RPC_IF_HANDLE __MIDL_itf_d3d12sdklayers_0000_0010_v0_0_s_ifspec;
 #endif
 
 #endif
-
-

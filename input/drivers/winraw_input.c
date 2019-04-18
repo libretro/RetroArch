@@ -133,14 +133,16 @@ static bool winraw_set_keyboard_input(HWND window)
 
 static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 {
-   UINT r;
    unsigned i;
    char name[256];
    UINT name_size = sizeof(name);
 
+   name[0] = '\0';
+
    for (i = 0; i < mouse_cnt; ++i)
    {
-      r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME, name, &name_size);
+      UINT r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME,
+            name, &name_size);
       if (r == (UINT)-1 || r == 0)
          name[0] = '\0';
       RARCH_LOG("[WINRAW]: Mouse #%u %s.\n", i, name);

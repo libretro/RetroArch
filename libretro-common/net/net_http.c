@@ -483,15 +483,18 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
-   if (conn->methodcopy)
-      free(conn->methodcopy);
-   if (conn->contenttypecopy)
-      free(conn->contenttypecopy);
-   conn->methodcopy = NULL;
-   conn->contenttypecopy = NULL;
-   conn->postdatacopy = NULL;
+   if (conn)
+   {
+      if (conn->methodcopy)
+         free(conn->methodcopy);
+      if (conn->contenttypecopy)
+         free(conn->contenttypecopy);
+      conn->methodcopy = NULL;
+      conn->contenttypecopy = NULL;
+      conn->postdatacopy = NULL;
+   }
 #ifdef HAVE_SSL
-   if (conn->sock_state.ssl && conn->sock_state.ssl_ctx && fd >= 0)
+   if (conn && conn->sock_state.ssl && conn->sock_state.ssl_ctx && fd >= 0)
    {
       ssl_socket_close(conn->sock_state.ssl_ctx);
       ssl_socket_free(conn->sock_state.ssl_ctx);

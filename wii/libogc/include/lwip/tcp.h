@@ -99,15 +99,12 @@ void             tcp_setprio (struct tcp_pcb *pcb, u8_t prio);
 void             tcp_slowtmr (void);
 void             tcp_fasttmr (void);
 
-
 /* Only used by IP to pass a TCP segment to TCP: */
 void             tcp_input   (struct pbuf *p, struct netif *inp);
 /* Used within the TCP code only: */
 err_t            tcp_output  (struct tcp_pcb *pcb);
 void             tcp_rexmit  (struct tcp_pcb *pcb);
 void             tcp_rexmit_rto  (struct tcp_pcb *pcb);
-
-
 
 #define TCP_SEQ_LT(a,b)     ((s32_t)((a)-(b)) < 0)
 #define TCP_SEQ_LEQ(a,b)    ((s32_t)((a)-(b)) <= 0)
@@ -165,7 +162,6 @@ void             tcp_rexmit_rto  (struct tcp_pcb *pcb);
 #define  TCP_KEEPINTVL     75000                         /* Time between KEEPALIVE probes in miliseconds */
 #define  TCP_KEEPCNT       9                             /* Counter for KEEPALIVE probes */
 #define  TCP_MAXIDLE       TCP_KEEPCNT * TCP_KEEPINTVL   /* Maximum KEEPALIVE probe time */
-
 
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
@@ -276,7 +272,6 @@ struct tcp_pcb {
 
   u16_t snd_buf;   /* Available buffer space for sending (in bytes). */
   u16_t snd_queuelen; /* Available buffer space for sending (in tcp_segs). */
-
 
   /* These are ordered by sequence number: */
   struct tcp_seg *unsent;   /* Unsent (queued) segments. */
@@ -528,6 +523,3 @@ extern struct tcp_pcb *tcp_tmp_pcb;      /* Only used for temporary storage. */
                             } while(0)
 #endif /* LWIP_DEBUG */
 #endif /* __LWIP_TCP_H__ */
-
-
-

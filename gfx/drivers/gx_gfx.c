@@ -1265,8 +1265,6 @@ static void gx_get_video_output_next(void *data)
 
 static const video_poke_interface_t gx_poke_interface = {
    NULL, /* get_flags */
-   NULL,                      /* set_coords */
-   NULL,                      /* set_mvp */
    NULL,
    NULL,
    gx_set_video_mode,
@@ -1539,7 +1537,6 @@ static bool gx_frame(void *data, const void *frame,
 
    g_draw_done = false;
    g_current_framebuf ^= 1;
-
 
    if (frame)
    {

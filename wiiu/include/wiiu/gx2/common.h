@@ -13,4 +13,3 @@
 
 #define GX2_TRUE                       TRUE
 #define GX2_FALSE                      FALSE
-

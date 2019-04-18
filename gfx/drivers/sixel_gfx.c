@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2018 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,6 +30,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/sixel_common.h"
@@ -598,8 +599,6 @@ static void sixel_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 static const video_poke_interface_t sixel_poke_interface = {
-   NULL,
-   NULL,
    NULL,
    NULL,
    NULL,

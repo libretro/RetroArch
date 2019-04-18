@@ -124,7 +124,6 @@ static int ir_correct_for_bounds(float* x, float* y, enum aspect_t aspect, int o
 	return 0;
 }
 
-
 /**
  *	@brief Interpolate the point to the user defined virtual screen resolution.
  */
@@ -303,7 +302,6 @@ void wiiuse_set_aspect_ratio(struct wiimote_t* wm, enum aspect_t aspect) {
 	wiiuse_set_ir_position(wm, wm->ir.pos);
 }
 
-
 /**
  *	@brief	Set the IR sensitivity.
  *
@@ -358,7 +356,6 @@ void wiiuse_set_ir_sensitivity(struct wiimote_t* wm, int level) {
 
 	WIIUSE_DEBUG("Set IR sensitivity to level %i (unid %i)", level, wm->unid);
 }
-
 
 /**
  *	@brief Calculate the data from the IR spots.  Basic IR mode.
@@ -834,4 +831,3 @@ float calc_yaw(struct ir_t* ir) {
 
 	return RAD_TO_DEGREE( atanf(x) );
 }
-

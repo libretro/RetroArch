@@ -12,13 +12,12 @@
 
 #include "d3dcommon.h"
 
-
 typedef enum D3D11_SHADER_VERSION_TYPE
 {
     D3D11_SHVER_PIXEL_SHADER    = 0,
     D3D11_SHVER_VERTEX_SHADER   = 1,
     D3D11_SHVER_GEOMETRY_SHADER = 2,
-    
+
     // D3D11 Shaders
     D3D11_SHVER_HULL_SHADER     = 3,
     D3D11_SHVER_DOMAIN_SHADER   = 4,
@@ -41,7 +40,6 @@ typedef D3D_RESOURCE_RETURN_TYPE D3D11_RESOURCE_RETURN_TYPE;
 
 typedef D3D_CBUFFER_TYPE D3D11_CBUFFER_TYPE;
 
-
 typedef struct _D3D11_SIGNATURE_PARAMETER_DESC
 {
     LPCSTR                      SemanticName;   // Name of the semantic
@@ -51,7 +49,7 @@ typedef struct _D3D11_SIGNATURE_PARAMETER_DESC
     D3D_REGISTER_COMPONENT_TYPE ComponentType;  // Scalar type (e.g. uint, float, etc.)
     BYTE                        Mask;           // Mask to indicate which components of the register
                                                 // are used (combination of D3D10_COMPONENT_MASK values)
-    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is 
+    BYTE                        ReadWriteMask;  // Mask to indicate whether a given component is
                                                 // never written (if this is an output signature) or
                                                 // always read (if this is an input signature).
                                                 // (combination of D3D_MASK_* values)
@@ -104,16 +102,16 @@ typedef struct _D3D11_SHADER_DESC
     UINT                    Version;                     // Shader version
     LPCSTR                  Creator;                     // Creator string
     UINT                    Flags;                       // Shader compilation/parse flags
-    
+
     UINT                    ConstantBuffers;             // Number of constant buffers
     UINT                    BoundResources;              // Number of bound resources
     UINT                    InputParameters;             // Number of parameters in the input signature
     UINT                    OutputParameters;            // Number of parameters in the output signature
 
     UINT                    InstructionCount;            // Number of emitted instructions
-    UINT                    TempRegisterCount;           // Number of temporary registers used 
+    UINT                    TempRegisterCount;           // Number of temporary registers used
     UINT                    TempArrayCount;              // Number of temporary arrays used
-    UINT                    DefCount;                    // Number of constant defines 
+    UINT                    DefCount;                    // Number of constant defines
     UINT                    DclCount;                    // Number of declarations (input + output)
     UINT                    TextureNormalInstructions;   // Number of non-categorized texture instructions
     UINT                    TextureLoadInstructions;     // Number of texture load instructions
@@ -150,7 +148,7 @@ typedef struct _D3D11_SHADER_INPUT_BIND_DESC
     D3D_SHADER_INPUT_TYPE       Type;           // Type of resource (e.g. texture, cbuffer, etc.)
     UINT                        BindPoint;      // Starting bind point
     UINT                        BindCount;      // Number of contiguous bind points (for arrays)
-    
+
     UINT                        uFlags;         // Input binding flags
     D3D_RESOURCE_RETURN_TYPE    ReturnType;     // Return type (if texture)
     D3D_SRV_DIMENSION           Dimension;      // Dimension (if texture)
@@ -167,7 +165,6 @@ typedef struct _D3D11_SHADER_INPUT_BIND_DESC
 #define D3D_SHADER_REQUIRES_LEVEL_9_COMPARISON_FILTERING    0x00000080
 #define D3D_SHADER_REQUIRES_TILED_RESOURCES                 0x00000100
 
-
 typedef struct _D3D11_LIBRARY_DESC
 {
     LPCSTR    Creator;           // The name of the originator of the library.
@@ -180,14 +177,14 @@ typedef struct _D3D11_FUNCTION_DESC
     UINT                    Version;                     // Shader version
     LPCSTR                  Creator;                     // Creator string
     UINT                    Flags;                       // Shader compilation/parse flags
-    
+
     UINT                    ConstantBuffers;             // Number of constant buffers
     UINT                    BoundResources;              // Number of bound resources
 
     UINT                    InstructionCount;            // Number of emitted instructions
-    UINT                    TempRegisterCount;           // Number of temporary registers used 
+    UINT                    TempRegisterCount;           // Number of temporary registers used
     UINT                    TempArrayCount;              // Number of temporary arrays used
-    UINT                    DefCount;                    // Number of constant defines 
+    UINT                    DefCount;                    // Number of constant defines
     UINT                    DclCount;                    // Number of declarations (input + output)
     UINT                    TextureNormalInstructions;   // Number of non-categorized texture instructions
     UINT                    TextureLoadInstructions;     // Number of texture load instructions
@@ -232,7 +229,6 @@ typedef struct _D3D11_PARAMETER_DESC
     UINT                        FirstOutComponent;  // The first output register component for this parameter.
 } D3D11_PARAMETER_DESC;
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Interfaces ////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -260,7 +256,7 @@ typedef interface ID3D11FunctionParameterReflection *LPD3D11FUNCTIONPARAMETERREF
 
 // {6E6FFA6A-9BAE-4613-A51E-91652D508C21}
 interface DECLSPEC_UUID("6E6FFA6A-9BAE-4613-A51E-91652D508C21") ID3D11ShaderReflectionType;
-DEFINE_GUID(IID_ID3D11ShaderReflectionType, 
+DEFINE_GUID(IID_ID3D11ShaderReflectionType,
 0x6e6ffa6a, 0x9bae, 0x4613, 0xa5, 0x1e, 0x91, 0x65, 0x2d, 0x50, 0x8c, 0x21);
 
 #undef INTERFACE
@@ -269,7 +265,7 @@ DEFINE_GUID(IID_ID3D11ShaderReflectionType,
 DECLARE_INTERFACE(ID3D11ShaderReflectionType)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D11_SHADER_TYPE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionType*, GetMemberTypeByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D11ShaderReflectionType*, GetMemberTypeByName)(THIS_ _In_ LPCSTR Name) PURE;
     STDMETHOD_(LPCSTR, GetMemberTypeName)(THIS_ _In_ UINT Index) PURE;
@@ -285,7 +281,7 @@ DECLARE_INTERFACE(ID3D11ShaderReflectionType)
 
 // {51F23923-F3E5-4BD1-91CB-606177D8DB4C}
 interface DECLSPEC_UUID("51F23923-F3E5-4BD1-91CB-606177D8DB4C") ID3D11ShaderReflectionVariable;
-DEFINE_GUID(IID_ID3D11ShaderReflectionVariable, 
+DEFINE_GUID(IID_ID3D11ShaderReflectionVariable,
 0x51f23923, 0xf3e5, 0x4bd1, 0x91, 0xcb, 0x60, 0x61, 0x77, 0xd8, 0xdb, 0x4c);
 
 #undef INTERFACE
@@ -294,7 +290,7 @@ DEFINE_GUID(IID_ID3D11ShaderReflectionVariable,
 DECLARE_INTERFACE(ID3D11ShaderReflectionVariable)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D11_SHADER_VARIABLE_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionType*, GetType)(THIS) PURE;
     STDMETHOD_(ID3D11ShaderReflectionConstantBuffer*, GetBuffer)(THIS) PURE;
 
@@ -303,7 +299,7 @@ DECLARE_INTERFACE(ID3D11ShaderReflectionVariable)
 
 // {EB62D63D-93DD-4318-8AE8-C6F83AD371B8}
 interface DECLSPEC_UUID("EB62D63D-93DD-4318-8AE8-C6F83AD371B8") ID3D11ShaderReflectionConstantBuffer;
-DEFINE_GUID(IID_ID3D11ShaderReflectionConstantBuffer, 
+DEFINE_GUID(IID_ID3D11ShaderReflectionConstantBuffer,
 0xeb62d63d, 0x93dd, 0x4318, 0x8a, 0xe8, 0xc6, 0xf8, 0x3a, 0xd3, 0x71, 0xb8);
 
 #undef INTERFACE
@@ -312,7 +308,7 @@ DEFINE_GUID(IID_ID3D11ShaderReflectionConstantBuffer,
 DECLARE_INTERFACE(ID3D11ShaderReflectionConstantBuffer)
 {
     STDMETHOD(GetDesc)(THIS_ D3D11_SHADER_BUFFER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionVariable*, GetVariableByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D11ShaderReflectionVariable*, GetVariableByName)(THIS_ _In_ LPCSTR Name) PURE;
 };
@@ -338,13 +334,13 @@ DECLARE_INTERFACE_(ID3D11ShaderReflection, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D11_SHADER_DESC *pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionConstantBuffer*, GetConstantBufferByIndex)(THIS_ _In_ UINT Index) PURE;
     STDMETHOD_(ID3D11ShaderReflectionConstantBuffer*, GetConstantBufferByName)(THIS_ _In_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ _In_ UINT ResourceIndex,
                                       _Out_ D3D11_SHADER_INPUT_BIND_DESC *pDesc) PURE;
-    
+
     STDMETHOD(GetInputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
                                      _Out_ D3D11_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
     STDMETHOD(GetOutputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
@@ -361,7 +357,7 @@ DECLARE_INTERFACE_(ID3D11ShaderReflection, IUnknown)
     STDMETHOD_(UINT, GetMovcInstructionCount)(THIS) PURE;
     STDMETHOD_(UINT, GetConversionInstructionCount)(THIS) PURE;
     STDMETHOD_(UINT, GetBitwiseInstructionCount)(THIS) PURE;
-    
+
     STDMETHOD_(D3D_PRIMITIVE, GetGSInputPrimitive)(THIS) PURE;
     STDMETHOD_(BOOL, IsSampleFrequencyShader)(THIS) PURE;
 
@@ -378,7 +374,7 @@ DECLARE_INTERFACE_(ID3D11ShaderReflection, IUnknown)
 
 // {54384F1B-5B3E-4BB7-AE01-60BA3097CBB6}
 interface DECLSPEC_UUID("54384F1B-5B3E-4BB7-AE01-60BA3097CBB6") ID3D11LibraryReflection;
-DEFINE_GUID(IID_ID3D11LibraryReflection, 
+DEFINE_GUID(IID_ID3D11LibraryReflection,
 0x54384f1b, 0x5b3e, 0x4bb7, 0xae, 0x1, 0x60, 0xba, 0x30, 0x97, 0xcb, 0xb6);
 
 #undef INTERFACE
@@ -391,13 +387,13 @@ DECLARE_INTERFACE_(ID3D11LibraryReflection, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D11_LIBRARY_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11FunctionReflection *, GetFunctionByIndex)(THIS_ _In_ INT FunctionIndex) PURE;
 };
 
 // {207BCECB-D683-4A06-A8A3-9B149B9F73A4}
 interface DECLSPEC_UUID("207BCECB-D683-4A06-A8A3-9B149B9F73A4") ID3D11FunctionReflection;
-DEFINE_GUID(IID_ID3D11FunctionReflection, 
+DEFINE_GUID(IID_ID3D11FunctionReflection,
 0x207bcecb, 0xd683, 0x4a06, 0xa8, 0xa3, 0x9b, 0x14, 0x9b, 0x9f, 0x73, 0xa4);
 
 #undef INTERFACE
@@ -406,13 +402,13 @@ DEFINE_GUID(IID_ID3D11FunctionReflection,
 DECLARE_INTERFACE(ID3D11FunctionReflection)
 {
     STDMETHOD(GetDesc)(THIS_ _Out_ D3D11_FUNCTION_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionConstantBuffer *, GetConstantBufferByIndex)(THIS_ _In_ UINT BufferIndex) PURE;
     STDMETHOD_(ID3D11ShaderReflectionConstantBuffer *, GetConstantBufferByName)(THIS_ _In_ LPCSTR Name) PURE;
-    
+
     STDMETHOD(GetResourceBindingDesc)(THIS_ _In_ UINT ResourceIndex,
                                       _Out_ D3D11_SHADER_INPUT_BIND_DESC * pDesc) PURE;
-    
+
     STDMETHOD_(ID3D11ShaderReflectionVariable *, GetVariableByName)(THIS_ _In_ LPCSTR Name) PURE;
 
     STDMETHOD(GetResourceBindingDescByName)(THIS_ _In_ LPCSTR Name,
@@ -424,7 +420,7 @@ DECLARE_INTERFACE(ID3D11FunctionReflection)
 
 // {42757488-334F-47FE-982E-1A65D08CC462}
 interface DECLSPEC_UUID("42757488-334F-47FE-982E-1A65D08CC462") ID3D11FunctionParameterReflection;
-DEFINE_GUID(IID_ID3D11FunctionParameterReflection, 
+DEFINE_GUID(IID_ID3D11FunctionParameterReflection,
 0x42757488, 0x334f, 0x47fe, 0x98, 0x2e, 0x1a, 0x65, 0xd0, 0x8c, 0xc4, 0x62);
 
 #undef INTERFACE
@@ -437,7 +433,7 @@ DECLARE_INTERFACE(ID3D11FunctionParameterReflection)
 
 // {CAC701EE-80FC-4122-8242-10B39C8CEC34}
 interface DECLSPEC_UUID("CAC701EE-80FC-4122-8242-10B39C8CEC34") ID3D11Module;
-DEFINE_GUID(IID_ID3D11Module, 
+DEFINE_GUID(IID_ID3D11Module,
 0xcac701ee, 0x80fc, 0x4122, 0x82, 0x42, 0x10, 0xb3, 0x9c, 0x8c, 0xec, 0x34);
 
 #undef INTERFACE
@@ -454,10 +450,9 @@ DECLARE_INTERFACE_(ID3D11Module, IUnknown)
                                     _COM_Outptr_ interface ID3D11ModuleInstance ** ppModuleInstance) PURE;
 };
 
-
 // {469E07F7-045A-48D5-AA12-68A478CDF75D}
 interface DECLSPEC_UUID("469E07F7-045A-48D5-AA12-68A478CDF75D") ID3D11ModuleInstance;
-DEFINE_GUID(IID_ID3D11ModuleInstance, 
+DEFINE_GUID(IID_ID3D11ModuleInstance,
 0x469e07f7, 0x45a, 0x48d5, 0xaa, 0x12, 0x68, 0xa4, 0x78, 0xcd, 0xf7, 0x5d);
 
 #undef INTERFACE
@@ -488,10 +483,9 @@ DECLARE_INTERFACE_(ID3D11ModuleInstance, IUnknown)
     STDMETHOD(BindResourceAsUnorderedAccessViewByName)(THIS_ _In_ LPCSTR pSrvName, _In_ UINT uDstUavSlot, _In_ UINT uCount) PURE;
 };
 
-
 // {59A6CD0E-E10D-4C1F-88C0-63ABA1DAF30E}
 interface DECLSPEC_UUID("59A6CD0E-E10D-4C1F-88C0-63ABA1DAF30E") ID3D11Linker;
-DEFINE_GUID(IID_ID3D11Linker, 
+DEFINE_GUID(IID_ID3D11Linker,
 0x59a6cd0e, 0xe10d, 0x4c1f, 0x88, 0xc0, 0x63, 0xab, 0xa1, 0xda, 0xf3, 0xe);
 
 #undef INTERFACE
@@ -518,10 +512,9 @@ DECLARE_INTERFACE_(ID3D11Linker, IUnknown)
     STDMETHOD(AddClipPlaneFromCBuffer)(THIS_ _In_ UINT uCBufferSlot, _In_ UINT uCBufferEntry) PURE;
 };
 
-
 // {D80DD70C-8D2F-4751-94A1-03C79B3556DB}
 interface DECLSPEC_UUID("D80DD70C-8D2F-4751-94A1-03C79B3556DB") ID3D11LinkingNode;
-DEFINE_GUID(IID_ID3D11LinkingNode, 
+DEFINE_GUID(IID_ID3D11LinkingNode,
 0xd80dd70c, 0x8d2f, 0x4751, 0x94, 0xa1, 0x3, 0xc7, 0x9b, 0x35, 0x56, 0xdb);
 
 #undef INTERFACE
@@ -534,10 +527,9 @@ DECLARE_INTERFACE_(ID3D11LinkingNode, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 };
 
-
 // {54133220-1CE8-43D3-8236-9855C5CEECFF}
 interface DECLSPEC_UUID("54133220-1CE8-43D3-8236-9855C5CEECFF") ID3D11FunctionLinkingGraph;
-DEFINE_GUID(IID_ID3D11FunctionLinkingGraph, 
+DEFINE_GUID(IID_ID3D11FunctionLinkingGraph,
 0x54133220, 0x1ce8, 0x43d3, 0x82, 0x36, 0x98, 0x55, 0xc5, 0xce, 0xec, 0xff);
 
 #undef INTERFACE
@@ -550,7 +542,7 @@ DECLARE_INTERFACE_(ID3D11FunctionLinkingGraph, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     // Create a shader module out of FLG description.
-    STDMETHOD(CreateModuleInstance)(THIS_ _COM_Outptr_ interface ID3D11ModuleInstance ** ppModuleInstance, 
+    STDMETHOD(CreateModuleInstance)(THIS_ _COM_Outptr_ interface ID3D11ModuleInstance ** ppModuleInstance,
                                           _Always_(_Outptr_opt_result_maybenull_) ID3DBlob ** ppErrorBuffer) PURE;
 
     STDMETHOD(SetInputSignature)(THIS_ __in_ecount(cInputParameters) const D3D11_PARAMETER_DESC * pInputParameters,
@@ -584,7 +576,6 @@ DECLARE_INTERFACE_(ID3D11FunctionLinkingGraph, IUnknown)
                                   _COM_Outptr_ ID3DBlob ** ppBuffer) PURE;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////
 // APIs //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -596,6 +587,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif //__cplusplus
-    
-#endif //__D3D11SHADER_H__
 
+#endif //__D3D11SHADER_H__

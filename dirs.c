@@ -25,7 +25,6 @@
 #include "dirs.h"
 #include "command.h"
 #include "configuration.h"
-#include "command.h"
 #include "defaults.h"
 #include "list_special.h"
 #include "file_path_special.h"
@@ -289,6 +288,10 @@ void dir_set(enum rarch_dir_type type, const char *path)
 static void check_defaults_dir_create_dir(const char *path)
 {
    char *new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   if (!new_path)
+      return;
+
    new_path[0] = '\0';
    fill_pathname_expand_special(new_path,
          path,
@@ -309,7 +312,13 @@ void dir_check_defaults(void)
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
+#ifdef ORBIS
+   if (filestream_exists("host0:app/custom.ini"))
+#elif defined(ANDROID)
+   if (filestream_exists("host0:app/custom.ini"))
+#else
    if (filestream_exists("custom.ini"))
+#endif
       return;
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)

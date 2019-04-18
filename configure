@@ -4,6 +4,8 @@ PACKAGE_NAME=retroarch
 
 cat /dev/null > config.log
 
+. qb/qb.init.sh
+
 . qb/qb.system.sh
 
 . qb/qb.params.sh
@@ -11,3 +13,7 @@ cat /dev/null > config.log
 . qb/qb.comp.sh
 
 . qb/qb.libs.sh
+
+. qb/qb.moc.sh
+
+. qb/qb.make.sh

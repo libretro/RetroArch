@@ -202,7 +202,6 @@ end:
    return success;
 }
 
-
 void image_texture_free(struct texture_image *img)
 {
    if (!img)

@@ -6,7 +6,6 @@
  * System Preferences.
  */
 
-
 typedef int ACResult;
 enum {
    AC_FAILED = -1,

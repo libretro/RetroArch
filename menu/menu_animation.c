@@ -23,15 +23,19 @@
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
+#define DG_DYNARR_IMPLEMENTATION
+#include <stdio.h>
+#include <retro_assert.h>
+#define DG_DYNARR_ASSERT(cond, msg)  (void)0
+#include <array/dynarray.h>
+#undef DG_DYNARR_IMPLEMENTATION
+
 #include "menu_animation.h"
 #include "../configuration.h"
 #include "../performance_counters.h"
 
-#define IDEAL_DELTA_TIME (1.0 / 60.0 * 1000000.0)
-
 struct tween
 {
-   bool        alive;
    float       duration;
    float       running_since;
    float       initial_value;
@@ -41,25 +45,34 @@ struct tween
    easing_cb   easing;
    tween_cb    cb;
    void        *userdata;
+   bool        deleted;
 };
+
+DA_TYPEDEF(struct tween, tween_array_t)
 
 struct menu_animation
 {
-   struct tween *list;
-   bool need_defrag;
-
-   size_t capacity;
-   size_t size;
-   size_t first_dead;
+   tween_array_t list;
+   tween_array_t pending;
+   bool pending_deletes;
+   bool in_update;
 };
 
 typedef struct menu_animation menu_animation_t;
 
+#define TICKER_SPEED       333
+#define TICKER_SLOW_SPEED  1600
+
+static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
+
 static menu_animation_t anim;
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
+static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
+static uint64_t ticker_slow_idx = 0; /* updated every TICKER_SLOW_SPEED ms */
 static float delta_time         = 0.0f;
 static bool animation_is_active = false;
+static bool ticker_is_active    = false;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -314,12 +327,102 @@ static void menu_animation_ticker_generic(uint64_t idx,
    *width = max_width;
 }
 
+static void menu_animation_ticker_loop(uint64_t idx,
+      size_t max_width, size_t str_width, size_t spacer_width,
+      size_t *offset1, size_t *width1,
+      size_t *offset2, size_t *width2,
+      size_t *offset3, size_t *width3)
+{
+   int ticker_period     = (int)(str_width + spacer_width);
+   int phase             = idx % ticker_period;
+   
+   /* Output offsets/widths are unsigned size_t, but it's
+    * easier to perform the required calculations with ints,
+    * so create some temporary variables... */
+   int offset;
+   int width;
+   
+   /* Looping text is composed of up to three strings,
+    * where string 1 and 2 are different regions of the
+    * source text and string 2 is a spacer:
+    * 
+    *     |-----max_width-----|
+    * [string 1][string 2][string 3]
+    * 
+    * The following implementation could probably be optimised,
+    * but any performance gains would be trivial compared with
+    * all the string manipulation that has to happen afterwards...
+    */
+   
+   /* String 1 */
+   offset   = (phase < (int)str_width) ? phase : 0;
+   width    = (int)(str_width - phase);
+   width    = (width < 0) ? 0 : width;
+   width    = (width > (int)max_width) ? max_width : width;
+   
+   *offset1 = offset;
+   *width1  = width;
+   
+   /* String 2 */
+   offset   = (int)(phase - str_width);
+   offset   = offset < 0 ? 0 : offset;
+   width    = (int)(max_width - *width1);
+   width    = (width > (int)spacer_width) ? spacer_width : width;
+   width    = width - offset;
+   
+   *offset2 = offset;
+   *width2  = width;
+   
+   /* String 3 */
+   width    = max_width - (*width1 + *width2);
+   width    = width < 0 ? 0 : width;
+   
+   /* Note: offset is always zero here so offset3 is
+    * unnecessary - but include it anyway to preserve
+    * symmetry... */
+   *offset3 = 0;
+   *width3  = width;
+}
+
+void menu_animation_init(void)
+{
+   da_init(anim.list);
+   da_init(anim.pending);
+}
+
+void menu_animation_free(void)
+{
+   da_free(anim.list);
+   da_free(anim.pending);
+}
+
+static void menu_delayed_animation_cb(void *userdata)
+{
+   menu_delayed_animation_t *delayed_animation = (menu_delayed_animation_t*) userdata;
+
+   menu_animation_push(&delayed_animation->entry);
+
+   free(delayed_animation);
+}
+
+void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry)
+{
+   menu_timer_ctx_entry_t timer_entry;
+   menu_delayed_animation_t *delayed_animation  = (menu_delayed_animation_t*) malloc(sizeof(menu_delayed_animation_t));
+
+   memcpy(&delayed_animation->entry, entry, sizeof(menu_animation_ctx_entry_t));
+
+   timer_entry.cb       = menu_delayed_animation_cb;
+   timer_entry.duration = delay;
+   timer_entry.userdata = delayed_animation;
+
+   menu_timer_start(&delayed_animation->timer, &timer_entry);
+}
+
 bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 {
    struct tween t;
-   struct tween *target = NULL;
 
-   t.alive              = true;
    t.duration           = entry->duration;
    t.running_since      = 0;
    t.initial_value      = *entry->subject;
@@ -329,6 +432,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    t.cb                 = entry->cb;
    t.userdata           = entry->userdata;
    t.easing             = NULL;
+   t.deleted            = false;
 
    switch (entry->easing_enum)
    {
@@ -447,65 +551,69 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (anim.first_dead < anim.size && !anim.list[anim.first_dead].alive)
-      target = &anim.list[anim.first_dead++];
+   if (anim.in_update)
+      da_push(anim.pending, t);
    else
-   {
-      if (anim.size >= anim.capacity)
-      {
-         anim.capacity++;
-         anim.list = (struct tween*)realloc(anim.list,
-               anim.capacity * sizeof(struct tween));
-      }
-
-      target = &anim.list[anim.size++];
-   }
-
-   *target = t;
-
-   anim.need_defrag = true;
+      da_push(anim.list, t);
 
    return true;
 }
 
-static int menu_animation_defrag_cmp(const void *a, const void *b)
+static void menu_animation_update_time(bool timedate_enable)
 {
-   const struct tween *ta = (const struct tween *)a;
-   const struct tween *tb = (const struct tween *)b;
+   static retro_time_t
+      last_clock_update       = 0;
+   static retro_time_t
+      last_ticker_update      = 0;
+   static retro_time_t
+      last_ticker_slow_update = 0;
 
-   return tb->alive - ta->alive;
-}
+   /* Adjust ticker speed */
+   settings_t *settings = config_get_ptr();
+   float speed_factor = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
+   unsigned ticker_speed = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   unsigned ticker_slow_speed = (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
 
-/* defragments and shrinks the tween list when possible */
-static void menu_animation_defrag()
-{
-   size_t i;
+   cur_time                 = cpu_features_get_time_usec() / 1000;
+   delta_time               = old_time == 0 ? 0 : cur_time - old_time;
 
-   qsort(anim.list, anim.size, sizeof(anim.list[0]), menu_animation_defrag_cmp);
+   old_time                 = cur_time;
 
-   for (i = anim.size-1; i > 0; i--)
+   if (((cur_time - last_clock_update) > 1000)
+         && timedate_enable)
    {
-      if (anim.list[i].alive)
-         break;
-
-      anim.size--;
+      animation_is_active   = true;
+      last_clock_update     = cur_time;
    }
 
-   anim.first_dead = anim.size;
-   anim.need_defrag = false;
+   if (ticker_is_active 
+      && cur_time - last_ticker_update >= ticker_speed)
+   {
+      ticker_idx++;
+      last_ticker_update = cur_time;
+   }
+
+   if (ticker_is_active 
+      && cur_time - last_ticker_slow_update >= ticker_slow_speed)
+   {
+      ticker_slow_idx++;
+      last_ticker_slow_update = cur_time;
+   }
 }
 
-bool menu_animation_update(float delta_time)
+bool menu_animation_update(void)
 {
    unsigned i;
-   unsigned active_tweens = 0;
+   settings_t *settings = config_get_ptr();
 
-   for(i = 0; i < anim.size; i++)
+   menu_animation_update_time(settings->bools.menu_timedate_enable);
+
+   anim.in_update       = true;
+   anim.pending_deletes = false;
+
+   for(i = 0; i < da_count(anim.list); i++)
    {
-      struct tween *tween = &anim.list[i];
-      if (!tween || !tween->alive)
-         continue;
-
+      struct tween *tween   = da_getptr(anim.list, i);
       tween->running_since += delta_time;
 
       *tween->subject = tween->easing(
@@ -517,38 +625,47 @@ bool menu_animation_update(float delta_time)
       if (tween->running_since >= tween->duration)
       {
          *tween->subject = tween->target_value;
-         tween->alive    = false;
-         anim.need_defrag = true;
 
          if (tween->cb)
             tween->cb(tween->userdata);
+
+         da_delete(anim.list, i);
+         i--;
       }
-
-      if (tween->running_since < tween->duration)
-         active_tweens += 1;
    }
 
-   if (anim.need_defrag)
-      menu_animation_defrag();
-
-   if (!active_tweens)
+   if (anim.pending_deletes)
    {
-      anim.size           = 0;
-      anim.first_dead     = 0;
-      anim.need_defrag    = false;
-      return false;
+      for(i = 0; i < da_count(anim.list); i++)
+      {
+         struct tween *tween = da_getptr(anim.list, i);
+         if (tween->deleted)
+         {
+            da_delete(anim.list, i);
+            i--;
+         }
+      }
+      anim.pending_deletes = false;
    }
 
+   if (da_count(anim.pending) > 0)
+   {
+      da_addn(anim.list, anim.pending.p, da_count(anim.pending));
+      da_clear(anim.pending);
+   }
 
-   animation_is_active = true;
+   anim.in_update      = false;
+   animation_is_active = da_count(anim.list) > 0;
 
-   return true;
+   return animation_is_active;
 }
 
-bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
+bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 {
    size_t str_len = utf8len(ticker->str);
-   size_t offset  = 0;
+
+   if (!ticker->spacer)
+      ticker->spacer = ticker_spacer_default;
 
    if ((size_t)str_len <= ticker->len)
    {
@@ -556,67 +673,104 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
             PATH_MAX_LENGTH,
             ticker->str,
             ticker->len);
-      return true;
+      return false;
    }
 
    if (!ticker->selected)
    {
       utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
       strlcat(ticker->s, "...", PATH_MAX_LENGTH);
-      return true;
-   }
-
-   if (str_len > ticker->len)
-      menu_animation_ticker_generic(
-            ticker->idx,
-            ticker->len,
-            &offset,
-            &str_len);
-
-   utf8cpy(
-         ticker->s,
-         PATH_MAX_LENGTH,
-         utf8skip(ticker->str, offset),
-         str_len);
-
-   animation_is_active = true;
-
-   return true;
-}
-
-bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
-{
-   if (!delta)
       return false;
-   delta->ideal = delta->current / IDEAL_DELTA_TIME;
-   return true;
-}
-
-void menu_animation_update_time(bool timedate_enable)
-{
-   static retro_time_t
-      last_clock_update     = 0;
-
-   cur_time                 = cpu_features_get_time_usec();
-   delta_time               = cur_time - old_time;
-
-   if (delta_time >= IDEAL_DELTA_TIME* 4)
-      delta_time            = IDEAL_DELTA_TIME * 4;
-   if (delta_time <= IDEAL_DELTA_TIME / 4)
-      delta_time            = IDEAL_DELTA_TIME / 4;
-   old_time                 = cur_time;
-
-   if (((cur_time - last_clock_update) > 1000000)
-         && timedate_enable)
-   {
-      animation_is_active   = true;
-      last_clock_update     = cur_time;
    }
+
+   /* Note: If we reach this point then str_len > ticker->len
+    * (previously had an unecessary 'if (str_len > ticker->len)'
+    * check here...) */
+   switch (ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+      {
+         size_t offset1, offset2, offset3;
+         size_t width1, width2, width3;
+         
+         /* Horribly oversized temporary buffer
+          * > utf8 support makes this whole thing incredibly
+          *   ugly/inefficient. Not much we can do about it... */
+         char tmp[PATH_MAX_LENGTH];
+         
+         tmp[0] = '\0';
+         ticker->s[0] = '\0';
+         
+         menu_animation_ticker_loop(
+               ticker->idx,
+               ticker->len,
+               str_len, utf8len(ticker->spacer),
+               &offset1, &width1,
+               &offset2, &width2,
+               &offset3, &width3);
+         
+         if (width1 > 0)
+         {
+            utf8cpy(
+                  ticker->s,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset1),
+                  width1);
+         }
+         
+         if (width2 > 0)
+         {
+            utf8cpy(
+                  tmp,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->spacer, offset2),
+                  width2);
+            
+            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
+         }
+         
+         if (width3 > 0)
+         {
+            utf8cpy(
+                  tmp,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset3),
+                  width3);
+            
+            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
+         }
+         
+         break;
+      }
+      case TICKER_TYPE_BOUNCE:
+      default:
+      {
+         size_t offset  = 0;
+         
+         menu_animation_ticker_generic(
+               ticker->idx,
+               ticker->len,
+               &offset,
+               &str_len);
+         
+         utf8cpy(
+               ticker->s,
+               PATH_MAX_LENGTH,
+               utf8skip(ticker->str, offset),
+               str_len);
+         
+         break;
+      }
+   }
+
+   ticker_is_active = true;
+
+   return true;
 }
 
 bool menu_animation_is_active(void)
 {
-   return animation_is_active;
+   return animation_is_active || ticker_is_active;
 }
 
 bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
@@ -626,18 +780,22 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
    if (!tag || *tag == (uintptr_t)-1)
       return false;
 
-   for (i = 0; i < anim.size; ++i)
+   for (i = 0; i < da_count(anim.list); ++i)
    {
-      if (anim.list[i].tag != *tag)
+      struct tween *t = da_getptr(anim.list, i);
+      if (t->tag != *tag)
          continue;
 
-      anim.list[i].alive   = false;
-      anim.list[i].subject = NULL;
-
-      if (i < anim.first_dead)
-         anim.first_dead = i;
-
-      anim.need_defrag = true;
+      if (anim.in_update)
+      {
+         t->deleted = true;
+         anim.pending_deletes = true;
+      }
+      else
+      {
+         da_delete(anim.list, i);
+         --i;
+      }
    }
 
    return true;
@@ -648,24 +806,27 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    unsigned i, j,  killed = 0;
    float            **sub = (float**)subject->data;
 
-   for (i = 0; i < anim.size && killed < subject->count; ++i)
+   for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
    {
-      if (!anim.list[i].alive)
-         continue;
+      struct tween *t = da_getptr(anim.list, i);
 
       for (j = 0; j < subject->count; ++j)
       {
-         if (anim.list[i].subject != sub[j])
+         if (t->subject != sub[j])
             continue;
 
-         anim.list[i].alive   = false;
-         anim.list[i].subject = NULL;
-
-         if (i < anim.first_dead)
-            anim.first_dead = i;
+         if (anim.in_update)
+         {
+            t->deleted = true;
+            anim.pending_deletes = true;
+         }
+         else
+         {
+            da_delete(anim.list, i);
+            --i;
+         }
 
          killed++;
-         anim.need_defrag = true;
          break;
       }
    }
@@ -684,13 +845,14 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          {
             size_t i;
 
-            for (i = 0; i < anim.size; i++)
+            for (i = 0; i < da_count(anim.list); i++)
             {
-               if (anim.list[i].subject)
-                  anim.list[i].subject = NULL;
+               struct tween *t = da_getptr(anim.list, i);
+               if (t->subject)
+                  t->subject = NULL;
             }
 
-            free(anim.list);
+            da_free(anim.list);
 
             memset(&anim, 0, sizeof(menu_animation_t));
          }
@@ -700,9 +862,11 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          animation_is_active       = false;
+         ticker_is_active          = false;
          break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
          animation_is_active       = true;
+         ticker_is_active          = true;
          break;
       case MENU_ANIMATION_CTL_NONE:
       default:
@@ -736,4 +900,14 @@ void menu_timer_kill(menu_timer_t *timer)
 {
    menu_animation_ctx_tag tag = (uintptr_t) timer;
    menu_animation_kill_by_tag(&tag);
+}
+
+uint64_t menu_animation_get_ticker_idx(void)
+{
+   return ticker_idx;
+}
+
+uint64_t menu_animation_get_ticker_slow_idx(void)
+{
+   return ticker_slow_idx;
 }

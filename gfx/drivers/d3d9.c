@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
@@ -39,6 +39,7 @@
 #include "../../dynamic.h"
 #include "../video_driver.h"
 #include "../../ui/ui_companion_driver.h"
+#include "../../frontend/frontend_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -48,15 +49,15 @@
 
 #ifdef _XBOX
 #define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
-#else
-#define HAVE_MONITOR
-#define HAVE_WINDOW
 #endif
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -64,6 +65,10 @@
 #include "../../core.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+
+#ifdef __WINRT__
+#error "UWP does not support D3D9"
+#endif
 
 static LPDIRECT3D9 g_pD3D9;
 
@@ -120,7 +125,7 @@ static bool d3d9_init_imports(d3d9_video_t *d3d)
       tracker_info.script_class   = d3d->shader.script_class;
 #endif
 
-   state_tracker                  = 
+   state_tracker                  =
       state_tracker_init(&tracker_info);
 
    if (!state_tracker)
@@ -451,12 +456,10 @@ static void d3d9_viewport_info(void *data, struct video_viewport *vp)
    vp->full_height  = height;
 }
 
-static void d3d9_set_mvp(void *data,
-      void *shader_data,
-      const void *mat_data)
+void d3d9_set_mvp(void *data, const void *mat_data)
 {
-   d3d9_video_t *d3d = (d3d9_video_t*)data;
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+   d3d9_set_vertex_shader_constantf(dev, 0, (const float*)mat_data, 4);
 }
 
 static void d3d9_overlay_render(d3d9_video_t *d3d,
@@ -689,7 +692,7 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ? 
+   bool gamma_enable              = global ?
       global->console.screen.gamma_correction : false;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
@@ -1032,6 +1035,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
    d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
@@ -1055,7 +1059,6 @@ static bool d3d9_restore(void *data)
 
    return true;
 }
-
 
 static void d3d9_set_nonblock_state(void *data, bool state)
 {
@@ -1112,7 +1115,7 @@ static bool d3d9_alive(void *data)
 
    ret = !quit;
 
-   if (  temp_width  != 0 && 
+   if (  temp_width  != 0 &&
          temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
@@ -1174,44 +1177,14 @@ static void d3d9_set_osd_msg(void *data,
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
+   const struct font_params *d3d_font_params = (const
+         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, params);
+   d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
    font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
+         msg, d3d_font_params);
    d3d9_end_scene(dev);
-}
-
-static void d3d9_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-   const char *name     = settings ? 
-      settings->arrays.input_joypad_driver : NULL;
-#ifdef _XBOX
-   void *xinput         = input_xinput.init(name);
-   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data          = xinput;
-#else
-
-#if _WIN32_WINNT >= 0x0501
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_winraw.init(name);
-      if (*input_data)
-      {
-         *input = &input_winraw;
-         dinput = NULL;
-         return;
-      }
-   }
-#endif
-
-   dinput               = input_dinput.init(name);
-   *input               = dinput ? &input_dinput : NULL;
-   *input_data          = dinput;
-#endif
 }
 
 static bool d3d9_init_internal(d3d9_video_t *d3d,
@@ -1322,10 +1295,29 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       return false;
 
    d3d->video_info = *info;
+
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d9_input_driver(input, input_data);
+   d3d_input_driver(settings->arrays.input_joypad_driver,
+      settings->arrays.input_joypad_driver, input, input_data);
+
+   {
+      char version_str[128];
+      D3DADAPTER_IDENTIFIER9 ident = {0};
+
+      IDirect3D9_GetAdapterIdentifier(g_pD3D9, 0, 0, &ident);
+
+      version_str[0] = '\0';
+
+      snprintf(version_str, sizeof(version_str), "%u.%u.%u.%u", HIWORD(ident.DriverVersion.HighPart), LOWORD(ident.DriverVersion.HighPart), HIWORD(ident.DriverVersion.LowPart), LOWORD(ident.DriverVersion.LowPart));
+
+      RARCH_LOG("[D3D9]: Using GPU: %s\n", ident.Description);
+      RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
+
+      video_driver_set_gpu_device_string(ident.Description);
+      video_driver_set_gpu_api_version_string(version_str);
+   }
 
    RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
@@ -1590,23 +1582,27 @@ static void d3d9_get_overlay_interface(void *data,
 
 static void d3d9_update_title(video_frame_info_t *video_info)
 {
+   const settings_t *settings = config_get_ptr();
 #ifdef _XBOX
    const ui_window_t *window      = NULL;
 #else
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
-   if (video_info->fps_show)
+   if (settings->bools.video_memory_show)
    {
-      MEMORYSTATUS stat;
-      char mem[128];
+#ifndef __WINRT__
+      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+      char         mem[128];
 
       mem[0] = '\0';
 
-      GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
-            stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(
+            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+            mem_bytes_total / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+#endif
    }
 
 #ifndef _XBOX
@@ -1695,11 +1691,10 @@ static bool d3d9_frame(void *data, const void *frame,
       return false;
    }
 
-
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp);
       d3d9_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1728,10 +1723,16 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d9_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
+#endif
+
+#ifdef HAVE_MENU
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
 #endif
 
    if (msg && *msg)
@@ -1765,14 +1766,14 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             d3d9_get_xrgb8888_format(),
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   if (d3d9_surface_lock_rect(dest, &rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1792,7 +1793,7 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect((void*)dest);
+      d3d9_surface_unlock_rect(dest);
    }
    else
       ret = false;
@@ -1856,12 +1857,14 @@ static void d3d9_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (    !d3d->menu->tex            || 
+   if (!d3d || !d3d->menu)
+      return;
+
+   if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      if (d3d->menu)
-	     d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1918,7 +1921,6 @@ static void d3d9_set_menu_texture_frame(void *data,
             }
          }
       }
-
 
       if (d3d->menu)
          d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)d3d->menu->tex);
@@ -2049,14 +2051,13 @@ static uint32_t d3d9_get_flags(void *data)
 
 static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_get_flags,
-   NULL,                            /* set_coords */
-   d3d9_set_mvp,
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,
-#ifdef _XBOX
+#if defined(_XBOX) || defined(__WINRT__)
    NULL,
 #else
+   /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
    NULL,
@@ -2094,6 +2095,14 @@ static bool d3d9_has_windowed(void *data)
 #endif
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool d3d9_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
@@ -2113,5 +2122,9 @@ video_driver_t video_d3d9 = {
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif
-   d3d9_get_poke_interface
+   d3d9_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   d3d9_menu_widgets_enabled
+#endif
 };

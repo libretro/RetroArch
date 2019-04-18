@@ -223,7 +223,6 @@ static GX2UniformBlock uniform_blocks[] =
     {"UBO_tex", 2, sizeof(GX2_vec2)},
 };
 
-
 static GX2UniformVar uniform_vars[] =
 {
     {"vp_size",  GX2_SHADER_VAR_TYPE_FLOAT2, 1, 0, 0},

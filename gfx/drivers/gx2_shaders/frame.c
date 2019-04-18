@@ -105,7 +105,6 @@ static GX2UniformVar uniform_vars[] = {
     {"global.MVP", GX2_SHADER_VAR_TYPE_MATRIX4X4, 1, 0, 0},
 };
 
-
 GX2Shader frame_shader =
 {
    {
@@ -158,6 +157,6 @@ GX2Shader frame_shader =
       .program = (uint8_t*)&ps_program,
       .mode = GX2_SHADER_MODE_UNIFORM_BLOCK,
       .samplerVarCount = countof(samplers), samplers,
-   },   
+   },
    .attribute_stream = attribute_stream,
 };

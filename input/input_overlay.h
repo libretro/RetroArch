@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
+#include <queues/task_queue.h>
 
 #include "input_driver.h"
 
@@ -256,7 +257,8 @@ bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
 bool input_overlay_is_alive(input_overlay_t *ol);
 
-void input_overlay_loaded(void *task_data, void *user_data, const char *err);
+void input_overlay_loaded(retro_task_t *task,
+      void *task_data, void *user_data, const char *err);
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 

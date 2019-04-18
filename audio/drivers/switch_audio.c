@@ -120,7 +120,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
 	if (to_write > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
 		to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
-	
+
    #ifndef HAVE_LIBNX
 	memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
    #else
@@ -137,7 +137,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 	}
 
 	swa->last_append = svcGetSystemTick();
-	
+
 	return to_write;
 }
 
@@ -328,7 +328,7 @@ static void *switch_audio_init(const char *device,
    swa->is_paused      = true;
 
    RARCH_LOG("[Audio]: Audio initialized\n");
-   
+
    return swa;
 
 fail_audio_output:

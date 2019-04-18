@@ -346,7 +346,6 @@ static inline void bba_insdata(void *val,u32 len)
 	EXI_ImmEx(EXI_CHANNEL_0,val,len,EXI_READ);
 }
 
-
 static inline void bba_outsregister(u32 reg)
 {
 	u32 req;
@@ -373,13 +372,11 @@ static u32 __bba_getlink_state_async()
 {
 	u32 ret;
 
-
 	if(EXI_Lock(EXI_CHANNEL_0,EXI_DEVICE_2,NULL)==0) return 0;
 	ret = __linkstate();
 	EXI_Unlock(EXI_CHANNEL_0);
 	return ret;
 }
-
 
 static u32 __bba_read_cid()
 {

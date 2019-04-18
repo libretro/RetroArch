@@ -16,12 +16,11 @@
 #include <d2d1effects_1.h>
 #endif // #ifndef _D2D1_EFFECTS_1_
 
-           
 /*#include <winapifamily.h>*/
 
 /*#pragma region Application Family*/
 /*#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)*/
-           
+
 // Built in effect CLSIDs
 DEFINE_GUID(CLSID_D2D1Contrast,                 0xb648a78a, 0x0ed5, 0x4f80, 0xa9, 0x4a, 0x8e, 0x82, 0x5a, 0xca, 0x6b, 0x77);
 DEFINE_GUID(CLSID_D2D1RgbToHue,                 0x23f3e5ec, 0x91e8, 0x4d3d, 0xad, 0x0a, 0xaf, 0xad, 0xc1, 0x00, 0x4a, 0xa1);
@@ -55,13 +54,13 @@ DEFINE_GUID(CLSID_D2D1Tint,                     0x36312b17, 0xf7dd, 0x4014, 0x91
 /// </summary>
 typedef enum D2D1_CONTRAST_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Contrast"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_CONTRAST_PROP_CONTRAST = 0,
-    
+
     /// <summary>
     /// Property Name: "ClampInput"
     /// Property Type: BOOL
@@ -71,13 +70,12 @@ typedef enum D2D1_CONTRAST_PROP
 
 } D2D1_CONTRAST_PROP;
 
-
 /// <summary>
 /// The enumeration of the RgbToHue effect's top level properties.
 /// </summary>
 typedef enum D2D1_RGBTOHUE_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "OutputColorSpace"
     /// Property Type: D2D1_RGBTOHUE_OUTPUT_COLOR_SPACE
@@ -95,13 +93,12 @@ typedef enum D2D1_RGBTOHUE_OUTPUT_COLOR_SPACE
 
 } D2D1_RGBTOHUE_OUTPUT_COLOR_SPACE;
 
-
 /// <summary>
 /// The enumeration of the HueToRgb effect's top level properties.
 /// </summary>
 typedef enum D2D1_HUETORGB_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "InputColorSpace"
     /// Property Type: D2D1_HUETORGB_INPUT_COLOR_SPACE
@@ -119,31 +116,30 @@ typedef enum D2D1_HUETORGB_INPUT_COLOR_SPACE
 
 } D2D1_HUETORGB_INPUT_COLOR_SPACE;
 
-
 /// <summary>
 /// The enumeration of the Chroma Key effect's top level properties.
 /// </summary>
 typedef enum D2D1_CHROMAKEY_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Color"
     /// Property Type: D2D1_VECTOR_3F
     /// </summary>
     D2D1_CHROMAKEY_PROP_COLOR = 0,
-    
+
     /// <summary>
     /// Property Name: "Tolerance"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_CHROMAKEY_PROP_TOLERANCE = 1,
-    
+
     /// <summary>
     /// Property Name: "InvertAlpha"
     /// Property Type: BOOL
     /// </summary>
     D2D1_CHROMAKEY_PROP_INVERT_ALPHA = 2,
-    
+
     /// <summary>
     /// Property Name: "Feather"
     /// Property Type: BOOL
@@ -153,19 +149,18 @@ typedef enum D2D1_CHROMAKEY_PROP
 
 } D2D1_CHROMAKEY_PROP;
 
-
 /// <summary>
 /// The enumeration of the Emboss effect's top level properties.
 /// </summary>
 typedef enum D2D1_EMBOSS_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Height"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_EMBOSS_PROP_HEIGHT = 0,
-    
+
     /// <summary>
     /// Property Name: "Direction"
     /// Property Type: FLOAT
@@ -175,13 +170,12 @@ typedef enum D2D1_EMBOSS_PROP
 
 } D2D1_EMBOSS_PROP;
 
-
 /// <summary>
 /// The enumeration of the Exposure effect's top level properties.
 /// </summary>
 typedef enum D2D1_EXPOSURE_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "ExposureValue"
     /// Property Type: FLOAT
@@ -191,25 +185,24 @@ typedef enum D2D1_EXPOSURE_PROP
 
 } D2D1_EXPOSURE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Posterize effect's top level properties.
 /// </summary>
 typedef enum D2D1_POSTERIZE_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "RedValueCount"
     /// Property Type: UINT32
     /// </summary>
     D2D1_POSTERIZE_PROP_RED_VALUE_COUNT = 0,
-    
+
     /// <summary>
     /// Property Name: "GreenValueCount"
     /// Property Type: UINT32
     /// </summary>
     D2D1_POSTERIZE_PROP_GREEN_VALUE_COUNT = 1,
-    
+
     /// <summary>
     /// Property Name: "BlueValueCount"
     /// Property Type: UINT32
@@ -219,19 +212,18 @@ typedef enum D2D1_POSTERIZE_PROP
 
 } D2D1_POSTERIZE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Sepia effect's top level properties.
 /// </summary>
 typedef enum D2D1_SEPIA_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Intensity"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_SEPIA_PROP_INTENSITY = 0,
-    
+
     /// <summary>
     /// Property Name: "AlphaMode"
     /// Property Type: D2D1_ALPHA_MODE
@@ -241,19 +233,18 @@ typedef enum D2D1_SEPIA_PROP
 
 } D2D1_SEPIA_PROP;
 
-
 /// <summary>
 /// The enumeration of the Sharpen effect's top level properties.
 /// </summary>
 typedef enum D2D1_SHARPEN_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Sharpness"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_SHARPEN_PROP_SHARPNESS = 0,
-    
+
     /// <summary>
     /// Property Name: "Threshold"
     /// Property Type: FLOAT
@@ -263,25 +254,24 @@ typedef enum D2D1_SHARPEN_PROP
 
 } D2D1_SHARPEN_PROP;
 
-
 /// <summary>
 /// The enumeration of the Straighten effect's top level properties.
 /// </summary>
 typedef enum D2D1_STRAIGHTEN_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Angle"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_STRAIGHTEN_PROP_ANGLE = 0,
-    
+
     /// <summary>
     /// Property Name: "MaintainSize"
     /// Property Type: BOOL
     /// </summary>
     D2D1_STRAIGHTEN_PROP_MAINTAIN_SIZE = 1,
-    
+
     /// <summary>
     /// Property Name: "ScaleMode"
     /// Property Type: D2D1_STRAIGHTEN_SCALE_MODE
@@ -302,19 +292,18 @@ typedef enum D2D1_STRAIGHTEN_SCALE_MODE
 
 } D2D1_STRAIGHTEN_SCALE_MODE;
 
-
 /// <summary>
 /// The enumeration of the Temperature And Tint effect's top level properties.
 /// </summary>
 typedef enum D2D1_TEMPERATUREANDTINT_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Temperature"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_TEMPERATUREANDTINT_PROP_TEMPERATURE = 0,
-    
+
     /// <summary>
     /// Property Name: "Tint"
     /// Property Type: FLOAT
@@ -324,25 +313,24 @@ typedef enum D2D1_TEMPERATUREANDTINT_PROP
 
 } D2D1_TEMPERATUREANDTINT_PROP;
 
-
 /// <summary>
 /// The enumeration of the Vignette effect's top level properties.
 /// </summary>
 typedef enum D2D1_VIGNETTE_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Color"
     /// Property Type: D2D1_VECTOR_4F
     /// </summary>
     D2D1_VIGNETTE_PROP_COLOR = 0,
-    
+
     /// <summary>
     /// Property Name: "TransitionSize"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_VIGNETTE_PROP_TRANSITION_SIZE = 1,
-    
+
     /// <summary>
     /// Property Name: "Strength"
     /// Property Type: FLOAT
@@ -352,37 +340,36 @@ typedef enum D2D1_VIGNETTE_PROP
 
 } D2D1_VIGNETTE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Edge Detection effect's top level properties.
 /// </summary>
 typedef enum D2D1_EDGEDETECTION_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Strength"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_EDGEDETECTION_PROP_STRENGTH = 0,
-    
+
     /// <summary>
     /// Property Name: "BlurRadius"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_EDGEDETECTION_PROP_BLUR_RADIUS = 1,
-    
+
     /// <summary>
     /// Property Name: "Mode"
     /// Property Type: D2D1_EDGEDETECTION_MODE
     /// </summary>
     D2D1_EDGEDETECTION_PROP_MODE = 2,
-    
+
     /// <summary>
     /// Property Name: "OverlayEdges"
     /// Property Type: BOOL
     /// </summary>
     D2D1_EDGEDETECTION_PROP_OVERLAY_EDGES = 3,
-    
+
     /// <summary>
     /// Property Name: "AlphaMode"
     /// Property Type: D2D1_ALPHA_MODE
@@ -400,37 +387,36 @@ typedef enum D2D1_EDGEDETECTION_MODE
 
 } D2D1_EDGEDETECTION_MODE;
 
-
 /// <summary>
 /// The enumeration of the Highlights and Shadows effect's top level properties.
 /// </summary>
 typedef enum D2D1_HIGHLIGHTSANDSHADOWS_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Highlights"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_HIGHLIGHTSANDSHADOWS_PROP_HIGHLIGHTS = 0,
-    
+
     /// <summary>
     /// Property Name: "Shadows"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_HIGHLIGHTSANDSHADOWS_PROP_SHADOWS = 1,
-    
+
     /// <summary>
     /// Property Name: "Clarity"
     /// Property Type: FLOAT
     /// </summary>
     D2D1_HIGHLIGHTSANDSHADOWS_PROP_CLARITY = 2,
-    
+
     /// <summary>
     /// Property Name: "InputGamma"
     /// Property Type: D2D1_HIGHLIGHTSANDSHADOWS_INPUT_GAMMA
     /// </summary>
     D2D1_HIGHLIGHTSANDSHADOWS_PROP_INPUT_GAMMA = 3,
-    
+
     /// <summary>
     /// Property Name: "MaskBlurRadius"
     /// Property Type: FLOAT
@@ -448,19 +434,18 @@ typedef enum D2D1_HIGHLIGHTSANDSHADOWS_INPUT_GAMMA
 
 } D2D1_HIGHLIGHTSANDSHADOWS_INPUT_GAMMA;
 
-
 /// <summary>
 /// The enumeration of the Lookup Table 3D effect's top level properties.
 /// </summary>
 typedef enum D2D1_LOOKUPTABLE3D_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Lut"
     /// Property Type: IUnknown *
     /// </summary>
     D2D1_LOOKUPTABLE3D_PROP_LUT = 0,
-    
+
     /// <summary>
     /// Property Name: "AlphaMode"
     /// Property Type: D2D1_ALPHA_MODE
@@ -470,7 +455,6 @@ typedef enum D2D1_LOOKUPTABLE3D_PROP
 
 } D2D1_LOOKUPTABLE3D_PROP;
 
-
 #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 
 /// <summary>
@@ -478,7 +462,7 @@ typedef enum D2D1_LOOKUPTABLE3D_PROP
 /// </summary>
 typedef enum D2D1_OPACITY_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Opacity"
     /// Property Type: FLOAT
@@ -488,13 +472,12 @@ typedef enum D2D1_OPACITY_PROP
 
 } D2D1_OPACITY_PROP;
 
-
 /// <summary>
 /// The enumeration of the Cross Fade effect's top level properties.
 /// </summary>
 typedef enum D2D1_CROSSFADE_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Weight"
     /// Property Type: FLOAT
@@ -504,19 +487,18 @@ typedef enum D2D1_CROSSFADE_PROP
 
 } D2D1_CROSSFADE_PROP;
 
-
 /// <summary>
 /// The enumeration of the Tint effect's top level properties.
 /// </summary>
 typedef enum D2D1_TINT_PROP
 {
-    
+
     /// <summary>
     /// Property Name: "Color"
     /// Property Type: D2D1_VECTOR_4F
     /// </summary>
     D2D1_TINT_PROP_COLOR = 0,
-    
+
     /// <summary>
     /// Property Name: "ClampOutput"
     /// Property Type: BOOL
@@ -525,7 +507,6 @@ typedef enum D2D1_TINT_PROP
     D2D1_TINT_PROP_FORCE_DWORD = 0xffffffff
 
 } D2D1_TINT_PROP;
-
 
 #endif // #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 

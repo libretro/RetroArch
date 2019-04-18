@@ -131,7 +131,7 @@ static const char *wiiu_iface_name = "eth0";
 /**
  * Allocate and zeroize the hunk of memory for the ifaddrs struct and its contents; the struct will be filled
  * out later.
- * 
+ *
  * returns NULL if any of the memory allocations fail.
  */
 static struct ifaddrs *buildEmptyIfa() {

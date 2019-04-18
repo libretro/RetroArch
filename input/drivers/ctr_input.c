@@ -29,7 +29,7 @@
 
 #define MAX_PADS 1
 
-/* TODO/FIXME - 
+/* TODO/FIXME -
  * fix game focus toggle */
 
 typedef struct ctr_input

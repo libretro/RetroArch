@@ -1,3 +1,17 @@
+/* RetroArch - A frontend for libretro.
+ * Copyright (C) 2010-2018 - Francisco Javier Trujillo Mata - fjtrujy
+ *
+ * RetroArch is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Found-
+ * ation, either version 3 of the License, or (at your option) any later version.
+ *
+ * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE. See the GNU General Public License for more details.
+ * * You should have received a copy of the GNU General Public License along with RetroArch.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef STDINT_H
 #define STDINT_H
 
@@ -13,7 +27,7 @@ typedef unsigned short    uint16_t;
 typedef unsigned int      uint32_t;
 typedef unsigned long     uint64_t;
 
-#define	 STDIN_FILENO	0	/* standard input file descriptor */
+#define	STDIN_FILENO	0	/* standard input file descriptor */
 #define	STDOUT_FILENO	1	/* standard output file descriptor */
 #define	STDERR_FILENO	2	/* standard error file descriptor */
 
@@ -27,4 +41,4 @@ typedef unsigned long     uint64_t;
 #define UINT32_C(val) val##ui
 #define UINT64_C(val) val##ul
 
-#endif //STDINT_H
+#endif /* STDINT_H */

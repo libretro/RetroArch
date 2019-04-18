@@ -582,7 +582,7 @@ ps_guVecScale:
 	ps_muls0	fr4,fr2,fr1
 	psq_st		fr4,0(r4),0,0
 	ps_muls0	fr4,fr3,fr1
-	psq_st		fr4,8(r4),1,0	
+	psq_st		fr4,8(r4),1,0
 	blr
 
 	.globl	ps_guVecNormalize
@@ -622,7 +622,7 @@ ps_guVecCross:
 	ps_merge01	fr10,fr5,fr8
 	psq_st		fr9,0(r5),1,0
 	ps_neg		fr10,fr10
-	psq_st		fr10,4(r5),0,0	
+	psq_st		fr10,4(r5),0,0
 	blr
 
 	.globl ps_guVecDotProduct
@@ -665,8 +665,8 @@ ps_guVecMultiply:
 	// r3 = mt, r4 = src, r5 = dst
 ps_guVecMultiplySR:
     psq_l		fr0,0(r3),0,0    // m[0][0], m[0][1] GQR0 = 0
-    // fp6 - x y 
-    psq_l		fr6,0(r4),0,0 
+    // fp6 - x y
+    psq_l		fr6,0(r4),0,0
     psq_l		fr2,16(r3),0,0   // m[1][0], m[1][1]
     // fp8 = m00x m01y // next X
     ps_mul		fr8,fr0,fr6
@@ -680,12 +680,12 @@ ps_guVecMultiplySR:
     ps_sum0		fr8,fr8,fr8,fr8
     psq_l		fr5,40(r3),0,0   // m[2][2], m[2][3]
     ps_sum0		fr10,fr10,fr10,fr10
-    psq_l		fr1,8(r3),0,0    // m[0][2], m[0][3] 
+    psq_l		fr1,8(r3),0,0    // m[0][2], m[0][3]
     ps_sum0		fr12,fr12,fr12,fr12
     ps_madd		fr9,fr1,fr7,fr8
     psq_st		fr9,0(r5),1,0      // store X
     ps_madd		fr11,fr3,fr7,fr10
-    psq_st		fr11,4(r5),1,0      // store Y  
+    psq_st		fr11,4(r5),1,0      // store Y
     ps_madd		fr13,fr5,fr7,fr12
     psq_st		fr13,8(r5),1,0      //  sore Z
 	blr

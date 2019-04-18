@@ -5,7 +5,6 @@ Icons generated with the Android Material Icon Generator are licensed under the 
 
 For commercial usage, please submit a request under https://goo.gl/forms/zX8GZ3Jz89SRyHdJ2 or send us an email to material-icons@bitdroid.de.
 
-
 Google Material Icons License
 =============================
 

@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2017 - Brad Parker
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -287,6 +287,11 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->frontend;
+         }
+         else if (string_is_equal(pValue, "subsystem_name"))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->subsystem_name;
          }
       }
    }

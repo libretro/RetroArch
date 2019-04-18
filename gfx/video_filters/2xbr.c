@@ -278,7 +278,6 @@ static void twoxbr_generic_destroy(void *data)
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>3))) )
 
-
 #define ALPHA_BLEND_8888_32_W(dst, src) \
 	dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -291,7 +290,6 @@ static void twoxbr_generic_destroy(void *data)
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>3))) ) +\
         pg_alpha_mask
-
 
 #define ALPHA_BLEND_64_W(dst, src) \
         dst = ( \
@@ -318,7 +316,6 @@ static void twoxbr_generic_destroy(void *data)
         (dst & pg_blue_mask))) >>2))) ) +\
         pg_alpha_mask
 
-
 #define ALPHA_BLEND_192_W(dst, src) \
         dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -330,7 +327,6 @@ static void twoxbr_generic_destroy(void *data)
     (pg_blue_mask & ((dst & pg_blue_mask) + \
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask)) * 192) >>8))) )
-
 
 #define ALPHA_BLEND_8888_192_W(dst, src) \
 	dst = ( \
@@ -370,12 +366,10 @@ static void twoxbr_generic_destroy(void *data)
         (dst & pg_blue_mask)) * 224) >>8))) ) +\
         pg_alpha_mask
 
-
 #define LEFT_UP_2_2X(N3, N2, N1, PIXEL)\
              ALPHA_BLEND_224_W(E[N3], PIXEL); \
              ALPHA_BLEND_64_W( E[N2], PIXEL); \
              E[N1] = E[N2]; \
-
 
 #define LEFT_2_2X(N3, N2, PIXEL)\
              ALPHA_BLEND_192_W(E[N3], PIXEL); \
@@ -388,12 +382,10 @@ static void twoxbr_generic_destroy(void *data)
 #define DIA_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
 
-
 #define LEFT_UP_2_8888_2X(N3, N2, N1, PIXEL)\
              ALPHA_BLEND_8888_224_W(E[N3], PIXEL); \
              ALPHA_BLEND_8888_64_W( E[N2], PIXEL); \
              E[N1] = E[N2]; \
-
 
 #define LEFT_2_8888_2X(N3, N2, PIXEL)\
              ALPHA_BLEND_8888_192_W(E[N3], PIXEL); \
@@ -406,14 +398,11 @@ static void twoxbr_generic_destroy(void *data)
 #define DIA_8888_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
 
-
 #define df(Z, A, B)\
         abs(Z->RGBtoYUV[A] - Z->RGBtoYUV[B])\
 
 #define eq(Z, A, B)\
         (df(Z, A, B) < 155)\
-
-
 
 float df8(uint32_t A, uint32_t B,
       uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
@@ -460,7 +449,6 @@ int eq8(uint32_t A, uint32_t B,
 
     return ((48 >= y) && (7 >= u) && (6 >= v)) ? 1 : 0;
 }
-
 
 #define FILTRO_RGB565(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
@@ -531,7 +519,6 @@ int eq8(uint32_t A, uint32_t B,
           }\
      }\
 
-
 #ifndef twoxbr_function
 #define twoxbr_function(FILTRO, Z) \
             E[0] = E[1] = E[2] = E[3] = PE;\
@@ -546,7 +533,6 @@ int eq8(uint32_t A, uint32_t B,
          ++in; \
          out += 2
 #endif
-
 
 static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
       int first, int last, uint32_t *src,

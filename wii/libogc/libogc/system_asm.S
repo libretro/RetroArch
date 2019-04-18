@@ -23,7 +23,7 @@ __configBATS:
 	ori		r3,r3,0x0c64
 	mtspr	HID0,r3
 	isync
-	
+
 #if defined(HW_RVL)
 	lis		r3,0x8200		//bits set: H4A(HID4 access), SBE(2nd BAT enabled)
 	mtspr	HID4,r3
@@ -57,7 +57,7 @@ __configBATS:
 	mtspr	DBAT0L,r3
 	mtspr	DBAT0U,r4
 	isync
-	
+
 #if defined(HW_RVL)
 	// set [DI]BAT4 for 256MB@90000000,
 	// real 10000000, WIMG=0000, R/W
@@ -69,7 +69,7 @@ __configBATS:
 	mtspr	DBAT4U,r4
 	isync
 #endif
-	
+
 	// set DBAT1 for 256MB@c0000000,
 	// real 00000000, WIMG=0101, R/W
 	li		r3,0x2a
@@ -78,7 +78,7 @@ __configBATS:
 	mtspr	DBAT1L,r3
 	mtspr	DBAT1U,r4
 	isync
-	
+
 #if defined(HW_RVL)
 	// set DBAT5 for 256MB@d0000000,
 	// real 10000000, WIMG=0101, R/W
@@ -96,7 +96,7 @@ __configBATS:
 	oris    r3,r3,0x8000
 	mtsrr0	r3
 	rfi
-	
+
 	.globl __InitFPRS
 __InitFPRS:
 	# Enable the Floating Point Registers
@@ -111,38 +111,38 @@ __InitFPRS:
 	lis		r3,zeroPS@ha
 	addi	r3,r3,zeroPS@l
 	psq_l	fr0,0(r3),0,0
-	ps_mr	fr1,fr0	
-	ps_mr	fr2,fr0	
-	ps_mr	fr3,fr0	
-	ps_mr	fr4,fr0	
-	ps_mr	fr5,fr0	
-	ps_mr	fr6,fr0	
-	ps_mr	fr7,fr0	
-	ps_mr	fr8,fr0	
-	ps_mr	fr9,fr0	
-	ps_mr	fr10,fr0	
-	ps_mr	fr11,fr0	
-	ps_mr	fr12,fr0	
-	ps_mr	fr13,fr0	
-	ps_mr	fr14,fr0	
-	ps_mr	fr15,fr0	
-	ps_mr	fr16,fr0	
-	ps_mr	fr17,fr0	
-	ps_mr	fr18,fr0	
-	ps_mr	fr19,fr0	
-	ps_mr	fr20,fr0	
-	ps_mr	fr21,fr0	
-	ps_mr	fr22,fr0	
-	ps_mr	fr23,fr0	
-	ps_mr	fr24,fr0	
-	ps_mr	fr25,fr0	
-	ps_mr	fr26,fr0	
-	ps_mr	fr27,fr0	
-	ps_mr	fr28,fr0	
-	ps_mr	fr29,fr0	
-	ps_mr	fr30,fr0	
+	ps_mr	fr1,fr0
+	ps_mr	fr2,fr0
+	ps_mr	fr3,fr0
+	ps_mr	fr4,fr0
+	ps_mr	fr5,fr0
+	ps_mr	fr6,fr0
+	ps_mr	fr7,fr0
+	ps_mr	fr8,fr0
+	ps_mr	fr9,fr0
+	ps_mr	fr10,fr0
+	ps_mr	fr11,fr0
+	ps_mr	fr12,fr0
+	ps_mr	fr13,fr0
+	ps_mr	fr14,fr0
+	ps_mr	fr15,fr0
+	ps_mr	fr16,fr0
+	ps_mr	fr17,fr0
+	ps_mr	fr18,fr0
+	ps_mr	fr19,fr0
+	ps_mr	fr20,fr0
+	ps_mr	fr21,fr0
+	ps_mr	fr22,fr0
+	ps_mr	fr23,fr0
+	ps_mr	fr24,fr0
+	ps_mr	fr25,fr0
+	ps_mr	fr26,fr0
+	ps_mr	fr27,fr0
+	ps_mr	fr28,fr0
+	ps_mr	fr29,fr0
+	ps_mr	fr30,fr0
 	ps_mr	fr31,fr0
-		
+
 	# Clear all of the FPR's to 0
 1:	lis	    r3,zeroF@ha
 	lfd	    fr0,zeroF@l(r3)
@@ -229,10 +229,10 @@ ICEnabled:
 	mfspr   r3, HID0
 	rlwinm. r0, r3, 0, 17, 17	// Check if the Data Cache has been enabled or not.
 	bne     DCEnabled
-	
-	bl		DCEnable	
+
+	bl		DCEnable
 DCEnabled:
-	
+
 	mfspr   r3, L2CR
 	clrrwi. r0, r3, 31			// Check if the Locked Cache has been enabled or not.
 	bne     L2Enabled
@@ -270,7 +270,7 @@ __InitSystem:
 	mtspr   957, r3
 	mtspr   958, r3
 	isync
-	
+
 #if defined(HW_RVL)
 	mfspr	r3,HID4
 	oris	r3,r3,0x0190		//set additional bits in HID4: SR0(store 0), LPE(PS LE exception), L2CFI(L2 castout prior to L2 inv. flash)
@@ -283,16 +283,16 @@ __InitSystem:
 	ori     r3, r3, 0x0200
 	mtspr   HID0, r3
 	isync
-	
+
 	# Set the Non-IEEE mode in the FPSCR
 	mtfsb1  29
-	
+
 	# Disable Write Gather Pipe
 	mfspr   r3,HID2 # (HID2)
-	rlwinm  r3, r3, 0, 2, 0	
+	rlwinm  r3, r3, 0, 2, 0
 	mtspr   HID2,r3 # (HID2)
 	isync
-	
+
 	# Restore the non-volatile registers to their previous values and return.
 	lwz     r0, 28(sp)
 	lmw	r29,12(sp)
@@ -345,7 +345,7 @@ __reset:
 6:	b		8f
 7:	nop
 	b		7b
-8:	b		9b	
+8:	b		9b
 
 	.globl __InitBATS
 __InitBATS:
@@ -356,7 +356,7 @@ __InitBATS:
 	bl		__realmode
 	mtlr	r31
 	blr
-	
+
 	.globl SYS_SwitchFiber
 SYS_SwitchFiber:
 	mflr	r0

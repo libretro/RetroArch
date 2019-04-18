@@ -13,6 +13,9 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
+#include "../../switch_performance_profiles.h"
+#include "../../configuration.h"
+#include <unistd.h>
 #else
 #include <libtransistor/nx.h>
 #include <libtransistor/ipc_helpers.h>
@@ -55,6 +58,8 @@ static const char *elf_path_cst = "/switch/retroarch_switch.nro";
 
 static uint64_t frontend_switch_get_mem_used(void);
 
+bool platform_switch_has_focus = true;
+
 #ifdef HAVE_LIBNX
 
 /* Splash */
@@ -68,10 +73,46 @@ static AppletHookCookie applet_hook_cookie;
 extern bool nxlink_connected;
 #endif
 
-static void on_applet_hook(AppletHookType hook, void* param) {
-   if(hook == AppletHookType_OnExitRequest) {
+void libnx_apply_overclock() {
+   const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES) / sizeof(SWITCH_CPU_PROFILES[1]);
+   if (config_get_ptr()->uints.libnx_overclock >= 0 && config_get_ptr()->uints.libnx_overclock <= profiles_count)
+      pcvSetClockRate(PcvModule_Cpu, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+}
+
+static void on_applet_hook(AppletHookType hook, void *param) {
+   u32 performance_mode;
+   AppletFocusState focus_state;
+
+   /* Exit request */
+   switch (hook)
+   {
+   case AppletHookType_OnExitRequest:
       RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
       retroarch_main_quit();
+      break;
+
+   /* Focus state*/
+   case AppletHookType_OnFocusState:
+      focus_state = appletGetFocusState();
+      RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
+      platform_switch_has_focus = focus_state == AppletFocusState_Focused;
+      if(!platform_switch_has_focus) {
+         pcvSetClockRate(PcvModule_Cpu, 1020000000);
+      } else {
+         libnx_apply_overclock();
+      }
+      break;
+
+   /* Performance mode */
+   case AppletHookType_OnPerformanceMode:
+      // 0 == Handheld, 1 == Docked
+      // Since CPU doesn't change we just re-apply
+      performance_mode = appletGetPerformanceMode();
+      libnx_apply_overclock();
+      break;
+
+   default:
+      break;
    }
 }
 
@@ -182,6 +223,9 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
    int i = 0;
    for (i; i < DEFAULT_DIR_LAST; i++)
    {
@@ -189,7 +233,7 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
-   
+
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
@@ -201,6 +245,8 @@ static void frontend_switch_deinit(void *data)
 
 #ifdef HAVE_LIBNX
    nifmExit();
+   pcvSetClockRate(PcvModule_Cpu, 1020000000); // Always 1020 MHz, unless SDEV
+   pcvExit();
 #if defined(SWITCH) && defined(NXLINK)
    socketExit();
 #endif
@@ -215,9 +261,6 @@ static void frontend_switch_deinit(void *data)
    if (psmInitialized)
        psmExit();
 
-#ifndef HAVE_OPENGL
-   gfxExit();
-#endif
    appletUnlockExit();
 #endif
 }
@@ -225,7 +268,7 @@ static void frontend_switch_deinit(void *data)
 #ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
-   char game_path[PATH_MAX];
+   char game_path[PATH_MAX-4];
    const char *arg_data[3];
    char error_string[200 + PATH_MAX];
    int args = 0;
@@ -359,18 +402,24 @@ void frontend_switch_showsplash(void)
 {
    printf("[Splash] Showing splashScreen\n");
 
+   NWindow *win = nwindowGetDefault();
+   Framebuffer fb;
+   framebufferCreate(&fb, win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
+   framebufferMakeLinear(&fb);
+
    if (splashData)
    {
       uint32_t width       = 0;
       uint32_t height      = 0;
-      uint32_t *frambuffer = (uint32_t *)gfxGetFramebuffer(&width, &height);
+      uint32_t stride;
+      uint32_t *frambuffer = (uint32_t *)framebufferBegin(&fb, &stride);
 
-      gfx_slow_swizzling_blit(frambuffer, splashData, width, height, 0, 0, false);
+      gfx_cpy_dsp_buf(frambuffer, splashData, width, height, stride, false);
 
-      gfxFlushBuffers();
-      gfxSwapBuffers();
-      gfxWaitForVsync();
+      framebufferEnd(&fb);
    }
+
+   framebufferClose(&fb);
 }
 
 /* From rpng_test.c */
@@ -615,23 +664,21 @@ extern void retro_get_system_info(struct retro_system_info *info);
 
 static void frontend_switch_init(void *data)
 {
+
    (void)data;
 
 #ifdef HAVE_LIBNX
    nifmInitialize();
+   pcvInitialize();
+
    appletLockExit();
    appletHook(&applet_hook_cookie, on_applet_hook, NULL);
-#ifndef HAVE_OPENGL
-   /* Init Resolution before initDefault */
-   gfxInitResolution(1280, 720);
+   appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
 
-   gfxInitDefault();
-   gfxSetMode(GfxMode_TiledDouble);
-
-   gfxConfigureTransform(0);
-#endif /* HAVE_OPENGL */
-
-   appletInitializeGamePlayRecording();
+   bool recording_supported = false;
+   appletIsGamePlayRecordingSupported(&recording_supported);
+   if(recording_supported)
+      appletInitializeGamePlayRecording();
 
 #ifdef NXLINK
    socketInitializeDefault();
@@ -776,6 +823,8 @@ static enum frontend_powerstate frontend_switch_get_powerstate(int *seconds, int
    case ChargerType_Charger:
    case ChargerType_Usb:
       return FRONTEND_POWERSTATE_CHARGING;
+   default:
+      break;
    }
 
    return FRONTEND_POWERSTATE_NO_SOURCE;
@@ -840,7 +889,7 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
 
    int patch;
    sscanf(firmware_version + 0x68, "%d.%d.%d", major, minor, &patch);
-   
+
 fail_object:
    ipc_close(set_sys);
 fail_sm:
@@ -895,5 +944,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         NULL, /* watch_path_for_changes */
         NULL, /* check_for_path_changes */
         NULL, /* set_sustained_performance_mode */
+        NULL, /* get_cpu_model_name */
+        NULL, /* get_user_language */
         "switch",
 };

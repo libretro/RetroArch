@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <dynamic/dylib.h>
 
 #include "../core.h"
 #include "../dynamic.h"
@@ -48,7 +49,7 @@ static void InputListElementRealloc(InputListElement *element, unsigned int newS
 {
    if (newSize > element->state_size)
    {
-      element->state = realloc(element->state, newSize * sizeof(int16_t));
+      element->state = (int16_t*)realloc(element->state, newSize * sizeof(int16_t));
       memset(&element->state[element->state_size], 0, (newSize - element->state_size) * sizeof(int16_t));
       element->state_size = newSize;
    }
@@ -98,9 +99,7 @@ static void input_state_set_last(unsigned port, unsigned device,
          )
       {
          if (id >= element->state_size)
-         {
             InputListElementExpand(element, id);
-         }
          element->state[id] = value;
          return;
       }
@@ -129,10 +128,10 @@ int16_t input_state_get_last(unsigned port,
    /* find list item */
    for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
-      InputListElement *element = 
+      InputListElement *element =
          (InputListElement*)input_state_list->data[i];
 
-      if (  (element->port   == port)   && 
+      if (  (element->port   == port)   &&
             (element->device == device) &&
             (element->index  == index))
       {
@@ -219,4 +218,3 @@ void remove_input_state_hook(void)
       retro_unserialize_callback_original = NULL;
    }
 }
-

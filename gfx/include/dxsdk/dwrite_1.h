@@ -14,8 +14,6 @@
 
 #include <dwrite.h>
 
-
-
 /// <summary>
 /// The overall kind of family.
 /// </summary>
@@ -506,7 +504,7 @@ enum DWRITE_PANOSE_SYMBOL_ASPECT_RATIO
 };
 
 /// <summary>
-/// Specifies the policy used by GetRecommendedRenderingMode to determine whether to 
+/// Specifies the policy used by GetRecommendedRenderingMode to determine whether to
 /// render glyphs in outline mode. Glyphs are rendered in outline mode by default at
 /// large sizes for performance reasons, but how large (i.e., the outline threshold)
 /// depends on the quality of outline rendering. If the graphics system renders anti-
@@ -623,7 +621,6 @@ enum DWRITE_GLYPH_ORIENTATION_ANGLE
     DWRITE_GLYPH_ORIENTATION_ANGLE_270_DEGREES,
 };
 
-
 struct DWRITE_FONT_METRICS1 : public DWRITE_FONT_METRICS
 {
     /// <summary>
@@ -709,12 +706,11 @@ struct DWRITE_FONT_METRICS1 : public DWRITE_FONT_METRICS
     INT16 superscriptSizeY;
 
     /// <summary>
-    /// Indicates that the ascent, descent, and lineGap are based on newer 
+    /// Indicates that the ascent, descent, and lineGap are based on newer
     /// 'typographic' values in the font, rather than legacy values.
     /// </summary>
     BOOL hasTypographicMetrics;
 };
-
 
 /// <summary>
 /// Metrics for caret placement in a font.
@@ -739,7 +735,6 @@ struct DWRITE_CARET_METRICS
     /// </summary>
     INT16 offset;
 };
-
 
 /// <summary>
 /// Typeface classification values, used for font selection and matching.
@@ -812,7 +807,6 @@ union DWRITE_PANOSE
     } symbol;
 };
 
-
 /// <summary>
 /// Range of Unicode codepoints.
 /// </summary>
@@ -828,7 +822,6 @@ struct DWRITE_UNICODE_RANGE
     /// </summary>
     UINT32 last;
 };
-
 
 /// <summary>
 /// Script-specific properties for caret navigation and justification.
@@ -916,7 +909,7 @@ struct DWRITE_SCRIPT_PROPERTIES
     /// between characters. Note that cursively linked scripts like Arabic
     /// are also connected (but not all connected scripts are
     /// cursive).
-    /// 
+    ///
     /// Examples: Devanagari, Arabic, Syriac, Bengali, Gurmukhi, Ogham
     /// Excludes: Latin, Chinese, Thaana
     /// </summary>
@@ -928,7 +921,7 @@ struct DWRITE_SCRIPT_PROPERTIES
     /// spacing. Note that although other scripts like Latin and Japanese may
     /// actually support handwritten cursive forms, they are not considered
     /// cursive scripts.
-    /// 
+    ///
     /// Examples: Arabic, Syriac, Mongolian
     /// Excludes: Thaana, Devanagari, Latin, Chinese
     /// </summary>
@@ -936,7 +929,6 @@ struct DWRITE_SCRIPT_PROPERTIES
 
     UINT32 reserved                     : 25;
 };
-
 
 /// <summary>
 /// Justification information per glyph.
@@ -1006,7 +998,6 @@ struct DWRITE_JUSTIFICATION_OPPORTUNITY
 
     UINT32 reserved                  : 12;
 };
-
 
 interface IDWriteTextAnalysisSource1;
 interface IDWriteTextAnalysisSink1;
@@ -1080,7 +1071,6 @@ interface DWRITE_DECLARE_INTERFACE("30572f99-dac6-41db-a16e-0486307e606a") IDWri
 
     using IDWriteFactory::CreateCustomRenderingParams;
 };
-
 
 /// <summary>
 /// The interface that represents an absolute reference to a font face.
@@ -1281,11 +1271,11 @@ interface DWRITE_DECLARE_INTERFACE("a71efdb4-9fdb-4838-ad90-cfc3be8c3daf") IDWri
     /// <param name="outlineThreshold">Specifies the quality of the graphics system's outline rendering,
     /// affects the size threshold above which outline rendering is used.</param>
     /// <param name="measuringMode">Specifies the method used to measure during text layout. For proper
-    /// glyph spacing, the function returns a rendering mode that is compatible with the specified 
+    /// glyph spacing, the function returns a rendering mode that is compatible with the specified
     /// measuring mode.</param>
     /// <param name="renderingMode">Receives the recommended rendering mode.</param>
     /// <remarks>
-    /// This method should be used to determine the actual rendering mode in cases where the rendering 
+    /// This method should be used to determine the actual rendering mode in cases where the rendering
     /// mode of the rendering params object is DWRITE_RENDERING_MODE_DEFAULT.
     /// </remarks>
     /// <returns>
@@ -1340,7 +1330,6 @@ interface DWRITE_DECLARE_INTERFACE("a71efdb4-9fdb-4838-ad90-cfc3be8c3daf") IDWri
     using IDWriteFontFace::GetGdiCompatibleMetrics;
     using IDWriteFontFace::GetRecommendedRenderingMode;
 };
-
 
 /// <summary>
 /// The IDWriteFont interface represents a physical font in a font collection.
@@ -1711,7 +1700,6 @@ interface DWRITE_DECLARE_INTERFACE("80DAD800-E21F-4E83-96CE-BFCCE500DB7C") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// The interface implemented by the client to provide needed information to
 /// the text analyzer, such as the text and associated text properties.
@@ -1752,7 +1740,6 @@ interface DWRITE_DECLARE_INTERFACE("639CFAD8-0FB4-4B21-A58A-067920120009") IDWri
         ) PURE;
 };
 
-
 /// <summary>
 /// The interface implemented by the client to receive the
 /// output of the text analyzers.
@@ -1791,7 +1778,6 @@ interface DWRITE_DECLARE_INTERFACE("B0D941A0-85E7-4D8B-9FD3-5CED9934482A") IDWri
         BOOL isRightToLeft
         ) PURE;
 };
-
 
 /// <summary>
 /// The IDWriteTextLayout1 interface represents a block of text after it has
@@ -1886,7 +1872,7 @@ enum DWRITE_TEXT_ANTIALIAS_MODE
 
     /// <summary>
     /// Grayscale antialiasing computes one coverage value for each pixel. Because the alpha
-    /// value of each pixel is well-defined, text can be rendered onto a transparent bitmap, 
+    /// value of each pixel is well-defined, text can be rendered onto a transparent bitmap,
     /// which can then be composited with other content. Note that grayscale rendering with
     /// IDWriteBitmapRenderTarget1 uses premultiplied alpha.
     /// </summary>
@@ -1913,7 +1899,7 @@ interface DWRITE_DECLARE_INTERFACE("791e8298-3ef3-4230-9880-c9bdecc42064") IDWri
     /// Returns S_OK if successful, or E_INVALIDARG if the argument is not valid.
     /// </returns>
     /// <remarks>
-    /// The antialiasing mode of a newly-created bitmap render target defaults to 
+    /// The antialiasing mode of a newly-created bitmap render target defaults to
     /// DWRITE_TEXT_ANTIALIAS_MODE_CLEARTYPE. An application can change the antialiasing
     /// mode by calling SetTextAntialiasMode. For example, an application might specify
     /// grayscale antialiasing when rendering text onto a transparent bitmap.

@@ -59,7 +59,6 @@ int isblank(int c);
 
 #endif
 
-
 RETRO_END_DECLS
 
 #endif

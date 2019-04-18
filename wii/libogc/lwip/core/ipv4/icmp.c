@@ -56,7 +56,6 @@ icmp_input(struct pbuf *p, struct netif *inp)
   ICMP_STATS_INC(icmp.recv);
   snmp_inc_icmpinmsgs();
 
-
   iphdr = p->payload;
   hlen = IPH_HL(iphdr) * 4;
   if (pbuf_header(p, -((s16_t)hlen)) || (p->tot_len < sizeof(u16_t)*2)) {
@@ -194,10 +193,3 @@ icmp_time_exceeded(struct pbuf *p, enum icmp_te_type t)
 }
 
 #endif /* IP_FORWARD */
-
-
-
-
-
-
-

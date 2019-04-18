@@ -50,4 +50,3 @@ RETRO_END_DECLS
 #endif
 
 #endif
-
