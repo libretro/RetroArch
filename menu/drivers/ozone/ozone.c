@@ -301,19 +301,23 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    return menu;
 
 error:
-   if (ozone->horizontal_list)
+   if (ozone)
    {
-      ozone_free_list_nodes(ozone->horizontal_list, false);
-      file_list_free(ozone->horizontal_list);
-   }
+      if (ozone->horizontal_list)
+      {
+         ozone_free_list_nodes(ozone->horizontal_list, false);
+         file_list_free(ozone->horizontal_list);
+      }
 
-   if (ozone->selection_buf_old)
-   {
-      ozone_free_list_nodes(ozone->selection_buf_old, false);
-      file_list_free(ozone->selection_buf_old);
+      if (ozone->selection_buf_old)
+      {
+         ozone_free_list_nodes(ozone->selection_buf_old, false);
+         file_list_free(ozone->selection_buf_old);
+      }
+
+      ozone->selection_buf_old = NULL;
+      ozone->horizontal_list   = NULL;
    }
-   ozone->selection_buf_old = NULL;
-   ozone->horizontal_list   = NULL;
 
    if (menu)
       free(menu);

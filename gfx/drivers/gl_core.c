@@ -503,7 +503,8 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 #endif
 
    /* Force shared context. */
-   gl->use_shared_context = hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   if (hwr)
+      gl->use_shared_context = hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,

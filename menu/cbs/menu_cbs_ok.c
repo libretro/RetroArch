@@ -3611,7 +3611,7 @@ finish:
             (transf ? transf->path: "unknown"), err);
    }
 #ifdef HAVE_DISCORD
-   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+   else if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
       discord_avatar_set_ready(true);
 #endif
 

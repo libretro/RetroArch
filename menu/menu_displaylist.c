@@ -2886,7 +2886,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    {
       const char *ext = NULL;
 
-      if (!string_is_empty(entry->path))
+      if (entry && !string_is_empty(entry->path))
          ext = path_get_extension(entry->path);
 
       if (!string_is_empty(ext) &&
@@ -2943,7 +2943,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       }
    }
 
-   if (!string_is_empty(entry->db_name) && (!content_loaded ||
+   if ((entry && !string_is_empty(entry->db_name)) && (!content_loaded ||
       (content_loaded && settings->bools.quick_menu_show_information)))
    {
       char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -7782,7 +7782,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                      PARSE_ACTION, false);
 
                /* Core fully loaded, use the subsystem data */
-               if (sys_info->subsystem.data)
+               if (sys_info && sys_info->subsystem.data)
                      subsystem = sys_info->subsystem.data;
                /* Core not loaded completely, use the data we peeked on load core */
                else

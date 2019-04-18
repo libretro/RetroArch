@@ -441,7 +441,8 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       }
 
 border_iterate:
-      y += node->height;
+      if (node)
+         y += node->height;
    }
 
    /* Cursor(s) layer - current */

@@ -418,8 +418,9 @@ static int general_push(menu_displaylist_info_t *info,
             }
             else
             {
-               strlcpy(newstring2, system->valid_extensions,
-                     PATH_MAX_LENGTH * sizeof(char));
+               if (system)
+                  strlcpy(newstring2, system->valid_extensions,
+                        PATH_MAX_LENGTH * sizeof(char));
             }
          }
          break;
@@ -442,7 +443,7 @@ static int general_push(menu_displaylist_info_t *info,
             }
             else
             {
-               if (!string_is_empty(system->valid_extensions))
+               if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
                   new_exts_allocated = true;
@@ -473,7 +474,12 @@ static int general_push(menu_displaylist_info_t *info,
             }
 
             if (new_exts_allocated)
+            {
                free(new_exts);
+
+               if (new_exts == info->exts)
+                  info->exts = NULL;
+            }
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
