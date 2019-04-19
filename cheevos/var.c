@@ -295,7 +295,7 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
    {
       rarch_system_info_t* system = runloop_get_system_info();
 
-      if (system->mmaps.num_descriptors > var->bank_id)
+      if (system->mmaps.num_descriptors != 0)
       {
          if (var->value >= system->mmaps.descriptors[var->bank_id].core.len)
              return NULL;
