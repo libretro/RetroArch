@@ -3724,7 +3724,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_FONT,
-    "Menu Font"
+    "Menü Fontu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -3768,7 +3768,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
-    "Automatic"
+    "Otomatik"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
@@ -3776,7 +3776,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-    "Menu Color Theme"
+    "Menü Renk Teması"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -3784,19 +3784,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-    "Dark"
+    "Karanlık"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
-    "Light"
+    "Aydınlık"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
-    "Morning Blue"
+    "Sabah Mavisi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
-    "Dark Purple"
+    "Koyu Mor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
@@ -3808,7 +3808,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
-    "Legacy Red"
+    "Eski Kırmızı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
@@ -3816,7 +3816,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-    "Plain"
+    "Sade"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -3836,7 +3836,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-    "Icon Shadows"
+    "Simge Gölgeleri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -3888,7 +3888,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-    "Shader Preset"
+    "Gölgelendirici Ön Ayarı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
@@ -3901,9 +3901,9 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Double the amount of points earned.\n"
-    "Disables savestates, cheats, rewind, pause, and slow-motion for all games.\n"
-    "Toggling this setting at runtime will restart your game."
+    "Kazanılan puanları iki katına çıkarır.\n"
+    "Tüm oyunlar için kaydetme konumlarını, hileleri, geri sarma, duraklatma ve yavaş hareketleri devre dışı bırakır.\n"
+    "Çalışma zamanında bu ayarın değiştirilmesi, oyununuzu yeniden başlatır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4144,7 +4144,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_APPLICATION_DIR,
-    "Application Dir"
+    "Uygulama Dizini"
     )
 MSG_HASH(
     MSG_APPLYING_CHEAT,
@@ -5201,15 +5201,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
-    "Show menu sublabels"
+    "Menü alt etiketlerini göster"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
-    "Shows additional information for the currently selected menu entry."
+    "Seçili olan menü girişi için ek bilgi gösterir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SELECT_FILE,
-    "Select File"
+    "Dosya Seç"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
@@ -5221,11 +5221,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-    "Netplay will start when content is loaded."
+    "İçerik yüklendiğinde Netplay başlayacaktır."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-    "Couldn't find a suitable core or content file, load manually."
+    "Uygun bir Core veya içerik dosyası bulunamadı, elle yükleyin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
@@ -5237,7 +5237,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_START,
-    "Start"
+    "Başlat"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
@@ -5333,11 +5333,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-    "Set the custom width for the display window."
+    "Ekran penceresi için özel genişliği ayarlayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-    "Set the custom height for the display window."
+    "Ekran penceresi için özel yüksekliği ayarlayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
@@ -8192,11 +8192,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-    "Kayda başla"
+    "Kayıt Yap"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-    "Kaydı başlatır."
+    "Kayıt yapmayı başlatır."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
@@ -8208,7 +8208,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-    "Yayın Yapmayı Başlat"
+    "Yayın Yap"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
