@@ -952,25 +952,25 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
             snprintf(s, len,
-                     "Shader Passes. \n"
+                     "Gölgelendirici Geçişleri. \n"
                              " \n"
-                             "RetroArch allows you to mix and match various \n"
-                             "shaders with arbitrary shader passes, with \n"
-                             "custom hardware filters and scale factors. \n"
+                             "RetroArch, çeşitli gölgelendiricileri isteğe \n"
+                             "bağlı gölgelendirici geçişleri ileözel donanım filtreleri \n"
+                             "özel donanım filtreleri ve ölçek faktörleriyle karıştırmanıza ve eşleştirmenize olanak sağlar. \n"
                              " \n"
-                             "This option specifies the number of shader \n"
-                             "passes to use. If you set this to 0, and use \n"
-                             "Apply Shader Changes, you use a 'blank' shader. \n"
+                             "Bu seçenek kullanılacak gölgelendirici geçiş \n"
+                             "sayısını belirtir. Bunu 0'a ayarlarsanız ve Gölgelendirici Değişiklikleri Uygula'yı \n"
+                             "kullanırsanız, 'boş' bir gölgelendirici kullanırsınız. \n"
                              " \n"
-                             "The Default Filter option will affect the \n"
-                             "stretching filter.");
+                             "Varsayılan Filtre seçeneği, \n"
+                             "germe filtresini etkiler.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
             snprintf(s, len,
-                     "Shader Parameters. \n"
+                     "Gölgelendirici Parametreleri. \n"
                              " \n"
-                             "Modifies current shader directly. Will not be \n"
-                             "saved to CGP/GLSLP preset file.");
+                             "Geçerli gölgelendiriciyi doğrudan değiştirir.\n"
+                             "CGP/GLSLP ön ayar dosyasına kaydedilmeyecek");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             snprintf(s, len,
@@ -993,8 +993,8 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
             snprintf(s, len,
-                     "Determines how configuration files \n"
-                             "are loaded and prioritized.");
+                     "Yapılandırma dosyalarının nasıl yüklendiğini \n"
+                             "ve önceliklendirildiğini belirler.");
             break;
         case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             snprintf(s, len,
@@ -1082,20 +1082,18 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
             snprintf(s, len,
-                     "Apply Shader Changes. \n"
+                     "Gölgelendirici Değişikliklerini Uygular. \n"
                              " \n"
-                             "After changing shader settings, use this to \n"
-                             "apply changes. \n"
+                             "Gölgelendirici ayarlarını değiştirdikten sonra, \n"
+                             "değişiklikleri uygulamak için bunu kullanın. \n"
                              " \n"
-                             "Changing shader settings is a somewhat \n"
-                             "expensive operation so it has to be \n"
-                             "done explicitly. \n"
+                             "Gölgelendirici ayarlarının değiştirilmesi biraz pahalı bir işlemdir, \n"
+                             "bu nedenle açıkça yapılması gerekir. \n"
                              " \n"
-                             "When you apply shaders, the menu shader \n"
-                             "settings are saved to a temporary file (either \n"
-                             "menu.cgp or menu.glslp) and loaded. The file \n"
-                             "persists after RetroArch exits. The file is \n"
-                             "saved to Shader Directory."
+                             "Gölgelendirici uyguladığınızda, menü gölgelendirici \n"
+                             "ayarları geçici bir dosyaya kaydedilir (menu.cgp veya menu.glslp) \n"
+                             "ve yüklenir. RetroArch çıktıktan sonra işlem devam eder. \n"
+                             "Dosya Gölgelendirici Dizinine kaydedilir."
             );
             break;
         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
@@ -1129,18 +1127,18 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_DISK_NEXT:
             snprintf(s, len,
-                     "Cycles through disk images. Use after \n"
-                             "ejecting. \n"
+                     "Disk görüntüleri arasında geçiş yapar.\n"
+                             "Diski çıkardıktan sonra kullanın. \n"
                              " \n"
-                             " Complete by toggling eject again.");
+                             "Çıkarmayı tekrar değiştirerek tamamlayın.");
             break;
         case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
             snprintf(s, len,
-                  "CPU-based video filter.");
+                  "CPU tabanlı video filtresi.");
 #else
             snprintf(s, len,
-                     "CPU-based video filter.\n"
+                     "CPU tabanlı video filtresi\n"
                              " \n"
                              "Path to a dynamic library.");
 #endif
@@ -1152,7 +1150,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "This is driver dependent. E.g.\n"
 #ifdef HAVE_ALSA
             " \n"
-            "ALSA wants a PCM device."
+            "ALSA için PCM cihazı gerek."
 #endif
 #ifdef HAVE_OSS
             " \n"
@@ -1172,13 +1170,13 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_DISK_EJECT_TOGGLE:
             snprintf(s, len,
-                     "Toggles eject for disks.\n"
+                     "Diskler için çıkarmayı değiştirir.\n"
                              " \n"
-                             "Used for multiple-disk content.");
+                             "Birden fazla disk içeriği için kullanılır.");
             break;
         case MENU_ENUM_LABEL_ENABLE_HOTKEY:
             snprintf(s, len,
-                     "Enable other hotkeys.\n"
+                     "Diğer kısayol tuşlarını etkinleştirin.\n"
                              " \n"
                              " If this hotkey is bound to either keyboard, \n"
                              "joybutton or joyaxis, all other hotkeys will \n"
@@ -1192,10 +1190,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_REWIND_ENABLE:
             snprintf(s, len,
-                     "Enable rewinding.\n"
+                     "Geri sarmayı etkinleştir.\n"
                              " \n"
-                             "This will take a performance hit, \n"
-                             "so it is disabled by default.");
+                             "Performans düşmesi olacaktır, \n"
+                             "bu nedenle varsayılan olarak devre dışıdır.");
             break;
         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
             snprintf(s, len,
@@ -1209,28 +1207,27 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Core Dizini. \n"
                              " \n"
-                             "A directory for where to search for \n"
-                             "libretro core implementations.");
+                             "Libretro Core uygulamalarının \n"
+                             "aranacağı dizin. ");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
             snprintf(s, len,
-                     "Refresh Rate Auto.\n"
+                     "Otomatik Yenileme Hızı\n"
                              " \n"
-                             "The accurate refresh rate of our monitor (Hz).\n"
-                             "This is used to calculate audio input rate with \n"
-                             "the formula: \n"
+                             "Monitörünüzün doğru yenileme hızı (Hz).\n"
+                             "Bu formül, ses giriş hızını hesaplamak \n"
+                             "için kullanılır: \n"
                              " \n"
-                             "audio_input_rate = game input rate * display \n"
-                             "refresh rate / game refresh rate\n"
+                             "audio_input_rate = oyun giriş hızı * \n"
+                             "ekran yenileme hızı/oyun yenileme hızı \n"
                              " \n"
-                             "If the implementation does not report any \n"
-                             "values, NTSC defaults will be assumed for \n"
-                             "compatibility.\n"
+                             "Uygulamada herhangi bir değer rapor edilmezse, \n"
+                             "uyumluluk için NTSC varsayılanları kabul edilir. \n"
                              " \n"
-                             "This value should stay close to 60Hz to avoid \n"
-                             "large pitch changes. If your monitor does \n"
-                             "not run at 60Hz, or something close to it, \n"
-                             "disable VSync, and leave this at its default.");
+                             "Geniş görüntü değişikliklerinden kaçınmak için bu değer 60Hz'ye yakın olmalıdır. \n"
+                             "Monitörünüz 60Hz'de veya ona yakın bir yerde  \n"
+                             "çalışmıyorsa, VSync'yi devre dışı bırakın \n"
+                             "ve bunu varsayılan olarak bırakın.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
             snprintf(s, len,
