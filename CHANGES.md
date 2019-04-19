@@ -1,5 +1,6 @@
 # 1.7.7 (future)
 - 3DS: Add unique IDs to prevent cores overwriting each other.
+- 3DS: Fix screen tearing when running 50Hz content.
 - ANDROID: We now target API level 26 (minimum is still API level 9).
 - ANDROID: Add option to vibrate on touch (works in menu or overlay).
 - ANDROID: Add device vibration option for cores that support rumble.
@@ -7,6 +8,7 @@
 - ANDROID: Allow stylus/pen to move mouse without pressing down.
 - AUDIO: Avoid deadlocks in certain audio drivers when toggling menu sounds on.
 - BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
+- CHEEVOS: Fix crash when reading memory that is out of range.
 - CRT: Dynamic super resolution support.
 - DISCORD: Fix potential crash when username is empty and discord is disabled.
 - DISCORD: Ask to join support for Linux.
@@ -22,14 +24,30 @@
 - COMMON: Show CPU model name in log.
 - COMMON: Add "Help -> Send Debug Info" option (and F10 hotkey) to send diagnostic info to the RetroArch team for help with problems.
 - COMMON: Show GPU device name/version in log.
+- COMMON: Add menu option to write log info to a file.
+- COMMON: Add subsystem support for playlists. Subsystem info is automatically saved to the history playlist for easy relaunching.
 - GL: Add new "gl1" OpenGL 1.1 compliant video driver for legacy GPUs and software renderers
 - GL: Draw OSD on top of overlay.
 - GL: Add a new "glcore" driver with slang support (requires GL 3.2+ or GLES3).
 - GONG: Add savestate support.
 - GONG: Add video refresh rate core options.
 - GONG: Two player support via core option.
+- GUI: Fix text alignment when using stb_unicode.
+- GUI: Fix text display issues when using Japanese (and other unicode-dependent language) text with stb_unicode.
+- GUI: Set language on first startup to the user's preferred OS language (Windows, *nix and Android).
+- INPUT: Add (scaled radial) analog deadzone and sensitivity options.
+- LIBRETRO: Add Turkish language support.
+- LIBRETRO: Allow non-accelerated video to rotate the display.
+- LOCALIZATION: Update Chinese (Simplified) translation.
+- LOCALIZATION: Update Chinese (Traditional) translation.
+- LOCALIZATION: Update Dutch translation.
+- LOCALIZATION: Update French translation.
+- LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Russian translation.
+- LOCALIZATION: Update Spanish translation.
+- LOCALIZATION: Add new Turkish translation.
 - MIDI: Fix startup crash in midi driver.
 - MENU: Add memory statistics support to more context drivers.
 - MENU: Enable ozone driver for UWP builds.
@@ -42,12 +60,15 @@
 - MENU: Enable "Add to Favorites" without loading a core.
 - MENU: Allow core name to be hidden on history/favorites playlists.
 - MENU: Populate crc32 and db_name fields when adding history/favourites playlist entries.
+- MENU: Fix TTF files not showing in OSD/menu font selection screen.
+- MENU: Fix audio/video filters not showing in file browser.
 - MENU/GLUI: Add subsystem support.
 - MENU/OZONE: Add mouse support on entries (no sidebar yet).
 - MENU/OZONE: Allow collapsing the sidebar.
 - MENU/OZONE: Add thumbnail support.
-- MENU/QT: Add git version and build date to Help->About window.
-- MENU/QT: Fix content loading via the file browser.
+- MENU/QT/WIMP: Add git version and build date to Help->About window.
+- MENU/QT/WIMP: Fix content loading via the file browser.
+- MENU/QT/WIMP: Add new settings window to control all RetroArch settings.
 - MENU/RGUI: Improve playlist titles.
 - MENU/RGUI: Add option to hide associated cores in playlists.
 - MENU/RGUI: Add internal upscaling option.
@@ -59,6 +80,14 @@
 - MENU/RGUI: Add "full width" layout option.
 - MENU/RGUI: Ensure menu color theme is applied immediately.
 - MENU/RGUI: Fix "Lock Menu Aspect Ratio" option when using custom viewports.
+- MENU/RGUI: Add widescreen support.
+- MENU/RGUI: Allow text to be centred when selecting widescreen layouts.
+- MENU/RGUI: Add inline playlist thumbnail support.
+- MENU/RGUI: Add optional shadow effects.
+- MENU/RGUI: Performance optimizations.
+- MENU/RGUI: Add optional extended ASCII support.
+- MENU/RGUI: Add optional delay when loading thumbnails.
+- MENU/RGUI: Add on-screen keyboard.
 - MENU/XMB: Prevent crashes when resizing to a tiny window.
 - NETPLAY: Fix stall-out causing total disconnection with >2 players.
 - NETPLAY: Different (more intuitive?) default netplay share policy.
@@ -73,7 +102,10 @@
 - PS2: Fix issues with load state and the font driver.
 - PS2: File I/O now works for USB and network host.
 - PS2: Support cores with extra padding in their frame buffers.
+- SHADERS: Don't alphabetize shader presets.
 - SWITCH: Add rumble support.
+- SWITCH: Add USB keyboard support.
+- VITA: Add bluetooth mouse and keyboard support.
 - VULKAN: Fix color issues with RGBA8888 swapchains in readback (screenshots).
 - WII: Don't init overlay when RAM is beyond 72MB.
 - WII: Skip CRC calculation on content load, can improve load times of larger games by several seconds.
