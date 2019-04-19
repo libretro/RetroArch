@@ -290,54 +290,51 @@ Testing
 uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
 {
    uint8_t* memory = NULL;
+   size_t length = 0;
 
-   if (var->bank_id >= 0)
+   if (var->bank_id < 0)
+      return NULL;
+
+   rarch_system_info_t* system = runloop_get_system_info();
+
+   if (system->mmaps.num_descriptors != 0)
    {
-      rarch_system_info_t* system = runloop_get_system_info();
+      memory = (uint8_t*)system->mmaps.descriptors[var->bank_id].core.ptr;
+      length = system->mmaps.descriptors[var->bank_id].core.len;
+   }
+   else
+   {
+      retro_ctx_memory_info_t meminfo = {NULL, 0, 0};
 
-      if (system->mmaps.num_descriptors > var->bank_id)
+      switch (var->bank_id)
       {
-         if (var->value >= system->mmaps.descriptors[var->bank_id].core.len)
-             return NULL;
-
-         memory = (uint8_t*)system->mmaps.descriptors[var->bank_id].core.ptr;
-      }
-      else
-      {
-         retro_ctx_memory_info_t meminfo = {NULL, 0, 0};
-
-         switch (var->bank_id)
-         {
-            case 0:
-               meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
-               break;
-            case 1:
-               meminfo.id = RETRO_MEMORY_SAVE_RAM;
-               break;
-            case 2:
-               meminfo.id = RETRO_MEMORY_VIDEO_RAM;
-               break;
-            case 3:
-               meminfo.id = RETRO_MEMORY_RTC;
-               break;
-            default:
-               CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
-               break;
-         }
-
-         core_get_memory(&meminfo);
-
-         if (var->value >= meminfo.size)
-             return NULL;
-
-         memory = (uint8_t*)meminfo.data;
+         case 0:
+            meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
+            break;
+         case 1:
+            meminfo.id = RETRO_MEMORY_SAVE_RAM;
+            break;
+         case 2:
+            meminfo.id = RETRO_MEMORY_VIDEO_RAM;
+            break;
+         case 3:
+            meminfo.id = RETRO_MEMORY_RTC;
+            break;
+         default:
+            CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %d\n", var->bank_id);
+            break;
       }
 
-      if (memory)
-         memory += var->value;
+      core_get_memory(&meminfo);
+
+      memory = (uint8_t*)meminfo.data;
+      length = meminfo.size;
    }
 
-   return memory;
+   if (memory == NULL || var->value >= length)
+      return NULL;
+
+   return memory + var->value;
 }
 
 unsigned cheevos_var_get_value(cheevos_var_t* var)
