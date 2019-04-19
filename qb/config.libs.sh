@@ -222,7 +222,7 @@ else
 fi
 
 check_pkgconf RSOUND rsound 1.1
-check_pkgconf ROAR libroar
+check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
