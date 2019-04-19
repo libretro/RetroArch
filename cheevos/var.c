@@ -321,7 +321,7 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
                meminfo.id = RETRO_MEMORY_RTC;
                break;
             default:
-               CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
+               CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %d\n", var->bank_id);
                break;
          }
 
