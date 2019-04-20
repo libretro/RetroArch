@@ -60,6 +60,11 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
+#define WL_ARRAY_FOR_EACH(pos, array, type) \
+	for (pos = (type)(array)->data; \
+	     (const char *) pos < ((const char *) (array)->data + (array)->size); \
+	     (pos)++)
+
 typedef struct touch_pos
 {
    bool active;
@@ -663,7 +668,7 @@ static void handle_toplevel_config(void *data,
    wl->fullscreen             = false;
    wl->maximized              = false;
 
-   wl_array_for_each((void*)state, states)
+   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
    {
       switch (*state)
       {
@@ -742,7 +747,7 @@ static void handle_zxdg_toplevel_config(
    wl->fullscreen             = false;
    wl->maximized              = false;
 
-   wl_array_for_each((void*)state, states)
+   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
    {
       switch (*state)
       {
