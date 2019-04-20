@@ -351,9 +351,9 @@ static void gl2_load_texture_image(GLenum target,
 {
 #if !defined(HAVE_PSGL) && !defined(ORBIS)
 #ifdef HAVE_OPENGLES2
-   unsigned cap = GL_CAPS_TEX_STORAGE_EXT;
+   enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
-   unsigned cap = GL_CAPS_TEX_STORAGE;
+   enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE;
 #endif
 
    if (gl_check_capability(cap) && internalFormat != GL_BGRA_EXT)
