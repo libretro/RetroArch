@@ -93,14 +93,6 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
 {
    (void)args;
 
-#ifndef IS_SALAMANDER
-#if defined(HAVE_LOGGER)
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("sdmc:/retroarch/retroarch-log.txt");
-#endif
-#endif
-
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
@@ -125,11 +117,13 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "config/remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                      "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
@@ -139,17 +133,25 @@ static void frontend_ctr_deinit(void* data)
    Handle lcd_handle;
    u32 parallax_layer_reg_state;
    u8 not_2DS;
+   u8 device_model = 0xFF;
 
    extern PrintConsole* currentConsole;
 
    (void)data;
 
 #ifndef IS_SALAMANDER
+   /* Note: frontend_ctr_deinit() is normally called when
+    * forking to load new content. When this happens, the
+    * log messages generated in frontend_ctr_exec() *must*
+    * be printed to screen (provided bottom screen is not
+    * turned off...), since the 'first core launch' warning
+    * can prevent sdcard corruption. We therefore close any
+    * existing log file, enable verbose logging and revert
+    * to console output. (Normal logging will be resumed
+    * once retroarch.cfg has been re-read) */
+   retro_main_log_file_deinit();
    verbosity_enable();
-
-#ifdef HAVE_FILE_LOGGER
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
-#endif
+   retro_main_log_file_init(NULL, false);
 
    if ((gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
          && (ctr_fork_mode == FRONTEND_FORK_NONE))
@@ -166,8 +168,16 @@ static void frontend_ctr_deinit(void* data)
       svcCloseHandle(lcd_handle);
    }
 
-   parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0) ? 0x0 : 0x00010001;
-   GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
+   /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
+    * mode with the parallax barrier disabled
+    * (i.e. these are the only platforms that can use
+    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+   CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
+   if ((device_model == 0) || (device_model == 1))
+   {
+      parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0) ? 0x0 : 0x00010001;
+      GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
+   }
 
    mcuHwcExit();
    ptmuExit();
@@ -203,9 +213,9 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strcpy(game_path, path_get(RARCH_PATH_CONTENT));
-	  arg_data[args] = game_path;
-	  arg_data[args + 1] = NULL;
-	  args++;
+      arg_data[args] = game_path;
+      arg_data[args + 1] = NULL;
+      args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
@@ -603,5 +613,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "ctr",
 };

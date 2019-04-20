@@ -256,9 +256,9 @@ void path_set_special(char **argv, unsigned num_content)
 {
    unsigned i;
    union string_list_elem_attr attr;
-   struct string_list* subsystem_paths = NULL;
+   struct string_list *subsystem_paths = NULL;
    char str[PATH_MAX_LENGTH];
-   global_t   *global   = global_get_ptr();
+   global_t *global = global_get_ptr();
 
    /* First content file is the significant one. */
    path_set_basename(argv[0]);
@@ -297,7 +297,9 @@ void path_set_special(char **argv, unsigned num_content)
                global->name.savestate);
       }
    }
-   free(subsystem_paths);
+
+   if (subsystem_paths)
+      string_list_free(subsystem_paths);
 }
 
 static bool path_init_subsystem(void)

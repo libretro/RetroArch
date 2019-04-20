@@ -150,9 +150,7 @@ void ShaderParamsDialog::clearLayout()
    if (m_scrollArea)
    {
       foreach (QObject *obj, children())
-      {
          obj->deleteLater();
-      }
    }
 
    m_layout = new QVBoxLayout();
@@ -179,25 +177,17 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
    if (menu_shader)
    {
       if (shader)
-      {
          *menu_shader = shader;
-      }
       else
-      {
          *menu_shader = NULL;
-      }
    }
 
    if (video_shader)
    {
       if (shader)
-      {
          *video_shader = shader_info.data;
-      }
       else
-      {
          *video_shader = NULL;
-      }
    }
 
    if (video_shader)
@@ -215,13 +205,9 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
       }
 
       if (shader_info.data)
-      {
          *video_shader = shader_info.data;
-      }
       else
-      {
          *video_shader = NULL;
-      }
    }
 }
 
@@ -272,11 +258,11 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
 
 void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
 {
-   QComboBox *comboBox = qobject_cast<QComboBox*>(sender());
    QVariant passVariant;
-   int pass = 0;
-   bool ok = false;
-   struct video_shader *menu_shader = NULL;
+   QComboBox *comboBox               = qobject_cast<QComboBox*>(sender());
+   int pass                          = 0;
+   bool ok                           = false;
+   struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
 
    getShaders(&menu_shader, &video_shader);
@@ -345,10 +331,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    pass = passVariant.toInt(&ok);
 
-   if (!ok)
-      return;
-
-   if (pass < 0)
+   if (!ok || pass < 0)
       return;
 
    if (video_shader)
@@ -364,13 +347,9 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          struct video_shader_parameter *param = &video_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass += 1;
-         }
          else if (param->pass == pass + 1)
-         {
             param->pass -= 1;
-         }
       }
 
       tempPass = ShaderPass(&video_shader->pass[pass]);
@@ -391,13 +370,9 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          struct video_shader_parameter *param = &menu_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass += 1;
-         }
          else if (param->pass == pass + 1)
-         {
             param->pass -= 1;
-         }
       }
 
       tempPass = ShaderPass(&menu_shader->pass[pass]);
@@ -429,10 +404,7 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    pass = passVariant.toInt(&ok);
 
-   if (!ok)
-      return;
-
-   if (pass <= 0)
+   if (!ok || pass <= 0)
       return;
 
    if (video_shader)
@@ -448,13 +420,9 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
          struct video_shader_parameter *param = &video_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass -= 1;
-         }
          else if (param->pass == pass - 1)
-         {
             param->pass += 1;
-         }
       }
 
       tempPass = ShaderPass(&video_shader->pass[pass - 1]);
@@ -475,13 +443,9 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
          struct video_shader_parameter *param = &menu_shader->parameters[i];
 
          if (param->pass == pass)
-         {
             param->pass -= 1;
-         }
          else if (param->pass == pass - 1)
-         {
             param->pass += 1;
-         }
       }
 
       tempPass = ShaderPass(&menu_shader->pass[pass - 1]);
@@ -684,7 +648,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    pathData = pathArray.constData();
 
    if (menu_shader->passes < GFX_MAX_SHADERS)
-      menu_shader_manager_increment_amount_passes();
+      menu_shader->passes++;
    else
       return;
 
@@ -811,7 +775,7 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
       return;
 
    while (menu_shader->passes > 0)
-      menu_shader_manager_decrement_amount_passes();
+      menu_shader->passes--;
 
    onShaderApplyClicked();
 }
@@ -846,11 +810,9 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
 
    /* move selected pass to the bottom */
    for (i = pass; i < static_cast<int>(menu_shader->passes) - 1; i++)
-   {
       std::swap(menu_shader->pass[i], menu_shader->pass[i + 1]);
-   }
 
-   menu_shader_manager_decrement_amount_passes();
+   menu_shader->passes--;
 
    onShaderApplyClicked();
 }

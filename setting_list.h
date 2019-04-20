@@ -46,6 +46,28 @@ enum setting_type
    ST_END_SUB_GROUP
 };
 
+enum ui_setting_type
+{
+   ST_UI_TYPE_NONE = 0,
+   ST_UI_TYPE_CHECKBOX,
+   ST_UI_TYPE_UINT_COLOR_BUTTON,
+   ST_UI_TYPE_UINT_SPINBOX,
+   ST_UI_TYPE_UINT_COMBOBOX,
+   ST_UI_TYPE_UINT_RADIO_BUTTONS,
+   ST_UI_TYPE_FLOAT_COLOR_BUTTON,
+   ST_UI_TYPE_FLOAT_SPINBOX,
+   ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX,
+   ST_UI_TYPE_SIZE_SPINBOX,
+   ST_UI_TYPE_BIND_BUTTON,
+   ST_UI_TYPE_DIRECTORY_SELECTOR,
+   ST_UI_TYPE_FILE_SELECTOR,
+   ST_UI_TYPE_FONT_SELECTOR,
+   ST_UI_TYPE_STRING_COMBOBOX,
+   ST_UI_TYPE_STRING_LINE_EDIT,
+   ST_UI_TYPE_PASSWORD_LINE_EDIT,
+   ST_UI_TYPE_LAST
+};
+
 enum setting_flags
 {
    SD_FLAG_NONE           = 0,
@@ -91,6 +113,7 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
+   enum ui_setting_type ui_type;
    enum setting_type    browser_selection_type;
    enum msg_hash_enums  enum_idx;
    enum msg_hash_enums  enum_value_idx;

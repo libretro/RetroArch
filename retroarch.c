@@ -44,6 +44,7 @@
 #include <retro_timers.h>
 
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
@@ -188,7 +189,6 @@ enum
    RA_OPT_FEATURES,
    RA_OPT_VERSION,
    RA_OPT_EOF_EXIT,
-   RA_OPT_LOG_FILE,
    RA_OPT_MAX_FRAMES,
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
@@ -292,6 +292,9 @@ static retro_time_t libretro_core_runtime_usec                  = 0;
 
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
+
+static bool log_file_created                                    = false;
+static char timestamped_log_file_name[64]                       = {0};
 
 extern bool input_driver_flushing_input;
 
@@ -699,6 +702,13 @@ void driver_uninit(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
    {
+#if defined(HAVE_MENU_WIDGETS)
+      /* This absolutely has to be done before video_driver_free()
+       * is called/completes, otherwise certain menu drivers
+       * (e.g. Vulkan) will segfault */
+      menu_widgets_context_destroy();
+      menu_widgets_free();
+#endif
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
       menu_driver_free();
    }
@@ -1025,8 +1035,6 @@ static void retroarch_print_features(void)
    _PSUPP(glsl,            "GLSL",            "Fragment/vertex shader driver");
    _PSUPP(glsl,            "HLSL",            "Fragment/vertex shader driver");
 
-   _PSUPP(libxml2,         "libxml2",         "libxml2 XML parsing");
-
    _PSUPP(sdl_image,       "SDL_image",       "SDL_image image loading");
    _PSUPP(rpng,            "rpng",            "PNG image loading/encoding");
    _PSUPP(rpng,            "rjpeg",           "JPEG image loading");
@@ -1085,7 +1093,6 @@ static void retroarch_print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into "
          "program.");
@@ -1278,9 +1285,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "max-frames-ss-path", 1, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT_PATH },
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
       { "version",            0, NULL, RA_OPT_VERSION },
-#ifdef HAVE_FILE_LOGGER
-      { "log-file",           1, NULL, RA_OPT_LOG_FILE },
-#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -1736,12 +1740,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_print_version();
                exit(0);
 
-   #ifdef HAVE_FILE_LOGGER
-            case RA_OPT_LOG_FILE:
-               retro_main_log_file_init(optarg);
-               break;
-   #endif
-
             case 'c':
             case 'h':
             case RA_OPT_APPENDCONFIG:
@@ -1759,6 +1757,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
          }
       }
    }
+
+   if (verbosity_is_enabled())
+      rarch_log_file_init();
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
@@ -1962,7 +1963,8 @@ bool retroarch_main_init(int argc, char *argv[])
 
    rarch_error_on_init = true;
 
-   retro_main_log_file_init(NULL);
+   /* Have to initialise non-file logging once at the start... */
+   retro_main_log_file_init(NULL, false);
 
    retroarch_parse_input_and_config(argc, argv);
 
@@ -1980,8 +1982,8 @@ bool retroarch_main_init(int argc, char *argv[])
          RARCH_LOG_OUTPUT("CPU Model Name: %s\n", cpu_model);
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      fprintf(stderr, "%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
-      fprintf(stderr, "Built: %s\n", __DATE__);
+      RARCH_LOG_OUTPUT("%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
+      RARCH_LOG_OUTPUT("Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
       RARCH_LOG_OUTPUT("Git: %s\n", retroarch_git_version);
@@ -4049,8 +4051,17 @@ static enum runloop_state runloop_check_state(
 
       /* Display the fast forward state to the user, if needed. */
       if (runloop_fastmotion)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets() || !menu_widgets_set_fast_forward(true))
+#endif
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      else
+         menu_widgets_set_fast_forward(false);
+#endif
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
@@ -4135,14 +4146,24 @@ static enum runloop_state runloop_check_state(
 #endif
    {
       char s[128];
-      unsigned t = 0;
+	  bool rewinding = false;
+      unsigned t     = 0;
 
-      s[0] = '\0';
+      s[0]           = '\0';
 
-      if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
-               settings->uints.rewind_granularity, runloop_is_paused, s, sizeof(s), &t))
-         runloop_msg_queue_push(s, 0, t, true, NULL, 
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      rewinding      = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!video_driver_has_widgets())
+#endif
+         if (rewinding)
+            runloop_msg_queue_push(s, 0, t, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_set_rewind(rewinding);
+#endif
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -4179,15 +4200,22 @@ static enum runloop_state runloop_check_state(
             if (!runloop_idle)
                video_driver_cached_frame();
 
-         if (state_manager_frame_is_reversed())
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL, 
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false, 
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         if (!video_driver_has_widgets())
+         {
+#endif
+            if (state_manager_frame_is_reversed())
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       }
+#endif
 
       old_slowmotion_button_state                  = new_slowmotion_button_state;
       old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
@@ -4907,13 +4935,15 @@ bool rarch_write_debug_info(void)
       gfx_ctx_ident_t ident_info = {0};
       const input_driver_t *input_driver;
       const input_device_driver_t *joypad_driver;
-      const char *driver = menu_driver_ident();
+      const char *driver;
+#ifdef HAVE_MENU
+      driver = menu_driver_ident();
 
       if (string_is_equal(driver, settings->arrays.menu_driver))
          filestream_printf(file, "  - Menu: %s\n", !string_is_empty(driver) ? driver : "n/a");
       else
          filestream_printf(file, "  - Menu: %s (configured for %s)\n", !string_is_empty(driver) ? driver : "n/a", !string_is_empty(settings->arrays.menu_driver) ? settings->arrays.menu_driver : "n/a");
-
+#endif
       driver =
 #ifdef HAVE_THREADS
       (video_driver_is_threaded()) ?
@@ -5285,4 +5315,157 @@ finish:
    if (info_buf)
       free(info_buf);
 #endif
+}
+
+void rarch_log_file_init(void)
+{
+   settings_t *settings = config_get_ptr();
+   FILE *fp = NULL;
+   
+   /* If this is the first run, generate a timestamped log
+    * file name (do this even when not outputting timestamped
+    * log files, since user may decide to switch at any moment...) */
+   if (string_is_empty(timestamped_log_file_name))
+   {
+      char format[256];
+      time_t cur_time = time(NULL);
+      
+      format[0] = '\0';
+      
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", localtime(&cur_time));
+      
+      fill_pathname_noext(timestamped_log_file_name, format,
+            file_path_str(FILE_PATH_EVENT_LOG_EXTENSION), sizeof(timestamped_log_file_name));
+   }
+   
+   /* If nothing has changed, do nothing */
+   if ((!settings->bools.log_to_file && !is_logging_to_file()) ||
+       (settings->bools.log_to_file && is_logging_to_file()))
+      return;
+   
+   /* If we are currently logging to file and wish to stop,
+    * de-initialise existing logger... */
+   if (!settings->bools.log_to_file && is_logging_to_file())
+   {
+      retro_main_log_file_deinit();
+      /* ...and revert to console */
+      retro_main_log_file_init(NULL, false);
+      return;
+   }
+   
+   /* If we reach this point, then we are not currently
+    * logging to file, and wish to do so */
+   
+   /* > Check whether we are already logging to console */
+   fp = retro_main_log_file();
+   if (fp)
+   {
+      /* De-initialise existing logger */
+      retro_main_log_file_deinit();
+   }
+   
+   /* > Attempt to initialise log file */
+   if (!string_is_empty(settings->paths.log_dir))
+   {
+      char buf[PATH_MAX_LENGTH];
+      /* Create log directory, if required */
+      if (!path_is_directory(settings->paths.log_dir))
+      {
+         path_mkdir(settings->paths.log_dir);
+         if(!path_is_directory(settings->paths.log_dir))
+         {
+            /* Re-enable console logging and output error message */
+            retro_main_log_file_init(NULL, false);
+            RARCH_ERR("Failed to create system event log directory: %s\n", settings->paths.log_dir);
+            return;
+         }
+      }
+      
+      /* Format log file name */
+      fill_pathname_join(buf, settings->paths.log_dir,
+            settings->bools.log_to_file_timestamp ? timestamped_log_file_name : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
+            sizeof(buf));
+      if (!string_is_empty(buf))
+      {
+         /* When RetroArch is launched, log file is overwritten.
+          * On subsequent calls within the same session, it is appended to. */
+         retro_main_log_file_init(buf, log_file_created);
+         if (is_logging_to_file())
+            log_file_created = true;
+         return;
+      }
+   }
+   
+   /* If we reach this point, then something went wrong...
+    * Just fall back to console logging */
+   retro_main_log_file_init(NULL, false);
+   RARCH_ERR("Failed to initialise system event file logging...\n");
+}
+
+void rarch_log_file_deinit(void)
+{
+   FILE *fp = NULL;
+   
+   /* De-initialise existing logger, if currently logging to file */
+   if (is_logging_to_file())
+   {
+      retro_main_log_file_deinit();
+   }
+   
+   /* If logging is currently disabled... */
+   fp = retro_main_log_file();
+   if (!fp)
+   {
+      /* ...initialise logging to console */
+      retro_main_log_file_init(NULL, false);
+   }
+}
+
+enum retro_language rarch_get_language_from_iso(const char *iso639)
+{
+   unsigned i;
+   enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
+
+   struct lang_pair
+   {
+      const char *iso639;
+      enum retro_language lang;
+   };
+
+   const struct lang_pair pairs[] =
+   {
+      {"en", RETRO_LANGUAGE_ENGLISH},
+      {"ja", RETRO_LANGUAGE_JAPANESE},
+      {"fr", RETRO_LANGUAGE_FRENCH},
+      {"es", RETRO_LANGUAGE_SPANISH},
+      {"de", RETRO_LANGUAGE_GERMAN},
+      {"it", RETRO_LANGUAGE_ITALIAN},
+      {"nl", RETRO_LANGUAGE_DUTCH},
+      {"pt_BR", RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {"pt_PT", RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {"pt", RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {"ru", RETRO_LANGUAGE_RUSSIAN},
+      {"ko", RETRO_LANGUAGE_KOREAN},
+      {"zh_CN", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"zh_SG", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"zh_HK", RETRO_LANGUAGE_CHINESE_TRADITIONAL},
+      {"zh_TW", RETRO_LANGUAGE_CHINESE_TRADITIONAL},
+      {"zh", RETRO_LANGUAGE_CHINESE_SIMPLIFIED},
+      {"eo", RETRO_LANGUAGE_ESPERANTO},
+      {"pl", RETRO_LANGUAGE_POLISH},
+      {"vi", RETRO_LANGUAGE_VIETNAMESE},
+      {"ar", RETRO_LANGUAGE_ARABIC},
+      {"el", RETRO_LANGUAGE_GREEK},
+   };
+
+   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   {
+      if (strcasestr(iso639, pairs[i].iso639))
+      {
+         lang = pairs[i].lang;
+         break;
+      }
+   }
+
+   return lang;
 }

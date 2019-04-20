@@ -66,7 +66,9 @@
       "xutility": "c",
       "menu_input_dialog.h": "c",
       "menu_filebrowser.h": "c",
-      "ozone_sidebar.h": "c"
+      "ozone_sidebar.h": "c",
+      "menu_thumbnail_path.h": "c",
+      "badges.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

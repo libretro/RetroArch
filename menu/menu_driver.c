@@ -181,9 +181,7 @@ static unsigned menu_display_header_height       = 0;
 
 static bool menu_display_has_windowed            = false;
 static bool menu_display_msg_force               = false;
-static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
-static const uint8_t *menu_display_font_framebuf = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 /* when enabled, on next iteration the 'Quick Menu' list will
@@ -502,16 +500,6 @@ video_coord_array_t *menu_display_get_coords_array(void)
    return &menu_disp_ca;
 }
 
-const uint8_t *menu_display_get_font_framebuffer(void)
-{
-   return menu_display_font_framebuf;
-}
-
-void menu_display_set_font_framebuffer(const uint8_t *buffer)
-{
-   menu_display_font_framebuf = buffer;
-}
-
 bool menu_display_libretro_running(
       bool rarch_is_inited,
       bool rarch_is_dummy_core)
@@ -606,16 +594,6 @@ bool menu_display_get_msg_force(void)
 void menu_display_set_msg_force(bool state)
 {
    menu_display_msg_force = state;
-}
-
-bool menu_display_get_font_data_init(void)
-{
-   return menu_display_font_alloc_framebuf;
-}
-
-void menu_display_set_font_data_init(bool state)
-{
-   menu_display_font_alloc_framebuf = state;
 }
 
 /* Returns true if an animation is still active or
@@ -2184,7 +2162,7 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
 void menu_driver_set_thumbnail_content(char *s, size_t len)
 {
    if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_content)
-      menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
+      menu_driver_ctx->set_thumbnail_content(menu_userdata, s);
 }
 
 /* Teardown function for the menu driver. */

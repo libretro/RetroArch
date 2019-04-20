@@ -51,7 +51,7 @@ static const float gl_core_colors[] = {
 
 static void *menu_display_gl_core_get_default_mvp(video_frame_info_t *video_info)
 {
-   gl_core_t *gl_core = video_info ? (gl_core_t*)video_info->userdata : NULL;
+   gl_core_t *gl_core = (gl_core_t*)video_info->userdata;
    if (!gl_core)
       return NULL;
    return &gl_core->mvp_no_rot;
@@ -83,23 +83,23 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
+   float output_size[2];
+   static struct video_coords blank_coords;
    static uint8_t ubo_scratch_data[768];
    static float t                = 0.0f;
    float yflip                   = 0.0f;
-   static struct video_coords blank_coords;
-   float output_size[2];
-   video_coord_array_t *ca = NULL;
-   gl_core_t *gl           = video_info ? (gl_core_t*)video_info->userdata : NULL;
+   video_coord_array_t *ca       = NULL;
+   gl_core_t *gl_core            = (gl_core_t*)video_info->userdata;
 
-   if (!gl || !draw)
+   if (!gl_core || !draw)
       return;
 
-   draw->x            = 0;
-   draw->y            = 0;
-   draw->matrix_data  = NULL;
+   draw->x                       = 0;
+   draw->y                       = 0;
+   draw->matrix_data             = NULL;
 
-   output_size[0] = (float)video_info->width;
-   output_size[1] = (float)video_info->height;
+   output_size[0]                = (float)video_info->width;
+   output_size[1]                = (float)video_info->height;
 
    switch (draw->pipeline.id)
    {
@@ -123,7 +123,8 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
          draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 4 * sizeof(float);
+         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) 
+            + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
@@ -135,11 +136,11 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          if (draw->pipeline.id == VIDEO_SHADER_MENU_5)
             yflip = 1.0f;
-         else
-            yflip = 0.0f;
 
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 2 * sizeof(float), &t, sizeof(t));
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 3 * sizeof(float), &yflip, sizeof(yflip));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+               + 2 * sizeof(float), &t, sizeof(t));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+               + 3 * sizeof(float), &yflip, sizeof(yflip));
          draw->coords = &blank_coords;
          blank_coords.vertices = 4;
          draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
@@ -158,7 +159,7 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    const float *color        = NULL;
    struct gl_core_vertex *pv = NULL;
    GLuint            texture = 0;
-   gl_core_t *gl             = video_info ? (gl_core_t*)video_info->userdata : NULL;
+   gl_core_t *gl             = (gl_core_t*)video_info->userdata;
    const struct gl_core_buffer_locations *loc = NULL;
 
    if (!gl || !draw)
@@ -228,40 +229,40 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    }
 
    if (loc && loc->flat_ubo_vertex >= 0)
-   {
       glUniform4fv(loc->flat_ubo_vertex,
                    (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
                    (const GLfloat*)draw->pipeline.backend_data);
-   }
 
    if (loc && loc->flat_ubo_fragment >= 0)
-   {
       glUniform4fv(loc->flat_ubo_fragment,
                    (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
                    (const GLfloat*)draw->pipeline.backend_data);
-   }
 
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : menu_display_gl_core_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)menu_display_gl_core_get_default_mvp(video_info);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
-      {
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);
-      }
    }
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl_core_bind_scratch_vbo(gl, vertex, 2 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, tex_coord, 2 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, color, 4 * sizeof(float) * draw->coords->vertices);
-   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, vertex,
+         2 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, tex_coord,
+         2 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl_core_bind_scratch_vbo(gl, color,
+         4 * sizeof(float) * draw->coords->vertices);
+   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+         4 * sizeof(float), (void *)(uintptr_t)0);
 
    if (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP)
       glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
@@ -294,7 +295,7 @@ static void menu_display_gl_core_clear_color(
 
 static void menu_display_gl_core_blend_begin(video_frame_info_t *video_info)
 {
-   gl_core_t *gl = video_info ? (gl_core_t*)video_info->userdata : NULL;
+   gl_core_t *gl = (gl_core_t*)video_info->userdata;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

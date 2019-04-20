@@ -632,15 +632,15 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "若要扫描游戏内容，请访问菜单「%s」 \n"
+               "若要扫描游戏内容，请访问菜单「%s」\n"
                "并选择「%s」或者「%s」。\n"
-               " \n"
-               "文件将会同数据库中的条目进行对比。 \n"
-               "若文件匹配某个条目，则它会被加入收藏中。 \n"
-               " \n"
-               "你可以无需每次都打开文件浏览器，而可以直接 \n"
+               "\n"
+               "文件将会同数据库中的条目进行对比。\n"
+               "若文件匹配某个条目，则它会被加入戏列表中。\n"
+               "\n"
+               "你可以无需每次都打开文件浏览器，而可以直接\n"
                "通过菜单项「%s」->「%s」 来访\n"
-               "问这些游戏内容。 \n"
+               "问这些游戏内容。\n"
                " \n"
                "注意：不是所有核心的游戏内容都支持扫描录入。"
                ,
@@ -648,7 +648,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
                );
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
@@ -1398,13 +1398,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "减速比例"
                " \n"
                "减速游戏时，速度将被降低的倍数。");
-         break;
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         snprintf(s, len,
-               "摇杆灵敏度\n"
-               " \n"
-               "必须把摇杆推到多大幅度才算按下按键。\n"
-               "数值范围为0.0至1.0。");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,

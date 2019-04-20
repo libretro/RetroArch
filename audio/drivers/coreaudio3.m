@@ -89,7 +89,7 @@ static void rb_init(ringbuffer_h r, size_t cap)
 static void rb_free(ringbuffer_h r)
 {
    free(r->buffer);
-   bzero(r, sizeof(*r));
+   memset(r, 0, sizeof(*r));
 }
 
 #define UNLIKELY(x) __builtin_expect((x), 0)
@@ -115,9 +115,10 @@ static void rb_write_data(ringbuffer_h r, const float *data, size_t len)
    rb_len_add(r, (int)n);
 }
 
-static void rb_read_data(ringbuffer_h r, float *d0, float *d1, size_t len)
+static void rb_read_data(ringbuffer_h r,
+      float *d0, float *d1, size_t len)
 {
-   size_t need = len*2;
+   size_t need    = len * 2;
 
    do {
       size_t have = rb_len(r);
@@ -136,13 +137,15 @@ static void rb_read_data(ringbuffer_h r, float *d0, float *d1, size_t len)
 
       if (UNLIKELY(need > 0))
       {
+         const float quiet = 0.0f;
+         size_t fill;
+
          /* we got more data */
          if (rb_len(r) > 0)
             continue;
 
-         // underflow
-         const float quiet = 0.0f;
-         size_t       fill = (need/2)*sizeof(float);
+         /* underflow */
+         fill = (need/2)*sizeof(float);
          memset_pattern4(&d0[i], &quiet, fill);
          memset_pattern4(&d1[i], &quiet, fill);
       }
@@ -180,35 +183,38 @@ static bool g_interrupted;
                      latency:(NSUInteger)latency {
    if (self = [super init])
    {
-      _sema = dispatch_semaphore_create(0);
+      NSError *err;
+      AUAudioUnit *au;
+      AudioComponentDescription desc;
+      AVAudioFormat *format, *renderFormat;
 
-      _bufferSize = (latency * rate) / 1000;
-      _bufferSize *= 2; // stereo
+      _sema        = dispatch_semaphore_create(0);
+
+      _bufferSize  = (latency * rate) / 1000;
+      _bufferSize *= 2; /* stereo */
       rb_init(&_rb, _bufferSize);
 
-      AudioComponentDescription desc = {
-         .componentType          = kAudioUnitType_Output,
-         .componentSubType       = kAudioUnitSubType_DefaultOutput,
-         .componentManufacturer  = kAudioUnitManufacturer_Apple,
-      };
+      desc.componentType          = kAudioUnitType_Output;
+      desc.componentSubType       = kAudioUnitSubType_DefaultOutput;
+      desc.componentManufacturer  = kAudioUnitManufacturer_Apple;
 
-      NSError *err;
-      AUAudioUnit *au = [[AUAudioUnit alloc] initWithComponentDescription:desc error:&err];
+      au = [[AUAudioUnit alloc] initWithComponentDescription:desc error:&err];
       if (err != nil)
          return nil;
 
-      AVAudioFormat *format = au.outputBusses[0].format;
+      format = au.outputBusses[0].format;
       if (format.channelCount != 2)
          return nil;
 
-      AVAudioFormat *renderFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:rate channels:2];
+      renderFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:rate channels:2];
       [au.inputBusses[0] setFormat:renderFormat error:&err];
       if (err != nil)
          return nil;
 
       ringbuffer_h rb = &_rb;
       __block dispatch_semaphore_t sema = _sema;
-      au.outputProvider = ^AUAudioUnitStatus(AudioUnitRenderActionFlags * actionFlags, const AudioTimeStamp * timestamp, AUAudioFrameCount frameCount, NSInteger inputBusNumber, AudioBufferList * inputData) {
+      au.outputProvider = ^AUAudioUnitStatus(AudioUnitRenderActionFlags * actionFlags, const AudioTimeStamp * timestamp, AUAudioFrameCount frameCount, NSInteger inputBusNumber, AudioBufferList * inputData)
+      {
          rb_read_data(rb, inputData->mBuffers[0].mData, inputData->mBuffers[1].mData, frameCount);
          dispatch_semaphore_signal(sema);
          return 0;
@@ -288,9 +294,9 @@ static void coreaudio3_free(void *data)
 }
 
 static void *coreaudio3_init(const char *device,
-                            unsigned rate, unsigned latency,
-                            unsigned block_frames,
-                            unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    CoreAudio3 *dev = [[CoreAudio3 alloc] initWithRate:rate
                                               latency:latency];
@@ -300,10 +306,12 @@ static void *coreaudio3_init(const char *device,
    return (__bridge_retained void *)dev;
 }
 
-static ssize_t coreaudio3_write(void *data, const void *buf_, size_t size)
+static ssize_t coreaudio3_write(void *data,
+      const void *buf_, size_t size)
 {
    CoreAudio3 *dev = (__bridge CoreAudio3 *)data;
-   return [dev writeFloat:(const float *)buf_ samples:size/sizeof(float)] * sizeof(float);
+   return [dev writeFloat:(const float *)
+             buf_ samples:size/sizeof(float)] * sizeof(float);
 }
 
 static void coreaudio3_set_nonblock_state(void *data, bool state)
@@ -377,6 +385,8 @@ audio_driver_t audio_coreaudio3 = {
    coreaudio3_free,
    coreaudio3_use_float,
    "coreaudio3",
+   NULL, /* device_list_new */
+   NULL, /* device_list_free */
    coreaudio3_write_avail,
    coreaudio3_buffer_size,
 };

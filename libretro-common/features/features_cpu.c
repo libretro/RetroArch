@@ -68,6 +68,7 @@
 #if defined(PS2)
 #include <kernel.h>
 #include <timer.h>
+#include <time.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -871,12 +872,15 @@ void cpu_features_get_model_name(char *name, int len)
    }
 end:
    /* terminate our string */
-   if (pos < len)
+   if (pos < (size_t)len)
       name[pos] = '\0';
 #elif defined(__MACH__)
    if (!name)
       return;
-   sysctlbyname("machdep.cpu.brand_string", name, &len, NULL, 0);
+   {
+      size_t len_size = len;
+      sysctlbyname("machdep.cpu.brand_string", name, &len_size, NULL, 0);
+   }
 #else
    if (!name)
       return;

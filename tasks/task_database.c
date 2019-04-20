@@ -843,13 +843,19 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if (!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
-      playlist_push(playlist, entry_path_str,
-            db_info_entry->name,
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            db_crc, db_playlist_base_str);
+      struct playlist_entry entry = {0};
+
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path = entry_path_str;
+      entry.label = db_info_entry->name;
+      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.crc32 = db_crc;
+      entry.db_name = db_playlist_base_str;
+
+      playlist_push(playlist, &entry);
    }
 
    playlist_write_file(playlist);
@@ -1010,22 +1016,26 @@ static int task_database_iterate_playlist_lutro(
 
    free(db_playlist_path);
 
-   if(!playlist_entry_exists(playlist,
+   if (!playlist_entry_exists(playlist,
             path, file_path_str(FILE_PATH_DETECT)))
    {
       char *game_title = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      struct playlist_entry entry = {0};
 
       game_title[0] = '\0';
 
       fill_short_pathname_representation_noext(game_title,
             path, PATH_MAX_LENGTH * sizeof(char));
 
-      playlist_push(playlist, path,
-            game_title,
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_DETECT),
-            file_path_str(FILE_PATH_LUTRO_PLAYLIST));
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path = (char*)path;
+      entry.label = game_title;
+      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.crc32 = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.db_name = (char*)file_path_str(FILE_PATH_LUTRO_PLAYLIST);
+
+      playlist_push(playlist, &entry);
 
       free(game_title);
    }

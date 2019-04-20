@@ -1078,6 +1078,7 @@ RETROARCH
 #include "../intl/msg_hash_cht.c"
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
+#include "../intl/msg_hash_tr.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1134,6 +1135,7 @@ THREAD
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
+#include "../libretro-common/rthreads/rsemaphore.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
@@ -1198,6 +1200,8 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
+#include "../menu/menu_shader.c"
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_input.c"
@@ -1234,7 +1238,6 @@ MENU
 #include "../menu/cbs/menu_cbs_up.c"
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
-#include "../menu/menu_shader.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_thumbnail_path.c"
@@ -1438,12 +1441,7 @@ DEPENDENCIES
 /*============================================================
 XML
 ============================================================ */
-#if 0
-#ifndef HAVE_LIBXML2
-#define RXML_LIBXML2_COMPAT 1
 #include "../libretro-common/formats/xml/rxml.c"
-#endif
-#endif
 
 /*============================================================
  AUDIO UTILS

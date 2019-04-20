@@ -56,6 +56,8 @@ enum {
     AMOTION_EVENT_BUTTON_BACK = 1 << 3,
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
+    AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
+    AINPUT_SOURCE_STYLUS = 0x00004000
 };
 #endif
 
@@ -561,7 +563,7 @@ static int android_check_quick_tap(android_input_t *android)
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
    retro_time_t now = cpu_features_get_time_usec();
-   if(android->quick_tap_time && (now/1000 - android->quick_tap_time/1000000) >= 200)
+   if (android->quick_tap_time && (now/1000 - android->quick_tap_time/1000000) >= 200)
    {
       android->quick_tap_time = 0;
       return 1;
@@ -648,7 +650,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float                        y_scale = 1;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if(av_info)
+   if (av_info)
    {
       video_viewport_t          *custom_vp   = video_viewport_get_custom();
       const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
@@ -687,7 +689,7 @@ static INLINE int android_input_poll_event_type_motion(
    int btn;
 
    /* Only handle events from a touchscreen or mouse */
-   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
+   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
       return 1;
 
    getaction  = AMotionEvent_getAction(event);
@@ -737,11 +739,11 @@ static INLINE int android_input_poll_event_type_motion(
 
    if (keyup && motion_ptr < MAX_TOUCH)
    {
-      if(action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
+      if (action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
       {
          /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
-         if((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
+         if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
             android->quick_tap_time = AMotionEvent_getEventTime(event);
          android->mouse_l = 0;
       }
@@ -760,7 +762,7 @@ static INLINE int android_input_poll_event_type_motion(
       if (settings && settings->bools.vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
          android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
 
-      if(action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
+      if (action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
       {
          /* When touch screen is pressed, set mouse
           * previous position to current position
@@ -771,14 +773,14 @@ static INLINE int android_input_poll_event_type_motion(
          /* If another touch happened within 200ms after a quick tap
           * then cancel the quick tap and register left mouse button
           * as being held down */
-         if((AMotionEvent_getEventTime(event) - android->quick_tap_time)/1000000 < 200)
+         if ((AMotionEvent_getEventTime(event) - android->quick_tap_time)/1000000 < 200)
          {
             android->quick_tap_time = 0;
             android->mouse_l = 1;
          }
       }
 
-      if(action == AMOTION_EVENT_ACTION_MOVE && ENABLE_TOUCH_SCREEN_MOUSE)
+      if ((action == AMOTION_EVENT_ACTION_MOVE || action == AMOTION_EVENT_ACTION_HOVER_MOVE) && ENABLE_TOUCH_SCREEN_MOUSE)
          android_mouse_calculate_deltas(android,event,motion_ptr);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
@@ -964,7 +966,7 @@ static void handle_hotplug(android_input_t *android,
     * and be grouped with the NVIDIA button of the virtual device.
     *
     */
-   if(strstr(device_model, "SHIELD Android TV") && (
+   if (strstr(device_model, "SHIELD Android TV") && (
       strstr(device_name, "Virtual") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
    {
@@ -1007,7 +1009,7 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   else if(strstr(device_model, "SHIELD") && (
+   else if (strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
@@ -1026,7 +1028,7 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   else if(strstr(device_model, "SHIELD") && (
+   else if (strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
    {
@@ -1057,7 +1059,7 @@ static void handle_hotplug(android_input_t *android,
     * This is a simple hack, basically groups the "back"
     * button with the rest of the gamepad
     */
-   else if(strstr(device_model, "XD") && (
+   else if (strstr(device_model, "XD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
       strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
    {
@@ -1118,7 +1120,7 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "ARCHOS GAMEPAD") && (
+   else if (strstr(device_model, "ARCHOS GAMEPAD") && (
       strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
    {
       /* only use the hack if the device is one of the built-in devices */
@@ -1138,7 +1140,7 @@ static void handle_hotplug(android_input_t *android,
    }
 
    /* Amazon Fire TV & Fire stick */
-   else if(strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
+   else if (strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
            strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
            strstr(device_model, "AFTRS"))
    {
@@ -1152,7 +1154,7 @@ static void handle_hotplug(android_input_t *android,
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
          /* remove the remote when a gamepad enters */
-         else if(strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
+         else if (strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
          {
             android->pads_connected = 0;
             *port = 0;
@@ -1192,7 +1194,7 @@ static void handle_hotplug(android_input_t *android,
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the
     * maximum number of keyboards are already registered. */
-   else if(source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
+   else if (source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
    {
       kbd_id[kbd_num] = id;
       kbd_num++;

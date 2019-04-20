@@ -24,7 +24,7 @@
 
 #include <glsym/glsym.h>
 
-#define SYM(x) { "gl" #x, &(gl##x) }
+#define SYM(x) { "gl" #x, (void*)&(gl##x) }
 
 const struct rglgen_sym_map rglgen_symbol_map[] = {
 #ifdef HAVE_LIBNX

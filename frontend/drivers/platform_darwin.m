@@ -53,6 +53,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <rhash.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -400,6 +401,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], home_dir_buf, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], home_dir_buf, "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], home_dir_buf, "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], home_dir_buf, "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #if defined(IOS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], home_dir_buf, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
 #endif
@@ -771,10 +773,11 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
-   #if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
     frontend_darwin_get_cpu_model_name,
-    #else
+#else
    NULL,
-    #endif
+#endif
+   NULL,                         /* get_user_language */
    "darwin",
 };

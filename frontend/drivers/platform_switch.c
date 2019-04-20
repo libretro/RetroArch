@@ -223,6 +223,9 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
    int i = 0;
    for (i; i < DEFAULT_DIR_LAST; i++)
    {
@@ -942,5 +945,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
         NULL, /* check_for_path_changes */
         NULL, /* set_sustained_performance_mode */
         NULL, /* get_cpu_model_name */
+        NULL, /* get_user_language */
         "switch",
 };

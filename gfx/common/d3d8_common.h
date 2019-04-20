@@ -515,6 +515,8 @@ static INLINE INT32 d3d8_get_xrgb8888_format(void)
 #endif
 }
 
+void d3d8_set_mvp(void *data, const void *userdata);
+
 RETRO_END_DECLS
 
 #endif

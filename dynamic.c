@@ -1395,7 +1395,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             unsigned retro_id;
             const struct retro_input_descriptor *desc = NULL;
-            memset(&system->input_desc_btn, 0,
+            memset((void*)&system->input_desc_btn, 0,
                   sizeof(system->input_desc_btn));
 
             desc = (const struct retro_input_descriptor*)data;

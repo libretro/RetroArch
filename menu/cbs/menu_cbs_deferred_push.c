@@ -418,8 +418,9 @@ static int general_push(menu_displaylist_info_t *info,
             }
             else
             {
-               strlcpy(newstring2, system->valid_extensions,
-                     PATH_MAX_LENGTH * sizeof(char));
+               if (system)
+                  strlcpy(newstring2, system->valid_extensions,
+                        PATH_MAX_LENGTH * sizeof(char));
             }
          }
          break;
@@ -442,7 +443,7 @@ static int general_push(menu_displaylist_info_t *info,
             }
             else
             {
-               if (!string_is_empty(system->valid_extensions))
+               if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
                   new_exts_allocated = true;
@@ -473,7 +474,12 @@ static int general_push(menu_displaylist_info_t *info,
             }
 
             if (new_exts_allocated)
+            {
                free(new_exts);
+
+               if (new_exts == info->exts)
+                  info->exts = NULL;
+            }
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
@@ -1238,7 +1244,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_CORE_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
                break;
-            case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+            case MENU_ENUM_LABEL_PLAYLISTS_TAB:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
                break;
             case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -1476,7 +1482,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
                break;
-            case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            case MENU_LABEL_PLAYLISTS_TAB:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
                break;
             case MENU_LABEL_CONFIGURATIONS:

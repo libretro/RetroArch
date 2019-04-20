@@ -704,28 +704,28 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,
-                     "Para analisar por conteúdo, vá para \n"
+                     "Para analisar por conteúdo, vá para\n"
                              "'%s' e selecione \n"
-                             "'%s' ou '%s'. \n"
-                             " \n"
-                             "Os arquivos serão comparados com registros \n"
-                             "da base de dados. \n"
-                             "Se houver uma correspondência, um registro \n"
-                             "será adicionado a uma coleção. \n"
-                             " \n"
+                             "'%s' ou '%s'.\n"
+                             "\n"
+                             "Os arquivos serão comparados com registros\n"
+                             "da base de dados.\n"
+                             "Se houver uma correspondência, um registro\n"
+                             "será adicionado à uma lista de reprodução.\n"
+                             "\n"
                              "Você poderá então acessar facilmente este \n"
-                             "conteúdo indo até \n"
+                             "conteúdo indo até\n"
                              "'%s' -> '%s'\n"
-                             "em vez de ter que utilizar o \n"
+                             "em vez de ter que utilizar o\n"
                              "navegador de arquivos todas as vezes.\n"
-                             " \n"
-                             "OBS: Conteúdo para alguns núcleos pode ainda \n"
+                             "\n"
+                             "OBS: Conteúdo para alguns núcleos pode ainda\n"
                              "não ser reconhecido.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
             );
             break;
         case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
@@ -1532,14 +1532,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              " \n"
                              "Quando está em Câmera Lenta, o conteúdo será \n"
                              "diminuído pelo fator especificado/definido.");
-            break;
-        case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-            snprintf(s, len,
-                     "Define a zona morta do controle analógico. \n"
-                             " \n"
-                             "Até que ponto um eixo deve ser \n"
-                             "movido para resultar em um botão pressionado. \n"
-                             "Os valores aceitos são entre [0.0, 1.0].");
             break;
         case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
             snprintf(s, len,

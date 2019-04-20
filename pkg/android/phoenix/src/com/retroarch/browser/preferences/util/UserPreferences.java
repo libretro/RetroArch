@@ -140,7 +140,6 @@ public final class UserPreferences
          Log.i(TAG, "dst dir is: " + dst_path);
          Log.i(TAG, "dst subdir is: " + dst_path_subdir);
 
-         config.setBoolean("log_verbosity", true);
          config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
          config.setString("bundle_assets_dst_path", dst_path);
          config.setString("bundle_assets_dst_path_subdir", dst_path_subdir);

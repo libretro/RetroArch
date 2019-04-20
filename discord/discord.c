@@ -345,15 +345,19 @@ void discord_update(enum discord_presence presence)
          {
             const char *system_id        = core_info->system_id
                ? core_info->system_id : "core";
-            char *label                  = NULL;
+            const char *label            = NULL;
+            const struct playlist_entry *entry  = NULL;
             playlist_t *current_playlist = playlist_get_cached();
 
             if (current_playlist)
+            {
                playlist_get_index_by_path(
-                  current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL);
+                  current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
+               label = entry->label;
+            }
 
             if (!label)
-               label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
+               label = path_basename(path_get(RARCH_PATH_BASENAME));
 #if 0
             RARCH_LOG("[discord] current core: %s\n", system_id);
             RARCH_LOG("[discord] current content: %s\n", label);

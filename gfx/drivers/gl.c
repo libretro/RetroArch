@@ -15,6 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Middle of the road OpenGL driver.
+ *
+ * Minimum version (desktop): OpenGL 2.0+
+ * Minimum version (mobile) : OpenGLES 2.0+
+ */
+
 #ifdef _MSC_VER
 #pragma comment(lib, "opengl32")
 #endif
@@ -267,13 +273,6 @@ static bool gl2_shader_scale(gl_t *gl,
    return true;
 }
 
-static const char *gl2_shader_get_ident(gl_t *gl)
-{
-   if (!gl || !gl->shader)
-      return "N/A";
-   return gl->shader->ident;
-}
-
 static void gl2_renderchain_convert_geometry(
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
@@ -352,18 +351,20 @@ static void gl2_load_texture_image(GLenum target,
 {
 #if !defined(HAVE_PSGL) && !defined(ORBIS)
 #ifdef HAVE_OPENGLES2
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT) && internalFormat != GL_BGRA_EXT)
-   {
-      gl2_size_format(&internalFormat);
-      glTexStorage2DEXT(target, 1, internalFormat, width, height);
-   }
+   unsigned cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE) && internalFormat != GL_BGRA_EXT)
+   unsigned cap = GL_CAPS_TEX_STORAGE;
+#endif
+
+   if (gl_check_capability(cap) && internalFormat != GL_BGRA_EXT)
    {
       gl2_size_format(&internalFormat);
-      glTexStorage2D(target, 1, internalFormat, width, height);
-   }
+#ifdef HAVE_OPENGLES2
+      glTexStorage2DEXT(target, 1, internalFormat, width, height);
+#else
+      glTexStorage2D   (target, 1, internalFormat, width, height);
 #endif
+   }
    else
 #endif
    {
@@ -658,11 +659,8 @@ static void gl2_renderchain_render(
 
       gl->coords.vertices = 4;
 
-      gl->shader->set_coords(gl,
-            gl->shader_data, &gl->coords);
-
-      gl->shader->set_mvp(gl, gl->shader_data,
-            &gl->mvp);
+      gl->shader->set_coords(gl->shader_data, &gl->coords);
+      gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -729,11 +727,8 @@ static void gl2_renderchain_render(
 
    gl->coords.vertices  = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1616,28 +1611,15 @@ static void gl2_renderchain_copy_frame(
 #endif
 }
 
-static void gl2_renderchain_bind_pbo(unsigned idx)
-{
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx);
+#define gl2_renderchain_bind_pbo(idx) glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx)
+#define gl2_renderchain_unbind_pbo()  glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+#define gl2_renderchain_init_pbo(size, data) glBufferData(GL_PIXEL_PACK_BUFFER, size, (const GLvoid*)data, GL_STREAM_READ)
+#else
+#define gl2_renderchain_bind_pbo(idx)
+#define gl2_renderchain_unbind_pbo()
+#define gl2_renderchain_init_pbo(size, data)
 #endif
-}
-
-static void gl2_renderchain_unbind_pbo(void)
-{
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-#endif
-}
-
-static void gl2_renderchain_init_pbo(unsigned size,
-      const void *data)
-{
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   glBufferData(GL_PIXEL_PACK_BUFFER, size,
-         (const GLvoid*)data, GL_STREAM_READ);
-#endif
-}
 
 static void gl2_renderchain_readback(
       gl_t *gl,
@@ -1977,20 +1959,16 @@ static void gl2_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl, gl->shader_data,
+         VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -2021,6 +1999,76 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
 }
 
 /* Shaders */
+static const shader_backend_t *gl_shader_driver_set_backend(
+      enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+         {
+#ifdef HAVE_CG
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            video_context_driver_get_flags(&flags);
+
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            {
+               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
+                     " GL context. Trying to fall back to GLSL...\n");
+               return gl_shader_driver_set_backend(RARCH_SHADER_GLSL);
+            }
+
+            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+            return &gl_cg_backend;
+#else
+            break;
+#endif
+         }
+      case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
+         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
+         return &gl_glsl_backend;
+#else
+         break;
+#endif
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
+{
+   void            *tmp = NULL;
+   settings_t *settings = config_get_ptr();
+
+   if (!init->shader || !init->shader->init)
+   {
+      init->shader = gl_shader_driver_set_backend(init->shader_type);
+
+      if (!init->shader)
+         return false;
+   }
+
+   tmp = init->shader->init(init->data, init->path);
+
+   if (!tmp)
+      return false;
+
+   if (string_is_equal(settings->arrays.menu_driver, "xmb")
+         && init->shader->init_menu_shaders)
+   {
+      RARCH_LOG("Setting up menu pipeline shaders for XMB ... \n");
+      init->shader->init_menu_shaders(tmp);
+   }
+
+   init->shader_data      = tmp;
+
+   return true;
+}
 
 static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       struct retro_hw_render_callback *hwr
@@ -2066,7 +2114,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.data                    = gl;
    init_data.path                    = shader_path;
 
-   if (video_shader_driver_init(&init_data))
+   if (gl_shader_driver_init(&init_data))
    {
       gl->shader                     = init_data.shader;
       gl->shader_data                = init_data.shader_data;
@@ -2078,7 +2126,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.shader = NULL;
    init_data.path   = NULL;
 
-   ret              = video_shader_driver_init(&init_data);
+   ret              = gl_shader_driver_init(&init_data);
 
    gl->shader       = init_data.shader;
    gl->shader_data  = init_data.shader_data;
@@ -2246,10 +2294,7 @@ static INLINE void gl2_set_shader_viewports(gl_t *gl)
 
    for (i = 0; i < 2; i++)
    {
-      if (video_info.shader_driver && video_info.shader_driver->use)
-         video_info.shader_driver->use(gl,
-               video_info.shader_data, i, true);
-
+      gl->shader->use(gl, gl->shader_data, i, true);
       gl2_set_viewport(gl, &video_info,
             width, height, false, true);
    }
@@ -2360,19 +2405,16 @@ static void gl2_render_osd_background(
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl, gl->shader_data,
+         VIDEO_SHADER_STOCK_BLEND, true);
 
-   gl->shader->set_coords(gl, gl->shader_data,
-         &coords);
+   gl->shader->set_coords(gl->shader_data, &coords);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -2464,17 +2506,13 @@ static INLINE void gl2_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->use(gl,
+         gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices    = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp_no_rot);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -2539,9 +2577,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->core_context_in_use)
       gl2_renderchain_bind_vao(chain);
 
-   if (video_info->shader_driver && video_info->shader_driver->use)
-      video_info->shader_driver->use(gl,
-            video_info->shader_data, 1, true);
+   gl->shader->use(gl, gl->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -2669,11 +2705,8 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl->coords.vertices  = 4;
 
-   gl->shader->set_coords(gl,
-         gl->shader_data, &gl->coords);
-
-   gl->shader->set_mvp(gl, gl->shader_data,
-         &gl->mvp);
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -2737,10 +2770,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      if (video_info->shader_driver && video_info->shader_driver->use)
-         video_info->shader_driver->use(gl,
-               video_info->shader_data, 0, true);
-
+      gl->shader->use(gl, gl->shader_data, 0, true);
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
@@ -2838,7 +2868,6 @@ static void gl2_free(void *data)
    font_driver_free_osd();
 
    gl->shader->deinit(gl->shader_data);
-   video_shader_driver_deinit();
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -3447,15 +3476,13 @@ static void *gl2_init(const video_info_t *video,
 
    gl->shader          = (shader_backend_t*)gl2_shader_ctx_drivers[0];
 
-   if (!video_shader_driver_init_first(gl->shader))
+   if (!gl->shader)
    {
       RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
       goto error;
    }
 
-   gl2_shader_get_ident(gl);
-
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl2_shader_get_ident(gl));
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl->shader->ident);
 
    if (!gl2_shader_init(gl, ctx_driver, hwr))
    {
@@ -3682,8 +3709,6 @@ static bool gl2_set_shader(void *data,
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
-   video_shader_driver_deinit();
-
    switch (type)
    {
 #ifdef HAVE_GLSL
@@ -3714,11 +3739,11 @@ static bool gl2_set_shader(void *data,
    init_data.data        = gl;
    init_data.path        = path;
 
-   if (!video_shader_driver_init(&init_data))
+   if (!gl_shader_driver_init(&init_data))
    {
       init_data.path = NULL;
 
-      video_shader_driver_init(&init_data);
+      gl_shader_driver_init(&init_data);
 
       gl->shader       = init_data.shader;
       gl->shader_data  = init_data.shader_data;
@@ -4142,8 +4167,6 @@ static uint32_t gl2_get_flags(void *data)
 
 static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_flags,
-   NULL, /* set_coords */
-   NULL, /* set_mvp    */
    gl2_load_texture,
    gl2_unload_texture,
    gl2_set_video_mode,

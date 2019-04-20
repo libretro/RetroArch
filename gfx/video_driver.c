@@ -47,6 +47,9 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_setting.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "video_thread_wrapper.h"
@@ -125,8 +128,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static bool (*video_driver_cb_shader_set_mvp)(void *data,
-      void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
@@ -226,9 +227,6 @@ static bool deferred_video_context_driver_set_flags      = false;
 static gfx_ctx_flags_t deferred_flag_data                = {0};
 
 static bool video_started_fullscreen                     = false;
-
-static shader_backend_t *current_shader                  = NULL;
-static void *current_shader_data                         = NULL;
 
 static char video_driver_gpu_device_string[128] = {0};
 static char video_driver_gpu_api_version_string[128] = {0};
@@ -2372,14 +2370,10 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    static char video_driver_msg[256];
-   static char title[256];
    video_frame_info_t video_info;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   unsigned output_width                             = 0;
-   unsigned output_height                            = 0;
-   unsigned output_pitch                             = 0;
    const char *msg                                   = NULL;
    retro_time_t        new_time                      =
       cpu_features_get_time_usec();
@@ -2412,6 +2406,7 @@ void video_driver_frame(const void *data, unsigned width,
    /* Get the amount of frames per seconds. */
    if (video_driver_frame_count)
    {
+      static char title[256];
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
@@ -2422,83 +2417,46 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_driver_frame_count == 1)
          strlcpy(title, video_driver_window_title, sizeof(title));
 
-      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
-      {
-         char frames_text[64];
-         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-
-         if (video_info.fps_show || video_info.framecount_show)
-         {
-            if (video_info.fps_show)
-            {
-               snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                     " ||  FPS: %6.1f ", last_fps);
-            }
-            if (video_info.framecount_show)
-            {
-               snprintf(frames_text,
-                     sizeof(frames_text),
-                     " ||  Frames: %" PRIu64,
-                     (uint64_t)video_driver_frame_count);
-            }
-            snprintf(video_driver_window_title, sizeof(video_driver_window_title),
-               "%s%s%s", title,
-               video_info.fps_show ? video_info.fps_text : "",
-               video_info.framecount_show ? frames_text : "");
-         }
-         else
-         {
-            if (!string_is_equal(video_driver_window_title, title))
-               strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
-         }
-
-         curr_time = new_time;
-         video_driver_window_title_update = true;
-      }
-
       if (video_info.fps_show)
       {
+         snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+               "FPS: %6.1f", last_fps);
          if (video_info.framecount_show)
-            snprintf(
-                  video_info.fps_text,
-                  sizeof(video_info.fps_text),
-                  "FPS: %6.1f || %s: %" PRIu64,
-                  last_fps,
-                  msg_hash_to_str(MSG_FRAMES),
-                  (uint64_t)video_driver_frame_count);
-         else
-            snprintf(
-                  video_info.fps_text,
-                  sizeof(video_info.fps_text),
-                  "FPS: %6.1f",
-                  last_fps);
+            strlcat(video_info.fps_text,
+                  " || ", sizeof(video_info.fps_text));
       }
 
-      if (video_info.fps_show && video_info.framecount_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "FPS: %6.1f || %s: %" PRIu64,
-               last_fps,
-               msg_hash_to_str(MSG_FRAMES),
+      if (video_info.framecount_show)
+      {
+         char frames_text[64];
+         snprintf(frames_text,
+               sizeof(frames_text),
+               "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)video_driver_frame_count);
-      else if (video_info.framecount_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "%s: %" PRIu64,
-               msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_driver_frame_count);
-      else if (video_info.fps_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "FPS: %6.1f",
-               last_fps);
+         strlcat(video_info.fps_text,
+               frames_text, sizeof(video_info.fps_text));
+      }
+
+      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
+      {
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+
+         strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
+
+         if (!string_is_empty(video_info.fps_text))
+         {
+            strlcat(video_driver_window_title,
+                  "|| ", sizeof(video_driver_window_title));
+            strlcat(video_driver_window_title,
+                  video_info.fps_text, sizeof(video_driver_window_title));
+         }
+
+         curr_time                        = new_time;
+         video_driver_window_title_update = true;
+      }
    }
    else
    {
-
       curr_time = fps_time = new_time;
 
       strlcpy(video_driver_window_title,
@@ -2513,8 +2471,8 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_window_title_update = true;
    }
 
-   video_info.frame_rate = last_fps;
-   video_info.frame_time = frame_time / 1000.0f;
+   video_info.frame_rate  = last_fps;
+   video_info.frame_time  = frame_time / 1000.0f;
    video_info.frame_count = (uint64_t) video_driver_frame_count;
 
    /* Slightly messy code,
@@ -2534,6 +2492,10 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (data && video_driver_state_filter)
    {
+      unsigned output_width                             = 0;
+      unsigned output_height                            = 0;
+      unsigned output_pitch                             = 0;
+
       rarch_softfilter_get_output_size(video_driver_state_filter,
             &output_width, &output_height, width, height);
 
@@ -2637,7 +2599,10 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show || video_info.framecount_show)
-      runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!video_driver_has_widgets() || !menu_widgets_set_fps_text(video_info.fps_text))
+#endif
+         runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
@@ -2703,8 +2668,16 @@ bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id)
 {
+#ifdef HAVE_THREADS
+   bool is_threaded = video_driver_is_threaded_internal();
+#endif
    if (!id || !video_driver_poke || !video_driver_poke->load_texture)
       return false;
+
+#ifdef HAVE_THREADS
+   if (is_threaded)
+      video_context_driver_make_current(false);
+#endif
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
          video_driver_is_threaded_internal(),
@@ -2715,8 +2688,16 @@ bool video_driver_texture_load(void *data,
 
 bool video_driver_texture_unload(uintptr_t *id)
 {
+#ifdef HAVE_THREADS
+   bool is_threaded = video_driver_is_threaded_internal();
+#endif
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
+
+#ifdef HAVE_THREADS
+   if (is_threaded)
+      video_context_driver_make_current(false);
+#endif
 
    video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
@@ -2828,15 +2809,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 
    video_info->context_data           = video_context_data;
-   video_info->shader_driver          = current_shader;
-   video_info->shader_data            = current_shader_data;
 
    video_info->cb_update_window_title = current_video_context.update_window_title;
    video_info->cb_swap_buffers        = current_video_context.swap_buffers;
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
-
-   video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
 
    video_info->userdata               = video_driver_get_ptr(false);
 
@@ -3284,7 +3261,7 @@ bool video_context_driver_show_mouse(bool *bool_data)
    return true;
 }
 
-static bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    if (!current_video_context.get_flags)
       return false;
@@ -3363,6 +3340,10 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_GX_API;
       else if (string_is_equal(video_driver, "gl"))
          return GFX_CTX_OPENGL_API;
+      else if (string_is_equal(video_driver, "gl1"))
+         return GFX_CTX_OPENGL_API;
+      else if (string_is_equal(video_driver, "glcore"))
+         return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_driver, "metal"))
@@ -3392,46 +3373,6 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
    return false;
 }
 
-static const shader_backend_t *video_shader_set_backend(
-      enum rarch_shader_type type)
-{
-   switch (type)
-   {
-      case RARCH_SHADER_CG:
-         {
-#ifdef HAVE_CG
-            gfx_ctx_flags_t flags;
-            flags.flags = 0;
-            video_context_driver_get_flags(&flags);
-
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-            {
-               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
-                     " GL context. Trying to fall back to GLSL...\n");
-               return video_shader_set_backend(RARCH_SHADER_GLSL);
-            }
-
-            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
-            return &gl_cg_backend;
-#else
-            break;
-#endif
-         }
-      case RARCH_SHADER_GLSL:
-#ifdef HAVE_GLSL
-         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
-         return &gl_glsl_backend;
-#else
-         break;
-#endif
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_NONE:
-      default:
-         break;
-   }
-
-   return NULL;
-}
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
@@ -3443,116 +3384,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
       return false;
    shader->data = video_poke->get_current_shader(video_driver);
    return true;
-}
-
-bool video_shader_driver_deinit(void)
-{
-   current_shader_data    = NULL;
-   current_shader         = NULL;
-   return true;
-}
-
-static bool video_driver_cb_set_mvp(void *data,
-      void *shader_data, const void *mat_data)
-{
-   video_shader_ctx_mvp_t mvp;
-   mvp.data   = data;
-   mvp.matrix = mat_data;
-
-   video_driver_set_mvp(&mvp);
-   return true;
-}
-
-static void video_shader_driver_reset_to_defaults(void)
-{
-   if (!current_shader)
-      return;
-
-   if (current_shader->set_mvp)
-      video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
-   else
-   {
-      current_shader->set_mvp           = video_driver_cb_set_mvp;
-      video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
-   }
-}
-
-/* Finds first suitable shader context driver. */
-bool video_shader_driver_init_first(const void *data)
-{
-   shader_backend_t *ptr = (shader_backend_t*)data;
-   if (!ptr)
-      return false;
-   current_shader = ptr;
-   video_shader_driver_reset_to_defaults();
-   return true;
-}
-
-bool video_shader_driver_init(video_shader_ctx_init_t *init)
-{
-   void            *tmp = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!init->shader || !init->shader->init)
-   {
-      init->shader = video_shader_set_backend(init->shader_type);
-
-      if (!init->shader)
-         return false;
-   }
-
-   tmp = init->shader->init(init->data, init->path);
-
-   if (!tmp)
-      return false;
-
-   if (string_is_equal(settings->arrays.menu_driver, "xmb")
-         && init->shader->init_menu_shaders)
-   {
-      RARCH_LOG("Setting up menu pipeline shaders for XMB ... \n");
-      init->shader->init_menu_shaders(tmp);
-   }
-
-   init->shader_data      = tmp;
-   current_shader_data    = tmp;
-
-   RARCH_LOG("Resetting shader to defaults ... \n");
-
-   current_shader         = (shader_backend_t*)init->shader;
-   video_shader_driver_reset_to_defaults();
-
-   return true;
-}
-
-void video_driver_set_coords(video_shader_ctx_coords_t *coords)
-{
-   if (current_shader && current_shader->set_coords)
-      current_shader->set_coords(coords->handle_data,
-            current_shader_data,
-            (const struct video_coords*)coords->data);
-   else
-   {
-      if (video_driver_poke && video_driver_poke->set_coords)
-         video_driver_poke->set_coords(coords->handle_data,
-               current_shader_data,
-               (const struct video_coords*)coords->data);
-   }
-}
-
-void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
-{
-   if (!mvp || !mvp->matrix)
-      return;
-
-   if (current_shader && current_shader->set_mvp)
-      current_shader->set_mvp(mvp->data,
-            current_shader_data, mvp->matrix);
-   else
-   {
-      if (video_driver_poke && video_driver_poke->set_mvp)
-         video_driver_poke->set_mvp(mvp->data,
-               current_shader_data, mvp->matrix);
-   }
 }
 
 float video_driver_get_refresh_rate(void)

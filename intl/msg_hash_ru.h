@@ -484,10 +484,6 @@ MSG_HASH(
       "Сохранить конфигурацию и выйти"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Коллекции"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "База данных контента"
       )
@@ -710,8 +706,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Gun D-pad Right")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Автоматическая настройка включена")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Мертвая зона у стиков")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Поменять кнопки OK и Отмена")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1163,7 +1157,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
       "Плейлисты")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Плейлист")
+      "Плейлисты")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Плейлисты")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -1455,8 +1449,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "Поддержка LibretroDB")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Поддержка Libusb")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "Поддержка синтаксического анализа libxml2 XML")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "Поддержка Netplay (peer-to-peer)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1617,8 +1609,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Обрезка обрезки (перезагрузка)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Отключить компоновку рабочего стола")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "Нижний экран 3DS")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Видеодрайвер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2350,10 +2344,6 @@ MSG_HASH(
    "Синхронизировать звук. Рекомендуется."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Как далеко ось должна быть наклонена, чтобы вызвать нажатие кнопки."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Количество секунд ожидания до перехода к следующей привязке."
    )
@@ -2488,8 +2478,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Показать заряд батареи")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Выбрать файл")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Выбрать файл с коллекции")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Выбрать из плейлиста.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Фильтр")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2561,7 +2551,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Спрятать наложения в меню интерфейса, и показывать снова после выхода из него.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Сканированный контент появится здесь."
       )
 MSG_HASH(
@@ -2817,9 +2807,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Отключить активное соединение Netplay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Сканирует каталог для поиска совместимых файлов и добавляет их в коллекцию.")
+      "Сканирует каталог для поиска совместимых файлов.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Сканирует совместимый файл и добавляет его в коллекцию.")
+      "Сканирует совместимый файл.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Использует заданный интервал обновления для вертикальной синхронизации. Установите для эффективной частоты обновления монитора."
       )
@@ -2839,7 +2829,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Сканировать для поиска новых комнат.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Удалить эту запись из коллекции.")
+      "Удалить эту запись из плейлиста.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Просмотреть больше информации о содержимом.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2911,7 +2901,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Выполнять задачи в отдельном потоке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Разрешить пользователю удалять отдельные записи из коллекции.")
+      "Разрешить пользователю удалять отдельные записи из плейлистов.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Устанавливает каталог System. Ядра могут запрашивать его для загрузки BIOS, прошивок, системных настроек и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2992,7 +2982,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Если игровой джойстик подключен, то джойстик будет автомотически подстроен, если существует подходящий файл автоматической настройки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Сохранять все коллекции в выбранной папке.")
+      "Сохранять все плейлисты в выбранной папке.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Контент извлеченный из архивов будет временно размещен в этой папке."
@@ -3166,7 +3156,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Применение пароля при скрытии вкладки Настройки может позже восстановить ее из меню. Для этого нужно перейти на вкладку Главное меню, выбрать Включить вкладку Настройки и ввести пароль.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Разрешить пользователю переименовывать записи в коллекции.")
+      "Разрешить пользователю переименовывать записи в плейлистах.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Разрешить переименовывать записи")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

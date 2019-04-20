@@ -222,7 +222,7 @@ else
 fi
 
 check_pkgconf RSOUND rsound 1.1
-check_pkgconf ROAR libroar
+check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
@@ -405,8 +405,6 @@ if [ "$HAVE_KMS" != "no" ]; then
    fi
 fi
 
-check_val '' LIBXML2 -lxml2 libxml2 libxml-2.0 '' '' false
-
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then
@@ -507,11 +505,6 @@ if [ "$HAVE_MENU" != 'no' ]; then
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi
-fi
-
-if [ "$HAVE_MENU_WIDGETS" != 'no' ]; then
-   die : 'Notice: Menu widgets are not fully implemented and should not be enabled' \
-         'Please do not report any bug concerning widgets until this message is removed'
 fi
 
 check_macro NEON __ARM_NEON__

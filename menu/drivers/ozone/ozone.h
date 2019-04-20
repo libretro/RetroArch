@@ -24,7 +24,9 @@ typedef struct ozone_handle ozone_handle_t;
 
 #include <retro_miscellaneous.h>
 
+#include "../../menu_thumbnail_path.h"
 #include "../../menu_driver.h"
+
 #include "../../../retroarch.h"
 
 #define ANIMATION_PUSH_ENTRY_DURATION  166
@@ -229,18 +231,18 @@ struct ozone_handle
    /* Thumbnails data */
    bool show_thumbnail_bar;
 
-   char *thumbnail_content;
-   char *thumbnail_system;
-   char *thumbnail_file_path;
-   char *left_thumbnail_file_path; /* name taken from xmb for consistency but not actually on the left */
-
    uintptr_t thumbnail;
    uintptr_t left_thumbnail;
 
+   menu_thumbnail_path_data_t *thumbnail_path_data;
+
    char selection_core_name[255];
-   char selection_playtime[64];
-   char selection_lastplayed[64];
+   char selection_playtime[255];
+   char selection_lastplayed[255];
    unsigned selection_core_name_lines;
+   bool selection_core_is_viewer;
+
+   bool is_db_manager_list;
 };
 
 /* If you change this struct, also
@@ -307,8 +309,8 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
 
-const char *ozone_thumbnails_ident(char pos);
-
 unsigned ozone_count_lines(const char *str);
+
+void ozone_update_content_metadata(ozone_handle_t *ozone);
 
 #endif

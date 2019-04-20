@@ -53,7 +53,7 @@ static const float *menu_display_gl1_get_default_tex_coords(void)
 
 static void *menu_display_gl1_get_default_mvp(video_frame_info_t *video_info)
 {
-   gl1_t *gl1 = video_info ? (gl1_t*)video_info->userdata : NULL;
+   gl1_t *gl1 = (gl1_t*)video_info->userdata;
 
    if (!gl1)
       return NULL;
@@ -100,9 +100,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
-   video_shader_ctx_coords_t coords;
-   gl1_t             *gl1          = video_info ?
-      (gl1_t*)video_info->userdata : NULL;
+   gl1_t             *gl1          = (gl1_t*)video_info->userdata;
 
    if (!gl1 || !draw)
       return;
@@ -120,19 +118,13 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
 
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   coords.handle_data = gl1;
-   coords.data        = draw->coords;
-
-   video_driver_set_coords(&coords);
-
    mvp.data   = gl1;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl1_get_default_mvp(video_info);
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-
-   video_driver_set_mvp(&mvp);
+   glLoadMatrixf(mvp.matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
@@ -201,6 +193,7 @@ static void menu_display_gl1_scissor_begin(video_frame_info_t *video_info, int x
 
 static void menu_display_gl1_scissor_end(video_frame_info_t *video_info)
 {
+   glScissor(0, 0, video_info->width, video_info->height);
    glDisable(GL_SCISSOR_TEST);
 }
 

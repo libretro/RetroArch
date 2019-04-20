@@ -172,7 +172,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               GS_TEXT);
 }
 
-static void clearVRAMIfNeeded(ps2_video_t *ps2, void *frame, int width, int height)
+static void clearVRAMIfNeeded(ps2_video_t *ps2, const void *frame, int width, int height)
 {
    if (!ps2->clearVRAM) {
       if(frame && frame != RETRO_HW_FRAME_BUFFER_VALID) {
@@ -470,8 +470,6 @@ static bool ps2_get_hw_render_interface(void* data,
 
 static const video_poke_interface_t ps2_poke_interface = {
    NULL,          /* get_flags  */
-   NULL,          /* set_coords */
-   NULL,          /* set_mvp */
    NULL,
    NULL,
    NULL,

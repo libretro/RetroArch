@@ -703,7 +703,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->scale_factor = 1;
       strlcpy(params->format, "webm", sizeof(params->format));
    }
-   else if (preset <= RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
+   else if (preset < RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
       params->scale_factor = 1;
       strlcpy(params->format, "gif", sizeof(params->format));

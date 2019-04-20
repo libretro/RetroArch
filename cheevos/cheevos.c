@@ -36,6 +36,9 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #ifdef HAVE_THREADS
@@ -1643,9 +1646,8 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          }
          else if (valid)
          {
-            char msg[256];
             char url[256];
-            msg[0] = url[0] = '\0';
+            url[0] = '\0';
 
             cheevo->active &= ~mode;
 
@@ -1655,11 +1657,18 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             CHEEVOS_LOG("[CHEEVOS]: awarding cheevo %u: %s (%s).\n",
                   cheevo->id, cheevo->title, cheevo->description);
 
-            snprintf(msg, sizeof(msg), "Achievement Unlocked: %s",
-                  cheevo->title);
-            msg[sizeof(msg) - 1] = 0;
-            runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+            if (!video_driver_has_widgets() || !menu_widgets_push_achievement(cheevo->title, cheevo->badge))
+#endif
+            {
+               char msg[256];
+               msg[0] = '\0';
+               snprintf(msg, sizeof(msg), "Achievement Unlocked: %s",
+                     cheevo->title);
+               msg[sizeof(msg) - 1] = 0;
+               runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
 
             cheevos_make_unlock_url(cheevo, url, sizeof(url));
             task_push_http_transfer(url, true, NULL,
@@ -3193,6 +3202,9 @@ found:
 
       badges_ctx = new_badges_ctx;
 
+#ifdef HAVE_MENU_WIDGETS
+      if (false) /* we always want badges if menu widgets are enabled */
+#endif
       {
          settings_t *settings = config_get_ptr();
          if (!(

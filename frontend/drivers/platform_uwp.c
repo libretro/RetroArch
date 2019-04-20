@@ -374,6 +374,8 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
       "~\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
       "~\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
+      "~\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -445,5 +447,6 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    NULL,                            /* get_cpu_model_name */
+   NULL,                            /* get_user_language */
    "uwp"
 };

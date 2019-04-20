@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined (HAVE_EMSCRIPTEN)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -1074,6 +1074,8 @@ int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   if (len == 0 && msg)
+      len = (unsigned)strlen(msg);
    if (font && font->renderer && font->renderer->get_message_width)
       return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;

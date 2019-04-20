@@ -15,7 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
+/* OpenGL driver.
+ *
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
  * Any additional features added for later 1.x versions should only be enabled if they are detected at runtime. */
 
 #include <stddef.h>
@@ -32,6 +34,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -103,6 +108,17 @@ static const GLfloat gl1_white_color[] = {
    if (gl1_shared_context_use) \
       gl1->ctx_driver->bind_hw_render(gl1->ctx_data, enable)
 
+static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info);
+static void gl1_free_overlay(gl1_t *gl);
+static void gl1_overlay_vertex_geom(void *data,
+      unsigned image,
+      float x, float y,
+      float w, float h);
+static void gl1_overlay_tex_geom(void *data,
+      unsigned image,
+      GLfloat x, GLfloat y,
+      GLfloat w, GLfloat h);
+
 static bool is_pot(unsigned x)
 {
    return (x & (x - 1)) == 0;
@@ -111,10 +127,6 @@ static bool is_pot(unsigned x)
 static unsigned get_pot(unsigned x)
 {
    return (is_pot(x) ? x : next_pow2(x));
-}
-
-static void gl1_gfx_create(void)
-{
 }
 
 static void *gl1_gfx_init(const video_info_t *video,
@@ -152,8 +164,6 @@ static void *gl1_gfx_init(const video_info_t *video,
       gl1_video_pitch = video->width * 4;
    else
       gl1_video_pitch = video->width * 2;
-
-   gl1_gfx_create();
 
    ctx_driver = video_context_driver_init_first(gl1,
          settings->arrays.video_context_driver,
@@ -205,6 +215,8 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
+
+   gl1->fullscreen = video->fullscreen;
 
    mode.width     = 0;
    mode.height    = 0;
@@ -468,7 +480,6 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
    glLoadIdentity();
-   /*glLoadMatrixf(gl1->mvp.data);*/
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
@@ -708,6 +719,32 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (gl1->menu_texture_enable)
       menu_driver_frame(video_info);
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = (struct font_params*)
+         &video_info->osd_stat_params;
+
+      if (osd_params)
+      {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+#if 0
+         osd_params->y               = 0.350f;
+         osd_params->scale           = 0.75f;
+         font_driver_render_msg(video_info, NULL, video_info->chat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+#endif
+      }
+   }
+
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
+#endif
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (gl1->overlay_enable)
+      gl1_render_overlay(gl1, video_info);
 #endif
 
    if (msg)
@@ -740,13 +777,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (gl1->have_sync
-         && video_info->hard_sync
+   if (video_info->hard_sync
          && !video_info->input_driver_nonblock_state
          && !gl1->menu_texture_enable)
    {
       glClear(GL_COLOR_BUFFER_BIT);
-      /* hard sync would go here if possible */
+      glFinish();
    }
 
    gl1_context_bind_hw_render(gl1, true);
@@ -858,6 +894,10 @@ static void gl1_gfx_free(void *data)
       glDeleteTextures(1, &gl1->menu_tex);
       gl1->menu_tex = 0;
    }
+
+#ifdef HAVE_OVERLAY
+   gl1_free_overlay(gl1);
+#endif
 
    if (gl1->extensions)
    {
@@ -1067,33 +1107,15 @@ static void gl1_load_texture_data(
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl1_wrap_type_to_enum(wrap_type);
 
-   /* Assume no mipmapping support. */
+   /* GL1.x does not have mipmapping support. */
    switch (filter_type)
    {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         filter_type = TEXTURE_FILTER_LINEAR;
-         break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
-         filter_type = TEXTURE_FILTER_NEAREST;
-         break;
-      default:
-         break;
-   }
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_NEAREST;
-         mag_filter = GL_LINEAR;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         min_filter = GL_NEAREST_MIPMAP_NEAREST;
-         mag_filter = GL_NEAREST;
-         break;
       case TEXTURE_FILTER_NEAREST:
          min_filter = GL_NEAREST;
          mag_filter = GL_NEAREST;
          break;
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
       case TEXTURE_FILTER_LINEAR:
       default:
          min_filter = GL_LINEAR;
@@ -1128,17 +1150,6 @@ static void video_texture_load_gl1(
 }
 
 #ifdef HAVE_THREADS
-static int video_texture_load_wrap_gl1_mipmap(void *data)
-{
-   uintptr_t id = 0;
-
-   if (!data)
-      return 0;
-   video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return (int)id;
-}
-
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
@@ -1146,7 +1157,7 @@ static int video_texture_load_wrap_gl1(void *data)
    if (!data)
       return 0;
    video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+         TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
 }
 #endif
@@ -1160,16 +1171,6 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
    if (threaded)
    {
       custom_command_method_t func = video_texture_load_wrap_gl1;
-
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = video_texture_load_wrap_gl1_mipmap;
-            break;
-         default:
-            break;
-      }
       return video_thread_texture_load(data, func);
    }
 #endif
@@ -1243,43 +1244,15 @@ static uint32_t gl1_get_flags(void *data)
 {
    uint32_t             flags = 0;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 
    return flags;
 }
 
-static void gl1_set_mvp(void *data, void *shader_data, const void *mat_data)
-{
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
-
-   (void)data;
-   (void)shader_data;
-
-   if (!mat)
-      return;
-
-   glLoadMatrixf(mat->data);
-}
-
-static void gl1_set_coords(void *handle_data, void *shader_data,
-      const struct video_coords *coords)
-{
-   gl1_t *gl1 = (gl1_t*)handle_data;
-
-   if (!gl1)
-      return;
-
-   gl1->coords.vertex = coords->vertex;
-   gl1->coords.color = coords->color;
-   gl1->coords.tex_coord = coords->tex_coord;
-   gl1->coords.lut_tex_coord = coords->lut_tex_coord;
-}
-
 static const video_poke_interface_t gl1_poke_interface = {
    gl1_get_flags,
-   gl1_set_coords,
-   gl1_set_mvp,
    gl1_load_texture,
    gl1_unload_texture,
    gl1_set_video_mode,
@@ -1309,6 +1282,14 @@ static void gl1_gfx_get_poke_interface(void *data,
    *iface = &gl1_poke_interface;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool gl1_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
@@ -1325,6 +1306,230 @@ bool gl1_has_menu_frame(void)
 {
    return (gl1_menu_frame != NULL);
 }
+
+#ifdef HAVE_OVERLAY
+static bool gl1_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i, j;
+   gl1_t *gl = (gl1_t*)data;
+   const struct texture_image *images =
+      (const struct texture_image*)image_data;
+
+   if (!gl)
+      return false;
+
+   gl1_context_bind_hw_render(gl, false);
+
+   gl1_free_overlay(gl);
+   gl->overlay_tex = (GLuint*)
+      calloc(num_images, sizeof(*gl->overlay_tex));
+
+   if (!gl->overlay_tex)
+   {
+      gl1_context_bind_hw_render(gl, true);
+      return false;
+   }
+
+   gl->overlay_vertex_coord = (GLfloat*)
+      calloc(2 * 4 * num_images, sizeof(GLfloat));
+   gl->overlay_tex_coord    = (GLfloat*)
+      calloc(2 * 4 * num_images, sizeof(GLfloat));
+   gl->overlay_color_coord  = (GLfloat*)
+      calloc(4 * 4 * num_images, sizeof(GLfloat));
+
+   if (     !gl->overlay_vertex_coord
+         || !gl->overlay_tex_coord
+         || !gl->overlay_color_coord)
+      return false;
+
+   gl->overlays             = num_images;
+   glGenTextures(num_images, gl->overlay_tex);
+
+   for (i = 0; i < num_images; i++)
+   {
+      unsigned alignment = video_pixel_get_alignment(images[i].width
+            * sizeof(uint32_t));
+
+      gl1_load_texture_data(gl->overlay_tex[i],
+            RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
+            alignment,
+            images[i].width, images[i].height, images[i].pixels,
+            sizeof(uint32_t));
+
+      /* Default. Stretch to whole screen. */
+      gl1_overlay_tex_geom(gl, i, 0, 0, 1, 1);
+      gl1_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+
+      for (j = 0; j < 16; j++)
+         gl->overlay_color_coord[16 * i + j] = 1.0f;
+   }
+
+   gl1_context_bind_hw_render(gl, true);
+   return true;
+}
+
+static void gl1_overlay_enable(void *data, bool state)
+{
+   gl1_t *gl           = (gl1_t*)data;
+
+   if (!gl)
+      return;
+
+   gl->overlay_enable = state;
+
+   if (gl->fullscreen)
+      video_context_driver_show_mouse(&state);
+}
+
+static void gl1_overlay_full_screen(void *data, bool enable)
+{
+   gl1_t *gl = (gl1_t*)data;
+
+   if (gl)
+      gl->overlay_full_screen = enable;
+}
+
+static void gl1_overlay_set_alpha(void *data, unsigned image, float mod)
+{
+   GLfloat *color = NULL;
+   gl1_t *gl      = (gl1_t*)data;
+   if (!gl)
+      return;
+
+   color          = (GLfloat*)&gl->overlay_color_coord[image * 16];
+
+   color[ 0 + 3]  = mod;
+   color[ 4 + 3]  = mod;
+   color[ 8 + 3]  = mod;
+   color[12 + 3]  = mod;
+}
+
+static const video_overlay_interface_t gl1_overlay_interface = {
+   gl1_overlay_enable,
+   gl1_overlay_load,
+   gl1_overlay_tex_geom,
+   gl1_overlay_vertex_geom,
+   gl1_overlay_full_screen,
+   gl1_overlay_set_alpha,
+};
+
+static void gl1_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &gl1_overlay_interface;
+}
+
+static void gl1_free_overlay(gl1_t *gl)
+{
+   glDeleteTextures(gl->overlays, gl->overlay_tex);
+
+   free(gl->overlay_tex);
+   free(gl->overlay_vertex_coord);
+   free(gl->overlay_tex_coord);
+   free(gl->overlay_color_coord);
+   gl->overlay_tex          = NULL;
+   gl->overlay_vertex_coord = NULL;
+   gl->overlay_tex_coord    = NULL;
+   gl->overlay_color_coord  = NULL;
+   gl->overlays             = 0;
+}
+
+static void gl1_overlay_vertex_geom(void *data,
+      unsigned image,
+      float x, float y,
+      float w, float h)
+{
+   GLfloat *vertex = NULL;
+   gl1_t *gl        = (gl1_t*)data;
+
+   if (!gl)
+      return;
+
+   if (image > gl->overlays)
+   {
+      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
+      return;
+   }
+
+   vertex          = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
+
+   /* Flipped, so we preserve top-down semantics. */
+   y               = 1.0f - y;
+   h               = -h;
+
+   vertex[0]       = x;
+   vertex[1]       = y;
+   vertex[2]       = x + w;
+   vertex[3]       = y;
+   vertex[4]       = x;
+   vertex[5]       = y + h;
+   vertex[6]       = x + w;
+   vertex[7]       = y + h;
+}
+
+static void gl1_overlay_tex_geom(void *data,
+      unsigned image,
+      GLfloat x, GLfloat y,
+      GLfloat w, GLfloat h)
+{
+   GLfloat *tex = NULL;
+   gl1_t *gl     = (gl1_t*)data;
+
+   if (!gl)
+      return;
+
+   tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
+
+   tex[0]       = x;
+   tex[1]       = y;
+   tex[2]       = x + w;
+   tex[3]       = y;
+   tex[4]       = x;
+   tex[5]       = y + h;
+   tex[6]       = x + w;
+   tex[7]       = y + h;
+}
+
+static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info)
+{
+   unsigned i;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
+
+   glEnable(GL_BLEND);
+
+   if (gl->overlay_full_screen)
+      glViewport(0, 0, width, height);
+
+   gl->coords.vertex    = gl->overlay_vertex_coord;
+   gl->coords.tex_coord = gl->overlay_tex_coord;
+   gl->coords.color     = gl->overlay_color_coord;
+   gl->coords.vertices  = 4 * gl->overlays;
+
+   /*gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);*/
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadIdentity();
+
+   for (i = 0; i < gl->overlays; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
+   }
+
+   glDisable(GL_BLEND);
+   gl->coords.vertex    = gl->vertex_ptr;
+   gl->coords.tex_coord = gl->tex_info.coord;
+   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
+   if (gl->overlay_full_screen)
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+}
+#endif
 
 video_driver_t video_gl1 = {
    gl1_gfx_init,
@@ -1344,11 +1549,11 @@ video_driver_t video_gl1 = {
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   gl1_get_overlay_interface,
 #endif
   gl1_gfx_get_poke_interface,
   gl1_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   NULL
+  gl1_menu_widgets_enabled
 #endif
 };

@@ -31,6 +31,7 @@
 #define SCREENSHOT_DURATION_IN            66
 #define SCREENSHOT_DURATION_OUT           SCREENSHOT_DURATION_IN*10
 #define SCREENSHOT_NOTIFICATION_DURATION  4000
+#define CHEEVO_NOTIFICATION_DURATION      4000
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
 #define HOURGLASS_DURATION                1000
@@ -60,8 +61,6 @@ bool menu_widgets_task_msg_queue_push(retro_task_t *task,
       unsigned prio, unsigned duration,
       bool flush);
 
-void menu_widgets_take_screenshot(void);
-
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
@@ -71,8 +70,10 @@ void menu_widgets_context_reset(bool is_threaded);
 
 void menu_widgets_context_destroy(void);
 
+bool menu_widgets_push_achievement(const char *title, const char *badge);
+
 /* All the functions below should be called in
- * the video driver - once they are all added, set 
+ * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void menu_widgets_frame(video_frame_info_t *video_info);
 

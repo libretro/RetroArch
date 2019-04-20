@@ -356,7 +356,7 @@ static void menu_animation_ticker_loop(uint64_t idx,
    
    /* String 1 */
    offset   = (phase < (int)str_width) ? phase : 0;
-   width    = str_width - phase;
+   width    = (int)(str_width - phase);
    width    = (width < 0) ? 0 : width;
    width    = (width > (int)max_width) ? max_width : width;
    
@@ -364,9 +364,9 @@ static void menu_animation_ticker_loop(uint64_t idx,
    *width1  = width;
    
    /* String 2 */
-   offset   = phase - str_width;
+   offset   = (int)(phase - str_width);
    offset   = offset < 0 ? 0 : offset;
-   width    = max_width - *width1;
+   width    = (int)(max_width - *width1);
    width    = (width > (int)spacer_width) ? spacer_width : width;
    width    = width - offset;
    

@@ -231,6 +231,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
       make -C ../ -f Makefile.${platform} $OPTS LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "libnx" ]; then
       make -C ../ -f Makefile.${platform} $OPTS APP_TITLE="$name" LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
+   elif [ $PLATFORM = "ps2" ]; then
+      # TODO PS2 should be able to compile in parallel
+      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack || exit 1
    else
       make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
    fi

@@ -166,7 +166,7 @@ typedef struct
 #    endif
 #  endif
 #elif PS2
-#  define PRI_SIZET "lu"
+#  define PRI_SIZET "u"
 #else
 #  if (SIZE_MAX == 0xFFFF)
 #    define PRI_SIZET "hu"

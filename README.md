@@ -105,7 +105,6 @@ OSX port of RetroArch requires latest versions of XCode to build.
 RetroArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
-   - libxml2 (GLSL XML shaders)
    - libfreetype2 (TTF font rendering on screen)
 
 RetroArch needs at least one of these audio driver libraries:

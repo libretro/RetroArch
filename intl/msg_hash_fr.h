@@ -475,10 +475,6 @@ MSG_HASH(
       "Sauvegarder la configuration en quittant"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Collections"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Base de données"
       )
@@ -701,8 +697,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Gun D-pad Right")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Activer l'autoconfiguration")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Seuil des axes analogiques")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Inverser les boutons OK et Annuler dans le menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1456,8 +1450,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "Support de LibretroDB")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Support de Libusb")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "Support du parser XML libxml2")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "Support du jeu en réseau (peer-to-peer)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1618,8 +1610,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Tronquer l'overscan (Reload)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Désactiver le compositeur de bureau")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "Écran inférieur 3DS")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Pilote vidéo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2345,10 +2339,6 @@ MSG_HASH(
    "Synchroniser le son avec le jeu. Recommandé."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Indique à quel point un axe doit être poussé avant d'obtenir une pression sur un bouton."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Nombre de secondes à attendre avant de passer à l'assignation suivante."
    )
@@ -2483,8 +2473,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Afficher le niveau de la batterie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Sélectionner un fichier")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Sélectionner depuis la collection")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Sélectionner depuis la playlist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtre")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2556,7 +2546,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Cacher l'overlay quand vous êtes dans le menu. Il sera actif uniquement dans les jeux.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Les contenus scannés apparaitront ici."
       )
 MSG_HASH(
@@ -2812,9 +2802,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Se déconnecter de la session de jeu en réseau active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Analyse récursivement un dossier pour y trouver des contenus compatibles qui seront ajoutés dans des playlists.")
+      "Analyse récursivement un dossier pour y trouver des contenus compatibles.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Analyse un fichier pour vérifier s'il est compatible et l'ajouter à une playlist.")
+      "Analyse un fichier pour vérifier s'il est compatible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
@@ -2906,7 +2896,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Perform tasks on a separate thread.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Autoriser l'utilisateur à supprimer des entrées des collections")
+      "Autoriser l'utilisateur à supprimer des entrées des playlists")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Définir le répertoire système. Les cœur peuvent utiliser ce répertoire pour charger des BIOS, configurations, etc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2989,7 +2979,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Sauvegarder toutes les collections dans ce dossier.")
+      "Sauvegarder toutes les playlists dans ce dossier.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
@@ -3167,7 +3157,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Autoriser l'utilisateur à renommer les entrées des collections.")
+      "Autoriser l'utilisateur à renommer les entrées des playlists.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Autoriser le renommage des entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

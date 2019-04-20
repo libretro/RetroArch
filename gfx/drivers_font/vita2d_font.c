@@ -209,8 +209,8 @@ static void vita2d_font_render_line(
       }
 
       vita2d_draw_texture_tint_part_scale(font->texture,
-            x + off_x + delta_x * scale,
-            y + off_y + delta_y * scale,
+            x + (off_x + delta_x) * scale,
+            y + (off_y + delta_y) * scale,
             tex_x, tex_y, width, height,
             scale,
             scale,

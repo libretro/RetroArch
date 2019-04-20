@@ -93,11 +93,11 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
 
 static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
 {
-   D3D11_RECT scissor_rect = {0};
+   D3D11_RECT scissor_rect;
 
-   scissor_rect.left = 0;
-   scissor_rect.top = 0;
-   scissor_rect.right = video_info->width;
+   scissor_rect.left   = 0;
+   scissor_rect.top    = 0;
+   scissor_rect.right  = video_info->width;
    scissor_rect.bottom = video_info->height;
 
    D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
@@ -1069,7 +1069,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
          IDXGIAdapter_GetDesc(d3d11->adapter, &desc);
 
-         utf16_to_char_string(desc.Description, str, sizeof(str));
+         utf16_to_char_string((const uint16_t*)
+               desc.Description, str, sizeof(str));
 
          RARCH_LOG("[D3D11]: Using GPU: %s\n", str);
 
@@ -1467,12 +1468,19 @@ static bool d3d11_gfx_frame(
    d3d11->sprites.enabled = true;
 
 #ifdef HAVE_MENU
+#ifndef HAVE_MENU_WIDGETS
    if (d3d11->menu.enabled)
+#endif
    {
       D3D11SetViewports(context, 1, &d3d11->viewport);
-      D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-      menu_driver_frame(video_info);
+      D3D11SetVertexBuffer(context, 0,
+            d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
    }
+#endif
+
+#ifdef HAVE_MENU
+   if (d3d11->menu.enabled)
+      menu_driver_frame(video_info);
    else
 #endif
       if (video_info->statistics_show)
@@ -1526,8 +1534,6 @@ static bool d3d11_gfx_frame(
       dxgi_update_title(video_info);
    }
    d3d11->sprites.enabled = false;
-
-
 
 #if 0
    PERF_STOP();
@@ -1750,8 +1756,6 @@ static uint32_t d3d11_get_flags(void *data)
 
 static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_get_flags,
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
    d3d11_gfx_load_texture,
    d3d11_gfx_unload_texture,
    NULL, /* set_video_mode */

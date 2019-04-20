@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/iosupport.h>
 
 #include <gccore.h>
 #include <ogcsys.h>
@@ -65,17 +66,6 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 static enum frontend_fork gx_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
-#ifndef IS_SALAMANDER
-#include "../../paths.h"
-
-enum
-{
-   GX_DEVICE_SD = 0,
-   GX_DEVICE_USB,
-   GX_DEVICE_END
-};
-
-#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
    "stdout",   /* device name */
    0,          /* size of file structure */
@@ -101,7 +91,16 @@ static devoptab_t dotab_stdout = {
    NULL,       /* device fsync_r */
    NULL,       /* deviceData; */
 };
-#endif
+
+#ifndef IS_SALAMANDER
+#include "../../paths.h"
+
+enum
+{
+   GX_DEVICE_SD = 0,
+   GX_DEVICE_USB,
+   GX_DEVICE_END
+};
 
 #ifdef HW_RVL
 static struct
@@ -151,22 +150,6 @@ static void gx_devthread(void *a)
 }
 #endif
 
-#ifdef HAVE_LOGGER
-static int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
-{
-#ifdef HAVE_LOGGER
-   static char temp[4000];
-   size_t l = (len >= 4000) ? 3999 : len - 1;
-   memcpy(temp, ptr, l);
-   temp[l] = 0;
-   logger_send("%s", temp);
-#elif defined(HAVE_FILE_LOGGER)
-   fwrite(ptr, 1, len, retro_main_log_file());
-#endif
-   return len;
-}
-#endif
-
 #endif
 
 #ifdef IS_SALAMANDER
@@ -180,11 +163,6 @@ static void frontend_gx_get_environment_settings(
    char *last_slash = NULL;
    char *device_end = NULL;
 #ifndef IS_SALAMANDER
-#if defined(HAVE_LOGGER)
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("/retroarch-log.txt");
-#endif
 
    /* This situation can happen on some loaders so we really need some
       fake args or else retroarch will just crash on parsing NULL pointers */
@@ -253,6 +231,8 @@ static void frontend_gx_get_environment_settings(
          "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_PORT],
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifdef IS_SALAMANDER
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
@@ -326,15 +306,8 @@ static void frontend_gx_init(void *data)
 
    fatInitDefault();
 
-#ifdef HAVE_LOGGER
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
-   dotab_stdout.write_r = gx_logger_net;
-#elif defined(HAVE_FILE_LOGGER) && !defined(IS_SALAMANDER)
-   devoptab_list[STD_OUT] = &dotab_stdout;
-   devoptab_list[STD_ERR] = &dotab_stdout;
-   dotab_stdout.write_r = gx_logger_file;
-#endif
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
@@ -575,5 +548,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    NULL,                            /* get_cpu_model_name */
+   NULL,                            /* get_user_language */
    "gx",
 };

@@ -80,8 +80,7 @@ static INT32 menu_display_prim_to_d3d9_enum(
 
 static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 {
-   d3d9_video_t *d3d = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
+   d3d9_video_t *d3d = (d3d9_video_t*)video_info->userdata;
 
    if (!d3d)
       return;
@@ -91,8 +90,7 @@ static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 
 static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
 {
-   d3d9_video_t *d3d = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
+   d3d9_video_t *d3d = (d3d9_video_t*)video_info->userdata;
 
    if (!d3d)
       return;
@@ -122,12 +120,10 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    unsigned i;
-   video_shader_ctx_mvp_t mvp;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
    LPDIRECT3DDEVICE9 dev;
-   d3d9_video_t *d3d              = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
+   d3d9_video_t *d3d             = (d3d9_video_t*)video_info->userdata;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -143,7 +139,8 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
       return;
 
    pv           = (Vertex*)
-      d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer);
+      d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)
+            d3d->menu_display.buffer);
 
    if (!pv)
       return;
@@ -181,7 +178,8 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer);
+   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)
+         d3d->menu_display.buffer);
 
    if(!draw->matrix_data)
       draw->matrix_data = menu_display_d3d9_get_default_mvp(video_info);
@@ -205,9 +203,7 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
 
-   mvp.data   = d3d;
-   mvp.matrix = &m1;
-   video_driver_set_mvp(&mvp);
+   d3d9_set_mvp(d3d->dev, &m1);
 
    if (draw && draw->texture)
       menu_display_d3d9_bind_texture(draw, d3d);
@@ -273,12 +269,12 @@ static void menu_display_d3d9_restore_clear_color(void)
 }
 
 static void menu_display_d3d9_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
+      menu_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    LPDIRECT3DDEVICE9 dev;
-   DWORD    clear_color = 0;
-   d3d9_video_t     *d3d = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
+   DWORD    clear_color  = 0;
+   d3d9_video_t     *d3d = (d3d9_video_t*)video_info->userdata;
 
    if (!d3d || !clearcolor)
       return;
@@ -309,36 +305,36 @@ static bool menu_display_d3d9_font_init_first(
    return true;
 }
 
-void menu_display_d3d9_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+void menu_display_d3d9_scissor_begin(
+      video_frame_info_t *video_info,
+      int x, int y, unsigned width, unsigned height)
 {
-   RECT rect = {0};
-   d3d9_video_t *d3d9 = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
-
-   rect.left = x;
-   rect.top = y;
-   rect.right = width + x;
-   rect.bottom = height + y;
+   RECT rect;
+   d3d9_video_t *d3d9 = (d3d9_video_t*)video_info->userdata;
 
    if (!d3d9 || !width || !height)
       return;
+
+   rect.left          = x;
+   rect.top           = y;
+   rect.right         = width + x;
+   rect.bottom        = height + y;
 
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }
 
 void menu_display_d3d9_scissor_end(video_frame_info_t *video_info)
 {
-   RECT rect = {0};
-   d3d9_video_t *d3d9 = video_info ?
-      (d3d9_video_t*)video_info->userdata : NULL;
+   RECT rect;
+   d3d9_video_t *d3d9 = (d3d9_video_t*)video_info->userdata;
 
    if (!d3d9)
       return;
 
-   rect.left = d3d9->vp.x;
-   rect.top = d3d9->vp.y;
-   rect.right = d3d9->vp.width;
-   rect.bottom = d3d9->vp.height;
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_info->width;
+   rect.bottom          = video_info->height;
 
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }

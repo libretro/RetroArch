@@ -116,14 +116,12 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    uint32_t text_alpha  = ozone->animations.sidebar_text_alpha * 255.0f;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   ticker.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+   ticker.spacer        = ticker_spacer;
 
    selection_y          = 0;
    selection_old_y      = 0;
    horizontal_list_size = 0;
-
-   entry_width = 0;
 
    if (!ozone->draw_sidebar)
       return;
@@ -150,14 +148,14 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    {
       if (i == ozone->categories_selection_ptr)
       {
-         selection_y = y;
+         selection_y = (unsigned)y;
          if (ozone->categories_selection_ptr > ozone->system_tab_end)
             selection_y += ozone->dimensions.sidebar_entry_padding_vertical + 1;
       }
 
       if (i == ozone->categories_active_idx_old)
       {
-         selection_old_y = y;
+         selection_old_y = (unsigned)y;
          if (ozone->categories_active_idx_old > ozone->system_tab_end)
             selection_old_y += ozone->dimensions.sidebar_entry_padding_vertical + 1;
       }
@@ -291,6 +289,8 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
 
    if (ozone->empty_playlist)
       return;
+
+   ozone_update_content_metadata(ozone);
 
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
    ozone->cursor_in_sidebar_old     = ozone->cursor_in_sidebar;
@@ -530,11 +530,11 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    info.path                    = strdup(
          settings->paths.directory_playlist);
    info.label                   = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup(
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
-   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+   info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
    if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
    {

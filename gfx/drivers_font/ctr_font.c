@@ -215,8 +215,8 @@ static void ctr_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-      v->x0 = x + off_x + delta_x * scale;
-      v->y0 = y + off_y + delta_y * scale;
+      v->x0 = x + (off_x + delta_x) * scale;
+      v->y0 = y + (off_y + delta_y) * scale;
       v->u0 = tex_x;
       v->v0 = tex_y;
       v->x1 = v->x0 + width * scale;
@@ -265,7 +265,7 @@ static void ctr_font_render_line(
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_800x240
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240
          ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);

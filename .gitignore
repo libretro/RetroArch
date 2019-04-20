@@ -62,7 +62,6 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /freetype2/
 /ft2build.h
 /iconv.h
-/libxml2/
 /phoenix/
 /python/
 /rsound.h
@@ -77,6 +76,10 @@ convert_rumble.awk
 *~
 assets
 info
+content_image_history.lpl
+saves
+screenshots
+
 
 # Wii U
 *.depend
@@ -164,6 +167,10 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+
+# PS2
+ps2/irx/*.c
+ps2/libcdvd/lib/
 
 # Wayland
 gfx/common/wayland/idle-inhibit-unstable-v1.c

@@ -726,8 +726,6 @@ static void sdl2_grab_mouse_toggle(void *data)
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* get_flags */
-   NULL,       /* set_coords */
-   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,

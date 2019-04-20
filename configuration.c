@@ -1310,6 +1310,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
             global->record.config_dir, false, NULL, true);
    }
 
+   SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
+
    *size = count;
 
    return tmp;
@@ -1506,8 +1508,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("rgui_background_filler_thickness_enable", &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
-   SETTING_BOOL("menu_rgui_lock_aspect",                   &settings->bools.menu_rgui_lock_aspect, true, rgui_lock_aspect, false);
+   SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, rgui_shadows, false);
    SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, rgui_full_width_layout, false);
+   SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, rgui_inline_thumbnails, false);
+   SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, rgui_swap_thumbnails, false);
+   SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, rgui_extended_ascii, false);
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
@@ -1595,6 +1600,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, ozone_collapse_sidebar, false);
 #endif
 
+   SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
+   SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, log_to_file_timestamp, false);
+
    *size = count;
 
    return tmp;
@@ -1633,6 +1641,8 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, fastforward_ratio, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, slowmotion_ratio, false);
    SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, axis_threshold, false);
+   SETTING_FLOAT("input_analog_deadzone",    &settings->floats.input_analog_deadzone, true, analog_deadzone, false);
+   SETTING_FLOAT("input_analog_sensitivity",    &settings->floats.input_analog_sensitivity, true, analog_sensitivity, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity", &settings->floats.video_msg_bgcolor_opacity, true, message_bgcolor_opacity, false);
 
    *size = count;
@@ -1691,7 +1701,10 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, rgui_color_theme, false);
    SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
+   SETTING_UINT("rgui_thumbnail_delay",         &settings->uints.menu_rgui_thumbnail_delay, true, rgui_thumbnail_delay, false);
    SETTING_UINT("rgui_internal_upscale_level",  &settings->uints.menu_rgui_internal_upscale_level, true, rgui_internal_upscale_level, false);
+   SETTING_UINT("rgui_aspect_ratio",            &settings->uints.menu_rgui_aspect_ratio, true, rgui_aspect, false);
+   SETTING_UINT("rgui_aspect_ratio_lock",       &settings->uints.menu_rgui_aspect_ratio_lock, true, rgui_aspect_lock, false);
 #endif
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
@@ -1743,7 +1756,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("netplay_share_analog",         &settings->uints.netplay_share_analog,  true, netplay_share_analog, false);
 #endif
 #ifdef HAVE_LANGEXTRA
-   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, RETRO_LANGUAGE_ENGLISH, false);
+   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, def_user_language, false);
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
@@ -1772,8 +1785,14 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("libnx_overclock",  &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
 #endif
 
+#ifdef _3DS
+   SETTING_UINT("video_3ds_display_mode",  &settings->uints.video_3ds_display_mode, true, video_3ds_display_mode, false);
+#endif
+
+#ifdef HAVE_MENU
    SETTING_UINT("playlist_show_inline_core_name",  &settings->uints.playlist_show_inline_core_name, true, playlist_show_inline_core_name, false);
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, playlist_sublabel_runtime_type, false);
+#endif
 
    *size = count;
 
@@ -2119,6 +2138,8 @@ void config_set_defaults(void)
    *settings->paths.directory_content_history = '\0';
    *settings->paths.path_audio_dsp_plugin = '\0';
 
+   *settings->paths.log_dir = '\0';
+
    video_driver_default_settings();
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
@@ -2254,6 +2275,11 @@ void config_set_defaults(void)
       strlcpy(settings->paths.directory_content_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
             sizeof(settings->paths.directory_content_history));
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+      strlcpy(settings->paths.log_dir,
+            g_defaults.dirs[DEFAULT_DIR_LOGS],
+            sizeof(settings->paths.log_dir));
 
    if (!string_is_empty(g_defaults.path.config))
    {
@@ -2834,7 +2860,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (config_get_bool(conf, "log_verbosity", &tmp_bool))
    {
       if (tmp_bool)
+      {
          verbosity_enable();
+      }
       else
          verbosity_disable();
    }
@@ -3144,6 +3172,20 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (string_is_equal(settings->paths.directory_system, "default"))
       *settings->paths.directory_system = '\0';
 
+   /* Log directory is a special case, since it must contain
+    * a valid path as soon as possible - if config file
+    * value is 'default' must copy g_defaults.dirs[DEFAULT_DIR_LOGS]
+    * directly... */
+   if (string_is_equal(settings->paths.log_dir, "default"))
+   {
+      if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+         strlcpy(settings->paths.log_dir,
+               g_defaults.dirs[DEFAULT_DIR_LOGS],
+               sizeof(settings->paths.log_dir));
+      else
+         *settings->paths.log_dir = '\0';
+   }
+
    if (settings->floats.slowmotion_ratio < 1.0f)
       configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
 
@@ -3245,8 +3287,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 
-   ret = true;
+   if (!config_entry_exists(conf, "user_language"))
+      msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
+   ret = true;
 end:
    if (conf)
       config_file_free(conf);

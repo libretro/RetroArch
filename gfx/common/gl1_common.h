@@ -75,6 +75,14 @@ typedef struct gl1
    bool smooth;
    bool menu_smooth;
    void *readback_buffer_screenshot;
+   bool overlay_enable;
+   bool overlay_full_screen;
+   GLuint *overlay_tex;
+   unsigned overlays;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   bool fullscreen;
 } gl1_t;
 
 static INLINE void gl1_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,

@@ -428,6 +428,12 @@ bool rarch_write_debug_info(void);
 
 void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
 
+void rarch_log_file_init(void);
+
+void rarch_log_file_deinit(void);
+
+enum retro_language rarch_get_language_from_iso(const char *lang);
+
 RETRO_END_DECLS
 
 #endif

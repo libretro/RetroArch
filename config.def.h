@@ -32,6 +32,11 @@
 #include "network/netplay/netplay.h"
 #endif
 
+/* Required for 3DS display mode setting */
+#if defined(_3DS)
+#include "gfx/common/ctr_common.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -384,10 +389,16 @@ static unsigned menu_shader_pipeline = 2;
 static bool show_advanced_settings        = false;
 
 static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+static bool rgui_inline_thumbnails = false;
+static bool rgui_swap_thumbnails = false;
 static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
-static bool rgui_lock_aspect = false;
+static unsigned rgui_thumbnail_delay = 0;
 static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
 static bool rgui_full_width_layout = true;
+static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
+static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
+static bool rgui_shadows = false;
+static bool rgui_extended_ascii = false;
 
 #else
 static bool default_block_config_read = false;
@@ -437,6 +448,9 @@ static bool menu_swap_ok_cancel_buttons = false;
 #endif
 
 static bool quit_press_twice = false;
+
+static bool default_log_to_file = false;
+static bool log_to_file_timestamp = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
@@ -509,9 +523,11 @@ static const float crt_refresh_rate = 60/1.001;
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
 
-#ifdef _3DS
+#if defined(_3DS)
 /* Enable bottom LCD screen */
 static const bool video_3ds_lcd_bottom = true;
+/* Sets video display mode (3D, 2D, etc.) */
+static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
 
 /* AUDIO */
@@ -716,13 +732,15 @@ static const bool playlist_sort_alphabetical = true;
 /* File format to use when writing playlists to disk */
 static const bool playlist_use_old_format = false;
 
+#ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
 static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
 
-static const bool playlist_show_sublabels = false;
-
 /* Specifies which runtime record to use on playlist sublabels */
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#endif
+
+static const bool playlist_show_sublabels = false;
 
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
@@ -752,7 +770,11 @@ static const unsigned libretro_log_level = 1;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold = 0.5;
+static const float axis_threshold = 0.5f;
+
+static const float analog_deadzone = 0.0f;
+
+static const float analog_sensitivity = 1.0f;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period = 6;

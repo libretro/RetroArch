@@ -84,35 +84,35 @@ static void blargg_ntsc_snes_initialize(void *data,
    {
       if (memcmp(tvtype, "composite", 9) == 0)
       {
-         setup = snes_ntsc_composite;
+         setup = retroarch_snes_ntsc_composite;
          setup.merge_fields = 1;
       }
       else if (memcmp(tvtype, "rf", 2) == 0)
       {
-         setup = snes_ntsc_composite;
+         setup = retroarch_snes_ntsc_composite;
          setup.merge_fields = 0;
       }
       else if (memcmp(tvtype, "rgb", 3) == 0)
       {
-         setup = snes_ntsc_rgb;
+         setup = retroarch_snes_ntsc_rgb;
          setup.merge_fields = 1;
       }
       else if (memcmp(tvtype, "svideo", 6) == 0)
       {
-         setup = snes_ntsc_svideo;
+         setup = retroarch_snes_ntsc_svideo;
          setup.merge_fields = 1;
       }
    }
    else
    {
-      setup = snes_ntsc_composite;
+      setup = retroarch_snes_ntsc_composite;
       setup.merge_fields = 1;
    }
 
    config->free(tvtype);
    tvtype = NULL;
 
-   snes_ntsc_init(filt->ntsc, &setup);
+   retroarch_snes_ntsc_init(filt->ntsc, &setup);
 
    filt->burst = 0;
    filt->burst_toggle = (setup.merge_fields ? 0 : 1);
@@ -170,10 +170,10 @@ static void blargg_ntsc_snes_render_rgb565(void *data, int width, int height,
 {
    struct filter_data *filt = (struct filter_data*)data;
    if(width <= 256)
-      snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst,
+      retroarch_snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst,
             width, height, output, outpitch * 2, first, last);
    else
-      snes_ntsc_blit_hires(filt->ntsc, input, pitch, filt->burst,
+      retroarch_snes_ntsc_blit_hires(filt->ntsc, input, pitch, filt->burst,
             width, height, output, outpitch * 2, first, last);
 
    filt->burst ^= filt->burst_toggle;

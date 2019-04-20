@@ -590,10 +590,6 @@ MSG_HASH(
     "Save Configuration on Exit"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Collections"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Database"
     )
@@ -1054,8 +1050,16 @@ MSG_HASH(
     "Autoconfig"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Analog Stick Deadzone"
+    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Input Button Axis Threshold"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+    "Analog Deadzone"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+    "Analog Sensitivity"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -1565,6 +1569,10 @@ MSG_HASH(
     "Greek"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+    "Turkish"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
     "Left Analog"
     )
@@ -1615,6 +1623,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
     "Logging Verbosity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Log To File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+    "Redirects system event log messages to file. Requires 'Logging Verbosity' to be enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Timestamped Log Files"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+    "When logging to file, redirects the output from each RetroArch session to a new timestamped file. If disabled, log is overwritten each time RetroArch is restarted."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -2086,7 +2110,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-    "Playlist"
+    "Playlists"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -2779,10 +2803,6 @@ MSG_HASH(
     "Libusb support"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-    "libxml2 XML parsing support"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
     "Netplay (peer-to-peer) support"
     )
@@ -2951,8 +2971,16 @@ MSG_HASH(
     "Thumbnails"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+    "Top Thumbnail"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
     "Left Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+    "Bottom Thumbnail"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -2963,12 +2991,36 @@ MSG_HASH(
     "Thumbnails Vertical Disposition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+    "Show Playlist Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+    "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+    "Swap Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+    "Swaps the display positions of 'Top Thumbnail' and 'Bottom Thumbnail'."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+    "Thumbnail Delay (ms)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+    "Applies a time delay between selecting a playlist entry and loading its associated thumbnails. Setting this to a value of at least 256 ms enables fast lag-free scrolling on even the slowest devices."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
     "Thumbnail Downscaling Method"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-    "Resampling method used when shrinking large thumbnails to fit the screen."
+    "Resampling method used when shrinking large thumbnails to fit the display."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
@@ -3021,6 +3073,38 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
     "x9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3,
+    "4:3"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9,
+    "16:9"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+    "16:9 (Centered)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
+    "16:10"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+    "16:10 (Centered)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+    "OFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+    "Fit Screen"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+    "Integer Scale"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
@@ -3402,10 +3486,40 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
     "Disable Desktop Composition"
     )
+#if defined(_3DS)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
     "3DS Bottom Screen"
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+    "Enable display of status information on bottom screen. Disable to increase battery life and improve performance."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+    "3DS Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+    "Selects between 3D and 2D display modes. In '3D' mode, pixels are square and a depth effect is applied when viewing the Quick Menu. '2D' mode provides the best performance."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
+    "3D"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D,
+    "2D"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240,
+    "2D (Pixel Grid Effect)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240,
+    "2D (High Resolution)"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Video"
@@ -3976,7 +4090,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-    "Log events to the terminal."
+    "Log events to a terminal or file."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY,
@@ -4807,6 +4921,10 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Achievement Unlocked"
+   )
+MSG_HASH(
     MSG_CHANGE_THUMBNAIL_TYPE,
     "Change thumbnail type"
     )
@@ -4931,7 +5049,7 @@ MSG_HASH(
     "Synchronize audio. Recommended."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
+    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
     "How far an axis must be tilted to result in a button press."
     )
 MSG_HASH(
@@ -5144,8 +5262,8 @@ MSG_HASH(
     "Select File"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Select From Collection"
+    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+    "Select from a playlist"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
@@ -5312,8 +5430,8 @@ MSG_HASH(
     "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-    "Scanned content will appear here."
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+    "Scanned content matching the database will appear here."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -5700,8 +5818,16 @@ MSG_HASH(
     "Type of thumbnail to display."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+    "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
     "Type of thumbnail to display at the left."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+    "Type of thumbnail to display at the bottom right of playlists."
     )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -5737,11 +5863,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Scans a directory for compatible files and add them to the collection."
+    "Scans a directory for content that matches the database."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Scans a compatible file and add it to the collection."
+    "Scans a file for content that matches the database."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
@@ -5777,7 +5903,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Remove this entry from the collection."
+    "Remove this entry from the playlist."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5921,7 +6047,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Allow the user to remove entries from collections."
+    "Allow the user to remove entries from playlists."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -6091,7 +6217,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all collections to this directory."
+    "Save all playlists to this directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6415,7 +6541,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Allow the user to rename entries in collections."
+    "Allow the user to rename entries in playlists."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -6726,11 +6852,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Automatically add content to playlist"
+    "Automatically add content to playlists"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Automatically scans loaded content so they appear inside playlists."
+    "Automatically scans loaded content with the playlist scanner."
     )
 MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
@@ -6793,11 +6919,11 @@ MSG_HASH(
     "Increase coarseness of menu background chequerboard pattern."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_RGUI_LOCK_ASPECT,
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
     "Lock Menu Aspect Ratio"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_RGUI_LOCK_ASPECT,
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
     "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
     )
 MSG_HASH(
@@ -6809,12 +6935,36 @@ MSG_HASH(
     "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+    "Menu Aspect Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+    "Select menu aspect ratio. Widescreen ratios increase the horizontal resolution of the menu interface. (May require a restart if 'Lock Menu Aspect Ratio' is disabled)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
     "Use Full-Width Layout"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
     "Resize and position menu entries to make best use of available screen space. Disable this to use classic fixed-width two column layout."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+    "Shadow Effects"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+    "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+    "Extended ASCII Support"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+    "Enable display of non-standard ASCII characters. Required for compatibility with certain non-English Western languages. Has a moderate performance impact."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
@@ -8027,7 +8177,7 @@ MSG_HASH(
     )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
-   "Icon view thumbnail type:"
+   "Thumbnail"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
@@ -8453,4 +8603,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
     "Enable device vibration (for supported cores)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_DIR,
+    "System Event Logs"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_DIR,
+    "Save system event log files to this directory."
     )

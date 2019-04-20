@@ -65,6 +65,12 @@ extern const struct rarch_key_map rarch_key_map_qnx[];
 extern const struct rarch_key_map rarch_key_map_dos[];
 extern const struct rarch_key_map rarch_key_map_wiiu[];
 extern const struct rarch_key_map rarch_key_map_winraw[];
+#ifdef HAVE_LIBNX
+extern const struct rarch_key_map rarch_key_map_switch[];
+#endif
+#ifdef VITA
+extern const struct rarch_key_map rarch_key_map_vita[];
+#endif
 
 /**
  * input_keymaps_init_keyboard_lut:

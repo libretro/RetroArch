@@ -14,9 +14,14 @@
 
 #define MULTITOUCH_LIMIT 4 /* supports up to this many fingers at once */
 #define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
+#define SWITCH_NUM_SCANCODES 114 /* size of rarch_key_map_switch */
+#define SWITCH_MAX_SCANCODE 0xfb /* see https://switchbrew.github.io/libnx/hid_8h.html */
+#define MOUSE_MAX_X 1920
+#define MOUSE_MAX_Y 1080
 #endif
 
 #include "../input_driver.h"
+#include "../input_keymaps.h"
 
 #define MAX_PADS 10
 
@@ -38,6 +43,16 @@ typedef struct switch_input
    bool touch_state[MULTITOUCH_LIMIT];
    uint32_t touch_x[MULTITOUCH_LIMIT];
    uint32_t touch_y[MULTITOUCH_LIMIT];
+   bool keyboard_state[SWITCH_MAX_SCANCODE + 1];
+
+   int32_t mouse_x;
+   int32_t mouse_y;
+   int32_t mouse_x_delta;
+   int32_t mouse_y_delta;
+   int32_t mouse_wheel;
+   bool mouse_button_left;
+   bool mouse_button_right;
+   bool mouse_button_middle;
 #endif
 } switch_input_t;
 
@@ -50,8 +65,13 @@ static void switch_input_poll(void *data)
 
 #ifdef HAVE_LIBNX
    uint32_t touch_count = hidTouchCount();
+   unsigned int i = 0;
+   int keySym = 0;
+   unsigned keyCode = 0;
+   uint16_t mod = 0;
+   MousePosition mouse_pos;
 
-   for (int i = 0; i < MULTITOUCH_LIMIT; i++)
+   for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       sw->touch_state[i] = touch_count > i;
 
@@ -64,6 +84,85 @@ static void switch_input_poll(void *data)
          sw->touch_y[i] = touch_position.py;
       }
    }
+
+   mod = 0;
+   if (hidKeyboardHeld(KBD_LEFTALT) || hidKeyboardHeld(KBD_RIGHTALT))
+      mod |= RETROKMOD_ALT;
+   if (hidKeyboardHeld(KBD_LEFTCTRL) || hidKeyboardHeld(KBD_RIGHTCTRL))
+      mod |= RETROKMOD_CTRL;
+   if (hidKeyboardHeld(KBD_LEFTSHIFT) || hidKeyboardHeld(KBD_RIGHTSHIFT))
+      mod |= RETROKMOD_SHIFT;
+
+   for (i = 0; i < SWITCH_NUM_SCANCODES; i++)
+   {
+      keySym = rarch_key_map_switch[i].sym;
+      keyCode = input_keymaps_translate_keysym_to_rk(keySym);
+
+      if (hidKeyboardHeld(keySym) && !(sw->keyboard_state[keySym]))
+      {
+         sw->keyboard_state[keySym] = true;
+         input_keyboard_event(true, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
+      }
+      else if (!hidKeyboardHeld(keySym) && sw->keyboard_state[keySym])
+      {
+         sw->keyboard_state[keySym] = false;
+         input_keyboard_event(false, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
+      }
+   }
+
+   if (hidMouseButtonsHeld() & MOUSE_LEFT)
+   {
+      sw->mouse_button_left = true;
+   }
+   else
+   {
+      sw->mouse_button_left = false;
+   }
+
+   if (hidMouseButtonsHeld() & MOUSE_RIGHT)
+   {
+      sw->mouse_button_right = true;
+   }
+   else
+   {
+      sw->mouse_button_right = false;
+   }
+
+   if (hidMouseButtonsHeld() & MOUSE_MIDDLE)
+   {
+      sw->mouse_button_middle = true;
+   } 
+   else
+   {
+      sw->mouse_button_middle = false;
+   }
+
+   hidMouseRead(&mouse_pos);
+
+   sw->mouse_x_delta = mouse_pos.velocityX;
+   sw->mouse_y_delta = mouse_pos.velocityY;
+   
+   sw->mouse_x += mouse_pos.velocityX;
+   sw->mouse_y += mouse_pos.velocityY;
+   if (sw->mouse_x < 0)
+   {
+      sw->mouse_x = 0;
+   }
+   else if (sw->mouse_x > MOUSE_MAX_X)
+   {
+      sw->mouse_x = MOUSE_MAX_X;
+   }
+
+   if (sw->mouse_y < 0) 
+   {
+      sw->mouse_y = 0;
+   }
+   else if (sw->mouse_y > MOUSE_MAX_Y)
+   {
+      sw->mouse_y = MOUSE_MAX_Y;
+   }
+
+   sw->mouse_wheel = mouse_pos.scrollVelocityY;
 #endif
 }
 
@@ -95,6 +194,61 @@ static int16_t switch_pointer_device_state(switch_input_t *sw,
 
    return 0;
 }
+
+static int16_t switch_input_mouse_state(switch_input_t *sw, unsigned id, bool screen)
+{
+   int val = 0;
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         val = sw->mouse_button_left;
+         break;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         val = sw->mouse_button_right;
+         break;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         val = sw->mouse_button_middle;
+         break;
+      case RETRO_DEVICE_ID_MOUSE_X:
+         if (screen)
+         {
+            val = sw->mouse_x;
+         }
+         else
+         {
+            val = sw->mouse_x_delta;
+            sw->mouse_x_delta = 0; /* flush delta after it has been read */
+         }
+         break;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         if (screen)
+         {
+            val = sw->mouse_y;
+         }
+         else
+         {
+            val = sw->mouse_y_delta;
+            sw->mouse_y_delta = 0; /* flush delta after it has been read */
+         }
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         if (sw->mouse_wheel > 0)
+         {
+            val = sw->mouse_wheel;
+            sw->mouse_wheel = 0;
+         }
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         if (sw->mouse_wheel < 0)
+         {
+            val = sw->mouse_wheel;
+            sw->mouse_wheel = 0;
+         }
+         break;
+   }
+
+   return val;
+}
 #endif
 
 static int16_t switch_input_state(void *data,
@@ -120,6 +274,15 @@ static int16_t switch_input_state(void *data,
                   joypad_info, port, idx, id, binds[port]);
          break;
 #ifdef HAVE_LIBNX
+      case RETRO_DEVICE_KEYBOARD:
+         return ((id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
+         break;
+      case RETRO_DEVICE_MOUSE:
+         return switch_input_mouse_state(sw, id, false);
+         break;
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return switch_input_mouse_state(sw, id, true);
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return switch_pointer_device_state(sw, id, idx);
@@ -162,6 +325,14 @@ static void* switch_input_init(const char *joypad_driver)
    */
 
    calc_touch_scaling(sw, 1280, 720, TOUCH_AXIS_MAX);
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_switch);
+   unsigned int i;
+   for (i = 0; i <= SWITCH_MAX_SCANCODE; i++) {
+      sw->keyboard_state[i] = false;
+   }
+   sw->mouse_x = 0;
+   sw->mouse_y = 0;
 #endif
 
    return sw;
@@ -174,7 +345,7 @@ static uint64_t switch_input_get_capabilities(void *data)
    uint64_t caps =  (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 
 #ifdef HAVE_LIBNX
-   caps |= (1 << RETRO_DEVICE_POINTER);
+   caps |= (1 << RETRO_DEVICE_POINTER) | (1 << RETRO_DEVICE_KEYBOARD) | (1 << RETRO_DEVICE_MOUSE);
 #endif
 
    return caps;

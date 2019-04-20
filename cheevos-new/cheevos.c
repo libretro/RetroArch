@@ -35,6 +35,9 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #ifdef HAVE_THREADS
@@ -492,9 +495,14 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;
 
    /* Show the OSD message. */
-   snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
-   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (!video_driver_has_widgets() || !menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge))
+#endif
+   {
+      snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
+      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Start the award task. */
    if ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0)
@@ -527,11 +535,14 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
       address, rcheevos_locals.patchdata.console_id);
    unsigned value = 0;
 
-   switch (num_bytes)
+   if (data)
    {
-      case 4: value |= data[2] << 16 | data[3] << 24;
-      case 2: value |= data[1] << 8;
-      case 1: value |= data[0];
+      switch (num_bytes)
+      {
+         case 4: value |= data[2] << 16 | data[3] << 24;
+         case 2: value |= data[1] << 8;
+         case 1: value |= data[0];
+      }
    }
 
    return value;
@@ -1678,6 +1689,9 @@ found:
 
       badges_ctx = new_badges_ctx;
 
+#ifdef HAVE_MENU_WIDGETS
+      if (false) /* we always want badges if menu widgets are enabled */
+#endif
       {
          settings_t *settings = config_get_ptr();
          if (!(

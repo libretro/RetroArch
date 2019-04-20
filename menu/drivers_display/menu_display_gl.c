@@ -52,7 +52,7 @@ static const float *menu_display_gl_get_default_tex_coords(void)
 
 static void *menu_display_gl_get_default_mvp(video_frame_info_t *video_info)
 {
-   gl_t *gl = video_info ? (gl_t*)video_info->userdata : NULL;
+   gl_t *gl = (gl_t*)video_info->userdata;
 
    if (!gl)
       return NULL;
@@ -103,8 +103,6 @@ static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
-   video_shader_ctx_coords_t coords;
    gl_t             *gl          = (gl_t*)video_info->userdata;
 
    if (!gl || !draw)
@@ -118,19 +116,13 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
    menu_display_gl_viewport(draw, video_info);
-   if (draw)
-      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   coords.handle_data = gl;
-   coords.data        = draw->coords;
+   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_mvp(gl->shader_data,
+         draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
+      : (math_matrix_4x4*)menu_display_gl_get_default_mvp(video_info));
 
-   video_driver_set_coords(&coords);
-
-   mvp.data   = gl;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)menu_display_gl_get_default_mvp(video_info);
-
-   video_driver_set_mvp(&mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
@@ -245,7 +237,8 @@ static bool menu_display_gl_font_init_first(
    return true;
 }
 
-static void menu_display_gl_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void menu_display_gl_scissor_begin(
+      video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
    glScissor(x, video_info->height - y - height, width, height);

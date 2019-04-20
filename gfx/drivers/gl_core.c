@@ -13,6 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Modern OpenGL driver.
+ *
+ * Minimum version (desktop): OpenGL 3.2+
+ * Minimum version (mobile) : OpenGLES 3.0+
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -394,13 +400,13 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    RARCH_LOG("[GLCore]: Max texture size: %d px, renderbuffer size: %d px.\n",
              max_fbo_size, max_rb_size);
 
-   if (width > max_fbo_size)
+   if (width > (unsigned)max_fbo_size)
        width = max_fbo_size;
-   if (width > max_rb_size)
+   if (width > (unsigned)max_rb_size)
        width = max_rb_size;
-   if (height > max_fbo_size)
+   if (height > (unsigned)max_fbo_size)
        height = max_fbo_size;
-   if (height > max_rb_size)
+   if (height > (unsigned)max_rb_size)
        height = max_rb_size;
 
    glGenFramebuffers(1, &gl->hw_render_fbo);
@@ -497,7 +503,8 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 #endif
 
    /* Force shared context. */
-   gl->use_shared_context = hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   if (hwr)
+      gl->use_shared_context = hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
@@ -1624,6 +1631,7 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_width = streamed->width;
       texture.padded_height = streamed->height;
    }
+   gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 
@@ -1959,8 +1967,6 @@ static retro_proc_address_t gl_core_get_proc_address(void *data, const char *sym
 
 static const video_poke_interface_t gl_core_poke_interface = {
    gl_core_get_flags,
-   NULL,                   /* set_coords */
-   NULL,                   /* set_mvp */
    gl_core_load_texture,
    gl_core_unload_texture,
    gl_core_set_video_mode,
@@ -1998,6 +2004,31 @@ static bool gl_core_menu_widgets_enabled(void *data)
 }
 #endif
 
+static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_BORDER:
+#ifdef HAVE_OPENGLES3
+         /* GLES does not support CLAMP_TO_BORDER until GLES 3.2.
+          * It is a deprecated feature in general. */
+         return GL_CLAMP_TO_EDGE;
+#else
+         return GL_CLAMP_TO_BORDER;
+#endif
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
@@ -2028,7 +2059,7 @@ video_driver_t video_gl_core = {
    gl_core_get_overlay_interface,
 #endif
    gl_core_get_poke_interface,
-   /*gl_core_wrap_type_to_enum,*/NULL,
+   gl_core_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    gl_core_menu_widgets_enabled
 #endif

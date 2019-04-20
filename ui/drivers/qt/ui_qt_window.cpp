@@ -366,6 +366,11 @@ MainWindow::MainWindow(QWidget *parent) :
    QToolButton *searchResetButton = NULL;
    QHBoxLayout *zoomLayout = new QHBoxLayout();
    QLabel *zoomLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), m_zoomWidget);
+   QPushButton *thumbnailTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE), m_zoomWidget);
+   QMenu *thumbnailTypeMenu = new QMenu(thumbnailTypePushButton);
+   QAction *thumbnailTypeBoxartAction = NULL;
+   QAction *thumbnailTypeScreenshotAction = NULL;
+   QAction *thumbnailTypeTitleAction = NULL;
    QPushButton *viewTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
    QMenu *viewTypeMenu = new QMenu(viewTypePushButton);
    QAction *viewTypeIconsAction = NULL;
@@ -385,6 +390,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
+
+   thumbnailTypePushButton->setObjectName("thumbnailTypePushButton");
+   thumbnailTypePushButton->setFlat(true);
+
+   thumbnailTypeBoxartAction = thumbnailTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
+   thumbnailTypeScreenshotAction = thumbnailTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
+   thumbnailTypeTitleAction = thumbnailTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
+
+   thumbnailTypePushButton->setMenu(thumbnailTypeMenu);
 
    viewTypePushButton->setObjectName("viewTypePushButton");
    viewTypePushButton->setFlat(true);
@@ -444,6 +458,7 @@ MainWindow::MainWindow(QWidget *parent) :
    gridFooterLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    gridFooterLayout->addWidget(m_gridProgressWidget);
    gridFooterLayout->addWidget(m_zoomWidget);
+   gridFooterLayout->addWidget(thumbnailTypePushButton);
    gridFooterLayout->addWidget(viewTypePushButton);
 
    static_cast<QVBoxLayout*>(m_playlistViewsAndFooter->layout())->addLayout(gridFooterLayout);
@@ -613,6 +628,9 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLaunchWithComboBoxIndexChanged(int)));
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
+   connect(thumbnailTypeBoxartAction, SIGNAL(triggered()), this, SLOT(onBoxartThumbnailClicked()));
+   connect(thumbnailTypeScreenshotAction, SIGNAL(triggered()), this, SLOT(onScreenshotThumbnailClicked()));
+   connect(thumbnailTypeTitleAction, SIGNAL(triggered()), this, SLOT(onTitleThumbnailClicked()));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
@@ -828,6 +846,21 @@ void MainWindow::onIconViewClicked()
 void MainWindow::onListViewClicked()
 {
    setCurrentViewType(VIEW_TYPE_LIST);
+}
+
+void MainWindow::onBoxartThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
+}
+
+void MainWindow::onScreenshotThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
+}
+
+void MainWindow::onTitleThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
 }
 
 void MainWindow::setIconViewZoom(int zoomValue)
@@ -1249,6 +1282,9 @@ void MainWindow::setTheme(Theme theme)
       default:
          break;
    }
+#ifdef HAVE_MENU
+   m_viewOptionsDialog->repaintIcons();
+#endif
 }
 
 void MainWindow::setDefaultCustomProperties()
@@ -2034,9 +2070,9 @@ ViewOptionsDialog* MainWindow::viewOptionsDialog()
 void MainWindow::setCoreActions()
 {
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   ViewType viewType = getCurrentViewType();
-   QHash<QString, QString> hash = getCurrentContentHash();
-   QString currentPlaylistFileName = QString();
+   ViewType                    viewType = getCurrentViewType();
+   QHash<QString, QString>         hash = getCurrentContentHash();
+   QString      currentPlaylistFileName = QString();
 
    m_launchWithComboBox->clear();
 
@@ -2061,9 +2097,7 @@ void MainWindow::setCoreActions()
          QString coreName = hash["core_name"];
 
          if (coreName.isEmpty())
-         {
             coreName = "<n/a>";
-         }
          else
          {
             const char *detect_str = file_path_str(FILE_PATH_DETECT);
@@ -2846,9 +2880,8 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
 
 void MainWindow::initContentTableWidget()
 {
-   QListWidgetItem *item = m_listWidget->currentItem();
    QString path;
-   int i = 0;
+   QListWidgetItem *item = m_listWidget->currentItem();
 
    if (!item)
       return;
@@ -2868,10 +2901,10 @@ void MainWindow::initContentTableWidget()
 
    if (path == ALL_PLAYLISTS_TOKEN)
    {
+      unsigned i;
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
       QStringList playlists;
-      int i = 0;
 
       for (i = 0; i < m_playlistFiles.count(); i++)
       {
@@ -2897,12 +2930,13 @@ void MainWindow::initContentTableWidget()
 
 void MainWindow::updateItemsCount()
 {
-   m_itemsCountLabel->setText(m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
+   m_itemsCountLabel->setText(
+         m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-/*
+#if 0
    if (event->key() == Qt::Key_F5)
    {
       event->accept();
@@ -2910,7 +2944,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
       return;
    }
-*/
+#endif
    QMainWindow::keyPressEvent(event);
 }
 
@@ -2983,6 +3017,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
    m_settings->setValue("view_type", getCurrentViewTypeString());
    m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
    m_settings->setValue("icon_view_zoom", m_lastZoomSliderValue);
+   m_settings->setValue("icon_view_thumbnail_type", getCurrentThumbnailTypeString());
+   m_settings->setValue("options_dialog_geometry", m_viewOptionsDialog->saveGeometry());
 
    QMainWindow::closeEvent(event);
 }

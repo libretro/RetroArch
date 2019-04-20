@@ -274,6 +274,7 @@ enum retro_language
    RETRO_LANGUAGE_VIETNAMESE          = 15,
    RETRO_LANGUAGE_ARABIC              = 16,
    RETRO_LANGUAGE_GREEK               = 17,
+   RETRO_LANGUAGE_TURKISH             = 18,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -485,7 +486,6 @@ enum retro_mod
 /* Environment commands. */
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  /* const unsigned * --
                                             * Sets screen rotation of graphics.
-                                            * Is only implemented if rotation can be accelerated by hardware.
                                             * Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180,
                                             * 270 degrees counter-clockwise respectively.
                                             */

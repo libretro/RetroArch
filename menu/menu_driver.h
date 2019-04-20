@@ -378,7 +378,7 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   void (*set_thumbnail_content)(void *data, char* s, size_t len);
+   void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
@@ -549,8 +549,6 @@ void menu_display_font_free(font_data_t *font);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);
-const uint8_t *menu_display_get_font_framebuffer(void);
-void menu_display_set_font_framebuffer(const uint8_t *buffer);
 bool menu_display_libretro(bool is_idle, bool is_inited, bool is_dummy);
 bool menu_display_libretro_running(bool rarch_is_inited,
       bool rarch_is_dummy_core);
@@ -566,8 +564,6 @@ void menu_display_set_framebuffer_pitch(size_t pitch);
 
 bool menu_display_get_msg_force(void);
 void menu_display_set_msg_force(bool state);
-bool menu_display_get_font_data_init(void);
-void menu_display_set_font_data_init(bool state);
 bool menu_display_get_update_pending(void);
 void menu_display_set_viewport(unsigned width, unsigned height);
 void menu_display_unset_viewport(unsigned width, unsigned height);

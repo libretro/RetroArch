@@ -944,8 +944,6 @@ static float sunxi_get_refresh_rate (void *data)
 
 static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_flags */
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */

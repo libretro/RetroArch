@@ -104,6 +104,8 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
          "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
@@ -300,6 +302,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
    "wiiu",
    NULL,                         /* get_video_driver */
 };

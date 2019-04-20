@@ -475,10 +475,6 @@ MSG_HASH(
       "Lưu cấu hình khi thoát"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Bộ sưu tập"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Mục cơ sở dữ liệu nội dung"
       )
@@ -701,8 +697,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Gun D-pad Right")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Kích hoạt Autoconfig")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Analog Stick Deadzone")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Menu Swap OK & Cancel Buttons")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1161,7 +1155,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Playlist Danh mục")
+      "Playlists Danh mục")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -1449,8 +1443,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "LibretroDB support")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Libusb support")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "libxml2 XML parsing support")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "Netplay (peer-to-peer) support")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1611,8 +1603,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Crop Overscan (Reload)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Disable Desktop Composition")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "Màn hình dưới 3DS")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Video Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2340,10 +2334,6 @@ MSG_HASH(
    "Synchronize audio. Recommended."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "How far an axis must be tilted to result in a button press."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Amount of seconds to wait until proceeding to the next bind."
    )
@@ -2482,8 +2472,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Display battery level")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Select File")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Select From Collection")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Select from Playlst")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2560,7 +2550,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Hide the overlay while inside the menu, and show it again when exiting the menu.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Scanned content will appear here."
       )
 MSG_HASH(
@@ -2816,9 +2806,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Disconnects an active Netplay connection.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Scans a directory for compatible files and add them to the collection.")
+      "Scans a directory for content that matches the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Scans a compatible file and add it to the collection.")
+      "Scans a file for content that matches the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
@@ -2838,7 +2828,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Scan for new rooms.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Remove this entry from the collection.")
+      "Remove this entry from the playlist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "View more information about the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2910,7 +2900,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Perform tasks on a separate thread.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Allow the user to remove entries from collections.")
+      "Allow the user to remove entries from playlists.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2993,7 +2983,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Save all collections to this directory.")
+      "Save all playlists to this directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
@@ -3165,7 +3155,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Allow the user to rename entries in collections.")
+      "Allow the user to rename entries in playlists.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Allow to rename entries")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

@@ -138,7 +138,13 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
 
    video_driver_get_size(NULL, &video_info_height);
 
-   current_selection_middle_onscreen    = ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical + ozone->animations.scroll_y + node->position_y + node->height / 2;
+   current_selection_middle_onscreen    =
+      ozone->dimensions.header_height +
+      ozone->dimensions.entry_padding_vertical +
+      ozone->animations.scroll_y +
+      node->position_y +
+      node->height / 2;
+
    bottom_boundary                      = video_info_height - ozone->dimensions.header_height - 1 - ozone->dimensions.footer_height;
    entries_middle                       = video_info_height/2;
 
@@ -435,7 +441,8 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       }
 
 border_iterate:
-      y += node->height;
+      if (node)
+         y += node->height;
    }
 
    /* Cursor(s) layer - current */
@@ -639,28 +646,14 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 }
 
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
-   unsigned *y, unsigned title_column_x, unsigned data_column_x,
-   const char *title, const char *data, unsigned lines_count)
+   unsigned *y, unsigned column_x,
+   const char *text, unsigned lines_count)
 {
    ozone_draw_text(video_info, ozone,
-      title,
-      title_column_x,
+      text,
+      column_x,
       *y + FONT_SIZE_FOOTER,
       TEXT_ALIGN_LEFT,
-      video_info->width, video_info->height,
-      ozone->fonts.footer,
-      ozone->theme->text_rgba,
-      true
-   );
-
-   if (font_driver_get_message_width(ozone->fonts.footer, data, strlen(data), 1) > ozone->dimensions.thumbnail_bar_width / 2)
-      *y += font_driver_get_line_height(ozone->fonts.footer, 1);
-
-   ozone_draw_text(video_info, ozone,
-      data,
-      data_column_x,
-      *y + FONT_SIZE_FOOTER,
-      TEXT_ALIGN_RIGHT,
       video_info->width, video_info->height,
       ozone->fonts.footer,
       ozone->theme->text_rgba,
@@ -690,11 +683,9 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Thumbnails */
    thumbnail = ozone->thumbnail &&
-      !string_is_equal(ozone_thumbnails_ident('R'),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+     menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT);
    left_thumbnail = ozone->left_thumbnail &&
-      !string_is_equal(ozone_thumbnails_ident('L'),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+      menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT);
 
    /* If user requested "left" thumbnail instead of content metadata
     * and no thumbnails are available, show a centered message and
@@ -708,7 +699,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Top row : thumbnail or no thumbnail available message */
    if (thumbnail)
    {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
 
       if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
@@ -739,7 +730,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Bottom row : "left" thumbnail or content metadata */
    if (thumbnail && left_thumbnail)
    {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - (ozone->dimensions.left_thumbnail_width + ozone->dimensions.sidebar_entry_icon_padding) / 2;
+      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.left_thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
 
       ozone_draw_icon(video_info,
@@ -753,13 +744,12 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          ozone_pure_white
       );
    }
-   else if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
+   else if (!ozone->selection_core_is_viewer)
    {
       unsigned y                          = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
       unsigned content_metadata_padding   = ozone->dimensions.sidebar_entry_icon_padding*3;
       unsigned separator_padding          = ozone->dimensions.sidebar_entry_icon_padding*2;
-      unsigned title_column_x             = x_position + content_metadata_padding;
-      unsigned data_column_x              = x_position + sidebar_width - content_metadata_padding;
+      unsigned column_x                   = x_position + content_metadata_padding;
 
       /* Content metadata */
       y += 10;
@@ -775,26 +765,23 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       /* Core association */
       ozone_content_metadata_line(video_info, ozone,
-         &y, title_column_x, data_column_x,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+         &y, column_x,
          ozone->selection_core_name,
          ozone->selection_core_name_lines
       );
 
       /* Playtime */
       ozone_content_metadata_line(video_info, ozone,
-         &y, title_column_x, data_column_x,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+         &y, column_x,
          ozone->selection_playtime,
          1
       );
 
       /* Last played */
       ozone_content_metadata_line(video_info, ozone,
-         &y, title_column_x, data_column_x,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+         &y, column_x,
          ozone->selection_lastplayed,
-         1
+         2
       );
    }
 }

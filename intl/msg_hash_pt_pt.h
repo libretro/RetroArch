@@ -463,10 +463,6 @@ MSG_HASH(
       "Guardar configuração ao sair"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "Coleções"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "Base de dados"
       )
@@ -689,8 +685,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "Botão direcional (direita) da pistola")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Ativar auto-configuração de teclas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Zona morta do eixo analógico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Menu trocar botões OK e Cancelar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1132,7 +1126,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
       "Contadores de desempenhp")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-      "Listas de reprodução")
+      "Selecionar de Listas de Reprodução")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
       "Pasta de listas de reprodução")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1420,8 +1414,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "Suporte de LibretroDB")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Suporte de Libusb")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "Suporte de análise de libxml2 XML")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "Suporte de Netplay (ponto-a-ponto)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1580,8 +1572,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Cortar sobreexploração (recarregar)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Desativar composição do ambiente de trabalho")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "Tela Inferior 3DS")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Controlador de vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2292,10 +2286,6 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_SYNC,
       "Sincronizar o som. Recomendado.")
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Até que ponto um eixo deve estar inclinado para causar o pressionamento de um botão."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Quantidade de segundos a aguardar até que seja feita uma nova associação."
    )
@@ -2430,8 +2420,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Mostrado estado da bateria")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "Selecionar ficheiro")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "Selecionar de coleção")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "Selecionar da Lista de Reprodução")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filtro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2499,7 +2489,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Ocultar a sobreposição quando o menu estiver aberto e mostrar novamente ao encerrar o mesmo.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "O conteúdo verificado aparecerá aqui."
       )
 MSG_HASH(
@@ -2743,9 +2733,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Terminar uma ligação de Netplay ativa.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Verificar uma pasta por ficheiros compatíveis e adicionar os mesmos à coleção.")
+      "Verificar uma pasta por ficheiros compatíveis.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Verificar um ficheiro compatível e adicioná-lo à coleção.")
+      "Verificar um ficheiro compatível.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Usa um intervalo de troca personalizado para Vsync. Utilize isto para reduzir efetivamente a taxa de atualização do monitor."
       )
@@ -2765,7 +2755,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Verificar por novas ROMs.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Remover esta entrada da coleção.")
+      "Remover esta entrada da lista de reprodução.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Ver mais informações sobre o conteúdo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -2837,7 +2827,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Executar tarefas numa thread independente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Permitir que o utilizador remova entradas das coleções.")
+      "Permitir que o utilizador remova entradas das listas de reprodução.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Define a pasta de sistema. Os núcleos podem verificar esta pasta para o carregamento de ficheiros BIOS, configurações específicas de sistema, etc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -2916,7 +2906,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "Se um comando estiver conectado, o mesmo será configurado automaticamente se o ficheiro de configuração correspondente estiver presente nesta pasta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Guardar todas as coleções nesta pasta.")
+      "Guardar todas as listas de reprodução nesta pasta.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "Se for definido, o conteúdo que for extraído, de forma temporária, será extraído para esta pasta."
@@ -3092,7 +3082,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Fornecer uma palavra-passe durante a ocultação do separador das definições faz com que seja possível restaurá-lo mais tarde a partir do menu, através do separador Menu principal, selecionando o separador Ativar definições e introduzindo a palavra-passe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Permitir que o utilizador renomeie entradas nas coleções.")
+      "Permitir que o utilizador renomeie entradas nas listas de reprodução.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Permitir renomeação de entradas")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

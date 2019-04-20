@@ -86,23 +86,20 @@ typedef struct d3d8_renderchain
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
-static void d3d8_renderchain_set_mvp(
-      d3d8_video_t *d3d,
-      void *chain_data,
-      void *shader_data,
-      const void *mat_data)
+void d3d8_set_mvp(void *data, const void *mat_data)
 {
    struct d3d_matrix matrix;
+   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)data;
 
    d3d_matrix_identity(&matrix);
 
-   d3d8_set_transform(d3d->dev, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
-   d3d8_set_transform(d3d->dev, D3DTS_VIEW, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_VIEW, (D3DMATRIX*)&matrix);
 
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
 
-   d3d8_set_transform(d3d->dev, D3DTS_WORLD, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
 static bool d3d8_renderchain_create_first_pass(
@@ -288,7 +285,7 @@ static void d3d8_renderchain_render_pass(
          D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
          NULL);
    d3d8_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp_rotate);
+   d3d8_set_mvp(d3d->dev, &d3d->mvp_rotate);
    d3d8_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
@@ -425,15 +422,6 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 
    if (d3d)
       d3d8_renderchain_viewport_info(d3d, vp);
-}
-
-static void d3d8_set_mvp(void *data,
-      void *shader_data,
-      const void *mat_data)
-{
-   d3d8_video_t *d3d = (d3d8_video_t*)data;
-   if (d3d)
-      d3d8_renderchain_set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
 }
 
 static void d3d8_overlay_render(d3d8_video_t *d3d,
@@ -1598,7 +1586,7 @@ static bool d3d8_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_set_mvp(d3d->dev, &d3d->mvp);
       d3d8_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1623,7 +1611,7 @@ static bool d3d8_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d8_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
@@ -1854,8 +1842,6 @@ static uint32_t d3d8_get_flags(void *data)
 
 static const video_poke_interface_t d3d_poke_interface = {
    d3d8_get_flags,
-   NULL, /* set_coords */
-   d3d8_set_mvp,
    d3d8_load_texture,
    d3d8_unload_texture,
    d3d8_set_video_mode,

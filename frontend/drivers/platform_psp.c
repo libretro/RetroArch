@@ -147,6 +147,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path.config, user_path,
@@ -177,6 +179,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
          "SYSTEM", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "LOGS", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
    /* cache dir */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
@@ -530,6 +534,7 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
 #ifdef VITA
    "vita",
 #else

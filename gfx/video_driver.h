@@ -234,10 +234,8 @@ typedef struct shader_backend
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(void *handle_data,
-         void *shader_data, const struct video_coords *coords);
-   bool (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
+   bool (*set_coords)(void *shader_data, const struct video_coords *coords);
+   bool (*set_mvp)(void *shader_data, const void *mat_data);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);
@@ -492,13 +490,8 @@ typedef struct video_frame_info
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
-   bool (*cb_set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
-
    void *context_data;
-   void *shader_data;
    void *userdata;
-   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);
@@ -691,10 +684,6 @@ struct aspect_ratio_elem
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
-   void (*set_coords)(void *handle_data, void *shader_data,
-         const struct video_coords *coords);
-   void (*set_mvp)(void *data, void *shader_data,
-         const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
@@ -1192,16 +1181,6 @@ void video_context_driver_free(void);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
-bool video_shader_driver_deinit(void);
-
-bool video_shader_driver_init_first(const void *data);
-
-bool video_shader_driver_init(video_shader_ctx_init_t *init);
-
-void video_driver_set_coords(video_shader_ctx_coords_t *coords);
-
-void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
-
 float video_driver_get_refresh_rate(void);
 
 extern bool (*video_driver_cb_has_focus)(void);
@@ -1209,6 +1188,8 @@ extern bool (*video_driver_cb_has_focus)(void);
 bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
+
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
       enum display_flags flag);

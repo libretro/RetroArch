@@ -555,10 +555,6 @@ MSG_HASH(
     "Απόθηκευση Διαμόρφωσης στην Έξοδο"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Συλλογές"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
     "Βάσεις Δεδομένων"
     )
@@ -1001,10 +997,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
     "Ενεργοποίηση Αυτόματης Διαμόρφωσης"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-    "Νεκρή Ζώνη Αναλογικού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -2671,10 +2663,6 @@ MSG_HASH(
     "Υποστήριξη Libusb"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-    "Υποστήριξη ανάλυσης libxml2 XML"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
     "Υποστήριξη Netplay (peer-to-peer)"
     )
@@ -3058,10 +3046,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
     "Disable Desktop Composition"
     )
+#if defined(_3DS)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
     "Κάτω οθόνη 3DS"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
     "Οδηγός Βίντεο"
@@ -4543,10 +4533,6 @@ MSG_HASH(
     "Συγχρονισμός ήχου. Προτείνεται."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-    "Πόσο μακριά ένας άξωνας πρέπει να γείρει ώστε να οδηγήσει σε πάτημα κουμπιού."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
     "Χρόνος αναμονής σε δευτερόλεπτα μέχρι την συνέχιση στην επόμενη σύνδεση πλήκτρων."
     )
@@ -4740,10 +4726,6 @@ MSG_HASH(
     "Επιλογή Αρχείου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-    "Επιλογή Από Συλλογή"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
     "Φίλτρα"
     )
@@ -4885,7 +4867,7 @@ MSG_HASH(
     "Επιλογή της θύρας για όταν είναι ενεργοποιημένη η επιλογή 'Εμφάνιση Εισαγωγών Στην Οθόνη'"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
     "Το σαρωμένο περιεχόμενο θα εμφανίζεται εδώ."
     )
 MSG_HASH(
@@ -5295,11 +5277,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία και τα προσθέτει στην συλλογή."
+    "Σαρώνει ένα ευρετήριο για συμβατά αρχεία."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_FILE,
-    "Σαρώνει ένα συμβατό αρχείο και το προσθέτει στην συλλογή."
+    "Σαρώνει ένα συμβατό αρχείο"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
@@ -5332,10 +5314,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
     "Σάρωση για νέα δωμάτια."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-    "Κατάργηση αυτής της καταχώρησης από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION,
@@ -5476,10 +5454,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
     "Perform tasks on a separate thread."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-    "Επιτρέψτε στον χρήστη να καταργεί τις καταχωρήσεις από την συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -5648,7 +5622,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all collections to this directory."
+    "Save all playlists to this directory."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -5969,10 +5943,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
     "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-    "Επιτρέψτε στον χρήστη να μετονομάζει τις καταχωρήσεις στην συλλογή."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,

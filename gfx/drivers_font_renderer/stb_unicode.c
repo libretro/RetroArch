@@ -66,6 +66,13 @@ typedef struct
    unsigned usage_counter;
 } stb_unicode_font_renderer_t;
 
+/* Ugly little thing... */
+static int INLINE round_away_from_zero(float f)
+{
+   double round = (f < 0.0) ? floor((double)f) : ceil((double)f);
+   return (int)round;
+}
+
 static struct font_atlas *font_renderer_stb_unicode_get_atlas(void *data)
 {
    stb_unicode_font_renderer_t *self = (stb_unicode_font_renderer_t*)data;
@@ -145,18 +152,29 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
          + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
 
-   stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
-         self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
-
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
-   stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1);
+   if (stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1))
+   {
+      stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
+            self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
+   }
+   else
+   {
+      /* This means the glyph is empty. In this case, stbtt_MakeGlyphBitmap()
+       * fills the corresponding region of the atlas buffer with garbage,
+       * so just zero it */
+      int x, y;
+      for (x = 0; x < self->max_glyph_width; x++)
+         for (y = 0; y < self->max_glyph_height; y++)
+            dst[x + (y * self->atlas.width)] = 0;
+   }
 
    atlas_slot->glyph.width          = self->max_glyph_width;
    atlas_slot->glyph.height         = self->max_glyph_height;
-   atlas_slot->glyph.advance_x      = advance_width * self->scale_factor;
-   /* atlas_slot->glyph.advance_y   = 0 ; */
-   atlas_slot->glyph.draw_offset_x  = x0 * self->scale_factor;
-   atlas_slot->glyph.draw_offset_y  = -y1 * self->scale_factor;
+   atlas_slot->glyph.advance_x      = round_away_from_zero((float)advance_width * self->scale_factor);
+   atlas_slot->glyph.advance_y      = 0;
+   atlas_slot->glyph.draw_offset_x  = round_away_from_zero((float)x0 * self->scale_factor);
+   atlas_slot->glyph.draw_offset_y  = round_away_from_zero((float)(-y1) * self->scale_factor);
 
    self->atlas.dirty = true;
    atlas_slot->last_used = self->usage_counter++;
@@ -177,7 +195,7 @@ static bool font_renderer_stb_unicode_create_atlas(
    self->atlas.height     = self->max_glyph_height * STB_UNICODE_ATLAS_ROWS;
 
    self->atlas.buffer     = (uint8_t*)
-      calloc(self->atlas.width * self->atlas.height, 1);
+      calloc(self->atlas.width * self->atlas.height, sizeof(uint8_t));
 
    if (!self->atlas.buffer)
       return false;

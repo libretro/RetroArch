@@ -171,8 +171,11 @@ typedef struct settings
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
-      bool menu_rgui_lock_aspect;
       bool menu_rgui_full_width_layout;
+      bool menu_rgui_shadows;
+      bool menu_rgui_inline_thumbnails;
+      bool menu_rgui_swap_thumbnails;
+      bool menu_rgui_extended_ascii;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
@@ -321,6 +324,9 @@ typedef struct settings
 #ifdef HAVE_OZONE
       bool ozone_collapse_sidebar;
 #endif
+
+      bool log_to_file;
+      bool log_to_file_timestamp;
    } bools;
 
    struct
@@ -353,6 +359,8 @@ typedef struct settings
 
       float slowmotion_ratio;
       float fastforward_ratio;
+      float input_analog_deadzone;
+      float input_analog_sensitivity;
    } floats;
 
    struct
@@ -423,11 +431,13 @@ typedef struct settings
       unsigned video_stream_quality;
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
+      unsigned video_3ds_display_mode;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned menu_rgui_thumbnail_downscaler;
+      unsigned menu_rgui_thumbnail_delay;
       unsigned menu_dpi_override_value;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_layout;
@@ -442,6 +452,8 @@ typedef struct settings
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
       unsigned menu_rgui_internal_upscale_level;
+      unsigned menu_rgui_aspect_ratio;
+      unsigned menu_rgui_aspect_ratio_lock;
       unsigned menu_ticker_type;
 
       unsigned playlist_show_inline_core_name;
@@ -590,6 +602,8 @@ typedef struct settings
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
       char streaming_title[PATH_MAX_LENGTH];
+
+      char log_dir[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;

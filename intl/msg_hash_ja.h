@@ -566,10 +566,6 @@ MSG_HASH(
       "終了前に設定を自動保存"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-      "コレクション"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
       "コンテンツデータベース"
       )
@@ -807,8 +803,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
       "ライトガンの十字キーの右")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "自動設定を有効")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "入力軸のしきい値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "メニューのOKとキャンセルボタンをスワップ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1640,8 +1634,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
       "LibretroDB対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
       "Libusb対応")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT,
-      "libxml2 XMLパース対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
       "ネットプレイ(ピアツーピア)対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -1810,8 +1802,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "オーバースキャンをクロップ（再起動が必要）")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "デスクトップコンポジションを無効")
+#if defined(_3DS)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
       "3DSボトム画面")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "ビデオのドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2547,10 +2541,6 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
       "オーディオを同期する。推奨。")
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "入力を確定するために要するスティックの傾き量です。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "次のバインドに移るまでの待機秒数です。"
    )
@@ -2689,8 +2679,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "バッテリー残量を表示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "ファイル選択")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
-      "コレクションから選択")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+      "プレイリストから選択")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "フィルター")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
@@ -2770,7 +2760,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "メニュー表示中はオーバーレイを隠し、メニューを閉じたときに再表示する。")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "スキャンしたコンテンツを表示します。"
       )
 MSG_HASH(
@@ -3018,9 +3008,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "アクティブなネットプレイ接続を切断する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "フォルダ内のすべての対応ファイルをスキャンして\nコレクションに追加します。")
+      "フォルダ内のすべての対応ファイルをスキャン")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "対応ファイルをスキャンしてコレクションに追加\nします。")
+      "対応ファイルをスキャンし。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
@@ -3040,7 +3030,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "新しいネットプレイルームをスキャンします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "このエントリーをコレクションから削除する。")
+      "このエントリーをプレイリストから削除する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "このコンテンツについての詳細を表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
@@ -3112,7 +3102,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "タスクを別のスレッドで実行する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "ユーザーがコレクションからエントリーを削除できるようにする。")
+      "ユーザーがプレイリストからエントリーを削除できるようにする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "システムフォルダを指定します。コアはBIOSや特定システムの設定などをロードするため、このフォルダを探索することができます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3341,7 +3331,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "設定タブを隠す際にあらかじめパスワードを設定しておくことで、そのパスワードを使用してメニューから設定タブを復元することができます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "コレクションのエントリーの名前変更をユーザーに許可する。")
+      "プレイリストのエントリーの名前変更をユーザーに許可する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "エントリーの名前変更を許可")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -3397,15 +3387,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "「お気に入りに追加」オプションを表示/非表示にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-      "Show Start Recording")
+      "「録画を開始」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
       "Show/hide the 'Start Recording' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-      "Show Start Streaming")
+      "「ストリーミングを開始」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
       "Show/hide the 'Start Streaming' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-      "Show Reset Core Association")
+      "「コアの関連付けをリセット」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
       "Show/hide the 'Reset Core Association' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -4025,7 +4015,7 @@ MSG_HASH(
     "色テーマを選択します。"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use preferred system color theme")
+      "システムの優先色テーマを使用")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use your operating system's color theme (if any) - overrides theme settings.")
 MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
@@ -4058,9 +4048,157 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
       "ウィンドウの位置とサイズを記憶")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-    "CoreAudio support"
+    "CoreAudio対応"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-    "CoreAudio V3 support"
+    "CoreAudio V3対応"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "コアをインストールや復元"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+    "メニュー音"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "デバッグ情報を送信"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "デバッグ情報を送信"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+    "画面の向き"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+    "OKの音を有効"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+    "キュンセルの音を有効"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+    "通知の音を有効"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+    "BGMの音を有効"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+    "終了キーを2回続けて押す"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+    "キー操作で振動"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+    "対応されたコアにデバイス振動を使用"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HOLD_START,
+    "スタートをホールド（２秒）"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+    "FPS表示の切り替え"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+    "ネットプレイホストの切り替え"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+    "実行時ログを保存（コアごと）"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "実行時ログを保存（総計）"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+    "実行時ログの保存フォルダ"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+    "コアごと"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+    "総計"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_DEBUG_INFO,
+    "デバッグ情報を保存に失敗しました。"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_DEBUG_INFO,
+    "デバッグ情報を送信に失敗しました。"
+    )
+MSG_HASH(
+    MSG_SENDING_DEBUG_INFO,
+    "デバッグ情報をサーバーに送信中..."
+    )
+MSG_HASH(
+    MSG_SENT_DEBUG_INFO,
+    "デバッグ情報を送信に成功しました。ID番号は%u。"
+    )
+MSG_HASH(
+    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+    "後2回押すとデバッグ情報をRetroArchチームに送信します。"
+    )
+MSG_HASH(
+    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+    "後1回押すとデバッグ情報をRetroArchチームに送信します。"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+    "正確なコンテンツフレームレートに同期 (G-Sync, FreeSync)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "メモリ詳細を含む"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "ティッカーのテキストアニメーション"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+    "ティッカーのテキスト速度"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    "日付/時刻の形式"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+    "ABC順にプレイリストを分類"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "古い形式でプレイリストを保存"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "関連付けたコアをプレイリストに表示"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+    "プレイリストのサブレーベルを表示"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "プレイリストサブレーベルの実行時ログ形式"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+    "実行時ログ"
     )

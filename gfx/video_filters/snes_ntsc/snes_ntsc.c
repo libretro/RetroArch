@@ -15,10 +15,10 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-snes_ntsc_setup_t const snes_ntsc_monochrome = { 0,-1, 0, 0,.2,  0,.2,-.2,-.2,-1,  1, 0, 0 };
-snes_ntsc_setup_t const snes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,  0,  0, 0,  1, 0, 0 };
-snes_ntsc_setup_t const snes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0,  1, 0, 0 };
-snes_ntsc_setup_t const snes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1,  1, 0, 0 };
+snes_ntsc_setup_t const retroarch_snes_ntsc_monochrome = { 0,-1, 0, 0,.2,  0,.2,-.2,-.2,-1,  1, 0, 0 };
+snes_ntsc_setup_t const retroarch_snes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,  0,  0, 0,  1, 0, 0 };
+snes_ntsc_setup_t const retroarch_snes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0,  1, 0, 0 };
+snes_ntsc_setup_t const retroarch_snes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1,  1, 0, 0 };
 
 #define alignment_count 3
 #define burst_count     3
@@ -35,7 +35,7 @@ snes_ntsc_setup_t const snes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1
 #include "snes_ntsc_impl.h"
 
 /* 3 input pixels -> 8 composite samples */
-pixel_info_t const snes_ntsc_pixels [alignment_count] = {
+pixel_info_t const retroarch_snes_ntsc_pixels [alignment_count] = {
 	{ PIXEL_OFFSET( -4, -9 ), { 1, 1, .6667f, 0 } },
 	{ PIXEL_OFFSET( -2, -7 ), {       .3333f, 1, 1, .3333f } },
 	{ PIXEL_OFFSET(  0, -5 ), {                  0, .6667f, 1, 1 } },
@@ -77,13 +77,13 @@ static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out )
 	}
 }
 
-void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
+void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
 {
 	int merge_fields;
 	int entry;
 	init_t impl;
 	if ( !setup )
-		setup = &snes_ntsc_composite;
+		setup = &retroarch_snes_ntsc_composite;
 	init( &impl, setup );
 
 	merge_fields = setup->merge_fields;
@@ -118,7 +118,7 @@ void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
 
 #ifndef SNES_NTSC_NO_BLITTERS
 
-void snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long in_row_width,
+void retroarch_snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long in_row_width,
 		int burst_phase, int in_width, int in_height, void* rgb_out, long out_pitch, int first, int last )
 {
 	int chunk_count = (in_width - 1) / snes_ntsc_in_chunk;
@@ -171,7 +171,7 @@ void snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long 
 	}
 }
 
-void snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long in_row_width,
+void retroarch_snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long in_row_width,
 		int burst_phase, int in_width, int in_height, void* rgb_out, long out_pitch, int first, int last )
 {
 	int chunk_count = (in_width - 2) / (snes_ntsc_in_chunk * 2);

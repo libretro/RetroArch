@@ -265,11 +265,6 @@ inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, 
    return lhs.value("name").toLower() < rhs.value("name").toLower();
 }
 
-inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
-{
-   return lhs.value("label").toLower() < rhs.value("label").toLower();
-}
-
 bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions)
 {
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
@@ -601,8 +596,19 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          }
       }
 
-      playlist_push(playlist, pathData, fileNameNoExten,
-            corePathData, coreNameData, "00000000|crc", databaseData);
+      {
+         struct playlist_entry entry = {0};
+
+         /* the push function reads our entry as const, so these casts are safe */
+         entry.path = const_cast<char*>(pathData);
+         entry.label = const_cast<char*>(fileNameNoExten);
+         entry.core_path = const_cast<char*>(corePathData);
+         entry.core_name = const_cast<char*>(coreNameData);
+         entry.crc32 = const_cast<char*>("00000000|crc");
+         entry.db_name = const_cast<char*>(databaseData);
+
+         playlist_push(playlist, &entry);
+      }
    }
 
    playlist_write_file(playlist);
@@ -703,8 +709,20 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
 
    playlist = playlist_init(playlistPathData, COLLECTION_SIZE);
 
-   playlist_update(playlist, index, pathData, labelData,
-         corePathData, coreNameData, crc32Data, dbNameData);
+   {
+      struct playlist_entry entry = {0};
+
+      /* the update function reads our entry as const, so these casts are safe */
+      entry.path = const_cast<char*>(pathData);
+      entry.label = const_cast<char*>(labelData);
+      entry.core_path = const_cast<char*>(corePathData);
+      entry.core_name = const_cast<char*>(coreNameData);
+      entry.crc32 = const_cast<char*>(crc32Data);
+      entry.db_name = const_cast<char*>(dbNameData);
+
+      playlist_update(playlist, index, &entry);
+   }
+
    playlist_write_file(playlist);
    playlist_free(playlist);
 
@@ -1358,48 +1376,41 @@ void PlaylistModel::getPlaylistItems(QString path)
 
    for (i = 0; i < playlistSize; i++)
    {
-      const char *path = NULL;
-      const char *label = NULL;
-      const char *core_path = NULL;
-      const char *core_name = NULL;
-      const char *crc32 = NULL;
-      const char *db_name = NULL;
+      const struct playlist_entry *entry  = NULL;
       QHash<QString, QString> hash;
 
-      playlist_get_index(playlist, i,
-                         &path, &label, &core_path,
-                         &core_name, &crc32, &db_name);
+      playlist_get_index(playlist, i, &entry);
 
-      if (string_is_empty(path))
+      if (string_is_empty(entry->path))
          continue;
       else
-         hash["path"] = path;
+         hash["path"] = entry->path;
 
       hash["index"] = QString::number(i);
 
-      if (string_is_empty(label))
+      if (string_is_empty(entry->label))
       {
-         hash["label"] = path;
-         hash["label_noext"] = path;
+         hash["label"] = entry->path;
+         hash["label_noext"] = entry->path;
       }
       else
       {
-         hash["label"] = label;
-         hash["label_noext"] = label;
+         hash["label"] = entry->label;
+         hash["label_noext"] = entry->label;
       }
 
-      if (!string_is_empty(core_path))
-         hash["core_path"] = core_path;
+      if (!string_is_empty(entry->core_path))
+         hash["core_path"] = entry->core_path;
 
-      if (!string_is_empty(core_name))
-         hash["core_name"] = core_name;
+      if (!string_is_empty(entry->core_name))
+         hash["core_name"] = entry->core_name;
 
-      if (!string_is_empty(crc32))
-         hash["crc32"] = crc32;
+      if (!string_is_empty(entry->crc32))
+         hash["crc32"] = entry->crc32;
 
-      if (!string_is_empty(db_name))
+      if (!string_is_empty(entry->db_name))
       {
-         hash["db_name"] = db_name;
+         hash["db_name"] = entry->db_name;
          hash["db_name"].remove(file_path_str(FILE_PATH_LPL_EXTENSION));
       }
 

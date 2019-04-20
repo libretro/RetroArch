@@ -82,10 +82,6 @@ void menu_shader_manager_clear_pass_scale(unsigned i);
 
 void menu_shader_manager_clear_pass_path(unsigned i);
 
-void menu_shader_manager_decrement_amount_passes(void);
-
-void menu_shader_manager_increment_amount_passes(void);
-
 RETRO_END_DECLS
 
 #endif
