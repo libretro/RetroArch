@@ -21,7 +21,9 @@ extern "C" {
 
 static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse) {
   const char* aux = *memaddr;
+#ifndef RC_DISABLE_LUA
   const char* id;
+#endif
 
   if (*aux++ != '@') {
     return RC_INVALID_LUA_OPERAND;
@@ -31,7 +33,9 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
     return RC_INVALID_LUA_OPERAND;
   }
 
+#ifndef RC_DISABLE_LUA
   id = aux;
+#endif
 
   while (isalnum(*aux) || *aux == '_') {
     aux++;
@@ -52,7 +56,7 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
       return RC_INVALID_LUA_OPERAND;
     }
 
-    self->function_ref = luaL_ref(parse->L, LUA_REGISTRYINDEX);
+    self->value.luafunc = luaL_ref(parse->L, LUA_REGISTRYINDEX);
   }
 
 #endif /* RC_DISABLE_LUA */
@@ -131,7 +135,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
     address = 0xffffffffU;
   }
 
-  self->memref = rc_alloc_memref_value(parse, address, size, is_bcd);
+  self->value.memref = rc_alloc_memref_value(parse, address, size, is_bcd);
   if (parse->offset < 0)
     return parse->offset;
 
@@ -158,7 +162,7 @@ static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc
       }
 
       self->type = RC_OPERAND_CONST;
-      self->value = (unsigned)value;
+      self->value.num = (unsigned)value;
 
       aux = end;
       break;
@@ -191,7 +195,7 @@ static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc
       }
 
       self->type = RC_OPERAND_CONST;
-      self->value = (unsigned)value;
+      self->value.num = (unsigned)value;
 
       aux = end;
       break;
@@ -229,7 +233,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
       }
 
       self->type = RC_OPERAND_CONST;
-      self->value = (unsigned)value;
+      self->value.num = (unsigned)value;
 
       aux = end;
       break;
@@ -246,7 +250,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
       }
 
       self->type = RC_OPERAND_CONST;
-      self->value = (unsigned)value;
+      self->value.num = (unsigned)value;
 
       aux = end;
       break;
@@ -269,15 +273,15 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
     case '+': case '-':
     case '1': case '2': case '3': case '4': case '5':
     case '6': case '7': case '8': case '9':
-      self->fp_value = strtod(aux, &end);
+      self->value.dbl = strtod(aux, &end);
 
       if (end == aux) {
         return RC_INVALID_FP_OPERAND;
       }
 
-      if (floor(self->fp_value) == self->fp_value) {
+      if (floor(self->value.dbl) == self->value.dbl) {
         self->type = RC_OPERAND_CONST;
-        self->value = (unsigned)floor(self->fp_value);
+        self->value.num = (unsigned)floor(self->value.dbl);
       }
       else {
         self->type = RC_OPERAND_FP;
@@ -338,7 +342,7 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
 
   switch (self->type) {
     case RC_OPERAND_CONST:
-      value = self->value;
+      value = self->value.num;
       break;
 
     case RC_OPERAND_FP:
@@ -349,7 +353,7 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
 #ifndef RC_DISABLE_LUA
 
       if (L != 0) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, self->function_ref);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, self->value.luafunc);
         lua_pushcfunction(L, rc_luapeek);
 
         luapeek.peek = peek;
@@ -374,15 +378,15 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
       break;
 
     case RC_OPERAND_ADDRESS:
-      value = self->memref->value;
+      value = self->value.memref->value;
       break;
 
     case RC_OPERAND_DELTA:
-      value = self->memref->previous;
+      value = self->value.memref->previous;
       break;
 
     case RC_OPERAND_PRIOR:
-      value = self->memref->prior;
+      value = self->value.memref->prior;
       break;
   }
 

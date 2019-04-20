@@ -22,7 +22,7 @@ rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned addre
     if (parse->scratch.memref_count == parse->scratch.memref_size) {
       if (parse->scratch.memref == parse->scratch.memref_buffer) {
         parse->scratch.memref_size += 16;
-        memref = malloc(parse->scratch.memref_size * sizeof(parse->scratch.memref_buffer[0]));
+        memref = (rc_memref_t*)malloc(parse->scratch.memref_size * sizeof(parse->scratch.memref_buffer[0]));
         if (memref) {
           parse->scratch.memref = memref;
           memcpy(memref, parse->scratch.memref_buffer, parse->scratch.memref_count * sizeof(parse->scratch.memref_buffer[0]));
@@ -34,7 +34,7 @@ rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned addre
       } 
       else {
         parse->scratch.memref_size += 32;
-        memref = realloc(parse->scratch.memref, parse->scratch.memref_size * sizeof(parse->scratch.memref_buffer[0]));
+        memref = (rc_memref_t*)realloc(parse->scratch.memref, parse->scratch.memref_size * sizeof(parse->scratch.memref_buffer[0]));
         if (memref) {
           parse->scratch.memref = memref;
         }
