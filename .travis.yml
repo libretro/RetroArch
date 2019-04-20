@@ -9,9 +9,6 @@ matrix:
           packages:
             - g++-mingw-w64-i686
             - mingw-w64-i686-dev
-      script:
-        - ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
-        - make
       env: CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: mingw-x64
       addons:
@@ -19,20 +16,10 @@ matrix:
           packages:
             - g++-mingw-w64-x86-64
             - mingw-w64-x86-64-dev
-      script:
-        - ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
-        - make
       env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: gcc
-      # Install a more recent gcc than the default
-      before_install:
-        - sudo apt-get install -y g++-8
       env: CC=gcc-8 CXX=g++-8
     - compiler: clang
-      # Install a more recent clang than the default
-      before_install:
-        - sudo apt-get install -y libstdc++-7-dev
-        - sudo apt-get install -y clang-6.0
       env: CC=clang-6.0 CXX=clang++-6.0
     - os: osx
       osx_image: xcode8
@@ -50,8 +37,24 @@ matrix:
         on:
           branch: master
 
+before_install:
+  - |
+     if [ "$CC" = gcc-8 ]; then
+       # Install a more recent gcc than the default
+       sudo apt-get install -y g++-8
+     elif [ "$CC" = clang-6.0 ]; then
+       # Install a more recent clang than the default
+       sudo apt-get install -y libstdc++-7-dev
+       sudo apt-get install -y clang-6.0
+     fi
+
 script:
-  - ./configure
+  - |
+     if [ -n "$CROSS_COMPILE" ]; then
+       ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
+     else
+       ./configure
+     fi
   - make
 
 env:
