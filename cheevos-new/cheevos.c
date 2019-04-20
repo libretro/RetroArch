@@ -64,8 +64,8 @@
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
-#include <rcheevos.h>
-#include <rurl.h>
+#include "../deps/rcheevos/include/rcheevos.h"
+#include "../deps/rcheevos/include/rurl.h"
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
