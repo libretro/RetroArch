@@ -5357,7 +5357,7 @@ void rarch_log_file_init(void)
     * logging to file, and wish to do so */
    
    /* > Check whether we are already logging to console */
-   fp = retro_main_log_file();
+   fp = (FILE*)retro_main_log_file();
    if (fp)
    {
       /* De-initialise existing logger */
@@ -5413,7 +5413,7 @@ void rarch_log_file_deinit(void)
    }
    
    /* If logging is currently disabled... */
-   fp = retro_main_log_file();
+   fp = (FILE*)retro_main_log_file();
    if (!fp)
    {
       /* ...initialise logging to console */
