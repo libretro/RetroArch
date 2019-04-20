@@ -16,10 +16,6 @@
 #ifndef __RARCH_CHEEVOS_OLD_BADGE_H
 #define __RARCH_CHEEVOS_OLD_BADGE_H
 
-#ifdef HAVE_NEW_CHEEVOS
-#include "../cheevos-new/badges.h"
-#else
-
 #include "../menu/menu_driver.h"
 
 #include <retro_common_api.h>
@@ -44,7 +40,5 @@ extern badges_ctx_t badges_ctx;
 static badges_ctx_t new_badges_ctx;
 
 RETRO_END_DECLS
-
-#endif
 
 #endif

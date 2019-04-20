@@ -71,6 +71,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
+#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 
 #include "task_content.h"
@@ -734,13 +735,15 @@ static bool content_file_load(
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
+      /* RCHEEVOS TODO: remove settings and settings tests */
+      settings_t *settings         = config_get_ptr();
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
 
-      cheevos_set_cheats();
+      settings->bools.cheevos_rcheevos_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
-         cheevos_load(info);
+         settings->bools.cheevos_rcheevos_enable ? rcheevos_load(info) : cheevos_load(info);
    }
 #endif
 

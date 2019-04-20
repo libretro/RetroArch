@@ -31,7 +31,7 @@ typedef struct {
   const char* memaddr;
   unsigned points;
   unsigned id;
-} cheevos_racheevo_t;
+} rcheevos_racheevo_t;
 
 typedef struct {
   const char* title;
@@ -39,28 +39,28 @@ typedef struct {
   const char* format;
   const char* mem;
   unsigned id;
-} cheevos_ralboard_t;
+} rcheevos_ralboard_t;
 
 typedef struct {
    unsigned console_id;
 
-   cheevos_racheevo_t* core;
-   cheevos_racheevo_t* unofficial;
-   cheevos_ralboard_t* lboards;
+   rcheevos_racheevo_t* core;
+   rcheevos_racheevo_t* unofficial;
+   rcheevos_ralboard_t* lboards;
 
    unsigned core_count;
    unsigned unofficial_count;
    unsigned lboard_count;
-} cheevos_rapatchdata_t;
+} rcheevos_rapatchdata_t;
 
-typedef void (*cheevos_unlock_cb_t)(unsigned id, void* userdata);
+typedef void (*rcheevos_unlock_cb_t)(unsigned id, void* userdata);
 
-int cheevos_get_token(const char* json, char* token, size_t length);
+int rcheevos_get_token(const char* json, char* token, size_t length);
 
-int  cheevos_get_patchdata(const char* json, cheevos_rapatchdata_t* patchdata);
-void cheevos_free_patchdata(cheevos_rapatchdata_t* patchdata);
+int  rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata);
+void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata);
 
-void cheevos_deactivate_unlocks(const char* json, cheevos_unlock_cb_t unlock_cb, void* userdata);
+void rcheevos_deactivate_unlocks(const char* json, rcheevos_unlock_cb_t unlock_cb, void* userdata);
 
 unsigned chevos_get_gameid(const char* json);
 

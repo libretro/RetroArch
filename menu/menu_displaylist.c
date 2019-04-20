@@ -39,6 +39,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
+#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -2667,7 +2668,8 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-         && !cheevos_hardcore_active
+          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
+          && !(rcheevos_hardcore_active || cheevos_hardcore_active)
 #endif
          )
       {
@@ -2690,7 +2692,8 @@ static int menu_displaylist_parse_load_content_settings(
       if (settings->bools.quick_menu_show_save_load_state &&
           settings->bools.quick_menu_show_undo_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !cheevos_hardcore_active
+          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
+          && !(rcheevos_hardcore_active || cheevos_hardcore_active)
 #endif
          )
       {
@@ -5564,10 +5567,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         cheevos_populate_menu(info);
-         info->need_push    = true;
-         info->need_refresh = true;
+         {  /* RCHEEVOS TODO: remove brackets, settings and settings test */
+            settings_t *settings = config_get_ptr();
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            settings->bools.cheevos_rcheevos_enable ? rcheevos_populate_menu(info) : cheevos_populate_menu(info);
+            info->need_push    = true;
+            info->need_refresh = true;
+         }
 #endif
          break;
 

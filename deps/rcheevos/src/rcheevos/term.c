@@ -1,18 +1,19 @@
 #include "internal.h"
 
-rc_term_t* rc_parse_term(int* ret, void* buffer, rc_scratch_t* scratch, const char** memaddr, lua_State* L, int funcs_ndx) {
+rc_term_t* rc_parse_term(const char** memaddr, rc_parse_state_t* parse) {
   rc_term_t* self;
   const char* aux;
+  char size;
   int ret2;
 
   aux = *memaddr;
-  self = RC_ALLOC(rc_term_t, buffer, ret, scratch);
+  self = RC_ALLOC(rc_term_t, parse);
   self->invert = 0;
 
-  ret2 = rc_parse_operand(&self->operand1, &aux, 0, L, funcs_ndx);
+  ret2 = rc_parse_operand(&self->operand1, &aux, 0, parse);
 
   if (ret2 < 0) {
-    *ret = ret2;
+    parse->offset = ret2;
     return 0;
   }
 
@@ -24,53 +25,63 @@ rc_term_t* rc_parse_term(int* ret, void* buffer, rc_scratch_t* scratch, const ch
       self->invert = 1;
     }
 
-    ret2 = rc_parse_operand(&self->operand2, &aux, 0, L, funcs_ndx);
+    ret2 = rc_parse_operand(&self->operand2, &aux, 0, parse);
 
     if (ret2 < 0) {
-      *ret = ret2;
+      parse->offset = ret2;
       return 0;
     }
 
     if (self->invert) {
-      switch (self->operand2.size) {
-        case RC_OPERAND_BIT_0:
-        case RC_OPERAND_BIT_1:
-        case RC_OPERAND_BIT_2:
-        case RC_OPERAND_BIT_3:
-        case RC_OPERAND_BIT_4:
-        case RC_OPERAND_BIT_5:
-        case RC_OPERAND_BIT_6:
-        case RC_OPERAND_BIT_7:
+      switch (self->operand2.type) {
+        case RC_OPERAND_ADDRESS:
+        case RC_OPERAND_DELTA:
+        case RC_OPERAND_PRIOR:
+          size = self->operand2.memref->memref.size;
+          break;
+        default:
+          size = RC_MEMSIZE_32_BITS;
+          break;
+      }
+
+      switch (size) {
+        case RC_MEMSIZE_BIT_0:
+        case RC_MEMSIZE_BIT_1:
+        case RC_MEMSIZE_BIT_2:
+        case RC_MEMSIZE_BIT_3:
+        case RC_MEMSIZE_BIT_4:
+        case RC_MEMSIZE_BIT_5:
+        case RC_MEMSIZE_BIT_6:
+        case RC_MEMSIZE_BIT_7:
           /* invert is already 1 */
           break;
 
-        case RC_OPERAND_LOW:
-        case RC_OPERAND_HIGH:
+        case RC_MEMSIZE_LOW:
+        case RC_MEMSIZE_HIGH:
           self->invert = 0xf;
           break;
         
-        case RC_OPERAND_8_BITS:
+        case RC_MEMSIZE_8_BITS:
           self->invert = 0xffU;
           break;
 
-        case RC_OPERAND_16_BITS:
+        case RC_MEMSIZE_16_BITS:
           self->invert = 0xffffU;
           break;
 
-        case RC_OPERAND_24_BITS:
+        case RC_MEMSIZE_24_BITS:
           self->invert = 0xffffffU;
           break;
 
-        case RC_OPERAND_32_BITS:
+        case RC_MEMSIZE_32_BITS:
           self->invert = 0xffffffffU;
           break;
       }
     }
   }
   else {
-    self->operand2.type = RC_OPERAND_FP;
-    self->operand2.size = RC_OPERAND_8_BITS;
-    self->operand2.fp_value = 1.0;
+    self->operand2.type = RC_OPERAND_CONST;
+    self->operand2.value = 1;
   }
 
   *memaddr = aux;
@@ -84,5 +95,5 @@ unsigned rc_evaluate_term(rc_term_t* self, rc_peek_t peek, void* ud, lua_State* 
     return value * (rc_evaluate_operand(&self->operand2, peek, ud, L) ^ self->invert);
   }
 
-  return (unsigned)(value * self->operand2.fp_value);
+  return (unsigned)((double)value * self->operand2.fp_value);
 }
