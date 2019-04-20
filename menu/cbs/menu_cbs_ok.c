@@ -1854,7 +1854,6 @@ static int action_ok_playlist_entry(const char *path,
          && string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      const char *entry_path                 = NULL;
       const char *path_base                  =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      =
@@ -2086,7 +2085,6 @@ static int action_ok_lookup_setting(const char *path,
 static int action_ok_audio_add_to_mixer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *entry_path              = NULL;
    playlist_t *tmp_playlist            = playlist_get_cached();
    const struct playlist_entry *entry  = NULL;
 
@@ -2108,7 +2106,6 @@ static int action_ok_audio_add_to_mixer(const char *path,
 static int action_ok_audio_add_to_mixer_and_play(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *entry_path              = NULL;
    playlist_t *tmp_playlist            = playlist_get_cached();
    const struct playlist_entry *entry  = NULL;
 
@@ -3823,12 +3820,8 @@ default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMP
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *tmp_path                = NULL;
    menu_handle_t *menu                 = NULL;
-   playlist_t *tmp_playlist            = playlist_get_cached();
 
-   if (!tmp_playlist)
-      return 0;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 

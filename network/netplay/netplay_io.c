@@ -826,7 +826,7 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
                 * one device, so share it */
                if (netplay->device_share_modes[0])
                {
-                  device = 0;
+                  device     = 0;
                   share_mode = netplay->device_share_modes[0];
                   break;
                }

@@ -1771,8 +1771,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          if (!ozone->cursor_in_sidebar)
             break;
 
-         tag = (uintptr_t)ozone;
-
+         tag           = (uintptr_t)ozone;
          new_selection = (ozone->categories_selection_ptr + 1);
 
          if (new_selection >= ozone->system_tab_end + horizontal_list_size + 1)
@@ -1787,8 +1786,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          if (!ozone->cursor_in_sidebar)
             break;
 
-         tag = (uintptr_t)ozone;
-
+         tag           = (uintptr_t)ozone;
          new_selection = ozone->categories_selection_ptr - 1;
 
          if (new_selection < 0)
