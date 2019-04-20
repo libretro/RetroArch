@@ -16,10 +16,6 @@
 #ifndef __RARCH_CHEEVOS_OLD_H
 #define __RARCH_CHEEVOS_OLD_H
 
-#ifdef HAVE_NEW_CHEEVOS
-#include "../cheevos-new/cheevos.h"
-#else
-
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -165,7 +161,5 @@ extern int cheats_are_enabled;
 extern int cheats_were_enabled;
 
 RETRO_END_DECLS
-
-#endif
 
 #endif /* __RARCH_CHEEVOS_H */
