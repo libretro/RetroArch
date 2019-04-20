@@ -552,9 +552,8 @@ static void menu_widgets_msg_queue_move(void)
 
    for (i = current_msgs->size-1; i >= 0; i--)
    {
-      menu_widget_msg_t *msg;
-
-      msg = file_list_get_userdata_at_offset(current_msgs, i);
+      menu_widget_msg_t *msg = (menu_widget_msg_t*)
+         file_list_get_userdata_at_offset(current_msgs, i);
 
       if (!msg || msg->dying)
          continue;
@@ -618,7 +617,8 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 
 static void menu_widgets_msg_queue_kill_end(void *userdata)
 {
-   menu_widget_msg_t *msg = file_list_get_userdata_at_offset(current_msgs, msg_queue_kill);
+   menu_widget_msg_t *msg = (menu_widget_msg_t*)
+      file_list_get_userdata_at_offset(current_msgs, msg_queue_kill);
 
    if (!msg)
       return;
@@ -630,7 +630,8 @@ static void menu_widgets_msg_queue_kill(unsigned idx)
 {
    menu_animation_ctx_entry_t entry;
 
-   menu_widget_msg_t *msg = file_list_get_userdata_at_offset(current_msgs, idx);
+   menu_widget_msg_t *msg = (menu_widget_msg_t*)
+      file_list_get_userdata_at_offset(current_msgs, idx);
 
    if (!msg)
       return;
@@ -862,7 +863,8 @@ void menu_widgets_iterate(void)
    /* Start expiration timer of dead tasks */
    for (i = 0; i < current_msgs->size ; i++)
    {
-      menu_widget_msg_t *msg  = file_list_get_userdata_at_offset(current_msgs, i);
+      menu_widget_msg_t *msg  = (menu_widget_msg_t*)
+         file_list_get_userdata_at_offset(current_msgs, i);
 
       if (!msg)
          continue;
@@ -1601,7 +1603,8 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    /* Draw all messages */
    for (i = 0; i < current_msgs->size; i++)
    {
-      menu_widget_msg_t *msg = file_list_get_userdata_at_offset(current_msgs, i);
+      menu_widget_msg_t *msg = (menu_widget_msg_t*)
+         file_list_get_userdata_at_offset(current_msgs, i);
 
       if (!msg)
          continue;
@@ -1925,7 +1928,8 @@ void menu_widgets_free(void)
    {
       for (i = 0; i < current_msgs->size; i++)
       {
-         menu_widget_msg_t *msg = file_list_get_userdata_at_offset(current_msgs, i);
+         menu_widget_msg_t *msg = (menu_widget_msg_t*)
+            file_list_get_userdata_at_offset(current_msgs, i);
 
          menu_widgets_msg_queue_free(msg, false);
       }
@@ -2074,14 +2078,16 @@ bool menu_widgets_task_msg_queue_push(retro_task_t *task,
       return false;
 
    if (task->title != NULL && !task->mute)
-      menu_widgets_msg_queue_push_internal(task, msg, duration, NULL, MESSAGE_QUEUE_CATEGORY_INFO, MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
+      menu_widgets_msg_queue_push_internal(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
 
    return true;
 }
 
 static void menu_widgets_end_load_content_animation(void *userdata)
 {
-   //task_load_content_resume(); TODO: Restore that
+#if 0
+   task_load_content_resume(); /* TODO: Restore that */
+#endif
 }
 
 void menu_widgets_cleanup_load_content_animation(void)
