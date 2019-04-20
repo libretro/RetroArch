@@ -289,13 +289,14 @@ Testing
 
 uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
 {
-   uint8_t* memory = NULL;
-   size_t length = 0;
+   rarch_system_info_t *system = NULL;
+   uint8_t             *memory = NULL;
+   size_t               length = 0;
 
    if (var->bank_id < 0)
       return NULL;
 
-   rarch_system_info_t* system = runloop_get_system_info();
+   system = runloop_get_system_info();
 
    if (system->mmaps.num_descriptors != 0)
    {

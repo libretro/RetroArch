@@ -582,7 +582,7 @@ bool playlist_push(playlist_t *playlist,
 
       if (entry->subsystem_roms)
       {
-         int j;
+         unsigned j;
          const struct string_list *roms = playlist->entries[i].subsystem_roms;
          bool                   unequal = false;
 
@@ -1051,7 +1051,7 @@ void playlist_write_file(playlist_t *playlist)
 
          if (playlist->entries[i].subsystem_roms && playlist->entries[i].subsystem_roms->size > 0)
          {
-            int j;
+            unsigned j;
 
             JSON_Writer_WriteComma(context.writer);
             JSON_Writer_WriteNewLine(context.writer);
