@@ -5,9 +5,26 @@
 
 #include <stddef.h>
 
+#define RC_ALLOW_ALIGN(T) struct __align_ ## T { char ch; T t; };
+RC_ALLOW_ALIGN(rc_condition_t)
+RC_ALLOW_ALIGN(rc_condset_t)
+RC_ALLOW_ALIGN(rc_expression_t)
+RC_ALLOW_ALIGN(rc_lboard_t)
+RC_ALLOW_ALIGN(rc_memref_value_t)
+RC_ALLOW_ALIGN(rc_operand_t)
+RC_ALLOW_ALIGN(rc_richpresence_t)
+RC_ALLOW_ALIGN(rc_richpresence_display_t)
+RC_ALLOW_ALIGN(rc_richpresence_display_part_t)
+RC_ALLOW_ALIGN(rc_richpresence_lookup_t)
+RC_ALLOW_ALIGN(rc_richpresence_lookup_item_t)
+RC_ALLOW_ALIGN(rc_term_t)
+RC_ALLOW_ALIGN(rc_trigger_t)
+RC_ALLOW_ALIGN(rc_value_t)
+RC_ALLOW_ALIGN(char)
+
 #define RC_TAG2(x,y) x ## y
 #define RC_TAG(x,y) RC_TAG2(x,y)
-#define RC_ALIGNOF(t) offsetof(struct RC_TAG(_unnamed, __LINE__) {char c; t d;}, d)
+#define RC_ALIGNOF(T) (sizeof(struct __align_ ## T) - sizeof(T))
 
 #define RC_ALLOC(t, p) ((t*)rc_alloc((p)->buffer, &(p)->offset, sizeof(t), RC_ALIGNOF(t), &(p)->scratch))
 
