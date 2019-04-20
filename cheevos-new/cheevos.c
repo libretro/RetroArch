@@ -673,7 +673,7 @@ static void rcheevos_test_leaderboards(void)
             break;
 
          case RC_LBOARD_ACTIVE:
-            // this is where we would update the onscreen tracker
+            /* this is where we would update the onscreen tracker */
             break;
 
          case RC_LBOARD_TRIGGERED:
