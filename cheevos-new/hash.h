@@ -23,7 +23,7 @@
 
 RETRO_BEGIN_DECLS
 
-uint32_t cheevos_djb2(const char* str, size_t length);
+uint32_t rcheevos_djb2(const char* str, size_t length);
 
 RETRO_END_DECLS
 

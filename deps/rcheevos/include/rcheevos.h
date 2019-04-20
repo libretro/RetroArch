@@ -29,7 +29,9 @@ enum {
   RC_MISSING_CANCEL = -14,
   RC_MISSING_SUBMIT = -15,
   RC_MISSING_VALUE = -16,
-  RC_INVALID_LBOARD_FIELD = -17
+  RC_INVALID_LBOARD_FIELD = -17,
+  RC_MISSING_DISPLAY_STRING = -18,
+  RC_OUT_OF_MEMORY = -19
 };
 
 /*****************************************************************************\
@@ -82,26 +84,56 @@ enum {
 typedef unsigned (*rc_peek_t)(unsigned address, unsigned num_bytes, void* ud);
 
 /*****************************************************************************\
-| Operands                                                                    |
+| Memory References                                                           |
 \*****************************************************************************/
 
 /* Sizes. */
 enum {
-  RC_OPERAND_BIT_0,
-  RC_OPERAND_BIT_1,
-  RC_OPERAND_BIT_2,
-  RC_OPERAND_BIT_3,
-  RC_OPERAND_BIT_4,
-  RC_OPERAND_BIT_5,
-  RC_OPERAND_BIT_6,
-  RC_OPERAND_BIT_7,
-  RC_OPERAND_LOW,
-  RC_OPERAND_HIGH,
-  RC_OPERAND_8_BITS,
-  RC_OPERAND_16_BITS,
-  RC_OPERAND_24_BITS,
-  RC_OPERAND_32_BITS
+  RC_MEMSIZE_BIT_0,
+  RC_MEMSIZE_BIT_1,
+  RC_MEMSIZE_BIT_2,
+  RC_MEMSIZE_BIT_3,
+  RC_MEMSIZE_BIT_4,
+  RC_MEMSIZE_BIT_5,
+  RC_MEMSIZE_BIT_6,
+  RC_MEMSIZE_BIT_7,
+  RC_MEMSIZE_LOW,
+  RC_MEMSIZE_HIGH,
+  RC_MEMSIZE_8_BITS,
+  RC_MEMSIZE_16_BITS,
+  RC_MEMSIZE_24_BITS,
+  RC_MEMSIZE_32_BITS
 };
+
+typedef struct {
+  /* The memory address of this variable. */
+  unsigned address;
+  /* The size of the variable. */
+  char size;
+  /* True if the value is in BCD. */
+  char is_bcd;
+} rc_memref_t;
+
+typedef struct rc_memref_value_t rc_memref_value_t;
+
+struct rc_memref_value_t {
+  /* The value of this memory reference. */
+  unsigned value;
+  /* The previous value of this memory reference. */
+  unsigned previous;
+  /* The last differing value of this memory reference. */
+  unsigned prior;
+
+  /* The referenced memory */
+  rc_memref_t memref;
+
+  /* The next memory reference in the chain */
+  rc_memref_value_t* next;
+};
+
+/*****************************************************************************\
+| Operands                                                                    |
+\*****************************************************************************/
 
 /* types */
 enum {
@@ -109,24 +141,17 @@ enum {
   RC_OPERAND_DELTA,   /* The value last known at this address. */
   RC_OPERAND_CONST,   /* A 32-bit unsigned integer. */
   RC_OPERAND_FP,      /* A floating point value. */
-  RC_OPERAND_LUA      /* A Lua function that provides the value. */
+  RC_OPERAND_LUA,     /* A Lua function that provides the value. */
+  RC_OPERAND_PRIOR    /* The last differing value at this address. */
 };
 
 typedef struct {
   union {
     /* A value read from memory. */
-    struct {
-      /* The memory address or constant value of this variable. */
-      unsigned value;
-      /* The previous memory contents if RC_OPERAND_DELTA. */
-      unsigned previous;
+    rc_memref_value_t* memref;
 
-      /* The size of the variable. */
-      char size;
-      /* True if the value is in BCD. */
-      char is_bcd;
-      /* The type of the variable. */
-    };
+    /* A value. */
+    unsigned value;
 
     /* A floating point value. */
     double fp_value;
@@ -150,7 +175,8 @@ enum {
   RC_CONDITION_RESET_IF,
   RC_CONDITION_ADD_SOURCE,
   RC_CONDITION_SUB_SOURCE,
-  RC_CONDITION_ADD_HITS
+  RC_CONDITION_ADD_HITS,
+  RC_CONDITION_AND_NEXT
 };
 
 /* operators */
@@ -166,9 +192,6 @@ enum {
 typedef struct rc_condition_t rc_condition_t;
 
 struct rc_condition_t {
-  /* The next condition in the chain. */
-  rc_condition_t* next;
-
   /* The condition's operands. */
   rc_operand_t operand1;
   rc_operand_t operand2;
@@ -177,6 +200,9 @@ struct rc_condition_t {
   unsigned required_hits;
   /* Number of hits so far. */
   unsigned current_hits;
+
+  /* The next condition in the chain. */
+  rc_condition_t* next;
 
   /**
    * Set if the condition needs to processed as part of the "check if paused"
@@ -217,6 +243,9 @@ typedef struct {
 
   /* The list of sub condition sets in this test. */
   rc_condset_t* alternative;
+
+  /* The memory references required by the trigger. */
+  rc_memref_value_t* memrefs;
 }
 rc_trigger_t;
 
@@ -257,6 +286,9 @@ struct rc_expression_t {
 typedef struct {
   /* The list of expression to evaluate. */
   rc_expression_t* expressions;
+
+  /* The memory references required by the value. */
+  rc_memref_value_t* memrefs;
 }
 rc_value_t;
 
@@ -283,6 +315,7 @@ typedef struct {
   rc_trigger_t cancel;
   rc_value_t value;
   rc_value_t* progress;
+  rc_memref_value_t* memrefs;
 
   char started;
   char submitted;
@@ -300,7 +333,7 @@ void rc_reset_lboard(rc_lboard_t* lboard);
 
 /* Supported formats. */
 enum {
-  RC_FORMAT_FRAMES = 0,
+  RC_FORMAT_FRAMES,
   RC_FORMAT_SECONDS,
   RC_FORMAT_CENTISECS,
   RC_FORMAT_SCORE,
@@ -309,7 +342,57 @@ enum {
 };
 
 int rc_parse_format(const char* format_str);
-void rc_format_value(char* buffer, int size, unsigned value, int format);
+int rc_format_value(char* buffer, int size, unsigned value, int format);
+
+/*****************************************************************************\
+| Rich Presence                                                               |
+\*****************************************************************************/
+
+typedef struct rc_richpresence_lookup_item_t rc_richpresence_lookup_item_t;
+
+struct rc_richpresence_lookup_item_t {
+  unsigned value;
+  rc_richpresence_lookup_item_t* next_item;
+  const char* label;
+};
+
+typedef struct rc_richpresence_lookup_t rc_richpresence_lookup_t;
+
+struct rc_richpresence_lookup_t {
+  rc_richpresence_lookup_item_t* first_item;
+  rc_richpresence_lookup_t* next;
+  const char* name;
+  unsigned short format;
+};
+
+typedef struct rc_richpresence_display_part_t rc_richpresence_display_part_t;
+
+struct rc_richpresence_display_part_t {
+  rc_richpresence_display_part_t* next;
+  const char* text;
+  rc_richpresence_lookup_item_t* first_lookup_item;
+  rc_value_t value;
+  unsigned short display_type;
+};
+
+typedef struct rc_richpresence_display_t rc_richpresence_display_t;
+
+struct rc_richpresence_display_t {
+  rc_trigger_t trigger;
+  rc_richpresence_display_t* next;
+  rc_richpresence_display_part_t* display;
+};
+
+typedef struct {
+  rc_richpresence_display_t* first_display;
+  rc_richpresence_lookup_t* first_lookup;
+  rc_memref_value_t* memrefs;
+}
+rc_richpresence_t;
+
+int rc_richpresence_size(const char* script);
+rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx);
+int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
 
 #ifdef __cplusplus
 }

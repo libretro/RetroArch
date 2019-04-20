@@ -38,21 +38,21 @@ typedef struct
    int         is_key;
    const char* value;
    size_t      length;
-} cheevos_getvalueud_t;
+} rcheevos_getvalueud_t;
 
-static int cheevos_getvalue_key(void* userdata,
+static int rcheevos_getvalue_key(void* userdata,
       const char* name, size_t length)
 {
-   cheevos_getvalueud_t* ud = (cheevos_getvalueud_t*)userdata;
+   rcheevos_getvalueud_t* ud = (rcheevos_getvalueud_t*)userdata;
 
-   ud->is_key = cheevos_djb2(name, length) == ud->key_hash;
+   ud->is_key = rcheevos_djb2(name, length) == ud->key_hash;
    return 0;
 }
 
-static int cheevos_getvalue_string(void* userdata,
+static int rcheevos_getvalue_string(void* userdata,
       const char* string, size_t length)
 {
-   cheevos_getvalueud_t* ud = (cheevos_getvalueud_t*)userdata;
+   rcheevos_getvalueud_t* ud = (rcheevos_getvalueud_t*)userdata;
 
    if (ud->is_key)
    {
@@ -64,9 +64,9 @@ static int cheevos_getvalue_string(void* userdata,
    return 0;
 }
 
-static int cheevos_getvalue_boolean(void* userdata, int istrue)
+static int rcheevos_getvalue_boolean(void* userdata, int istrue)
 {
-   cheevos_getvalueud_t* ud = (cheevos_getvalueud_t*)userdata;
+   rcheevos_getvalueud_t* ud = (rcheevos_getvalueud_t*)userdata;
 
    if (ud->is_key)
    {
@@ -87,9 +87,9 @@ static int cheevos_getvalue_boolean(void* userdata, int istrue)
    return 0;
 }
 
-static int cheevos_getvalue_null(void* userdata)
+static int rcheevos_getvalue_null(void* userdata)
 {
-   cheevos_getvalueud_t* ud = (cheevos_getvalueud_t*)userdata;
+   rcheevos_getvalueud_t* ud = (rcheevos_getvalueud_t*)userdata;
 
    if (ud->is_key )
    {
@@ -101,7 +101,7 @@ static int cheevos_getvalue_null(void* userdata)
    return 0;
 }
 
-static int cheevos_get_value(const char* json, unsigned key_hash,
+static int rcheevos_get_value(const char* json, unsigned key_hash,
       char* value, size_t length)
 {
    static const jsonsax_handlers_t handlers =
@@ -112,15 +112,15 @@ static int cheevos_get_value(const char* json, unsigned key_hash,
       NULL,
       NULL,
       NULL,
-      cheevos_getvalue_key,
+      rcheevos_getvalue_key,
       NULL,
-      cheevos_getvalue_string,
-      cheevos_getvalue_string, /* number */
-      cheevos_getvalue_boolean,
-      cheevos_getvalue_null
+      rcheevos_getvalue_string,
+      rcheevos_getvalue_string, /* number */
+      rcheevos_getvalue_boolean,
+      rcheevos_getvalue_null
    };
 
-   cheevos_getvalueud_t ud;
+   rcheevos_getvalueud_t ud;
 
    ud.key_hash = key_hash;
    ud.is_key   = 0;
@@ -142,14 +142,14 @@ static int cheevos_get_value(const char* json, unsigned key_hash,
 Returns the token of the error message
 *****************************************************************************/
 
-int cheevos_get_token(const char* json, char* token, size_t length)
+int rcheevos_get_token(const char* json, char* token, size_t length)
 {
-   cheevos_get_value(json, CHEEVOS_JSON_KEY_ERROR, token, length);
+   rcheevos_get_value(json, CHEEVOS_JSON_KEY_ERROR, token, length);
 
    if (!string_is_empty(token))
       return -1;
 
-   return cheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length);
+   return rcheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length);
 }
 
 /*****************************************************************************
@@ -164,23 +164,23 @@ typedef struct
    unsigned core_count;
    unsigned unofficial_count;
    unsigned lboard_count;
-} cheevos_countud_t;
+} rcheevos_countud_t;
 
-static int cheevos_count_end_array(void* userdata)
+static int rcheevos_count_end_array(void* userdata)
 {
-  cheevos_countud_t* ud = (cheevos_countud_t*)userdata;
+  rcheevos_countud_t* ud = (rcheevos_countud_t*)userdata;
 
    ud->in_cheevos       = 0;
    ud->in_lboards       = 0;
    return 0;
 }
 
-static int cheevos_count_key(void* userdata,
+static int rcheevos_count_key(void* userdata,
       const char* name, size_t length)
 {
-   cheevos_countud_t* ud = (cheevos_countud_t*)userdata;
+   rcheevos_countud_t* ud = (rcheevos_countud_t*)userdata;
 
-   ud->field_hash        = cheevos_djb2(name, length);
+   ud->field_hash        = rcheevos_djb2(name, length);
 
    if (ud->field_hash == CHEEVOS_JSON_KEY_ACHIEVEMENTS)
       ud->in_cheevos     = 1;
@@ -190,10 +190,10 @@ static int cheevos_count_key(void* userdata,
    return 0;
 }
 
-static int cheevos_count_number(void* userdata,
+static int rcheevos_count_number(void* userdata,
       const char* number, size_t length)
 {
-   cheevos_countud_t* ud = (cheevos_countud_t*)userdata;
+   rcheevos_countud_t* ud = (rcheevos_countud_t*)userdata;
 
    if (ud->in_cheevos && ud->field_hash == CHEEVOS_JSON_KEY_FLAGS)
    {
@@ -210,7 +210,7 @@ static int cheevos_count_number(void* userdata,
    return 0;
 }
 
-static int cheevos_count_cheevos(const char* json,
+static int rcheevos_count_cheevos(const char* json,
       unsigned* core_count, unsigned* unofficial_count,
       unsigned* lboard_count)
 {
@@ -221,17 +221,17 @@ static int cheevos_count_cheevos(const char* json,
       NULL,
       NULL,
       NULL,
-      cheevos_count_end_array,
-      cheevos_count_key,
+      rcheevos_count_end_array,
+      rcheevos_count_key,
       NULL,
       NULL,
-      cheevos_count_number,
+      rcheevos_count_number,
       NULL,
       NULL
    };
 
    int res;
-   cheevos_countud_t ud;
+   rcheevos_countud_t ud;
    ud.in_cheevos       = 0;
    ud.in_lboards       = 0;
    ud.core_count       = 0;
@@ -255,7 +255,7 @@ typedef struct
 {
    const char* string;
    size_t      length;
-} cheevos_field_t;
+} rcheevos_field_t;
 
 typedef struct
 {
@@ -266,14 +266,14 @@ typedef struct
    unsigned unofficial_count;
    unsigned lboard_count;
 
-   cheevos_field_t* field;
-   cheevos_field_t  id, memaddr, title, desc, points, author;
-   cheevos_field_t  modified, created, badge, flags, format;
+   rcheevos_field_t* field;
+   rcheevos_field_t  id, memaddr, title, desc, points, author;
+   rcheevos_field_t  modified, created, badge, flags, format;
 
-   cheevos_rapatchdata_t* patchdata;
-} cheevos_readud_t;
+   rcheevos_rapatchdata_t* patchdata;
+} rcheevos_readud_t;
 
-static const char* cheevos_dupstr(const cheevos_field_t* field)
+static const char* rcheevos_dupstr(const rcheevos_field_t* field)
 {
    char* string = (char*)malloc(field->length + 1);
 
@@ -285,9 +285,9 @@ static const char* cheevos_dupstr(const cheevos_field_t* field)
    return string;
 }
 
-static int cheevos_new_cheevo(cheevos_readud_t* ud)
+static int rcheevos_new_cheevo(rcheevos_readud_t* ud)
 {
-   cheevos_racheevo_t* cheevo = NULL;
+   rcheevos_racheevo_t* cheevo = NULL;
    unsigned flags             = (unsigned)strtol(ud->flags.string, NULL, 10);
 
    if (flags == 3)
@@ -297,10 +297,10 @@ static int cheevos_new_cheevo(cheevos_readud_t* ud)
    else
       return 0;
 
-   cheevo->title       = cheevos_dupstr(&ud->title);
-   cheevo->description = cheevos_dupstr(&ud->desc);
-   cheevo->badge       = cheevos_dupstr(&ud->badge);
-   cheevo->memaddr     = cheevos_dupstr(&ud->memaddr);
+   cheevo->title       = rcheevos_dupstr(&ud->title);
+   cheevo->description = rcheevos_dupstr(&ud->desc);
+   cheevo->badge       = rcheevos_dupstr(&ud->badge);
+   cheevo->memaddr     = rcheevos_dupstr(&ud->memaddr);
    cheevo->points      = (unsigned)strtol(ud->points.string, NULL, 10);
    cheevo->id          = (unsigned)strtol(ud->id.string, NULL, 10);
 
@@ -319,14 +319,14 @@ static int cheevos_new_cheevo(cheevos_readud_t* ud)
    return 0;
 }
 
-static int cheevos_new_lboard(cheevos_readud_t* ud)
+static int rcheevos_new_lboard(rcheevos_readud_t* ud)
 {
-   cheevos_ralboard_t* lboard = ud->patchdata->lboards + ud->lboard_count++;
+   rcheevos_ralboard_t* lboard = ud->patchdata->lboards + ud->lboard_count++;
 
-   lboard->title              = cheevos_dupstr(&ud->title);
-   lboard->description        = cheevos_dupstr(&ud->desc);
-   lboard->format             = cheevos_dupstr(&ud->format);
-   lboard->mem                = cheevos_dupstr(&ud->memaddr);
+   lboard->title              = rcheevos_dupstr(&ud->title);
+   lboard->description        = rcheevos_dupstr(&ud->desc);
+   lboard->format             = rcheevos_dupstr(&ud->format);
+   lboard->mem                = rcheevos_dupstr(&ud->memaddr);
    lboard->id                 = (unsigned)strtol(ud->id.string, NULL, 10);
 
    if (   !lboard->title
@@ -344,35 +344,35 @@ static int cheevos_new_lboard(cheevos_readud_t* ud)
    return 0;
 }
 
-static int cheevos_read_end_object(void* userdata)
+static int rcheevos_read_end_object(void* userdata)
 {
-   cheevos_readud_t* ud = (cheevos_readud_t*)userdata;
+   rcheevos_readud_t* ud = (rcheevos_readud_t*)userdata;
 
    if (ud->in_cheevos)
-      return cheevos_new_cheevo(ud);
+      return rcheevos_new_cheevo(ud);
 
    if (ud->in_lboards)
-      return cheevos_new_lboard(ud);
+      return rcheevos_new_lboard(ud);
 
    return 0;
 }
 
-static int cheevos_read_end_array(void* userdata)
+static int rcheevos_read_end_array(void* userdata)
 {
-   cheevos_readud_t* ud = (cheevos_readud_t*)userdata;
+   rcheevos_readud_t* ud = (rcheevos_readud_t*)userdata;
 
    ud->in_cheevos       = 0;
    ud->in_lboards       = 0;
    return 0;
 }
 
-static int cheevos_read_key(void* userdata,
+static int rcheevos_read_key(void* userdata,
       const char* name, size_t length)
 {
-   cheevos_readud_t* ud = (cheevos_readud_t*)userdata;
+   rcheevos_readud_t* ud = (rcheevos_readud_t*)userdata;
 
    int common           = ud->in_cheevos || ud->in_lboards;
-   uint32_t hash        = cheevos_djb2(name, length);
+   uint32_t hash        = rcheevos_djb2(name, length);
    ud->field            = NULL;
 
    switch (hash)
@@ -441,10 +441,10 @@ static int cheevos_read_key(void* userdata,
    return 0;
 }
 
-static int cheevos_read_string(void* userdata,
+static int rcheevos_read_string(void* userdata,
       const char* string, size_t length)
 {
-   cheevos_readud_t* ud = (cheevos_readud_t*)userdata;
+   rcheevos_readud_t* ud = (rcheevos_readud_t*)userdata;
 
    if (ud->field)
    {
@@ -455,10 +455,10 @@ static int cheevos_read_string(void* userdata,
    return 0;
 }
 
-static int cheevos_read_number(void* userdata,
+static int rcheevos_read_number(void* userdata,
       const char* number, size_t length)
 {
-   cheevos_readud_t* ud = (cheevos_readud_t*)userdata;
+   rcheevos_readud_t* ud = (rcheevos_readud_t*)userdata;
 
    if (ud->field)
    {
@@ -474,29 +474,29 @@ static int cheevos_read_number(void* userdata,
    return 0;
 }
 
-int cheevos_get_patchdata(const char* json, cheevos_rapatchdata_t* patchdata)
+int rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata)
 {
    static const jsonsax_handlers_t handlers =
    {
       NULL,
       NULL,
       NULL,
-      cheevos_read_end_object,
+      rcheevos_read_end_object,
       NULL,
-      cheevos_read_end_array,
-      cheevos_read_key,
+      rcheevos_read_end_array,
+      rcheevos_read_key,
       NULL,
-      cheevos_read_string,
-      cheevos_read_number,
+      rcheevos_read_string,
+      rcheevos_read_number,
       NULL,
       NULL
    };
 
-   cheevos_readud_t ud;
+   rcheevos_readud_t ud;
    int res;
 
    /* Count the number of achievements in the JSON file. */
-   res = cheevos_count_cheevos(json, &patchdata->core_count,
+   res = rcheevos_count_cheevos(json, &patchdata->core_count,
       &patchdata->unofficial_count, &patchdata->lboard_count);
 
    if (res != JSONSAX_OK)
@@ -504,14 +504,14 @@ int cheevos_get_patchdata(const char* json, cheevos_rapatchdata_t* patchdata)
 
    /* Allocate the achievements. */
 
-   patchdata->core = (cheevos_racheevo_t*)
-      calloc(patchdata->core_count, sizeof(cheevos_racheevo_t));
+   patchdata->core = (rcheevos_racheevo_t*)
+      calloc(patchdata->core_count, sizeof(rcheevos_racheevo_t));
 
-   patchdata->unofficial = (cheevos_racheevo_t*)
-      calloc(patchdata->unofficial_count, sizeof(cheevos_racheevo_t));
+   patchdata->unofficial = (rcheevos_racheevo_t*)
+      calloc(patchdata->unofficial_count, sizeof(rcheevos_racheevo_t));
 
-   patchdata->lboards = (cheevos_ralboard_t*)
-      calloc(patchdata->lboard_count, sizeof(cheevos_ralboard_t));
+   patchdata->lboards = (rcheevos_ralboard_t*)
+      calloc(patchdata->lboard_count, sizeof(rcheevos_ralboard_t));
 
    if (!patchdata->core       ||
        !patchdata->unofficial ||
@@ -536,7 +536,7 @@ int cheevos_get_patchdata(const char* json, cheevos_rapatchdata_t* patchdata)
 
    if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
    {
-      cheevos_free_patchdata(patchdata);
+      rcheevos_free_patchdata(patchdata);
       return -1;
    }
 
@@ -547,11 +547,11 @@ int cheevos_get_patchdata(const char* json, cheevos_rapatchdata_t* patchdata)
 Frees the patchdata
 *****************************************************************************/
 
-void cheevos_free_patchdata(cheevos_rapatchdata_t* patchdata)
+void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
 {
    unsigned i = 0, count = 0;
-   const cheevos_racheevo_t* cheevo = NULL;
-   const cheevos_ralboard_t* lboard = NULL;
+   const rcheevos_racheevo_t* cheevo = NULL;
+   const rcheevos_ralboard_t* lboard = NULL;
 
    cheevo = patchdata->core;
 
@@ -603,22 +603,22 @@ Deactivates unlocked cheevos
 typedef struct
 {
    int is_element;
-   cheevos_unlock_cb_t unlock_cb;
+   rcheevos_unlock_cb_t unlock_cb;
    void* userdata;
-} cheevos_deactivate_t;
+} rcheevos_deactivate_t;
 
-static int cheevos_deactivate_index(void* userdata, unsigned int index)
+static int rcheevos_deactivate_index(void* userdata, unsigned int index)
 {
-   cheevos_deactivate_t* ud = (cheevos_deactivate_t*)userdata;
+   rcheevos_deactivate_t* ud = (rcheevos_deactivate_t*)userdata;
 
    ud->is_element           = 1;
    return 0;
 }
 
-static int cheevos_deactivate_number(void* userdata,
+static int rcheevos_deactivate_number(void* userdata,
       const char* number, size_t length)
 {
-   cheevos_deactivate_t* ud = (cheevos_deactivate_t*)userdata;
+   rcheevos_deactivate_t* ud = (rcheevos_deactivate_t*)userdata;
    unsigned id              = 0;
 
    if (ud->is_element)
@@ -632,7 +632,7 @@ static int cheevos_deactivate_number(void* userdata,
    return 0;
 }
 
-void cheevos_deactivate_unlocks(const char* json, cheevos_unlock_cb_t unlock_cb, void* userdata)
+void rcheevos_deactivate_unlocks(const char* json, rcheevos_unlock_cb_t unlock_cb, void* userdata)
 {
    static const jsonsax_handlers_t handlers =
    {
@@ -643,14 +643,14 @@ void cheevos_deactivate_unlocks(const char* json, cheevos_unlock_cb_t unlock_cb,
       NULL,
       NULL,
       NULL,
-      cheevos_deactivate_index,
+      rcheevos_deactivate_index,
       NULL,
-      cheevos_deactivate_number,
+      rcheevos_deactivate_number,
       NULL,
       NULL
    };
 
-   cheevos_deactivate_t ud;
+   rcheevos_deactivate_t ud;
 
    ud.is_element = 0;
    ud.unlock_cb  = unlock_cb;
@@ -667,7 +667,7 @@ unsigned chevos_get_gameid(const char* json)
 {
    char gameid[32];
 
-   if (cheevos_get_value(json, CHEEVOS_JSON_KEY_GAMEID, gameid, sizeof(gameid)) != 0)
+   if (rcheevos_get_value(json, CHEEVOS_JSON_KEY_GAMEID, gameid, sizeof(gameid)) != 0)
       return 0;
 
    return (unsigned)strtol(gameid, NULL, 10);

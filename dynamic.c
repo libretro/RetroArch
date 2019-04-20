@@ -37,6 +37,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 
 #ifdef HAVE_OPENGL
@@ -1924,7 +1925,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             bool state = *(const bool*)data;
             RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
-            cheevos_set_support_cheevos(state);
+            /* RCHEEVOS TODO: remove settings test */
+            settings->bools.cheevos_rcheevos_enable ? rcheevos_set_support_cheevos(state) : cheevos_set_support_cheevos(state);
          }
 #endif
          break;

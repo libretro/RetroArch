@@ -2,13 +2,13 @@
 
 #include <stdlib.h>
 
-rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch, const char** memaddr, lua_State* L, int funcs_ndx) {
+rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse) {
   rc_condition_t* self;
   const char* aux;
   int ret2;
 
   aux = *memaddr;
-  self = RC_ALLOC(rc_condition_t, buffer, ret, scratch);
+  self = RC_ALLOC(rc_condition_t, parse);
   self->current_hits = 0;
 
   if (*aux != 0 && aux[1] == ':') {
@@ -18,7 +18,8 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
       case 'a': case 'A': self->type = RC_CONDITION_ADD_SOURCE; break;
       case 'b': case 'B': self->type = RC_CONDITION_SUB_SOURCE; break;
       case 'c': case 'C': self->type = RC_CONDITION_ADD_HITS; break;
-      default: *ret = RC_INVALID_CONDITION_TYPE; return 0;
+      case 'n': case 'N': self->type = RC_CONDITION_AND_NEXT; break;
+      default: parse->offset = RC_INVALID_CONDITION_TYPE; return 0;
     }
 
     aux += 2;
@@ -27,10 +28,10 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
     self->type = RC_CONDITION_STANDARD;
   }
 
-  ret2 = rc_parse_operand(&self->operand1, &aux, 1, L, funcs_ndx);
+  ret2 = rc_parse_operand(&self->operand1, &aux, 1, parse);
 
   if (ret2 < 0) {
-    *ret = ret2;
+    parse->offset = ret2;
     return 0;
   }
 
@@ -44,7 +45,7 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
       if (*aux++ != '=') {
         /* fall through */
     default:
-        *ret = RC_INVALID_OPERATOR;
+        parse->offset = RC_INVALID_OPERATOR;
         return 0;
       }
 
@@ -72,10 +73,10 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
       break;
   }
 
-  ret2 = rc_parse_operand(&self->operand2, &aux, 1, L, funcs_ndx);
+  ret2 = rc_parse_operand(&self->operand2, &aux, 1, parse);
 
   if (ret2 < 0) {
-    *ret = ret2;
+    parse->offset = ret2;
     return 0;
   }
 
@@ -84,7 +85,7 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
     self->required_hits = (unsigned)strtoul(++aux, &end, 10);
 
     if (end == aux || *end != ')') {
-      *ret = RC_INVALID_REQUIRED_HITS;
+      parse->offset = RC_INVALID_REQUIRED_HITS;
       return 0;
     }
 
@@ -95,7 +96,7 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
     self->required_hits = (unsigned)strtoul(++aux, &end, 10);
 
     if (end == aux || *end != '.') {
-      *ret = RC_INVALID_REQUIRED_HITS;
+      parse->offset = RC_INVALID_REQUIRED_HITS;
       return 0;
     }
 
