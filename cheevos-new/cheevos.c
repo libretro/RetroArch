@@ -1627,7 +1627,8 @@ found:
    CORO_SUB(RCHEEVOS_GET_GAMEID)
 
       {
-         int size = rc_url_get_gameid(coro->url, sizeof(coro->url), coro->hash);
+         int size;
+         size = rc_url_get_gameid(coro->url, sizeof(coro->url), coro->hash);
 
          if (size < 0)
          {
@@ -1777,11 +1778,15 @@ found:
          *************************************************************************/
    CORO_SUB(RCHEEVOS_LOGIN)
    {
-      const char* username = coro->settings->arrays.cheevos_username;
-      const char* password = coro->settings->arrays.cheevos_password;
-      const char* token    = coro->settings->arrays.cheevos_token;
+      const char* username;
+      const char* password;
+      const char* token;
       int ret;
       char tok[256];
+
+      username = coro->settings->arrays.cheevos_username;
+      password = coro->settings->arrays.cheevos_password;
+      token    = coro->settings->arrays.cheevos_token;
 
       if (rcheevos_locals.token[0])
          CORO_RET();

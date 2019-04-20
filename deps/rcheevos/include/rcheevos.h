@@ -150,15 +150,15 @@ typedef struct {
     /* A value read from memory. */
     rc_memref_value_t* memref;
 
-    /* A value. */
-    unsigned value;
+    /* An integer value. */
+    unsigned num;
 
     /* A floating point value. */
-    double fp_value;
+    double dbl;
 
     /* A reference to the Lua function that provides the value. */
-    int function_ref;
-  };
+    int luafunc;
+  } value;
 
   char type;
 }

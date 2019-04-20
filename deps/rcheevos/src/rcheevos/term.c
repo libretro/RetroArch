@@ -37,7 +37,7 @@ rc_term_t* rc_parse_term(const char** memaddr, rc_parse_state_t* parse) {
         case RC_OPERAND_ADDRESS:
         case RC_OPERAND_DELTA:
         case RC_OPERAND_PRIOR:
-          size = self->operand2.memref->memref.size;
+          size = self->operand2.value.memref->memref.size;
           break;
         default:
           size = RC_MEMSIZE_32_BITS;
@@ -81,7 +81,7 @@ rc_term_t* rc_parse_term(const char** memaddr, rc_parse_state_t* parse) {
   }
   else {
     self->operand2.type = RC_OPERAND_CONST;
-    self->operand2.value = 1;
+    self->operand2.value.num = 1;
   }
 
   *memaddr = aux;
@@ -95,5 +95,5 @@ unsigned rc_evaluate_term(rc_term_t* self, rc_peek_t peek, void* ud, lua_State* 
     return value * (rc_evaluate_operand(&self->operand2, peek, ud, L) ^ self->invert);
   }
 
-  return (unsigned)((double)value * self->operand2.fp_value);
+  return (unsigned)((double)value * self->operand2.value.dbl);
 }
