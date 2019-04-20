@@ -10,6 +10,20 @@ matrix:
             - g++-mingw-w64-i686
             - mingw-w64-i686-dev
       env: CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+    - compiler: mingw-x86
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-i686
+            - mingw-w64-i686-dev
+      env: C89_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+    - compiler: mingw-x86
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-i686
+            - mingw-w64-i686-dev
+      env: CXX_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: mingw-x64
       addons:
         apt:
@@ -17,10 +31,32 @@ matrix:
             - g++-mingw-w64-x86-64
             - mingw-w64-x86-64-dev
       env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+    - compiler: mingw-x64
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-x86-64
+            - mingw-w64-x86-64-dev
+      env: C89_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+    - compiler: mingw-x64
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-x86-64
+            - mingw-w64-x86-64-dev
+      env: CXX_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: gcc
       env: CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: C89_BUILD=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: CXX_BUILD=1 CC=gcc-8 CXX=g++-8
     - compiler: clang
       env: CC=clang-6.0 CXX=clang++-6.0
+    - compiler: clang
+      env: C89_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
+    - compiler: clang
+      env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
       osx_image: xcode8
       script:
@@ -55,7 +91,14 @@ script:
      else
        ./configure
      fi
-  - make
+  - |
+     if [ -n "$C89_BUILD" ]; then
+       make C89_BUILD=1
+     elif [ -n "$CXX_BUILD" ]; then
+       make CXX_BUILD=1
+     else
+       make
+     fi
 
 env:
   global:
