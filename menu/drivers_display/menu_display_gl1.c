@@ -124,7 +124,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-   glLoadMatrixf(mvp.matrix);
+   glLoadMatrixf((const GLfloat*)mvp.matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
