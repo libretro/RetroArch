@@ -4385,6 +4385,20 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_UPDATER_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
+                  PARSE_ONLY_STRING, false) != -1)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
+                  PARSE_ONLY_STRING, false) != -1)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+                  PARSE_ONLY_BOOL, false) != -1)
+            count++;
+         break;
       case DISPLAYLIST_MENU_SOUNDS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
@@ -5995,6 +6009,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_CORE_SETTINGS_LIST:
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SOUNDS_LIST:
+      case DISPLAYLIST_UPDATER_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6584,31 +6599,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,
                PARSE_ONLY_BOOL, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_UPDATER_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
-                  PARSE_ONLY_STRING, false) != -1)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
-                  PARSE_ONLY_STRING, false) != -1)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-                  PARSE_ONLY_BOOL, false) != -1)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;

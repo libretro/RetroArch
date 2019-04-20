@@ -164,12 +164,23 @@ UpdaterPage::UpdaterPage(QObject *parent) :
 
 QWidget *UpdaterPage::widget()
 {
-   QWidget    *widget = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget             *widget = new QWidget;
+   FormLayout          *layout = new FormLayout;
+   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
 
-   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
-   layout->add(MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL);
-   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
+   menu_displaylist_build_list(
+         list, DISPLAYLIST_UPDATER_SETTINGS_LIST);
+
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
+
+      layout->add(cbs->enum_idx);
+   }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 
