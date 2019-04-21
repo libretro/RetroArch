@@ -3880,9 +3880,6 @@ static void parse_config_file(void)
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");
-      if (!path_is_empty(RARCH_PATH_CONFIG))
-         RARCH_LOG("[config] found default config: %s.\n",
-               path_get(RARCH_PATH_CONFIG));
    }
 
    RARCH_LOG("[config] loading config from: %s.\n",

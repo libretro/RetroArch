@@ -308,8 +308,9 @@ static bool path_init_subsystem(void)
    const struct retro_subsystem_info *info = NULL;
    global_t                        *global = global_get_ptr();
    rarch_system_info_t             *system = runloop_get_system_info();
+   bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
 
-   if (!system || path_is_empty(RARCH_PATH_SUBSYSTEM))
+   if (!system || subsystem_path_empty)
       return false;
    /* For subsystems, we know exactly which RAM types are supported. */
 
@@ -322,7 +323,7 @@ static bool path_init_subsystem(void)
    if (info)
    {
       unsigned num_content = MIN(info->num_roms,
-            path_is_empty(RARCH_PATH_SUBSYSTEM) ?
+            subsystem_path_empty ?
             0 : (unsigned)subsystem_fullpaths->size);
 
       for (i = 0; i < num_content; i++)
