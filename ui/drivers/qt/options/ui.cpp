@@ -18,7 +18,6 @@ UserInterfaceCategory::UserInterfaceCategory(MainWindow *mainwindow, QWidget *pa
 
    m_pages << new UserInterfacePage(this);
    m_pages << new ViewsPage(this);
-   /* pages << new QuickMenuPage(parent); */
    m_pages << new AppearancePage(this);
    m_pages << new DesktopMenuPage(m_mainwindow, this);
 }

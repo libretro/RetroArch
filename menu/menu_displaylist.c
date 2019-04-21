@@ -4385,6 +4385,40 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
+               PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+               PARSE_ACTION, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_USER_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_PRIVACY_SETTINGS,
+               PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_ACCOUNTS_LIST,
+               PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_NETPLAY_NICKNAME,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_USER_LANGUAGE,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -6010,6 +6044,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SOUNDS_LIST:
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
+      case DISPLAYLIST_USER_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+      case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6247,16 +6284,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_push    = true;
          break;
       }
-      case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,   PARSE_ACTION, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(info->list,
@@ -6483,24 +6510,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -6792,35 +6801,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
                PARSE_ONLY_BOOL, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_USER_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_PRIVACY_SETTINGS,
-               PARSE_ACTION, false);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ACCOUNTS_LIST,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_NETPLAY_NICKNAME,
-               PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_USER_LANGUAGE,
-               PARSE_ONLY_UINT, false) == 0)
             count++;
 
          if (count == 0)
