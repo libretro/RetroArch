@@ -724,8 +724,6 @@ void input_config_get_bind_string(char *buf,
  **/
 enum retro_key input_config_translate_str_to_rk(const char *str);
 
-const char *input_config_get_prefix(unsigned user, bool meta);
-
 /**
  * input_config_translate_str_to_bind_id:
  * @str                            : String to translate to bind ID.

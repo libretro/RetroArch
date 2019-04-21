@@ -2428,7 +2428,7 @@ static void input_config_parse_key(
       bind->key = input_config_translate_str_to_rk(tmp);
 }
 
-const char *input_config_get_prefix(unsigned user, bool meta)
+static const char *input_config_get_prefix(unsigned user, bool meta)
 {
    static const char *bind_user_prefix[MAX_USERS] = {
       "input_player1",
@@ -2858,7 +2858,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       strlcat(buf, "---", size);
 }
 
-unsigned input_config_get_device_count()
+unsigned input_config_get_device_count(void)
 {
    unsigned num_devices;
    for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
@@ -2900,29 +2900,29 @@ const char *input_config_get_device_config_name(unsigned port)
 
 void input_config_set_device_name(unsigned port, const char *name)
 {
-   if (!string_is_empty(name))
-   {
-      strlcpy(input_device_names[port],
-            name,
-            sizeof(input_device_names[port]));
+   if (string_is_empty(name))
+      return;
 
-      input_autoconfigure_joypad_reindex_devices();
-   }
+   strlcpy(input_device_names[port],
+         name,
+         sizeof(input_device_names[port]));
+
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 void input_config_set_device_config_path(unsigned port, const char *path)
 {
-   if (!string_is_empty(path))
-   {
-      fill_pathname_parent_dir_name(input_device_config_paths[port],
-            path, sizeof(input_device_config_paths[port]));
-      strlcat(input_device_config_paths[port],
-            "/",
-            sizeof(input_device_config_paths[port]));
-      strlcat(input_device_config_paths[port],
-            path_basename(path),
-            sizeof(input_device_config_paths[port]));
-   }
+   if (string_is_empty(path))
+      return;
+
+   fill_pathname_parent_dir_name(input_device_config_paths[port],
+         path, sizeof(input_device_config_paths[port]));
+   strlcat(input_device_config_paths[port],
+         "/",
+         sizeof(input_device_config_paths[port]));
+   strlcat(input_device_config_paths[port],
+         path_basename(path),
+         sizeof(input_device_config_paths[port]));
 }
 
 void input_config_set_device_config_name(unsigned port, const char *name)
