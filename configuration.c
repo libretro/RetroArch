@@ -3344,11 +3344,13 @@ bool config_load_override(void)
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ?
       system->info.library_name : NULL;
-   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
+   const char *game_name                  = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
 
-   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3574,11 +3576,13 @@ bool config_load_remap(void)
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
-   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
+   const char *game_name                  = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
 
-   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3734,11 +3738,13 @@ bool config_load_shader_preset(void)
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system
       ? system->info.library_name : NULL;
-   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
+   const char *game_name                  = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
 
-   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3877,34 +3883,19 @@ success:
 
 static void parse_config_file(void)
 {
+   const char *config_path = path_get(RARCH_PATH_CONFIG);
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");
    }
 
-   RARCH_LOG("[config] loading config from: %s.\n",
-         path_get(RARCH_PATH_CONFIG));
+   RARCH_LOG("[config] loading config from: %s.\n", config_path);
 
-   if (config_load_file(path_get(RARCH_PATH_CONFIG),
-            false, config_get_ptr()))
+   if (config_load_file(config_path, false, config_get_ptr()))
       return;
 
    RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
-         path_get(RARCH_PATH_CONFIG));
-}
-
-static void save_keybind_key(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind)
-{
-   char key[64];
-   char btn[64];
-
-   key[0] = btn[0] = '\0';
-
-   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-
-   input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
-   config_set_string(conf, key, btn);
+         config_path);
 }
 
 static void save_keybind_hat(config_file_t *conf, const char *key,
@@ -4068,12 +4059,8 @@ static void save_keybind_mbutton(config_file_t *conf,
  */
 static void save_keybind(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind,
-      bool save_kb, bool save_empty)
+      bool save_empty)
 {
-   if (!bind->valid)
-      return;
-   if (save_kb)
-      save_keybind_key(conf, prefix, base, bind);
    save_keybind_joykey(conf, prefix, base, bind, save_empty);
    save_keybind_axis(conf, prefix, base, bind, save_empty);
    save_keybind_mbutton(conf, prefix, base, bind, save_empty);
@@ -4092,12 +4079,25 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
-      const char *prefix = input_config_get_prefix(user,
+      const char *prefix               = input_config_get_prefix(user,
             input_config_bind_map_get_meta(i));
+      const struct retro_keybind *bind = &input_config_binds[user][i];
 
-      if (prefix)
-         save_keybind(conf, prefix, input_config_bind_map_get_base(i),
-               &input_config_binds[user][i], true, true);
+      if (prefix && bind->valid)
+      {
+         char key[64];
+         char btn[64];
+         const char *base = input_config_bind_map_get_base(i);
+
+         key[0] = btn[0]  = '\0';
+
+         fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+
+         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+         config_set_string(conf, key, btn);
+
+         save_keybind(conf, prefix, base, bind, true);
+      }
    }
 }
 
@@ -4250,8 +4250,10 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      save_keybind(conf, "input", input_config_bind_map_get_base(i),
-            &input_config_binds[user][i], false, false);
+      const struct retro_keybind *bind = &input_config_binds[user][i];
+      if (bind->valid)
+         save_keybind(conf, "input", input_config_bind_map_get_base(i),
+               bind, false);
    }
 
    ret = config_file_write(conf, autoconf_file, false);
@@ -4537,11 +4539,12 @@ bool config_save_overrides(int override_type)
    int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
    rarch_system_info_t *system                 = runloop_get_system_info();
    const char *core_name                       = system ? system->info.library_name : NULL;
-   const char *game_name                       = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
+   const char *game_name                       = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
 
-   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name, rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -4819,17 +4822,18 @@ bool config_save_overrides(int override_type)
 bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
+   const char *rarch_path_config   = path_get(RARCH_PATH_CONFIG);
 
    if (!path)
       return false;
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */
-   if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
+   if (string_is_equal(path, rarch_path_config))
       return false;
 
    if (config_replace_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
-      config_save_file(path_get(RARCH_PATH_CONFIG));
+      config_save_file(rarch_path_config);
 
    path_set(RARCH_PATH_CONFIG, path);
 
