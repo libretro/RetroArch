@@ -857,9 +857,7 @@ void rarch_core_runtime_tick(void)
          retro_time_t current_usec = cpu_features_get_time_usec();
 
          if (current_usec - libretro_core_runtime_last < frame_time)
-         {
             frame_time = current_usec - libretro_core_runtime_last;
-         }
 
          libretro_core_runtime_last = current_usec;
       }
@@ -870,24 +868,23 @@ void rarch_core_runtime_tick(void)
 
 static void update_runtime_log(bool log_per_core)
 {
-   runtime_log_t *runtime_log = NULL;
-
    /* Initialise runtime log file */
-   runtime_log = runtime_log_init(runtime_content_path, runtime_core_path, log_per_core);
-   if (runtime_log)
-   {
-      /* Add additional runtime */
-      runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
+   runtime_log_t *runtime_log = runtime_log_init(runtime_content_path, runtime_core_path, log_per_core);
 
-      /* Update 'last played' entry */
-      runtime_log_set_last_played_now(runtime_log);
+   if (!runtime_log)
+      return;
 
-      /* Save runtime log file */
-      runtime_log_save(runtime_log);
+   /* Add additional runtime */
+   runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
 
-      /* Clean up */
-      free(runtime_log);
-   }
+   /* Update 'last played' entry */
+   runtime_log_set_last_played_now(runtime_log);
+
+   /* Save runtime log file */
+   runtime_log_save(runtime_log);
+
+   /* Clean up */
+   free(runtime_log);
 }
 
 #ifdef HAVE_THREADS
