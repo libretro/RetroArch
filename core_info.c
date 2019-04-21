@@ -833,7 +833,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
          continue;
       }
 
-      conf                            = config_file_new(info_path);
+      conf                            = config_file_read(info_path);
 
       if (!conf)
       {
@@ -985,7 +985,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
    bool               ret   = true;
    char       *tmp          = NULL;
-   config_file_t *conf      = config_file_new(path);
+   config_file_t *conf      = config_file_read(path);
 
    if (!conf)
    {

@@ -2702,8 +2702,9 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    {
       struct playlist_entry entry = {0};
 
-      /* the update function reads our entry as const, so these casts are safe */
-      entry.label = (char*)content_label;
+      /* the update function reads our entry 
+       * as const, so these casts are safe */
+      entry.label     = (char*)content_label;
       entry.core_path = (char*)new_core_path;
       entry.core_name = core_display_name;
 

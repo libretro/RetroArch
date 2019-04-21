@@ -149,7 +149,7 @@ void input_autoconfigure_joypad_reindex_devices()
             continue;
 
          /*another device with the same name found, for the first time*/
-         if(string_is_equal(tmp, other) &&
+         if (string_is_equal(tmp, other) &&
                input_device_name_index[j]==0 )
          {
             /*Mark the first device of the set*/
@@ -203,9 +203,9 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 #if 0
    else
    {
-      if(string_is_empty(params->name))
+      if (string_is_empty(params->name))
          RARCH_LOG("[autoconf]: failed match because params->name was empty\n");
-      else if(string_is_empty(ident))
+      else if (string_is_empty(ident))
          RARCH_LOG("[autoconf]: failed match because ident was empty\n");
       else
          RARCH_LOG("[autoconf]: failed match because ident '%s' != param->name '%s'\n",
@@ -250,7 +250,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             (string_is_empty(display_name) &&
              !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
-      if(!remote_is_bound)
+      if (!remote_is_bound)
       {
          task_free_title(task);
          task_set_title(task, strdup(msg));
@@ -346,7 +346,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
                DIR_LIST_AUTOCONFIG, "cfg");
    }
 
-   if(!list)
+   if (!list)
    {
       RARCH_LOG("[autoconf]: No profiles found.\n");
       return false;
@@ -359,12 +359,12 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    for (i = 0; i < list->size; i++)
    {
-      conf = config_file_new(list->elems[i].data);
+      conf = config_file_read(list->elems[i].data);
 
       if (conf)
          ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
 
-      if(ret >= current_best)
+      if (ret >= current_best)
       {
          index        = (int)i;
          current_best = ret;
@@ -372,9 +372,9 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
 
-   if(index >= 0 && current_best > 0)
+   if (index >= 0 && current_best > 0)
    {
-      conf = config_file_new(list->elems[index].data);
+      conf = config_file_read(list->elems[index].data);
 
       if (conf)
       {
