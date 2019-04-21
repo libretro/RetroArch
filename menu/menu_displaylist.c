@@ -101,6 +101,10 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
+#define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
+
+#define menu_displaylist_parse_settings(info_list, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(info_list, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
+
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
@@ -2346,7 +2350,7 @@ loop:
    return 0;
 }
 
-int menu_displaylist_parse_settings_internal_enum(
+static int menu_displaylist_parse_settings_internal_enum(
       file_list_t *info_list,
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry,
@@ -4385,6 +4389,79 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_SETTINGS_ALL:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_DRIVER_SETTINGS,  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_VIDEO_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_AUDIO_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_INPUT_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LATENCY_SETTINGS, PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CORE_SETTINGS,    PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_SAVING_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+
+         {
+            settings_t      *settings     = config_get_ptr();
+            if (string_is_not_equal(settings->arrays.record_driver, "null"))
+               if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false) == 0)
+                  count++;
+         }
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_WIFI_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_PLAYLIST_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_USER_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_DIRECTORY_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
@@ -6047,6 +6124,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_USER_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
+      case DISPLAYLIST_SETTINGS_ALL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -7300,58 +7378,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   0, 0, 0);
 
          info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_SETTINGS_ALL:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_DRIVER_SETTINGS,  PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LATENCY_SETTINGS, PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CORE_SETTINGS,    PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SAVING_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
-         {
-            settings_t      *settings     = config_get_ptr();
-            if (string_is_not_equal(settings->arrays.record_driver, "null"))
-               ret = menu_displaylist_parse_settings_enum(info->list,
-                     MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
-         }
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_WIFI_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_PLAYLIST_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_USER_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_DIRECTORY_SETTINGS,   PARSE_ACTION, false);
          info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
