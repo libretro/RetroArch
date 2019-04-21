@@ -665,7 +665,7 @@ int16_t input_state(unsigned port, unsigned device,
 
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
-   bool reset_state  = false;
+   bool reset_state    = false;
 
    device &= RETRO_DEVICE_MASK;
 
@@ -881,9 +881,9 @@ static INLINE bool input_keys_pressed_iterate(unsigned i,
 
 static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port, uint32_t joyaxis, bool button)
 {
-   int16_t val = 0;
+   int16_t val          = 0;
    settings_t *settings = config_get_ptr();
-   bool left = true;
+   bool left            = true;
 
    if (!drv || !drv->axis)
       return 0;
@@ -897,22 +897,18 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
    if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
    {
       /* current axis is negative */
+      /* current stick is the left */
       if (AXIS_NEG_GET(joyaxis) < 2)
-      {
-         /* current stick is the left */
          left = true;
-      }
       else
          left = false;
    }
    else
    {
       /* current axis is positive */
+      /* current stick is the left */
       if (AXIS_POS_GET(joyaxis) < 2)
-      {
-         /* current stick is the left */
          left = true;
-      }
       else
          left = false;
    }
@@ -920,14 +916,14 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port
    if (settings->floats.input_analog_deadzone)
    {
       /* 0/1 are the left analog X/Y axes, 2/3 are the right analog X/Y axes */
-      int16_t x = input_joypad_axis_raw(drv, port, left ? 0 : 2);
-      int16_t y = input_joypad_axis_raw(drv, port, left ? 1 : 3);
-      int mag = sqrt(x * x + y * y);
       float normalized;
+      int16_t x        = input_joypad_axis_raw(drv, port, left ? 0 : 2);
+      int16_t y        = input_joypad_axis_raw(drv, port, left ? 1 : 3);
+      int mag          = sqrt(x * x + y * y);
       float normal_mag = (1.0f / 0x7fff) * mag;
 
       /* if analog value is below the deadzone, ignore it */
-      val = normal_mag <= settings->floats.input_analog_deadzone ? 0 : val;
+      val              = normal_mag <= settings->floats.input_analog_deadzone ? 0 : val;
 
       if (val == 0)
          return 0;
@@ -1778,9 +1774,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (ident < RARCH_FIRST_CUSTOM_BIND)
       {
          uint32_t axis = 0;
-         const struct retro_keybind *bind = NULL;
-
-         bind = &binds[ ident ];
+         const struct retro_keybind *bind = &binds[ ident ];
 
          if (!bind->valid)
             return 0;
@@ -1805,11 +1799,8 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
                res = 0x7fff;
          }
       }
-      else
-      {
-         /* not a suitable button */
+      else /* not a suitable button */
          res = 0;
-      }
    }
    else
    {
@@ -1934,7 +1925,7 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
    settings_t *settings = config_get_ptr();
 
    /*ignore axes*/
-   if ( id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y )
+   if (id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y)
       return false;
 
    joypad_info.axis_threshold = input_driver_axis_threshold;
@@ -2652,13 +2643,13 @@ static void input_config_parse_mouse_button(
    fill_pathname_join_delim(key, str,
          "mbtn", '_', sizeof(key));
 
-   if ( bind && config_get_array(conf, key, tmp, sizeof(tmp)) )
+   if (bind && config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       bind->mbutton = NO_BTN;
 
-      if ( tmp[0]=='w' )
+      if (tmp[0]=='w')
       {
-         switch ( tmp[1] )
+         switch (tmp[1])
          {
             case 'u':
                bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
@@ -2667,7 +2658,7 @@ static void input_config_parse_mouse_button(
                bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
                break;
             case 'h':
-               switch ( tmp[2] )
+               switch (tmp[2])
                {
                   case 'u':
                      bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
@@ -2682,7 +2673,7 @@ static void input_config_parse_mouse_button(
       else
       {
          val = atoi(tmp);
-         switch ( val )
+         switch (val)
          {
             case 1:
                bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
@@ -2820,10 +2811,10 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    }
 #endif
 
-   if ( bind->mbutton != NO_BTN )
+   if (bind->mbutton != NO_BTN)
    {
       int tag = 0;
-      switch ( bind->mbutton )
+      switch (bind->mbutton)
       {
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
@@ -2852,7 +2843,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
          case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
             tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN;
             break;
-      } /* switch ( bind->mbutton ) */
+      }
 
       if (tag != 0)
       {
@@ -2863,17 +2854,17 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    }
 
    /*completely empty?*/
-   if ( *buf == '\0' )
+   if (*buf == '\0')
       strlcat(buf, "---", size);
 }
 
 unsigned input_config_get_device_count()
 {
    unsigned num_devices;
-   for ( num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices )
+   for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
    {
       const char *device_name = input_config_get_device_name(num_devices);
-      if ( string_is_empty(device_name) )
+      if (string_is_empty(device_name))
          break;
    }
    return num_devices;
@@ -2937,21 +2928,17 @@ void input_config_set_device_config_path(unsigned port, const char *path)
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
-   {
       strlcpy(input_device_config_names[port],
             name,
             sizeof(input_device_config_names[port]));
-   }
 }
 
 void input_config_set_device_display_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
-   {
       strlcpy(input_device_display_names[port],
             name,
             sizeof(input_device_display_names[port]));
-   }
 }
 
 void input_config_clear_device_name(unsigned port)
@@ -3073,9 +3060,7 @@ void config_read_keybinds_conf(void *data)
             continue;
          if (!input_config_bind_map_get_valid(j))
             continue;
-         if (!btn)
-            continue;
-         if (!prefix)
+         if (!btn || !prefix)
             continue;
 
          input_config_parse_key(conf, prefix, btn, bind);
@@ -3253,7 +3238,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    fill_pathname_join_delim_concat(key, prefix,
       base, '_', "_mbtn", sizeof(key));
 
-   switch ( bind->mbutton )
+   switch (bind->mbutton)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          config_set_uint64(conf, key, 1);
