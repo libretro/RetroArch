@@ -520,30 +520,30 @@ void runtime_log_set_last_played(runtime_log_t *runtime_log,
 void runtime_log_set_last_played_now(runtime_log_t *runtime_log)
 {
    time_t current_time;
-   struct tm * time_info;
+   struct tm time_info;
    
    if (!runtime_log)
       return;
    
    /* Get current time */
    time(&current_time);
-   time_info = localtime(&current_time);
+   tzset();
    
    /* This can actually happen, but if does we probably
     * have bigger problems to worry about... */
-   if(!time_info)
+   if(!localtime_r(&current_time, &time_info))
    {
       RARCH_ERR("Failed to get current time.\n");
       return;
    }
    
    /* Extract values */
-   runtime_log->last_played.year   = (unsigned)time_info->tm_year + 1900;
-   runtime_log->last_played.month  = (unsigned)time_info->tm_mon + 1;
-   runtime_log->last_played.day    = (unsigned)time_info->tm_mday;
-   runtime_log->last_played.hour   = (unsigned)time_info->tm_hour;
-   runtime_log->last_played.minute = (unsigned)time_info->tm_min;
-   runtime_log->last_played.second = (unsigned)time_info->tm_sec;
+   runtime_log->last_played.year   = (unsigned)time_info.tm_year + 1900;
+   runtime_log->last_played.month  = (unsigned)time_info.tm_mon + 1;
+   runtime_log->last_played.day    = (unsigned)time_info.tm_mday;
+   runtime_log->last_played.hour   = (unsigned)time_info.tm_hour;
+   runtime_log->last_played.minute = (unsigned)time_info.tm_min;
+   runtime_log->last_played.second = (unsigned)time_info.tm_sec;
 }
 
 /* Resets log to default (zero) values */
