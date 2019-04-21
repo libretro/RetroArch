@@ -741,18 +741,9 @@ const char *input_config_get_prefix(unsigned user, bool meta);
  **/
 unsigned input_config_translate_str_to_bind_id(const char *str);
 
-void input_config_parse_key(void *data,
-      const char *prefix, const char *btn,
-      struct retro_keybind *bind);
+void config_read_keybinds_conf(void *data);
 
-void input_config_parse_joy_button(void *data, const char *prefix,
-      const char *btn, struct retro_keybind *bind);
-
-void input_config_parse_joy_axis(void *data, const char *prefix,
-      const char *axis, struct retro_keybind *bind);
-
-void input_config_parse_mouse_button(void *data, const char *prefix,
-      const char *btn, struct retro_keybind *bind);
+void input_autoconfigure_joypad_conf(void *data, struct retro_keybind *binds);
 
 void input_config_set_device_name(unsigned port, const char *name);
 

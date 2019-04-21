@@ -162,20 +162,6 @@ void input_autoconfigure_joypad_reindex_devices()
    }
 }
 
-static void input_autoconfigure_joypad_conf(config_file_t *conf,
-      struct retro_keybind *binds)
-{
-   unsigned i;
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      input_config_parse_joy_button(conf, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
-      input_config_parse_joy_axis(conf, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
-   }
-}
-
 static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {

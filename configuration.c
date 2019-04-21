@@ -2556,37 +2556,6 @@ static bool check_menu_driver_compatibility(void)
 }
 #endif
 
-static void config_read_keybinds_conf(config_file_t *conf)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      unsigned j;
-
-      for (j = 0; input_config_bind_map_get_valid(j); j++)
-      {
-         struct retro_keybind *bind = &input_config_binds[i][j];
-         const char *prefix         = input_config_get_prefix(i, input_config_bind_map_get_meta(j));
-         const char *btn            = input_config_bind_map_get_base(j);
-
-         if (!bind->valid)
-            continue;
-         if (!input_config_bind_map_get_valid(j))
-            continue;
-         if (!btn)
-            continue;
-         if (!prefix)
-            continue;
-
-         input_config_parse_key(conf, prefix, btn, bind);
-         input_config_parse_joy_button(conf, prefix, btn, bind);
-         input_config_parse_joy_axis(conf, prefix, btn, bind);
-         input_config_parse_mouse_button(conf, prefix, btn, bind);
-      }
-   }
-}
-
 static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
@@ -2615,58 +2584,6 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 
    return false;
 }
-
-#if 0
-static bool config_read_keybinds(const char *path)
-{
-   config_file_t *conf = (config_file_t*)config_file_new(path);
-
-   if (!conf)
-      return false;
-
-   config_read_keybinds_conf(conf);
-   config_file_free(conf);
-
-   return true;
-}
-
-/* Also dumps inherited values, useful for logging. */
-static void config_file_dump_all(config_file_t *conf)
-{
-   struct config_entry_list *list = NULL;
-   struct config_include_list *includes = conf->includes;
-
-   while (includes)
-   {
-      RARCH_LOG("#include \"%s\"\n", includes->path);
-      includes = includes->next;
-   }
-
-   list = conf->entries;
-
-   while (list)
-   {
-      RARCH_LOG("%s = \"%s\"%s\n", list->key,
-            list->value, list->readonly ? " (included)" : "");
-      list = list->next;
-   }
-}
-#endif
-
-/*
- * This is no longer used, so comment out to silence warnings...
-#ifdef HAVE_MENU
-static void config_get_hex_base(config_file_t *conf,
-      const char *key, unsigned *base)
-{
-   unsigned tmp = 0;
-   if (!base)
-      return;
-   if (config_get_hex(conf, key, &tmp))
-      *base = tmp;
-}
-#endif
-*/
 
 /**
  * config_load:

@@ -2412,13 +2412,13 @@ const char *input_config_bind_map_get_desc(unsigned i)
    return msg_hash_to_str(keybind->desc);
 }
 
-void input_config_parse_key(void *data,
+static void input_config_parse_key(
+      config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
    char tmp[64];
    char key[64];
-   config_file_t *conf = (config_file_t*)data;
 
    tmp[0] = key[0] = '\0';
 
@@ -2534,7 +2534,8 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
-void input_config_parse_joy_button(void *data, const char *prefix,
+static void input_config_parse_joy_button(
+      config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    char str[256];
@@ -2542,7 +2543,6 @@ void input_config_parse_joy_button(void *data, const char *prefix,
    char key[64];
    char key_label[64];
    char *tmp_a              = NULL;
-   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
@@ -2581,7 +2581,8 @@ void input_config_parse_joy_button(void *data, const char *prefix,
    }
 }
 
-void input_config_parse_joy_axis(void *data, const char *prefix,
+static void input_config_parse_joy_axis(
+      config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
    char str[256];
@@ -2589,7 +2590,6 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
    char       key[64];
    char key_label[64];
    char        *tmp_a       = NULL;
-   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
@@ -2627,14 +2627,14 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
    }
 }
 
-void input_config_parse_mouse_button(void *data, const char *prefix,
+static void input_config_parse_mouse_button(
+      config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    int val;
    char str[256];
    char tmp[64];
    char key[64];
-   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = '\0';
 
@@ -3050,5 +3050,58 @@ void input_config_reset(void)
 
       for (j = 0; j < 64; j++)
          input_device_names[i][j] = 0;
+   }
+}
+
+void config_read_keybinds_conf(void *data)
+{
+   unsigned i;
+   config_file_t *conf = (config_file_t*)data;
+
+   if (!conf)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+
+      for (j = 0; input_config_bind_map_get_valid(j); j++)
+      {
+         struct retro_keybind *bind = &input_config_binds[i][j];
+         const char *prefix         = input_config_get_prefix(i, input_config_bind_map_get_meta(j));
+         const char *btn            = input_config_bind_map_get_base(j);
+
+         if (!bind->valid)
+            continue;
+         if (!input_config_bind_map_get_valid(j))
+            continue;
+         if (!btn)
+            continue;
+         if (!prefix)
+            continue;
+
+         input_config_parse_key(conf, prefix, btn, bind);
+         input_config_parse_joy_button(conf, prefix, btn, bind);
+         input_config_parse_joy_axis(conf, prefix, btn, bind);
+         input_config_parse_mouse_button(conf, prefix, btn, bind);
+      }
+   }
+}
+
+void input_autoconfigure_joypad_conf(void *data,
+      struct retro_keybind *binds)
+{
+   unsigned i;
+   config_file_t *conf = (config_file_t*)data;
+
+   if (!conf)
+      return;
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_config_parse_joy_button(conf, "input",
+            input_config_bind_map_get_base(i), &binds[i]);
+      input_config_parse_joy_axis(conf, "input",
+            input_config_bind_map_get_base(i), &binds[i]);
    }
 }
