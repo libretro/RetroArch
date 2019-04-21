@@ -606,8 +606,6 @@ bool input_mouse_button_raw(unsigned port, unsigned button);
 const char *input_joypad_name(const input_device_driver_t *driver,
       unsigned port);
 
-bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
-
 #ifdef HAVE_HID
 
 #include "include/hid_driver.h"
@@ -711,8 +709,6 @@ unsigned input_config_bind_map_get_meta(unsigned i);
 
 const char *input_config_bind_map_get_desc(unsigned i);
 
-bool input_config_bind_map_get_valid(unsigned i);
-
 /* auto_bind can be NULL. */
 void input_config_get_bind_string(char *buf,
       const struct retro_keybind *bind,
@@ -788,6 +784,12 @@ uint16_t input_config_get_pid(unsigned port);
 void input_config_set_vid(unsigned port, uint16_t vid);
 
 uint16_t input_config_get_vid(unsigned port);
+
+void input_config_save_keybinds_user(void *data, unsigned user);
+
+void input_config_save_keybind(void *data, const char *prefix,
+      const char *base, const struct retro_keybind *bind,
+      bool save_empty);
 
 void input_config_reset(void);
 

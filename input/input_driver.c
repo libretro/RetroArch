@@ -1709,6 +1709,18 @@ const char *input_joypad_name(const input_device_driver_t *drv,
    return drv->name(port);
 }
 
+static bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
+
+   if (joy_idx >= MAX_USERS)
+      return false;
+
+   *joy_idx_real        = joy_idx;
+   return true;
+}
+
 /**
  * input_joypad_set_rumble:
  * @drv                     : Input device driver handle.
@@ -2371,12 +2383,9 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
    return true;
 }
 
-static const void *input_config_bind_map_get(unsigned i)
-{
-   return (const struct input_bind_map*)&input_config_bind_map[i];
-}
+#define input_config_bind_map_get(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
-bool input_config_bind_map_get_valid(unsigned i)
+static bool input_config_bind_map_get_valid(unsigned i)
 {
    const struct input_bind_map *keybind =
       (const struct input_bind_map*)input_config_bind_map_get(i);
@@ -2986,17 +2995,6 @@ void input_config_set_device(unsigned port, unsigned id)
       settings->uints.input_libretro_device[port] = id;
 }
 
-bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->uints.input_joypad_map[port];
-
-   if (joy_idx >= MAX_USERS)
-      return false;
-
-   *joy_idx_real        = joy_idx;
-   return true;
-}
 
 const struct retro_keybind *input_config_get_bind_auto(
       unsigned port, unsigned id)
@@ -3104,4 +3102,210 @@ void input_autoconfigure_joypad_conf(void *data,
       input_config_parse_joy_axis(conf, "input",
             input_config_bind_map_get_base(i), &binds[i]);
    }
+}
+
+/**
+ * input_config_save_keybinds_user:
+ * @conf               : pointer to config file object
+ * @user               : user number
+ *
+ * Save the current keybinds of a user (@user) to the config file (@conf).
+ */
+void input_config_save_keybinds_user(void *data, unsigned user)
+{
+   unsigned i = 0;
+   config_file_t *conf = (config_file_t*)data;
+
+   for (i = 0; input_config_bind_map_get_valid(i); i++)
+   {
+      const char *prefix               = input_config_get_prefix(user,
+            input_config_bind_map_get_meta(i));
+      const struct retro_keybind *bind = &input_config_binds[user][i];
+
+      if (prefix && bind->valid)
+      {
+         char key[64];
+         char btn[64];
+         const char *base = input_config_bind_map_get_base(i);
+
+         key[0] = btn[0]  = '\0';
+
+         fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+
+         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+         config_set_string(conf, key, btn);
+
+         input_config_save_keybind(conf, prefix, base, bind, true);
+      }
+   }
+}
+
+static void save_keybind_hat(config_file_t *conf, const char *key,
+      const struct retro_keybind *bind)
+{
+   char config[16];
+   unsigned hat     = (unsigned)GET_HAT(bind->joykey);
+   const char *dir  = NULL;
+
+   config[0]        = '\0';
+
+   switch (GET_HAT_DIR(bind->joykey))
+   {
+      case HAT_UP_MASK:
+         dir = "up";
+         break;
+
+      case HAT_DOWN_MASK:
+         dir = "down";
+         break;
+
+      case HAT_LEFT_MASK:
+         dir = "left";
+         break;
+
+      case HAT_RIGHT_MASK:
+         dir = "right";
+         break;
+
+      default:
+         break;
+   }
+
+   snprintf(config, sizeof(config), "h%u%s", hat, dir);
+   config_set_string(conf, key, config);
+}
+
+static void save_keybind_joykey(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key, prefix,
+         base, '_', "_btn", sizeof(key));
+
+   if (bind->joykey == NO_BTN)
+   {
+       if (save_empty)
+         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+   }
+   else if (GET_HAT_DIR(bind->joykey))
+      save_keybind_hat(conf, key, bind);
+   else
+      config_set_uint64(conf, key, bind->joykey);
+}
+
+static void save_keybind_axis(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+   unsigned axis   = 0;
+   char dir        = '\0';
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key,
+         prefix, base, '_',
+         "_axis",
+         sizeof(key));
+
+   if (bind->joyaxis == AXIS_NONE)
+   {
+      if (save_empty)
+         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+   }
+   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '-';
+      axis = AXIS_NEG_GET(bind->joyaxis);
+   }
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '+';
+      axis = AXIS_POS_GET(bind->joyaxis);
+   }
+
+   if (dir)
+   {
+      char config[16];
+
+      config[0] = '\0';
+
+      snprintf(config, sizeof(config), "%c%u", dir, axis);
+      config_set_string(conf, key, config);
+   }
+}
+
+static void save_keybind_mbutton(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key, prefix,
+      base, '_', "_mbtn", sizeof(key));
+
+   switch ( bind->mbutton )
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         config_set_uint64(conf, key, 1);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         config_set_uint64(conf, key, 2);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         config_set_uint64(conf, key, 3);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         config_set_uint64(conf, key, 4);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         config_set_uint64(conf, key, 5);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         config_set_string(conf, key, "wu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         config_set_string(conf, key, "wd");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         config_set_string(conf, key, "whu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         config_set_string(conf, key, "whd");
+         break;
+      default:
+         if (save_empty)
+            config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+         break;
+   }
+}
+
+/**
+ * input_config_save_keybind:
+ * @conf               : pointer to config file object
+ * @prefix             : prefix name of keybind
+ * @base               : base name   of keybind
+ * @bind               : pointer to key binding object
+ * @kb                 : save keyboard binds
+ *
+ * Save a key binding to the config file.
+ */
+void input_config_save_keybind(void *data, const char *prefix,
+      const char *base, const struct retro_keybind *bind,
+      bool save_empty)
+{
+   config_file_t *conf = (config_file_t*)data;
+
+   save_keybind_joykey(conf, prefix, base, bind, save_empty);
+   save_keybind_axis(conf, prefix, base, bind, save_empty);
+   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
 }

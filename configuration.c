@@ -3726,209 +3726,6 @@ static void parse_config_file(void)
          config_path);
 }
 
-static void save_keybind_hat(config_file_t *conf, const char *key,
-      const struct retro_keybind *bind)
-{
-   char config[16];
-   unsigned hat     = (unsigned)GET_HAT(bind->joykey);
-   const char *dir  = NULL;
-
-   config[0]        = '\0';
-
-   switch (GET_HAT_DIR(bind->joykey))
-   {
-      case HAT_UP_MASK:
-         dir = "up";
-         break;
-
-      case HAT_DOWN_MASK:
-         dir = "down";
-         break;
-
-      case HAT_LEFT_MASK:
-         dir = "left";
-         break;
-
-      case HAT_RIGHT_MASK:
-         dir = "right";
-         break;
-
-      default:
-         break;
-   }
-
-   snprintf(config, sizeof(config), "h%u%s", hat, dir);
-   config_set_string(conf, key, config);
-}
-
-static void save_keybind_joykey(config_file_t *conf,
-      const char *prefix,
-      const char *base,
-      const struct retro_keybind *bind, bool save_empty)
-{
-   char key[64];
-
-   key[0] = '\0';
-
-   fill_pathname_join_delim_concat(key, prefix,
-         base, '_', "_btn", sizeof(key));
-
-   if (bind->joykey == NO_BTN)
-   {
-       if (save_empty)
-         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
-   }
-   else if (GET_HAT_DIR(bind->joykey))
-      save_keybind_hat(conf, key, bind);
-   else
-      config_set_uint64(conf, key, bind->joykey);
-}
-
-static void save_keybind_axis(config_file_t *conf,
-      const char *prefix,
-      const char *base,
-      const struct retro_keybind *bind, bool save_empty)
-{
-   char key[64];
-   unsigned axis   = 0;
-   char dir        = '\0';
-
-   key[0] = '\0';
-
-   fill_pathname_join_delim_concat(key,
-         prefix, base, '_',
-         "_axis",
-         sizeof(key));
-
-   if (bind->joyaxis == AXIS_NONE)
-   {
-      if (save_empty)
-         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
-   }
-   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      dir = '-';
-      axis = AXIS_NEG_GET(bind->joyaxis);
-   }
-   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      dir = '+';
-      axis = AXIS_POS_GET(bind->joyaxis);
-   }
-
-   if (dir)
-   {
-      char config[16];
-
-      config[0] = '\0';
-
-      snprintf(config, sizeof(config), "%c%u", dir, axis);
-      config_set_string(conf, key, config);
-   }
-}
-
-static void save_keybind_mbutton(config_file_t *conf,
-      const char *prefix,
-      const char *base,
-      const struct retro_keybind *bind, bool save_empty)
-{
-   char key[64];
-
-   key[0] = '\0';
-
-   fill_pathname_join_delim_concat(key, prefix,
-      base, '_', "_mbtn", sizeof(key));
-
-   switch ( bind->mbutton )
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         config_set_uint64(conf, key, 1);
-         break;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         config_set_uint64(conf, key, 2);
-         break;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         config_set_uint64(conf, key, 3);
-         break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         config_set_uint64(conf, key, 4);
-         break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         config_set_uint64(conf, key, 5);
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         config_set_string(conf, key, "wu");
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         config_set_string(conf, key, "wd");
-         break;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         config_set_string(conf, key, "whu");
-         break;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         config_set_string(conf, key, "whd");
-         break;
-      default:
-         if (save_empty)
-            config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
-         break;
-   }
-}
-
-/**
- * save_keybind:
- * @conf               : pointer to config file object
- * @prefix             : prefix name of keybind
- * @base               : base name   of keybind
- * @bind               : pointer to key binding object
- * @kb                 : save keyboard binds
- *
- * Save a key binding to the config file.
- */
-static void save_keybind(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind,
-      bool save_empty)
-{
-   save_keybind_joykey(conf, prefix, base, bind, save_empty);
-   save_keybind_axis(conf, prefix, base, bind, save_empty);
-   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
-}
-
-/**
- * save_keybinds_user:
- * @conf               : pointer to config file object
- * @user               : user number
- *
- * Save the current keybinds of a user (@user) to the config file (@conf).
- */
-static void save_keybinds_user(config_file_t *conf, unsigned user)
-{
-   unsigned i = 0;
-
-   for (i = 0; input_config_bind_map_get_valid(i); i++)
-   {
-      const char *prefix               = input_config_get_prefix(user,
-            input_config_bind_map_get_meta(i));
-      const struct retro_keybind *bind = &input_config_binds[user][i];
-
-      if (prefix && bind->valid)
-      {
-         char key[64];
-         char btn[64];
-         const char *base = input_config_bind_map_get_base(i);
-
-         key[0] = btn[0]  = '\0';
-
-         fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-
-         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
-         config_set_string(conf, key, btn);
-
-         save_keybind(conf, prefix, base, bind, true);
-      }
-   }
-}
-
 /**
  * config_load:
  *
@@ -3947,38 +3744,6 @@ void config_load(void)
    config_set_defaults();
    parse_config_file();
 }
-
-#if 0
-/**
- * config_save_keybinds_file:
- * @path            : Path that shall be written to.
- *
- * Writes a keybinds config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- **/
-static bool config_save_keybinds_file(const char *path)
-{
-   unsigned          i = 0;
-   bool            ret = false;
-   config_file_t *conf = config_file_new(path);
-
-   if (!conf)
-      conf = config_file_new(NULL);
-
-   if (!conf)
-      return false;
-
-   RARCH_LOG("Saving keybinds config at path: \"%s\"\n", path);
-
-   for (i = 0; i < MAX_USERS; i++)
-      save_keybinds_user(conf, i);
-
-   ret = config_file_write(conf, path, true);
-   config_file_free(conf);
-   return ret;
-}
-#endif
 
 /**
  * config_save_autoconf_profile:
@@ -4080,7 +3845,8 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    {
       const struct retro_keybind *bind = &input_config_binds[user][i];
       if (bind->valid)
-         save_keybind(conf, "input", input_config_bind_map_get_base(i),
+         input_config_save_keybind(
+               conf, "input", input_config_bind_map_get_base(i),
                bind, false);
    }
 
@@ -4314,7 +4080,7 @@ bool config_save_file(const char *path)
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
-      save_keybinds_user(conf, i);
+      input_config_save_keybinds_user(conf, i);
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);
