@@ -1232,20 +1232,15 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      bool bit_pressed = false;
-
-      if (
-            ((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-             || !input_driver_block_hotkey) &&
-            binds[i].valid && current_input->input_state(current_input_data,
+      bool bit_pressed = (
+            (!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey)
+         &&
+         binds[i].valid && current_input->input_state(current_input_data,
                joypad_info, &binds,
-               0, RETRO_DEVICE_JOYPAD, 0, i)
-         )
-         bit_pressed = true;
-      else if (input_keys_pressed_iterate(i, p_new_state))
-         bit_pressed = true;
-
-      if (bit_pressed)
+               0, RETRO_DEVICE_JOYPAD, 0, i);
+      
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -1268,18 +1263,18 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      bool bit_pressed = false;
-      int16_t val;
-      val = input_joypad_analog(joypad_driver, joypad_info, port, RETRO_DEVICE_INDEX_ANALOG_BUTTON, i, libretro_input_binds[port]);
-
       if (input_driver_input_state(joypad_info, libretro_input_binds,
                port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
-         bit_pressed = true;
+      {
+         int16_t      val = input_joypad_analog(
+               joypad_driver, joypad_info, port,
+               RETRO_DEVICE_INDEX_ANALOG_BUTTON, i, libretro_input_binds[port]);
 
-      if (bit_pressed)
          BIT256_SET_PTR(p_new_state, i);
-      if (bit_pressed && val)
-         p_new_state->analog_buttons[i] = val;
+
+         if (val)
+            p_new_state->analog_buttons[i] = val;
+      }
    }
 
    for (i = 0; i < 2; i++)
