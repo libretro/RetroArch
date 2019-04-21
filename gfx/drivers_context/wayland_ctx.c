@@ -626,7 +626,7 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
     };
 }
 
-static void wl_nop(void *a, wl_surface *b, wl_output *c)
+static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c)
 {
    (void)a;
    (void)b;
