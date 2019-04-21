@@ -3816,7 +3816,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             path_size);
    }
 
-   conf = config_file_new(autoconf_file);
+   conf = config_file_read(autoconf_file);
 
    if (!conf)
    {

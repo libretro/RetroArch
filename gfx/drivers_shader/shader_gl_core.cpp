@@ -2265,7 +2265,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, gl_core::ConfigDeleter> conf{ config_file_new(path) };
+   unique_ptr<config_file_t, gl_core::ConfigDeleter> conf{ config_file_read(path) };
    if (!conf)
       return nullptr;
 
@@ -2328,11 +2328,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (meta_param.desc != itr->desc ||
+            if (meta_param.desc    != itr->desc    ||
                 meta_param.initial != itr->initial ||
                 meta_param.minimum != itr->minimum ||
                 meta_param.maximum != itr->maximum ||
-                meta_param.step != itr->step)
+                meta_param.step    != itr->step)
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);

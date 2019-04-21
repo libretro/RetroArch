@@ -1379,15 +1379,15 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
 
 static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
 {
-   settings_t *settings = config_get_ptr();
-   config_file_t *conf = NULL;
-   char *wallpaper_key = NULL;
    unsigned normal_color, hover_color, title_color,
       bg_dark_color, bg_light_color,
       border_dark_color, border_light_color,
       shadow_color;
    char wallpaper_file[PATH_MAX_LENGTH];
-   bool success = false;
+   config_file_t *conf  = NULL;
+   char *wallpaper_key  = NULL;
+   settings_t *settings = config_get_ptr();
+   bool success         = false;
 
    /* Determine which type of wallpaper to load */
    switch (settings->uints.menu_rgui_aspect_ratio)
@@ -1415,7 +1415,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Open config file */
-   conf = config_file_new(theme_path);
+   conf = config_file_read(theme_path);
    if (!conf)
       goto end;
 
@@ -1447,7 +1447,8 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    if(!config_get_hex(conf, "rgui_shadow_color", &shadow_color))
       shadow_color = 0xFF000000;
 
-   config_get_array(conf, wallpaper_key, wallpaper_file, sizeof(wallpaper_file));
+   config_get_array(conf, wallpaper_key,
+         wallpaper_file, sizeof(wallpaper_file));
 
    success = true;
 
@@ -1455,14 +1456,14 @@ end:
 
    if (success)
    {
-      theme_colors->normal_color = (uint32_t)normal_color;
-      theme_colors->hover_color = (uint32_t)hover_color;
-      theme_colors->title_color = (uint32_t)title_color;
-      theme_colors->bg_dark_color = (uint32_t)bg_dark_color;
-      theme_colors->bg_light_color = (uint32_t)bg_light_color;
-      theme_colors->border_dark_color = (uint32_t)border_dark_color;
+      theme_colors->normal_color       = (uint32_t)normal_color;
+      theme_colors->hover_color        = (uint32_t)hover_color;
+      theme_colors->title_color        = (uint32_t)title_color;
+      theme_colors->bg_dark_color      = (uint32_t)bg_dark_color;
+      theme_colors->bg_light_color     = (uint32_t)bg_light_color;
+      theme_colors->border_dark_color  = (uint32_t)border_dark_color;
       theme_colors->border_light_color = (uint32_t)border_light_color;
-      theme_colors->shadow_color = (uint32_t)shadow_color;
+      theme_colors->shadow_color       = (uint32_t)shadow_color;
 
       /* Load wallpaper, if required */
       if (!string_is_empty(wallpaper_file))
@@ -1477,14 +1478,14 @@ end:
    else
    {
       /* Use 'Classic Green' fallback */
-      theme_colors->normal_color = rgui_theme_classic_green.normal_color;
-      theme_colors->hover_color = rgui_theme_classic_green.hover_color;
-      theme_colors->title_color = rgui_theme_classic_green.title_color;
-      theme_colors->bg_dark_color = rgui_theme_classic_green.bg_dark_color;
-      theme_colors->bg_light_color = rgui_theme_classic_green.bg_light_color;
-      theme_colors->border_dark_color = rgui_theme_classic_green.border_dark_color;
+      theme_colors->normal_color       = rgui_theme_classic_green.normal_color;
+      theme_colors->hover_color        = rgui_theme_classic_green.hover_color;
+      theme_colors->title_color        = rgui_theme_classic_green.title_color;
+      theme_colors->bg_dark_color      = rgui_theme_classic_green.bg_dark_color;
+      theme_colors->bg_light_color     = rgui_theme_classic_green.bg_light_color;
+      theme_colors->border_dark_color  = rgui_theme_classic_green.border_dark_color;
       theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
-      theme_colors->shadow_color = rgui_theme_classic_green.shadow_color;
+      theme_colors->shadow_color       = rgui_theme_classic_green.shadow_color;
    }
 
    if (conf)
@@ -1509,9 +1510,9 @@ static void rgui_cache_background(rgui_t *rgui)
          &fb_pitch);
 
    /* Sanity check */
-   if ((fb_width != rgui_background_buf.width) ||
-       (fb_height != rgui_background_buf.height) ||
-       (fb_pitch != rgui_background_buf.width << 1) ||
+   if ((fb_width  != rgui_background_buf.width)      ||
+       (fb_height != rgui_background_buf.height)     ||
+       (fb_pitch  != rgui_background_buf.width << 1) ||
        !rgui_background_buf.data)
       return;
 
@@ -1568,26 +1569,27 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    else
    {
       const rgui_theme_t *current_theme = get_theme(rgui);
-      theme_colors.hover_color = current_theme->hover_color;
-      theme_colors.normal_color = current_theme->normal_color;
-      theme_colors.title_color = current_theme->title_color;
-      theme_colors.bg_dark_color = current_theme->bg_dark_color;
-      theme_colors.bg_light_color = current_theme->bg_light_color;
-      theme_colors.border_dark_color = current_theme->border_dark_color;
-      theme_colors.border_light_color = current_theme->border_light_color;
-      theme_colors.shadow_color = current_theme->shadow_color;
-   }
-   rgui->colors.hover_color = argb32_to_pixel_platform_format(theme_colors.hover_color);
-   rgui->colors.normal_color = argb32_to_pixel_platform_format(theme_colors.normal_color);
-   rgui->colors.title_color = argb32_to_pixel_platform_format(theme_colors.title_color);
-   rgui->colors.bg_dark_color = argb32_to_pixel_platform_format(theme_colors.bg_dark_color);
-   rgui->colors.bg_light_color = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
-   rgui->colors.border_dark_color = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
-   rgui->colors.border_light_color = argb32_to_pixel_platform_format(theme_colors.border_light_color);
-   rgui->colors.shadow_color = argb32_to_pixel_platform_format(theme_colors.shadow_color);
 
-   rgui->bg_modified = true;
-   rgui->force_redraw = true;
+      theme_colors.hover_color          = current_theme->hover_color;
+      theme_colors.normal_color         = current_theme->normal_color;
+      theme_colors.title_color          = current_theme->title_color;
+      theme_colors.bg_dark_color        = current_theme->bg_dark_color;
+      theme_colors.bg_light_color       = current_theme->bg_light_color;
+      theme_colors.border_dark_color    = current_theme->border_dark_color;
+      theme_colors.border_light_color   = current_theme->border_light_color;
+      theme_colors.shadow_color         = current_theme->shadow_color;
+   }
+   rgui->colors.hover_color             = argb32_to_pixel_platform_format(theme_colors.hover_color);
+   rgui->colors.normal_color            = argb32_to_pixel_platform_format(theme_colors.normal_color);
+   rgui->colors.title_color             = argb32_to_pixel_platform_format(theme_colors.title_color);
+   rgui->colors.bg_dark_color           = argb32_to_pixel_platform_format(theme_colors.bg_dark_color);
+   rgui->colors.bg_light_color          = argb32_to_pixel_platform_format(theme_colors.bg_light_color);
+   rgui->colors.border_dark_color       = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
+   rgui->colors.border_light_color      = argb32_to_pixel_platform_format(theme_colors.border_light_color);
+   rgui->colors.shadow_color            = argb32_to_pixel_platform_format(theme_colors.shadow_color);
+
+   rgui->bg_modified                    = true;
+   rgui->force_redraw                   = true;
 }
 
 /* ==============================
@@ -1810,8 +1812,10 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
       case RGUI_SYMBOL_TEXT_CURSOR:
          return rgui_symbol_data_text_cursor;
       default:
-         return NULL;
+         break;
    }
+
+   return NULL;
 }
 
 static void blit_symbol_regular(int x, int y,

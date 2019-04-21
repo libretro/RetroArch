@@ -77,7 +77,7 @@ bool menu_shader_manager_init(void)
 
    if (is_preset)
    {
-      conf     = config_file_new(path_shader);
+      conf     = config_file_read(path_shader);
       new_path = strdup(path_shader);
    }
    else
@@ -101,20 +101,20 @@ bool menu_shader_manager_init(void)
 
          fill_pathname_join(preset_path, shader_dir,
                "menu.glslp", sizeof(preset_path));
-         conf = config_file_new(preset_path);
+         conf = config_file_read(preset_path);
 
          if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.cgp", sizeof(preset_path));
-            conf = config_file_new(preset_path);
+            conf = config_file_read(preset_path);
          }
 
          if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.slangp", sizeof(preset_path));
-            conf = config_file_new(preset_path);
+            conf = config_file_read(preset_path);
          }
 
          new_path = strdup(preset_path);
@@ -174,7 +174,7 @@ bool menu_shader_manager_set_preset(void *data,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   conf = config_file_new(preset_path);
+   conf = config_file_read(preset_path);
 
    if (!conf)
       return false;

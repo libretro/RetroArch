@@ -896,7 +896,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
       if (string_is_equal(path_ext, "glslp"))
       {
-         conf = config_file_new(path);
+         conf = config_file_read(path);
          if (conf)
          {
             ret = video_shader_read_conf_cgp(conf, glsl->shader);
