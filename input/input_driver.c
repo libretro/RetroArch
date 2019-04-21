@@ -1743,7 +1743,8 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
 
    if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
    {
-      /* A RETRO_DEVICE_JOYPAD button? */
+      /* A RETRO_DEVICE_JOYPAD button?
+       * Otherwise, not a suitable button */
       if (ident < RARCH_FIRST_CUSTOM_BIND)
       {
          uint32_t axis = 0;
@@ -1752,30 +1753,27 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          if (!bind->valid)
             return 0;
 
-         axis = bind->joyaxis;
-
-         if (axis == AXIS_NONE)
-            axis = joypad_info.auto_binds[ident].joyaxis;
+         axis = (bind->joyaxis == AXIS_NONE) 
+            ? joypad_info.auto_binds[ident].joyaxis
+            : bind->joyaxis;
 
          /* Analog button. */
          /* no deadzone/sensitivity correction for analog buttons currently */
          if (drv->axis)
             res = abs(drv->axis(joypad_info.joy_idx, axis));
 
-         /* If the result is zero, it's got a digital button attached to it */
+         /* If the result is zero, it's got a digital button 
+          * attached to it instead */
          if (res == 0)
          {
-            uint16_t key = bind->joykey;
-
-            if (key == NO_BTN)
-               key = joypad_info.auto_binds[ident].joykey;
+            uint16_t key = (bind->joykey == NO_BTN) 
+               ? joypad_info.auto_binds[ident].joykey
+               : bind->joykey;
 
             if (drv->button(joypad_info.joy_idx, key))
                res = 0x7fff;
          }
       }
-      else /* not a suitable button */
-         res = 0;
    }
    else
    {
@@ -1845,7 +1843,6 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
  **/
 bool input_mouse_button_raw(unsigned port, unsigned id)
 {
-   int16_t res;
    rarch_joypad_info_t joypad_info;
    settings_t *settings = config_get_ptr();
 
@@ -1857,10 +1854,8 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
    joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
-   res = current_input->input_state(current_input_data,
-         joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
-
-   if (res)
+   if (current_input->input_state(current_input_data,
+         joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id))
       return true;
    return false;
 }
