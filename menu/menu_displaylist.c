@@ -4396,6 +4396,23 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CAMERA_ALLOW, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DISCORD_ALLOW,  PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_LOCATION_ALLOW,  PARSE_ONLY_BOOL},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -6074,6 +6091,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
       case DISPLAYLIST_SETTINGS_ALL:
+      case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6595,14 +6613,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
                PARSE_ONLY_BOOL, false);
 #endif
-#if defined(_3DS)
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
                PARSE_ONLY_BOOL, false);
-#endif
          info->need_refresh = true;
          info->need_push    = true;
          break;
@@ -6828,32 +6844,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
                PARSE_ONLY_BOOL, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_CAMERA_ALLOW,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_DISCORD_ALLOW,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_LOCATION_ALLOW,
-                  PARSE_ONLY_BOOL, true) == 0)
             count++;
 
          if (count == 0)
