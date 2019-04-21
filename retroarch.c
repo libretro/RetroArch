@@ -1786,17 +1786,17 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 #endif
    }
 
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM) && optind < argc)
+   if (optind < argc)
    {
+      bool subsystem_path_is_empty = path_is_empty(RARCH_PATH_SUBSYSTEM);
+
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-      path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
-   }
-   else if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && optind < argc)
-   {
-      /* We requested explicit ROM, so use PLAIN core type. */
-      retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-      path_set_special(argv + optind, argc - optind);
+
+      if (subsystem_path_is_empty)
+         path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
+      else
+         path_set_special(argv + optind, argc - optind);
    }
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
