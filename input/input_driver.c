@@ -879,65 +879,71 @@ static INLINE bool input_keys_pressed_iterate(unsigned i,
    return false;
 }
 
-static int16_t input_joypad_axis(const input_device_driver_t *drv, unsigned port, uint32_t joyaxis, bool button)
+static int16_t input_joypad_axis(const input_device_driver_t *drv,
+      unsigned port, uint32_t joyaxis)
 {
-   int16_t val          = 0;
-   settings_t *settings = config_get_ptr();
-   bool left            = true;
+   settings_t *settings           = config_get_ptr();
+   float input_analog_deadzone    = settings->floats.input_analog_deadzone;
+   float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+   int16_t val                    = drv->axis(port, joyaxis);
 
-   if (!drv || !drv->axis)
-      return 0;
-
-   val = drv->axis(port, joyaxis);
-
-   /* no deadzone/sensitivity correction for analog buttons currently */
-   if (button)
-      return val;
-
-   if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
+   if (input_analog_deadzone)
    {
-      /* current axis is negative */
-      /* current stick is the left */
-      if (AXIS_NEG_GET(joyaxis) < 2)
-         left = true;
-      else
-         left = false;
-   }
-   else
-   {
-      /* current axis is positive */
-      /* current stick is the left */
-      if (AXIS_POS_GET(joyaxis) < 2)
-         left = true;
-      else
-         left = false;
-   }
-
-   if (settings->floats.input_analog_deadzone)
-   {
-      /* 0/1 are the left analog X/Y axes, 2/3 are the right analog X/Y axes */
+      int16_t x, y;
+      int mag;
       float normalized;
-      int16_t x        = input_joypad_axis_raw(drv, port, left ? 0 : 2);
-      int16_t y        = input_joypad_axis_raw(drv, port, left ? 1 : 3);
-      int mag          = sqrt(x * x + y * y);
-      float normal_mag = (1.0f / 0x7fff) * mag;
+      float normal_mag;
+      /* 2/3 are the right analog X/Y axes */
+      unsigned x_axis      = 2;
+      unsigned y_axis      = 3;
+
+      /* 0/1 are the left analog X/Y axes */
+      if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
+      {
+         /* current axis is negative         */
+         /* current stick is the left        */
+         if (AXIS_NEG_GET(joyaxis) < 2)
+         {
+            x_axis = 0;
+            y_axis = 1;
+         }
+      }
+      else
+      {
+         /* current axis is positive */
+         /* current stick is the left */
+         if (AXIS_POS_GET(joyaxis) < 2)
+         {
+            x_axis = 0;
+            y_axis = 1;
+         }
+      }
+
+      x                = drv->axis(port, AXIS_POS(x_axis))
+         + drv->axis(port, AXIS_NEG(x_axis));
+      y                = drv->axis(port, AXIS_POS(y_axis))
+         + drv->axis(port, AXIS_NEG(y_axis));
+      mag              = sqrt(x * x + y * y);
+      normal_mag       = (1.0f / 0x7fff) * mag;
 
       /* if analog value is below the deadzone, ignore it */
-      val              = normal_mag <= settings->floats.input_analog_deadzone ? 0 : val;
-
-      if (val == 0)
+      if (normal_mag <= input_analog_deadzone)
          return 0;
 
       normalized = (1.0f / 0x7fff) * val;
 
-      /* now scale the "good" analog range appropriately, so we don't start out way above 0 */
-      val = 0x7fff * normalized * MIN(1.0f, ((normal_mag - settings->floats.input_analog_deadzone) / (1.0f - settings->floats.input_analog_deadzone)));
+      /* now scale the "good" analog range appropriately, 
+       * so we don't start out way above 0 */
+      val = 0x7fff * normalized * MIN(1.0f, 
+         ((normal_mag - input_analog_deadzone) 
+          / (1.0f - input_analog_deadzone)));
    }
 
-   if (settings->floats.input_analog_sensitivity != 1.0f)
+   if (input_analog_sensitivity != 1.0f)
    {
       float normalized = (1.0f / 0x7fff) * val;
-      int new_val = 0x7fff * normalized * settings->floats.input_analog_sensitivity;
+      int      new_val = 0x7fff * normalized  * 
+         input_analog_sensitivity;
 
       if (new_val > 0x7fff)
          new_val = 0x7fff;
@@ -1053,8 +1059,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !sec->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = input_joypad_axis(sec, joypad_info.joy_idx, joyaxis, false);
-                  float    scaled_axis = (float)abs(axis) / 0x8000;
+                  float    scaled_axis = sec->axis ? ((float)abs(input_joypad_axis(sec, joypad_info.joy_idx, joyaxis)) / 0x8000) : 0.0;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
@@ -1065,8 +1070,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
             {
                if (joykey == NO_BTN || !first->button(joypad_info.joy_idx, joykey))
                {
-                  int16_t  axis        = input_joypad_axis(first, joypad_info.joy_idx, joyaxis, false);
-                  float    scaled_axis = (float)abs(axis) / 0x8000;
+                  float    scaled_axis = first->axis ? ((float)abs(input_joypad_axis(first, joypad_info.joy_idx, joyaxis)) / 0x8000) : 0.0;
                   bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
@@ -1689,35 +1693,6 @@ const input_device_driver_t *input_joypad_init_first(void *data)
 }
 
 /**
- * input_joypad_name:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- *
- * Gets name of the joystick (@port).
- *
- * Returns: name of joystick #port.
- **/
-const char *input_joypad_name(const input_device_driver_t *drv,
-      unsigned port)
-{
-   if (!drv)
-      return NULL;
-   return drv->name(port);
-}
-
-static bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->uints.input_joypad_map[port];
-
-   if (joy_idx >= MAX_USERS)
-      return false;
-
-   *joy_idx_real        = joy_idx;
-   return true;
-}
-
-/**
  * input_joypad_set_rumble:
  * @drv                     : Input device driver handle.
  * @port                    : User number.
@@ -1731,12 +1706,10 @@ static bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 bool input_joypad_set_rumble(const input_device_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   unsigned joy_idx     = 0;
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
 
-   if (!input_config_get_bind_idx(port, &joy_idx))
-      return false;
-
-   if (!drv || !drv->set_rumble)
+   if (!drv || !drv->set_rumble || joy_idx >= MAX_USERS)
       return false;
 
    return drv->set_rumble(joy_idx, effect, strength);
@@ -1766,7 +1739,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
-   int16_t res;
+   int16_t res = 0;
 
    if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
    {
@@ -1785,7 +1758,9 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             axis = joypad_info.auto_binds[ident].joyaxis;
 
          /* Analog button. */
-         res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis, true));
+         /* no deadzone/sensitivity correction for analog buttons currently */
+         if (drv->axis)
+            res = abs(drv->axis(joypad_info.joy_idx, axis));
 
          /* If the result is zero, it's got a digital button attached to it */
          if (res == 0)
@@ -1807,8 +1782,6 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
        * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
 
-      uint32_t axis_minus, axis_plus;
-      int16_t  pressed_minus, pressed_plus;
       unsigned ident_minus                   = 0;
       unsigned ident_plus                    = 0;
       const struct retro_keybind *bind_minus = NULL;
@@ -1822,89 +1795,41 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (!bind_minus->valid || !bind_plus->valid)
          return 0;
 
-      axis_minus    = bind_minus->joyaxis;
-      axis_plus     = bind_plus->joyaxis;
-
-      if (axis_minus == AXIS_NONE)
-         axis_minus = joypad_info.auto_binds[ident_minus].joyaxis;
-      if (axis_plus == AXIS_NONE)
-         axis_plus  = joypad_info.auto_binds[ident_plus].joyaxis;
-
-      pressed_minus = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_minus, false));
-      pressed_plus  = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis_plus, false));
-      res           = pressed_plus - pressed_minus;
+      if (drv->axis)
+      {
+         uint32_t axis_minus    = (bind_minus->joyaxis == AXIS_NONE) 
+            ? joypad_info.auto_binds[ident_minus].joyaxis 
+            : bind_minus->joyaxis;
+         uint32_t axis_plus     = (bind_plus->joyaxis  == AXIS_NONE) 
+            ? joypad_info.auto_binds[ident_plus].joyaxis  
+            : bind_plus->joyaxis;
+         int16_t  pressed_minus = abs(
+               input_joypad_axis(drv, joypad_info.joy_idx,
+                  axis_minus));
+         int16_t pressed_plus  = abs(
+               input_joypad_axis(drv, joypad_info.joy_idx,
+                  axis_plus));
+         res                   = pressed_plus - pressed_minus;
+      }
 
       if (res == 0)
       {
-         int16_t digital_left  = 0;
-         int16_t digital_right = 0;
-         uint16_t key_minus    = bind_minus->joykey;
-         uint16_t key_plus     = bind_plus->joykey;
-
-         if (key_minus == NO_BTN)
-            key_minus = joypad_info.auto_binds[ident_minus].joykey;
-         if (key_plus == NO_BTN)
-            key_plus = joypad_info.auto_binds[ident_plus].joykey;
-
-         if (drv->button(joypad_info.joy_idx, key_minus))
-            digital_left  = -0x7fff;
-         if (drv->button(joypad_info.joy_idx, key_plus))
-            digital_right = 0x7fff;
+         uint16_t key_minus    = (bind_minus->joykey == NO_BTN) 
+            ? joypad_info.auto_binds[ident_minus].joykey 
+            : bind_minus->joykey;
+         uint16_t key_plus     = (bind_plus->joykey  == NO_BTN) 
+            ? joypad_info.auto_binds[ident_plus].joykey  
+            : bind_plus->joykey;
+         int16_t digital_left  = drv->button(joypad_info.joy_idx, key_minus) 
+            ? -0x7fff : 0;
+         int16_t digital_right = drv->button(joypad_info.joy_idx, key_plus)  
+            ? 0x7fff  : 0;
 
          return digital_right + digital_left;
       }
    }
 
    return res;
-}
-
-/**
- * input_joypad_axis_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @axis                    : Identifier of axis.
- *
- * Checks if axis (@axis) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if axis was pressed, otherwise
- * false (0).
- **/
-int16_t input_joypad_axis_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned axis)
-{
-   if (!drv)
-      return 0;
-   return drv->axis(port, AXIS_POS(axis)) +
-      drv->axis(port, AXIS_NEG(axis));
-}
-
-/**
- * input_joypad_button_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @button                  : Identifier of key.
- *
- * Checks if key (@button) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-bool input_joypad_button_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned button)
-{
-   if (!drv)
-      return false;
-   return drv->button(port, button);
-}
-
-bool input_joypad_hat_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned hat_dir, unsigned hat)
-{
-   if (!drv)
-      return false;
-   return drv->button(port, HAT_MAP(hat, hat_dir));
 }
 
 /**
@@ -2460,20 +2385,6 @@ static const char *input_config_get_prefix(unsigned user, bool meta)
    return NULL;
 }
 
-static enum retro_key find_rk_bind(const char *str)
-{
-   size_t i;
-
-   for (i = 0; input_config_key_map[i].str; i++)
-   {
-      if (string_is_equal_noncase(input_config_key_map[i].str, str))
-         return input_config_key_map[i].key;
-   }
-
-   RARCH_WARN("Key name %s not found.\n", str);
-   return RETROK_UNKNOWN;
-}
-
 /**
  * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
@@ -2484,9 +2395,17 @@ static enum retro_key find_rk_bind(const char *str)
  **/
 enum retro_key input_config_translate_str_to_rk(const char *str)
 {
+   size_t i;
    if (strlen(str) == 1 && isalpha((int)*str))
       return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
-   return find_rk_bind(str);
+   for (i = 0; input_config_key_map[i].str; i++)
+   {
+      if (string_is_equal_noncase(input_config_key_map[i].str, str))
+         return input_config_key_map[i].key;
+   }
+
+   RARCH_WARN("Key name %s not found.\n", str);
+   return RETROK_UNKNOWN;
 }
 
 /**
@@ -3103,25 +3022,24 @@ void input_config_save_keybinds_user(void *data, unsigned user)
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
+      char key[64];
+      char btn[64];
       const char *prefix               = input_config_get_prefix(user,
             input_config_bind_map_get_meta(i));
       const struct retro_keybind *bind = &input_config_binds[user][i];
+      const char                 *base = input_config_bind_map_get_base(i);
 
-      if (prefix && bind->valid)
-      {
-         char key[64];
-         char btn[64];
-         const char *base = input_config_bind_map_get_base(i);
+      if (!prefix || !bind->valid)
+         continue;
 
-         key[0] = btn[0]  = '\0';
+      key[0] = btn[0]  = '\0';
 
-         fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+      fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
-         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
-         config_set_string(conf, key, btn);
+      input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+      config_set_string(conf, key, btn);
 
-         input_config_save_keybind(conf, prefix, base, bind, true);
-      }
+      input_config_save_keybind(conf, prefix, base, bind, true);
    }
 }
 
@@ -3290,7 +3208,7 @@ void input_config_save_keybind(void *data, const char *prefix,
 {
    config_file_t *conf = (config_file_t*)data;
 
-   save_keybind_joykey(conf, prefix, base, bind, save_empty);
-   save_keybind_axis(conf, prefix, base, bind, save_empty);
+   save_keybind_joykey (conf, prefix, base, bind, save_empty);
+   save_keybind_axis   (conf, prefix, base, bind, save_empty);
    save_keybind_mbutton(conf, prefix, base, bind, save_empty);
 }

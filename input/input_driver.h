@@ -488,7 +488,7 @@ static INLINE bool input_joypad_pressed(
       unsigned key)
 {
    /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey = (binds[key].joykey != NO_BTN)
+   const uint64_t joykey  = (binds[key].joykey != NO_BTN)
       ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
    const uint32_t joyaxis = (binds[key].joyaxis != AXIS_NONE)
       ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
@@ -551,8 +551,14 @@ bool input_joypad_set_rumble(const input_device_driver_t *driver,
  * Returns: true (1) if axis was pressed, otherwise
  * false (0).
  **/
-int16_t input_joypad_axis_raw(const input_device_driver_t *driver,
-      unsigned port, unsigned axis);
+static INLINE int16_t input_joypad_axis_raw(const input_device_driver_t *drv,
+      unsigned port, unsigned axis)
+{
+   if (!drv)
+      return 0;
+   return drv->axis(port, AXIS_POS(axis)) +
+      drv->axis(port, AXIS_NEG(axis));
+}
 
 /**
  * input_joypad_button_raw:
@@ -566,11 +572,21 @@ int16_t input_joypad_axis_raw(const input_device_driver_t *driver,
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-bool input_joypad_button_raw(const input_device_driver_t *driver,
-      unsigned port, unsigned button);
+static INLINE bool input_joypad_button_raw(const input_device_driver_t *drv,
+      unsigned port, unsigned button)
+{
+   if (!drv)
+      return false;
+   return drv && drv->button(port, button);
+}
 
-bool input_joypad_hat_raw(const input_device_driver_t *driver,
-      unsigned joypad, unsigned hat_dir, unsigned hat);
+static INLINE bool input_joypad_hat_raw(const input_device_driver_t *drv,
+      unsigned port, unsigned hat_dir, unsigned hat)
+{
+   if (!drv)
+      return false;
+   return drv->button(port, HAT_MAP(hat, hat_dir));
+}
 
 /**
  * input_pad_connect:
@@ -603,8 +619,13 @@ bool input_mouse_button_raw(unsigned port, unsigned button);
  *
  * Returns: name of joystick #port.
  **/
-const char *input_joypad_name(const input_device_driver_t *driver,
-      unsigned port);
+static INLINE const char *input_joypad_name(const input_device_driver_t *drv,
+      unsigned port)
+{
+   if (!drv)
+      return NULL;
+   return drv->name(port);
+}
 
 #ifdef HAVE_HID
 
