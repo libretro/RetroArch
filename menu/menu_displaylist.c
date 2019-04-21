@@ -4391,8 +4391,7 @@ typedef struct menu_displaylist_build_info {
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
-   unsigned                count = 0;
-   settings_t      *settings     = config_get_ptr();
+   unsigned count = 0;
 
    switch (type)
    {
@@ -4518,18 +4517,21 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          }
          break;
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
-                  PARSE_ONLY_STRING, false) != -1)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
-                  PARSE_ONLY_STRING, false) != -1)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-                  PARSE_ONLY_BOOL, false) != -1)
-            count++;
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,             PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,                   PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,     PARSE_ONLY_BOOL},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_MENU_SOUNDS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
