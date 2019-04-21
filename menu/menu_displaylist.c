@@ -4439,32 +4439,38 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             count++;
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-               PARSE_ACTION, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS, PARSE_ACTION},
+               {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,  PARSE_ACTION},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_USER_SETTINGS_LIST:
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_PRIVACY_SETTINGS,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_ACCOUNTS_LIST,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_NETPLAY_NICKNAME,
-               PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_USER_LANGUAGE,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_PRIVACY_SETTINGS,  PARSE_ACTION},
+               {MENU_ENUM_LABEL_ACCOUNTS_LIST,     PARSE_ACTION},
+               {MENU_ENUM_LABEL_NETPLAY_NICKNAME,  PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_USER_LANGUAGE,     PARSE_ONLY_UINT},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
