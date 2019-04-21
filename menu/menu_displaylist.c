@@ -4803,14 +4803,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                PARSE_ONLY_BOOL, false) == 0)
             count++;
 
-         {
-            settings_t      *settings     = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-              if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_PERFCNT_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-                 count++;
-         }
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_PERFCNT_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
          break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
