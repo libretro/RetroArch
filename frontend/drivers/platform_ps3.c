@@ -602,7 +602,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
       if (filestream_exists(path))
-         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
+         path_set(RARCH_PATH_CORE, path);
    }
 #endif
 }

@@ -344,7 +344,7 @@ INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
-                        rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH,info->path);
+                        path_set(RARCH_PATH_CORE, info->path);
                      }
                      break;
                }

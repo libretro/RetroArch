@@ -2192,7 +2192,7 @@ void config_set_defaults(void)
             g_defaults.path.buildbot_server_url,
             sizeof(settings->paths.network_buildbot_url));
    if (!string_is_empty(g_defaults.path.core))
-      rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
+      path_set(RARCH_PATH_CORE, g_defaults.path.core);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
       strlcpy(settings->paths.path_content_database,
             g_defaults.dirs[DEFAULT_DIR_DATABASE],

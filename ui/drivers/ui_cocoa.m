@@ -548,7 +548,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 
     settings_t *settings = config_get_ptr();
 
-    rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    path_set(RARCH_PATH_CORE, state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
     if (info && info->load_no_content

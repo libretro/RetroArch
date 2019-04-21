@@ -1349,8 +1349,7 @@ bool task_push_load_content_from_playlist_from_menu(
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-   /* Set libretro core path */
-   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   path_set(RARCH_PATH_CORE, core_path);
 
    /* Is content required by this core? */
    if (fullpath)
@@ -1502,8 +1501,7 @@ bool task_push_load_new_core(
       retro_task_callback_t cb,
       void *user_data)
 {
-   /* Set libretro core path */
-   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   path_set(RARCH_PATH_CORE, core_path);
 
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
@@ -1573,11 +1571,8 @@ bool task_push_load_content_with_new_core_from_menu(
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
-   /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
-
-   /* Set libretro core path */
-   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   path_set(RARCH_PATH_CORE, core_path);
 
 #ifdef HAVE_DYNAMIC
    /* Load core */
@@ -1756,11 +1751,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 {
    global_t *global = global_get_ptr();
 
-   /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
-
-   /* Set libretro core path */
-   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   path_set(RARCH_PATH_CORE, core_path);
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
@@ -1837,7 +1829,6 @@ bool task_push_load_content_with_current_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data)
 {
-   /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
@@ -1860,7 +1851,6 @@ bool task_push_load_content_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */

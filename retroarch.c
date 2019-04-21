@@ -1528,8 +1528,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
                else if (filestream_exists(optarg))
                {
-
-                  rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
+                  path_set(RARCH_PATH_CORE, optarg);
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
                   /* We requested explicit core, so use PLAIN core type. */
@@ -2571,8 +2570,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_pending_windowed_scale = *idx;
          }
          break;
-      case RARCH_CTL_SET_LIBRETRO_PATH:
-         return path_set(RARCH_PATH_CORE, (const char*)data);
       case RARCH_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0,
                sizeof(struct retro_frame_time_callback));
