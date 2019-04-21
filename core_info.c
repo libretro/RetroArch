@@ -245,10 +245,8 @@ static core_info_list_t *core_info_list_new(const char *path,
    struct string_list *core_packages = string_list_new();
    uwp_fill_installed_core_packages(core_packages);
    for (i = 0; i < core_packages->size; i++)
-   {
       dir_list_append(contents, core_packages->elems[i].data, exts,
             false, dir_show_hidden_files, false, false);
-   }
    string_list_free(core_packages);
 #else
    /* Keep the old 'directory not found' behavior */
