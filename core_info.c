@@ -286,7 +286,7 @@ static core_info_list_t *core_info_list_new(const char *path,
          char *tmp           = NULL;
          bool tmp_bool       = false;
          unsigned count      = 0;
-         config_file_t *conf = config_file_new(info_path);
+         config_file_t *conf = config_file_read(info_path);
 
          free(info_path);
 
