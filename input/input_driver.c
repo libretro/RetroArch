@@ -890,7 +890,6 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
    if (input_analog_deadzone)
    {
       int16_t x, y;
-      int mag;
       float normalized;
       float normal_mag;
       /* 2/3 are the right analog X/Y axes */
@@ -923,8 +922,7 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
          + drv->axis(port, AXIS_NEG(x_axis));
       y                = drv->axis(port, AXIS_POS(y_axis))
          + drv->axis(port, AXIS_NEG(y_axis));
-      mag              = sqrt(x * x + y * y);
-      normal_mag       = (1.0f / 0x7fff) * mag;
+      normal_mag       = (1.0f / 0x7fff) * sqrt(x * x + y * y);
 
       /* if analog value is below the deadzone, ignore it */
       if (normal_mag <= input_analog_deadzone)
@@ -950,7 +948,7 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
       else if (new_val < -0x7fff)
          new_val = -0x7fff;
 
-      val = new_val;
+      return new_val;
    }
 
    return val;
