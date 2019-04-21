@@ -2556,102 +2556,35 @@ static bool check_menu_driver_compatibility(void)
 }
 #endif
 
-static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   const char *prefix = NULL;
-
-   if (!input_config_bind_map_get_valid(idx))
-      return;
-
-   if (!input_config_bind_map_get_base(idx))
-      return;
-
-   prefix = input_config_get_prefix(user, input_config_bind_map_get_meta(idx));
-
-   if (prefix)
-      input_config_parse_key(conf, prefix,
-            input_config_bind_map_get_base(idx), bind);
-}
-
-static void read_keybinds_button(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   const char *prefix = NULL;
-
-   if (!input_config_bind_map_get_valid(idx))
-      return;
-   if (!input_config_bind_map_get_base(idx))
-      return;
-
-   prefix = input_config_get_prefix(user,
-         input_config_bind_map_get_meta(idx));
-
-   if (prefix)
-      input_config_parse_joy_button(conf, prefix,
-            input_config_bind_map_get_base(idx), bind);
-}
-
-static void read_keybinds_axis(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   const char *prefix = NULL;
-
-   if (!input_config_bind_map_get_valid(idx))
-      return;
-   if (!input_config_bind_map_get_base(idx))
-      return;
-
-   prefix = input_config_get_prefix(user,
-         input_config_bind_map_get_meta(idx));
-
-   if (prefix)
-      input_config_parse_joy_axis(conf, prefix,
-            input_config_bind_map_get_base(idx), bind);
-}
-
-static void read_keybinds_mbutton(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   const char *prefix = NULL;
-
-   if (!input_config_bind_map_get_valid(idx))
-      return;
-   if (!input_config_bind_map_get_base(idx))
-      return;
-
-   prefix = input_config_get_prefix(user,
-         input_config_bind_map_get_meta(idx));
-
-   if (prefix)
-      input_config_parse_mouse_button(conf, prefix,
-            input_config_bind_map_get_base(idx), bind);
-}
-
-static void read_keybinds_user(config_file_t *conf, unsigned user)
-{
-   unsigned i;
-
-   for (i = 0; input_config_bind_map_get_valid(i); i++)
-   {
-      struct retro_keybind *bind = &input_config_binds[user][i];
-
-      if (!bind->valid)
-         continue;
-
-      read_keybinds_keyboard(conf, user, i, bind);
-      read_keybinds_button(conf, user, i, bind);
-      read_keybinds_axis(conf, user, i, bind);
-      read_keybinds_mbutton(conf, user, i, bind);
-   }
-}
-
 static void config_read_keybinds_conf(config_file_t *conf)
 {
    unsigned i;
 
    for (i = 0; i < MAX_USERS; i++)
-      read_keybinds_user(conf, i);
+   {
+      unsigned j;
+
+      for (j = 0; input_config_bind_map_get_valid(j); j++)
+      {
+         struct retro_keybind *bind = &input_config_binds[i][j];
+         const char *prefix         = input_config_get_prefix(i, input_config_bind_map_get_meta(j));
+         const char *btn            = input_config_bind_map_get_base(j);
+
+         if (!bind->valid)
+            continue;
+         if (!input_config_bind_map_get_valid(j))
+            continue;
+         if (!btn)
+            continue;
+         if (!prefix)
+            continue;
+
+         input_config_parse_key(conf, prefix, btn, bind);
+         input_config_parse_joy_button(conf, prefix, btn, bind);
+         input_config_parse_joy_axis(conf, prefix, btn, bind);
+         input_config_parse_mouse_button(conf, prefix, btn, bind);
+      }
+   }
 }
 
 static bool check_shader_compatibility(enum file_path_enum enum_idx)
@@ -2860,9 +2793,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (config_get_bool(conf, "log_verbosity", &tmp_bool))
    {
       if (tmp_bool)
-      {
          verbosity_enable();
-      }
       else
          verbosity_disable();
    }
@@ -3018,96 +2949,76 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (string_is_empty(settings->paths.path_content_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
-      {
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
                path_config,
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->paths.path_content_history));
-      }
       else
-      {
          fill_pathname_join(settings->paths.path_content_history,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->paths.path_content_history));
-      }
    }
 
    if (string_is_empty(settings->paths.path_content_favorites))
    {
       if (string_is_empty(settings->paths.directory_content_history))
-      {
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
                path_config,
                file_path_str(FILE_PATH_CONTENT_FAVORITES),
                sizeof(settings->paths.path_content_favorites));
-      }
       else
-      {
          fill_pathname_join(settings->paths.path_content_favorites,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_FAVORITES),
                sizeof(settings->paths.path_content_favorites));
-      }
    }
 
    if (string_is_empty(settings->paths.path_content_music_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
-      {
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
                path_config,
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->paths.path_content_music_history));
-      }
       else
-      {
          fill_pathname_join(settings->paths.path_content_music_history,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->paths.path_content_music_history));
-      }
    }
 
    if (string_is_empty(settings->paths.path_content_video_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
-      {
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
                path_config,
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->paths.path_content_video_history));
-      }
       else
-      {
          fill_pathname_join(settings->paths.path_content_video_history,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->paths.path_content_video_history));
-      }
    }
 
    if (string_is_empty(settings->paths.path_content_image_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
-      {
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
                path_config,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
-      }
       else
-      {
          fill_pathname_join(settings->paths.path_content_image_history,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
-      }
    }
 
    if (!string_is_empty(settings->paths.directory_screenshot))
