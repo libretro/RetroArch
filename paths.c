@@ -62,7 +62,6 @@ void path_set_redirect(void)
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   bool check_library_name                     = false;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
@@ -82,62 +81,59 @@ void path_set_redirect(void)
       if (!string_is_equal(system->library_name,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
-         check_library_name = true;
-   }
-
-   if (check_library_name)
-   {
-      /* per-core saves: append the library_name to the save location */
-      if (settings->bools.sort_savefiles_enable
-            && !string_is_empty(old_savefile_dir))
       {
-         fill_pathname_join(
-               new_savefile_dir,
-               old_savefile_dir,
-               system->library_name,
-               path_size);
-
-         /* If path doesn't exist, try to create it,
-          * if everything fails revert to the original path. */
-         if(!path_is_directory(new_savefile_dir)
-               && !string_is_empty(new_savefile_dir))
+         /* per-core saves: append the library_name to the save location */
+         if (settings->bools.sort_savefiles_enable
+               && !string_is_empty(old_savefile_dir))
          {
-            path_mkdir(new_savefile_dir);
-            if(!path_is_directory(new_savefile_dir))
-            {
-               RARCH_LOG("%s %s\n",
-                     msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
-                     old_savefile_dir);
+            fill_pathname_join(
+                  new_savefile_dir,
+                  old_savefile_dir,
+                  system->library_name,
+                  path_size);
 
-               strlcpy(new_savefile_dir, old_savefile_dir, path_size);
+            /* If path doesn't exist, try to create it,
+             * if everything fails revert to the original path. */
+            if(!path_is_directory(new_savefile_dir)
+                  && !string_is_empty(new_savefile_dir))
+            {
+               path_mkdir(new_savefile_dir);
+               if(!path_is_directory(new_savefile_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+                        old_savefile_dir);
+
+                  strlcpy(new_savefile_dir, old_savefile_dir, path_size);
+               }
             }
          }
-      }
 
-      /* per-core states: append the library_name to the save location */
-      if (settings->bools.sort_savestates_enable
-            && !string_is_empty(old_savestate_dir))
-      {
-         fill_pathname_join(
-               new_savestate_dir,
-               old_savestate_dir,
-               system->library_name,
-               path_size);
-
-         /* If path doesn't exist, try to create it.
-          * If everything fails, revert to the original path. */
-         if(!path_is_directory(new_savestate_dir) &&
-               !string_is_empty(new_savestate_dir))
+         /* per-core states: append the library_name to the save location */
+         if (settings->bools.sort_savestates_enable
+               && !string_is_empty(old_savestate_dir))
          {
-            path_mkdir(new_savestate_dir);
-            if(!path_is_directory(new_savestate_dir))
+            fill_pathname_join(
+                  new_savestate_dir,
+                  old_savestate_dir,
+                  system->library_name,
+                  path_size);
+
+            /* If path doesn't exist, try to create it.
+             * If everything fails, revert to the original path. */
+            if(!path_is_directory(new_savestate_dir) &&
+                  !string_is_empty(new_savestate_dir))
             {
-               RARCH_LOG("%s %s\n",
-                     msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
-                     old_savestate_dir);
-               strlcpy(new_savestate_dir,
-                     old_savestate_dir,
-                     path_size);
+               path_mkdir(new_savestate_dir);
+               if(!path_is_directory(new_savestate_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+                        old_savestate_dir);
+                  strlcpy(new_savestate_dir,
+                        old_savestate_dir,
+                        path_size);
+               }
             }
          }
       }
@@ -356,10 +352,8 @@ static bool path_init_subsystem(void)
                      path_size);
             }
             else
-            {
-               fill_pathname(path, savename,
-                     ext, path_size);
-            }
+               fill_pathname(path, savename, ext, path_size);
+
             RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                path);
