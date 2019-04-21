@@ -848,8 +848,9 @@ static void content_file_init_set_attribs(
    }
    else
    {
-      bool contentless     = false;
-      bool is_inited       = false;
+      bool contentless           = false;
+      bool is_inited             = false;
+      bool content_path_is_empty = path_is_empty(RARCH_PATH_CONTENT);
 
       content_get_status(&contentless, &is_inited);
 
@@ -857,15 +858,12 @@ static void content_file_init_set_attribs(
       attr->i              |= content_ctx->need_fullpath << 1;
       attr->i              |= (!contentless)  << 2;
 
-      if (path_is_empty(RARCH_PATH_CONTENT)
+      if (content_path_is_empty
             && contentless
             && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", *attr);
-      else
-      {
-         if (!path_is_empty(RARCH_PATH_CONTENT))
-            string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
-      }
+      else if (!content_path_is_empty)
+         string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
    }
 }
 
@@ -884,13 +882,12 @@ static bool content_file_init(
 {
    union string_list_elem_attr attr;
    struct retro_game_info               *info = NULL;
-   bool ret                                   =
-      path_is_empty(RARCH_PATH_SUBSYSTEM)
-      ? true : false;
+   bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
+   bool ret                                   = subsystem_path_is_empty;
    const struct retro_subsystem_info *special =
-      path_is_empty(RARCH_PATH_SUBSYSTEM)
-      ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
-            content_ctx->subsystem.size, error_string, &ret);
+     subsystem_path_is_empty 
+     ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
+           content_ctx->subsystem.size, error_string, &ret);
 
    if (!ret)
       return false;
