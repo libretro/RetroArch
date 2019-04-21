@@ -94,8 +94,7 @@ void path_set_redirect(void)
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
-            if(!path_is_directory(new_savefile_dir)
-                  && !string_is_empty(new_savefile_dir))
+            if(!path_is_directory(new_savefile_dir))
             {
                path_mkdir(new_savefile_dir);
                if(!path_is_directory(new_savefile_dir))
@@ -121,8 +120,7 @@ void path_set_redirect(void)
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
-            if(!path_is_directory(new_savestate_dir) &&
-                  !string_is_empty(new_savestate_dir))
+            if(!path_is_directory(new_savestate_dir))
             {
                path_mkdir(new_savestate_dir);
                if(!path_is_directory(new_savestate_dir))
