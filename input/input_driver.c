@@ -592,7 +592,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
 void input_poll(void)
 {
    size_t i;
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings;
    uint8_t max_users              = (uint8_t)input_driver_max_users;
 
    current_input->poll(current_input_data);
@@ -605,19 +605,22 @@ void input_poll(void)
    if (input_driver_block_libretro_input)
       return;
 
+   settings = config_get_ptr();
+
    for (i = 0; i < max_users; i++)
    {
-      if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
-      {
-         rarch_joypad_info_t joypad_info;
-         joypad_info.axis_threshold = input_driver_axis_threshold;
-         joypad_info.joy_idx        = settings->uints.input_joypad_map[i];
-         joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+      rarch_joypad_info_t joypad_info;
 
-         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-               current_input_data, joypad_info, libretro_input_binds,
-               (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-      }
+      if (!libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
+         continue;
+
+      joypad_info.axis_threshold              = input_driver_axis_threshold;
+      joypad_info.joy_idx                     = settings->uints.input_joypad_map[i];
+      joypad_info.auto_binds                  = input_autoconf_binds[joypad_info.joy_idx];
+
+      input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
+            current_input_data, joypad_info, libretro_input_binds,
+            (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
 #ifdef HAVE_OVERLAY
