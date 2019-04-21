@@ -106,11 +106,11 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    QScopedPointer<QAction> editAction;
    QScopedPointer<QAction> deleteAction;
    QPointer<QAction> selectedAction;
-   QPoint cursorPos = QCursor::pos();
+   QPoint                    cursorPos = QCursor::pos();
    QHash<QString, QString> contentHash = getCurrentContentHash();
-   bool specialPlaylist = currentPlaylistIsSpecial();
-   bool allPlaylist = currentPlaylistIsAll();
-   bool actionsAdded = false;
+   bool                specialPlaylist = currentPlaylistIsSpecial();
+   bool                    allPlaylist = currentPlaylistIsAll();
+   bool                   actionsAdded = false;
 
    menu.reset(new QMenu(this));
 
@@ -178,37 +178,40 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    {
       if (selectedAction == addFilesAction.data())
       {
-         QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
+         QStringList filePaths = QFileDialog::getOpenFileNames(
+               this,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
 
          if (!filePaths.isEmpty())
             addFilesToPlaylist(filePaths);
       }
       else if (selectedAction == addEntryAction.data())
-      {
          addFilesToPlaylist(QStringList());
-      }
       else if (selectedAction == addFolderAction.data())
       {
-         QString dirPath = QFileDialog::getExistingDirectory(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER), QString(), QFileDialog::ShowDirsOnly);
+         QString dirPath = QFileDialog::getExistingDirectory(
+               this,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER),
+               QString(), QFileDialog::ShowDirsOnly);
 
          if (!dirPath.isEmpty())
             addFilesToPlaylist(QStringList() << dirPath);
       }
       else if (selectedAction == editAction.data())
       {
-         PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
-         QHash<QString, QString> selectedCore;
          QString selectedDatabase;
          QString selectedName;
          QString selectedPath;
-         QString currentPlaylistPath = getCurrentPlaylistPath();
+         QHash<QString, QString> selectedCore;
+         PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
+         QString         currentPlaylistPath = getCurrentPlaylistPath();
 
          if (!playlistDialog->showDialog(contentHash))
             return;
 
-         selectedName = m_playlistEntryDialog->getSelectedName();
-         selectedPath = m_playlistEntryDialog->getSelectedPath();
-         selectedCore = m_playlistEntryDialog->getSelectedCore();
+         selectedName     = m_playlistEntryDialog->getSelectedName();
+         selectedPath     = m_playlistEntryDialog->getSelectedPath();
+         selectedCore     = m_playlistEntryDialog->getSelectedCore();
          selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
 
          if (selectedCore.isEmpty())
@@ -218,15 +221,13 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
          }
 
          if (selectedDatabase.isEmpty())
-         {
             selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION));
-         }
 
-         contentHash["label"] = selectedName;
-         contentHash["path"] = selectedPath;
+         contentHash["label"]     = selectedName;
+         contentHash["path"]      = selectedPath;
          contentHash["core_name"] = selectedCore.value("core_name");
          contentHash["core_path"] = selectedCore.value("core_path");
-         contentHash["db_name"] = selectedDatabase;
+         contentHash["db_name"]   = selectedDatabase;
 
          if (!updateCurrentPlaylistEntry(contentHash))
          {
@@ -235,8 +236,6 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
          }
       }
       else if (selectedAction == deleteAction.data())
-      {
          deleteCurrentPlaylistItem();
-      }
    }
 }

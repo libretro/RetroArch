@@ -284,9 +284,7 @@ void CoreOptionsDialog::buildLayout()
                comboBox = new QComboBox(this);
 
                for (k = 0; k < option->vals->size; k++)
-               {
                   comboBox->addItem(option->vals->elems[k].data, option->key);
-               }
 
                comboBox->setCurrentText(val);
 

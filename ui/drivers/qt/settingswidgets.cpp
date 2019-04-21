@@ -150,9 +150,9 @@ void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 
 void FormLayout::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
 {
-   rarch_setting_t *red = menu_setting_find_enum(r);
+   rarch_setting_t   *red = menu_setting_find_enum(r);
    rarch_setting_t *green = menu_setting_find_enum(g);
-   rarch_setting_t *blue = menu_setting_find_enum(b);
+   rarch_setting_t  *blue = menu_setting_find_enum(b);
 
    if (red && green && blue)
       addRow(title, new UIntColorButton(red, green, blue));
@@ -326,7 +326,7 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
    if (setting && setting->short_description)
    {
       m_setting = setting;
-      m_value = setting->value.target.boolean;
+      m_value   = setting->value.target.boolean;
 
       setTitle(setting->short_description);
 
@@ -1088,7 +1088,7 @@ ColorButton::ColorButton(msg_hash_enums red, msg_hash_enums green, msg_hash_enum
 void ColorButton::paintEvent(QPaintEvent *event)
 {
    const int pixSize = 10;
-   const int corr = 5;
+   const int    corr = 5;
    const QColor frameColor1(0, 0, 0, 26);
    const QColor frameColor2(0, 0, 0, 51);
 

@@ -82,10 +82,10 @@ void CoreInfoDialog::showCoreInfo()
    for (i = 0; i < infoList.count(); i++)
    {
       const QHash<QString, QString> &line = infoList.at(i);
-      QLabel *label = new QLabel(line.value("key"));
-      CoreInfoLabel *value = new CoreInfoLabel(line.value("value"));
-      QString labelStyle = line.value("label_style");
-      QString valueStyle = line.value("value_style");
+      QLabel                       *label = new QLabel(line.value("key"));
+      CoreInfoLabel                *value = new CoreInfoLabel(line.value("value"));
+      QString                  labelStyle = line.value("label_style");
+      QString                  valueStyle = line.value("value_style");
 
       if (!labelStyle.isEmpty())
          label->setStyleSheet(labelStyle);

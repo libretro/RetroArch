@@ -132,22 +132,24 @@ void PlaylistEntryDialog::loadPlaylistOptions()
 
       for (i = 0; i < core_info_list->count; i++)
       {
-         const core_info_t *core = &core_info_list->list[i];
-         QStringList databases = QString(core->databases).split("|");
-         QHash<QString, QString> hash;
          QString ui_display_name;
+         QHash<QString, QString> hash;
+         const core_info_t *core = &core_info_list->list[i];
+         QStringList databases   = QString(core->databases).split("|");
 
-         hash["core_name"] = core->core_name;
+         hash["core_name"]         = core->core_name;
          hash["core_display_name"] = core->display_name;
-         hash["core_path"] = core->path;
-         hash["core_databases"] = core->databases;
+         hash["core_path"]         = core->path;
+         hash["core_databases"]    = core->databases;
 
-         ui_display_name = hash.value("core_name");
+         ui_display_name           = hash.value("core_name");
 
          if (ui_display_name.isEmpty())
-            ui_display_name = hash.value("core_display_name");
+            ui_display_name        = hash.value("core_display_name");
          if (ui_display_name.isEmpty())
-            ui_display_name = QFileInfo(hash.value("core_path")).fileName();
+            ui_display_name        = QFileInfo(
+                  hash.value("core_path")).fileName();
+
          if (ui_display_name.isEmpty())
             continue;
 
@@ -191,12 +193,13 @@ bool PlaylistEntryDialog::nameFieldEnabled()
    return m_nameLineEdit->isEnabled();
 }
 
-void PlaylistEntryDialog::setEntryValues(const QHash<QString, QString> &contentHash)
+void PlaylistEntryDialog::setEntryValues(
+      const QHash<QString, QString> &contentHash)
 {
    QString db;
    QString coreName = contentHash.value("core_name");
    int foundDB = 0;
-   int i = 0;
+   int i       = 0;
 
    loadPlaylistOptions();
 

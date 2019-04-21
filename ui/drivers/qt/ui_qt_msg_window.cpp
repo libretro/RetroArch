@@ -57,7 +57,8 @@ static enum ui_msg_window_response ui_msg_window_qt_response(ui_msg_window_state
 	return UI_MSG_RESPONSE_NA;
 }
 
-static QFlags<QMessageBox::StandardButton> ui_msg_window_qt_buttons(ui_msg_window_state *state)
+static QFlags<QMessageBox::StandardButton> 
+ui_msg_window_qt_buttons(ui_msg_window_state *state)
 {
 	switch (state->buttons)
 	{
@@ -74,7 +75,8 @@ static QFlags<QMessageBox::StandardButton> ui_msg_window_qt_buttons(ui_msg_windo
 	return QMessageBox::NoButton;
 }
 
-static enum ui_msg_window_response ui_msg_window_qt_error(ui_msg_window_state *state)
+static enum ui_msg_window_response 
+ui_msg_window_qt_error(ui_msg_window_state *state)
 {
    QFlags<QMessageBox::StandardButton> flags = ui_msg_window_qt_buttons(state);
    return ui_msg_window_qt_response(state, QMessageBox::critical((QWidget*)state->window, state->title, state->text, flags));

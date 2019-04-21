@@ -127,7 +127,7 @@ static void scan_finished_handler(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    bool dontAsk = false;
-   bool answer = false;
+   bool answer  = false;
 
 #ifdef HAVE_MENU
    menu_ctx_environment_t menu_environ;
@@ -730,19 +730,19 @@ MainWindow::~MainWindow()
       delete m_proxyFileModel;
 }
 
-void MainWindow::startTimer() {
+void MainWindow::startTimer()
+{
    if (m_thumbnailTimer->isActive())
    {
       m_thumbnailTimer->stop();
       m_thumbnailTimer->start(50);
    }
    else
-   {
       m_thumbnailTimer->start(50);
-   }
 }
 
-void MainWindow::updateVisibleItems() {
+void MainWindow::updateVisibleItems()
+{
    if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS && m_viewType == VIEW_TYPE_ICONS)
    {
       unsigned i;
@@ -1194,13 +1194,9 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
    m_coreInfoLabel->setText(coreInfoText);
 
    if (coreSelection == CORE_SELECTION_LOAD_CORE)
-   {
       onLoadCoreClicked();
-   }
    else
-   {
       m_loadCoreWindow->setProperty("last_launch_with_index", m_launchWithComboBox->currentIndex());
-   }
 }
 
 MainWindow::Theme MainWindow::getThemeFromString(QString themeString)
@@ -1280,14 +1276,14 @@ void MainWindow::changeThumbnailType(ThumbnailType type)
 QString MainWindow::changeThumbnail(const QImage &image, QString type)
 {
    QHash<QString, QString> hash = getCurrentContentHash();
-   QString dirString = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]) + "/" + type;
-   QString thumbPath = dirString + "/" + m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
-   QByteArray dirArray = QDir::toNativeSeparators(dirString).toUtf8();
-   const char *dirData = dirArray.constData();
-   QByteArray thumbArray = QDir::toNativeSeparators(thumbPath).toUtf8();
-   const char *thumbData = thumbArray.constData();
+   QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]) + "/" + type;
+   QString thumbPath            = dirString + "/" + m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+   QByteArray   dirArray        = QDir::toNativeSeparators(dirString).toUtf8();
+   const char   *dirData        = dirArray.constData();
+   QByteArray thumbArray        = QDir::toNativeSeparators(thumbPath).toUtf8();
+   const char *thumbData        = thumbArray.constData();
+   int quality                  = -1;
    QDir dir(dirString);
-   int quality = -1;
    QImage scaledImage(image);
 
    if (!dir.exists())
@@ -1325,7 +1321,8 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
    return QString();
 }
 
-void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnailType)
+void MainWindow::onThumbnailDropped(const QImage &image,
+      ThumbnailType thumbnailType)
 {
    switch (thumbnailType)
    {
@@ -1381,11 +1378,11 @@ void MainWindow::onThumbnailDropped(const QImage &image, ThumbnailType thumbnail
 
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
+   unsigned i;
    QVector<QHash<QString, QString> > infoList;
    QHash<QString, QString> currentCore = getSelectedCore();
-   core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info = NULL;
-   unsigned i = 0;
+   core_info_list_t    *core_info_list = NULL;
+   const core_info_t        *core_info = NULL;
 
    core_info_get_list(&core_info_list);
 
@@ -1407,7 +1404,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    {
       QHash<QString, QString> hash;
 
-      hash["key"] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE);
+      hash["key"]   = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE);
       hash["value"] = "";
 
       infoList.append(hash);
@@ -1419,7 +1417,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    {
       QHash<QString, QString> hash;
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME)) + ":";
       hash["value"] = core_info->core_name;
 
       infoList.append(hash);
@@ -1429,7 +1428,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    {
       QHash<QString, QString> hash;
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL)) + ":";
       hash["value"] = core_info->display_name;
 
       infoList.append(hash);
@@ -1468,7 +1468,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             categories += ", ";
       }
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES)) + ":";
       hash["value"] = categories;
 
       infoList.append(hash);
@@ -1487,7 +1488,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             authors += ", ";
       }
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS)) + ":";
       hash["value"] = authors;
 
       infoList.append(hash);
@@ -1506,7 +1508,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             permissions += ", ";
       }
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS)) + ":";
       hash["value"] = permissions;
 
       infoList.append(hash);
@@ -1525,7 +1528,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             licenses += ", ";
       }
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES)) + ":";
       hash["value"] = licenses;
 
       infoList.append(hash);
@@ -1544,7 +1548,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             supported_extensions += ", ";
       }
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS)) + ":";
+      hash["key"]   = QString(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS)) + ":";
       hash["value"] = supported_extensions;
 
       infoList.append(hash);
@@ -1590,13 +1595,13 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
                if (core_info->firmware[i].missing)
                {
-                  missing = true;
+                  missing    = true;
                   labelText += msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING);
                }
                else
                   labelText += msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT);
 
-               labelText += ", ";
+               labelText    += ", ";
 
                if (core_info->firmware[i].optional)
                   labelText += msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL);
@@ -1690,8 +1695,8 @@ void MainWindow::selectBrowserDir(QString path)
    if (!path.isEmpty())
    {
       QModelIndex sourceIndex = m_fileModel->setRootPath(path);
-      QModelIndex proxyIndex = m_proxyFileModel->mapFromSource(sourceIndex);
-      m_fileTableHeaderState = m_fileTableView->horizontalHeader()->saveState();
+      QModelIndex proxyIndex  = m_proxyFileModel->mapFromSource(sourceIndex);
+      m_fileTableHeaderState  = m_fileTableView->horizontalHeader()->saveState();
 
       if (proxyIndex.isValid())
          m_fileTableView->setRootIndex(proxyIndex);
@@ -1846,10 +1851,10 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    QByteArray corePathArray;
    QByteArray contentPathArray;
    QByteArray contentLabelArray;
-   const char *corePath = NULL;
-   const char *contentPath = NULL;
+   const char *corePath     = NULL;
+   const char *contentPath  = NULL;
    const char *contentLabel = NULL;
-   QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
+   QVariantMap coreMap      = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
 
    if (m_pendingRun)
@@ -1938,9 +1943,9 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          return;
    }
 
-   corePath = corePathArray.constData();
-   contentPath = contentPathArray.constData();
-   contentLabel = contentLabelArray.constData();
+   corePath                            = corePathArray.constData();
+   contentPath                         = contentPathArray.constData();
+   contentLabel                        = contentLabelArray.constData();
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -1957,7 +1962,8 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          corePath, contentPath, contentLabel, &content_info,
          NULL, NULL))
    {
-      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       return;
    }
 
@@ -1995,7 +2001,8 @@ bool MainWindow::isContentLessCore()
 
 bool MainWindow::isCoreLoaded()
 {
-   if (m_currentCore.isEmpty() || m_currentCore == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
+   if (  m_currentCore.isEmpty() || 
+         m_currentCore == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
       return false;
 
    return true;
@@ -2028,8 +2035,8 @@ void MainWindow::setCoreActions()
    if (isCoreLoaded() && m_settings->value("suggest_loaded_core_first", false).toBool())
    {
       QVariantMap comboBoxMap;
-      comboBoxMap["core_name"] = m_currentCore;
-      comboBoxMap["core_path"] = path_get(RARCH_PATH_CORE);
+      comboBoxMap["core_name"]      = m_currentCore;
+      comboBoxMap["core_path"]      = path_get(RARCH_PATH_CORE);
       comboBoxMap["core_selection"] = CORE_SELECTION_CURRENT;
       m_launchWithComboBox->addItem(m_currentCore, QVariant::fromValue(comboBoxMap));
    }
@@ -2067,8 +2074,8 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"] = coreName;
-                     comboBoxMap["core_path"] = hash["core_path"];
+                     comboBoxMap["core_name"]      = coreName;
+                     comboBoxMap["core_path"]      = hash["core_path"];
                      comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_SAVED;
                      m_launchWithComboBox->addItem(coreName, QVariant::fromValue(comboBoxMap));
                   }
@@ -2109,9 +2116,9 @@ void MainWindow::setCoreActions()
          {
             if (allPlaylists)
             {
-               QListWidgetItem *listItem = m_listWidget->item(row);
-               QString listItemString = listItem->data(Qt::UserRole).toString();
                QFileInfo info;
+               QListWidgetItem *listItem = m_listWidget->item(row);
+               QString    listItemString = listItem->data(Qt::UserRole).toString();
 
                info.setFile(listItemString);
 
@@ -2122,7 +2129,7 @@ void MainWindow::setCoreActions()
             for (i = 0; i < defaultCores.count(); i++)
             {
                QString playlist = defaultCores.at(i)["playlist_filename"];
-               QString core = defaultCores.at(i)["core_path"];
+               QString core     = defaultCores.at(i)["core_path"];
 
                playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
 
@@ -2397,17 +2404,18 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    QFileInfo playlistInfo;
    QString playlistPath;
    settings_t *settings = config_get_ptr();
-   QDir playlistDir(settings->paths.directory_playlist);
    bool specialPlaylist = false;
+   QDir playlistDir(settings->paths.directory_playlist);
 
    if (!item)
       return;
 
    playlistPath = item->data(Qt::UserRole).toString();
    playlistInfo = playlistPath;
-   oldName = playlistInfo.completeBaseName();
+   oldName      = playlistInfo.completeBaseName();
 
-   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   /* Don't just compare strings in case there are 
+    * case differences on Windows that should be ignored. */
    if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
    {
       /* special playlists like history etc. can't have an association */
@@ -2465,7 +2473,7 @@ void MainWindow::onCurrentFileChanged(const QModelIndex &index)
 
 void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
 {
-   QString path = hash["path"];
+   QString    path = hash["path"];
    bool acceptDrop = false;
 
    if (m_thumbnailPixmap)
@@ -2666,7 +2674,7 @@ TreeView* MainWindow::dirTreeView()
 void MainWindow::onTimeout()
 {
    bool contentless = false;
-   bool is_inited = false;
+   bool is_inited   = false;
 
    content_get_status(&contentless, &is_inited);
 
@@ -3025,15 +3033,15 @@ void MainWindow::onShowInfoMessage(QString msg)
 
 int MainWindow::onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb)
 {
-   QByteArray pathArray = path.toUtf8();
-   QByteArray dirArray = extractionDir.toUtf8();
-   const char *file = pathArray.constData();
-   const char *dir = dirArray.constData();
+   unsigned i;
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata;
+   QByteArray pathArray          = path.toUtf8();
+   QByteArray dirArray           = extractionDir.toUtf8();
+   const char *file              = pathArray.constData();
+   const char *dir               = dirArray.constData();
    struct string_list *file_list = file_archive_get_file_list(file, NULL);
-   bool returnerr = true;
-   unsigned i;
+   bool returnerr                = true;
 
    if (!file_list || file_list->size == 0)
    {

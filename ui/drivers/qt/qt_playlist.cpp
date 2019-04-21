@@ -94,7 +94,8 @@ Qt::ItemFlags PlaylistModel::flags(const QModelIndex &index) const
 
 bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-   if (index.isValid() && role == Qt::EditRole) {
+   if (index.isValid() && role == Qt::EditRole)
+   {
       QHash<QString, QString> hash = m_contents.at(index.row());
 
       hash["label"] = value.toString();
@@ -114,8 +115,7 @@ QVariant PlaylistModel::headerData(int section, Qt::Orientation orientation, int
 
    if (orientation == Qt::Horizontal)
       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
-   else
-      return section + 1;
+   return section + 1;
 }
 
 void PlaylistModel::setThumbnailType(const ThumbnailType type)
@@ -151,9 +151,7 @@ bool PlaylistModel::isSupportedImage(const QString path) const
       extensionStr = path.mid(lastIndex + 1);
 
       if (!extensionStr.isEmpty())
-      {
          extension = extensionStr.toLower().toUtf8();
-      }
    }
 
    if (!extension.isEmpty() && m_imageFormats.contains(extension))
@@ -174,30 +172,32 @@ QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QSt
       /* use thumbnail widgets to show regular image files */
       return hash["path"];
    }
-   else
-   {
-      return getPlaylistThumbnailsDir(hash.value("db_name")) + "/" + type + "/" + getSanitizedThumbnailName(hash["label_noext"]);
-   }
+
+   return getPlaylistThumbnailsDir(hash.value("db_name")) 
+      + "/" + type + "/" + getSanitizedThumbnailName(hash["label_noext"]);
 }
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
 {
    switch (m_thumbnailType)
    {
-   case THUMBNAIL_TYPE_BOXART:
-      return getThumbnailPath(index, THUMBNAIL_BOXART);
-   case THUMBNAIL_TYPE_SCREENSHOT:
-      return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
-   case THUMBNAIL_TYPE_TITLE_SCREEN:
-      return getThumbnailPath(index, THUMBNAIL_TITLE);
-   default:
-      return QString();
+      case THUMBNAIL_TYPE_BOXART:
+         return getThumbnailPath(index, THUMBNAIL_BOXART);
+      case THUMBNAIL_TYPE_SCREENSHOT:
+         return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+      case THUMBNAIL_TYPE_TITLE_SCREEN:
+         return getThumbnailPath(index, THUMBNAIL_TITLE);
+      default:
+         break;
    }
+
+   return QString();
 }
 
 void PlaylistModel::reloadThumbnail(const QModelIndex &index)
 {
-   if (index.isValid()) {
+   if (index.isValid())
+   {
       reloadThumbnailPath(getCurrentTypeThumbnailPath(index));
       loadThumbnail(index);
    }
@@ -281,16 +281,16 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &l
       if (dialog->wasCanceled())
          return false;
 
+      /* Needed to update progress dialog while doing 
+       * a lot of stuff on the main thread. */
       if (i % 25 == 0)
-      {
-         /* Needed to update progress dialog while doing a lot of stuff on the main thread. */
          qApp->processEvents();
-      }
 
       if (fileInfo.isDir())
       {
          QDir fileInfoDir(path);
-         bool success = addDirectoryFilesToList(dialog, list, fileInfoDir, extensions);
+         bool success = addDirectoryFilesToList(
+               dialog, list, fileInfoDir, extensions);
 
          if (!success)
             return false;
@@ -449,11 +449,10 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       if (dialog->wasCanceled())
          return;
 
+      /* Needed to update progress dialog while 
+       * doing a lot of stuff on the main thread. */
       if (i % 25 == 0)
-      {
-         /* Needed to update progress dialog while doing a lot of stuff on the main thread. */
          qApp->processEvents();
-      }
 
       if (fileInfo.isDir())
       {
@@ -517,9 +516,11 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       const char *coreNameData = NULL;
       const char *databaseData = NULL;
 
+      /* Cancel out of everything, the 
+       * current progress will not be written 
+       * to the playlist at all. */
       if (dialog->wasCanceled())
       {
-         /* Cancel out of everything, the current progress will not be written to the playlist at all. */
          playlist_free(playlist);
          return;
       }
@@ -1202,9 +1203,7 @@ void MainWindow::reloadPlaylists()
          if (!foundCurrent)
          {
             if (foundInitial && initialItem)
-            {
                m_listWidget->setCurrentItem(initialItem);
-            }
             else
             {
                /* the previous playlist must be gone now, just select the first one */
@@ -1218,8 +1217,8 @@ void MainWindow::reloadPlaylists()
 
 QString MainWindow::getCurrentPlaylistPath()
 {
-   QListWidgetItem *playlistItem = m_listWidget->currentItem();
    QString playlistPath;
+   QListWidgetItem *playlistItem = m_listWidget->currentItem();
 
    if (!playlistItem)
       return playlistPath;
@@ -1231,23 +1230,24 @@ QString MainWindow::getCurrentPlaylistPath()
 
 bool MainWindow::currentPlaylistIsSpecial()
 {
-   settings_t *settings = config_get_ptr();
-   QDir playlistDir(settings->paths.directory_playlist);
-   QString playlistDirAbsPath = playlistDir.absolutePath();
    QFileInfo currentPlaylistFileInfo;
    QString currentPlaylistPath;
    QString currentPlaylistDirPath;
+   bool specialPlaylist                 = false;
+   settings_t *settings                 = config_get_ptr();
+   QDir playlistDir(settings->paths.directory_playlist);
+   QString playlistDirAbsPath           = playlistDir.absolutePath();
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   bool specialPlaylist = false;
 
    if (!currentPlaylistItem)
       return false;
 
-   currentPlaylistPath = currentPlaylistItem->data(Qt::UserRole).toString();
+   currentPlaylistPath     = currentPlaylistItem->data(Qt::UserRole).toString();
    currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
-   currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
+   currentPlaylistDirPath  = currentPlaylistFileInfo.absoluteDir().absolutePath();
 
-   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   /* Don't just compare strings in case there are 
+    * case differences on Windows that should be ignored. */
    if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
       specialPlaylist = true;
 
@@ -1262,7 +1262,8 @@ bool MainWindow::currentPlaylistIsAll()
    if (!currentPlaylistItem)
       return false;
 
-   if (currentPlaylistItem->data(Qt::UserRole).toString() == ALL_PLAYLISTS_TOKEN)
+   if (currentPlaylistItem->data(Qt::UserRole).toString() 
+         == ALL_PLAYLISTS_TOKEN)
       all = true;
 
    return all;
@@ -1310,10 +1311,12 @@ void MainWindow::deleteCurrentPlaylistItem()
 
 QVector<QHash<QString, QString> > MainWindow::getPlaylistDefaultCores()
 {
-   settings_t *settings = config_get_ptr();
-   struct string_list *playlists = string_split(settings->arrays.playlist_names, ";");
-   struct string_list *cores = string_split(settings->arrays.playlist_cores, ";");
    unsigned i = 0;
+   settings_t          *settings = config_get_ptr();
+   struct string_list *playlists = string_split(
+         settings->arrays.playlist_names, ";");
+   struct string_list     *cores = string_split(
+         settings->arrays.playlist_cores, ";");
    QVector<QHash<QString, QString> > coreList;
 
    if (!playlists || !cores)
@@ -1433,9 +1436,7 @@ void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
    m_contents.clear();
 
    for (i = 0; i < paths.size(); i++)
-   {
       getPlaylistItems(paths.at(i));
-   }
 
    endResetModel();
 }
@@ -1466,10 +1467,10 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
       QString filePath(QDir::toNativeSeparators(dir.absoluteFilePath(fileName)));
       QFileInfo fileInfo(filePath);
 
-      hash["path"] = filePath;
-      hash["label"] = hash["path"];
+      hash["path"]        = filePath;
+      hash["label"]       = hash["path"];
       hash["label_noext"] = fileInfo.completeBaseName();
-      hash["db_name"] = fileInfo.dir().dirName();
+      hash["db_name"]     = fileInfo.dir().dirName();
 
       m_contents.append(hash);
    }
