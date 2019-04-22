@@ -96,8 +96,7 @@ void path_set_redirect(void)
              * if everything fails revert to the original path. */
             if(!path_is_directory(new_savefile_dir))
             {
-               path_mkdir(new_savefile_dir);
-               if(!path_is_directory(new_savefile_dir))
+               if (!path_mkdir(new_savefile_dir))
                {
                   RARCH_LOG("%s %s\n",
                         msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
@@ -122,8 +121,7 @@ void path_set_redirect(void)
              * If everything fails, revert to the original path. */
             if(!path_is_directory(new_savestate_dir))
             {
-               path_mkdir(new_savestate_dir);
-               if(!path_is_directory(new_savestate_dir))
+               if (!path_mkdir(new_savestate_dir))
                {
                   RARCH_LOG("%s %s\n",
                         msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),

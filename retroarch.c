@@ -4894,7 +4894,7 @@ bool rarch_write_debug_info(void)
                input_config_get_bind_string(descriptor,
                      keybind, auto_bind, sizeof(descriptor));
 
-               if(!strstr(descriptor, "Auto") && auto_bind && !auto_bind->valid && auto_bind->joykey != 0xFFFF && !string_is_empty(auto_bind->joykey_label))
+               if (!strstr(descriptor, "Auto") && auto_bind && !auto_bind->valid && auto_bind->joykey != 0xFFFF && !string_is_empty(auto_bind->joykey_label))
                   rebind++;
             }
          }
@@ -5365,8 +5365,7 @@ void rarch_log_file_init(void)
       /* Create log directory, if required */
       if (!path_is_directory(settings->paths.log_dir))
       {
-         path_mkdir(settings->paths.log_dir);
-         if(!path_is_directory(settings->paths.log_dir))
+         if (!path_mkdir(settings->paths.log_dir))
          {
             /* Re-enable console logging and output error message */
             retro_main_log_file_init(NULL, false);

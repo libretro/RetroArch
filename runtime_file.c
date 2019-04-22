@@ -353,9 +353,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    /* Create directory, if required */
    if (!path_is_directory(log_file_dir))
    {
-      path_mkdir(log_file_dir);
-      
-      if(!path_is_directory(log_file_dir))
+      if (!path_mkdir(log_file_dir))
       {
          RARCH_ERR("[runtime] failed to create directory for runtime log: %s.\n", log_file_dir);
          return NULL;
