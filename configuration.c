@@ -3596,12 +3596,6 @@ bool config_load_shader_preset(void)
          continue;
 
       /* Concatenate strings into full paths */
-      fill_pathname_join_special_ext(core_path,
-            shader_directory, core_name,
-            core_name,
-            file_path_str((enum file_path_enum)(idx)),
-            path_size);
-
       fill_pathname_join_special_ext(game_path,
             shader_directory, core_name,
             game_name,
@@ -3609,14 +3603,8 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file */
-      new_conf = config_file_read(game_path);
-
-      if (!new_conf)
-      {
-         RARCH_LOG("[Shaders]: no game-specific preset found at %s.\n",
-               game_path);
+      if (!(new_conf = config_file_read(game_path)))
          continue;
-      }
 
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: game-specific shader preset found at %s.\n",
@@ -3629,6 +3617,7 @@ bool config_load_shader_preset(void)
    {
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
+
       /* Concatenate strings into full paths */
       fill_pathname_join_special_ext(content_path,
             shader_directory, core_name,
@@ -3637,14 +3626,8 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file */
-      new_conf = config_file_read(content_path);
-
-      if (!new_conf)
-      {
-         RARCH_LOG("[Shaders]: no content-dir-specific preset found at %s.\n",
-               content_path);
+      if (!(new_conf = config_file_read(content_path)))
          continue;
-      }
 
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: content-dir-specific shader preset found at %s.\n",
@@ -3657,6 +3640,7 @@ bool config_load_shader_preset(void)
    {
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
+
       /* Concatenate strings into full paths */
       fill_pathname_join_special_ext(core_path,
             shader_directory, core_name,
@@ -3665,14 +3649,8 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file */
-      new_conf = config_file_read(core_path);
-
-      if (!new_conf)
-      {
-         RARCH_LOG("[Shaders]: no core-specific preset found at %s.\n",
-               core_path);
+      if (!(new_conf = config_file_read(core_path)))
          continue;
-      }
 
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: core-specific shader preset found at %s.\n",
@@ -3741,7 +3719,6 @@ void config_load(void)
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
-   char *path_new                       = NULL;
    config_file_t *conf                  = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
    int32_t pid_user                     = 0;
