@@ -151,7 +151,7 @@ static bool d3d9_font_init_first(
 }
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL)
 static const font_renderer_t *gl_font_backends[] = {
    &gl_raster_font,
 #if defined(HAVE_LIBDBGFONT)

@@ -209,7 +209,7 @@ VIDEO CONTEXT
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
@@ -416,11 +416,12 @@ VIDEO DRIVER
 
 #include "../gfx/display_servers/dispserv_null.c"
 
-#ifdef HAVE_OPENGL
-#include "../gfx/drivers/gl.c"
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
 #endif
+
+#ifdef HAVE_OPENGL
+#include "../gfx/drivers/gl.c"
 #ifdef HAVE_OPENGL_CORE
 #include "../gfx/drivers/gl_core.c"
 #endif
@@ -499,11 +500,12 @@ FONTS
 #include "../gfx/drivers_font/ps_libdbgfont.c"
 #endif
 
-#if defined(HAVE_OPENGL)
-#include "../gfx/drivers_font/gl_raster_font.c"
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers_font/gl1_raster_font.c"
 #endif
+
+#if defined(HAVE_OPENGL)
+#include "../gfx/drivers_font/gl_raster_font.c"
 #ifdef HAVE_OPENGL_CORE
 #include "../gfx/drivers_font/gl_core_raster_font.c"
 #endif
@@ -1267,11 +1269,12 @@ MENU
 #include "../menu/drivers_display/menu_display_d3d12.c"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "../menu/drivers_display/menu_display_gl.c"
 #ifdef HAVE_OPENGL1
 #include "../menu/drivers_display/menu_display_gl1.c"
 #endif
+
+#ifdef HAVE_OPENGL
+#include "../menu/drivers_display/menu_display_gl.c"
 #ifdef HAVE_OPENGL_CORE
 #include "../menu/drivers_display/menu_display_gl_core.c"
 #endif

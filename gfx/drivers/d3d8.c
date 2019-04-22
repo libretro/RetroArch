@@ -429,13 +429,13 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
       overlay_t *overlay, bool force_linear)
 {
    D3DVIEWPORT8 vp_full;
-   D3DTEXTUREFILTERTYPE filter_type;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-   unsigned width      = video_info->width;
-   unsigned height     = video_info->height;
+   enum D3DTEXTUREFILTERTYPE filter_type = D3DTEXF_LINEAR;
+   unsigned width                        = video_info->width;
+   unsigned height                       = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;

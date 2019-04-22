@@ -381,14 +381,14 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
-#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_VULKAN))
+#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN))
    &gfx_ctx_wgl,
 #endif
 #if defined(HAVE_WAYLAND)
    &gfx_ctx_wayland,
 #endif
 #if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN)
    &gfx_ctx_x,
 #endif
 #endif
@@ -410,7 +410,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
    &gfx_ctx_cgl,
 #endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1))
    &gfx_ctx_sdl_gl,
 #endif
 #ifdef HAVE_OSMESA
