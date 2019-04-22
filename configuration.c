@@ -3741,8 +3741,6 @@ void config_load(void)
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
-   char *buf                            = NULL;
-   char *autoconf_file                  = NULL;
    char *path_new                       = NULL;
    config_file_t *conf                  = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
@@ -3752,16 +3750,12 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    settings_t *settings                 = config_get_ptr();
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
    const char *joypad_ident             = settings->arrays.input_joypad_driver;
-
-   if (string_is_empty(path))
-      return false;
-
-   buf                                  = (char*)
+   char *buf                            = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
-   autoconf_file                        = (char*)
+   char *autoconf_file                  = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *path_new                       = strdup(path);
    buf[0] = autoconf_file[0]            = '\0';
-   path_new                             = strdup(path);
 
    for (i = 0; invalid_filename_chars[i]; i++)
    {
