@@ -321,7 +321,7 @@ enum midi_driver_enum
 
 #if defined(HAVE_METAL)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(GEKKO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
