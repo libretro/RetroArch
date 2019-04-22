@@ -1318,10 +1318,10 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VITA2D) || defined(_3DS) || defined(__wiiu__) || defined(HAVE_METAL)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif
+
 #ifdef HAVE_OZONE
 #include "../menu/drivers/ozone/ozone.c"
 #include "../menu/drivers/ozone/ozone_display.c"
@@ -1337,8 +1337,6 @@ MENU
 
 #ifdef HAVE_MATERIALUI
 #include "../menu/drivers/materialui.c"
-#endif
-
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
