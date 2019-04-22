@@ -4871,28 +4871,29 @@ bool rarch_write_debug_info(void)
    {
       if (input_is_autoconfigured(i))
       {
-         unsigned rebind = 0;
          unsigned retro_id;
-         unsigned device = settings->uints.input_libretro_device[i];
+         unsigned rebind  = 0;
+         unsigned device  = settings->uints.input_libretro_device[i];
 
-         device &= RETRO_DEVICE_MASK;
+         device          &= RETRO_DEVICE_MASK;
 
          if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
          {
             for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
             {
                char descriptor[300];
-               const struct retro_keybind *auto_bind = NULL;
-               const struct retro_keybind *keybind   = NULL;
-
-               keybind   = &input_config_binds[i][retro_id];
-               auto_bind = (const struct retro_keybind*)
+               const struct retro_keybind *keybind   = &input_config_binds[i][retro_id];
+               const struct retro_keybind *auto_bind = (const struct retro_keybind*)
                   input_config_get_bind_auto(i, retro_id);
 
                input_config_get_bind_string(descriptor,
                      keybind, auto_bind, sizeof(descriptor));
 
-               if (!strstr(descriptor, "Auto") && auto_bind && !auto_bind->valid && auto_bind->joykey != 0xFFFF && !string_is_empty(auto_bind->joykey_label))
+               if (!strstr(descriptor, "Auto") 
+                     && auto_bind 
+                     && !auto_bind->valid 
+                     && (auto_bind->joykey != 0xFFFF)
+                     && !string_is_empty(auto_bind->joykey_label))
                   rebind++;
             }
          }
@@ -4932,9 +4933,16 @@ bool rarch_write_debug_info(void)
       driver = menu_driver_ident();
 
       if (string_is_equal(driver, settings->arrays.menu_driver))
-         filestream_printf(file, "  - Menu: %s\n", !string_is_empty(driver) ? driver : "n/a");
+         filestream_printf(file, "  - Menu: %s\n",
+               !string_is_empty(driver) ? driver : "n/a");
       else
-         filestream_printf(file, "  - Menu: %s (configured for %s)\n", !string_is_empty(driver) ? driver : "n/a", !string_is_empty(settings->arrays.menu_driver) ? settings->arrays.menu_driver : "n/a");
+         filestream_printf(file, "  - Menu: %s (configured for %s)\n",
+               !string_is_empty(driver) 
+               ? driver 
+               : "n/a",
+               !string_is_empty(settings->arrays.menu_driver) 
+               ? settings->arrays.menu_driver 
+               : "n/a");
 #endif
       driver =
 #ifdef HAVE_THREADS
@@ -4944,19 +4952,32 @@ bool rarch_write_debug_info(void)
       video_driver_get_ident();
 
       if (string_is_equal(driver, settings->arrays.video_driver))
-         filestream_printf(file, "  - Video: %s\n", !string_is_empty(driver) ? driver : "n/a");
+         filestream_printf(file, "  - Video: %s\n",
+               !string_is_empty(driver) 
+               ? driver 
+               : "n/a");
       else
-         filestream_printf(file, "  - Video: %s (configured for %s)\n", !string_is_empty(driver) ? driver : "n/a", !string_is_empty(settings->arrays.video_driver) ? settings->arrays.video_driver : "n/a");
+         filestream_printf(file, "  - Video: %s (configured for %s)\n",
+               !string_is_empty(driver) 
+               ? driver 
+               : "n/a",
+               !string_is_empty(settings->arrays.video_driver) 
+               ? settings->arrays.video_driver 
+               : "n/a");
 
       video_context_driver_get_ident(&ident_info);
-      filestream_printf(file, "  - Video Context: %s\n", ident_info.ident ? ident_info.ident : "n/a");
+      filestream_printf(file, "  - Video Context: %s\n",
+            ident_info.ident ? ident_info.ident : "n/a");
 
       driver = audio_driver_get_ident();
 
       if (string_is_equal(driver, settings->arrays.audio_driver))
-         filestream_printf(file, "  - Audio: %s\n", !string_is_empty(driver) ? driver : "n/a");
+         filestream_printf(file, "  - Audio: %s\n",
+               !string_is_empty(driver) ? driver : "n/a");
       else
-         filestream_printf(file, "  - Audio: %s (configured for %s)\n", !string_is_empty(driver) ? driver : "n/a", !string_is_empty(settings->arrays.audio_driver) ? settings->arrays.audio_driver : "n/a");
+         filestream_printf(file, "  - Audio: %s (configured for %s)\n",
+               !string_is_empty(driver) ? driver : "n/a",
+               !string_is_empty(settings->arrays.audio_driver) ? settings->arrays.audio_driver : "n/a");
 
       input_driver = input_get_ptr();
 
@@ -5103,7 +5124,7 @@ bool rarch_write_debug_info(void)
 
    {
       core_info_list_t *core_info_list = NULL;
-      bool found = false;
+      bool                       found = false;
 
       filestream_printf(file, "\n");
       filestream_printf(file, "Firmware files found:\n");

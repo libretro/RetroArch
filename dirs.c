@@ -285,27 +285,6 @@ void dir_set(enum rarch_dir_type type, const char *path)
    }
 }
 
-static void check_defaults_dir_create_dir(const char *path)
-{
-   char *new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   if (!new_path)
-      return;
-
-   new_path[0] = '\0';
-   fill_pathname_expand_special(new_path,
-         path,
-         PATH_MAX_LENGTH * sizeof(char));
-
-   if (path_is_directory(new_path))
-   {
-      free(new_path);
-      return;
-   }
-   path_mkdir(new_path);
-   free(new_path);
-}
-
 void dir_check_defaults(void)
 {
    unsigned i;
@@ -323,8 +302,25 @@ void dir_check_defaults(void)
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
+      char       *new_path = NULL;
       const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         check_defaults_dir_create_dir(dir_path);
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      if (!new_path)
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path,
+            PATH_MAX_LENGTH * sizeof(char));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+
+      free(new_path);
    }
 }
