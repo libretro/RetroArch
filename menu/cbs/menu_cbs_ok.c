@@ -2442,7 +2442,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
             core_name,
             sizeof(directory));
    }
-   if (!filestream_exists(directory))
+   if (!path_is_directory(directory))
        path_mkdir(directory);
 
    switch (action_type)
@@ -2544,7 +2544,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          break;
    }
 
-   if (!filestream_exists(directory))
+   if (!path_is_directory(directory))
        path_mkdir(directory);
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
@@ -3516,7 +3516,7 @@ void cb_generic_download(retro_task_t *task,
                   dirname,
                   sizeof(shaderdir));
 
-            if (!filestream_exists(shaderdir) && !path_mkdir(shaderdir))
+            if (!path_is_directory(shaderdir) && !path_mkdir(shaderdir))
                goto finish;
 
             dir_path = shaderdir;

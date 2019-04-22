@@ -707,7 +707,7 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
             sizeof(directory));
    }
 
-   if (!filestream_exists(directory))
+   if (!path_is_directory(directory))
        path_mkdir(directory);
 
    switch (action_type)

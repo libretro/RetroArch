@@ -4157,7 +4157,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_join(override_directory, config_directory, core_name,
       path_size);
 
-   if (!filestream_exists(override_directory))
+   if (!path_is_directory(override_directory))
        path_mkdir(override_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
