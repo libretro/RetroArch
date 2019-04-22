@@ -3778,7 +3778,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    {
       char *buf_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      buf_new[0] = '\0';
+      buf_new[0]    = '\0';
 
       fill_pathname_join(buf_new, buf,
             path, path_size);
@@ -3797,13 +3797,19 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             path_size);
    }
 
+   free(buf);
+   free(path_new);
+
    conf = config_file_read(autoconf_file);
 
    if (!conf)
    {
       conf = config_file_new(NULL);
       if (!conf)
-         goto error;
+      {
+         free(autoconf_file);
+         return false;
+      }
    }
 
    config_set_string(conf, "input_driver",
@@ -3834,16 +3840,8 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    ret = config_file_write(conf, autoconf_file, false);
 
    config_file_free(conf);
-   free(buf);
    free(autoconf_file);
-   free(path_new);
    return ret;
-
-error:
-   free(buf);
-   free(autoconf_file);
-   free(path_new);
-   return false;
 }
 
 /**
@@ -4398,9 +4396,6 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
    const char *rarch_path_config   = path_get(RARCH_PATH_CONFIG);
-
-   if (!path)
-      return false;
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */
