@@ -1424,7 +1424,7 @@ static bool wiiu_gfx_set_shader(void *data,
    if (!path)
       return true;
 
-   config_file_t *conf = config_file_new(path);
+   config_file_t *conf = config_file_read(path);
 
    if (!conf)
       return false;

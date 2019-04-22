@@ -346,7 +346,7 @@ static bool d3d10_gfx_set_shader(void* data,
       return false;
    }
 
-   conf = config_file_new(path);
+   conf = config_file_read(path);
 
    if (!conf)
       return false;

@@ -353,7 +353,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   config_file_t* conf = config_file_new(path);
+   config_file_t* conf = config_file_read(path);
 
    if (!conf)
       return false;
