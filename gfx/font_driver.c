@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
