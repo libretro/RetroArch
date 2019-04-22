@@ -2633,80 +2633,6 @@ static int menu_displaylist_parse_information_list(
    return 0;
 }
 
-static int menu_displaylist_parse_configurations_list(
-      menu_displaylist_info_t *info)
-{
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
-         msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
-         MENU_ENUM_LABEL_CONFIGURATIONS,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-         msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
-         MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
-         msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
-         MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
-         msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
-         MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
-         MENU_SETTING_ACTION, 0, 0);
-   return 0;
-}
-
-static unsigned menu_displaylist_parse_add_content_list(
-      menu_displaylist_info_t *info)
-{
-   unsigned count = 0;
-
-#ifdef HAVE_LIBRETRODB
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-         MENU_ENUM_LABEL_SCAN_DIRECTORY,
-         MENU_SETTING_ACTION, 0, 0);
-   count++;
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-         MENU_ENUM_LABEL_SCAN_FILE,
-         MENU_SETTING_ACTION, 0, 0);
-   count++;
-#endif
-
-   return count;
-}
-
-static unsigned menu_displaylist_parse_scan_directory_list(
-      menu_displaylist_info_t *info)
-{
-   unsigned count = 0;
-#ifdef HAVE_LIBRETRODB
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-         MENU_ENUM_LABEL_SCAN_DIRECTORY,
-         MENU_SETTING_ACTION, 0, 0);
-   count++;
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-         MENU_ENUM_LABEL_SCAN_FILE,
-         MENU_SETTING_ACTION, 0, 0);
-   count++;
-#endif
-
-   return count;
-}
-
 static unsigned menu_displaylist_parse_options(
       menu_displaylist_info_t *info)
 {
@@ -3273,10 +3199,9 @@ static unsigned menu_displaylist_parse_cores(
    struct string_list *core_packages = string_list_new();
    uwp_fill_installed_core_packages(core_packages);
    for (i = 0; i < core_packages->size; i++)
-   {
       dir_list_append(str_list, core_packages->elems[i].data, info->exts,
             true, settings->bools.show_hidden_files, true, false);
-   }
+
    string_list_free(core_packages);
 #else
    /* Keep the old 'directory not found' behavior */
@@ -3981,6 +3906,32 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_CONFIGURATIONS_LIST:
+         menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
+               MENU_ENUM_LABEL_CONFIGURATIONS,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+               msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
+               MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         break;
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5459,6 +5410,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
       case DISPLAYLIST_SETTINGS_ALL:
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
+      case DISPLAYLIST_CONFIGURATIONS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6727,7 +6679,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_add_content_list(info);
+
+#ifdef HAVE_LIBRETRODB
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_DIRECTORY,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+               MENU_ENUM_LABEL_SCAN_FILE,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -6740,16 +6706,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_push    = true;
          info->need_refresh = true;
          break;
-      case DISPLAYLIST_CONFIGURATIONS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_configurations_list(info);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_scan_directory_list(info);
+
+#ifdef HAVE_LIBRETRODB
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_DIRECTORY,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+               MENU_ENUM_LABEL_SCAN_FILE,
+               MENU_SETTING_ACTION, 0, 0);
+         count++;
+#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
