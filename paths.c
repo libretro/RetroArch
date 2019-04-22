@@ -94,7 +94,7 @@ void path_set_redirect(void)
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
-            if(!path_is_directory(new_savefile_dir))
+            if (!path_is_directory(new_savefile_dir))
             {
                if (!path_mkdir(new_savefile_dir))
                {
@@ -119,7 +119,7 @@ void path_set_redirect(void)
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
-            if(!path_is_directory(new_savestate_dir))
+            if (!path_is_directory(new_savestate_dir))
             {
                if (!path_mkdir(new_savestate_dir))
                {
@@ -153,11 +153,11 @@ void path_set_redirect(void)
 
    if (global)
    {
-      if(path_is_directory(new_savefile_dir))
+      if (path_is_directory(new_savefile_dir))
          strlcpy(global->name.savefile, new_savefile_dir,
                sizeof(global->name.savefile));
 
-      if(path_is_directory(new_savestate_dir))
+      if (path_is_directory(new_savestate_dir))
          strlcpy(global->name.savestate, new_savestate_dir,
                sizeof(global->name.savestate));
 
@@ -275,7 +275,7 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      if(path_is_directory(dir_get(RARCH_DIR_CURRENT_SAVESTATE)))
+      if (path_is_directory(dir_get(RARCH_DIR_CURRENT_SAVESTATE)))
          strlcpy(global->name.savestate, dir_get(RARCH_DIR_CURRENT_SAVESTATE),
                sizeof(global->name.savestate));
       if (path_is_directory(global->name.savestate))
