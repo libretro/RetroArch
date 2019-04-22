@@ -3496,9 +3496,9 @@ static enum runloop_state runloop_check_state(
 
          rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
-         cur_time      = cpu_features_get_time_usec();
-         trig_quit_key = trig_quit_key && (cur_time - quit_key_time < QUIT_DELAY_USEC);
-         quit_key_time = cur_time;
+         cur_time        = cpu_features_get_time_usec();
+         trig_quit_key   = trig_quit_key && (cur_time - quit_key_time < QUIT_DELAY_USEC);
+         quit_key_time   = cur_time;
 
          if (!trig_quit_key)
             runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1,
@@ -3508,29 +3508,27 @@ static enum runloop_state runloop_check_state(
 
       if (time_to_exit(trig_quit_key))
       {
-         if ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames))
+         if ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)
+               && runloop_max_frames_screenshot)
          {
-            if (runloop_max_frames_screenshot)
+            const char *screenshot_path = NULL;
+            bool fullpath               = false;
+
+            if (string_is_empty(runloop_max_frames_screenshot_path))
+               screenshot_path          = path_get(RARCH_PATH_BASENAME);
+            else
             {
-               const char *screenshot_path = NULL;
-               bool fullpath = false;
+               fullpath                 = true;
+               screenshot_path          = runloop_max_frames_screenshot_path;
+            }
 
-               if (string_is_empty(runloop_max_frames_screenshot_path))
-                  screenshot_path = path_get(RARCH_PATH_BASENAME);
-               else
-               {
-                  fullpath = true;
-                  screenshot_path = runloop_max_frames_screenshot_path;
-               }
+            RARCH_LOG("Taking a screenshot before exiting...\n");
 
-               RARCH_LOG("Taking a screenshot before exiting...\n");
-
-               /* Take a screenshot before we exit. */
-               if (!take_screenshot(screenshot_path, false,
-                        video_driver_cached_frame_has_valid_framebuffer(), fullpath, false))
-               {
-                  RARCH_ERR("Could not take a screenshot before exiting.\n");
-               }
+            /* Take a screenshot before we exit. */
+            if (!take_screenshot(screenshot_path, false,
+                     video_driver_cached_frame_has_valid_framebuffer(), fullpath, false))
+            {
+               RARCH_ERR("Could not take a screenshot before exiting.\n");
             }
          }
 
@@ -3593,7 +3591,8 @@ static enum runloop_state runloop_check_state(
       {
          if (action == old_action)
          {
-            retro_time_t press_time = cpu_features_get_time_usec();
+            retro_time_t press_time           = cpu_features_get_time_usec();
+
             if (action == MENU_ACTION_NOOP)
                global->menu.noop_press_time   = press_time - global->menu.noop_start_time;
             else
@@ -3603,8 +3602,9 @@ static enum runloop_state runloop_check_state(
          {
             if (action == MENU_ACTION_NOOP)
             {
-               global->menu.noop_start_time = cpu_features_get_time_usec();
-               global->menu.noop_press_time = 0;
+               global->menu.noop_start_time      = cpu_features_get_time_usec();
+               global->menu.noop_press_time      = 0;
+
                if (global->menu.prev_action == old_action)
                   global->menu.action_start_time = global->menu.prev_start_time;
                else
@@ -3612,7 +3612,7 @@ static enum runloop_state runloop_check_state(
             }
             else
             {
-               if (global->menu.prev_action == action &&
+               if (  global->menu.prev_action == action &&
                      global->menu.noop_press_time < 200000) /* 250ms */
                {
                   global->menu.action_start_time = global->menu.prev_start_time;
@@ -4503,9 +4503,7 @@ int runloop_iterate(unsigned *sleep_ms)
          )
          run_ahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
       else
-      {
          core_run();
-      }
    }
 #else
    {
@@ -4631,7 +4629,7 @@ char *get_retroarch_launch_arguments(void)
 
 void rarch_force_video_driver_fallback(const char *driver)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t        *settings = config_get_ptr();
    ui_msg_window_t *msg_window = NULL;
 
    strlcpy(settings->arrays.video_driver,
@@ -4714,9 +4712,9 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
 bool rarch_write_debug_info(void)
 {
    int i;
-   gfx_ctx_mode_t mode_info = {0};
    char str[PATH_MAX_LENGTH];
    char debug_filepath[PATH_MAX_LENGTH];
+   gfx_ctx_mode_t mode_info              = {0};
    settings_t                  *settings = config_get_ptr();
    RFILE *file                           = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
@@ -4725,7 +4723,8 @@ bool rarch_write_debug_info(void)
    unsigned lang                         = 
       *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 
-   str[0] = debug_filepath[0] = '\0';
+   str[0]                                = 
+      debug_filepath[0]                  = '\0';
 
    /* Only print our debug info in English */
    if (lang != RETRO_LANGUAGE_ENGLISH)
@@ -5255,18 +5254,19 @@ static void send_debug_info_cb(retro_task_t *task,
 void rarch_send_debug_info(void)
 {
 #ifdef HAVE_NETWORKING
-   const char *url = "http://lobby.libretro.com/debuginfo/add/";
-   char *info_buf = NULL;
-   const size_t param_buf_size = 65535;
-   char *param_buf = (char*)malloc(param_buf_size);
-   char *param_buf_tmp = NULL;
-   int param_buf_pos = 0;
-   int64_t len = 0;
    char debug_filepath[PATH_MAX_LENGTH];
-   const char *path_config = path_get(RARCH_PATH_CONFIG);
-   bool info_written = rarch_write_debug_info();
+   const char *url             = "http://lobby.libretro.com/debuginfo/add/";
+   char *info_buf              = NULL;
+   const size_t param_buf_size = 65535;
+   char *param_buf             = (char*)malloc(param_buf_size);
+   char *param_buf_tmp         = NULL;
+   int param_buf_pos           = 0;
+   int64_t len                 = 0;
+   const char *path_config     = path_get(RARCH_PATH_CONFIG);
+   bool       info_written     = rarch_write_debug_info();
 
-   debug_filepath[0] = param_buf[0] = '\0';
+   debug_filepath[0]           = 
+      param_buf[0]             = '\0';
 
    fill_pathname_resolve_relative(
          debug_filepath,
@@ -5312,8 +5312,8 @@ finish:
 
 void rarch_log_file_init(void)
 {
+   FILE             *fp = NULL;
    settings_t *settings = config_get_ptr();
-   FILE *fp = NULL;
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5328,7 +5328,8 @@ void rarch_log_file_init(void)
       strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", localtime(&cur_time));
       
       fill_pathname_noext(timestamped_log_file_name, format,
-            file_path_str(FILE_PATH_EVENT_LOG_EXTENSION), sizeof(timestamped_log_file_name));
+            file_path_str(FILE_PATH_EVENT_LOG_EXTENSION),
+            sizeof(timestamped_log_file_name));
    }
    
    /* If nothing has changed, do nothing */
@@ -5375,7 +5376,9 @@ void rarch_log_file_init(void)
       
       /* Format log file name */
       fill_pathname_join(buf, settings->paths.log_dir,
-            settings->bools.log_to_file_timestamp ? timestamped_log_file_name : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
+            settings->bools.log_to_file_timestamp 
+            ? timestamped_log_file_name 
+            : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
             sizeof(buf));
       if (!string_is_empty(buf))
       {
@@ -5400,17 +5403,12 @@ void rarch_log_file_deinit(void)
    
    /* De-initialise existing logger, if currently logging to file */
    if (is_logging_to_file())
-   {
       retro_main_log_file_deinit();
-   }
    
    /* If logging is currently disabled... */
    fp = (FILE*)retro_main_log_file();
-   if (!fp)
-   {
-      /* ...initialise logging to console */
+   if (!fp) /* ...initialise logging to console */
       retro_main_log_file_init(NULL, false);
-   }
 }
 
 enum retro_language rarch_get_language_from_iso(const char *iso639)
