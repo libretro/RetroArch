@@ -3218,7 +3218,7 @@ bool config_load_override(void)
 
    /* per-core overrides */
    /* Create a new config file from core_path */
-   new_conf = config_file_new(core_path);
+   new_conf = config_file_read(core_path);
 
    if (new_conf)
    {
@@ -3236,7 +3236,7 @@ bool config_load_override(void)
 
    /* per-content-dir overrides */
    /* Create a new config file from content_path */
-   new_conf = config_file_new(content_path);
+   new_conf = config_file_read(content_path);
 
    if (new_conf)
    {
@@ -3271,7 +3271,7 @@ bool config_load_override(void)
 
    /* per-game overrides */
    /* Create a new config file from game_path */
-   new_conf = config_file_new(game_path);
+   new_conf = config_file_read(game_path);
 
    if (new_conf)
    {
@@ -3458,7 +3458,7 @@ bool config_load_remap(void)
          path_size);
 
    /* Create a new config file from game_path */
-   new_conf = config_file_new(game_path);
+   new_conf = config_file_read(game_path);
 
    /* If a game remap file exists, load it. */
    if (new_conf)
@@ -3480,7 +3480,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from content_path */
-   new_conf = config_file_new(content_path);
+   new_conf = config_file_read(content_path);
 
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
@@ -3502,7 +3502,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from core_path */
-   new_conf = config_file_new(core_path);
+   new_conf = config_file_read(core_path);
 
    /* If a core remap file exists, load it. */
    if (new_conf)
@@ -3621,7 +3621,7 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file from game_path */
-      new_conf = config_file_new(game_path);
+      new_conf = config_file_read(game_path);
 
       if (!new_conf)
       {
@@ -3649,7 +3649,7 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file from parent path */
-      new_conf = config_file_new(content_path);
+      new_conf = config_file_read(content_path);
 
       if (!new_conf)
       {
@@ -3677,7 +3677,7 @@ bool config_load_shader_preset(void)
             path_size);
 
       /* Create a new config file from core_path */
-      new_conf = config_file_new(core_path);
+      new_conf = config_file_read(core_path);
 
       if (!new_conf)
       {
