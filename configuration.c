@@ -2593,17 +2593,15 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(const char *path, bool set_defaults,
-   settings_t *settings)
+static bool config_load_file(const char *path, settings_t *settings)
 {
    unsigned i;
    size_t path_size                                = PATH_MAX_LENGTH * sizeof(char);
    char *tmp_str                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    bool ret                                        = false;
    bool tmp_bool                                   = false;
-   char *save                                      = NULL;
    unsigned msg_color                              = 0;
-   config_file_t *conf                             = NULL;
+   char *save                                      = NULL;
    char *override_username                         = NULL;
    const char *path_core                           = NULL;
    const char *path_config                         = NULL;
@@ -2622,26 +2620,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_size_setting *size_settings       = populate_settings_size  (settings, &size_settings_size);
    struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
    struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
+   config_file_t *conf                             = path ? config_file_new(path) : open_default_config_file();
 
    tmp_str[0] = '\0';
 
-   if (path)
-   {
-      conf = config_file_new(path);
-      if (!conf)
-         goto end;
-   }
-   else
-      conf = open_default_config_file();
-
    if (!conf)
    {
-      ret = true;
+      if (!path)
+         ret = true;
       goto end;
    }
-
-   if (set_defaults)
-      config_set_defaults();
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
@@ -3084,7 +3072,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (!string_is_empty(shader_ext))
    {
-      for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+      for (i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
       {
          enum file_path_enum ext = (enum file_path_enum)(i);
          if (!strstr(file_path_str(ext), shader_ext))
@@ -3319,7 +3307,7 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       goto error;
 
    /* Restore the libretro_path we're using
@@ -3367,7 +3355,7 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       return false;
 
    RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
@@ -3602,11 +3590,11 @@ bool config_load_shader_preset(void)
 
    RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
+   for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
+
       /* Concatenate strings into full paths for core_path, game_path */
       fill_pathname_join_special_ext(core_path,
             shader_directory, core_name,
@@ -3637,7 +3625,7 @@ bool config_load_shader_preset(void)
       goto success;
    }
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
+   for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
@@ -3665,7 +3653,7 @@ bool config_load_shader_preset(void)
       goto success;
    }
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
+   for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
@@ -3718,7 +3706,7 @@ static void parse_config_file(void)
 
    RARCH_LOG("[config] loading config from: %s.\n", config_path);
 
-   if (config_load_file(config_path, false, config_get_ptr()))
+   if (config_load_file(config_path, config_get_ptr()))
       return;
 
    RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
@@ -4183,7 +4171,7 @@ bool config_save_overrides(int override_type)
       conf = config_file_new(NULL);
 
    /* Load the original config file in memory */
-   config_load_file(path_get(RARCH_PATH_CONFIG), false, settings);
+   config_load_file(path_get(RARCH_PATH_CONFIG), settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
    tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
