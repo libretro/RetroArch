@@ -597,7 +597,7 @@ static void iohidmanager_hid_device_add_device(
 	 * if so do not re-add the pad */
 	for (i=0; i<MAX_USERS; i++)
 	{
-		struct iohidmanager_hid_adapter *a = hid->slots[i].data;
+		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
 		if (a == NULL)
 			continue;
 		if (a->uniqueId == deviceUniqueId)
@@ -982,9 +982,9 @@ static int iohidmanager_hid_manager_set_device_matching(
 {
 	/* deterministically add all device currently plugged when lanching retroarch
 	 * order by location id which seems to correspond to usb port number */
-	CFSetRef set = IOHIDManagerCopyDevices(hid->ptr);
-	CFIndex num_devices = CFSetGetCount(set);
-	IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
+	CFSetRef set                 = IOHIDManagerCopyDevices(hid->ptr);
+	CFIndex num_devices          = CFSetGetCount(set);
+	IOHIDDeviceRef *device_array = (IOHIDDeviceRef*)calloc(num_devices, sizeof(IOHIDDeviceRef));
 	CFSetGetValues(set, (const void **) device_array);
 
 	/* re order device by location id */
@@ -1006,32 +1006,30 @@ static int iohidmanager_hid_manager_set_device_matching(
 		{
 			if ( devList == NULL )
 			{
-				devList = (hid_list_t *)malloc(sizeof(hid_list_t));
-				devList->device = dev;
-				devList->lid = iohidmanager_hid_device_get_location_id(dev);
-				devList->next = NULL;
+				devList          = (hid_list_t *)malloc(sizeof(hid_list_t));
+				devList->device  = dev;
+				devList->lid     = iohidmanager_hid_device_get_location_id(dev);
+				devList->next    = NULL;
 			}
 			else
 			{
-				hid_list_t * new = (hid_list_t *)malloc(sizeof(hid_list_t));
-				new->device = dev;
-				new->lid = iohidmanager_hid_device_get_location_id(dev);
-				new->next = NULL;
+				hid_list_t * devnew = (hid_list_t *)malloc(sizeof(hid_list_t));
+				devnew->device      = dev;
+				devnew->lid         = iohidmanager_hid_device_get_location_id(dev);
+				devnew->next        = NULL;
 
 				hid_list_t * ptr = devList;
-				if ( new->lid < ptr->lid )
+				if (devnew->lid < ptr->lid)
 				{
-					new->next = ptr;
-					devList = new;
+					devnew->next = ptr;
+					devList      = devnew;
 				}
 				else
 				{
-					while ( ( ptr->lid < new->lid ) && (ptr->next != NULL) )
-					{
+					while ( ( ptr->lid < devnew->lid ) && (ptr->next != NULL) )
 						ptr = ptr->next;
-					}
-					new->next = ptr->next;
-					ptr->next = new;
+					devnew->next = ptr->next;
+					ptr->next    = devnew;
 				}
 			}
 		}
