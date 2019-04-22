@@ -20,7 +20,7 @@
 #include "../retroarch.h"
 #include "../core.h"
 
-#include <rcheevos.h>
+#include "../deps/rcheevos/include/rcheevos.h"
 
 static int rcheevos_cmpaddr(const void* e1, const void* e2)
 {
