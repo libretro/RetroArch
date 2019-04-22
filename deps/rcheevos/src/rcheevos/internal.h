@@ -1,9 +1,8 @@
 #ifndef INTERNAL_H
 #define INTERNAL_H
 
-#include "rcheevos.h"
-
 #include <stddef.h>
+#include <rcheevos.h>
 
 #define RC_ALLOW_ALIGN(T) struct __align_ ## T { char ch; T t; };
 RC_ALLOW_ALIGN(rc_condition_t)
