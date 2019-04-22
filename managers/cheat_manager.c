@@ -170,9 +170,7 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
    }
 
    if (!overwrite)
-      conf = config_file_new(cheats_file);
-   else
-      conf = config_file_new(NULL);
+      conf = config_file_read(cheats_file);
 
    if (!conf)
       conf = config_file_new(NULL);

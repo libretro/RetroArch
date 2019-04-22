@@ -763,7 +763,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    if (!config)
       return true;
 
-   params->conf             = config_file_new(config);
+   params->conf             = config_file_read(config);
    RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
    if (!params->conf)
    {

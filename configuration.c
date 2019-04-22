@@ -2401,8 +2401,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
    {
       bool saved = false;
-
-      conf = config_file_new(NULL);
+      conf       = config_file_new(NULL);
 
       if (conf)
       {
@@ -3885,7 +3884,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
-   config_file_t                              *conf  = config_file_new(path);
+   config_file_t                              *conf  = config_file_read(path);
    settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
