@@ -202,50 +202,34 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       return 0;
    }
 
-   if (core_info->core_name)
    {
-      fill_pathname_join_concat_noext(tmp,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME),
-            ": ",
-            core_info->core_name,
-            sizeof(tmp));
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   }
+      unsigned i;
+      typedef struct menu_features_info
+      {
+         const char *name;
+         enum msg_hash_enums msg;
+      } menu_features_info_t;
 
-   if (core_info->display_name)
-   {
-      fill_pathname_join_concat_noext(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL),
-            ": ",
-            core_info->display_name,
-            sizeof(tmp));
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   }
+      menu_features_info_t info_list[] = {
+         {core_info->core_name,             MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME},
+         {core_info->display_name,          MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL},
+         {core_info->systemname,            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME},
+         {core_info->system_manufacturer,   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER},
+      };
 
-   if (core_info->systemname)
-   {
-      fill_pathname_join_concat_noext(tmp,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME),
-            ": ",
-            core_info->systemname,
-            sizeof(tmp));
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   }
+      for (i = 0; i < ARRAY_SIZE(info_list); i++)
+      {
+         if (!info_list[i].name)
+            continue;
 
-   if (core_info->system_manufacturer)
-   {
-      fill_pathname_join_concat_noext(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER),
-            ": ",
-            core_info->system_manufacturer,
-            sizeof(tmp));
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         fill_pathname_join_concat_noext(tmp,
+               msg_hash_to_str(info_list[i].msg),
+               ": ",
+               info_list[i].name,
+               sizeof(tmp));
+         menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      }
    }
 
    if (core_info->categories_list)
@@ -338,24 +322,24 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
          for (i = 0; i < core_info->firmware_count; i++)
          {
-            if (core_info->firmware[i].desc)
-            {
-               snprintf(tmp, sizeof(tmp), "(!) %s, %s: %s",
-                     core_info->firmware[i].missing ?
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT),
-                     core_info->firmware[i].optional ?
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED),
-                     core_info->firmware[i].desc ?
-                     core_info->firmware[i].desc :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
-                     );
+            if (!core_info->firmware[i].desc)
+               continue;
 
-               menu_entries_append_enum(info->list, tmp, "",
-                     MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-            }
+            snprintf(tmp, sizeof(tmp), "(!) %s, %s: %s",
+                  core_info->firmware[i].missing ?
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT),
+                  core_info->firmware[i].optional ?
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED),
+                  core_info->firmware[i].desc ?
+                  core_info->firmware[i].desc :
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
+                  );
+
+            menu_entries_append_enum(info->list, tmp, "",
+                  MENU_ENUM_LABEL_CORE_INFO_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
          }
       }
    }
