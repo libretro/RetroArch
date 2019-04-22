@@ -480,7 +480,7 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
 #if defined(__SSE2__)
 /* :( TODO: Make this saner. */
 static INLINE void store_bgr24_sse2(void *output, __m128i a,
-      __m128i b, __m128i c, __m128i d)
+      __m128i b, __m128i c, __m128i *d)
 {
    const __m128i mask_0 = _mm_set_epi32(0, 0, 0, 0x00ffffff);
    const __m128i mask_1 = _mm_set_epi32(0, 0, 0x00ffffff, 0);
@@ -503,10 +503,10 @@ static INLINE void store_bgr24_sse2(void *output, __m128i a,
 
    __m128i c0 = _mm_srli_si128(_mm_and_si128(c, mask_2), 10);
    __m128i c1 = _mm_srli_si128(_mm_and_si128(c, mask_3), 11);
-   __m128i c2 = _mm_slli_si128(_mm_and_si128(d, mask_0),  4);
-   __m128i c3 = _mm_slli_si128(_mm_and_si128(d, mask_1),  3);
-   __m128i c4 = _mm_slli_si128(_mm_and_si128(d, mask_2),  2);
-   __m128i c5 = _mm_slli_si128(_mm_and_si128(d, mask_3),  1);
+   __m128i c2 = _mm_slli_si128(_mm_and_si128(*d, mask_0),  4);
+   __m128i c3 = _mm_slli_si128(_mm_and_si128(*d, mask_1),  3);
+   __m128i c4 = _mm_slli_si128(_mm_and_si128(*d, mask_2),  2);
+   __m128i c5 = _mm_slli_si128(_mm_and_si128(*d, mask_3),  1);
 
    __m128i *out = (__m128i*)output;
 
@@ -589,7 +589,7 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
                _mm_slli_si128(res_hi_ra1, 2));
 
          /* Non-POT pixel sizes for the loss */
-         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
+         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, &res_hi1);
       }
 #endif
 
@@ -674,7 +674,7 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
          res_hi1    = _mm_or_si128(res_hi_bg1,
                _mm_slli_si128(res_hi_ra1, 2));
 
-         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
+         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, &res_hi1);
       }
 #endif
 
@@ -767,7 +767,7 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
          l1 = _mm_shuffle_epi32(l1, _MM_SHUFFLE(3, 0, 1, 2));
          l2 = _mm_shuffle_epi32(l2, _MM_SHUFFLE(3, 0, 1, 2));
          l3 = _mm_shuffle_epi32(l3, _MM_SHUFFLE(3, 0, 1, 2));
-         store_bgr24_sse2(out, l0, l1, l2, l3);
+         store_bgr24_sse2(out, l0, l1, l2, &l3);
       }
 #endif
 
@@ -801,11 +801,12 @@ void conv_abgr8888_bgr24(void *output_, const void *input_,
 #if defined(__SSE2__)
       for (; w < max_width; w += 16, out += 48)
       {
+		 __m128i d = _mm_loadu_si128((const __m128i*)(input + w + 12));
          store_bgr24_sse2(out,
                _mm_loadu_si128((const __m128i*)(input + w +  0)),
                _mm_loadu_si128((const __m128i*)(input + w +  4)),
-               _mm_loadu_si128((const __m128i*)(input + w +  8)),
-               _mm_loadu_si128((const __m128i*)(input + w + 12)));
+               _mm_loadu_si128((const __m128i*)(input + w +  8)), &d
+               );
       }
 #endif
 
