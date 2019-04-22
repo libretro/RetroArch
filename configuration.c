@@ -3585,7 +3585,6 @@ static bool config_load_shader_preset_internal(
  */
 bool config_load_shader_preset(void)
 {
-   unsigned idx;
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
