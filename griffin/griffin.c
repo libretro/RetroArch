@@ -1318,7 +1318,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__) || defined(HAVE_METAL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VITA2D) || defined(_3DS) || defined(__wiiu__) || defined(HAVE_METAL)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif
