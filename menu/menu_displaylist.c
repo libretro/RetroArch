@@ -1749,7 +1749,7 @@ static int menu_displaylist_parse_settings_internal(
    if (!setting)
       return -1;
 
-   flags = setting->flags;
+   flags                       = setting->flags;
 
    switch (parse_type)
    {
@@ -1878,15 +1878,9 @@ static int menu_displaylist_parse_settings_internal(
             goto loop;
       }
 
-      if ((flags & SD_FLAG_ADVANCED) &&
-            !show_advanced_settings)
-         goto loop;
-
-#ifdef HAVE_LAKKA
-      if ((flags & SD_FLAG_LAKKA_ADVANCED) &&
-            !show_advanced_settings)
-         goto loop;
-#endif
+      if (!show_advanced_settings)
+         if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
+            goto loop;
 
       if (
             (entry_type >= MENU_SETTINGS_INPUT_BEGIN) &&
@@ -1931,12 +1925,16 @@ loop:
       (*list = *list + 1);
    }
 
-   if (count == 0 && add_empty_entry)
-      menu_entries_append_enum(info_list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-            0, 0, 0);
+   if (count == 0)
+   {
+      if (add_empty_entry)
+         menu_entries_append_enum(info_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+               MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+               0, 0, 0);
+      return -1;
+   }
 
    return 0;
 }
@@ -1950,14 +1948,15 @@ static int menu_displaylist_parse_settings_internal_enum(
       )
 {
    enum setting_type precond;
-   size_t             count  = 0;
-   uint64_t flags            = 0;
-   settings_t *settings      = config_get_ptr();
+   size_t             count    = 0;
+   uint64_t flags              = 0;
+   settings_t *settings        = config_get_ptr();
+   bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 
    if (!setting)
       return -1;
 
-   flags            = setting->flags;
+   flags                       = setting->flags;
 
    switch (parse_type)
    {
@@ -2086,15 +2085,9 @@ static int menu_displaylist_parse_settings_internal_enum(
             goto loop;
       }
 
-#ifdef HAVE_LAKKA
-      if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
-            !settings->bools.menu_show_advanced_settings)
-         goto loop;
-#else
-      if (flags & SD_FLAG_ADVANCED &&
-            !settings->bools.menu_show_advanced_settings)
-         goto loop;
-#endif
+      if (!show_advanced_settings)
+         if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
+            goto loop;
 
       menu_entries_append_enum(info_list, short_description,
             name, enum_idx, menu_setting_set_flags(setting), 0, 0);
