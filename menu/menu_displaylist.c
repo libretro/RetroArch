@@ -1821,51 +1821,18 @@ static int menu_displaylist_parse_settings_internal_enum(
          case PARSE_SUB_GROUP:
             break;
          case PARSE_ACTION:
-            if (type == ST_ACTION)
-               break;
-            goto loop;
          case PARSE_ONLY_INT:
-            if (type == ST_INT)
-               break;
-            goto loop;
          case PARSE_ONLY_UINT:
-            if (type == ST_UINT)
-               break;
-            goto loop;
          case PARSE_ONLY_SIZE:
-            if (type == ST_SIZE)
-               break;
-            goto loop;
          case PARSE_ONLY_BIND:
-            if (type == ST_BIND)
-               break;
-            goto loop;
          case PARSE_ONLY_BOOL:
-            if (type == ST_BOOL)
-               break;
-            goto loop;
          case PARSE_ONLY_FLOAT:
-            if (type == ST_FLOAT)
-               break;
-            goto loop;
          case PARSE_ONLY_HEX:
-            if (type == ST_HEX)
-               break;
-            goto loop;
          case PARSE_ONLY_STRING:
-            if (type == ST_STRING)
-               break;
-            goto loop;
          case PARSE_ONLY_PATH:
-            if (type == ST_PATH)
-               break;
-            goto loop;
          case PARSE_ONLY_DIR:
-            if (type == ST_DIR)
-               break;
-            goto loop;
          case PARSE_ONLY_STRING_OPTIONS:
-            if (type == ST_STRING_OPTIONS)
+            if (type == precond)
                break;
             goto loop;
       }
