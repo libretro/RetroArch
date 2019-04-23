@@ -124,12 +124,11 @@ static retro_vfs_mkdir_t path_mkdir_cb = NULL;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-   const struct retro_vfs_interface* vfs_iface;
+   const struct retro_vfs_interface* 
+      vfs_iface           = vfs_info->iface;
 
    path_stat_cb           = NULL;
    path_mkdir_cb          = NULL;
-
-   vfs_iface              = vfs_info->iface;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
@@ -140,12 +139,7 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 
 #define path_stat(path, size) ((path_stat_cb != NULL) ? path_stat_cb((path), (size)) : retro_vfs_stat_impl((path), (size)))
 
-static int path_mkdir_norecurse(const char *dir)
-{
-   if (path_mkdir_cb != NULL)
-      return path_mkdir_cb(dir);
-   return retro_vfs_mkdir_impl(dir);
-}
+#define path_mkdir_norecurse(dir) ((path_mkdir_cb != NULL) ? path_mkdir_cb((dir)) : retro_vfs_mkdir_impl((dir)))
 
 /**
  * path_is_directory:
@@ -234,7 +228,7 @@ bool path_mkdir(const char *dir)
 
       /* Don't treat this as an error. */
       if (ret == -2 && path_is_directory(dir))
-         ret = 0;
+         return true;
 
       return (ret == 0);
    }
@@ -483,13 +477,15 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    strlcpy(out, ptr, size);
 }
 
-void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
+void fill_pathname_base_noext(char *out,
+      const char *in_path, size_t size)
 {
    fill_pathname_base(out, in_path, size);
    path_remove_extension(out);
 }
 
-void fill_pathname_base_ext(char *out, const char *in_path, const char *ext,
+void fill_pathname_base_ext(char *out,
+      const char *in_path, const char *ext,
       size_t size)
 {
    fill_pathname_base_noext(out, in_path, size);
@@ -536,23 +532,20 @@ bool fill_pathname_parent_dir_name(char *out_dir,
 {
    char *temp = strdup(in_dir);
    char *last = find_last_slash(temp);
-   bool ret = false;
 
-   *last = '\0';
+   *last      = '\0';
 
-   in_dir = find_last_slash(temp);
+   in_dir     = find_last_slash(temp);
 
    if (in_dir && in_dir + 1)
    {
       strlcpy(out_dir, in_dir + 1, size);
-      ret = true;
+      free(temp);
+      return true;
    }
-   else
-      ret = false;
 
    free(temp);
-
-   return ret;
+   return false;
 }
 
 /**
@@ -614,7 +607,7 @@ void fill_str_dated_filename(char *out_filename,
    char format[256];
    time_t cur_time = time(NULL);
 
-   format[0] = '\0';
+   format[0]       = '\0';
 
    strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
 
@@ -655,7 +648,8 @@ void path_basedir(char *path)
 void path_parent_dir(char *path)
 {
    bool path_was_absolute = path_is_absolute(path);
-   size_t len = strlen(path);
+   size_t             len = strlen(path);
+
    if (len && path_char_is_slash(path[len - 1]))
    {
       path[len - 1] = '\0';
