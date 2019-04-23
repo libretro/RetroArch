@@ -103,7 +103,7 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
 
-#define menu_displaylist_parse_settings(info_list, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(info_list, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
+#define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type)
 
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
@@ -1736,8 +1736,8 @@ static int menu_displaylist_parse_settings_internal(
       file_list_t *info_list,
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry,
-      unsigned entry_type,
-      rarch_setting_t *setting
+      rarch_setting_t *setting,
+      unsigned entry_type
       )
 {
    enum setting_type precond;
@@ -1944,7 +1944,7 @@ static int menu_displaylist_parse_settings_internal_enum(
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry,
       rarch_setting_t *setting,
-      enum msg_hash_enums enum_idx
+      unsigned entry_type 
       )
 {
    enum setting_type precond;
@@ -2089,8 +2089,12 @@ static int menu_displaylist_parse_settings_internal_enum(
          if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
             goto loop;
 
-      menu_entries_append_enum(info_list, short_description,
-            name, enum_idx, menu_setting_set_flags(setting), 0, 0);
+      {
+         enum msg_hash_enums enum_idx = (enum msg_hash_enums)entry_type;
+
+         menu_entries_append_enum(info_list, short_description,
+               name, enum_idx, menu_setting_set_flags(setting), 0, 0);
+      }
       count++;
 
 loop:
