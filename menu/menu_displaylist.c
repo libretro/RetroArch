@@ -1162,6 +1162,7 @@ static int create_string_list_rdb_entry_string(
    }
 
    string_list_join_concat(output_label, str_len, str_list, "|");
+   string_list_free(str_list);
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
          actual_string, path_size);
@@ -1169,10 +1170,7 @@ static int create_string_list_rdb_entry_string(
          enum_idx,
          0, 0, 0);
 
-   if (output_label)
-      free(output_label);
-   string_list_free(str_list);
-   str_list = NULL;
+   free(output_label);
    free(tmp);
 
    return 0;
@@ -1192,51 +1190,44 @@ static int create_string_list_rdb_entry_int(
    struct string_list *str_list     = string_list_new();
 
    if (!str_list)
-      goto error;
+      return -1;
 
    attr.i                           = 0;
    tmp                              = (char*)malloc(path_size);
    str                              = (char*)malloc(path_size);
    tmp[0] = str[0] = '\0';
 
-   str_len += strlen(label) + 1;
+   str_len                         += strlen(label) + 1;
    string_list_append(str_list, label, attr);
 
    snprintf(str, path_size, "%d", actual_int);
-   str_len += strlen(str) + 1;
+   str_len                         += strlen(str) + 1;
    string_list_append(str_list, str, attr);
+   free(str);
 
-   str_len += strlen(path) + 1;
+   str_len                         += strlen(path) + 1;
    string_list_append(str_list, path, attr);
 
    output_label = (char*)calloc(str_len, sizeof(char));
 
    if (!output_label)
-      goto error;
+   {
+      string_list_free(str_list);
+      free(tmp);
+      return -1;
+   }
 
    string_list_join_concat(output_label, str_len, str_list, "|");
+   string_list_free(str_list);
 
    snprintf(tmp, path_size, "%s : %d", desc, actual_int);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
 
-   if (output_label)
-      free(output_label);
+   free(output_label);
 
-   string_list_free(str_list);
-   str_list = NULL;
-   free(tmp);
-   free(str);
    return 0;
-
-error:
-   if (str_list)
-      string_list_free(str_list);
-   str_list = NULL;
-   free(tmp);
-   free(str);
-   return -1;
 }
 
 static enum msg_file_type extension_to_file_hash_type(const char *ext)
