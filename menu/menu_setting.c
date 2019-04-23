@@ -7889,6 +7889,7 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
+#ifdef ANDROID
          CONFIG_UINT(
             list, list_info,
             &settings->uints.input_block_timeout,
@@ -7903,6 +7904,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by = 1;
          menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -11190,6 +11192,7 @@ static bool setting_append_list(
                parent_group);
 #endif
 
+#ifdef HAVE_NETWORKING
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,
@@ -11205,6 +11208,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

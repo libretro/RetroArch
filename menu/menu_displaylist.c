@@ -5984,16 +5984,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
+
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
-	 if (true)
+         if (true)
 #else
-	 if (!string_is_equal(video_display_server_get_ident(), "null"))
+         if (!string_is_equal(video_display_server_get_ident(), "null"))
 #endif
-	 {
-		 menu_displaylist_parse_settings_enum(info->list,
-				 MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-				 PARSE_ACTION, false);
-	 }
+         {
+            menu_displaylist_parse_settings_enum(info->list,
+                  MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                  PARSE_ACTION, false);
+         }
+
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_PAL60_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -6387,12 +6389,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
                PARSE_ONLY_BOOL, false) == 0)
             count++;
-#ifdef ANDROID
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
                PARSE_ONLY_UINT, false) == 0)
             count++;
-#endif
+
          if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
@@ -6880,7 +6881,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_QUIT_RETROARCH,
                      PARSE_ACTION, false);
-#ifdef HAVE_LAKKA_SWITCH
+
             menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
                PARSE_ACTION, false);
@@ -6888,7 +6889,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
                PARSE_ACTION, false);
-#endif
+
             if (settings->bools.menu_show_reboot)
                menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_REBOOT,
@@ -6996,7 +6997,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                PARSE_ACTION, false) == 0)
             count++;
 
-#ifdef HAVE_NETWORKING
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,
                PARSE_ACTION, false) == 0)
@@ -7006,7 +7006,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
                PARSE_ACTION, false) == 0)
             count++;
-#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
