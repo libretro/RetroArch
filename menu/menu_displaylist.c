@@ -3716,6 +3716,31 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_LATENCY_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,            PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_VIDEO_HARD_SYNC,                       PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,                PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,          PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5232,6 +5257,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
       case DISPLAYLIST_CONFIGURATIONS_LIST:
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
+      case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6342,64 +6368,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             }
 
          }
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_LATENCY_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_LATENCY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;
