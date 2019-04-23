@@ -1734,14 +1734,19 @@ static int menu_displaylist_parse_settings_internal_enum(
 {
    enum setting_type precond   = ST_NONE;
    size_t             count    = 0;
-   uint64_t flags              = 0;
    settings_t *settings        = config_get_ptr();
    bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 
    if (!setting)
       return -1;
 
-   flags                       = setting->flags;
+   {
+      uint64_t flags = setting->flags;
+
+      if (!show_advanced_settings)
+         if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
+            goto end;
+   }
 
    switch (parse_type)
    {
@@ -1790,6 +1795,7 @@ static int menu_displaylist_parse_settings_internal_enum(
          break;
    }
 
+
    for (;;)
    {
       bool time_to_exit             = false;
@@ -1835,10 +1841,6 @@ static int menu_displaylist_parse_settings_internal_enum(
                break;
             goto loop;
       }
-
-      if (!show_advanced_settings)
-         if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
-            goto loop;
 
       if (is_enum)
       {
@@ -1893,6 +1895,7 @@ loop:
       (*list = *list + 1);
    }
 
+end:
    if (count == 0)
    {
       if (add_empty_entry)
