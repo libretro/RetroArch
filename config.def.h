@@ -398,6 +398,7 @@ static bool rgui_full_width_layout = true;
 static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
 static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static bool rgui_shadows = false;
+static bool rgui_snow = false;
 static bool rgui_extended_ascii = false;
 
 #else

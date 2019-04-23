@@ -173,6 +173,7 @@ typedef struct settings
       bool menu_rgui_border_filler_enable;
       bool menu_rgui_full_width_layout;
       bool menu_rgui_shadows;
+      bool menu_rgui_snow;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_extended_ascii;
