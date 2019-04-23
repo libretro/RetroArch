@@ -6959,6 +6959,14 @@ MSG_HASH(
     "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SNOW,
+    "Snow"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_SNOW,
+    "Enable snow, forces menu to update every frame"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Extended ASCII Support"
     )

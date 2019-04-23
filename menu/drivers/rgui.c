@@ -484,6 +484,7 @@ typedef struct
    bool border_thickness;
    bool border_enable;
    bool shadow_enable;
+   bool snow_enable;
    bool extended_ascii_enable;
    float scroll_y;
    char *msgbox;
@@ -517,6 +518,8 @@ static unsigned mini_thumbnail_max_width = 0;
 static unsigned mini_thumbnail_max_height = 0;
 
 static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
+
+float snowflakes[1024];
 
 /* ==============================
  * Custom Symbols (glyphs) START
@@ -1553,6 +1556,15 @@ static void rgui_cache_background(rgui_t *rgui)
                6, fb_height - 5, fb_width - 10, 1, rgui->colors.shadow_color);
       }
    }
+   if (rgui->snow_enable) {
+      size_t i = 0;
+      for (i = 0; i < 1024; i += 4) {
+         snowflakes[i    ] = rand()%fb_width;
+         snowflakes[i + 1] = rand()%fb_height;
+         snowflakes[i + 2] = (rand()%64 - 16)*.1;
+         snowflakes[i + 3] = (rand()%64 - 48)*.1;
+      }
+   }
 }
 
 static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
@@ -2428,6 +2440,23 @@ static void rgui_render(void *data, bool is_idle)
 
    /* Render background */
    rgui_render_background();
+   
+   /* Snow */
+   if (rgui->snow_enable && rgui_frame_buf.data) {
+      for (i = 0; i < 1024; i += 4) {
+         snowflakes[i + 2] = snowflakes[i + 2] + (rand()%16 - 9)*.01;
+         snowflakes[i + 3] = snowflakes[i + 3] + (rand()%16 - 7)*.01;
+         if (snowflakes[i + 2] < -0.4) snowflakes[i + 2] = -0.4;
+         if (snowflakes[i + 2] >  0.1) snowflakes[i + 2] =  0.1;
+         if (snowflakes[i + 3] < -0.1) snowflakes[i + 3] = -0.1;
+         if (snowflakes[i + 3] >  0.4) snowflakes[i + 3] =  0.4;
+         snowflakes[i    ] = fmod(snowflakes[i    ] + snowflakes[i + 2], fb_width);
+         snowflakes[i + 1] = fmod(snowflakes[i + 1] + snowflakes[i + 3], fb_height);
+         if (snowflakes[i    ] < 0) snowflakes[i    ] += fb_width;
+         if (snowflakes[i + 1] < 0) snowflakes[i + 1] += fb_height;
+         rgui_frame_buf.data[ (int) snowflakes[i+1] * (fb_pitch >> 1) + (int) snowflakes[i]] = rgui->colors.normal_color;
+      }
+   }
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
@@ -3143,6 +3172,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->border_thickness      = settings->bools.menu_rgui_border_filler_thickness_enable;
    rgui->border_enable         = settings->bools.menu_rgui_border_filler_enable;
    rgui->shadow_enable         = settings->bools.menu_rgui_shadows;
+   rgui->snow_enable           = settings->bools.menu_rgui_snow;
    rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
 
    rgui->last_width  = rgui_frame_buf.width;
@@ -3637,6 +3667,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
    settings_t *settings           = config_get_ptr();
+   if (rgui->snow_enable)
+      rgui->force_redraw = true;
 
    if (settings->bools.menu_rgui_background_filler_thickness_enable != rgui->bg_thickness)
    {
@@ -3667,6 +3699,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui->shadow_enable = settings->bools.menu_rgui_shadows;
       rgui->bg_modified   = true;
       rgui->force_redraw  = true;
+   }
+
+   if (settings->bools.menu_rgui_snow != rgui->snow_enable)
+   {
+      rgui->snow_enable = settings->bools.menu_rgui_snow;
+      rgui->bg_modified   = true;
    }
 
    if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
