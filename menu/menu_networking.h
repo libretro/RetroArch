@@ -29,7 +29,7 @@
 
 RETRO_BEGIN_DECLS
 
-void print_buf_lines(file_list_t *list, char *buf,
+unsigned print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended);
 

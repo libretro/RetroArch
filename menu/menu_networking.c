@@ -42,23 +42,17 @@
 #include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
 
-void print_buf_lines(file_list_t *list, char *buf,
+unsigned print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended)
 {
    char c;
-   int i, j = 0;
+   unsigned count   = 0;
+   int i, j         = 0;
    char *line_start = buf;
 
    if (!buf || !buf_size)
-   {
-      menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0);
-      return;
-   }
+      return 0;
 
    for (i = 0; i < buf_size; i++)
    {
@@ -102,20 +96,32 @@ void print_buf_lines(file_list_t *list, char *buf,
       if (extended)
       {
          if (append)
-            menu_entries_append_enum(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         {
+            if (menu_entries_append_enum(list, core_pathname, "",
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0))
+               count++;
+         }
          else
+         {
             menu_entries_prepend(list, core_pathname, "",
                   MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            count++;
+         }
       }
       else
       {
          if (append)
-            menu_entries_append_enum(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         {
+            if (menu_entries_append_enum(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0))
+               count++;
+         }
          else
+         {
             menu_entries_prepend(list, line_start, label,
                   MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            count++;
+         }
       }
 
       switch (type)
@@ -178,6 +184,8 @@ void print_buf_lines(file_list_t *list, char *buf,
       file_list_sort_on_alt(list);
    /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
+
+   return count;
 }
 
 void cb_net_generic_subdir(retro_task_t *task,

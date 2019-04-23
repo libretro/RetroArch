@@ -4626,9 +4626,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CORE_CONTENT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, menu->core_buf, "",
+         count = print_buf_lines(info->list, menu->core_buf, "",
                (int)menu->core_len,
                FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4646,8 +4654,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
             if (str_list->elems[1].data)
                strlcpy(menu->core_buf, str_list->elems[1].data, menu->core_len);
-            print_buf_lines(info->list, menu->core_buf, new_label,
+
+            count = print_buf_lines(info->list, menu->core_buf, new_label,
                   (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
             info->need_push    = true;
             info->need_refresh = true;
             info->need_clear   = true;
@@ -4668,8 +4685,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             fill_pathname_join(new_label,
                   settings->paths.network_buildbot_assets_url,
                   "cores", sizeof(new_label));
-            print_buf_lines(info->list, menu->core_buf, new_label,
+
+            count = print_buf_lines(info->list, menu->core_buf, new_label,
                   (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
             info->need_push    = true;
             info->need_refresh = true;
             info->need_clear   = true;
@@ -4679,8 +4705,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CORES_UPDATER:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, menu->core_buf, "",
+         count = print_buf_lines(info->list, menu->core_buf, "",
                (int)menu->core_len, FILE_TYPE_DOWNLOAD_CORE, true, true);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4689,9 +4723,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_THUMBNAILS_UPDATER:
 #ifdef HAVE_NETWORKING
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         print_buf_lines(info->list, menu->core_buf, "",
+         count = print_buf_lines(info->list, menu->core_buf, "",
                (int)menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
                true, false);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4700,9 +4742,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_LAKKA:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, menu->core_buf, "",
+         count = print_buf_lines(info->list, menu->core_buf, "",
                (int)menu->core_len, FILE_TYPE_DOWNLOAD_LAKKA,
                true, false);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
