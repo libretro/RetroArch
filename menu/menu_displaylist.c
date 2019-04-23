@@ -3707,6 +3707,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5425,6 +5431,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
+      case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -6845,25 +6852,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,
-               PARSE_ONLY_STRING, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-                  MENU_ENUM_LABEL_NO_ITEMS,
-                  MENU_SETTING_NO_ITEM, 0, 0);
-
-         ret                = 0;
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
                PARSE_ONLY_STRING, false) == 0)
             count++;
 
