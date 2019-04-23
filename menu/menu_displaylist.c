@@ -397,7 +397,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
 
    if (menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
    (void)tmp_string;
@@ -410,13 +410,13 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          retroarch_git_version,
          sizeof(tmp));
    if (menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 #endif
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
    if (menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
 #ifdef ANDROID
@@ -426,7 +426,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
          perms ? "read-write" : "read-only");
    if (menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
 #endif
@@ -443,7 +443,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
       if (menu_entries_append_enum(info->list, cpu_str, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
 
@@ -464,7 +464,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       if (menu_entries_append_enum(info->list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
-            MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+            MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
 
@@ -478,7 +478,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             "%s %d\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
       if (menu_entries_append_enum(info->list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
-            MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+            MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
 
@@ -492,7 +492,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             input_autoconfigure_get_device_name_index(controller));
          if (menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
 
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
@@ -502,21 +502,21 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                input_config_get_device_display_name(controller) : "N/A");
             if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
                input_config_get_device_display_name(controller) ?
                input_config_get_device_config_name(controller) : "N/A");
             if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
                input_config_get_vid(controller),
                input_config_get_pid(controller));
             if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
          }
       }
@@ -538,7 +538,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             sizeof(tmp));
       if (menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
 
 #ifdef HAVE_LAKKA
@@ -553,7 +553,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                sizeof(tmp));
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 #endif
@@ -569,7 +569,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                sizeof(tmp));
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 
@@ -582,7 +582,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                major, minor);
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 
@@ -593,7 +593,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                frontend->get_rating());
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 
@@ -632,15 +632,15 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
             if (menu_entries_append_enum(info->list, tmp, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             if (menu_entries_append_enum(info->list, tmp2, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             if (menu_entries_append_enum(info->list, tmp3, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
          }
       }
@@ -706,7 +706,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                sizeof(tmp));
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
    }
@@ -724,7 +724,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          sizeof(tmp));
    if (menu_entries_append_enum(info->list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
    {
@@ -742,7 +742,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                val);
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 
@@ -756,7 +756,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                val);
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
 
@@ -770,7 +770,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                val);
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
    }
@@ -856,7 +856,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                sizeof(feat_str));
          if (menu_entries_append_enum(info->list, feat_str, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0) == 0)
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
    }
@@ -1701,27 +1701,6 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    return 0;
 }
 #endif
-
-static unsigned deferred_push_video_shader_parameters_common(
-      menu_displaylist_info_t *info,
-      struct video_shader *shader, unsigned base_parameter)
-{
-   unsigned i, count = 0;
-   size_t list_size  = shader->num_parameters;
-
-   if (list_size == 0)
-      return 0;
-
-   for (i = 0; i < list_size; i++)
-   {
-      menu_entries_append_enum(info->list, shader->parameters[i].desc,
-            info->label, MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY,
-            base_parameter + i, 0, 0);
-      count++;
-   }
-
-   return count;
-}
 
 static int menu_displaylist_parse_settings_internal_enum(
       file_list_t *info_list,
@@ -6478,26 +6457,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             video_shader_ctx_t shader_info;
-            video_shader_driver_get_current_shader(&shader_info);
 
-            if (shader_info.data)
-               count = deferred_push_video_shader_parameters_common(
-                     info, shader_info.data,
-                     (type == DISPLAYLIST_SHADER_PARAMETERS)
-                     ? MENU_SETTINGS_SHADER_PARAMETER_0
-                     : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-                     );
+            if (video_shader_driver_get_current_shader(&shader_info))
+            {
+               unsigned i;
+               struct video_shader *shader = shader_info.data;
+               size_t list_size            = shader->num_parameters;
+               unsigned     base_parameter = (type == DISPLAYLIST_SHADER_PARAMETERS)
+                  ? MENU_SETTINGS_SHADER_PARAMETER_0
+                  : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0;
 
-            if (count == 0)
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
-                     MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
-                     0, 0, 0);
-
-            ret             = 0;
-            info->need_push = true;
+               for (i = 0; i < list_size; i++)
+                  if (menu_entries_append_enum(info->list, shader->parameters[i].desc,
+                           info->label, MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY,
+                           base_parameter + i, 0, 0))
+                     count++;
+            }
          }
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
+                  MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
+                  0, 0, 0);
+
+         ret                = 0;
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
