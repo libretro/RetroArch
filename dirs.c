@@ -285,6 +285,17 @@ void dir_set(enum rarch_dir_type type, const char *path)
    }
 }
 
+bool dir_set_defaults(enum default_dirs dir_type, const char *dirpath)
+{
+   switch (dir_type)
+   {
+      case DEFAULT_DIR_PORT:
+         strlcpy(g_defaults.dirs[dir_type], dirpath,
+               sizeof(g_defaults.dirs[dir_type]));
+         break;
+   }
+}
+
 void dir_check_defaults(void)
 {
    unsigned i;
