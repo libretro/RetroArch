@@ -7551,11 +7551,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   char val_d[256], str[256];
                   snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
                   snprintf(val_d, sizeof(val_d), "%d", i);
-                  menu_entries_append_enum(info->list,
+                  if (menu_entries_append_enum(info->list,
                         str,
                         val_d,
                         MENU_ENUM_LABEL_NO_ITEMS,
-                        MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, list[i].idx, 0);
+                        MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, list[i].idx, 0))
+                     count++;
 
                   if (list[i].current)
                      menu_entries_set_checked(info->list, i, true);
@@ -7563,7 +7564,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
                free(list);
             }
-            else
+
+            if (count == 0)
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
