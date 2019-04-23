@@ -2167,7 +2167,6 @@ static bool rarch_game_specific_options(char **output)
    if (!retroarch_validate_game_options(game_path,
             game_path_size, false))
       goto error;
-
    if (!config_file_exists(game_path))
       goto error;
 

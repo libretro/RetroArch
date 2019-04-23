@@ -2458,10 +2458,8 @@ static int generic_action_ok_shader_preset_save(const char *path,
          }
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
-         {
-            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-            fill_pathname_join(file, directory, tmp, sizeof(file));
-         }
+         fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+         fill_pathname_join(file, directory, tmp, sizeof(file));
          break;
    }
 
