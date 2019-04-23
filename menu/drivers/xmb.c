@@ -2801,21 +2801,25 @@ static int xmb_draw_item(
       menu_animation_ticker(&ticker);
 
    label_offset = xmb->margins_label_top;
-   if (i == current && width > 320 && height > 240
-         && !string_is_empty(entry->sublabel))
+
+   if (settings->bools.menu_show_sublabels)
    {
-      char entry_sublabel[512] = {0};
+      if (i == current && width > 320 && height > 240
+            && !string_is_empty(entry->sublabel))
+      {
+         char entry_sublabel[512] = {0};
 
-      label_offset      = - xmb->margins_label_top;
+         label_offset      = - xmb->margins_label_top;
 
-      word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true);
+         word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true);
 
-      xmb_draw_text(video_info, xmb, entry_sublabel,
-            node->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal + xmb->margins_label_left,
-            xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
-            1, node->label_alpha, TEXT_ALIGN_LEFT,
-            width, height, xmb->font2);
+         xmb_draw_text(video_info, xmb, entry_sublabel,
+               node->x + xmb->margins_screen_left +
+               xmb->icon_spacing_horizontal + xmb->margins_label_left,
+               xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
+               1, node->label_alpha, TEXT_ALIGN_LEFT,
+               width, height, xmb->font2);
+      }
    }
 
    xmb_draw_text(video_info, xmb, tmp,

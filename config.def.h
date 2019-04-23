@@ -331,7 +331,7 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
-static bool menu_show_sublabels          = false;
+static bool menu_show_sublabels          = true;
 
 static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
 static float menu_ticker_speed           = 1.0f;
