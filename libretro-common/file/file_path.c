@@ -207,37 +207,31 @@ int32_t path_get_size(const char *path)
 bool path_mkdir(const char *dir)
 {
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   const char *target = NULL;
    bool         sret  = false;
    bool norecurse     = false;
-   char     *basedir  = NULL;
-
-   if (dir && *dir)
-      basedir         = strdup(dir);
+   char     *basedir  = (dir && *dir) ? strdup(dir) : NULL;
 
    if (!basedir)
       return false;
 
    path_parent_dir(basedir);
    if (!*basedir || !strcmp(basedir, dir))
-      goto end;
+   {
+      free(basedir);
+      return false;
+   }
 
    if (path_is_directory(basedir))
-   {
-      target    = dir;
       norecurse = true;
-   }
    else
    {
-      target    = basedir;
       sret      = path_mkdir(basedir);
 
       if (sret)
-      {
-         target    = dir;
          norecurse = true;
-      }
    }
+
+   free(basedir);
 
    if (norecurse)
    {
@@ -247,15 +241,9 @@ bool path_mkdir(const char *dir)
       if (ret == -2 && path_is_directory(dir))
          ret = 0;
 
-      if (ret < 0)
-         printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
-      sret = (ret == 0);
+      return (ret == 0);
    }
 
-end:
-   if (target && !sret)
-      printf("Failed to create directory: \"%s\".\n", target);
-   free(basedir);
    return sret;
 }
 
