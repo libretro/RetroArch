@@ -1815,7 +1815,6 @@ static bool drivers_set_active(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char *core_path                        = NULL;
    char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
@@ -1824,9 +1823,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   core_path                              = (char*)malloc(str_size);
    config_directory                       = (char*)malloc(str_size);
-   config_directory[0] = core_path[0]     = '\0';
+   config_directory[0]                    = '\0';
 
    fill_pathname_application_special(config_directory,
          str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
@@ -1837,13 +1835,20 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
          file_path_str(FILE_PATH_OPT_EXTENSION),
          len);
 
-   fill_pathname_join(core_path,
-         config_directory, core_name, str_size);
+   if (mkdir)
+   {
+      char *core_path  = (char*)malloc(str_size);
+      core_path[0]     = '\0';
 
-   if (!path_is_directory(core_path) && mkdir)
-      path_mkdir(core_path);
+      fill_pathname_join(core_path,
+            config_directory, core_name, str_size);
 
-   free(core_path);
+      if (!path_is_directory(core_path))
+         path_mkdir(core_path);
+
+      free(core_path);
+   }
+
    free(config_directory);
    return true;
 }
