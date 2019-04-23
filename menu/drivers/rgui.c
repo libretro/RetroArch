@@ -1557,7 +1557,8 @@ static void rgui_cache_background(rgui_t *rgui)
       }
    }
    if (rgui->snow_enable) {
-      for (int i = 0; i < 1024; i += 4) {
+      size_t i = 0;
+      for (i = 0; i < 1024; i += 4) {
          snowflakes[i    ] = rand()%fb_width;
          snowflakes[i + 1] = rand()%fb_height;
          snowflakes[i + 2] = (rand()%64 - 16)*.1;
@@ -2441,10 +2442,14 @@ static void rgui_render(void *data, bool is_idle)
    rgui_render_background();
    
    /* Snow */
-   if (rgui->snow_enable) {
-      for (int i = 0; i < 1024; i += 4) {
-         snowflakes[i + 2] = fmin(fmax(snowflakes[i + 2] + (rand()%16 - 9)*.01, -0.4), 0.1);
-         snowflakes[i + 3] = fmin(fmax(snowflakes[i + 3] + (rand()%16 - 7)*.01, -0.1), 0.4);
+   if (rgui->snow_enable && rgui_frame_buf.data) {
+      for (i = 0; i < 1024; i += 4) {
+         snowflakes[i + 2] = snowflakes[i + 2] + (rand()%16 - 9)*.01;
+         snowflakes[i + 3] = snowflakes[i + 3] + (rand()%16 - 7)*.01;
+         if (snowflakes[i + 2] < -0.4) snowflakes[i + 2] = -0.4;
+         if (snowflakes[i + 2] >  0.1) snowflakes[i + 2] =  0.1;
+         if (snowflakes[i + 3] < -0.1) snowflakes[i + 3] = -0.1;
+         if (snowflakes[i + 3] >  0.4) snowflakes[i + 3] =  0.4;
          snowflakes[i    ] = fmod(snowflakes[i    ] + snowflakes[i + 2], fb_width);
          snowflakes[i + 1] = fmod(snowflakes[i + 1] + snowflakes[i + 3], fb_height);
          if (snowflakes[i    ] < 0) snowflakes[i    ] += fb_width;
