@@ -1732,7 +1732,7 @@ static int menu_displaylist_parse_settings_internal_enum(
       bool is_enum
       )
 {
-   enum setting_type precond;
+   enum setting_type precond   = ST_NONE;
    size_t             count    = 0;
    uint64_t flags              = 0;
    settings_t *settings        = config_get_ptr();
@@ -1747,7 +1747,6 @@ static int menu_displaylist_parse_settings_internal_enum(
    {
       case PARSE_GROUP:
       case PARSE_SUB_GROUP:
-         precond = ST_NONE;
          break;
       case PARSE_ACTION:
          precond = ST_ACTION;
