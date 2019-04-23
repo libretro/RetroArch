@@ -647,13 +647,15 @@ void path_basedir(char *path)
  **/
 void path_parent_dir(char *path)
 {
-   bool path_was_absolute = path_is_absolute(path);
-   size_t             len = strlen(path);
+   size_t len = strlen(path);
 
    if (len && path_char_is_slash(path[len - 1]))
    {
+      bool path_was_absolute = path_is_absolute(path);
+
       path[len - 1] = '\0';
-      if (path_was_absolute && find_last_slash(path) == NULL)
+
+      if (path_was_absolute && !find_last_slash(path))
       {
          /* We removed the only slash from what used to be an absolute path.
           * On Linux, this goes from "/" to an empty string and everything works fine,
@@ -965,7 +967,7 @@ void fill_pathname_expand_special(char *out_path,
             retro_assert(src_size < size);
 
             out_path += src_size;
-            size -= src_size;
+            size     -= src_size;
          }
 
          in_path += 2;
