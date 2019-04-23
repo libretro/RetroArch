@@ -211,11 +211,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       } menu_features_info_t;
 
       menu_features_info_t info_list[] = {
-         {core_info->core_name,             MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME},
-         {core_info->display_name,          MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL},
-         {core_info->systemname,            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME},
-         {core_info->system_manufacturer,   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER},
+         {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME},
+         {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL},
+         {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME},
+         {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER},
       };
+      info_list[0].name = core_info->core_name;
+      info_list[1].name = core_info->display_name;
+      info_list[2].name = core_info->systemname;
+      info_list[3].name = core_info->system_manufacturer;
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
@@ -228,7 +232,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                info_list[i].name,
                sizeof(tmp));
          menu_entries_append_enum(info->list, tmp, "",
-               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
    }
 
