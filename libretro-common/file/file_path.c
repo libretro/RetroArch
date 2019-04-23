@@ -119,7 +119,7 @@
 
 #endif
 
-static retro_vfs_stat_t path_stat_cb = NULL;
+static retro_vfs_stat_t path_stat_cb   = NULL;
 static retro_vfs_mkdir_t path_mkdir_cb = NULL;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
@@ -138,12 +138,7 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_mkdir_cb          = vfs_iface->mkdir;
 }
 
-static int path_stat(const char *path, int32_t *size)
-{
-   if (path_stat_cb != NULL)
-      return path_stat_cb(path, size);
-   return retro_vfs_stat_impl(path, size);
-}
+#define path_stat(path, size) ((path_stat_cb != NULL) ? path_stat_cb((path), (size)) : retro_vfs_stat_impl((path), (size)))
 
 static int path_mkdir_norecurse(const char *dir)
 {
