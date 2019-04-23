@@ -1620,28 +1620,6 @@ error:
 
    return -1;
 }
-
-static int menu_database_parse_query(file_list_t *list, const char *path,
-      const char *query)
-{
-   unsigned i;
-   database_info_list_t *db_list = database_info_list_new(path, query);
-
-   if (!db_list)
-      return -1;
-
-   for (i = 0; i < db_list->count; i++)
-   {
-      if (!string_is_empty(db_list->list[i].name))
-         menu_entries_append_enum(list, db_list->list[i].name,
-               path, MENU_ENUM_LABEL_RDB_ENTRY, FILE_TYPE_RDB_ENTRY, 0, 0);
-   }
-
-   database_info_list_free(db_list);
-   free(db_list);
-
-   return 0;
-}
 #endif
 
 static int menu_displaylist_parse_settings_internal_enum(
@@ -4604,15 +4582,36 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DATABASE_QUERY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_LIBRETRODB
-         ret = menu_database_parse_query(info->list,
-               info->path, string_is_empty(info->path_c)
-               ? NULL : info->path_c);
-#else
-         ret = 0;
+         {
+            unsigned i;
+            const char *query             = string_is_empty(info->path_c) ? NULL : info->path_c;
+            database_info_list_t *db_list = database_info_list_new(info->path, query);
+
+            if (db_list)
+            {
+               for (i = 0; i < db_list->count; i++)
+               {
+                  if (!string_is_empty(db_list->list[i].name))
+                     if (menu_entries_append_enum(info->list, db_list->list[i].name,
+                              info->path, MENU_ENUM_LABEL_RDB_ENTRY, FILE_TYPE_RDB_ENTRY, 0, 0))
+                        count++;
+               }
+            }
+
+            database_info_list_free(db_list);
+            free(db_list);
+         }
 #endif
          if (!string_is_empty(info->path))
             free(info->path);
          info->path         = strdup(info->path_b);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
 
          info->need_sort    = true;
          info->need_refresh = true;
