@@ -2382,6 +2382,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
+      case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
       case MENU_ENUM_LABEL_SHUTDOWN:
