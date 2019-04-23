@@ -32,6 +32,8 @@
 
 RETRO_BEGIN_DECLS
 
+/* NOTE: Order matters - only add new entries at
+ * the bottom */
 enum menu_displaylist_parse_type
 {
    PARSE_NONE = 0,
