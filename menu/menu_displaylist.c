@@ -811,11 +811,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 {
    unsigned i;
    char label_spacer[PL_LABEL_SPACER_MAXLEN];
-   size_t           list_size = playlist_size(playlist);
-   settings_t       *settings = config_get_ptr();
-   bool               is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
-   bool           get_runtime = false;
-   bool show_inline_core_name = false;
+   size_t           list_size        = playlist_size(playlist);
+   settings_t       *settings        = config_get_ptr();
+   bool               is_rgui        = string_is_equal(settings->arrays.menu_driver, "rgui");
+   bool           get_runtime        = false;
+   bool show_inline_core_name        = false;
+   unsigned pl_sublabel_runtime_type = settings->uints.playlist_sublabel_runtime_type;
 
    label_spacer[0] = '\0';
 
@@ -823,9 +824,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       goto error;
 
    /* Check whether runtime logging info should be parsed */
-   if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
+   if (((pl_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
          settings->bools.content_runtime_log) ||
-       ((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
+       ((pl_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
          settings->bools.content_runtime_log_aggregate))
    {
       /* Runtime logging is valid for every type of playlist *apart from*
@@ -893,9 +894,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       /* Extract any available runtime values, if required */
       if (get_runtime)
       {
-         runtime_log_t *runtime_log = NULL;
-         runtime_log = runtime_log_init(entry->path, entry->core_path,
-               settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE);
+         runtime_log_t *runtime_log = runtime_log_init(entry->path, entry->core_path,
+               pl_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE);
 
          if (runtime_log)
          {
@@ -3303,14 +3303,14 @@ static void menu_displaylist_parse_playlist_generic(
 
    playlist             = playlist_get_cached();
 
-   if (playlist)
-   {
-      if (sort)
-         playlist_qsort(playlist);
+   if (!playlist)
+      return;
 
-      *ret              = menu_displaylist_parse_playlist(info,
-            playlist, playlist_name, is_collection);
-   }
+   if (sort)
+      playlist_qsort(playlist);
+
+   *ret              = menu_displaylist_parse_playlist(info,
+         playlist, playlist_name, is_collection);
 }
 
 #ifdef HAVE_NETWORKING
