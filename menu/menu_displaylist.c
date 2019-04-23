@@ -2686,89 +2686,90 @@ static int menu_displaylist_parse_options_remappings(
    return 0;
 }
 
-static int menu_displaylist_parse_playlists(
+static unsigned menu_displaylist_parse_playlists(
       menu_displaylist_info_t *info, bool horizontal)
 {
    size_t i, list_size;
    struct string_list *str_list = NULL;
-   unsigned items_found         = 0;
+   unsigned count               = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
 
    if (string_is_empty(path))
    {
-      if (frontend_driver_parse_drive_list(info->list, true) != 0)
-         menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-      return 0;
+      int ret = frontend_driver_parse_drive_list(info->list, true);
+      /* TODO/FIXME - we need to know the actual count number here */
+      if (ret == 0)
+         count++;
+      else
+         if (menu_entries_append_enum(info->list, "/", "",
+               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0))
+            count++;
+      return count;
    }
-
-   str_list = dir_list_new(path, NULL, true,
-         settings->bools.show_hidden_files, true, false);
-
-   if (!str_list)
-      return 0;
-
-   dir_list_sort(str_list, true);
-
-   list_size = str_list->size;
 
    if (!horizontal)
    {
 #ifdef HAVE_LIBRETRODB
       if (settings->bools.menu_content_show_add)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
                MENU_ENUM_LABEL_SCAN_DIRECTORY,
-               MENU_SETTING_ACTION, 0, 0);
-         menu_entries_append_enum(info->list,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+         if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
                MENU_ENUM_LABEL_SCAN_FILE,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 #endif
      if (settings->bools.menu_content_show_favorites)
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
             MENU_ENUM_LABEL_GOTO_FAVORITES,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
      if (settings->bools.menu_content_show_images)
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
             MENU_ENUM_LABEL_GOTO_IMAGES,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
      if (settings->bools.menu_content_show_music)
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
             MENU_ENUM_LABEL_GOTO_MUSIC,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
      if (settings->bools.menu_content_show_video)
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
             MENU_ENUM_LABEL_GOTO_VIDEO,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 #endif
    }
 
-   if (list_size == 0)
-   {
-      string_list_free(str_list);
+   str_list = dir_list_new(path, NULL, true,
+         settings->bools.show_hidden_files, true, false);
 
-      if (!horizontal)
-         goto no_playlists;
+   if (!str_list)
+      return count;
 
-      return 0;
-   }
+   dir_list_sort(str_list, true);
+
+   list_size = str_list->size;
 
    for (i = 0; i < list_size; i++)
    {
@@ -2802,31 +2803,18 @@ static int menu_displaylist_parse_playlists(
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
       if (horizontal)
-      {
          if (!string_is_empty(path))
             path = path_basename(path);
-      }
 
-      items_found++;
-      menu_entries_append_enum(info->list, path, label,
+      if (menu_entries_append_enum(info->list, path, label,
             MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY,
-            file_type, 0, 0);
+            file_type, 0, 0))
+         count++;
    }
 
    string_list_free(str_list);
 
-   if (items_found == 0 && !horizontal)
-      goto no_playlists;
-
-   return 0;
-
-no_playlists:
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NO_PLAYLISTS),
-         MENU_ENUM_LABEL_NO_PLAYLISTS,
-         MENU_SETTING_NO_ITEM, 0, 0);
-   return 0;
+   return count;
 }
 
 static unsigned menu_displaylist_parse_cores(
@@ -7171,19 +7159,24 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_displaylist_parse_playlists(info, true) == 0)
-         {
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
+         count =  menu_displaylist_parse_playlists(info, true);
+
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_displaylist_parse_playlists(info, false) == 0)
-         {
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
+         count = menu_displaylist_parse_playlists(info, false);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PLAYLISTS),
+                  MENU_ENUM_LABEL_NO_PLAYLISTS,
+                  MENU_SETTING_NO_ITEM, 0, 0);
+
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_CORES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
