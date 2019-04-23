@@ -151,30 +151,6 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
 #endif
 
-static void menu_displaylist_push_perfcounter(
-      menu_displaylist_info_t *info,
-      struct retro_perf_counter **counters,
-      unsigned num, unsigned id)
-{
-   unsigned i;
-   if (!counters || num == 0)
-   {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
-            MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
-            0, 0, 0);
-      return;
-   }
-
-   for (i = 0; i < num; i++)
-      if (counters[i] && counters[i]->ident)
-         menu_entries_append_enum(info->list,
-               counters[i]->ident, "",
-               (enum msg_hash_enums)(id + i),
-               id + i , 0, 0);
-}
-
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 {
    unsigned i;
@@ -6489,17 +6465,41 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_push_perfcounter(info,
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               retro_get_perf_counter_libretro()
-               : retro_get_perf_counter_rarch(),
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               retro_get_perf_count_libretro()
-               : retro_get_perf_count_rarch(),
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN :
-               MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-         ret = 0;
+         {
+            unsigned i;
+            struct retro_perf_counter **counters = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ? retro_get_perf_counter_libretro()
+               : retro_get_perf_counter_rarch();
+            unsigned num                         = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ?   retro_get_perf_count_libretro()
+               : retro_get_perf_count_rarch();
+            unsigned id                          = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ? MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
+               : MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+
+            if (counters && num != 0)
+            {
+               for (i = 0; i < num; i++)
+                  if (counters[i] && counters[i]->ident)
+                     if (menu_entries_append_enum(info->list,
+                           counters[i]->ident, "",
+                           (enum msg_hash_enums)(id + i),
+                           id + i , 0, 0))
+                        count++;
+            }
+         }
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
+                  MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
+                  0, 0, 0);
+
+         ret                = 0;
 
          info->need_refresh = false;
          info->need_push    = true;
@@ -6538,7 +6538,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             count++;
          if (settings->uints.streaming_mode == STREAMING_MODE_LOCAL)
          {
-            /* To-Do: Refresh on settings->uints.streaming_mode change to show this parameter */
+            /* TODO: Refresh on settings->uints.streaming_mode change to show this parameter */
             if (menu_displaylist_parse_settings_enum(info->list,
                   MENU_ENUM_LABEL_UDP_STREAM_PORT,
                   PARSE_ONLY_UINT, false) == 0)
@@ -6760,11 +6760,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
 
-            menu_entries_append_enum(info->list,
+            if (menu_entries_append_enum(info->list,
                   link,
                   name,
                   MSG_UNKNOWN,
-                  0, 0, 0);
+                  0, 0, 0))
+               count++;
          }
 #endif
 
@@ -6809,8 +6810,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             menu_driver_list_cache(&list_info);
 
-            menu_entries_append_enum(info->list, info->path,
-                  info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
+            if (menu_entries_append_enum(info->list, info->path,
+                  info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0))
+               count++;
 
             info->need_navigation_clear = true;
             info->need_entries_refresh  = true;
