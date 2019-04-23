@@ -3716,6 +3716,22 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                       PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                       PARSE_ONLY_STRING},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5246,6 +5262,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+      case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -5537,11 +5554,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_MENU_SHOW_HELP,
                PARSE_ONLY_BOOL, false);
-#ifdef HAVE_QT
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_SHOW_WIMP,
                PARSE_ONLY_UINT, false);
-#endif
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
                PARSE_ONLY_BOOL, false);
@@ -5671,14 +5686,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
                PARSE_ONLY_BOOL, false);
-#ifdef HAVE_QT
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
                PARSE_ONLY_BOOL, false);
-#endif
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
                PARSE_ONLY_UINT, false);
@@ -6929,29 +6942,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
                PARSE_ACTION, false) == 0)
-            count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-                  MENU_ENUM_LABEL_NO_ITEMS,
-                  MENU_SETTING_NO_ITEM, 0, 0);
-
-         ret                = 0;
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CHEEVOS_USERNAME,
-               PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
-               PARSE_ONLY_STRING, false) == 0)
             count++;
 
          if (count == 0)
