@@ -902,56 +902,45 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 }
 
+#if defined(VITA)
+#define path_mkdir_error(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
+#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(ORBIS)
+#define path_mkdir_error(ret) ((ret) == -1)
+#else
+#define path_mkdir_error(ret) ((ret) < 0 && errno == EEXIST)
+#endif
+
 int retro_vfs_mkdir_impl(const char *dir)
 {
 #if defined(_WIN32)
 #ifdef LEGACY_WIN32
-   int       ret = _mkdir(dir);
+   int ret = _mkdir(dir);
 #else
    wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
    int       ret = -1;
 
    if (dirW)
    {
-      ret        = _wmkdir(dirW);
+      ret = _wmkdir(dirW);
       free(dirW);
    }
 #endif
 #elif defined(IOS)
    int ret = mkdir(dir, 0755);
-   if (ret < 0 && errno == EEXIST)
-      return -2;
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
    int ret = sceIoMkdir(dir, 0777);
-   if (ret == SCE_ERROR_ERRNO_EEXIST)
-      return -2;
-#elif defined(PSP)
-   int ret = sceIoMkdir(dir, 0777);
-   if (ret == -1)
-      return -2;
 #elif defined(PS2)
    int ret = fileXioMkdir(dir, 0777);
-   if (ret == -1)
-      return -2;
 #elif defined(ORBIS)
    int ret = orbisMkdir(dir, 0755);
-   if (ret == -1)
-      return -2;
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
-   if (ret < 0 && errno == EEXIST)
-      return -2;
 #else
    int ret = mkdir(dir, 0750);
-#if defined(_3DS) || defined(WIIU) || defined(SWITCH)
-   if (ret == -1)
-      return -2;
-#else
-   if (ret < 0 && errno == EEXIST)
-      return -2;
-#endif
 #endif
 
+   if (path_mkdir_error(ret))
+      return -2;
    return ret < 0 ? -1 : 0;
 }
 
