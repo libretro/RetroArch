@@ -679,10 +679,13 @@ void Framebuffer::set_size(const Size2D &size_, GLenum format_)
 
 void Framebuffer::init()
 {
+   GLenum status;
+
    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
    if (image != 0)
    {
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
       glDeleteTextures(1, &image);
    }
 
@@ -704,12 +707,16 @@ void Framebuffer::init()
                   format,
                   size.width, size.height);
 
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
-   auto status   = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-   bool fallback = false;
+   glFramebufferTexture2D(GL_FRAMEBUFFER,
+         GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+
+   status   = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   complete = true;
 
    if (status != GL_FRAMEBUFFER_COMPLETE)
    {
+      complete = false;
+
       switch (status)
       {
          case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
@@ -721,34 +728,27 @@ void Framebuffer::init()
             break;
 
          case GL_FRAMEBUFFER_UNSUPPORTED:
-            RARCH_ERR("[GLCore]: Unsupported FBO, falling back to RGBA8.\n");
-            fallback = true;
-            break;
-      }
+            {
+               unsigned levels;
 
-      complete = false;
-   }
-   else
-      complete = true;
+               RARCH_ERR("[GLCore]: Unsupported FBO, falling back to RGBA8.\n");
 
-   if (fallback)
-   {
-      unsigned levels;
+               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+               glDeleteTextures(1, &image);
+               glGenTextures(1, &image);
+               glBindTexture(GL_TEXTURE_2D, image);
 
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-      glDeleteTextures(1, &image);
-      glGenTextures(1, &image);
-      glBindTexture(GL_TEXTURE_2D, image);
-
-      levels = num_miplevels(size.width, size.height);
-      if (max_levels < levels)
-         levels = max_levels;
-      glTexStorage2D(GL_TEXTURE_2D, levels,
+               levels = num_miplevels(size.width, size.height);
+               if (max_levels < levels)
+                  levels = max_levels;
+               glTexStorage2D(GL_TEXTURE_2D, levels,
                      GL_RGBA8,
                      size.width, size.height);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
-      status   = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-      complete = status == GL_FRAMEBUFFER_COMPLETE;
+               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+               complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+            }
+            break;
+      }
    }
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
