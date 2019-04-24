@@ -427,6 +427,9 @@ VIDEO DRIVER
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
+#endif
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
