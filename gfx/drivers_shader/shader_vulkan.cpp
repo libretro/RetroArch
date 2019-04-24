@@ -692,27 +692,33 @@ void vulkan_filter_chain::flush()
 void vulkan_filter_chain::update_history_info()
 {
    unsigned i = 0;
-   for (auto &texture : original_history)
+
+   for (i = 0; i < original_history.size(); i++)
    {
-      Texture &source         = common.original_history[i];
-      source.texture.image    = texture->get_image();
-      source.texture.view     = texture->get_view();
-      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      source.texture.width    = texture->get_size().width;
-      source.texture.height   = texture->get_size().height;
-      source.filter           = passes.front()->get_source_filter();
-      source.mip_filter       = passes.front()->get_mip_filter();
-      source.address          = passes.front()->get_address_mode();
-      i++;
+      Texture *source = (Texture*)&common.original_history[i];
+
+      if (!source)
+         continue;
+
+      source->texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      source->texture.view     = original_history[i]->get_view();
+      source->texture.image    = original_history[i]->get_image();
+      source->texture.width    = original_history[i]->get_size().width;
+      source->texture.height   = original_history[i]->get_size().height;
+      source->filter           = passes.front()->get_source_filter();
+      source->mip_filter       = passes.front()->get_mip_filter();
+      source->address          = passes.front()->get_address_mode();
    }
 }
 
 void vulkan_filter_chain::update_feedback_info()
 {
+   unsigned i;
    if (common.framebuffer_feedback.empty())
       return;
 
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
       auto fb = passes[i]->get_feedback_framebuffer();
       if (!fb)
