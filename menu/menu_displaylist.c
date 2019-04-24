@@ -6521,7 +6521,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                unsigned i;
                struct video_shader *shader = shader_info.data;
-               size_t list_size            = shader->num_parameters;
+               size_t list_size            = shader ? shader->num_parameters : 0;
                unsigned     base_parameter = (type == DISPLAYLIST_SHADER_PARAMETERS)
                   ? MENU_SETTINGS_SHADER_PARAMETER_0
                   : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0;
