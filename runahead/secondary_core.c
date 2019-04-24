@@ -342,22 +342,25 @@ static void secondary_core_input_poll_null(void) { }
 
 bool secondary_core_run_use_last_input(void)
 {
+   retro_input_poll_t old_poll_function;
+   retro_input_state_t old_input_function;
+
    if (!secondary_core_ensure_exists())
       return false;
 
-   retro_input_poll_t old_poll_function   = secondary_callbacks.poll_cb;
-   retro_input_state_t old_input_function = secondary_callbacks.state_cb;
+   old_poll_function            = secondary_callbacks.poll_cb;
+   old_input_function           = secondary_callbacks.state_cb;
 
-   secondary_callbacks.poll_cb            = secondary_core_input_poll_null;
-   secondary_callbacks.state_cb           = input_state_get_last;
+   secondary_callbacks.poll_cb  = secondary_core_input_poll_null;
+   secondary_callbacks.state_cb = input_state_get_last;
 
    secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
    secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
 
    secondary_core.retro_run();
 
-   secondary_callbacks.poll_cb            = old_poll_function;
-   secondary_callbacks.state_cb           = old_input_function;
+   secondary_callbacks.poll_cb  = old_poll_function;
+   secondary_callbacks.state_cb = old_input_function;
 
    secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
    secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
