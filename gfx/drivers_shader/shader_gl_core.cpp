@@ -757,14 +757,14 @@ void Framebuffer::init()
 
 void Framebuffer::clear()
 {
-   if (complete)
-   {
-      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   }
+   if (!complete)
+      return;
+
+   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Framebuffer::generate_mips()
@@ -805,6 +805,7 @@ void Framebuffer::copy(const CommonResources &common, GLuint image)
 
 void Framebuffer::copy_partial(const CommonResources &common, GLuint image, float rx, float ry)
 {
+   GLuint vbo;
    if (!complete)
       return;
 
@@ -831,8 +832,7 @@ void Framebuffer::copy_partial(const CommonResources &common, GLuint image, floa
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
 
-   // A bit crude, but heeeey.
-   GLuint vbo;
+   /* A bit crude, but heeeey. */
    glGenBuffers(1, &vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -870,26 +870,9 @@ class UBORing
 {
 public:
    ~UBORing();
-   void init(size_t size, unsigned count);
    std::vector<GLuint> buffers;
    unsigned buffer_index = 0;
 };
-
-void UBORing::init(size_t size, unsigned count)
-{
-   unsigned i;
-
-   buffers.resize(count);
-   glGenBuffers(count, buffers.data());
-
-   for (i = 0; i < buffers.size(); i++)
-   {
-      glBindBuffer(GL_UNIFORM_BUFFER, buffers[i]);
-      glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
-   }
-
-   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
 
 static void ubo_ring_update_and_bind(
       unsigned vertex_binding,
@@ -1224,7 +1207,22 @@ bool Pass::init_pipeline()
 
    uniforms.resize(reflection.ubo_size);
    if (reflection.ubo_size)
-      ubo_ring.init(reflection.ubo_size, 16);
+   {
+      unsigned i;
+      size_t    size = reflection.ubo_size;
+      unsigned count = 16;
+
+      ubo_ring.buffers.resize(count);
+      glGenBuffers(count, ubo_ring.buffers.data());
+
+      for (i = 0; i < ubo_ring.buffers.size(); i++)
+      {
+         glBindBuffer(GL_UNIFORM_BUFFER, ubo_ring.buffers[i]);
+         glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+      }
+
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+   }
    push_constant_buffer.resize(reflection.push_constant_size);
 
    reflect_parameter("MVP", reflection.semantics[SLANG_SEMANTIC_MVP]);
