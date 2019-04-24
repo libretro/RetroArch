@@ -1211,9 +1211,6 @@ static bool gl_core_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      unsigned alignment = video_pixel_get_alignment(images[i].width
-            * sizeof(uint32_t));
-
       video_texture_load_gl_core(&images[i], TEXTURE_FILTER_LINEAR, &id);
       gl->overlay_tex[i] = id;
 
