@@ -378,7 +378,7 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
       "~\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifdef HAVE_MENU
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    snprintf(g_defaults.settings.menu,
          sizeof(g_defaults.settings.menu), "xmb");
 #endif

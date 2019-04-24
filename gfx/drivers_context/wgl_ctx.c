@@ -49,6 +49,8 @@
 
 #if defined(HAVE_OPENGL) 
 #include "../common/gl_common.h"
+#elif defined(HAVE_OPENGL_CORE)
+#include "../common/gl_core_common.h"
 #elif defined(HAVE_OPENGL1)
 #include "../common/gl1_common.h"
 #endif
@@ -57,7 +59,7 @@
 #include "../common/vulkan_common.h"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #endif
@@ -83,7 +85,7 @@
 #endif
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
 static wglCreateContextAttribsProc pcreate_context;
 #endif
@@ -109,7 +111,7 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static bool wgl_has_extension(const char *extension, const char *extensions)
 {
    const char *start      = NULL;
@@ -151,7 +153,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          {
             gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
             if (func)
@@ -170,7 +172,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 #endif
 }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static void setup_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
@@ -325,7 +327,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          create_gl_context(hwnd, quit);
 #endif
          break;
@@ -369,7 +371,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          win32_interval = interval;
          if (!win32_hrc)
             return;
@@ -587,7 +589,7 @@ static void gfx_ctx_wgl_destroy(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          if (win32_hrc)
          {
             glFinish();
@@ -749,7 +751,7 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    win32_minor = minor;
    win32_api   = api;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    if (api == GFX_CTX_OPENGL_API)
       return true;
 #endif
@@ -772,7 +774,7 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          win32_use_hw_ctx = enable;
 
          if (win32_hdc)
@@ -845,7 +847,7 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             wgl_adaptive_vsync = true;
 

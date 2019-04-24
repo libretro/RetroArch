@@ -142,6 +142,8 @@ struct config_path_setting
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
+   VIDEO_GL1,
+   VIDEO_GL_CORE,
    VIDEO_VULKAN,
    VIDEO_METAL,
    VIDEO_DRM,
@@ -321,8 +323,12 @@ enum midi_driver_enum
 
 #if defined(HAVE_METAL)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
+#elif defined(HAVE_OPENGL_CORE)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
+#elif defined(HAVE_OPENGL1)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL1;
 #elif defined(GEKKO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 #elif defined(WIIU)
@@ -779,6 +785,10 @@ const char *config_get_default_video(void)
    {
       case VIDEO_GL:
          return "gl";
+      case VIDEO_GL1:
+         return "gl1";
+      case VIDEO_GL_CORE:
+         return "glcore";
       case VIDEO_VULKAN:
          return "vulkan";
       case VIDEO_METAL:

@@ -214,7 +214,7 @@ static bool gl_font_init_first(
 
    return false;
 }
-
+#endif
 
 #ifdef HAVE_OPENGL_CORE
 static const font_renderer_t *gl_core_font_backends[] = {
@@ -245,7 +245,6 @@ static bool gl_core_font_init_first(
 
    return false;
 }
-#endif
 #endif
 
 #ifdef HAVE_CACA
@@ -698,11 +697,11 @@ static bool font_init_first(
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
+#endif
 #ifdef HAVE_OPENGL_CORE
       case FONT_DRIVER_RENDER_OPENGL_CORE_API:
          return gl_core_font_init_first(font_driver, font_handle,
                                         video_data, font_path, font_size, is_threaded);
-#endif
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:

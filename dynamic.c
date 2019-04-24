@@ -40,8 +40,10 @@
 #include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL)
 #include "gfx/common/gl_common.h"
+#elif defined(HAVE_OPENGL_CORE)
+#include "gfx/common/gl_core_common.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -1087,7 +1089,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
                "is compiled against OpenGLES. Cannot use HW context.\n");
          return false;
 
-#elif defined(HAVE_OPENGL)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
          RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
@@ -1530,7 +1532,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (!dynamic_verify_hw_context(cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
          if (!gl_set_core_context(cb->context_type)) { }
 #endif
 

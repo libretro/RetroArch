@@ -99,7 +99,7 @@ VIDEO DRIVER
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #endif
 
-#if defined(HAVE_OPENGL) && defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_OPENGL_CORE)
 #include "../gfx/drivers_shader/shader_gl_core.cpp"
 #endif
 

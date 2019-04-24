@@ -241,7 +241,7 @@ void cocoagl_gfx_ctx_update(void)
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 #if MAC_OS_X_VERSION_10_7
          CGLUpdateContext(g_hw_ctx.CGLContextObj);
@@ -269,7 +269,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
          [GLContextClass clearCurrentContext];
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
