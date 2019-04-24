@@ -845,15 +845,27 @@ static int database_info_list_iterate_found_match(
 
    if (!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
-      struct playlist_entry entry = {0};
+      struct playlist_entry entry;
 
       /* the push function reads our entry as const, so these casts are safe */
-      entry.path = entry_path_str;
-      entry.label = db_info_entry->name;
-      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.crc32 = db_crc;
-      entry.db_name = db_playlist_base_str;
+      entry.path              = entry_path_str;
+      entry.label             = db_info_entry->name;
+      entry.core_path         = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name         = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.db_name           = db_playlist_base_str;
+      entry.crc32             = db_crc;
+      entry.subsystem_ident   = NULL;
+      entry.subsystem_name    = NULL;
+      entry.subsystem_roms    = NULL;
+      entry.runtime_hours     = 0;
+      entry.runtime_minutes   = 0;
+      entry.runtime_seconds   = 0;
+      entry.last_played_year  = 0;
+      entry.last_played_month = 0;
+      entry.last_played_day   = 0;
+      entry.last_played_hour  = 0;
+      entry.last_played_minute= 0;
+      entry.last_played_second= 0;
 
       playlist_push(playlist, &entry);
    }
@@ -864,8 +876,8 @@ static int database_info_list_iterate_found_match(
    database_info_list_free(db_state->info);
    free(db_state->info);
 
-   db_state->info = NULL;
-   db_state->crc  = 0;
+   db_state->info        = NULL;
+   db_state->crc         = 0;
    db_state->archive_crc = 0;
 
    free(entry_path_str);
@@ -1019,8 +1031,8 @@ static int task_database_iterate_playlist_lutro(
    if (!playlist_entry_exists(playlist,
             path, file_path_str(FILE_PATH_DETECT)))
    {
-      char *game_title = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      struct playlist_entry entry = {0};
+      struct playlist_entry entry;
+      char *game_title            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       game_title[0] = '\0';
 
@@ -1028,12 +1040,24 @@ static int task_database_iterate_playlist_lutro(
             path, PATH_MAX_LENGTH * sizeof(char));
 
       /* the push function reads our entry as const, so these casts are safe */
-      entry.path = (char*)path;
-      entry.label = game_title;
-      entry.core_path = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.core_name = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.crc32 = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.db_name = (char*)file_path_str(FILE_PATH_LUTRO_PLAYLIST);
+      entry.path              = (char*)path;
+      entry.label             = game_title;
+      entry.core_path         = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_name         = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.db_name           = (char*)file_path_str(FILE_PATH_LUTRO_PLAYLIST);
+      entry.crc32             = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.subsystem_ident   = NULL;
+      entry.subsystem_name    = NULL;
+      entry.subsystem_roms    = NULL;
+      entry.runtime_hours     = 0;
+      entry.runtime_minutes   = 0;
+      entry.runtime_seconds   = 0;
+      entry.last_played_year  = 0;
+      entry.last_played_month = 0;
+      entry.last_played_day   = 0;
+      entry.last_played_hour  = 0;
+      entry.last_played_minute= 0;
+      entry.last_played_second= 0;
 
       playlist_push(playlist, &entry);
 
