@@ -157,7 +157,6 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    const float *vertex       = NULL;
    const float *tex_coord    = NULL;
    const float *color        = NULL;
-   struct gl_core_vertex *pv = NULL;
    GLuint            texture = 0;
    gl_core_t *gl             = (gl_core_t*)video_info->userdata;
    const struct gl_core_buffer_locations *loc = NULL;

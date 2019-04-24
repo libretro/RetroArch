@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <retro_inline.h>
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
 
@@ -1201,6 +1202,23 @@ const char* video_driver_get_gpu_device_string(void);
 void video_driver_set_gpu_api_version_string(const char *str);
 
 const char* video_driver_get_gpu_api_version_string(void);
+
+static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
+{
+   gfx_ctx_flags_t flags;
+   if (ctx_type != RETRO_HW_CONTEXT_OPENGL_CORE)
+      return false;
+
+   /**
+    * Ensure that the rest of the frontend knows we have a core context
+    */
+   flags.flags = 0;
+   BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+   video_context_driver_set_flags(&flags);
+
+   return true;
+}
 
 extern video_driver_t video_gl_core;
 extern video_driver_t video_gl2;
