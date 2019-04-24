@@ -225,9 +225,8 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 #elif defined(PS2)
       int64_t ret = fileXioLseek(fileno(stream->fp), (off_t)offset, whence);
       /* fileXioLseek could return positive numbers */
-      if (ret > 0) {
+      if (ret > 0)
          ret = 0;
-      }
       return ret;
 #elif defined(ORBIS)
       int ret = orbisLseek(stream->fd, offset, whence);
@@ -877,14 +876,15 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 #if defined(VITA) || defined(PSP)
    is_dir = FIO_S_ISDIR(buf.st_mode);
 #elif defined(PS2)
-   if (!buf.mode) {
-      // if fileXioGetStat fails
+   if (!buf.mode)
+   {
+      /* if fileXioGetStat fails */
       int dir_ret = fileXioDopen(path);
-      is_dir =  dir_ret > 0;
+      is_dir      =  dir_ret > 0;
       fileXioDclose(dir_ret);
-   } else {
-      is_dir = FIO_S_ISDIR(buf.mode);
    }
+   else
+      is_dir = FIO_S_ISDIR(buf.mode);
 #elif defined(__CELLOS_LV2__)
    is_dir = ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
