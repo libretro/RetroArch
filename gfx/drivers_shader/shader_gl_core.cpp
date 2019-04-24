@@ -1787,17 +1787,6 @@ private:
    void update_history_info();
 };
 
-void gl_core_filter_chain::clear_history_and_feedback()
-{
-   for (auto &texture : original_history)
-      texture->clear();
-   for (auto &pass : passes)
-   {
-      gl_core::Framebuffer *fb = pass->get_feedback_framebuffer();
-      if (fb)
-         fb->clear();
-   }
-}
 
 void gl_core_filter_chain::update_history_info()
 {
@@ -1849,6 +1838,8 @@ void gl_core_filter_chain::update_feedback_info()
 
 void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
 {
+   unsigned i;
+
    /* First frame, make sure our history and feedback textures 
     * are in a clean state. */
    if (require_clear)
@@ -1868,7 +1859,7 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    };
    gl_core::Texture source = original;
 
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
@@ -1891,9 +1882,9 @@ void gl_core_filter_chain::update_history()
    unique_ptr<gl_core::Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
-   if (input_texture.width   != tmp->get_size().width ||
-       input_texture.height  != tmp->get_size().height ||
-       (input_texture.format != 0 
+   if (input_texture.width      != tmp->get_size().width  ||
+       input_texture.height     != tmp->get_size().height ||
+       (input_texture.format    != 0 
         && input_texture.format != tmp->get_format()))
       tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
@@ -2147,6 +2138,19 @@ bool gl_core_filter_chain::init()
    return true;
 }
 
+void gl_core_filter_chain::clear_history_and_feedback()
+{
+   unsigned i;
+   for (i = 0; i < original_history.size(); i++)
+      original_history[i]->clear();
+   for (i = 0; i < passes.size(); i++)
+   {
+      gl_core::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb)
+         fb->clear();
+   }
+}
+
 void gl_core_filter_chain::set_input_texture(
       const gl_core_filter_chain_texture &texture)
 {
@@ -2154,20 +2158,23 @@ void gl_core_filter_chain::set_input_texture(
 
    /* Need a copy to remove padding.
     * GL HW render interface in libretro is kinda garbage now ... */
-   if (input_texture.padded_width != input_texture.width ||
+   if (input_texture.padded_width  != input_texture.width ||
        input_texture.padded_height != input_texture.height)
    {
       if (!copy_framebuffer)
          copy_framebuffer.reset(new gl_core::Framebuffer(texture.format, 1));
 
-      if (input_texture.width != copy_framebuffer->get_size().width ||
-          input_texture.height != copy_framebuffer->get_size().height ||
-          (input_texture.format != 0 && input_texture.format != copy_framebuffer->get_format()))
+      if (input_texture.width   != copy_framebuffer->get_size().width  ||
+          input_texture.height  != copy_framebuffer->get_size().height ||
+          (input_texture.format != 0                                   &&
+           input_texture.format != copy_framebuffer->get_format()))
          copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
       copy_framebuffer->copy_partial(common, input_texture.image,
-                                     float(input_texture.width) / input_texture.padded_width,
-                                     float(input_texture.height) / input_texture.padded_height);
+                                     float(input_texture.width) 
+                                     / input_texture.padded_width,
+                                     float(input_texture.height) 
+                                     / input_texture.padded_height);
       input_texture.image = copy_framebuffer->get_image();
    }
 }
@@ -2179,8 +2186,9 @@ void gl_core_filter_chain::add_static_texture(unique_ptr<gl_core::StaticTexture>
 
 void gl_core_filter_chain::set_frame_count(uint64_t count)
 {
-   for (auto &pass : passes)
-      pass->set_frame_count(count);
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_count(count);
 }
 
 void gl_core_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
@@ -2197,9 +2205,13 @@ static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
       gl_core_filter_chain *chain,
       const video_shader_lut *shader)
 {
-   GLuint tex = 0;
-   texture_image image = {};
-   image.supports_rgba = true;
+   texture_image image;
+   GLuint tex                      = 0;
+
+   image.width                     = 0;
+   image.height                    = 0;
+   image.pixels                    = NULL;
+   image.supports_rgba             = true;
 
    if (!image_texture_load(&image, shader->path))
       return {};
@@ -2239,7 +2251,7 @@ static bool gl_core_filter_chain_load_luts(
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
-      auto image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
+      unique_ptr<gl_core::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
          RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
