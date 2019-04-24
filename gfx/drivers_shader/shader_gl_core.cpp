@@ -51,36 +51,43 @@ static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m, const str
    return true;
 }
 
-static GLuint gl_core_compile_shader(GLenum stage, const string &source)
+static GLuint gl_core_compile_shader(GLenum stage, const char *source)
 {
-   GLuint shader = glCreateShader(stage);
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
 
-   const char *ptr = source.c_str();
    glShaderSource(shader, 1, &ptr, nullptr);
    glCompileShader(shader);
 
-   GLint status;
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
    if (!status)
    {
       GLint length;
       glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
       if (length > 0)
       {
-         vector<char> buffer(length + 1);
-         glGetShaderInfoLog(shader, length, &length, buffer.data());
-         RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", buffer.data());
-         glDeleteShader(shader);
-         return 0;
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
       }
    }
 
    return shader;
 }
 
-GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
-                                     const uint32_t *fragment, size_t fragment_size,
-                                     gl_core_buffer_locations *loc, bool flatten)
+GLuint gl_core_cross_compile_program(
+      const uint32_t *vertex, size_t vertex_size,
+      const uint32_t *fragment, size_t fragment_size,
+      gl_core_buffer_locations *loc, bool flatten)
 {
    GLuint program = 0;
    try
@@ -193,11 +200,13 @@ GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
 
       auto vertex_source = vertex_compiler.compile();
       auto fragment_source = fragment_compiler.compile();
-      GLuint vertex_shader = gl_core_compile_shader(GL_VERTEX_SHADER, vertex_source);
-      GLuint fragment_shader = gl_core_compile_shader(GL_FRAGMENT_SHADER, fragment_source);
+      GLuint vertex_shader = gl_core_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
+      GLuint fragment_shader = gl_core_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
 
-      //RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
-      //RARCH_LOG("[GLCore]: Fragment shader:\n========\n%s\n=======\n", fragment_source.c_str());
+#if 0
+      RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
+      RARCH_LOG("[GLCore]: Fragment shader:\n========\n%s\n=======\n", fragment_source.c_str());
+#endif
 
       if (!vertex_shader || !fragment_shader)
       {
@@ -229,11 +238,16 @@ GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
          glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
          if (length > 0)
          {
-            vector<char> buffer(length + 1);
-            glGetProgramInfoLog(program, length, &length, buffer.data());
-            RARCH_ERR("[GLCore]: Failed to link program: %s\n", buffer.data());
-            glDeleteProgram(program);
-            return 0;
+            char *info_log = (char*)malloc(length);
+
+            if (info_log)
+            {
+               glGetProgramInfoLog(program, length, &length, info_log);
+               RARCH_ERR("[GLCore]: Failed to link program: %s\n", info_log);
+               free(info_log);
+               glDeleteProgram(program);
+               return 0;
+            }
          }
       }
 
