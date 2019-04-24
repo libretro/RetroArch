@@ -37,7 +37,8 @@
 using namespace std;
 
 template <typename P>
-static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m, const string &name, const P &p)
+static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m,
+      const string &name, const P &p)
 {
    auto itr = m.find(name);
    if (itr != end(m))
@@ -1801,6 +1802,7 @@ void gl_core_filter_chain::clear_history_and_feedback()
 void gl_core_filter_chain::update_history_info()
 {
    unsigned i;
+
    for (i = 0; i < original_history.size(); i++)
    {
       gl_core::Texture *source = (gl_core::Texture*)
@@ -1889,9 +1891,10 @@ void gl_core_filter_chain::update_history()
    unique_ptr<gl_core::Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
-   if (input_texture.width != tmp->get_size().width ||
-       input_texture.height != tmp->get_size().height ||
-       (input_texture.format != 0 && input_texture.format != tmp->get_format()))
+   if (input_texture.width   != tmp->get_size().width ||
+       input_texture.height  != tmp->get_size().height ||
+       (input_texture.format != 0 
+        && input_texture.format != tmp->get_format()))
       tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
    tmp->copy(common, input_texture.image);
@@ -1941,8 +1944,8 @@ void gl_core_filter_chain::build_viewport_pass(
    }
    else
    {
-      auto &fb = passes[passes.size() - 2]->get_framebuffer();
-      source.texture.image = fb.get_image();
+      auto &fb               = passes[passes.size() - 2]->get_framebuffer();
+      source.texture.image   = fb.get_image();
       source.texture.width   = fb.get_size().width;
       source.texture.height  = fb.get_size().height;
       source.filter          = passes.back()->get_source_filter();
@@ -2009,11 +2012,12 @@ bool gl_core_filter_chain::init_feedback()
       bool use_feedback = false;
       for (auto &pass : passes)
       {
-         auto &r         = pass->get_reflection();
-         auto &feedbacks = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         auto &r          = pass->get_reflection();
+         auto &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+
          if (i < feedbacks.size() && feedbacks[i].texture)
          {
-            use_feedback = true;
+            use_feedback  = true;
             use_feedbacks = true;
             break;
          }

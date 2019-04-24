@@ -44,6 +44,22 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
+template <typename P>
+static bool vk_shader_set_unique_map(unordered_map<string, P> &m,
+      const string &name, const P &p)
+{
+   auto itr = m.find(name);
+   if (itr != end(m))
+   {
+      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
+            name.c_str());
+      return false;
+   }
+
+   m[name] = p;
+   return true;
+}
+
 static unsigned num_miplevels(unsigned width, unsigned height)
 {
    unsigned size   = MAX(width, height);
@@ -738,16 +754,17 @@ void vulkan_filter_chain::update_feedback_info()
 
 bool vulkan_filter_chain::init_history()
 {
+   unsigned i;
+   size_t required_images = 0;
+
    original_history.clear();
    common.original_history.clear();
 
-   size_t required_images = 0;
-   for (auto &pass : passes)
-   {
+   for (i = 0; i < passes.size(); i++)
       required_images =
          max(required_images,
-               pass->get_reflection().semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
-   }
+               passes[i]->get_reflection().semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
 
    if (required_images < 2)
    {
@@ -761,11 +778,9 @@ bool vulkan_filter_chain::init_history()
    original_history.reserve(required_images);
    common.original_history.resize(required_images);
 
-   for (unsigned i = 0; i < required_images; i++)
-   {
+   for (i = 0; i < required_images; i++)
       original_history.emplace_back(new Framebuffer(device, memory_properties,
                max_input_size, original_format, 1));
-   }
 
    RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
 
@@ -779,21 +794,23 @@ bool vulkan_filter_chain::init_history()
 
 bool vulkan_filter_chain::init_feedback()
 {
-   common.framebuffer_feedback.clear();
-
+   unsigned i;
    bool use_feedbacks = false;
 
+   common.framebuffer_feedback.clear();
+
    /* Final pass cannot have feedback. */
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
       bool use_feedback = false;
       for (auto &pass : passes)
       {
-         auto &r = pass->get_reflection();
-         auto &feedbacks = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         auto &r          = pass->get_reflection();
+         auto &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+
          if (i < feedbacks.size() && feedbacks[i].texture)
          {
-            use_feedback = true;
+            use_feedback  = true;
             use_feedbacks = true;
             break;
          }
@@ -817,20 +834,6 @@ bool vulkan_filter_chain::init_feedback()
    return true;
 }
 
-template <typename P>
-static bool vk_shader_set_unique_map(unordered_map<string, P> &m, const string &name, const P &p)
-{
-   auto itr = m.find(name);
-   if (itr != end(m))
-   {
-      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
-            name.c_str());
-      return false;
-   }
-
-   m[name] = p;
-   return true;
-}
 
 bool vulkan_filter_chain::init_alias()
 {
@@ -955,7 +958,8 @@ void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
 void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       const VkViewport &vp)
 {
-   /* First frame, make sure our history and feedback textures are in a clean state. */
+   /* First frame, make sure our history and feedback textures 
+    * are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback(cmd);
@@ -981,7 +985,8 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       passes[i]->build_commands(disposer, cmd,
             original, source, vp, nullptr);
 
-      auto &fb = passes[i]->get_framebuffer();
+      auto &fb                = passes[i]->get_framebuffer();
+
       source.texture.view     = fb.get_view();
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width    = fb.get_size().width;
@@ -1017,12 +1022,11 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
    unique_ptr<Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
-   if (input_texture.width != tmp->get_size().width ||
-         input_texture.height != tmp->get_size().height ||
-         (input_texture.format != VK_FORMAT_UNDEFINED && input_texture.format != tmp->get_format()))
-   {
+   if   (input_texture.width   != tmp->get_size().width ||
+         input_texture.height  != tmp->get_size().height ||
+         (input_texture.format != VK_FORMAT_UNDEFINED 
+          && input_texture.format != tmp->get_format()))
       tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
-   }
 
    tmp->copy(cmd, input_texture.image, src_layout);
 
@@ -1060,6 +1064,7 @@ void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
 void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
+   unsigned i;
    /* First frame, make sure our history and feedback textures are in a clean state. */
    if (require_clear)
    {
@@ -1087,7 +1092,7 @@ void vulkan_filter_chain::build_viewport_pass(
    }
    else
    {
-      auto &fb = passes[passes.size() - 2]->get_framebuffer();
+      auto &fb               = passes[passes.size() - 2]->get_framebuffer();
       source.texture.view    = fb.get_view();
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width   = fb.get_size().width;
@@ -1101,8 +1106,8 @@ void vulkan_filter_chain::build_viewport_pass(
          original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
-   for (auto &pass : passes)
-      pass->end_frame();
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->end_frame();
 }
 
 StaticTexture::StaticTexture(string id,
@@ -1705,12 +1710,10 @@ bool Pass::build()
    framebuffer_feedback.reset();
 
    if (!final_pass)
-   {
       framebuffer = unique_ptr<Framebuffer>(
             new Framebuffer(device, memory_properties,
                current_framebuffer_size,
                pass_info.rt_format, pass_info.max_levels));
-   }
 
    for (auto &param : parameters)
    {
@@ -1838,7 +1841,8 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
 
    if (refl.push_constant)
       build_vec4(
-            reinterpret_cast<float *>(push.buffer.data() + (refl.push_constant_offset >> 2)),
+            reinterpret_cast<float *>
+            (push.buffer.data() + (refl.push_constant_offset >> 2)),
             width,
             height);
 }
@@ -1886,6 +1890,8 @@ void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
+   unsigned i;
+
    /* MVP */
    if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
@@ -1907,66 +1913,55 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
 
    /* Output information */
    build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
-         current_framebuffer_size.width, current_framebuffer_size.height);
+                       current_framebuffer_size.width,
+                       current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-         unsigned(current_viewport.width), unsigned(current_viewport.height));
+                       unsigned(current_viewport.width),
+                       unsigned(current_viewport.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-         frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
+                       frame_count_period 
+                       ? uint32_t(frame_count % frame_count_period) 
+                       : uint32_t(frame_count));
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+   build_semantic_texture_array(set, buffer,
+         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    /* Parameters. */
-   for (auto &param : filtered_parameters)
-   {
-      float value = common->shader_preset->parameters[param.index].current;
-      build_semantic_parameter(buffer, param.semantic_index, value);
-   }
+   for (i = 0; i < filtered_parameters.size(); i++)
+      build_semantic_parameter(buffer,
+            filtered_parameters[i].semantic_index,
+            common->shader_preset->parameters[
+            filtered_parameters[i].index].current);
 
    /* Previous inputs. */
-   unsigned i = 0;
-   for (auto &texture : common->original_history)
-   {
+   for (i = 0; i < common->original_history.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            texture);
-      i++;
-   }
+            common->original_history[i]);
 
    /* Previous passes. */
-   i = 0;
-   for (auto &texture : common->pass_outputs)
-   {
+   for (i = 0; i < common->pass_outputs.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            texture);
-      i++;
-   }
+            common->pass_outputs[i]);
 
    /* Feedback FBOs. */
-   i = 0;
-   for (auto &texture : common->framebuffer_feedback)
-   {
+   for (i = 0; i < common->framebuffer_feedback.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            texture);
-      i++;
-   }
+            common->framebuffer_feedback[i]);
 
    /* LUTs. */
-   i = 0;
-   for (auto &lut : common->luts)
-   {
+   for (i = 0; i < common->luts.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            lut->get_texture());
-      i++;
-   }
+            common->luts[i]->get_texture());
 }
 
 void Pass::build_commands(
@@ -1978,16 +1973,15 @@ void Pass::build_commands(
       const float *mvp)
 {
    current_viewport = vp;
-   auto size = get_output_size(
+   auto size        = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
    if (framebuffer &&
          (size.width  != framebuffer->get_size().width ||
           size.height != framebuffer->get_size().height))
-   {
       framebuffer->set_size(disposer, size);
-   }
+
    current_framebuffer_size = size;
 
    if (reflection.ubo_stage_mask && common->ubo_mapped)
