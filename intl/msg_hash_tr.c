@@ -922,13 +922,12 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Shader Öne Ayarı yükleyin. \n"
                              " \n"
-                             " Load a shader preset directly. \n"
-                             "The menu shader menu is updated accordingly. \n"
+                             "Doğrudan bir gölgelendirici önayarı yükleyin. \n"
+                             "Menü gölgelendirici menüsü buna göre güncellenir. \n"
                              " \n"
-                             "If the CGP uses scaling methods which are not \n"
-                             "simple, (i.e. source scaling, same scaling \n"
-                             "factor for X/Y), the scaling factor displayed \n"
-                             "in the menu might not be correct."
+                             "CGP basit olmayan ölçeklendirme yöntemleri kullanıyorsa, \n"
+                             "(yani kaynak ölçeklendirme, X / Y için aynı ölçeklendirme faktörü), \n"
+                             "menüde görüntülenen ölçeklendirme faktörü doğru olmayabilir. \n"
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
@@ -1633,10 +1632,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
             snprintf(s, len,
-                     "Whether to announce netplay games publicly. \n"
+                     "Netplay oyunlarının kamuya duyurulup duyulmayacağı. \n"
                              " \n"
-                             "If set to false, clients must manually connect \n"
-                             "rather than using the public lobby.");
+                             "False olarak ayarlanırsa, istemciler genel \n"
+                             "lobiyi kullanmak yerine manuel olarak bağlanmalıdır.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
             snprintf(s, len,
@@ -1744,8 +1743,8 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             snprintf(s, len,
-                     "Smoothens picture with bilinear filtering. \n"
-                             "Should be disabled if using shaders.");
+                     "Resmi bilinear filtreleme ile pürüzsüzleştirir. \n"
+                             "Gölgelendiriciler kullanılıyorsa devre dışı bırakılmalıdır.");
             break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,

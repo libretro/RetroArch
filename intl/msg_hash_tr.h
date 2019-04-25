@@ -563,7 +563,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-    "Verbose Mode"
+    "Verbose Modu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
@@ -1366,7 +1366,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-    "Save state"
+    "Konumu Kaydet"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -1602,7 +1602,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-    "Load State"
+    "Kayıtlı Konumu Yükle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -2010,15 +2010,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-    "Onscreen Display"
+    "Ekrandaki Görünüm"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-    "Onscreen Overlay"
+    "Ekrandaki Kaplama"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-    "Adjust Bezels and Onscreen controls"
+    "Çerçeveleri ve Ekran denetimlerini ayarlama"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -3360,11 +3360,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-    "Undo Load State"
+    "Kayıtlı Konumu Yüklemeyi Geri Al"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-    "Undo Save State"
+    "Konum Kaydetmeyi Geri Al"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UNKNOWN,
@@ -4116,7 +4116,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-    "The refresh rate as reported by the display driver."
+    "Ekran sürücüsü tarafından bildirilen yenileme hızı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -4148,11 +4148,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_APPLYING_CHEAT,
-    "Applying cheat changes."
+    "Hile değişikliklerini uygulanıyor"
     )
 MSG_HASH(
     MSG_APPLYING_SHADER,
-    "Applying shader"
+    "Gölgelendiriciler uygulanıyor"
     )
 MSG_HASH(
     MSG_AUDIO_MUTED,
@@ -4172,7 +4172,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_AUTOSAVE_FAILED,
-    "Could not initialize autosave."
+    "Otomatik kaydetme başlatılamadı."
     )
 MSG_HASH(
     MSG_AUTO_SAVE_STATE_TO,
@@ -4180,7 +4180,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_BLOCKING_SRAM_OVERWRITE,
-    "Blocking SRAM Overwrite"
+    "SRAM Üzerine Yazmayı Engelleniyor"
     )
 MSG_HASH(
     MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -4216,15 +4216,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CONTENT_CRC32S_DIFFER,
-    "Content CRC32s differ. Cannot use different games."
+    "İçerik CRC32'ler farklıdır. Farklı oyunlar kullanılamaz."
     )
 MSG_HASH(
     MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-    "Content loading skipped. Implementation will load it on its own."
+    "İçerik yüklemesi atlandı. Uygulama tek başına yükleyecektir."
     )
 MSG_HASH(
     MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-    "Core does not support save states."
+    "Core Konum Kayıtlarını desteklemiyor."
     )
 MSG_HASH(
     MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -4364,7 +4364,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-    "Failed to accept incoming spectator."
+    "Gelen seyirci kabul edilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
@@ -4372,83 +4372,83 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_APPLY_SHADER,
-    "Failed to apply shader."
+    "Gölgelendirici uygulanamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_BIND_SOCKET,
-    "Failed to bind socket."
+    "Soket bağlanamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-    "Failed to create the directory."
+    "Dizin oluşturulamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-    "Failed to extract content from compressed file"
+    "Sıkıştırılmış dosyadan içerik alınamadı"
     )
 MSG_HASH(
     MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-    "Failed to get nickname from client."
+    "İstemciden takma ad alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD,
-    "Failed to load"
+    "Yükleme başarısız"
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_CONTENT,
-    "Failed to load content"
+    "İçerik yüklenemedi"
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_MOVIE_FILE,
-    "Failed to load movie file"
+    "Film dosyası yüklenemedi"
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_OVERLAY,
-    "Failed to load overlay."
+    "Kaplama yüklenemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_STATE,
-    "Failed to load state from"
+    "Kayıtlı Konum yüklenemedi"
     )
 MSG_HASH(
     MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-    "Failed to open libretro core"
+    "Libretro Core açılamadı"
     )
 MSG_HASH(
     MSG_FAILED_TO_PATCH,
-    "Failed to patch"
+    "Yama yapılamadı"
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-    "Failed to receive header from client."
+    "İstemciden başlık alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_NICKNAME,
-    "Failed to receive nickname."
+    "Takma ad alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-    "Failed to receive nickname from host."
+    "Ana bilgisayardan takma ad alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-    "Failed to receive nickname size from host."
+    "Ana bilgisayardan takma ad boyutu alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-    "Failed to receive SRAM data from host."
+    "Ana bilgisayardan SRAM verileri alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-    "Failed to remove disk from tray."
+    "Disk tepsiden çıkartılamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-    "Failed to remove temporary file"
+    "Geçici dosya kaldırılamadı"
     )
 MSG_HASH(
     MSG_FAILED_TO_SAVE_SRAM,
-    "Failed to save SRAM"
+    "SRAM kaydedilemedi"
     )
 MSG_HASH(
     MSG_FAILED_TO_SAVE_STATE_TO,
@@ -4456,51 +4456,51 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_NICKNAME,
-    "Failed to send nickname."
+    "Takma ad gönderilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_NICKNAME_SIZE,
-    "Failed to send nickname size."
+    "Takma ad boyutu gönderilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
-    "Failed to send nickname to client."
+    "Takma ad diğer cihaza gönderilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-    "Failed to send nickname to host."
+    "Sunucuya takma ad gönderilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-    "Failed to send SRAM data to client."
+    "SRAM verileri istemciye gönderilemedi."
     )
 MSG_HASH(
     MSG_FAILED_TO_START_AUDIO_DRIVER,
-    "Failed to start audio driver. Will continue without audio."
+    "Ses sürücüsü başlatılamadı. Ses olmadan devam edilecek."
     )
 MSG_HASH(
     MSG_FAILED_TO_START_MOVIE_RECORD,
-    "Failed to start movie record."
+    "Film kaydı başlatılamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_START_RECORDING,
-    "Failed to start recording."
+    "Kayıt başlatılamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_TAKE_SCREENSHOT,
-    "Failed to take screenshot."
+    "Ekran görüntüsü alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_UNDO_LOAD_STATE,
-    "Failed to undo load state."
+    "Konum durumu geri alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_UNDO_SAVE_STATE,
-    "Failed to undo save state."
+    "Konum Kaydetme geri alınamadı."
     )
 MSG_HASH(
     MSG_FAILED_TO_UNMUTE_AUDIO,
-    "Failed to unmute audio."
+    "Ses açılamadı."
     )
 MSG_HASH(
     MSG_FATAL_ERROR_RECEIVED_IN,
@@ -4508,7 +4508,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FILE_NOT_FOUND,
-    "File not found"
+    "Dosya bulunamadı"
     )
 MSG_HASH(
     MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -4536,7 +4536,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-    "Per-Game Options: game-specific core options found at"
+    "Oyun Başına Seçenekler: oyunda bulunan oyuna özgü temel seçenekler"
     )
 MSG_HASH(
     MSG_GOT_INVALID_DISK_INDEX,
@@ -4548,11 +4548,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_GAME_FOCUS_ON,
-    "Game focus on"
+    "Game focus açık"
     )
 MSG_HASH(
     MSG_GAME_FOCUS_OFF,
-    "Game focus off"
+    "Game focus kapalı"
     )
 MSG_HASH(
     MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
@@ -4576,7 +4576,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_INPUT_RENAME_ENTRY,
-    "Rename Title"
+    "Başlığı Yeniden Adlandır"
     )
 MSG_HASH(
     MSG_INTERFACE,
@@ -4632,11 +4632,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOADING_CONTENT_FILE,
-    "Loading content file"
+    "İçerik dosyası yükleniyor"
     )
 MSG_HASH(
     MSG_LOADING_HISTORY_FILE,
-    "Loading history file"
+    "Geçmiş dosyası yükleniyor"
     )
 MSG_HASH(
     MSG_LOADING_STATE,
@@ -4700,7 +4700,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RECEIVED,
-    "received"
+    "alındı"
     )
 MSG_HASH(
     MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
@@ -4740,7 +4740,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RESET,
-    "Reset"
+    "Yeniden başlatılıyor"
     )
 MSG_HASH(
     MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
@@ -4764,7 +4764,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REWINDING,
-    "Gerisarılıyor."
+    "Geri sarılıyor."
     )
 MSG_HASH(
     MSG_REWIND_INIT,
@@ -4824,7 +4824,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SHADER,
-    "Shader"
+    "Gölgelendirici"
     )
 MSG_HASH(
     MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
@@ -4840,7 +4840,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAST_FORWARD,
-    "Fast forward."
+    "İleri sarılıyor."
     )
 MSG_HASH(
     MSG_SLOW_MOTION_REWIND,
@@ -4868,23 +4868,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_TAKING_SCREENSHOT,
-    "Taking screenshot."
+    "Ekran görüntüsü alınıyor."
     )
 MSG_HASH(
     MSG_SCREENSHOT_SAVED,
-    "Screenshot saved"
+    "Ekran görüntüsü kaydedildi"
     )
 MSG_HASH(
     MSG_CHANGE_THUMBNAIL_TYPE,
-    "Change thumbnail type"
+    "Küçük resim türünü değiştir"
     )
 MSG_HASH(
     MSG_NO_THUMBNAIL_AVAILABLE,
-    "No thumbnail available"
+    "Küçük resim yok"
     )
 MSG_HASH(
     MSG_PRESS_AGAIN_TO_QUIT,
-    "Press again to quit..."
+    "Çıkmak için tekrar basın..."
     )
 MSG_HASH(
     MSG_TO,
@@ -4900,15 +4900,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_UNKNOWN,
-    "Unknown"
+    "Bilinmiyor"
     )
 MSG_HASH(
     MSG_UNPAUSED,
-    "Unpaused."
+    "Devam ediyor."
     )
 MSG_HASH(
     MSG_UNRECOGNIZED_COMMAND,
-    "Unrecognized command"
+    "Tanınmayan komut"
     )
 MSG_HASH(
     MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -4928,11 +4928,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_VALUE_REBOOTING,
-    "Rebooting..."
+    "Yeniden başlatılıyor..."
     )
 MSG_HASH(
     MSG_VALUE_SHUTTING_DOWN,
-    "Shutting down..."
+    "Kapatılıyor..."
     )
 MSG_HASH(
     MSG_VERSION_OF_LIBRETRO_API,
@@ -4960,11 +4960,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
-    "Allow or disallow camera access by cores."
+    "Kameranın Core tarafından erişimine izin ver veya verme."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-    "Allow or disallow location services access by cores."
+    "Konum servislerinin Core tarafından erişimine izin ver veya verme."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
@@ -5365,11 +5365,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-    "Hide the overlay while inside the menu, and show it again when exiting the menu."
+    "Menü içindeyken kaplamayı gizleyin ve menüden çıkarken tekrar gösterin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-    "Show keyboard/controller inputs on the onscreen overlay."
+    "Ekran kaplaması üzerinde klavye/denetleyici girişlerini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
@@ -5397,7 +5397,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-    "Start in fullscreen. Can be changed at runtime. Can be overridden by a command line switch"
+    "Tam ekrandan başlar. Çalışma zamanında değiştirilebilir. Komut satırı tarafından geçersiz kılınabilir"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
@@ -5425,19 +5425,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-    "Run core logic one or more frames ahead then load the state back to reduce perceived input lag."
+    "Core mantığını bir veya daha fazla karenin önünde çalıştırın, ardından algılanan giriş gecikmesini azaltmak için durumu geri yükleyin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-    "The number of frames to run ahead. Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game."
+    "Önde çalışacak kare sayısı. Oyunun içindeki gecikmeli çerçeve sayısını aşarsanız, jitter(seğirme) gibi oyun sorunlarına neden olur."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
-    "The number of milliseconds to wait to get a complete input sample, use it if you have issues with simultaneous button presses (Android only)."
+    "Komple bir giriş örneği almak için beklenecek milisaniye sayısı, eşzamanlı tuşlara basıldığında sorun yaşıyorsanız kullanın (yalnızca Android için)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-    "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
+    "Devam etmek için RetroArch Core'un ikinci bir örneğini kullanın. Yükleme durumu nedeniyle ses sorunlarını önler."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
@@ -5445,16 +5445,16 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-    "Made a mistake? Rewind and try again.\n"
-    "Beware that this causes a performance hit when playing."
+    "Bir hata mı yaptın? Geri sar ve tekrar dene.\n"
+    "Bunun oyun oynarken performansın düşmesine neden olduğuna dikkat edin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-    "Apply cheat immediately after toggling."
+    "Geçiş yaptıktan hemen sonra hileyi uygulayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
-    "Auto-apply cheats when game loads."
+    "Oyun yüklendiğinde hileleri otomatik uygulayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
@@ -5471,7 +5471,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-    "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+    "Tanımlanmış sayıda kare geri alırken, bir defada birkaç kare geri sararak geri sarma hızını artırabilirsiniz."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
@@ -5479,7 +5479,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-    "Each time you increase or decrease the rewind buffer size value via this UI it will change by this amount"
+    "Bu kullanıcı arabirimiyle geri alma arabellek boyutu değerini her artırdığınızda ya da azaltdığınızda, bu miktar kadar değişecektir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_IDX,
@@ -5901,11 +5901,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_STATE,
-    "Load a saved state from the currently selected slot."
+    "Seçili yuvadan kaydedilmiş konumu yükleyin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_STATE,
-    "Save a state to the currently selected slot."
+    "Seçili yuvaya konumu kaydedin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESUME,
@@ -5965,19 +5965,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-    "Set up cheat codes."
+    "Hile kodlarını ayarlayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-    "Set up shaders to visually augment the image."
+    "Görüntüyü görsel geliştirmek için gölgelendiricileri ayarlayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-    "Change the controls for the currently running content."
+    "Çalışmakta olan içerik için kontrolleri değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-    "Change the options for the currently running content."
+    "Çalışmakta olan içeriğin seçeneklerini değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
