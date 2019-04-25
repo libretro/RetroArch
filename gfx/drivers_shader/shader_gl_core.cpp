@@ -1077,9 +1077,9 @@ bool Pass::build()
       framebuffer = unique_ptr<Framebuffer>(
             new Framebuffer(pass_info.rt_format, pass_info.max_levels));
 
-   for (auto &param : parameters)
+   for (i = 0; i < parameters.size(); i++)
    {
-      if (!gl_core_shader_set_unique_map(semantic_map, param.id,
+      if (!gl_core_shader_set_unique_map(semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -1863,16 +1863,16 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
-      auto &fb                = passes[i]->get_framebuffer();
+      const gl_core::Framebuffer &fb   = passes[i]->get_framebuffer();
 
-      source.texture.image    = fb.get_image();
-      source.texture.width    = fb.get_size().width;
-      source.texture.height   = fb.get_size().height;
-      source.filter           = passes[i + 1]->get_source_filter();
-      source.mip_filter       = passes[i + 1]->get_mip_filter();
-      source.address          = passes[i + 1]->get_address_mode();
+      source.texture.image             = fb.get_image();
+      source.texture.width             = fb.get_size().width;
+      source.texture.height            = fb.get_size().height;
+      source.filter                    = passes[i + 1]->get_source_filter();
+      source.mip_filter                = passes[i + 1]->get_mip_filter();
+      source.address                   = passes[i + 1]->get_address_mode();
 
-      common.pass_outputs[i] = source;
+      common.pass_outputs[i]           = source;
    }
 }
 
@@ -1909,7 +1909,8 @@ void gl_core_filter_chain::build_viewport_pass(
       const gl_core_viewport &vp, const float *mvp)
 {
    unsigned i;
-   /* First frame, make sure our history and feedback textures are in a clean state. */
+   /* First frame, make sure our history and 
+    * feedback textures are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback();
@@ -1935,13 +1936,14 @@ void gl_core_filter_chain::build_viewport_pass(
    }
    else
    {
-      auto &fb               = passes[passes.size() - 2]->get_framebuffer();
-      source.texture.image   = fb.get_image();
-      source.texture.width   = fb.get_size().width;
-      source.texture.height  = fb.get_size().height;
-      source.filter          = passes.back()->get_source_filter();
-      source.mip_filter      = passes.back()->get_mip_filter();
-      source.address         = passes.back()->get_address_mode();
+      const gl_core::Framebuffer &fb = passes[passes.size() - 2]
+         ->get_framebuffer();
+      source.texture.image           = fb.get_image();
+      source.texture.width           = fb.get_size().width;
+      source.texture.height          = fb.get_size().height;
+      source.filter                  = passes.back()->get_source_filter();
+      source.mip_filter              = passes.back()->get_mip_filter();
+      source.address                 = passes.back()->get_address_mode();
    }
 
    passes.back()->build_commands(original, source, vp, mvp);
@@ -2034,43 +2036,49 @@ bool gl_core_filter_chain::init_feedback()
 
 bool gl_core_filter_chain::init_alias()
 {
+   unsigned i, j;
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   for (auto &pass : passes)
+   for (i = 0; i < passes.size(); i++)
    {
-      auto &name = pass->get_name();
+      const string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
-      unsigned i = &pass - passes.data();
+      j = &passes[i] - passes.data();
 
       if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               name + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+               name + "Feedback",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               name + "FeedbackSize",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
    }
 
-   for (auto &lut : common.luts)
+   for (i = 0; i < common.luts.size(); i++)
    {
-      unsigned i = &lut - common.luts.data();
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, lut->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      j = &common.luts[i] - common.luts.data();
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+               common.luts[i]->get_id(),
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, lut->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               common.luts[i]->get_id() + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
    }
 
@@ -2104,7 +2112,8 @@ void gl_core_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_
    passes[pass]->set_shader(stage, spirv, spirv_words);
 }
 
-void gl_core_filter_chain::add_parameter(unsigned pass, unsigned index, const std::string &id)
+void gl_core_filter_chain::add_parameter(unsigned pass,
+      unsigned index, const std::string &id)
 {
    passes[pass]->add_parameter(index, id);
 }
@@ -2118,14 +2127,13 @@ bool gl_core_filter_chain::init()
 
    for (i = 0; i < passes.size(); i++)
    {
-      auto &pass = passes[i];
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
-            pass->get_name().empty() ?
+            passes[i]->get_name().empty() ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            pass->get_name().c_str());
+            passes[i]->get_name().c_str());
 
-      pass->set_pass_info(pass_info[i]);
-      if (!pass->build())
+      passes[i]->set_pass_info(pass_info[i]);
+      if (!passes[i]->build())
          return false;
    }
 

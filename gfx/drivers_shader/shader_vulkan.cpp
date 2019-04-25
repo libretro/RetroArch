@@ -624,6 +624,7 @@ void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
 
 void vulkan_filter_chain::notify_sync_index(unsigned index)
 {
+   unsigned i;
    auto &calls = deferred_calls[index];
    for (auto &call : calls)
       call();
@@ -631,8 +632,8 @@ void vulkan_filter_chain::notify_sync_index(unsigned index)
 
    current_sync_index = index;
 
-   for (auto &pass : passes)
-      pass->notify_sync_index(index);
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->notify_sync_index(index);
 }
 
 bool vulkan_filter_chain::update_swapchain_info(
@@ -645,8 +646,9 @@ bool vulkan_filter_chain::update_swapchain_info(
 
 void vulkan_filter_chain::release_staging_buffers()
 {
-   for (auto &lut : common.luts)
-      lut->release_staging_buffer();
+   unsigned i;
+   for (i = 0; i < common.luts.size(); i++)
+      common.luts[i]->release_staging_buffer();
 }
 
 void vulkan_filter_chain::execute_deferred()
@@ -747,7 +749,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       passes[i]->build_commands(disposer, cmd,
             original, source, vp, nullptr);
 
-      auto &fb                = passes[i]->get_framebuffer();
+      const Framebuffer &fb   = passes[i]->get_framebuffer();
 
       source.texture.view     = fb.get_view();
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -757,11 +759,12 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       source.mip_filter       = passes[i + 1]->get_mip_filter();
       source.address          = passes[i + 1]->get_address_mode();
 
-      common.pass_outputs[i] = source;
+      common.pass_outputs[i]  = source;
    }
 }
 
-void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBuffer cmd)
+void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
+      VkCommandBuffer cmd)
 {
    unique_ptr<Framebuffer> tmp;
    VkImageLayout src_layout = input_texture.layout;
@@ -827,7 +830,8 @@ void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
    unsigned i;
-   /* First frame, make sure our history and feedback textures are in a clean state. */
+   /* First frame, make sure our history and 
+    * feedback textures are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback(cmd);
@@ -854,7 +858,7 @@ void vulkan_filter_chain::build_viewport_pass(
    }
    else
    {
-      auto &fb               = passes[passes.size() - 2]->get_framebuffer();
+      const Framebuffer &fb  = passes[passes.size() - 2]->get_framebuffer();
       source.texture.view    = fb.get_view();
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width   = fb.get_size().width;
@@ -957,43 +961,46 @@ bool vulkan_filter_chain::init_feedback()
 
 bool vulkan_filter_chain::init_alias()
 {
+   unsigned i, j;
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   for (auto &pass : passes)
+   for (i = 0; i < passes.size(); i++)
    {
-      auto &name = pass->get_name();
+      const string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
-      unsigned i = &pass - passes.data();
+      j = &passes[i] - passes.data();
 
       if (!vk_shader_set_unique_map(common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
       if (!vk_shader_set_unique_map(common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
       if (!vk_shader_set_unique_map(common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
       if (!vk_shader_set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
    }
 
-   for (auto &lut : common.luts)
+   for (i = 0; i < common.luts.size(); i++)
    {
-      unsigned i = &lut - common.luts.data();
-      if (!vk_shader_set_unique_map(common.texture_semantic_map, lut->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      j = &common.luts[i] - common.luts.data();
+      if (!vk_shader_set_unique_map(common.texture_semantic_map,
+               common.luts[i]->get_id(),
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!vk_shader_set_unique_map(common.texture_semantic_uniform_map, lut->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      if (!vk_shader_set_unique_map(common.texture_semantic_uniform_map,
+               common.luts[i]->get_id() + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
    }
 
@@ -1031,7 +1038,8 @@ void vulkan_filter_chain::set_shader(
    passes[pass]->set_shader(stage, spirv, spirv_words);
 }
 
-void vulkan_filter_chain::add_parameter(unsigned pass, unsigned index, const std::string &id)
+void vulkan_filter_chain::add_parameter(unsigned pass,
+      unsigned index, const std::string &id)
 {
    passes[pass]->add_parameter(index, id);
 }
@@ -1077,15 +1085,15 @@ bool vulkan_filter_chain::init()
 
    for (i = 0; i < passes.size(); i++)
    {
-      auto &pass = passes[i];
+      const string name = passes[i]->get_name();
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
-            pass->get_name().empty() ?
+            name.empty() ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            pass->get_name().c_str());
+            name.c_str());
 
-      source = pass->set_pass_info(max_input_size,
+      source = passes[i]->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);
-      if (!pass->build())
+      if (!passes[i]->build())
          return false;
    }
 
@@ -1957,9 +1965,9 @@ bool Pass::build()
                current_framebuffer_size,
                pass_info.rt_format, pass_info.max_levels));
 
-   for (auto &param : parameters)
+   for (i = 0; i < parameters.size(); i++)
    {
-      if (!vk_shader_set_unique_map(semantic_map, param.id,
+      if (!vk_shader_set_unique_map(semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -2215,7 +2223,7 @@ void Pass::build_commands(
       const float *mvp)
 {
    current_viewport = vp;
-   auto size        = get_output_size(
+   Size2D size      = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
