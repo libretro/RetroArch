@@ -28,31 +28,32 @@ using namespace std;
 bool slang_preprocess_parse_parameters(glslang_meta& meta,
       struct video_shader *shader)
 {
+   unsigned i;
    unsigned old_num_parameters = shader->num_parameters;
 
    /* Assumes num_parameters is
     * initialized to something sane. */
-   for (auto &param : meta.parameters)
+   for (i = 0; i < meta.parameters.size(); i++)
    {
       bool mismatch_dup = false;
       bool dup          = false;
       auto itr          = find_if(shader->parameters,
             shader->parameters + shader->num_parameters,
-         [&](const video_shader_parameter &parsed_param)
-         {
-            return param.id == parsed_param.id;
-         });
+            [&](const video_shader_parameter &parsed_param)
+            {
+            return meta.parameters[i].id == parsed_param.id;
+            });
 
       if (itr != shader->parameters + shader->num_parameters)
       {
          dup = true;
          /* Allow duplicate #pragma parameter, but only
           * if they are exactly the same. */
-         if (param.desc != itr->desc ||
-               param.initial != itr->initial ||
-               param.minimum != itr->minimum ||
-               param.maximum != itr->maximum ||
-               param.step != itr->step)
+         if (  meta.parameters[i].desc    != itr->desc    ||
+               meta.parameters[i].initial != itr->initial ||
+               meta.parameters[i].minimum != itr->minimum ||
+               meta.parameters[i].maximum != itr->maximum ||
+               meta.parameters[i].step    != itr->step)
          {
             RARCH_ERR("[slang]: Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
@@ -70,14 +71,19 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
          return false;
       }
 
-      auto &p = shader->parameters[shader->num_parameters++];
-      strlcpy(p.id, param.id.c_str(), sizeof(p.id));
-      strlcpy(p.desc, param.desc.c_str(), sizeof(p.desc));
-      p.initial = param.initial;
-      p.minimum = param.minimum;
-      p.maximum = param.maximum;
-      p.step    = param.step;
-      p.current = param.initial;
+      struct video_shader_parameter *p = (struct video_shader_parameter*)
+         &shader->parameters[shader->num_parameters++];
+
+      if (!p)
+         continue;
+
+      strlcpy(p->id,   meta.parameters[i].id.c_str(),   sizeof(p->id));
+      strlcpy(p->desc, meta.parameters[i].desc.c_str(), sizeof(p->desc));
+      p->initial = meta.parameters[i].initial;
+      p->minimum = meta.parameters[i].minimum;
+      p->maximum = meta.parameters[i].maximum;
+      p->step    = meta.parameters[i].step;
+      p->current = meta.parameters[i].initial;
    }
 
    return true;
