@@ -6906,17 +6906,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             settings_t *settings      = config_get_ptr();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             filebrowser_clear_type();
-            info->type_default = FILE_TYPE_RDB;
             if (!string_is_empty(info->exts))
                free(info->exts);
-            info->exts = strdup(
+            if (info->path)
+               free(info->path);
+            info->type_default = FILE_TYPE_RDB;
+            info->exts         = strdup(
                   file_path_str(FILE_PATH_RDB_EXTENSION));
             info->enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
             load_content       = false;
             use_filebrowser    = true;
-            if (info->path)
-               free(info->path);
-            info->path        = strdup(settings->paths.path_content_database);
+            info->path         = strdup(settings->paths.path_content_database);
          }
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
@@ -6924,29 +6924,35 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             settings_t *settings      = config_get_ptr();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             filebrowser_clear_type();
-            info->type_default = FILE_TYPE_CURSOR;
-            load_content       = false;
-            use_filebrowser    = true;
             if (!string_is_empty(info->exts))
                free(info->exts);
             if (info->path)
                free(info->path);
+            info->type_default = FILE_TYPE_CURSOR;
             info->exts         = strdup("dbc");
+            load_content       = false;
+            use_filebrowser    = true;
             info->path         = strdup(settings->paths.directory_cursor);
          }
          break;
+      case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
             struct string_list *str_list    = string_list_new();
+
             attr.i = 0;
 
             new_exts[0] = '\0';
 
             filebrowser_clear_type();
-            info->type_default = FILE_TYPE_SHADER_PRESET;
+            
+            if      (type == DISPLAYLIST_SHADER_PRESET)
+               info->type_default = FILE_TYPE_SHADER_PRESET;
+            else if (type == DISPLAYLIST_SHADER_PASS)
+               info->type_default = FILE_TYPE_SHADER;
 
             {
                gfx_ctx_flags_t flags;
@@ -6964,46 +6970,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                gfx_ctx_flags_t flags;
                if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                   string_list_append(str_list, "slangp", attr);
-            }
-
-            string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
-            if (!string_is_empty(info->exts))
-               free(info->exts);
-            info->exts = strdup(new_exts);
-            string_list_free(str_list);
-            use_filebrowser    = true;
-         }
-         break;
-      case DISPLAYLIST_SHADER_PASS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-            char new_exts[PATH_MAX_LENGTH];
-            union string_list_elem_attr attr;
-            struct string_list *str_list    = string_list_new();
-
-            attr.i = 0;
-
-            new_exts[0] = '\0';
-
-            filebrowser_clear_type();
-            info->type_default = FILE_TYPE_SHADER;
-
-            {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  string_list_append(str_list, "cg", attr);
-            }
-
-            {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-                  string_list_append(str_list, "glsl", attr);
-            }
-
-            {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                  string_list_append(str_list, "slang", attr);
             }
 
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
