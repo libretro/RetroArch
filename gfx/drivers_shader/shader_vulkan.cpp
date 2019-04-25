@@ -76,7 +76,7 @@ static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
 {
-   uint32_t i;
+   unsigned i;
    for (i = 0; i < VK_MAX_MEMORY_TYPES; i++)
    {
       if ((device_reqs & (1u << i)) &&
@@ -1568,6 +1568,7 @@ void Pass::clear_vk()
 
 bool Pass::init_pipeline_layout()
 {
+   unsigned i;
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
 
@@ -1660,7 +1661,7 @@ bool Pass::init_pipeline_layout()
 
    sets.resize(num_sync_indices);
 
-   for (unsigned i = 0; i < num_sync_indices; i++)
+   for (i = 0; i < num_sync_indices; i++)
       vkAllocateDescriptorSets(device, &alloc_info, &sets[i]);
 
    return true;
@@ -1802,6 +1803,7 @@ CommonResources::CommonResources(VkDevice device,
       const VkPhysicalDeviceMemoryProperties &memory_properties)
    : device(device)
 {
+   unsigned i;
    /* The final pass uses an MVP designed for [0, 1] range VBO.
     * For in-between passes, we just go with identity matrices,
     * so keep it simple.
@@ -1836,8 +1838,10 @@ CommonResources::CommonResources(VkDevice device,
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-   for (unsigned i = 0; i < VULKAN_FILTER_CHAIN_COUNT; i++)
+   for (i = 0; i < VULKAN_FILTER_CHAIN_COUNT; i++)
    {
+      unsigned j;
+
       switch (static_cast<vulkan_filter_chain_filter>(i))
       {
          case VULKAN_FILTER_CHAIN_LINEAR:
@@ -1854,8 +1858,10 @@ CommonResources::CommonResources(VkDevice device,
             break;
       }
 
-      for (unsigned j = 0; j < VULKAN_FILTER_CHAIN_COUNT; j++)
+      for (j = 0; j < VULKAN_FILTER_CHAIN_COUNT; j++)
       {
+         unsigned k;
+
          switch (static_cast<vulkan_filter_chain_filter>(j))
          {
             case VULKAN_FILTER_CHAIN_LINEAR:
@@ -1870,7 +1876,7 @@ CommonResources::CommonResources(VkDevice device,
                break;
          }
 
-         for (unsigned k = 0; k < VULKAN_FILTER_CHAIN_ADDRESS_COUNT; k++)
+         for (k = 0; k < VULKAN_FILTER_CHAIN_ADDRESS_COUNT; k++)
          {
             VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 
