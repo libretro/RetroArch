@@ -6935,19 +6935,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->path         = strdup(settings->paths.directory_cursor);
          }
          break;
-      case DISPLAYLIST_CONFIG_FILES:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-
-         info->type_default = FILE_TYPE_CONFIG;
-
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-
-         info->exts         = strdup("cfg");
-         load_content       = false;
-         use_filebrowser    = true;
-         break;
       case DISPLAYLIST_SHADER_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
@@ -7026,16 +7013,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             string_list_free(str_list);
             use_filebrowser    = true;
          }
-         break;
-      case DISPLAYLIST_VIDEO_FILTERS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_VIDEOFILTER;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("filt");
          break;
       case DISPLAYLIST_IMAGES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -7125,25 +7102,67 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh    = true;
          info->need_push       = true;
          break;
+      case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_CONFIG_FILES:
+      case DISPLAYLIST_REMAP_FILES:
+      case DISPLAYLIST_RGUI_THEME_PRESETS:
+      case DISPLAYLIST_STREAM_CONFIG_FILES:
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
+      case DISPLAYLIST_OVERLAYS:
+      case DISPLAYLIST_FONTS:
       case DISPLAYLIST_AUDIO_FILTERS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_AUDIOFILTER;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("dsp");
-         break;
       case DISPLAYLIST_CHEAT_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
-         info->type_default = FILE_TYPE_CHEAT;
-         load_content       = false;
-         use_filebrowser    = true;
          if (!string_is_empty(info->exts))
             free(info->exts);
-         info->exts         = strdup("cht");
+         switch (type)
+         {
+            case DISPLAYLIST_VIDEO_FILTERS:
+               info->type_default = FILE_TYPE_VIDEOFILTER;
+               info->exts         = strdup("filt");
+               break;
+            case DISPLAYLIST_CONFIG_FILES:
+               info->type_default = FILE_TYPE_CONFIG;
+               info->exts         = strdup("cfg");
+               break;
+            case DISPLAYLIST_REMAP_FILES:
+               info->type_default    = FILE_TYPE_REMAP;
+               info->exts            = strdup("rmp");
+               break;
+            case DISPLAYLIST_RGUI_THEME_PRESETS:
+               info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
+               info->exts         = strdup("cfg");
+               break;
+            case DISPLAYLIST_STREAM_CONFIG_FILES:
+               info->type_default = FILE_TYPE_STREAM_CONFIG;
+               info->exts         = strdup("cfg");
+               break;
+            case DISPLAYLIST_RECORD_CONFIG_FILES:
+               info->type_default = FILE_TYPE_RECORD_CONFIG;
+               info->exts         = strdup("cfg");
+               break;
+            case DISPLAYLIST_OVERLAYS:
+               info->type_default = FILE_TYPE_OVERLAY;
+               info->exts         = strdup("cfg");
+               break;
+            case DISPLAYLIST_FONTS:
+               info->type_default = FILE_TYPE_FONT;
+               info->exts         = strdup("ttf");
+               break;
+            case DISPLAYLIST_AUDIO_FILTERS:
+               info->type_default = FILE_TYPE_AUDIOFILTER;
+               info->exts         = strdup("dsp");
+               break;
+            case DISPLAYLIST_CHEAT_FILES:
+               info->type_default = FILE_TYPE_CHEAT;
+               info->exts         = strdup("cht");
+               break;
+            default:
+               break;
+         }
+         load_content       = false;
+         use_filebrowser    = true;
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -7153,66 +7172,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts         = strdup("lpl");
-         break;
-      case DISPLAYLIST_FONTS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_FONT;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("ttf");
-         break;
-      case DISPLAYLIST_OVERLAYS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_OVERLAY;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("cfg");
-         break;
-      case DISPLAYLIST_STREAM_CONFIG_FILES:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_STREAM_CONFIG;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("cfg");
-         break;
-      case DISPLAYLIST_RECORD_CONFIG_FILES:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_RECORD_CONFIG;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("cfg");
-         break;
-      case DISPLAYLIST_RGUI_THEME_PRESETS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strdup("cfg");
-         break;
-      case DISPLAYLIST_REMAP_FILES:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default    = FILE_TYPE_REMAP;
-         load_content          = false;
-         use_filebrowser       = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts            = strdup("rmp");
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
