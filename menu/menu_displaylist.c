@@ -3455,6 +3455,35 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_PERFCOUNTERS_CORE:
+      case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+         {
+            unsigned i;
+            struct retro_perf_counter **counters = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ? retro_get_perf_counter_libretro()
+               : retro_get_perf_counter_rarch();
+            unsigned num                         = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ?   retro_get_perf_count_libretro()
+               : retro_get_perf_count_rarch();
+            unsigned id                          = 
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
+               ? MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
+               : MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+
+            if (counters && num != 0)
+            {
+               for (i = 0; i < num; i++)
+                  if (counters[i] && counters[i]->ident)
+                     if (menu_entries_append_enum(list,
+                           counters[i]->ident, "",
+                           (enum msg_hash_enums)(id + i),
+                           id + i , 0, 0))
+                        count++;
+            }
+         }
+         break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5778,6 +5807,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_PERFCOUNTERS_CORE:
+      case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_build_list(info->list, type);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
+                  MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
+                  0, 0, 0);
+
+         info->need_refresh = false; /* TODO/FIXME - check why this is set to false */
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -6513,48 +6557,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          ret                = 0;
          info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_PERFCOUNTERS_CORE:
-      case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-            unsigned i;
-            struct retro_perf_counter **counters = 
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
-               ? retro_get_perf_counter_libretro()
-               : retro_get_perf_counter_rarch();
-            unsigned num                         = 
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
-               ?   retro_get_perf_count_libretro()
-               : retro_get_perf_count_rarch();
-            unsigned id                          = 
-               (type == DISPLAYLIST_PERFCOUNTERS_CORE)
-               ? MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
-               : MENU_SETTINGS_PERF_COUNTERS_BEGIN;
-
-            if (counters && num != 0)
-            {
-               for (i = 0; i < num; i++)
-                  if (counters[i] && counters[i]->ident)
-                     if (menu_entries_append_enum(info->list,
-                           counters[i]->ident, "",
-                           (enum msg_hash_enums)(id + i),
-                           id + i , 0, 0))
-                        count++;
-            }
-         }
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
-                  MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
-                  0, 0, 0);
-
-         ret                = 0;
-
-         info->need_refresh = false;
          info->need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
