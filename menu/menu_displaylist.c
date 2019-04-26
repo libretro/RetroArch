@@ -6956,19 +6956,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                gfx_ctx_flags_t flags;
                if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  string_list_append(str_list, "cgp", attr);
+               {
+                  if (type == DISPLAYLIST_SHADER_PRESET)
+                     string_list_append(str_list, "cgp", attr);
+                  else if (type == DISPLAYLIST_SHADER_PASS)
+                     string_list_append(str_list, "cg", attr);
+               }
             }
 
             {
                gfx_ctx_flags_t flags;
                if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-                  string_list_append(str_list, "glslp", attr);
+               {
+                  if (type == DISPLAYLIST_SHADER_PRESET)
+                     string_list_append(str_list, "glslp", attr);
+                  else if (type == DISPLAYLIST_SHADER_PASS)
+                     string_list_append(str_list, "glsl", attr);
+               }
             }
 
             {
                gfx_ctx_flags_t flags;
                if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                  string_list_append(str_list, "slangp", attr);
+               {
+                  if (type == DISPLAYLIST_SHADER_PRESET)
+                     string_list_append(str_list, "slangp", attr);
+                  else if (type == DISPLAYLIST_SHADER_PASS)
+                     string_list_append(str_list, "slang", attr);
+               }
             }
 
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
