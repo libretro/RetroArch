@@ -2740,7 +2740,14 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    config_get_ptr()->uints.libnx_overclock = entry_idx;
 
    unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
-   pcvSetClockRate(PcvModule_Cpu, (u32)profile_clock);
+   if(hosversionBefore(8, 0, 0)) {
+      pcvSetClockRate(PcvModule_CpuBus, (u32)profile_clock);
+   } else {
+      ClkrstSession session = {0};
+      clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
+      clkrstSetClockRate(&session, profile_clock);
+      clkrstCloseSession(&session);
+   }
    snprintf(command, sizeof(command), "Current Clock set to %i", profile_clock);
 #endif
 

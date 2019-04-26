@@ -55,7 +55,11 @@
 #include "tasks_internal.h"
 #include "../managers/cheat_manager.h"
 
+#ifdef HAVE_LIBNX
+#define SAVE_STATE_CHUNK 4096 * 10
+#else
 #define SAVE_STATE_CHUNK 4096
+#endif
 
 static bool save_state_in_background = false;
 static struct string_list *task_save_files = NULL;

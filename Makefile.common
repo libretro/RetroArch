@@ -902,9 +902,6 @@ ifeq ($(TARGET), retroarch_switch)
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
-      ifeq ($(HAVE_THREADS), 1)
-         OBJ += $(LIBRETRO_COMM_DIR)/rthreads/switch_pthread.o
-      endif
    else
       OBJ += gfx/drivers/switch_gfx.o
    endif
