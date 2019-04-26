@@ -247,20 +247,13 @@ bool dir_list_append(struct string_list *list,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   struct string_list *ext_list   = NULL;
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   if(dir_list_read(dir, list, ext_list, include_dirs,
-            include_hidden, include_compressed, recursive) == -1)
-   {
-      string_list_free(ext_list);
-      return false;
-   }
+   struct string_list *ext_list   = ext ? string_split(ext, "|") : NULL;
+   bool ret                       = dir_list_read(dir, list, ext_list,
+         include_dirs, include_hidden, include_compressed, recursive) != -1;
 
    string_list_free(ext_list);
-   return true;
+
+   return ret;
 }
 
 /**
