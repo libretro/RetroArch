@@ -115,6 +115,11 @@ static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 
    switch (cocoagl_api)
    {
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_GLSL
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         break;
       case GFX_CTX_OPENGL_API:
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
          else if (string_is_equal(video_driver_get_ident(), "glcore")) { }
