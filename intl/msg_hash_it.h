@@ -1,3 +1,31 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "Overclocca la GPU"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Overclocca o underclocca la GPU del Nintendo Switch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Luminosità dello schermo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Aumenta o diminuisce la luminosità dello schermo del Nintendo Switch"
+    )
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "Overclocca la CPU"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Overclocca la CPU del Nintendo Switch"
+    )
+#endif
 MSG_HASH(
       MSG_COMPILER,
       "Compilatore"
