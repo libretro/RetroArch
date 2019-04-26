@@ -350,6 +350,7 @@
 					"../../libretro-common/include",
 					../../deps/stb,
 					../../deps/libz,
+					../../deps/rcheevos/include,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
@@ -433,6 +434,7 @@
 					"../../libretro-common/include",
 					../../deps/stb,
 					../../deps/libz,
+					../../deps/rcheevos/include,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
