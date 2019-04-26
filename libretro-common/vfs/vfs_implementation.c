@@ -1099,7 +1099,7 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
    if (name_local)
       free(name_local);
 #else
-   char *name = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
+   char *name       = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
    memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
    strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
 
