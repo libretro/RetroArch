@@ -733,9 +733,9 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, int64_t *length)
 {
-   const struct file_archive_file_backend *backend = NULL;
-   int ret                            = 0;
-   struct string_list *str_list       = NULL;
+   const struct 
+      file_archive_file_backend *backend = NULL;
+   struct string_list *str_list          = NULL;
 
    /* Safety check.
     * If optional_filename and optional_filename
@@ -743,7 +743,7 @@ int file_archive_compressed_read(
     * hoping that optional_filename is the
     * same as requested.
     */
-   if (optional_filename && filestream_exists(optional_filename))
+   if (optional_filename && path_is_valid(optional_filename))
    {
       *length = 0;
       return 1;
@@ -757,22 +757,22 @@ int file_archive_compressed_read(
     * path = /path/to/file.7z#
     */
    if (str_list->size <= 1)
-      goto error;
+   {
+      /* could not extract string and substring. */
+      string_list_free(str_list);
+      *length = 0;
+      return 0;
+   }
 
    backend = file_archive_get_file_backend(str_list->elems[0].data);
    *length = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
 
+   string_list_free(str_list);
+
    if (*length != -1)
-      ret = 1;
+      return 1;
 
-   string_list_free(str_list);
-   return ret;
-
-error:
-   /* could not extract string and substring. */
-   string_list_free(str_list);
-   *length = 0;
    return 0;
 }
 
